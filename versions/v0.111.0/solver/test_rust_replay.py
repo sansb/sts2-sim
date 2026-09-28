@@ -75,6 +75,30 @@ def test_recorded_root_identity_mismatch_precedes_any_process(queen, monkeypatch
         replay.recorded_witness('unused', queen['entry'], queen['replay'], {'won': False, 'final_hp': 0})
 
 
+def test_only_a_whispering_earring_root_may_lack_a_dealt_card(queen, monkeypatch):
+    """#3414: the Earring's turn-one loop can play a Power out of every pile
+    before the root, so only there may a deck uid be absent; every present
+    card is still matched."""
+    class Launched(Exception):
+        pass
+
+    def launch(*a, **k):
+        raise Launched
+    monkeypatch.setattr(replay.subprocess, 'Popen', launch)
+    witness = lambda: replay.recorded_witness(  # noqa: E731
+        'unused', queen['entry'], queen['replay'], {'won': False, 'final_hp': 0})
+    queen['entry']['piles']['hand'].pop(0)
+    with pytest.raises(ValueError, match='physical card identities'):
+        witness()
+    queen['entry']['player']['relics_entering'] = list(
+        queen['entry']['player'].get('relics_entering') or ()) + ['RELIC.WHISPERING_EARRING']
+    with pytest.raises(Launched):
+        witness()
+    queen['entry']['piles']['hand'][0]['id'] = 'WRONG_CARD'
+    with pytest.raises(ValueError, match='physical card identities'):
+        witness()
+
+
 @pytest.mark.parametrize('fails', [False, True])
 def test_review_attaches_hydrated_line_or_keeps_solver_results(tmp_path, monkeypatch, fails):
     from review_summary import ReviewConfig

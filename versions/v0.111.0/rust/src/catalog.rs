@@ -680,6 +680,68 @@ pub(crate) fn souls_power_removes_exhaust(identity: CardIdentity) -> bool {
     )
 }
 
+/// The native `CardEnergyCost._base` of a card whose identity carries
+/// `TEZCATARAS_EMBER` (#3413): zero for every fixed, non-negative cost.
+///
+/// Current v0.111.0 DLL SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`:
+/// `Enchantments.TezcatarasEmber::OnEnchant` RVA `0xd6643` is
+/// `Card.EnergyCost.UpgradeBy(-Card.EnergyCost.GetWithModifiers(0))`
+/// (IL_0001-001e) then `Card.AddKeyword(7)` (IL_0023-002a). With
+/// `CostModifiers.None` (`0`), `CardEnergyCost::GetWithModifiers` RVA
+/// `0x11e044` skips both the local list (IL_0037-0048, flag 2) and the
+/// `ModifyEnergyCostInCombat` walk (IL_0081-0092, flag 4) and returns
+/// `Math.Max(0, _base)` (IL_00c3-00ca); `CardEnergyCost::UpgradeBy` RVA
+/// `0x11e31c` returns early for X-cost (IL_0018-001f) and otherwise stores
+/// `Math.Max(0, _base + delta)` (IL_0024-0034). So a fixed non-negative
+/// `_base` becomes exactly zero; an X-cost card keeps its base.
+///
+/// The zero is permanent for the card, which is why it can live in the
+/// immutable slot-2 identity rather than a mutable row:
+///
+/// * a save re-runs it on load — `CardModel::FromSerializable` RVA `0x7e31c`
+///   calls `EnchantInternal` (IL_007d) then `EnchantmentModel::ModifyCard`
+///   (IL_0088, whose `OnEnchant` call is RVA `0x7f692` IL_0015) BEFORE its
+///   `UpgradeInternal` loop (IL_0097-00ae);
+/// * a clone copies it — `CardModel::DeepCloneFields` RVA `0x7d21c`
+///   IL_005d-0071 clones the cost object, and `CardEnergyCost::Clone` RVA
+///   `0x11e41c` IL_0058-005f copies `_base`; the enchantment is re-attached
+///   through `EnchantInternal` (IL_00b4) without re-running `OnEnchant`;
+/// * an upgrade whose `OnUpgrade` lowers the cost clamps at zero
+///   (`UpgradeBy`'s `Math.Max`), and `CardModel::DowngradeInternal` RVA
+///   `0x7e12c` resets `_base` to `Canonical` (IL_0042) and then re-runs
+///   `ModifyCard` (IL_0077), zeroing it again.
+///
+/// `Canonical` itself is untouched, but every in-combat reader of it is a
+/// sign test (`CardEnergyCost::SetThisTurn` RVA `0x11e1f9` IL_0005-000b and
+/// its three siblings, `ConfusedPower::AfterCardDrawn` RVA `0xa07f4`
+/// IL_0025-0031) or reads a pool's canonical models rather than this card
+/// (Jackpot's `<OnPlay>b__3_0` RVA `0x3a80a8`); a zero `_base` and a
+/// non-negative `Canonical` agree on every sign test. Readers of the base,
+/// such as Mummified Hand's `GetWithModifiers(0) > 0` (RVA `0x32add6`
+/// IL_0002-000e), read the zero, as the Rust spec cost does.
+///
+/// The Eternal keyword (`CardKeyword` 7) has no combat reader:
+/// `CardModel::get_IsRemovable` RVA `0x7ce0d` is its only reader, and
+/// `get_IsTransformable` RVA `0x7ce20` (IL_000c-002d) is true for any card
+/// outside the Deck pile whatever `IsRemovable` says; the other
+/// `IsRemovable` callers are out-of-combat deck selections (events,
+/// Amalgamator, `FromDeckForRemoval`).
+pub(crate) fn tezcataras_ember_base_cost(identity: CardIdentity, row: &CardRow) -> i64 {
+    let tezcatara = matches!(
+        identity.enchantment,
+        Some(CardEnchantment {
+            id: EnchantmentId::TezcatarasEmber,
+            ..
+        })
+    );
+    if tezcatara && !row.x_cost && row.cost >= 0 {
+        0
+    } else {
+        row.cost
+    }
+}
+
 /// The one provenance predicate Entropy's transform is modeled under.
 ///
 /// Four independent consumers have to agree about whether a native Entropy
@@ -876,7 +938,9 @@ impl CardSpec {
             identity,
             forge_rehearsal,
             steps,
-            cost: row.cost,
+            // `TezcatarasEmber::OnEnchant` RVA `0xd6643` zeroes `_base`; see
+            // [`tezcataras_ember_base_cost`].
+            cost: tezcataras_ember_base_cost(identity, row),
             card_type: row.card_type,
             is_power: row.card_type == CardType::Power,
             is_skill: row.card_type == CardType::Skill,
@@ -3184,15 +3248,14 @@ mod tests {
             "Energized"
         ));
 
-        for (tinker_type, rider) in [(3, 8), (3, 9)] {
-            let variant = MadScienceVariant::from_saved(tinker_type, rider).unwrap();
-            let mut builder = CatalogBuilder::new();
-            builder.set_mad_science_variant(variant);
-            assert_eq!(
-                builder.intern(identity),
-                Err(CatalogError::MadScienceVariantNotModeled(variant))
-            );
-        }
+        // #3427 ported Curious (3, 8); Improvement is the one unported rider.
+        let improvement = MadScienceVariant::from_saved(3, 9).unwrap();
+        let mut builder = CatalogBuilder::new();
+        builder.set_mad_science_variant(improvement);
+        assert_eq!(
+            builder.intern(identity),
+            Err(CatalogError::MadScienceVariantNotModeled(improvement))
+        );
     }
 
     /// #2942: the generated rows are the only Mad Science programs, the
@@ -3212,7 +3275,7 @@ mod tests {
                     kinds.extend(row.steps.iter().map(|step| step.kind));
                 }
                 (None, Some(reason)) => {
-                    assert!(matches!(variant.rider_name, "Curious" | "Improvement"));
+                    assert_eq!(variant.rider_name, "Improvement");
                     assert!(!reason.is_empty());
                 }
                 _ => panic!("a variant row is either ported or names why not"),
@@ -3227,6 +3290,7 @@ mod tests {
                 StepKind::Draw,
                 StepKind::Energy,
                 StepKind::MadScienceChaosExact,
+                StepKind::MadScienceCurious,
                 StepKind::Strangle,
                 StepKind::Strength,
                 StepKind::Vulnerable,

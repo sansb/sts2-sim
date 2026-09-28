@@ -3,12 +3,12 @@
  "build": "v0.111.0",
  "seed": "0XPN2X98ZW1V",
  "node": 47,
- "encounter": null,
- "node_type": null,
+ "encounter": "ENCOUNTER.QUEEN_BOSS",
+ "node_type": "boss",
  "character": "IRONCLAD",
  "ascension": 10,
  "capture_sha256": "33ba25c1b140cb43120e1a059ba7a44e36f81c79e0d4cb2f531fab39a8cda736",
  "save_sha256": "cd262a8d39b28303217f2f17c84119356732a0eccac06ecbfc654040d24ee165",
- "entry_digest": null,
- "checksummed": null
+ "entry_digest": "dfc8ddb08a91bb2728b565a888ae6b3d933976e6b9e44bcd704d3185b09159a9",
+ "checksummed": true
 }

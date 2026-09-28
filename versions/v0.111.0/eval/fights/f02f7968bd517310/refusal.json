@@ -1,9 +1,0 @@
-{
- "surface": "capture-pairing",
- "class": "no_encounter",
- "kind": null,
- "detail": "no_encounter for map node type None",
- "missing": [],
- "schema": "sts-eval-refusal-v1",
- "stage": "no_encounter"
-}

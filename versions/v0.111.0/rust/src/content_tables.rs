@@ -19230,8 +19230,23 @@ pub static MAD_SCIENCE_VARIANT_ROWS: [MadScienceVariantRow; 18] = [
     },
     MadScienceVariantRow {
         tinker_type: 3, rider: 8, rider_name: "Curious",
-        row: None,
-        unmodeled: Some("CuriousPower (the Power-card cost reduction) is not modeled"),
+        row: Some(CardRow {
+            id: CardId::MadScience, upgrade: 0, name: "MAD_SCIENCE", cost: 1,
+            rarity: CardRarity::Event,
+            steps: &[
+                Step { kind: StepKind::MadScienceCurious, args: &[Arg::I(1)] },
+            ],
+            pool: None, star_cost: -1, star_x: false, playable: true,
+            play_condition: None, ethereal: false, on_draw_energy_loss: 0,
+            card_type: CardType::Power,
+            nimble_eligible: false,
+            is_power: true, is_skill: false, strike_tag: false, tags: &[],
+            exhausts: false, targeted: false, target_type: "Self", heal: 0,
+            turn_end_dmg: 0, turn_end_hp_loss: 0, turn_end_weak: 0, turn_end_frail: 0,
+            turn_end_hp_loss_hand: false, is_status: false, is_status_curse: false, selects: false, innate: false,
+            x_cost: false, retain: false, sly: false,
+        }),
+        unmodeled: None,
     },
     MadScienceVariantRow {
         tinker_type: 3, rider: 9, rider_name: "Improvement",
@@ -19387,8 +19402,23 @@ pub static MAD_SCIENCE_VARIANT_ROWS: [MadScienceVariantRow; 18] = [
     },
     MadScienceVariantRow {
         tinker_type: 3, rider: 8, rider_name: "Curious",
-        row: None,
-        unmodeled: Some("CuriousPower (the Power-card cost reduction) is not modeled"),
+        row: Some(CardRow {
+            id: CardId::MadScience, upgrade: 1, name: "MAD_SCIENCE+", cost: 1,
+            rarity: CardRarity::Event,
+            steps: &[
+                Step { kind: StepKind::MadScienceCurious, args: &[Arg::I(1)] },
+            ],
+            pool: None, star_cost: -1, star_x: false, playable: true,
+            play_condition: None, ethereal: false, on_draw_energy_loss: 0,
+            card_type: CardType::Power,
+            nimble_eligible: false,
+            is_power: true, is_skill: false, strike_tag: false, tags: &[],
+            exhausts: false, targeted: false, target_type: "Self", heal: 0,
+            turn_end_dmg: 0, turn_end_hp_loss: 0, turn_end_weak: 0, turn_end_frail: 0,
+            turn_end_hp_loss_hand: false, is_status: false, is_status_curse: false, selects: false, innate: true,
+            x_cost: false, retain: false, sly: false,
+        }),
+        unmodeled: None,
     },
     MadScienceVariantRow {
         tinker_type: 3, rider: 9, rider_name: "Improvement",

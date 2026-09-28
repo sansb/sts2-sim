@@ -7,7 +7,7 @@
 //! ```
 //!
 //! PORT_PLAN.md D4. This file is the **complete** dispatch surface: one arm
-//! per StepKind variant (334 of them), each delegating to a body in the
+//! per StepKind variant (335 of them), each delegating to a body in the
 //! per-family module that owns it. It is generated once and never edited by a
 //! wave PR, so two wave PRs cannot conflict here; a wave PR replaces a stub
 //! body in its own `steps/<family>.rs` and flips nothing shared.
@@ -59,7 +59,7 @@ use crate::ids::StepKind;
 /// Published so the completeness/uniqueness contract test can be
 /// derived rather than hand-listed.
 #[rustfmt::skip]
-pub static FAMILY_OF: [(StepKind, &str); 334] = [
+pub static FAMILY_OF: [(StepKind, &str); 335] = [
     (StepKind::AbundanceExact, "neutral"), (StepKind::Accelerant, "templates"),
     (StepKind::Accuracy, "templates"), (StepKind::ActiveCardCostAddExact, "defect_rare"),
     (StepKind::AdaptiveStrikeExact, "defect_rare"), (StepKind::AddOrbSlotsExact, "shared"),
@@ -154,12 +154,13 @@ pub static FAMILY_OF: [(StepKind, &str); 334] = [
     (StepKind::LegionOfBoneExact, "necrobinder_uncommon"), (StepKind::Lethality, "shared"),
     (StepKind::LiftExact, "neutral"), (StepKind::LightningRod, "defect_orb"), (StepKind::Loop,
     "templates"), (StepKind::MachineLearning, "templates"), (StepKind::MadScienceChaosExact,
-    "neutral"), (StepKind::MalaiseX, "silent_rare"), (StepKind::ManifestAuthorityExact,
-    "regent_uncommon"), (StepKind::MasterPlanner, "physical_lifecycle"), (StepKind::MaulExact,
-    "physical_cost"), (StepKind::Mayhem, "templates"), (StepKind::MetamorphosisExact,
-    "neutral"), (StepKind::MeteorShowerExact, "regent_ancient"), (StepKind::MimicExact,
-    "neutral"), (StepKind::MirageTotalPoisonBlockExact, "silent_uncommon"),
-    (StepKind::MiseryExact, "necrobinder_rare"), (StepKind::MoltenVuln, "ironclad_common"),
+    "neutral"), (StepKind::MadScienceCurious, "templates"), (StepKind::MalaiseX, "silent_rare"),
+    (StepKind::ManifestAuthorityExact, "regent_uncommon"), (StepKind::MasterPlanner,
+    "physical_lifecycle"), (StepKind::MaulExact, "physical_cost"), (StepKind::Mayhem,
+    "templates"), (StepKind::MetamorphosisExact, "neutral"), (StepKind::MeteorShowerExact,
+    "regent_ancient"), (StepKind::MimicExact, "neutral"),
+    (StepKind::MirageTotalPoisonBlockExact, "silent_uncommon"), (StepKind::MiseryExact,
+    "necrobinder_rare"), (StepKind::MoltenVuln, "ironclad_common"),
     (StepKind::MomentumStrikeExact, "physical_cost"), (StepKind::MonarchsGaze, "templates"),
     (StepKind::Monologue, "regent_uncommon"), (StepKind::NecroMastery, "templates"),
     (StepKind::Neurosurge, "templates"), (StepKind::NoDraw, "templates"), (StepKind::Nostalgia,
@@ -460,6 +461,7 @@ pub fn apply_step(kind: StepKind, ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
         StepKind::Loop => templates::loop_(ctx),
         StepKind::MachineLearning => templates::machine_learning(ctx),
         StepKind::MadScienceChaosExact => neutral::mad_science_chaos_exact(ctx),
+        StepKind::MadScienceCurious => templates::mad_science_curious(ctx),
         StepKind::MalaiseX => silent_rare::malaise_x(ctx),
         StepKind::ManifestAuthorityExact => regent_uncommon::manifest_authority_exact(ctx),
         StepKind::MasterPlanner => physical_lifecycle::master_planner(ctx),

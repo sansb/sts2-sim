@@ -40,7 +40,7 @@ fall more than 5% of the total behind it.
 
 | Surface | Implemented | Total | Families |
 |---|---:|---:|---:|
-| Steps | 325 (97.3%) | 334 | 30 |
+| Steps | 326 (97.3%) | 335 | 30 |
 | Moves | 93 (100.0%) | 93 | 5 |
 | Active relics | 182 (100.0%) | 182 | — |
 | Inert relics | 117 (100.0%) | 117 | — |
@@ -79,7 +79,7 @@ fall more than 5% of the total behind it.
 | `silent_uncommon` | 12 (92.3%) | 13 |
 | `single_pile_selection` | 1 (100.0%) | 1 |
 | `status` | 1 (100.0%) | 1 |
-| `templates` | 100 (99.0%) | 101 |
+| `templates` | 101 (99.0%) | 102 |
 
 ## Moves by family (`src/moves/`)
 

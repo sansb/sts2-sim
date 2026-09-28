@@ -220,6 +220,7 @@
    "f026a52bcc1c60d4",
    "f026a99156f60650",
    "f02e89f1e95fbe30",
+   "f02f7968bd517310",
    "f02f79fdf33b2cb4",
    "f03a09535e140c97",
    "f03d30e5fedb3cbe",
@@ -250,6 +251,7 @@
    "f0c64ba0c32b937f",
    "f0ce9468b3936427",
    "f0d7d781f0657414",
+   "f0e5344aeb5829a9",
    "f0e7e54f7de80b85",
    "f0eeb7078e35e49b",
    "f0eedfe5c2bb6b03",
@@ -744,20 +746,15 @@
    "fffb0664c87156b8",
    "fffb376814a88839"
   ],
-  "class:card_enchantment": [
-   "f0e5344aeb5829a9"
-  ],
   "class:event_combat_listener_not_modeled": [
    "fda3b5d55a3a09fc"
-  ],
-  "class:no_encounter": [
-   "f02f7968bd517310"
   ],
   "class:unpaired": [
    "f72122321bf3a6fe"
   ],
   "death": [
    "f012ed2351735549",
+   "f02f7968bd517310",
    "f066148b82434548",
    "f143c7e6993ed27c",
    "f1b2e68c28256c93",
@@ -820,6 +817,7 @@
    "f026a52bcc1c60d4",
    "f026a99156f60650",
    "f02e89f1e95fbe30",
+   "f02f7968bd517310",
    "f02f79fdf33b2cb4",
    "f03a09535e140c97",
    "f03d30e5fedb3cbe",
@@ -850,6 +848,7 @@
    "f0c64ba0c32b937f",
    "f0ce9468b3936427",
    "f0d7d781f0657414",
+   "f0e5344aeb5829a9",
    "f0e7e54f7de80b85",
    "f0eeb7078e35e49b",
    "f0eedfe5c2bb6b03",
@@ -1354,6 +1353,7 @@
    "f01d874c4ffb0b9e",
    "f026a99156f60650",
    "f02e89f1e95fbe30",
+   "f02f7968bd517310",
    "f03a09535e140c97",
    "f04442cd475cdc72",
    "f049d495b4530e41",
@@ -2212,6 +2212,7 @@
   ],
   "node:boss": [
    "f016d6f285290648",
+   "f02f7968bd517310",
    "f049d495b4530e41",
    "f05e7dbfd34be8e7",
    "f066148b82434548",
@@ -2759,6 +2760,7 @@
    "f01a8fc3889892c5",
    "f01d874c4ffb0b9e",
    "f02e89f1e95fbe30",
+   "f02f7968bd517310",
    "f02f79fdf33b2cb4",
    "f03d30e5fedb3cbe",
    "f04442cd475cdc72",
@@ -2779,6 +2781,7 @@
    "f0c5fb3799e13b1a",
    "f0c63b3b966190f7",
    "f0c64ba0c32b937f",
+   "f0e5344aeb5829a9",
    "f0e7e54f7de80b85",
    "f0eeb7078e35e49b",
    "f0eedfe5c2bb6b03",
@@ -3164,20 +3167,14 @@
    "fffb376814a88839"
   ],
   "refusal": [
-   "f02f7968bd517310",
-   "f0e5344aeb5829a9",
    "f72122321bf3a6fe",
    "fda3b5d55a3a09fc"
   ],
   "refusal:capture-pairing": [
-   "f02f7968bd517310",
    "f72122321bf3a6fe"
   ],
   "refusal:rust-entry": [
    "fda3b5d55a3a09fc"
-  ],
-  "refusal:rust-load": [
-   "f0e5344aeb5829a9"
   ],
   "short": [
    "f0023c33c4dc0fe0",
@@ -3189,6 +3186,7 @@
    "f0909ca70cb6c4bc",
    "f0ab2c243932074c",
    "f0d7d781f0657414",
+   "f0e5344aeb5829a9",
    "f10b187826242ac5",
    "f1143818926e7142",
    "f1176885bf21304f",
@@ -3310,6 +3308,7 @@
    "f026a52bcc1c60d4",
    "f026a99156f60650",
    "f02e89f1e95fbe30",
+   "f02f7968bd517310",
    "f02f79fdf33b2cb4",
    "f03a09535e140c97",
    "f03d30e5fedb3cbe",
@@ -3340,6 +3339,7 @@
    "f0c64ba0c32b937f",
    "f0ce9468b3936427",
    "f0d7d781f0657414",
+   "f0e5344aeb5829a9",
    "f0e7e54f7de80b85",
    "f0eeb7078e35e49b",
    "f0eedfe5c2bb6b03",
@@ -4204,29 +4204,35 @@
   },
   {
    "id": "f02f7968bd517310",
-   "kind": "refusal",
+   "kind": "line",
    "categories": [
-    "class:no_encounter",
+    "certified",
+    "death",
+    "human",
+    "long",
     "multi:IRONCLAD",
-    "refusal",
-    "refusal:capture-pairing"
+    "node:boss",
+    "potions",
+    "solvable"
    ],
    "files": [
-    "provenance.json",
-    "refusal.json"
+    "entry.canonical.json",
+    "human_line.json",
+    "provenance.json"
    ],
    "seed": "0XPN2X98ZW1V",
    "node": 47,
-   "encounter": null,
+   "encounter": "ENCOUNTER.QUEEN_BOSS",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": null,
-   "rust_root": null,
+   "entry_digest": "dfc8ddb08a91bb2728b565a888ae6b3d933976e6b9e44bcd704d3185b09159a9",
+   "rust_root": "admitted",
    "rust_refusal_class": null,
-   "lockstep": null,
-   "refusal_class": "no_encounter",
-   "refusal_surface": "capture-pairing",
-   "refusal_detail": "no_encounter for map node type None"
+   "lockstep": "lockstep_ok",
+   "turns": 7,
+   "actions": 40,
+   "terminal_hp": 0,
+   "won": false
   },
   {
    "id": "f02f79fdf33b2cb4",
@@ -5144,18 +5150,20 @@
   },
   {
    "id": "f0e5344aeb5829a9",
-   "kind": "refusal",
+   "kind": "line",
    "categories": [
-    "class:card_enchantment",
+    "certified",
+    "human",
     "multi:IRONCLAD",
     "node:monster",
-    "refusal",
-    "refusal:rust-load"
+    "potions",
+    "short",
+    "solvable"
    ],
    "files": [
     "entry.canonical.json",
-    "provenance.json",
-    "refusal.json"
+    "human_line.json",
+    "provenance.json"
    ],
    "seed": "7CDZCQ4WH55E",
    "node": 18,
@@ -5163,12 +5171,13 @@
    "character": "IRONCLAD",
    "ascension": 10,
    "entry_digest": "79ba4215e3d6f79f96d76dd93a61a30a667a02e492d3403724ed03a3a929111e",
-   "rust_root": "refused",
-   "rust_refusal_class": "card_enchantment",
-   "lockstep": null,
-   "refusal_class": "card_enchantment",
-   "refusal_surface": "rust-load",
-   "refusal_detail": "entry needs enchantment \"TEZCATARAS_EMBER\""
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 3,
+   "actions": 13,
+   "terminal_hp": 58,
+   "won": true
   },
   {
    "id": "f0e7e54f7de80b85",

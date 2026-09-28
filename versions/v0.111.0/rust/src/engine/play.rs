@@ -508,6 +508,67 @@ pub(crate) fn vigorous_identity_is_exact(spec: &CardSpec) -> bool {
         && !spec.native_unplayable
 }
 
+/// TEZCATARAS_EMBER (#3413): a zero base cost plus a fixed powered-attack
+/// damage additive of 3.
+///
+/// Current v0.111.0 DLL SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`
+/// (`dump_type.py TezcatarasEmber`). `Enchantments.TezcatarasEmber` declares
+/// exactly:
+///
+/// * `get_ExtraHoverTips` RVA `0xd6623` — the Eternal hover tip, display only;
+/// * `get_CanonicalVars` RVA `0xd6630` — one `DamageVar(3m, 8)`
+///   (IL_0001-000d);
+/// * `OnEnchant` RVA `0xd6643` — zero the energy `_base` and add Eternal,
+///   folded into the catalog's spec cost by
+///   [`crate::catalog::tezcataras_ember_base_cost`];
+/// * `EnchantDamageAdditive` RVA `0xd6673` — `if (!IsPoweredAttack(props))
+///   return 0` (IL_0001-000e), else `DynamicVars.Damage.BaseValue`
+///   (IL_000f-001f): Sharp's body (`Sharp::EnchantDamageAdditive` RVA
+///   `0xd62f4`) with the constant 3 in place of `Amount`. Nothing rewrites
+///   the enchantment's own vars: `get_DynamicVars` RVA `0x7f49a` builds them
+///   once from `CanonicalVars`, and `RecalculateValues` is the base no-op
+///   RVA `0x7f6c3`, which TezcatarasEmber does not override. The one caller
+///   is `Hook::ModifyDamage` RVA `0x10511c`, as for Sharp, so it joins the
+///   same additive slot in [`crate::engine::damage`]'s powered-attack fold;
+/// * `.ctor` RVA `0xd6693` — the base ctor only.
+///
+/// No `CanEnchantCardType` override (the base RVA `0x7f403` returns true),
+/// no `OnPlay`, no `AfterCardPlayed`, no `EnchantPlayCount`, no
+/// `EnchantBlock*`, no `EnchantDamageMultiplicative`, no `Status` write and no
+/// field of its own, so the identity is immutable and needs no slot-5 row.
+/// `Amount` is never read.
+///
+/// The gate is the one source's exact shape. `NutritiousSoup::AfterObtained`
+/// RVA `0x979c4` enchants each Deck card with `Rarity == 1` (Basic,
+/// IL_0033-003a) and the Strike tag (`CardTag` 1, IL_003c-0048) that
+/// `CanEnchant` accepts, at `Decimal.One` (IL_0057-005d). No other code path
+/// names the type. The Basic Strike-tagged rows are the five character
+/// Strikes, each a fixed cost-1 Attack at both upgrade levels, so every
+/// upgrade keeps the zero `_base` and no cost-lowering upgrade clamp is
+/// reachable.
+pub(crate) fn tezcataras_ember_identity_is_exact(spec: &CardSpec) -> bool {
+    matches!(
+        spec.identity.enchantment,
+        Some(crate::catalog::CardEnchantment {
+            id: EnchantmentId::TezcatarasEmber,
+            amount: 1,
+        })
+    ) && matches!(
+        spec.identity.id,
+        CardId::StrikeDefect
+            | CardId::StrikeIronclad
+            | CardId::StrikeNecrobinder
+            | CardId::StrikeRegent
+            | CardId::StrikeSilent
+    ) && matches!(spec.identity.upgrade, 0 | 1)
+        && spec.card_type == crate::content_tables::CardType::Attack
+        && !spec.x_cost
+        && spec.row.cost >= 0
+        && spec.cost == 0
+        && !spec.native_unplayable
+}
+
 /// `Vigorous::AfterCardPlayed` RVA `0xd66cd` for the played card's own
 /// enchantment listener: `if (cardPlay.Card != Card) return; Status = 1;`.
 ///
@@ -748,7 +809,9 @@ fn goopy_after_card_played(
 /// Slither contributes only a draw-time cost roll (#2926), see
 /// [`super::draw::slither_identity_is_exact`]. Vigorous contributes only a
 /// Status-gated damage additive in the shared powered-attack fold (#3275),
-/// see [`vigorous_identity_is_exact`]. Imbued changes nothing a play reads
+/// see [`vigorous_identity_is_exact`]. TezcatarasEmber contributes a zero
+/// spec cost and a fixed additive in the same fold (#3413), see
+/// [`tezcataras_ember_identity_is_exact`]. Imbued changes nothing a play reads
 /// (#3381): its one effect is a turn-one AutoPre listener, which admission
 /// gates on its own ([`imbued_identity_is_inert`]).
 pub(crate) fn body_enchantment_is_exact(spec: &CardSpec) -> bool {
@@ -761,6 +824,7 @@ pub(crate) fn body_enchantment_is_exact(spec: &CardSpec) -> bool {
         || super::draw::slither_identity_is_exact(spec)
         || goopy_identity_is_exact(spec)
         || vigorous_identity_is_exact(spec)
+        || tezcataras_ember_identity_is_exact(spec)
         || imbued_skill_identity(spec)
 }
 
@@ -5356,9 +5420,11 @@ pub(crate) fn effective_replay_count(
                 || onplay_enchantment_identity_is_exact(spec)
                 // Goopy declares no `EnchantPlayCount` (its method set is
                 // enumerated on `goopy_identity_is_exact`), nor does Vigorous
-                // (`vigorous_identity_is_exact`).
+                // (`vigorous_identity_is_exact`), nor TezcatarasEmber
+                // (`tezcataras_ember_identity_is_exact`).
                 || goopy_identity_is_exact(spec)
-                || vigorous_identity_is_exact(spec) =>
+                || vigorous_identity_is_exact(spec)
+                || tezcataras_ember_identity_is_exact(spec) =>
         {
             0
         }
@@ -5616,8 +5682,41 @@ fn resolved_energy_cost_without_free_from_local(
         0
     };
     let borrowed_time = state.powers.value(PowerId::BorrowedTime);
-    (i128::from(local) + i128::from(tangled) + i128::from(borrowed_time))
-        .clamp(0, i128::from(i64::MAX)) as i64
+    let early = (i128::from(local) + i128::from(tangled) + i128::from(borrowed_time))
+        .clamp(0, i128::from(i64::MAX)) as i64;
+    if spec.is_power {
+        curious_reduced_energy_cost(state, early)
+    } else {
+        early
+    }
+}
+
+/// CuriousPower's early `TryModifyEnergyCostInCombat` term on a Power card
+/// (#3427).
+///
+/// Current v0.111.0 `CuriousPower::TryModifyEnergyCostInCombat` RVA
+/// `0xa102c`: it declines unless the card's owner creature is the power's
+/// owner (IL_0013-IL_0027) and `card.Type == 3` (Power, IL_0028-IL_0032),
+/// and declines when the incoming running cost is `<= 0` (IL_0033-IL_0041).
+/// Otherwise it writes `cost - Amount` (IL_0042-IL_0054) and replaces a
+/// negative result with zero (IL_0059-IL_006c). `Hook::
+/// ModifyEnergyCostInCombat` RVA `0x1052f0` passes each early listener the
+/// running value (IL_0032-IL_0037) before any Late listener
+/// (IL_0051-IL_006d), so this term precedes every absolute-zero Late row.
+///
+/// The only other early listeners that can reach a Power card are Borrowed
+/// Time and Spiked Gauntlets. A Curious beside either refuses at the
+/// application sites (`steps::templates::mad_science_curious` /
+/// `borrowed_time`) and at admission; Tangled reads Attacks only. So `cost`
+/// here is the unmodified local cost whenever Curious is live, and the fold
+/// order is not observable.
+#[inline]
+fn curious_reduced_energy_cost(state: &HotState, cost: i64) -> i64 {
+    let curious = state.powers.value(PowerId::Curious);
+    if curious <= 0 || cost <= 0 {
+        return cost;
+    }
+    (cost - i64::from(curious)).max(0)
 }
 
 /// The base `CardModel.GetResultLocationForCardPlay` route for a played card.
@@ -6384,8 +6483,48 @@ pub(crate) fn autoplay_history_course_dupe(
     )
 }
 
+/// Whether Whispering Earring's AutoPlay of `spec` from Hand can suspend
+/// (#3414).
+///
+/// [`autoplay_child_requires_suspension`] answers for the whole fight: a
+/// child's Draw can park wherever Stratagem, or Hellraiser with a selecting
+/// Strike, is reachable. The Earring picks one live child at a time, so
+/// this asks the live state instead. A Draw can only suspend through
+/// `PowerId::Stratagem` (`draw::stratagem_after_shuffle`) or
+/// `PowerId::Hellraiser` (`autoplay_hellraiser_strike`), and the only
+/// writers of those powers are the Stratagem and Hellraiser card steps
+/// (`steps::templates`), neither of which draws. With both powers absent
+/// and a child that applies neither, only an explicit selection can
+/// suspend, and Glimmer's and Cosmic Indifference's resolve inline under the
+/// loop's `VakuuCardSelector`. Otherwise the fight-wide answer stands.
+fn whispering_earring_child_can_suspend(
+    state: &HotState,
+    catalog: &Catalog,
+    spec: &CardSpec,
+) -> bool {
+    let draw_hooks_quiet = state.powers.value(PowerId::Stratagem) == 0
+        && state.powers.value(PowerId::Hellraiser) == 0
+        && !catalog
+            .steps(spec)
+            .iter()
+            .any(|step| matches!(step.kind, StepKind::Stratagem | StepKind::Hellraiser));
+    let suspends = if draw_hooks_quiet {
+        autoplay_child_requires_explicit_selection(PileId::Hand, spec, catalog)
+    } else {
+        autoplay_child_requires_suspension(PileId::Hand, spec, catalog)
+    };
+    suspends
+        && !super::selection::whispering_earring_child_selection_is_vakuu_resolved(
+            spec,
+            catalog,
+            draw_hooks_quiet,
+        )
+}
+
 /// Execute one Whispering Earring iteration. The caller repeats this at most
 /// thirteen times, rebuilding the first-playable Hand query after each play.
+/// It holds a [`super::selection::VakuuSelectorScope`] across the loop, so a
+/// Glimmer or Cosmic Indifference child resolves its selection inline (#3414).
 pub(crate) fn autoplay_whispering_earring_first(
     state: &mut HotState,
     catalog: &Catalog,
@@ -6410,7 +6549,7 @@ pub(crate) fn autoplay_whispering_earring_first(
         .ok_or(EngineRefusal::UnknownAtom(card.atom))?;
     if spec.x_cost
         || spec.row.star_x
-        || autoplay_child_requires_suspension(PileId::Hand, spec, catalog)
+        || whispering_earring_child_can_suspend(state, catalog, spec)
         || super::admission::autoplay_parent_program_can_spawn_child(spec.row)
     {
         return Err(EngineRefusal::MalformedArgs(
@@ -8301,10 +8440,20 @@ fn play_card_with_work_inner(
                 Some(crate::frame::Frame::Phase { record })
                     if state.frames.auto_pre_history_course_phase(record) == Some(uid)
             );
+        // Whispering Earring's direct AutoPlay from Hand (#3414): the only
+        // play under its VakuuCardSelector scope, which the loop's own
+        // picker already cleared against the live state
+        // ([`whispering_earring_child_can_suspend`]).
+        let whispering_earring_child = matches!(provenance, PlayProvenance::Auto)
+            && source_pile == PileId::Hand
+            && state.pending.is_none()
+            && super::selection::vakuu_selector_active()
+            && !whispering_earring_child_can_suspend(state, catalog, &spec);
         if !restricted_batch_child
             && !direct_owner_child
             && !potion_draw_child
             && !history_course_child
+            && !whispering_earring_child
         {
             // Only modeled parent/child continuation grammars may nest a
             // physical AutoPlay. The active card is already in Play, so it
@@ -19827,6 +19976,191 @@ mod vigorous_tests {
         play(&mut state, &catalog).unwrap();
         assert!(state.exact_piles);
         assert_eq!(status(&state, UID + 1), Some(0));
+    }
+}
+
+/// TEZCATARAS_EMBER's zero base cost and fixed damage additive (#3413).
+#[cfg(test)]
+mod tezcataras_ember_tests {
+    use super::*;
+    use crate::boundary::HotBoundary;
+    use crate::catalog::{CardEnchantment, CardIdentity, CatalogBuilder};
+    use crate::hot::HotMonster;
+    use crate::ids::{CardId, EnchantmentId, MonsterKind};
+
+    const UID: u32 = 7;
+    const HP: i32 = 100;
+
+    fn ember(id: CardId, upgrade: u8, amount: i32) -> CardIdentity {
+        CardIdentity {
+            id,
+            upgrade,
+            enchantment: Some(CardEnchantment {
+                id: EnchantmentId::TezcatarasEmber,
+                amount,
+            }),
+        }
+    }
+
+    fn fixture(identity: CardIdentity) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(identity).unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 70;
+        state.max_hp = 70;
+        state.energy = 3;
+        let mut target = HotMonster::new(MonsterKind::Toadpole, HP);
+        target.max_hp = HP;
+        state.monsters_mut().push(target);
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: UID,
+            atom,
+            flags: 0,
+        });
+        (state, catalog)
+    }
+
+    fn dealt(state: &HotState) -> i32 {
+        HP - state.monsters[0].hp
+    }
+
+    fn play(state: &mut HotState, catalog: &Catalog) -> Result<(), EngineRefusal> {
+        play_card(state, catalog, UID, Some(0), None, &mut Vec::new())
+    }
+
+    fn spec_of(catalog: &Catalog, identity: CardIdentity) -> &CardSpec {
+        catalog.spec(catalog.atom(&identity).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn an_ember_strike_is_free_and_adds_three() {
+        let (mut state, catalog) = fixture(ember(CardId::StrikeIronclad, 0, 1));
+        let card = state.piles.get(PileId::Hand).as_slice()[0];
+        let spec = catalog.spec(card.atom).unwrap();
+        assert_eq!(resolved_energy_cost(&state, card, spec), 0);
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(state.energy, 3);
+        assert_eq!(dealt(&state), 6 + 3);
+    }
+
+    #[test]
+    fn an_upgraded_ember_strike_keeps_the_zero_base_and_the_fixed_three() {
+        let (mut state, catalog) = fixture(ember(CardId::StrikeIronclad, 1, 1));
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(state.energy, 3);
+        assert_eq!(dealt(&state), 9 + 3);
+    }
+
+    #[test]
+    fn the_additive_joins_the_additive_fold_before_vulnerable() {
+        let (mut state, catalog) = fixture(ember(CardId::StrikeIronclad, 0, 1));
+        state.monsters_mut()[0]
+            .powers
+            .set(PowerId::Vuln, crate::powers::SlotWire::Int, 1);
+        play(&mut state, &catalog).unwrap();
+        // floor((6 + 3) * 1.5) = 13, not floor(6 * 1.5) + 3 = 12.
+        assert_eq!(dealt(&state), 13);
+    }
+
+    #[test]
+    fn the_catalog_zeroes_only_a_fixed_non_negative_base() {
+        let mut builder = CatalogBuilder::new();
+        let plain = CardIdentity {
+            id: CardId::StrikeIronclad,
+            upgrade: 0,
+            enchantment: None,
+        };
+        // Whirlwind is X-cost: `UpgradeBy` RVA `0x11e31c` IL_0018-001f
+        // returns before touching `_base`.
+        let whirlwind = ember(CardId::Whirlwind, 0, 1);
+        for identity in [plain, ember(CardId::StrikeIronclad, 0, 1), whirlwind] {
+            builder.intern(identity).unwrap();
+        }
+        let catalog = builder.build();
+        assert_eq!(spec_of(&catalog, plain).cost, 1);
+        assert_eq!(
+            spec_of(&catalog, ember(CardId::StrikeIronclad, 0, 1)).cost,
+            0
+        );
+        let whirlwind_spec = spec_of(&catalog, whirlwind);
+        assert!(whirlwind_spec.x_cost);
+        assert_eq!(whirlwind_spec.cost, whirlwind_spec.row.cost);
+        assert!(!tezcataras_ember_identity_is_exact(whirlwind_spec));
+
+        // A negative base (Unplayable) is left alone by the fold too; the
+        // identity gate refuses it anyway.
+        let row = crate::content_tables::card_row(CardId::Regret, 0).unwrap();
+        assert!(row.cost < 0);
+        assert_eq!(
+            crate::catalog::tezcataras_ember_base_cost(ember(CardId::Regret, 0, 1), row),
+            row.cost
+        );
+    }
+
+    #[test]
+    fn the_identity_gate_is_the_nutritious_soup_shape() {
+        let mut builder = CatalogBuilder::new();
+        let identities = [
+            ember(CardId::StrikeIronclad, 0, 1),
+            ember(CardId::StrikeSilent, 1, 1),
+            ember(CardId::StrikeIronclad, 0, 2),
+            ember(CardId::DefendIronclad, 0, 1),
+            ember(CardId::TwinStrike, 0, 1),
+        ];
+        for identity in identities {
+            builder.intern(identity).unwrap();
+        }
+        let catalog = builder.build();
+        let verdicts = identities
+            .map(|identity| tezcataras_ember_identity_is_exact(spec_of(&catalog, identity)));
+        assert_eq!(verdicts, [true, true, false, false, false]);
+        for (identity, verdict) in identities.into_iter().zip(verdicts) {
+            assert_eq!(
+                body_enchantment_is_exact(spec_of(&catalog, identity)),
+                verdict
+            );
+        }
+    }
+
+    #[test]
+    fn the_ember_contributes_no_replay() {
+        let (state, catalog) = fixture(ember(CardId::StrikeIronclad, 0, 1));
+        let card = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(
+            effective_replay_count(&state, catalog.spec(card.atom).unwrap(), UID),
+            Ok(0)
+        );
+    }
+
+    #[test]
+    fn an_unproven_ember_owner_refuses_by_name_at_the_additive() {
+        // Amount 2 is no native source's shape: the body gate rejects it and
+        // the additive refuses rather than guessing.
+        let (mut state, catalog) = fixture(ember(CardId::StrikeIronclad, 0, 2));
+        assert_eq!(
+            play(&mut state, &catalog),
+            Err(EngineRefusal::MalformedArgs("TEZCATARAS_EMBER owner"))
+        );
+    }
+
+    #[test]
+    fn the_ember_round_trips_through_the_boundary() {
+        let (mut state, catalog) = fixture(ember(CardId::StrikeIronclad, 0, 1));
+        let before = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(
+            before.piles["hand"][0].enchantment,
+            Some(serde_json::json!(["TEZCATARAS_EMBER", 1]))
+        );
+        play(&mut state, &catalog).unwrap();
+        let after = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        let reloaded_catalog = HotBoundary::catalog_from_canonical(&after).unwrap();
+        let reloaded = HotBoundary::from_canonical(&after, &reloaded_catalog).unwrap();
+        assert_eq!(
+            HotBoundary::try_to_canonical(&reloaded, &reloaded_catalog).unwrap(),
+            after
+        );
     }
 }
 
@@ -33065,6 +33399,55 @@ mod tests {
                 .iter()
                 .any(|card| card.uid == 8)
         );
+    }
+
+    /// #3427 witness for `CuriousPower::TryModifyEnergyCostInCombat` RVA
+    /// `0xa102c`: a live Curious subtracts its Amount from a Power card's
+    /// positive cost and clamps at zero; a zero-cost Power, every non-Power
+    /// card, and a zero Amount are untouched; the Late absolute-zero row
+    /// (Free Power) still applies after it; and the without-free reader sees
+    /// the same early term.
+    #[test]
+    fn curious_reduces_power_card_costs_and_clamps_at_zero() {
+        let demon_form = identity(CardId::DemonForm, 0);
+        let inflame = identity(CardId::Inflame, 0);
+        let panache = identity(CardId::Panache, 0);
+        let defend = identity(CardId::DefendIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        for id in [demon_form, inflame, panache, defend] {
+            builder.intern(id).unwrap();
+        }
+        let catalog = builder.build();
+        let state = state_with_card(&catalog, demon_form, 7);
+        let card = |id: CardIdentity| HotCard {
+            uid: 7,
+            atom: catalog.atom(&id).unwrap(),
+            flags: 0,
+        };
+        let cost = |state: &HotState, id: CardIdentity| {
+            let card = card(id);
+            let spec = catalog.spec(card.atom).unwrap();
+            (
+                resolved_energy_cost(state, card, spec),
+                resolved_energy_cost_without_free(state, card, spec),
+            )
+        };
+        assert_eq!(cost(&state, demon_form), (3, 3));
+        assert_eq!(cost(&state, inflame), (1, 1));
+
+        let mut curious = state.clone();
+        curious.powers.set(PowerId::Curious, SlotWire::Int, 1);
+        assert_eq!(cost(&curious, demon_form), (2, 2));
+        assert_eq!(cost(&curious, inflame), (0, 0));
+        assert_eq!(cost(&curious, panache), (0, 0), "a zero cost is declined");
+        assert_eq!(cost(&curious, defend), (1, 1), "Skills are not Powers");
+
+        curious.powers.set(PowerId::Curious, SlotWire::Int, 5);
+        assert_eq!(cost(&curious, demon_form), (0, 0), "clamped at zero");
+
+        curious.powers.set(PowerId::Curious, SlotWire::Int, 2);
+        curious.powers.set(PowerId::FreePower, SlotWire::Int, 1);
+        assert_eq!(cost(&curious, demon_form), (0, 1), "Late Free Power zeroes");
     }
 
     #[test]
@@ -48212,5 +48595,64 @@ mod rupture_batch_tests {
             ))
         );
         assert_eq!(state.hp, 70, "refused before the command");
+    }
+}
+
+#[cfg(test)]
+mod whispering_earring_child_tests {
+    use super::*;
+    use crate::catalog::{CardIdentity, CatalogBuilder};
+    use crate::powers::SlotWire;
+
+    /// The Earring clears a child against the live Draw hooks, not the
+    /// fight-wide reachability (#3414): with Stratagem only reachable, Big
+    /// Bang's Draw and Glimmer's resolved selection cannot suspend; once
+    /// `PowerId::Stratagem` is live both fall back to the fight-wide answer.
+    #[test]
+    fn earring_children_are_cleared_against_the_live_draw_hooks() {
+        let mut builder = CatalogBuilder::new();
+        for id in [CardId::BigBang, CardId::Glimmer, CardId::Stratagem] {
+            builder
+                .intern_reachable(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        let catalog = builder.build();
+        assert!(catalog.cardplay_draw_hook_can_suspend());
+        let spec = |id| {
+            catalog
+                .spec(
+                    catalog
+                        .atom(&CardIdentity {
+                            id,
+                            upgrade: 0,
+                            enchantment: None,
+                        })
+                        .unwrap(),
+                )
+                .unwrap()
+        };
+        let mut state = HotState::at_defaults();
+        for id in [CardId::BigBang, CardId::Glimmer] {
+            assert!(autoplay_child_requires_suspension(
+                PileId::Hand,
+                spec(id),
+                &catalog
+            ));
+            assert!(
+                !whispering_earring_child_can_suspend(&state, &catalog, spec(id)),
+                "{id:?}"
+            );
+        }
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+        for id in [CardId::BigBang, CardId::Glimmer] {
+            assert!(
+                whispering_earring_child_can_suspend(&state, &catalog, spec(id)),
+                "{id:?}"
+            );
+        }
     }
 }

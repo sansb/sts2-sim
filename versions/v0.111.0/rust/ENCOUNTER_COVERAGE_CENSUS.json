@@ -7,8 +7,8 @@
  "corpus_measured": true,
  "corpus_totals": {
   "fights": 1206,
-  "with_encounter": 1188,
-  "no_encounter": 17,
+  "with_encounter": 1201,
+  "no_encounter": 4,
   "unpaired": 1,
   "saves": 4075
  },
@@ -29,8 +29,8 @@
   },
   "with_corpus_demand": 84,
   "zero_corpus_demand": 4,
-  "corpus_fights_covered": 1188,
-  "fixtures_covered": 537
+  "corpus_fights_covered": 1201,
+  "fixtures_covered": 538
  },
  "rows": [
   {
@@ -1140,7 +1140,7 @@
    "observed_wire_ids": [
     "ENCOUNTER.AEONGLASS_BOSS"
    ],
-   "corpus_fights": 12,
+   "corpus_fights": 13,
    "fixtures": 5,
    "module": "content/encounters/boss.py",
    "builder": "_aeonglass",
@@ -1170,7 +1170,7 @@
    "observed_wire_ids": [
     "ENCOUNTER.KNOWLEDGE_DEMON_BOSS"
    ],
-   "corpus_fights": 12,
+   "corpus_fights": 13,
    "fixtures": 8,
    "module": "content/encounters/boss.py",
    "builder": "_knowledge_demon",
@@ -1185,7 +1185,7 @@
    "observed_wire_ids": [
     "ENCOUNTER.WATERFALL_GIANT_BOSS"
    ],
-   "corpus_fights": 11,
+   "corpus_fights": 14,
    "fixtures": 6,
    "module": "content/encounters/boss.py",
    "builder": "_waterfall_giant",
@@ -1215,7 +1215,7 @@
    "observed_wire_ids": [
     "ENCOUNTER.CEREMONIAL_BEAST_BOSS"
    ],
-   "corpus_fights": 10,
+   "corpus_fights": 11,
    "fixtures": 7,
    "module": "content/encounters/boss.py",
    "builder": "_ceremonial_beast",
@@ -1230,8 +1230,8 @@
    "observed_wire_ids": [
     "ENCOUNTER.QUEEN_BOSS"
    ],
-   "corpus_fights": 9,
-   "fixtures": 5,
+   "corpus_fights": 11,
+   "fixtures": 6,
    "module": "content/encounters/boss.py",
    "builder": "_queen",
    "source": "L153-L163",
@@ -1245,7 +1245,7 @@
    "observed_wire_ids": [
     "ENCOUNTER.THE_KIN_BOSS"
    ],
-   "corpus_fights": 12,
+   "corpus_fights": 13,
    "fixtures": 8,
    "module": "content/encounters/boss.py",
    "builder": "_the_kin",
@@ -1305,7 +1305,7 @@
    "observed_wire_ids": [
     "ENCOUNTER.KAISER_CRAB_BOSS"
    ],
-   "corpus_fights": 17,
+   "corpus_fights": 21,
    "fixtures": 8,
    "module": "content/encounters/boss.py",
    "builder": "_kaiser_crab",

@@ -373,8 +373,14 @@ def recorded_witness(binary, entry, replay, actual):
 
     def physical_uid(index):
         return rows[index] if rows is not None and index < len(rows) else index
-    if any(physical_uid(i) not in cards
-           or (cards[physical_uid(i)]['id'], cards[physical_uid(i)].get('upgrade', 0)) != tuple(card[:2])
+    # Whispering Earring's turn-one loop (#3414) AutoPlays dealt cards before
+    # the root, and a played Power leaves every pile. Only there may a deck
+    # uid be absent; every present card is still matched, and a recorded
+    # play of an absent uid fails the per-input identity check below.
+    earring = 'RELIC.WHISPERING_EARRING' in (entry['player'].get('relics_entering') or ())
+    if any((physical_uid(i) not in cards and not earring)
+           or (physical_uid(i) in cards
+               and (cards[physical_uid(i)]['id'], cards[physical_uid(i)].get('upgrade', 0)) != tuple(card[:2]))
            for i, card in enumerate(instances)):
         raise ValueError('recorded initial physical card identities differ')
 
@@ -525,7 +531,7 @@ _NATIVE_PLAYER_POWER_DIRECT = frozenset({
     'CONQUEROR_POWER', 'CONSUMING_SHADOW_POWER', 'COOLANT_POWER',
     'CORROSIVE_WAVE_POWER', 'CORRUPTION_POWER', 'COUNTDOWN_POWER',
     'CREATIVE_AI_POWER', 'CRIMSON_MANTLE_POWER', 'CRUELTY_POWER',
-    'CURL_UP_POWER', 'DANSE_MACABRE_POWER', 'DARK_EMBRACE_POWER',
+    'CURIOUS_POWER', 'CURL_UP_POWER', 'DANSE_MACABRE_POWER', 'DARK_EMBRACE_POWER',
     'DEBILITATE_POWER', 'DEMESNE_POWER', 'DEMISE_POWER', 'DEMON_FORM_POWER',
     'DEVOUR_LIFE_POWER', 'DISINTEGRATION_POWER', 'DOUBLE_DAMAGE_POWER',
     'DUPLICATION_POWER', 'ECHO_FORM_POWER', 'ENERGY_NEXT_TURN_POWER',

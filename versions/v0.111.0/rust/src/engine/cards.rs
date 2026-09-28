@@ -1108,6 +1108,20 @@ pub(crate) fn apply_dampen_power(
             if spec.identity.upgrade != 1 {
                 return Err(EngineRefusal::MalformedArgs("Dampen upgrade level"));
             }
+            // #3413: `CardModel::DowngradeInternal` RVA `0x7e12c` resets
+            // `_base` to `Canonical` (IL_0042) and re-runs `ModifyCard`
+            // (IL_0077), so TezcatarasEmber's `OnEnchant` lowers the cost
+            // 1 -> 0 through `UpgradeBy`'s local-modifier walk (RVA `0x11e31c`
+            // IL_0041-0045), which this atom swap does not replay.
+            if matches!(
+                spec.identity.enchantment,
+                Some(crate::catalog::CardEnchantment {
+                    id: crate::ids::EnchantmentId::TezcatarasEmber,
+                    ..
+                })
+            ) {
+                return Err(EngineRefusal::MalformedArgs("Dampen over TEZCATARAS_EMBER"));
+            }
             let atom = catalog
                 .atom(&crate::catalog::CardIdentity {
                     id: spec.identity.id,
@@ -5762,11 +5776,20 @@ mod tests {
         id: CardId,
         relics: &[crate::ids::RelicId],
     ) -> (HotState, Catalog, CardAtom, CardAtom) {
-        let l0 = CardIdentity {
-            id,
-            upgrade: 0,
-            enchantment: None,
-        };
+        dampen_fixture_for_identity(
+            CardIdentity {
+                id,
+                upgrade: 0,
+                enchantment: None,
+            },
+            relics,
+        )
+    }
+
+    fn dampen_fixture_for_identity(
+        l0: CardIdentity,
+        relics: &[crate::ids::RelicId],
+    ) -> (HotState, Catalog, CardAtom, CardAtom) {
         let mut builder = CatalogBuilder::new();
         builder.intern_magi_dampen_smoke_foundation().unwrap();
         let (l0_atom, l1_atom) = builder.intern_dampen_card_pair(l0).unwrap();
@@ -5806,6 +5829,31 @@ mod tests {
 
     fn dampen_fixture() -> (HotState, Catalog, CardAtom, CardAtom) {
         dampen_fixture_for(CardId::StrikeIronclad)
+    }
+
+    /// #3413: native `DowngradeInternal` re-runs TezcatarasEmber's
+    /// `OnEnchant` through `UpgradeBy`'s local-modifier walk, which the atom
+    /// swap does not replay, so Dampen over an upgraded Tezcatara card
+    /// refuses by name and leaves the state untouched.
+    #[test]
+    fn dampen_over_an_upgraded_tezcataras_ember_card_refuses_by_name() {
+        let (mut state, catalog, _, _) = dampen_fixture_for_identity(
+            CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: Some(crate::catalog::CardEnchantment {
+                    id: crate::ids::EnchantmentId::TezcatarasEmber,
+                    amount: 1,
+                }),
+            },
+            &[],
+        );
+        let before = state.clone();
+        assert_eq!(
+            apply_dampen_power(&mut state, &catalog, 2),
+            Err(EngineRefusal::MalformedArgs("Dampen over TEZCATARAS_EMBER"))
+        );
+        assert_eq!(state, before);
     }
 
     #[test]

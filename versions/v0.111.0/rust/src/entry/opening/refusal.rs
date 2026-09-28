@@ -416,8 +416,8 @@ pub enum OpeningRefusal {
     /// `TinkerTimeRider`) that make each copy one of eighteen different cards
     /// ([`crate::catalog::MadScienceVariant`], #2942). A legal variant whose
     /// body is not ported
-    /// ([`crate::content_tables::MadScienceVariantRow::unmodeled`]: Curious and
-    /// Improvement since #3322 ported Chaos), or a deck whose copies carry two different
+    /// ([`crate::content_tables::MadScienceVariantRow::unmodeled`]: Improvement
+    /// since #3427 ported Curious), or a deck whose copies carry two different
     /// variants (which the fight-level variant axis does not represent),
     /// refuses here by name rather than entering combat as a different card.
     CardEntryVariantNotModeled { card: &'static str, detail: String },

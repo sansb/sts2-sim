@@ -747,6 +747,7 @@
       "Knockdown",
       "Loop",
       "MachineLearning",
+      "MadScienceCurious",
       "Mayhem",
       "MonarchsGaze",
       "NecroMastery",
@@ -796,11 +797,11 @@
       "Vigor",
       "WraithForm"
      ],
-     "owned": 101
+     "owned": 102
     }
    },
-   "implemented": 325,
-   "total": 334
+   "implemented": 326,
+   "total": 335
   }
  },
  "schema": "rust-port-coverage-v1"

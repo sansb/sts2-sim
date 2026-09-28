@@ -1486,8 +1486,9 @@ mod tests {
         assert!(steps.windows(2).all(|pair| {
             pair[0].as_str().expect("a kind name") < pair[1].as_str().expect("a kind name")
         }));
-        // 334 since #3322 added the Rust-owned `mad_science_chaos_exact`.
-        assert_eq!(manifest["steps"]["total"], json!(334));
+        // 335 since #3322 added the Rust-owned `mad_science_chaos_exact` and
+        // #3427 `mad_science_curious`.
+        assert_eq!(manifest["steps"]["total"], json!(335));
         assert_eq!(manifest["steps"]["families"], json!(30));
         let moves = manifest["moves"]["implemented"]
             .as_array()

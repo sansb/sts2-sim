@@ -220,7 +220,8 @@ _AFTER_ENERGY_RESET_NATIVE_IDS = AFTER_ENERGY_RESET_NATIVE_IDS
 _native_after_energy_reset_powers = native_after_energy_reset_powers
 
 
-def _rust_opening(binary, save, fight, build, *, source="--save"):
+def _rust_opening(binary, save, fight, build, *, source="--save",
+                  native_checkpoints=False):
     """`sts-sim entry --opening` on one run: the whole combat-entry root.
 
     `source` names the input schema: `--save` for a schema-20 start save,
@@ -228,6 +229,10 @@ def _rust_opening(binary, save, fight, build, *, source="--save"):
     The document it returns is `sts-sim-canonical-v2`, the same bytes Rust
     search loads. An entry or opening refusal is a normal answer on stdout and
     is raised here by name; a non-zero exit is an argv contract failure.
+
+    `native_checkpoints` adds `--native-checkpoints` (#3392) and returns
+    `(document, recorded)`, where `recorded` is the opening's own native
+    checkpoint list (`None` when the opening reported none).
     """
     if source not in ("--save", "--capture-run"):
         raise ValueError(f"unknown Rust entry input {source!r}")
@@ -237,11 +242,16 @@ def _rust_opening(binary, save, fight, build, *, source="--save"):
         completed = subprocess.run(
             [str(binary), "entry", "--build", build, source, str(path),
              "--encounter", fight.encounter_id, "--node-type", fight.node_type,
-             "--opening"],
+             "--opening", *(("--native-checkpoints",) if native_checkpoints else ())],
             text=True, capture_output=True, timeout=60, check=False)
     if completed.returncode:
         raise ValueError("Rust opening CLI failed: " + completed.stderr[-500:])
     document = json.loads(completed.stdout)
+    recorded = None
+    if native_checkpoints and document.get("schema") == _OPENING_CHECKPOINTS_SCHEMA:
+        document, recorded = document.get("state"), document.get("native_checkpoints")
+        if not isinstance(document, dict):
+            raise ValueError("Rust opening checkpoints carry no root")
     if document.get("schema") != "sts-sim-canonical-v2":
         opening = document.get("opening") or {}
         refusal = document.get("refusal") or {}
@@ -249,7 +259,7 @@ def _rust_opening(binary, save, fight, build, *, source="--save"):
                 or "entry_refused")
         detail = opening.get("detail") or refusal.get("detail") or ""
         raise ValueError(f"Rust opening refused: {kind}: {detail[:300]}")
-    return document
+    return (document, recorded) if native_checkpoints else document
 
 
 def _load_refusal(binary, document):
@@ -319,6 +329,36 @@ def build_root(run_path, fight_index, saves, binary=None):
 
 
 _OPENING_CHECKPOINT = "After player turn start"
+_OPENING_CHECKPOINTS_SCHEMA = "sts-sim-opening-checkpoints-v1"
+_AFTER_PLAYER_TURN_START = "after_player_turn_start"
+
+
+def _opening_checkpoint_state(document, recorded):
+    """The Rust state the capture's opening checkpoint is compared against.
+
+    Native writes "After player turn start" BEFORE turn one's
+    `RunAutoPrePlayPhase` (`CombatManager/<StartTurn>d__100::MoveNext` RVA
+    0x3f781c IL_096f/IL_0975, then IL_0b1e), while the root is post-AutoPre:
+    an Imbued AutoPlay (#3381) or Whispering Earring's loop (#3414) has run
+    in it. So the checkpoint is compared against the opening's recorded
+    `after_player_turn_start` state, exactly as the census does
+    (`eval_suite.opening_checkpoint_state`, #3392). With nothing recorded (a
+    SetupPlayerTurn that paused on a choice, where native took the checkpoint
+    at that pause) the root is the state compared. A malformed report raises.
+    """
+    if recorded is None:
+        return document
+    if not isinstance(recorded, list):
+        raise ValueError("the opening did not report its native checkpoints")
+    states = {}
+    for entry in recorded:
+        kind = entry.get("kind") if isinstance(entry, dict) else None
+        if kind != _AFTER_PLAYER_TURN_START or kind in states:
+            raise ValueError(f"unexpected opening native checkpoint {kind!r}")
+        if not isinstance(entry.get("state"), dict):
+            raise ValueError(f"opening native checkpoint {kind} does not project")
+        states[kind] = entry["state"]
+    return states.get(_AFTER_PLAYER_TURN_START, document)
 
 
 def _check_native_enchantments(document, native_player):
@@ -356,19 +396,30 @@ def _replay_opening(binary, capture_run, fight, build, checkpoint):
     path the order is observed rather than proposed, so a boundary rejection
     of it is a refusal, not a reason to fall back to legacy-unknown.
     """
-    document = _rust_opening(binary, capture_run, fight, build, source="--capture-run")
-    check_native_snapshot(document, checkpoint)
-    _check_native_enchantments(document, checkpoint["players"][0])
+    document, recorded = _rust_opening(
+        binary, capture_run, fight, build, source="--capture-run",
+        native_checkpoints=True)
+    compared = _opening_checkpoint_state(document, recorded)
+    check_native_snapshot(compared, checkpoint)
+    _check_native_enchantments(compared, checkpoint["players"][0])
     hero = next(c for c in checkpoint["creatures"] if c.get("player_id") is not None)
     native = _native_after_energy_reset_powers(hero)
     # The six listeners' amounts, as the Python-rooted check compared them.
     # Each is a canonical player slot under its own name (`boundary.rs`).
-    modeled = {name: document["player"].get(name, 0)
+    modeled = {name: compared["player"].get(name, 0)
                for name in _AFTER_ENERGY_RESET_NATIVE_IDS.values()}
     if {name: amount for name, amount in modeled.items() if amount} != dict(native):
         raise ValueError("Rust opening reset listeners differ from native checkpoint")
+    order = [name for name, _ in native]
+    if compared is not document:
+        # Turn one's AutoPre ran after the checkpoint (#3414): a listener it
+        # acquired joins `Creature.Powers` after every checkpoint power, in
+        # acquisition order, which is the order the root already carries for
+        # listeners acquired after the opening.
+        order += [name for name in document["player"].get("after_energy_reset_order") or ()
+                  if name not in order]
     document = copy.deepcopy(document)
-    document["player"]["after_energy_reset_order"] = [name for name, _ in native]
+    document["player"]["after_energy_reset_order"] = order
     refusal = _load_refusal(binary, document)
     if refusal is not None and "after_energy_reset_order" in refusal:
         raise ValueError("Rust boundary rejected the native AfterEnergyReset order: "

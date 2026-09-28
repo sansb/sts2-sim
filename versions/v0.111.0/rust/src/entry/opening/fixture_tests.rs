@@ -567,7 +567,7 @@ fn every_saved_mad_science_variant_opens_as_its_own_card_or_refuses_by_name() {
             variant.rider_name
         );
     }
-    assert_eq!(opened, 14, "seven ported bodies at two levels");
+    assert_eq!(opened, 16, "eight ported bodies at two levels");
 }
 
 /// A Mad Science copy whose saved props are not a pair `TinkerTime` can
@@ -709,6 +709,72 @@ fn each_ported_mad_science_body_plays_its_native_program() {
             .all(|card| card.uid != uid)),
         "the played Power is removed from combat"
     );
+}
+
+/// Mad Science's Curious rider (#3427) plays its native program:
+/// `<ExecutePower>d__54` `0x3aa660` IL_01f5-IL_0228 applies CuriousPower
+/// `CuriousReduction` (1), and no `ExecuteRider` runs for rider 8. The live
+/// power then lowers the next Power card's cost through
+/// `CuriousPower::TryModifyEnergyCostInCombat` `0xa102c`: here that is the
+/// second Curious copy (a Power costing 1), which becomes free, and playing
+/// it stacks the power to 2 without spending Energy.
+#[test]
+fn a_curious_mad_science_applies_curious_and_frees_the_next_power() {
+    use crate::hot::PileId;
+    use crate::ids::{CardId, PowerId};
+    let props = mad_science_props(3, 8);
+    let case = mad_science_case(&[(0, props.clone()), (1, props)]);
+    let (document, catalog, state) = owner_pool_root(&case, &["MAD_SCIENCE"]);
+    crate::engine::admit(&document, &state, &catalog).expect("a Curious root admits");
+    let copies: Vec<crate::hot::HotCard> = PileId::ALL
+        .into_iter()
+        .flat_map(|pile| state.piles.get(pile).as_slice().iter().copied())
+        .filter(|card| catalog.spec(card.atom).unwrap().identity.id == CardId::MadScience)
+        .collect();
+    assert_eq!(copies.len(), 2);
+    for card in &copies {
+        let spec = catalog.spec(card.atom).unwrap();
+        assert_eq!(
+            crate::engine::play::resolved_energy_cost(&state, *card, spec),
+            1
+        );
+    }
+    let uid = hand_card_uid(&state, &catalog, CardId::MadScience);
+    let after = play(&state, &catalog, uid, None).expect("Curious plays");
+    assert_eq!(after.powers.value(PowerId::Curious), 1);
+    assert_eq!(state.energy - after.energy, 1);
+    assert_eq!(after.block, state.block, "a Power variant gains no Block");
+    let other = *copies.iter().find(|card| card.uid != uid).unwrap();
+    let spec = catalog.spec(other.atom).unwrap();
+    assert_eq!(
+        crate::engine::play::resolved_energy_cost(&after, other, spec),
+        0,
+        "Curious frees the next Power"
+    );
+    let boundary = crate::boundary::HotBoundary::to_canonical(&after, &catalog);
+    assert_eq!(boundary.player.get("curious"), Some(&Value::from(1)));
+
+    // Put the second copy in hand and play it for free: Curious stacks.
+    let mut ready = after.clone();
+    for pile in [PileId::Draw, PileId::Discard] {
+        ready
+            .piles
+            .get_mut(pile)
+            .make_mut()
+            .retain(|card| card.uid != other.uid);
+    }
+    if !ready
+        .piles
+        .get(PileId::Hand)
+        .as_slice()
+        .iter()
+        .any(|card| card.uid == other.uid)
+    {
+        ready.piles.get_mut(PileId::Hand).make_mut().push(other);
+    }
+    let twice = play(&ready, &catalog, other.uid, None).expect("the free copy plays");
+    assert_eq!(twice.powers.value(PowerId::Curious), 2);
+    assert_eq!(twice.energy, ready.energy, "the second Power cost nothing");
 }
 
 /// Mad Science's Chaos rider (#3322) plays its native program: the Skill body
@@ -992,12 +1058,12 @@ fn the_boundary_refuses_every_malformed_mad_science_tinker_row() {
         load(&with_extra(
             &opening.document,
             "MAD_SCIENCE",
-            serde_json::json!([["MAD_SCIENCE_TINKER", 3, 8]])
+            serde_json::json!([["MAD_SCIENCE_TINKER", 3, 9]])
         )),
         Err(BoundaryRefusal::Catalog(
             CatalogError::MadScienceVariantNotModeled(MadScienceVariant {
                 tinker_type: 3,
-                rider: 8
+                rider: 9
             })
         ))
     );
@@ -13175,4 +13241,210 @@ fn entropy_card_pool_follows_the_owners_own_pool_epochs() {
     assert_eq!(entropy("CHARACTER.IRONCLAD", &["IRONCLAD7_EPOCH"]), None);
     assert_eq!(entropy("CHARACTER.IRONCLAD", &["REGENT7_EPOCH"]), ironclad);
     assert_eq!(entropy("CHARACTER.SILENT", &[]), None);
+}
+
+fn with_whispering_earring(mut case: Value) -> Value {
+    relic(
+        &mut case,
+        serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.WHISPERING_EARRING"}),
+    );
+    case
+}
+
+fn with_deck(rows: &[Value]) -> Value {
+    let mut case = empty_belt_case();
+    case["save"]["players"][0]["deck"] = Value::from(rows.to_vec());
+    case
+}
+
+fn root_state(
+    document: &crate::canonical::CanonicalStateV2,
+) -> (crate::hot::HotState, crate::catalog::Catalog) {
+    let catalog = crate::boundary::HotBoundary::catalog_from_canonical(document).unwrap();
+    let state = crate::boundary::HotBoundary::from_canonical(document, &catalog).unwrap();
+    (state, catalog)
+}
+
+/// Whispering Earring AutoPlays the dealt hand in turn one's AutoPre phase,
+/// and never again (#3414).
+///
+/// `WhisperingEarring/<AfterAutoPrePlayPhaseEnteredLate>d__8::MoveNext` RVA
+/// `0x333fcc` leaves at IL_005a unless `TurnNumber <= 1` (IL_0047-IL_0058).
+/// The opened root has played cards (the control opens with none), still
+/// admits (the admission wall guards only a loop still ahead,
+/// `engine::turn::whispering_earring_loop_is_ahead`), and the recorded
+/// pre-AutoPre checkpoint (#3392) holds the hand unplayed. Ending turn one
+/// starts turn two with nothing auto-played.
+#[test]
+fn whispering_earring_auto_plays_the_hand_on_turn_one_only() {
+    let played = |document: &crate::canonical::CanonicalStateV2| {
+        ["discard", "exhaust"]
+            .into_iter()
+            .filter_map(|pile| document.piles.get(pile))
+            .map(Vec::len)
+            .sum::<usize>()
+    };
+    let control = open(&empty_belt_case()).expect("the control opens");
+    assert_eq!(played(&control.document), 0);
+
+    let case = with_whispering_earring(empty_belt_case());
+    let recording = OpeningOptions {
+        record_native_checkpoints: true,
+        ..OpeningOptions::default()
+    };
+    let opening = build_opening(&entry_facts(&case), &recording)
+        .unwrap_or_else(|refusal| panic!("opens: {refusal}"));
+    let document = &opening.document;
+    assert!(played(document) > 0, "turn one's hand was AutoPlayed");
+    let (state, catalog) = root_state(document);
+    assert!(!crate::engine::turn::whispering_earring_loop_is_ahead(
+        &state
+    ));
+    crate::engine::admit(document, &state, &catalog)
+        .unwrap_or_else(|refusal| panic!("the post-AutoPre root admits: {refusal}"));
+
+    let checkpoints = opening.native_checkpoints.expect("recorded");
+    let before = checkpoints[0].state.as_ref().expect("projects");
+    assert_eq!(played(before), 0, "the checkpoint precedes the loop");
+    assert_eq!(
+        before.piles["hand"].len(),
+        control.document.piles["hand"].len()
+    );
+
+    let next = crate::engine::apply_action(&state, &catalog, &crate::engine::Action::EndTurn)
+        .unwrap()
+        .state;
+    assert_eq!(next.turn, 2);
+    assert!(next.pending.is_none());
+    assert_eq!(next.history.manual_card_plays_finished_this_turn, 0);
+    assert!(
+        !next.piles.get(crate::hot::PileId::Hand).is_empty(),
+        "turn two's hand is the player's"
+    );
+}
+
+/// The Earring's children are still bounded by name (#3414): an X-cost card
+/// has no modeled Earring energy, so a hand of Whirlwinds refuses.
+#[test]
+fn whispering_earring_refuses_an_x_cost_child_by_name() {
+    let case = with_whispering_earring(with_deck(&vec![deck_card("WHIRLWIND"); 5]));
+    let refusal = open(&case).unwrap_err().to_string();
+    assert!(
+        refusal.contains("Whispering Earring playable child"),
+        "{refusal}"
+    );
+}
+
+/// A selecting child resolves inline under the Earring's pushed
+/// `VakuuCardSelector` (#3414, `engine::selection::VakuuSelectorScope`):
+/// Glimmer's Hand put-back and Cosmic Indifference's Discard pick. Each deck
+/// opens with the selecting card played and nothing pending, where it would
+/// otherwise have refused as a suspending AutoPlay child.
+#[test]
+fn whispering_earring_resolves_glimmer_and_cosmic_indifference_selections() {
+    for selecting in ["GLIMMER", "COSMIC_INDIFFERENCE"] {
+        let mut deck = vec![deck_card("STRIKE_IRONCLAD"); 8];
+        deck.insert(0, deck_card(selecting));
+        let case = with_whispering_earring(with_deck(&deck));
+        let opening = open(&case).unwrap_or_else(|refusal| panic!("{selecting}: {refusal}"));
+        let document = &opening.document;
+        let (state, _) = root_state(document);
+        assert!(state.pending.is_none(), "{selecting}");
+        assert!(
+            document.piles["discard"]
+                .iter()
+                .any(|card| card.id == selecting),
+            "{selecting} was AutoPlayed"
+        );
+    }
+}
+
+/// The admission wall over the Earring's children guards only a loop still
+/// ahead (#3414). The same root with a reachable X-cost card admits past
+/// turn one's AutoPre, and refuses by name when set back into it.
+#[test]
+fn whispering_earring_admission_wall_guards_only_a_loop_still_ahead() {
+    let opening = open(&with_whispering_earring(empty_belt_case())).expect("opens");
+    let mut document = opening.document;
+    let next = document.player["next_card_uid"].as_u64().unwrap();
+    document
+        .piles
+        .get_mut("draw")
+        .unwrap()
+        .push(crate::canonical::CanonicalCardV2 {
+            id: "WHIRLWIND".to_string(),
+            upgrade: 0,
+            uid: Some(next),
+            pick: false,
+            enchantment: None,
+            local_keywords: Vec::new(),
+            transient_keywords: Vec::new(),
+            enchantment_state: None,
+            sovereign_blade: None,
+            physical_state: None,
+            extra: Vec::new(),
+        });
+    document
+        .player
+        .insert("next_card_uid".to_string(), Value::from(next + 1));
+    let (mut state, catalog) = root_state(&document);
+    crate::engine::admit(&document, &state, &catalog)
+        .unwrap_or_else(|refusal| panic!("the loop is behind: {refusal}"));
+
+    state.player_phase = crate::engine::turn::PHASE_AUTO_PRE;
+    let refusal = crate::engine::admit(&document, &state, &catalog).unwrap_err();
+    assert!(
+        refusal.missing().any(|missing| missing
+            == crate::engine::admission::MissingCapability::ArgumentShape(
+                "Whispering Earring bounded live Hand loop"
+            )),
+        "{refusal}"
+    );
+}
+
+/// The uid-allocation check's Whispering Earring branch (#3414) admits the
+/// opened root and still refuses what the loop cannot produce: fresh uids
+/// out of allocation order in the hand, and a dealt uid carried twice.
+#[test]
+fn whispering_earring_allocation_check_refuses_what_the_loop_cannot_produce() {
+    use super::{PreDeal, check_card_identity_allocation, expected_identity_order};
+    let case = with_whispering_earring(empty_belt_case());
+    let built = pre_hook(&case).expect("the pre-hook builds");
+    let relics = entry_facts(&case).relic_entry.relics_entering;
+    let expected = expected_identity_order(&built.document, &relics, None);
+    let earring = PreDeal {
+        whispering_earring: true,
+        ..PreDeal::default()
+    };
+    let opened = open(&case).expect("opens").document;
+    assert_eq!(
+        check_card_identity_allocation(&opened, &expected, earring),
+        Ok(())
+    );
+
+    let mut unordered = opened.clone();
+    let next = unordered.player["next_card_uid"].as_u64().unwrap();
+    let template = unordered.piles["draw"][0].clone();
+    for uid in [next + 1, next] {
+        let mut fresh = template.clone();
+        fresh.uid = Some(uid);
+        unordered.piles.get_mut("hand").unwrap().push(fresh);
+    }
+    unordered
+        .player
+        .insert("next_card_uid".to_string(), Value::from(next + 2));
+    assert!(matches!(
+        check_card_identity_allocation(&unordered, &expected, earring),
+        Err(OpeningRefusal::CardIdentityAllocationDiverged { detail })
+            if detail.contains("not in allocation order")
+    ));
+
+    let mut twice = opened.clone();
+    let dealt = twice.piles["draw"][0].clone();
+    twice.piles.get_mut("draw").unwrap().push(dealt);
+    assert!(matches!(
+        check_card_identity_allocation(&twice, &expected, earring),
+        Err(OpeningRefusal::CardIdentityAllocationDiverged { detail })
+            if detail.contains("twice")
+    ));
 }

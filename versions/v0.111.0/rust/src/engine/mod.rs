@@ -1532,7 +1532,7 @@ fn validate_potion_action(
         return Err(EngineRefusal::BadTarget(target));
     }
     if let Some(target) = target {
-        potions::target_application_is_exact(state, catalog, potion, usize::from(target), false)?;
+        potions::target_application_is_exact(state, potion, usize::from(target), false)?;
     }
     if potion == PotionId::BottledPotential
         && !crate::steps::defect_rare::bottled_potential_entry_is_valid(state, catalog)
@@ -2106,7 +2106,6 @@ pub fn legal_actions_into<'a>(
                     .filter(|target| {
                         potions::target_application_is_exact(
                             state,
-                            catalog,
                             potion,
                             usize::from(*target),
                             false,
@@ -15666,64 +15665,60 @@ mod tests {
     }
 
     #[test]
-    fn powdered_demise_waterfall_preflight_covers_all_pressure_rows() {
+    fn powdered_demise_on_a_waterfall_is_an_ordinary_application() {
+        // #3428: the Waterfall revival is decided at the side-end Demise
+        // anchor, so neither the held closure nor the action refuses it.
         let mut builder = CatalogBuilder::new();
         builder.intern_monster(MonsterKind::WaterfallGiant).unwrap();
         let catalog = builder.build();
         for loop_pos in 0..=5 {
-            let mut state = HotState::at_defaults();
-            let mut waterfall = HotMonster::new(MonsterKind::WaterfallGiant, 100);
-            waterfall.max_hp = 100;
-            waterfall.loop_pos = loop_pos;
-            state.monsters_mut().push(waterfall);
-            assert_eq!(
-                potions::target_application_is_exact(
-                    &state,
-                    &catalog,
-                    PotionId::PowderedDemise,
-                    0,
+            for pressure in [0, 20] {
+                let mut state = HotState::at_defaults();
+                let mut waterfall = HotMonster::new(MonsterKind::WaterfallGiant, 100);
+                waterfall.max_hp = 100;
+                waterfall.loop_pos = loop_pos;
+                waterfall
+                    .powers
+                    .set(PowerId::SteamPressure, SlotWire::Int, pressure);
+                state.monsters_mut().push(waterfall);
+                assert!(state.fanouts.set_potion_belt(
+                    vec![Some(PotionId::PowderedDemise)],
                     false,
-                ),
-                Err(EngineRefusal::MalformedArgs(
-                    "Powdered Demise Waterfall listener suffix"
-                )),
-                "loop_pos={loop_pos}"
-            );
-            state.monsters_mut()[0]
-                .powers
-                .set(PowerId::Artifact, SlotWire::Int, 1);
-            assert_eq!(
-                potions::target_application_is_exact(
-                    &state,
-                    &catalog,
-                    PotionId::PowderedDemise,
-                    0,
                     false,
-                ),
-                Ok(()),
-                "Artifact blocks loop_pos={loop_pos}"
-            );
+                    false,
+                    false,
+                    true,
+                ));
+                let case = format!("loop_pos={loop_pos} pressure={pressure}");
+                assert_eq!(
+                    potions::target_application_is_exact(
+                        &state,
+                        PotionId::PowderedDemise,
+                        0,
+                        false,
+                    ),
+                    Ok(()),
+                    "{case}"
+                );
+                assert_eq!(
+                    potions::held_target_applications_are_exact(&state, 0, 0, 1),
+                    Ok(()),
+                    "{case}"
+                );
+                let action = Action::UsePotion {
+                    slot: 0,
+                    target: Some(0),
+                };
+                assert!(legal_actions(&state, &catalog).contains(&action), "{case}");
+                let after = apply_action(&state, &catalog, &action).unwrap().state;
+                assert_eq!(after.monsters[0].powers.value(PowerId::Demise), 9, "{case}");
+                assert_eq!(
+                    after.monsters[0].misery_debuff_order.as_slice(),
+                    [MiseryToken::Demise],
+                    "{case}"
+                );
+            }
         }
-
-        let mut about = HotState::at_defaults();
-        let mut waterfall = HotMonster::new(MonsterKind::WaterfallGiant, 999_999_999);
-        waterfall.max_hp = 999_999_999;
-        waterfall.loop_pos = 6;
-        waterfall.set_is_about_to_blow(true);
-        waterfall
-            .powers
-            .set(PowerId::SteamPressure, SlotWire::Int, 20);
-        about.monsters_mut().push(waterfall);
-        assert_eq!(
-            potions::target_application_is_exact(
-                &about,
-                &catalog,
-                PotionId::PowderedDemise,
-                0,
-                false,
-            ),
-            Ok(())
-        );
     }
 
     #[test]

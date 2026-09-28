@@ -69,9 +69,11 @@ KNOWN_LINE_GAPS: dict = {}
 # `refusal:rust-line` left it with the group-7 divergence wave: no A9/A10
 # corpus line diverges any more (see
 # `test_refusal_fixtures_name_a_surface_and_quote_the_refusal`).
-REQUIRED_REFUSAL_SURFACES = (
-    "refusal:rust-load",
-)
+# `refusal:rust-load` left it with #3413: TEZCATARAS_EMBER certified
+# f0e5344aeb5829a9, the last fixture Rust refused at load. The one corpus
+# root still refused at load on that head (f16bbb885e652607, Mecha Knight
+# at A8) is below A9, so it cannot be a fixture.
+REQUIRED_REFUSAL_SURFACES: tuple = ()
 # A fixture is provenance and projections, never a player: no capture file
 # names, no home directories, no wall-clock run identity.
 FORBIDDEN_SUBSTRINGS = (
@@ -217,8 +219,11 @@ def test_refusal_fixtures_name_a_surface_and_quote_the_refusal():
     # corpus line still diverging on that head (fb421c3b04df9382) is below
     # A9, so it cannot be a fixture. The surfaces that still hold a refusal keep
     # their bar. A new rust-line refusal fixture must still quote its refusal,
-    # which the loop above checks.
-    assert {"rust-load"} <= surfaces
+    # which the loop above checks. `rust-load` left the same way with #3413:
+    # its last fixture (f0e5344aeb5829a9) certified, and the one corpus root
+    # still refused at load (f16bbb885e652607) is at A8. A new rust-load
+    # refusal fixture must still quote its refusal and name its `kind`.
+    assert surfaces <= set(eval_suite.REFUSAL_SURFACES)
 
 
 def test_every_seed_category_is_populated():
@@ -506,6 +511,28 @@ def test_the_deal_undoes_jeweled_masks_pre_deal_power_lift():
     # this relic's alone.
     root["player"]["relics_entering"] = []
     with pytest.raises(ValueError, match="identities differ"):
+        eval_suite._dealt_uids(root, recorded)
+
+
+def test_the_deal_reads_a_whispering_earring_root_in_uid_order():
+    """#3414: the Earring's turn-one loop plays dealt cards before the root,
+    puts one back on Draw's top (Cosmic Indifference), and a played Power
+    leaves every pile. The deck was numbered in the dealt layout, so uid
+    order is that layout; the vanished Power's place matches whatever the
+    cycle records there, and every present card must still match."""
+    card = lambda cid, uid: {"id": cid, "uid": uid, "upgrade": 0}
+    root = {"player": {"innate_min_draw": 0,
+                       "relics_entering": ["RELIC.WHISPERING_EARRING"]},
+            "piles": {"hand": [card("B", 1)],
+                      "draw": [card("A", 0), card("C", 2)],
+                      "discard": [card("GEN", 4)]}}
+    recorded = [("A", 0), ("B", 0), ("C", 0), ("POWER", 0)]
+    assert eval_suite._dealt_uids(root, recorded) == [0, 1, 2, 3]
+    with pytest.raises(ValueError, match="identities differ"):
+        eval_suite._dealt_uids(root, [("A", 0), ("X", 0), ("C", 0), ("POWER", 0)])
+    # Only this relic's roots may lack a dealt card.
+    root["player"]["relics_entering"] = []
+    with pytest.raises(ValueError, match="deck size differs"):
         eval_suite._dealt_uids(root, recorded)
 
 
@@ -1092,6 +1119,36 @@ def test_the_census_counts_truncated_captures_apart_from_divergences():
         {"captures": "c", "build": "b", "summary": summary})
     assert "| capture ends mid-fight (truncated, uncertified, #3277) | 1 |" \
         in markdown
+
+
+def test_the_census_headline_is_certified_over_eligible():
+    """#3421: eligible drops only captures proven unusable, by reason."""
+    rows = [
+        {"stage": "rooted", "rust": "admitted", "human": "exact",
+         "lockstep": "lockstep_ok"},
+        {"stage": "rooted", "rust": "admitted", "human": "diverged"},
+        _truncated_row(),
+        # A capture that recorded no combat at all.
+        eval_suite.with_unusable_capture(
+            {"stage": "no_encounter"}, {"events": [], "checksums": []}),
+        # A real combat the harness could not name: it stays eligible.
+        eval_suite.with_unusable_capture(
+            {"stage": "no_encounter"},
+            {"events": [{"event_type": "GameAction"}], "checksums": [{}]}),
+    ]
+    summary = eval_suite.census_summary(rows)
+    assert summary["fights"] == 5
+    assert summary["certified"] == 1
+    assert summary["eligible"] == 3
+    assert summary["excluded_unusable"] == {
+        "capture_truncated": 1, "no_combat_in_capture": 1}
+    # The existing fields are untouched: both pairing rows still count.
+    assert summary["stages"]["no_encounter"] == 2
+    markdown = eval_suite.census_markdown(
+        {"captures": "c", "build": "b", "summary": summary})
+    assert "**certified / eligible: 1 / 3** (33.3%)" in markdown
+    assert ("excluded as unusable captures: 2 (`capture_truncated` 1, "
+            "`no_combat_in_capture` 1)") in markdown
 
 
 # `eval_suite.py --self-test` is deliberately NOT invoked here: it re-derives

@@ -54,6 +54,15 @@ def test_player_side_debuffs_map_to_their_player_slots():
     assert fields["NOXIOUS_FUMES_POWER"] == "noxious_fumes"
 
 
+def test_curious_power_is_compared_as_its_own_field():
+    # #3427: Mad Science's Curious rider applies CuriousPower, which Rust
+    # carries as `PowerId::Curious` (`curious`).
+    assert replay.NATIVE_PLAYER_POWER_FIELDS["CURIOUS_POWER"] == "curious"
+    assert _rows(_state(curious=1), _native(("CURIOUS_POWER", 1))) == []
+    assert _rows(_state(), _native(("CURIOUS_POWER", 1))) == [
+        {"class": "amount", "power": "CURIOUS_POWER", "native": 1, "rust": 0}]
+
+
 def test_every_native_id_has_exactly_one_comparison():
     groups = [set(replay.NATIVE_PLAYER_POWER_FIELDS),
               set(replay.NATIVE_PLAYER_POWER_PROJECTIONS),

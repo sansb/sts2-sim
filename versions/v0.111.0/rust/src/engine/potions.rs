@@ -1755,7 +1755,6 @@ pub(crate) fn potion_target_roster_is_exact(state: &HotState, potion: PotionId) 
 /// whole application before any amount/order/body-specific reader runs.
 pub(crate) fn target_application_is_exact(
     state: &HotState,
-    catalog: &Catalog,
     potion: PotionId,
     target: usize,
     assume_unblocked: bool,
@@ -1784,16 +1783,10 @@ pub(crate) fn target_application_is_exact(
     if power == PowerId::Shrink && updated >= 999_999_999 {
         return Err(EngineRefusal::CounterOverflow(site));
     }
-    if potion == PotionId::PowderedDemise
-        && monster.kind == crate::ids::MonsterKind::WaterfallGiant
-        && !monster.is_about_to_blow()
-        && (monster.powers.value(PowerId::SteamPressure) > 0
-            || super::turn::waterfall_pressure_writer_intent(monster, catalog))
-    {
-        return Err(EngineRefusal::MalformedArgs(
-            "Powdered Demise Waterfall listener suffix",
-        ));
-    }
+    // A Waterfall Giant target is not refused here (#3428). The application
+    // itself is the ordinary one; the only Waterfall-specific question is a
+    // later lethal Demise tick reviving the owner, which the side-end Demise
+    // anchor decides exactly (`turn::waterfall_demise_revival_suffix_is_empty`).
     Ok(())
 }
 
@@ -1802,13 +1795,12 @@ pub(crate) fn target_application_is_exact(
 /// consume it before any selected potion slot is used.
 pub(crate) fn held_target_applications_are_exact(
     state: &HotState,
-    catalog: &Catalog,
     target: usize,
     beetle_juice_count: usize,
     powdered_demise_count: usize,
 ) -> Result<(), EngineRefusal> {
     if beetle_juice_count > 0 {
-        target_application_is_exact(state, catalog, PotionId::BeetleJuice, target, true)?;
+        target_application_is_exact(state, PotionId::BeetleJuice, target, true)?;
         let old = i64::from(state.monsters[target].powers.value(PowerId::Shrink));
         let count = i64::try_from(beetle_juice_count)
             .map_err(|_| EngineRefusal::CounterOverflow("held Beetle Juice count"))?;
@@ -1826,7 +1818,7 @@ pub(crate) fn held_target_applications_are_exact(
         }
     }
     if powdered_demise_count > 0 {
-        target_application_is_exact(state, catalog, PotionId::PowderedDemise, target, true)?;
+        target_application_is_exact(state, PotionId::PowderedDemise, target, true)?;
         let old = i64::from(state.monsters[target].powers.value(PowerId::Demise));
         let count = i64::try_from(powdered_demise_count)
             .map_err(|_| EngineRefusal::CounterOverflow("held Powdered Demise count"))?;

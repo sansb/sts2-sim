@@ -537,7 +537,7 @@ pub(crate) fn delayed_block_power_state_is_exact(state: &HotState) -> bool {
 /// fold, and until slice 2 neither that fold nor this gate accounted for one,
 /// so `admit` refused the player's whole slot vector. It is now a list, and
 /// still a short one — every entry is a power some engine path reads back.
-pub const IMPLEMENTED_PLAYER_POWERS: [PowerId; 163] = [
+pub const IMPLEMENTED_PLAYER_POWERS: [PowerId; 164] = [
     PowerId::Accuracy,
     PowerId::Accelerant,
     PowerId::Aggression,
@@ -570,6 +570,7 @@ pub const IMPLEMENTED_PLAYER_POWERS: [PowerId; 163] = [
     PowerId::CrimsonMantle,
     PowerId::CrimsonSelf,
     PowerId::Cruelty,
+    PowerId::Curious,
     PowerId::DanseMacabre,
     PowerId::DarkEmbrace,
     PowerId::Demesne,
@@ -2638,7 +2639,6 @@ pub fn admit(
             monster.hp > 0
                 && super::potions::held_target_applications_are_exact(
                     state,
-                    catalog,
                     target,
                     beetle_juice_count,
                     powdered_demise_count,
@@ -2699,17 +2699,27 @@ pub fn admit(
             "Whispering Earring solo target universe",
         ));
     }
+    // The Earring's loop runs once, in turn one's AutoPre (#3414,
+    // `turn::whispering_earring_loop_is_ahead`), so a root past it owes this
+    // wall nothing. Ahead of it, a selecting child resolves inline under the
+    // pushed VakuuCardSelector when its CardSelectCmd path was read
+    // (`selection::VakuuSelectorScope`): Glimmer and Cosmic Indifference.
     if whispering_earring
+        && crate::engine::turn::whispering_earring_loop_is_ahead(state)
         && catalog.reachable_specs().any(|spec| {
             card_row_is_admitted(catalog, spec)
                 && !spec.solo_unplayable
                 && (spec.x_cost
                     || spec.row.star_x
-                    || crate::engine::play::autoplay_child_requires_suspension(
+                    || (crate::engine::play::autoplay_child_requires_suspension(
                         PileId::Hand,
                         spec,
                         catalog,
-                    )
+                    ) && !crate::engine::selection::whispering_earring_child_selection_is_vakuu_resolved(
+                        spec,
+                        catalog,
+                        !catalog.cardplay_draw_hook_can_suspend(),
+                    ))
                     || autoplay_parent_program_can_spawn_child(spec.row))
         })
     {
@@ -3070,6 +3080,7 @@ pub fn admit(
                 | PowerId::CreativeAi
                 | PowerId::SpectrumShift
                 | PowerId::Cruelty
+                | PowerId::Curious
                 | PowerId::DanseMacabre
                 | PowerId::DarkEmbrace
                 | PowerId::Demesne
@@ -3211,6 +3222,20 @@ pub fn admit(
                 missing.insert(MissingCapability::PowerState(slot.key));
             }
         }
+    }
+    // #3427: CuriousPower (`TryModifyEnergyCostInCombat` RVA 0xa102c) is an
+    // early Power-card cost listener that does not commute with Borrowed
+    // Time's `+Amount` (RVA 0x9feb6), and Spiked Gauntlets' Power-card `+1`
+    // (RVA 0x9bd30) has no term in the cost fold. The Curious and Borrowed
+    // Time writers refuse to create either pairing; a root that already
+    // carries one refuses here.
+    if state.powers.value(PowerId::Curious) > 0
+        && (state.powers.value(PowerId::BorrowedTime) > 0
+            || catalog.hooks().owns(RelicId::RelicSpikedGauntlets))
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "Curious energy-cost listener order",
+        ));
     }
     let knowledge_demon_surface = state
         .monsters
@@ -31233,6 +31258,56 @@ mod tests {
         )));
     }
 
+    /// #3427 witness: a positive Int Curious round-trips and admits alone; a
+    /// non-positive or Bool one is a power-state refusal; beside a live
+    /// Borrowed Time or an owned Spiked Gauntlets the root refuses by name.
+    #[test]
+    fn curious_admits_alone_and_refuses_beside_another_power_cost_listener() {
+        let (mut document, _, _) = parts();
+        document.player.insert("curious".to_owned(), Value::from(2));
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert_eq!(state.powers.value(PowerId::Curious), 2);
+        assert_eq!(HotBoundary::to_canonical(&state, &catalog), document);
+        assert_eq!(admit(&document, &state, &catalog), Ok(()));
+
+        let mut borrowed = document.clone();
+        borrowed
+            .player
+            .insert("borrowed_time".to_owned(), Value::from(1));
+        borrowed.player.insert(
+            "after_side_turn_end_power_order".to_owned(),
+            json!([["borrowed_time", 0]]),
+        );
+        borrowed
+            .player
+            .insert("next_after_side_turn_end_power_uid".to_owned(), json!(1));
+        assert!(refuse(&borrowed).contains(MissingCapability::ArgumentShape(
+            "Curious energy-cost listener order"
+        )));
+
+        let mut gauntlets = document.clone();
+        gauntlets.player.insert(
+            "relics_entering".to_owned(),
+            json!(["RELIC.SPIKED_GAUNTLETS"]),
+        );
+        gauntlets
+            .player
+            .insert("spiked_gauntlets".to_owned(), json!(true));
+        assert!(
+            refuse(&gauntlets).contains(MissingCapability::ArgumentShape(
+                "Curious energy-cost listener order"
+            ))
+        );
+        // The relic alone is not refused by this gate.
+        gauntlets.player.remove("curious");
+        assert!(
+            maybe_refuse(&gauntlets).is_none_or(|refusal| !refusal.contains(
+                MissingCapability::ArgumentShape("Curious energy-cost listener order")
+            ))
+        );
+    }
+
     #[test]
     fn star_reset_powers_require_the_complete_live_order() {
         let (mut document, _, _) = parts();
@@ -33128,6 +33203,41 @@ mod tests {
         assert!(
             refuse(&skill).contains(MissingCapability::CardEnchantment(EnchantmentId::Vigorous))
         );
+    }
+
+    /// #3413: a TEZCATARAS_EMBER Strike (Nutritious Soup's one shape) admits
+    /// with no slot-5 row and round-trips through the boundary unchanged;
+    /// every other shape stays refused under the enchantment's own name.
+    #[test]
+    fn a_tezcataras_ember_strike_admits_and_round_trips() {
+        let (mut base, _, _) = parts();
+        base.player
+            .insert("exact_piles".to_owned(), Value::from(true));
+        {
+            let card = &mut base.piles.get_mut("hand").unwrap()[0];
+            card.id = CardId::StrikeIronclad.as_str().to_owned();
+            card.upgrade = 0;
+            card.enchantment = Some(json!(["TEZCATARAS_EMBER", 1]));
+        }
+        assert_admits(&base);
+        let catalog = HotBoundary::catalog_from_canonical(&base).unwrap();
+        let state = HotBoundary::from_canonical(&base, &catalog).unwrap();
+        let emitted = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(emitted.piles["hand"][0], base.piles["hand"][0]);
+
+        // `NutritiousSoup::AfterObtained` RVA `0x979c4` IL_0057-005d only
+        // ever writes `Decimal.One`, and only onto Basic Strikes.
+        let mut two = base.clone();
+        two.piles.get_mut("hand").unwrap()[0].enchantment = Some(json!(["TEZCATARAS_EMBER", 2]));
+        let mut defend = base.clone();
+        defend.piles.get_mut("hand").unwrap()[0].id = CardId::DefendIronclad.as_str().to_owned();
+        for document in [two, defend] {
+            assert!(
+                refuse(&document).contains(MissingCapability::CardEnchantment(
+                    EnchantmentId::TezcatarasEmber
+                ))
+            );
+        }
     }
 
     /// #2874: GOOPY Defends admit at their exact amounts, the amount rides

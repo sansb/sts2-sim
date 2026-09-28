@@ -470,7 +470,7 @@ pub fn end_player_turn(
     if knowledge_demon_reachable && !knowledge_demon_state_is_exact(state) {
         return Err(EngineRefusal::MalformedArgs("Knowledge Demon state"));
     }
-    if !enemy_potion_debuff_side_end_is_exact(state, catalog, true) {
+    if !enemy_potion_debuff_side_end_is_exact(state) {
         return Err(EngineRefusal::MalformedArgs(
             "enemy potion-debuff side-end state",
         ));
@@ -4173,11 +4173,7 @@ fn run_enemy_phase_after_player_turn(
 /// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`:
 /// Demise's side-end body is RVA `0x338c88`; Shrink's finite-duration body is
 /// RVA `0x3445c0`; the Hook/iterator walk is `0x3d11c0`/`0x3f9720`.
-fn enemy_potion_debuff_side_end_is_exact(
-    state: &HotState,
-    catalog: &Catalog,
-    anticipate_moves: bool,
-) -> bool {
+fn enemy_potion_debuff_side_end_is_exact(state: &HotState) -> bool {
     state.monsters.iter().all(|monster| {
         let demise = monster.powers.value(PowerId::Demise);
         let shrink = monster.powers.value(PowerId::Shrink);
@@ -4188,16 +4184,10 @@ fn enemy_potion_debuff_side_end_is_exact(
             && (!monster.demise_before_ritual() || demise > 0 && ritual > 0)
             && (demise == 0 || super::damage::misery_order_projection_is_exact(monster).is_ok());
         let shrink_state_exact = (0..999_999_999).contains(&shrink);
-        let active_waterfall_suffix = demise > 0
-            && monster.hp > 0
-            && monster.kind == MonsterKind::WaterfallGiant
-            && !monster.is_about_to_blow()
-            && (monster.powers.value(PowerId::SteamPressure) > 0
-                || anticipate_moves && waterfall_pressure_writer_intent(monster, catalog));
-        demise_state_exact
-            && shrink_state_exact
-            && monster.owner_latches_are_exact()
-            && !active_waterfall_suffix
+        // A Waterfall Giant's SteamEruption revival is not refused here: the
+        // Demise anchor decides it at the tick itself (#3428,
+        // `waterfall_demise_revival_suffix_is_empty`).
+        demise_state_exact && shrink_state_exact && monster.owner_latches_are_exact()
     })
 }
 
@@ -4289,7 +4279,7 @@ fn run_enemy_phase_inner(
     if conqueror_reachable {
         super::damage::null_applier_power_amount_changed_is_exact(state)?;
     }
-    if !enemy_potion_debuff_side_end_is_exact(state, catalog, false) {
+    if !enemy_potion_debuff_side_end_is_exact(state) {
         return Err(EngineRefusal::MalformedArgs(
             "enemy potion-debuff side-end state",
         ));
@@ -4418,6 +4408,15 @@ fn run_enemy_phase_inner(
         // wrapper instance, in `Creature.Powers` order. #2693 S2 records the
         // concrete instances, so the whole lifecycle now lives in one writer;
         // `TempStrength != 0` keeps `Misery` refusing until S3 reads them.
+        // Rust unwinds every wrapper here, ahead of every Demise anchor, but
+        // a wrapper's native listener position relative to Demise is not
+        // recorded. Only a revived Waterfall can observe the difference, so
+        // only that owner remembers that one existed (#3428).
+        let unordered_wrapper = monster.kind == MonsterKind::WaterfallGiant
+            && (monster.powers.value(PowerId::TempStrength) != 0
+                || super::monsters::temp_strength_wrapper_rows(monster)
+                    .next()
+                    .is_some());
         super::damage::unwind_monster_temp_strength_wrappers(monster, upkeep)?;
         let has_demise = monster.powers.value(PowerId::Demise) > 0;
         // On the no-Demise static path below, the following fixed order remains:
@@ -4448,13 +4447,14 @@ fn run_enemy_phase_inner(
             && monster.powers.value(PowerId::Intangible) > 0
             && !monster.demise_after_intangible();
         if demise_before_intangible {
+            // The live Intangible is this anchor's later listener.
             let owner_survived = run_monster_demise_ledger_at_anchor(
                 state,
                 catalog,
                 index,
-                frozen_slot,
-                frozen_uid,
+                (frozen_slot, frozen_uid),
                 conqueror_reachable,
+                true,
                 events,
             )?;
             if state.history.over {
@@ -4563,13 +4563,15 @@ fn run_enemy_phase_inner(
             && monster.powers.value(PowerId::Demise) > 0
             && monster.demise_before_ritual();
         if demise_before_ritual {
+            // The live Ritual (`enemy_potion_debuff_side_end_is_exact`
+            // proves it) is this anchor's later listener.
             let owner_survived = run_monster_demise_ledger_at_anchor(
                 state,
                 catalog,
                 index,
-                frozen_slot,
-                frozen_uid,
+                (frozen_slot, frozen_uid),
                 conqueror_reachable,
+                true,
                 events,
             )?;
             if state.history.over {
@@ -4588,9 +4590,9 @@ fn run_enemy_phase_inner(
                 state,
                 catalog,
                 index,
-                frozen_slot,
-                frozen_uid,
+                (frozen_slot, frozen_uid),
                 conqueror_reachable,
+                unordered_wrapper,
                 events,
             )?;
             if state.history.over {
@@ -4863,13 +4865,93 @@ fn expire_monster_side_end_ledger_suffix(
     Ok(())
 }
 
+/// Whether a lethal hit on this owner would revive it through its own
+/// SteamEruption instead of removing it: the arm of the shared death body in
+/// `damage.rs` that forms the ABOUT sentinel.
+fn waterfall_revival_is_armed(monster: &HotMonster) -> bool {
+    monster.kind == MonsterKind::WaterfallGiant
+        && monster.hp > 0
+        && monster.powers.value(PowerId::SteamPressure) > 0
+        && !monster.is_about_to_blow()
+}
+
+/// Whether a Demise tick that revives a Waterfall Giant leaves no later
+/// listener of the same owner in the already-started `AfterSideTurnEnd` walk.
+///
+/// Current v0.111.0 ARM64 DLL SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`:
+///
+/// - The walk does not skip a power its owner lost. `Hook/<AfterSideTurnEnd>
+///   d__81::MoveNext` RVA `0x3d11c0` enumerates
+///   `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`,
+///   which copies every creature's `Powers` into a list at iteration start
+///   (IL_008f-IL_0097) and re-tests each element only with
+///   `CombatState::Contains` (IL_02a3-IL_02ab). `Contains` RVA `0x137564`
+///   IL_00ad-IL_00d1 tests a power's `Owner.CombatState != null`, not its
+///   membership in `Owner.Powers`. An ordinary dead owner is removed from
+///   combat, so its later listeners are skipped. A revived Waterfall is not:
+///   `SteamEruptionPower::ShouldCreatureBeRemovedFromCombatAfterDeath` RVA
+///   `0xa85fe` keeps its owner, and `<AfterDeath>d__4::MoveNext` RVA
+///   `0x34618c` IL_003d-IL_004d revives it through `TriggerAboutToBlowState`.
+///   So a power the death just removed would still run its listener, on the
+///   sentinel. That is the shape Rust does not represent, and it refuses.
+/// - An empty suffix is exact. `dump_method.py AfterSideTurnEnd` lists 61
+///   non-mock power types that override the hook. `SteamEruptionPower`,
+///   `StrengthPower`, `PoisonPower` and `ArtifactPower` are not among them,
+///   and neither is `WaterfallGiant` nor `MonsterModel` (only
+///   `AbstractModel`'s no-op). `DoomPower/<AfterSideTurnEnd>d__9::MoveNext`
+///   RVA `0x3390f0` IL_001d-IL_0026 leaves when `side == 2` (Enemy), so a
+///   Doom listener is inert in this walk. Every other surviving power must be
+///   an acquisition-ordered listener that already ran: a Misery-ledger
+///   family whose token precedes Demise (a live later token is a suffix), or
+///   Intangible/Ritual, which callers report through `later_listeners` when
+///   the anchor precedes them.
+/// - The revived owner then keeps ABOUT. `TriggerAboutToBlowState`'s body
+///   RVA `0x3762a8` IL_00a9-IL_00b1 calls `SetMoveImmediate(AboutToBlowState)`,
+///   and `GenerateMoveStateMachine` RVA `0xc4eb0` IL_0162-IL_0169 builds that
+///   state with `MustPerformOnceBeforeTransitioning`, so the side-end
+///   `RollMove` (`FindNextMoveState` RVA `0x78e94` IL_001f-IL_002c) leaves it
+///   in place. This is the same timing as the Doom kill earlier in this
+///   side end.
+fn waterfall_demise_revival_suffix_is_empty(monster: &HotMonster, processed: u16) -> bool {
+    next_monster_side_end_ledger_token(monster, processed).is_none()
+        && monster.powers.as_slice().iter().all(|slot| {
+            matches!(
+                slot.key,
+                PowerId::SteamPressure
+                    | PowerId::Demise
+                    | PowerId::Strength
+                    | PowerId::Poison
+                    | PowerId::Artifact
+                    | PowerId::Doom
+                    | PowerId::Intangible
+                    | PowerId::Ritual
+                    | PowerId::SicEm
+                    | PowerId::Strangle
+                    | PowerId::Weak
+                    | PowerId::Vuln
+                    | PowerId::Shrink
+                    | PowerId::Conqueror
+                    | PowerId::Debilitate
+                    | PowerId::Knockdown
+            )
+        })
+}
+
+/// Run one owner's acquisition-ordered Demise block at its anchor.
+///
+/// `later_listeners` reports a same-owner listener outside the Misery ledger
+/// that runs after this anchor or whose position is unrecorded (Intangible
+/// before the first anchor, Ritual before the second, a temporary-Strength
+/// wrapper at any). It matters only when the tick revives a Waterfall Giant;
+/// see [`waterfall_demise_revival_suffix_is_empty`].
 fn run_monster_demise_ledger_at_anchor(
     state: &mut HotState,
     catalog: &Catalog,
     index: usize,
-    frozen_slot: i32,
-    frozen_uid: u32,
+    frozen: (i32, u32),
     conqueror_reachable: bool,
+    later_listeners: bool,
     events: &mut Vec<Event>,
 ) -> Result<bool, EngineRefusal> {
     let mut processed = 0_u16;
@@ -4879,7 +4961,10 @@ fn run_monster_demise_ledger_at_anchor(
         conqueror_reachable,
         events,
     )?;
-    let amount = state.monsters[index].powers.value(PowerId::Demise);
+    let owner = &state.monsters[index];
+    let amount = owner.powers.value(PowerId::Demise);
+    let revival_is_unrepresented = waterfall_revival_is_armed(owner)
+        && (later_listeners || !waterfall_demise_revival_suffix_is_empty(owner, processed));
     // `DemisePower/<AfterSideTurnEnd>d__4::MoveNext` RVA `0x338c88` (v0.111.0
     // DLL 9cb4f1ad…) awaits one `CreatureCmd.Damage(Owner, Amount, ValueProp
     // 6)` (IL_0042-IL_0055); a lethal one runs `Hook.AfterDeath`, so it keeps
@@ -4893,10 +4978,20 @@ fn run_monster_demise_ledger_at_anchor(
         false,
         events,
     )?;
-    if state.history.over
-        || state.monsters.get(index).is_none_or(|monster| {
-            monster.hp <= 0 || (monster.slot, monster.uid) != (frozen_slot, frozen_uid)
+    if revival_is_unrepresented
+        && state.monsters.get(index).is_some_and(|monster| {
+            (monster.slot, monster.uid) == frozen && monster.is_about_to_blow()
         })
+    {
+        return Err(EngineRefusal::MalformedArgs(
+            "Demise Waterfall revival listener suffix",
+        ));
+    }
+    if state.history.over
+        || state
+            .monsters
+            .get(index)
+            .is_none_or(|monster| monster.hp <= 0 || (monster.slot, monster.uid) != frozen)
     {
         return Ok(false);
     }
@@ -6364,29 +6459,6 @@ fn monster_intent(state: &HotState, catalog: &Catalog, monster: &HotMonster) -> 
     }
 }
 
-/// Whether the current Waterfall action would install or increase
-/// SteamEruptionPower before this enemy side's owner-power suffix.
-///
-/// Demise's persistent can kill and revive the owner before a later frozen power
-/// listener. Canonical state does not retain that general listener suffix,
-/// so callers close the six pressure-building intents before ACT rather than
-/// guessing. ABOUT and EXPLODE do not install the revival listener.
-pub(crate) fn waterfall_pressure_writer_intent(monster: &HotMonster, catalog: &Catalog) -> bool {
-    if monster.kind != MonsterKind::WaterfallGiant || monster.is_about_to_blow() {
-        return false;
-    }
-    current_table_move(monster, catalog).is_ok_and(|(entry, _, _)| {
-        matches!(
-            entry.kind,
-            MoveKind::WaterfallPressurize
-                | MoveKind::WaterfallStomp
-                | MoveKind::WaterfallRam
-                | MoveKind::WaterfallSiphon
-                | MoveKind::WaterfallPressureGun
-                | MoveKind::WaterfallPressureUp
-        )
-    })
-}
 /// Whether one generated move advertises a native attack intent.
 ///
 /// `MonsterModel.IntendsToAttack` (v0.111.0 RVA `0x82347`) accepts intent
@@ -9429,10 +9501,12 @@ pub(crate) fn finish_auto_pre_relic_tail(
         super::play::autoplay_imbued_turn_one(state, catalog, events)?;
     }
 
-    // Whispering Earring is the AutoPre/Late relic listener. Its live Hand
-    // query is rebuilt after every direct play and is capped at 13 bodies.
+    // Whispering Earring is the AutoPre/Late relic listener, on turn one only
+    // (#3414, see `whispering_earring_loop_is_ahead`). Its live Hand query is
+    // rebuilt after every direct play and is capped at 13 bodies. The loop
+    // runs under its pushed VakuuCardSelector.
     if !state.history.over
-        && state.turn > 1
+        && state.turn <= 1
         && catalog.hooks().owns(RelicId::RelicWhisperingEarring)
     {
         if state.multiplayer_ally_key != 0 {
@@ -9441,6 +9515,7 @@ pub(crate) fn finish_auto_pre_relic_tail(
             ));
         }
         let start_turn = state.turn;
+        let _vakuu = super::selection::VakuuSelectorScope::enter();
         for _ in 0..13 {
             if state.history.over || state.hp <= 0 || state.turn != start_turn {
                 break;
@@ -9462,6 +9537,24 @@ pub(crate) fn finish_auto_pre_relic_tail(
     }
     events.push(Event::TurnBegan { turn: state.turn });
     Ok(())
+}
+
+/// Whether Whispering Earring's AutoPlay loop can still run from `state`
+/// (#3414).
+///
+/// `WhisperingEarring/<AfterAutoPrePlayPhaseEnteredLate>d__8::MoveNext`
+/// RVA `0x333fcc` (v0.111.0, SHA-256 `9cb4f1ad…`) leaves at IL_005a unless
+/// the owner's `PlayerCombatState.TurnNumber <= 1` (IL_0047-IL_0058
+/// `ldc.i4.1; ble.s`). The loop therefore runs in turn one's AutoPre and
+/// never again. `state.turn` is that `TurnNumber`: it advances at every
+/// player turn start, Pael's Eye's extra turn included
+/// (`finish_player_turn_after_ordinary_side_end`), so no later AutoPre is
+/// turn one.
+/// The loop is ahead only before turn one has left its AutoPre phase. It
+/// cannot park (a pending child refuses), so a turn-one state at or past
+/// ordinary actions has already run it.
+pub(crate) fn whispering_earring_loop_is_ahead(state: &HotState) -> bool {
+    state.turn < 1 || (state.turn == 1 && state.player_phase <= PHASE_AUTO_PRE)
 }
 
 /// Whether History Course's dupe of `source` takes the receipt-owned path
@@ -21211,6 +21304,189 @@ mod tests {
         }
     }
 
+    /// A pressured Waterfall Giant (#3428) carrying Demise, about to act
+    /// PRESSURIZE (loop 0), which only adds Steam Pressure.
+    fn waterfall_demise_owner(hp: i32, pressure: i32) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::WaterfallGiant).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 100;
+        state.max_hp = 100;
+        let mut owner = HotMonster::new(MonsterKind::WaterfallGiant, hp);
+        owner.max_hp = 250;
+        owner.pressure_gun_damage = 23;
+        owner.loop_pos = 0;
+        owner
+            .powers
+            .set(PowerId::SteamPressure, SlotWire::Int, pressure);
+        owner.powers.set(PowerId::Demise, SlotWire::Int, 9);
+        state.monsters_mut().push(owner);
+        (state, catalog)
+    }
+
+    fn push_demise_peer(state: &mut HotState, power: PowerId, token: MiseryToken, amount: i32) {
+        let owner = &mut state.monsters_mut()[0];
+        owner.powers.set(power, SlotWire::Int, amount);
+        owner.misery_debuff_order.push(token);
+    }
+
+    fn assert_waterfall_sentinel(state: &HotState) {
+        let sentinel = &state.monsters[0];
+        assert!(sentinel.is_about_to_blow());
+        assert_eq!(sentinel.hp, 999_999_999);
+        assert_eq!(sentinel.loop_pos, 6, "the side-end RollMove keeps ABOUT");
+        assert_eq!(sentinel.powers.value(PowerId::Demise), 0);
+        assert!(sentinel.powers.value(PowerId::SteamPressure) > 0);
+        assert!(sentinel.misery_debuff_order.is_empty());
+        assert!(!state.history.over, "SteamEruption keeps the combat going");
+    }
+
+    #[test]
+    fn lethal_demise_revives_a_waterfall_when_no_later_listener_exists() {
+        let (mut state, catalog) = waterfall_demise_owner(9, 20);
+        state.monsters_mut()[0]
+            .misery_debuff_order
+            .push(MiseryToken::Demise);
+        run_enemy_phase(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_waterfall_sentinel(&state);
+
+        // The legacy singleton (no ledger token) infers the same order.
+        let (mut legacy, catalog) = waterfall_demise_owner(9, 20);
+        run_enemy_phase(&mut legacy, &catalog, &mut Vec::new()).unwrap();
+        assert_waterfall_sentinel(&legacy);
+    }
+
+    #[test]
+    fn lethal_demise_revival_admits_a_ledger_prefix_and_inert_powers() {
+        let (mut state, catalog) = waterfall_demise_owner(9, 20);
+        push_demise_peer(&mut state, PowerId::Weak, MiseryToken::Weak, 2);
+        state.monsters_mut()[0]
+            .misery_debuff_order
+            .push(MiseryToken::Demise);
+        let owner = &mut state.monsters_mut()[0];
+        // No AfterSideTurnEnd override (Strength, Poison, Artifact), or one
+        // that leaves on the Enemy side (Doom).
+        owner.powers.set(PowerId::Strength, SlotWire::Int, 2);
+        owner.powers.set(PowerId::Artifact, SlotWire::Int, 1);
+        owner.powers.set(PowerId::Doom, SlotWire::Int, 3);
+        owner.misery_debuff_order.push(MiseryToken::Doom);
+        run_enemy_phase(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_waterfall_sentinel(&state);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Weak), 0);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Strength), 0);
+    }
+
+    #[test]
+    fn lethal_demise_revival_with_a_later_ledger_listener_refuses() {
+        let (mut state, catalog) = waterfall_demise_owner(9, 20);
+        state.monsters_mut()[0]
+            .misery_debuff_order
+            .push(MiseryToken::Demise);
+        push_demise_peer(&mut state, PowerId::Weak, MiseryToken::Weak, 2);
+        assert_eq!(
+            run_enemy_phase(&mut state, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "Demise Waterfall revival listener suffix"
+            ))
+        );
+    }
+
+    #[test]
+    fn nonlethal_demise_on_a_waterfall_runs_its_later_listeners() {
+        let (mut state, catalog) = waterfall_demise_owner(100, 20);
+        state.monsters_mut()[0]
+            .misery_debuff_order
+            .push(MiseryToken::Demise);
+        push_demise_peer(&mut state, PowerId::Weak, MiseryToken::Weak, 2);
+        run_enemy_phase(&mut state, &catalog, &mut Vec::new()).unwrap();
+        let owner = &state.monsters[0];
+        assert_eq!(owner.hp, 91);
+        assert!(!owner.is_about_to_blow());
+        assert_eq!(owner.powers.value(PowerId::Weak), 1);
+        assert_eq!(owner.powers.value(PowerId::Demise), 9);
+    }
+
+    #[test]
+    fn lethal_demise_on_an_unpressured_waterfall_is_an_ordinary_death() {
+        // Zero pressure, and an ABOUT loop that installs none: the owner is
+        // removed, so its later Weak listener is skipped as for any corpse.
+        let (mut state, catalog) = waterfall_demise_owner(9, 0);
+        state.monsters_mut()[0].loop_pos = 6;
+        state.monsters_mut()[0]
+            .misery_debuff_order
+            .push(MiseryToken::Demise);
+        push_demise_peer(&mut state, PowerId::Weak, MiseryToken::Weak, 2);
+        let mut events = Vec::new();
+        run_enemy_phase(&mut state, &catalog, &mut events).unwrap();
+        assert!(state.monsters[0].hp <= 0);
+        assert!(!state.monsters[0].is_about_to_blow());
+    }
+
+    #[test]
+    fn lethal_demise_revival_refuses_an_unordered_or_later_non_ledger_listener() {
+        // A temporary-Strength wrapper's position relative to Demise is not
+        // recorded; Rust unwinds it first.
+        let (mut wrapped, catalog) = waterfall_demise_owner(9, 20);
+        {
+            let owner = &mut wrapped.monsters_mut()[0];
+            owner.powers.set(PowerId::Strength, SlotWire::Int, -2);
+            owner.powers.set(PowerId::TempStrength, SlotWire::Int, -2);
+            owner.misery_debuff_order.push(MiseryToken::Demise);
+        }
+        assert_eq!(
+            run_enemy_phase(&mut wrapped, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "Demise Waterfall revival listener suffix"
+            ))
+        );
+
+        // Demise acquired before Ritual: the second anchor. (The first
+        // anchor, before Intangible, is unreachable here: a Waterfall
+        // carrying Intangible already refuses as `monster Intangible
+        // owner/state`.)
+        let (mut ritual, catalog) = waterfall_demise_owner(9, 20);
+        {
+            let owner = &mut ritual.monsters_mut()[0];
+            owner.misery_debuff_order.push(MiseryToken::Demise);
+            owner.powers.set(PowerId::Ritual, SlotWire::Int, 1);
+            owner.set_demise_before_ritual(true);
+        }
+        assert_eq!(
+            run_enemy_phase(&mut ritual, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "Demise Waterfall revival listener suffix"
+            ))
+        );
+
+        // A power outside the proven set refuses rather than guessing.
+        let (mut unknown, catalog) = waterfall_demise_owner(9, 20);
+        {
+            let owner = &mut unknown.monsters_mut()[0];
+            owner.misery_debuff_order.push(MiseryToken::Demise);
+            owner.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+        }
+        assert_eq!(
+            run_enemy_phase(&mut unknown, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "Demise Waterfall revival listener suffix"
+            ))
+        );
+    }
+
+    #[test]
+    fn a_waterfall_demise_owner_passes_the_side_end_preflight() {
+        for pressure in [0, 20] {
+            let (mut state, catalog) = waterfall_demise_owner(100, pressure);
+            state.monsters_mut()[0]
+                .misery_debuff_order
+                .push(MiseryToken::Demise);
+            assert!(enemy_potion_debuff_side_end_is_exact(&state), "{pressure}");
+            end_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+            assert_eq!(state.monsters[0].hp, 91, "{pressure}");
+        }
+    }
+
     #[test]
     fn demise_and_soul_fysh_intangible_follow_acquisition_order() {
         let mut builder = CatalogBuilder::new();
@@ -24479,8 +24755,8 @@ mod tests {
             &mut state,
             &catalog,
             0,
-            slot,
-            uid,
+            (slot, uid),
+            false,
             false,
             &mut Vec::new(),
         )

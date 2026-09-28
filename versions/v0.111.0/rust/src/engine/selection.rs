@@ -19,6 +19,124 @@ pub(crate) enum SelectDisposition {
     Suspend,
 }
 
+thread_local! {
+    /// Whether native's `CardSelectCmd` selector stack holds a
+    /// `VakuuCardSelector` (#3414). See [`VakuuSelectorScope`].
+    static VAKUU_SELECTOR_ACTIVE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Whispering Earring's pushed `VakuuCardSelector` (#3414).
+///
+/// Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`):
+///
+/// - `WhisperingEarring/<AfterAutoPrePlayPhaseEnteredLate>d__8::MoveNext`
+///   RVA `0x333fcc` calls `CardSelectCmd::PushSelector(new
+///   VakuuCardSelector(), false)` (IL_0065-IL_006c) before its AutoPlay loop
+///   and disposes the returned `StackedSelectorScope` in the loop's
+///   `finally` (IL_0268-IL_0276), so every selection inside the loop,
+///   `SpendResources` included, sees it.
+/// - `CardSelectCmd::get_Selector` RVA `0x131889` peeks that stack. With a
+///   selector, `CardSelectCmd/<FromHand>d__28::MoveNext` RVA `0x3e7568` and
+///   `CardSelectCmd/<FromCombatPile>d__20::MoveNext` RVA `0x3e5e84` never
+///   reserve a `PlayerChoiceSynchronizer` choice id (IL_007c / IL_0077
+///   `brtrue`). The count-at-or-under-`MinSelect` auto-take still runs first
+///   (FromHand IL_0166-IL_018d, FromCombatPile IL_015a-IL_017c). Otherwise
+///   the selector receives the filtered options in live pile order. The only
+///   reorder is FromCombatPile's Draw-pile view (IL_0191-IL_01dd).
+/// - `VakuuCardSelector::GetSelectedCards` RVA `0x9d733` is
+///   `options.Take(maxSelect).ToList()` (IL_0001-IL_0008), so the answer is
+///   the first `MaxSelect` options.
+///
+/// Only the selector programs whose `CardSelectCmd` path was read above
+/// resolve through the scope ([`vakuu_program_is_exact`], Glimmer). Every
+/// other selection still suspends, which the Earring loop refuses by name.
+pub(crate) struct VakuuSelectorScope {
+    previous: bool,
+}
+
+impl VakuuSelectorScope {
+    pub(crate) fn enter() -> Self {
+        Self {
+            previous: VAKUU_SELECTOR_ACTIVE.with(|active| active.replace(true)),
+        }
+    }
+}
+
+impl Drop for VakuuSelectorScope {
+    fn drop(&mut self) {
+        VAKUU_SELECTOR_ACTIVE.with(|active| active.set(self.previous));
+    }
+}
+
+pub(crate) fn vakuu_selector_active() -> bool {
+    VAKUU_SELECTOR_ACTIVE.with(std::cell::Cell::get)
+}
+
+/// Whether a generic select program resolves exactly under
+/// [`VakuuSelectorScope`]: today only Cosmic Indifference (#3414).
+///
+/// `CosmicIndifference/<OnPlay>d__5::MoveNext` RVA `0x3950c0` builds
+/// `CardSelectorPrefs(SelectionScreenPrompt, 1)` (IL_00aa-IL_00b0; the
+/// two-argument constructor RVA `0x1397d4` passes the count as both
+/// `MinSelect` and `MaxSelect`) and awaits the four-argument
+/// `CardSelectCmd::FromCombatPile` over the Discard pile (IL_00c8-IL_00db,
+/// `ldc.i4.3`). `<FromCombatPile>d__19::MoveNext` RVA `0x3e5d8c` forwards to
+/// the filtered overload with the always-true `<>c::<FromCombatPile>b__19_0`
+/// (IL_002e-IL_004d), so the Vakuu answer is the Discard pile's first card.
+fn vakuu_program_is_exact(owner: &CardSpec, selector: Selector) -> bool {
+    owner.identity.id == crate::ids::CardId::CosmicIndifference
+        && matches!(owner.identity.upgrade, 0 | 1)
+        && crate::content_tables::card_row(owner.identity.id, owner.identity.upgrade)
+            == Some(owner.row)
+        && crate::engine::play::body_enchantment_is_exact(owner)
+        && selector.pile == PileId::Discard
+        && selector.min == 1
+        && selector.max == 1
+        && selector.filter.is_none()
+        && selector.operation
+            == Operation::Move {
+                destination: PileId::Draw,
+                top: true,
+            }
+}
+
+/// Whether Whispering Earring's AutoPlay of `spec` can meet a selection
+/// only at the program [`VakuuSelectorScope`] resolves (#3414).
+///
+/// Glimmer (`FromHand`, `CardSelectorPrefs(prompt, PutBack)` with a null
+/// filter at `Glimmer/<OnPlay>d__4::MoveNext` RVA `0x3a173c`
+/// IL_00a7-IL_00d8) and Cosmic Indifference ([`vakuu_program_is_exact`]).
+/// `draw_hooks_quiet` says no Draw hook can suspend (Stratagem, or
+/// Hellraiser with a selecting Strike). Without it the answer is false:
+/// those hooks' selections under the selector were not read here.
+pub(crate) fn whispering_earring_child_selection_is_vakuu_resolved(
+    spec: &CardSpec,
+    catalog: &Catalog,
+    draw_hooks_quiet: bool,
+) -> bool {
+    if !draw_hooks_quiet
+        || !crate::engine::play::body_enchantment_is_exact(spec)
+        || crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
+            != Some(spec.row)
+    {
+        return false;
+    }
+    match spec.identity.id {
+        crate::ids::CardId::Glimmer => {
+            crate::engine::admission::body_owned_select_program_is_supported(spec.row)
+        }
+        crate::ids::CardId::CosmicIndifference => match catalog.steps(spec) {
+            [block, select] if block.kind == StepKind::Block && select.kind == StepKind::Select => {
+                selector_from_args(catalog, spec, catalog.args(select.args))
+                    .is_ok_and(|selector| vakuu_program_is_exact(spec, selector))
+            }
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Operation {
     /// Plural `CardCmd::Discard` of the answer, in pick order (Hidden
@@ -986,6 +1104,17 @@ pub(crate) fn execute_glimmer(
     if candidates.len() <= selector.min {
         apply(state, catalog, selector, &candidates, events)?;
         Ok(SelectDisposition::Complete)
+    } else if vakuu_selector_active() {
+        // `VakuuCardSelector` takes the first `PutBack` Hand cards in live
+        // order ([`VakuuSelectorScope`]).
+        apply(
+            state,
+            catalog,
+            selector,
+            &candidates[..selector.max],
+            events,
+        )?;
+        Ok(SelectDisposition::Complete)
     } else {
         Ok(SelectDisposition::Suspend)
     }
@@ -1881,6 +2010,17 @@ pub(crate) fn execute(ctx: &mut StepCtx<'_>) -> Result<SelectDisposition, Engine
     let candidates = candidates(ctx.state, ctx.catalog, selector)?;
     if candidates.len() <= selector.min {
         apply(ctx.state, ctx.catalog, selector, &candidates, ctx.events)?;
+        Ok(SelectDisposition::Complete)
+    } else if vakuu_selector_active() && vakuu_program_is_exact(ctx.spec, selector) {
+        // `VakuuCardSelector` takes the first `MaxSelect` options in live
+        // pile order ([`VakuuSelectorScope`]).
+        apply(
+            ctx.state,
+            ctx.catalog,
+            selector,
+            &candidates[..selector.max],
+            ctx.events,
+        )?;
         Ok(SelectDisposition::Complete)
     } else {
         // Python normalizes a clone to enumerate immutable physical picks,
@@ -6909,6 +7049,111 @@ mod tests {
             SelectDisposition::Complete
         );
         assert_eq!(two, terminal, "terminal selection is an exact no-op");
+    }
+
+    /// Under Whispering Earring's `VakuuCardSelector` (#3414) Glimmer's
+    /// put-back takes Hand's first card (`VakuuCardSelector::GetSelectedCards`
+    /// RVA `0x9d733`, `options.Take(maxSelect)`); leaving the scope restores
+    /// the player's choice.
+    #[test]
+    fn vakuu_scope_puts_back_the_first_hand_card_for_glimmer() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern(identity(CardId::StrikeIronclad)).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.piles.get_mut(PileId::Hand).make_mut().extend([
+            card(&catalog, CardId::StrikeIronclad, 2),
+            card(&catalog, CardId::StrikeIronclad, 3),
+        ]);
+        let before = state.clone();
+        {
+            let _vakuu = VakuuSelectorScope::enter();
+            assert_eq!(
+                execute_glimmer(&mut state, &catalog, &mut Vec::new()).unwrap(),
+                SelectDisposition::Complete
+            );
+        }
+        let uids = |pile| -> Vec<u32> {
+            state
+                .piles
+                .get(pile)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .collect()
+        };
+        assert_eq!(uids(PileId::Hand), [3]);
+        assert_eq!(uids(PileId::Draw), [2]);
+
+        let mut outside = before.clone();
+        assert_eq!(
+            execute_glimmer(&mut outside, &catalog, &mut Vec::new()).unwrap(),
+            SelectDisposition::Suspend
+        );
+        assert_eq!(outside, before);
+    }
+
+    fn cosmic_indifference_style_fixture(id: CardId) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        for id in [id, CardId::StrikeIronclad, CardId::DefendIronclad] {
+            builder.intern(identity(id)).unwrap();
+        }
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 70;
+        state.energy = 3;
+        state.next_card_uid = 4;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 40));
+        state
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(card(&catalog, id, 1));
+        state.piles.get_mut(PileId::Discard).make_mut().extend([
+            card(&catalog, CardId::StrikeIronclad, 2),
+            card(&catalog, CardId::DefendIronclad, 3),
+        ]);
+        (state, catalog)
+    }
+
+    /// Cosmic Indifference under the scope takes the Discard pile's first
+    /// card to Draw's top (`vakuu_program_is_exact`); Headbutt, the same
+    /// Discard-to-Draw-top shape but a `CardSelectCmd` path not read for
+    /// #3414, still suspends for the player.
+    #[test]
+    fn vakuu_scope_resolves_only_cosmic_indifference_among_discard_pickers() {
+        let (state, catalog) = cosmic_indifference_style_fixture(CardId::CosmicIndifference);
+        let play = Action::Play {
+            uid: 1,
+            target: None,
+            selection: SelectionRef::NONE,
+        };
+        let resolved = {
+            let _vakuu = VakuuSelectorScope::enter();
+            apply_action(&state, &catalog, &play).unwrap().state
+        };
+        assert!(resolved.pending.is_none());
+        assert_eq!(resolved.piles.get(PileId::Draw).as_slice()[0].uid, 2);
+        let outside = apply_action(&state, &catalog, &play).unwrap().state;
+        assert!(
+            outside.pending.is_some(),
+            "the player chooses without the scope"
+        );
+
+        let (state, catalog) = cosmic_indifference_style_fixture(CardId::Headbutt);
+        let headbutt = Action::Play {
+            uid: 1,
+            target: Some(0),
+            selection: SelectionRef::NONE,
+        };
+        let _vakuu = VakuuSelectorScope::enter();
+        let parked = apply_action(&state, &catalog, &headbutt).unwrap().state;
+        assert!(
+            parked.pending.is_some(),
+            "an unread selector is never auto-picked"
+        );
     }
 
     #[test]

@@ -777,7 +777,8 @@ fn card_step_arguments_match_their_native_var_roles() {
 /// `SappingWeak`/`SappingVulnerable` (IL_0065-IL_011e), `ChokingDamage`
 /// (IL_0182-IL_01af), gains `EnergizedEnergy` (IL_0212-IL_0232) and draws
 /// `WisdomCards` (IL_0295-IL_02bb); `<ExecutePower>d__54` RVA 0x3aa660 applies
-/// `ExpertiseStrength` then `ExpertiseDexterity` (IL_00ce-IL_0192).
+/// `ExpertiseStrength` then `ExpertiseDexterity` (IL_00ce-IL_0192) and
+/// `CuriousReduction` (IL_01f5-IL_0228).
 #[test]
 fn mad_science_variant_rows_read_their_native_vars_by_role() {
     use sts_sim::content_tables::MAD_SCIENCE_VARIANT_ROWS;
@@ -817,6 +818,9 @@ fn mad_science_variant_rows_read_their_native_vars_by_role() {
                 // #3322: Chaos reads no var (`<ExecuteRider>d__57`
                 // IL_031e-IL_0395 passes the literal count 1).
                 K::MadScienceChaosExact => vec![],
+                // #3427: `<ExecutePower>d__54` IL_01f5-IL_0228 applies
+                // CuriousPower of `CuriousReduction`.
+                K::MadScienceCurious => vec![Some("CuriousReduction")],
                 kind => panic!("{kind:?} has no Mad Science role"),
             };
             assert_eq!(roles.len(), step.args.len(), "{:?}", step.kind);
@@ -838,6 +842,7 @@ fn mad_science_variant_rows_read_their_native_vars_by_role() {
         }
     }
     // Per level: Sapping 4, Violence 2, Choking 3, Energized 2, Wisdom 2,
-    // Chaos 1 (its Block; the Chaos step has no argument), Expertise 2.
-    assert_eq!(checked, 32, "every ported argument is checked");
+    // Chaos 1 (its Block; the Chaos step has no argument), Expertise 2,
+    // Curious 1.
+    assert_eq!(checked, 34, "every ported argument is checked");
 }

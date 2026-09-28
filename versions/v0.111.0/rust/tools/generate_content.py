@@ -236,6 +236,13 @@ def apply_rust_overlays(registry):
     # the power's state field takes the `*_power` spelling (`hex_power`).
     registry.MODELED_POWER_FIELDS = frozenset(
         registry.MODELED_POWER_FIELDS | {"self_forming_clay_power"})
+    # #3427: Mad Science's Curious rider applies CuriousPower
+    # (`<ExecutePower>d__54::MoveNext` RVA 0x3aa660 IL_01f5-IL_0228), which
+    # no frozen row carried. Its player field is the stripped-lowercase
+    # `curious`, the spelling `rust_replay.NATIVE_PLAYER_POWER_FIELDS` derives
+    # from `CURIOUS_POWER`.
+    registry.MODELED_POWER_FIELDS = frozenset(
+        registry.MODELED_POWER_FIELDS | {"curious"})
     return registry
 
 
@@ -251,10 +258,11 @@ RUST_OVERLAY_VOCABULARY: dict[str, frozenset[str]] = {
     "FilterMode": frozenset({"without_ethereal_keyword"}),
     "StepWord": frozenset({"without_ethereal_keyword",
                            "apply_permanent_ethereal"}),
-    # #3159 Self-Forming Clay.
-    "PowerId": frozenset({"self_forming_clay_power"}),
-    # #3322 Mad Science's Chaos rider (`RUST_STEP_KIND_FAMILIES`).
-    "StepKind": frozenset({"mad_science_chaos_exact"}),
+    # #3159 Self-Forming Clay; #3427 Mad Science's CuriousPower.
+    "PowerId": frozenset({"self_forming_clay_power", "curious"}),
+    # #3322 Mad Science's Chaos rider and #3427 its Curious rider
+    # (`RUST_STEP_KIND_FAMILIES`).
+    "StepKind": frozenset({"mad_science_chaos_exact", "mad_science_curious"}),
 }
 
 #: Rust-owned step kinds that no frozen ``CARDS`` row carries, with the family
@@ -266,8 +274,13 @@ RUST_OVERLAY_VOCABULARY: dict[str, frozenset[str]] = {
 #:   only into ``MAD_SCIENCE_VARIANT_ROWS``. Mad Science is an Event card with
 #:   no character, so its body lives with the other owner-pool generators in
 #:   ``neutral`` (Discovery, Jackpot).
+#: * ``mad_science_curious`` (#3427): Mad Science's Curious rider, one
+#:   CuriousPower application, emitted only into ``MAD_SCIENCE_VARIANT_ROWS``.
+#:   It is an exact player-power apply, so it lives beside the other
+#:   ``apply_exact_player_power`` bodies in ``templates``.
 RUST_STEP_KIND_FAMILIES: dict[str, str] = {
     "mad_science_chaos_exact": "neutral",
+    "mad_science_curious": "templates",
 }
 
 
@@ -1583,11 +1596,12 @@ MAD_SCIENCE_RIDER_BODY = {
     "Chaos": (("mad_science_chaos_exact", None),),
     "Expertise": (("strength", "ExpertiseStrength"),
                   ("dexterity", "ExpertiseDexterity")),
-    "Curious": None,
+    # #3427: Curious is one CuriousPower application of CuriousReduction
+    # (`<ExecutePower>d__54` IL_01f5-IL_0228), body `mad_science_curious`.
+    "Curious": (("mad_science_curious", "CuriousReduction"),),
     "Improvement": None,
 }
 MAD_SCIENCE_UNMODELED = {
-    "Curious": "CuriousPower (the Power-card cost reduction) is not modeled",
     "Improvement": ("ImprovementPower (the after-combat upgrade) is not "
                     "modeled"),
 }

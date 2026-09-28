@@ -132,10 +132,14 @@ def replay_fixture(tmp_path, monkeypatch):
                        for attr, stream in mcr_native._REPRESENTED_RNG_STREAMS.items()}}
     calls = []
 
-    def rust_opening(binary, run, fight, build, *, source='--save'):
+    def rust_opening(binary, run, fight, build, *, source='--save', native_checkpoints=False):
         calls.append({'binary': binary, 'run': copy.deepcopy(run), 'source': source,
-                      'encounter': fight.encounter_id, 'build': build})
-        return copy.deepcopy(opening)
+                      'encounter': fight.encounter_id, 'build': build,
+                      'native_checkpoints': native_checkpoints})
+        document = copy.deepcopy(opening)
+        if native_checkpoints:
+            return document, copy.deepcopy(replay_fixture.recorded)
+        return document
     monkeypatch.setattr(provenance, '_history_depth', lambda _: 32)
     monkeypatch.setattr(provenance, '_encounter_matches', lambda *args: True)
     monkeypatch.setattr(adapter, 'provenance_entry_for_fight', lambda *a, **kw: None)
@@ -143,6 +147,7 @@ def replay_fixture(tmp_path, monkeypatch):
     monkeypatch.setattr(review, '_rust_opening', rust_opening)
     monkeypatch.setattr(review, 'default_binary', lambda: 'sts-sim')
     replay_fixture.calls, replay_fixture.opening, replay_fixture.unlocks = calls, opening, unlocks
+    replay_fixture.recorded = None
     return path, replay, projection
 
 
@@ -205,6 +210,66 @@ def test_a_boundary_rejection_of_the_native_order_is_a_refusal(tmp_path, monkeyp
          'live reset listeners'}))
     with pytest.raises(ValueError, match='rejected the native AfterEnergyReset order'):
         review.build_replay_root(path, 0, replay, projection)
+
+
+def test_the_opening_checkpoint_is_compared_against_the_pre_autopre_state(tmp_path, monkeypatch):
+    """#3414, the production side of #3392: native writes the opening
+    checkpoint before turn one's AutoPre, where Whispering Earring's loop
+    spends energy. The recorded pre-AutoPre state is compared; the root is
+    what search loads."""
+    path, replay, projection = replay_fixture(tmp_path, monkeypatch)
+    before = copy.deepcopy(replay_fixture.opening)
+    replay_fixture.opening['player'].update(energy=1)
+    with pytest.raises(ValueError, match='differs from native player state'):
+        review.build_replay_root(path, 0, replay, projection)
+    replay_fixture.recorded = [{'kind': 'after_player_turn_start', 'state': before}]
+    root = review.build_replay_root(path, 0, replay, projection)[2]
+    assert root['player']['energy'] == 1
+    assert replay_fixture.calls[-1]['native_checkpoints'] is True
+
+
+def test_a_listener_the_autopre_loop_acquired_follows_the_native_order(tmp_path, monkeypatch):
+    """A reset listener acquired after the checkpoint joins `Creature.Powers`
+    after every checkpoint power, in the root's own acquisition order."""
+    path, replay, projection = replay_fixture(tmp_path, monkeypatch)
+    replay['checksums'][0]['full_state']['creatures'][0]['powers'] = [
+        {'id': 'SPINNER_POWER', 'amount': 1}]
+    replay_fixture.opening['player'].update(spinner=1)
+    before = copy.deepcopy(replay_fixture.opening)
+    replay_fixture.opening['player'].update(
+        genesis=2, after_energy_reset_order=['genesis', 'spinner'])
+    replay_fixture.recorded = [{'kind': 'after_player_turn_start', 'state': before}]
+    root = review.build_replay_root(path, 0, replay, projection)[2]
+    assert root['player']['after_energy_reset_order'] == ['spinner', 'genesis']
+
+
+@pytest.mark.parametrize('recorded', [
+    {'kind': 'after_player_turn_start'},
+    [{'kind': 'after_hand_draw', 'state': {}}],
+    [{'kind': 'after_player_turn_start', 'state': None}],
+])
+def test_a_malformed_opening_checkpoint_report_is_a_refusal(tmp_path, monkeypatch, recorded):
+    path, replay, projection = replay_fixture(tmp_path, monkeypatch)
+    replay_fixture.recorded = recorded
+    with pytest.raises(ValueError, match='opening'):
+        review.build_replay_root(path, 0, replay, projection)
+
+
+def test_rust_opening_unwraps_its_native_checkpoints(monkeypatch):
+    fight = SimpleNamespace(encounter_id='ENCOUNTER.X', node_type='monster')
+    seen = {}
+    root = {'schema': 'sts-sim-canonical-v2', 'player': {}}
+
+    def run(argv, **kw):
+        seen['argv'] = argv
+        return SimpleNamespace(returncode=0, stderr='', stdout=json.dumps({
+            'schema': 'sts-sim-opening-checkpoints-v1', 'state': root,
+            'native_checkpoints': [{'kind': 'after_player_turn_start', 'state': root}]}))
+    monkeypatch.setattr(review.subprocess, 'run', run)
+    document, recorded = review._rust_opening(
+        'sts-sim', {}, fight, 'v0.111.0', source='--capture-run', native_checkpoints=True)
+    assert document == root and recorded[0]['kind'] == 'after_player_turn_start'
+    assert seen['argv'][-2:] == ['--opening', '--native-checkpoints']
 
 
 def test_an_unrelated_load_refusal_leaves_the_replay_root_to_search(tmp_path, monkeypatch):

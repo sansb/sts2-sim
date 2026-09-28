@@ -62,7 +62,7 @@
    }
   }
  },
- "certified": 535,
+ "certified": 537,
  "corpus": {
   "cells": {
    "ENCOUNTER.AEONGLASS_BOSS": {
@@ -1460,7 +1460,7 @@
      },
      "IRONCLAD": {
       "captured": 5,
-      "certified_fixtures": 4,
+      "certified_fixtures": 5,
       "state": "certified"
      },
      "NECROBINDER": {
@@ -2050,7 +2050,7 @@
  },
  "relics_held": {
   "all": {
-   "covered": 209,
+   "covered": 210,
    "total": 297
   },
   "by_pool": {
@@ -2059,7 +2059,7 @@
     "total": 8
    },
    "event": {
-    "covered": 96,
+    "covered": 97,
     "total": 142
    },
    "ironclad": {

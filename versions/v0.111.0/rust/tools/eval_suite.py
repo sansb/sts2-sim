@@ -946,6 +946,8 @@ def _same_card(card: Dict[str, Any], recorded) -> bool:
     `_same_enchantment` itself, and only as a tiebreaker once id/upgrade
     alone already leaves more than one candidate.
     """
+    if card.get("vanished"):
+        return True
     return (card["id"] == recorded[0]
             and card.get("upgrade", 0) >= (recorded[1] or 0))
 
@@ -1019,7 +1021,24 @@ def _dealt_uids(root: Dict[str, Any], instances: list) -> List[int]:
     # dealt piles as Rust laid them out, and only then are created cards
     # dropped, so each queue keeps the deck cards' relative order.
     deck_size = len(instances)
-    if "RELIC.JEWELED_MASK" in (root["player"].get("relics_entering") or ()):
+    if "RELIC.WHISPERING_EARRING" in (root["player"].get("relics_entering") or ()):
+        # Whispering Earring's turn-one AutoPre loop (#3414,
+        # `engine::turn::whispering_earring_loop_is_ahead`) AutoPlays live
+        # Hand cards after the deal, so deck cards leave `hand ++ draw` for
+        # their result piles, and a played Power leaves every pile. The deck
+        # was numbered in the post-rewrite layout, so the deck cards in uid
+        # order ARE that layout (the Jeweled Mask reading below). A uid in no
+        # pile is a vanished Power: it holds its place as a placeholder that
+        # `_same_card` matches to whatever the cycle records there. Every
+        # other position still matches exactly, the cycle is the whole deck,
+        # and `_interleavings` still refuses a second reading, so the
+        # placeholder's identity is forced; the native checkpoints compare
+        # the loop's effects afterwards.
+        present = {c["uid"]: c for pile in root["piles"].values() for c in pile
+                   if c["uid"] < deck_size}
+        dealt = [present.get(uid, {"uid": uid, "id": None, "vanished": True})
+                 for uid in range(deck_size)]
+    elif "RELIC.JEWELED_MASK" in (root["player"].get("relics_entering") or ()):
         # Jeweled Mask's turn-1 BeforeHandDraw (`JeweledMask/<BeforeHandDraw>
         # d__2::MoveNext`, v0.111.0 RVA 0x3272f4) moves one deck Power from
         # mid-Draw to the Hand AFTER the deck was numbered, and the moved card
@@ -1484,6 +1503,26 @@ def scan_saves(captures: pathlib.Path) -> list:
     return out
 
 
+#: A save's act map keeps its boss nodes OUTSIDE `points` (#3426): the act
+#: boss under `saved_map.boss`, act 3's second boss under
+#: `saved_map.second_boss`. Each names its encounter in its own `rooms` slot.
+#: Verified over ~/sts2-captures on 2026-09-27: 212 saves sit at `boss` and
+#: 19 at `second_boss`, and each of the 103 that a later save resolves
+#: (`pre_finished_room.encounter_id`) agrees with this pairing.
+BOSS_MAP_ROOMS = (("boss", "boss_id"), ("second_boss", "second_boss_id"))
+
+
+def boss_room_slot(save) -> Optional[str]:
+    """The `rooms` slot naming the current node's boss, or None off a boss."""
+    m = save["acts"][save["current_act_index"]].get("saved_map")
+    cur = save["visited_map_coords"][-1]
+    for map_key, room_key in BOSS_MAP_ROOMS:
+        point = (m or {}).get(map_key)
+        if isinstance(point, dict) and point.get("coord") == cur:
+            return room_key
+    return None
+
+
 def node_type(save):
     """Map point type of the current node, from the saved act map."""
     m = save["acts"][save["current_act_index"]].get("saved_map")
@@ -1494,6 +1533,8 @@ def node_type(save):
         if pt["coord"] == cur:
             t = str(pt.get("point_type") or pt.get("type") or "")
             return t.lower()
+    if boss_room_slot(save):
+        return "boss"
     return None
 
 
@@ -1502,7 +1543,11 @@ def next_encounter(save, kind):
     if kind == "elite":
         return r["elite_encounter_ids"][r["elite_encounters_visited"]]
     if kind == "boss":
-        return r["boss_id"]
+        slot = boss_room_slot(save)
+        if slot is None:
+            raise EvalRefusal("boss node is neither saved_map.boss nor "
+                              "saved_map.second_boss")
+        return r[slot]
     return r["normal_encounter_ids"][r["normal_encounters_visited"]]
 
 
@@ -1631,7 +1676,7 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
     spath = state["first_save"].get(key)
     if spath is None:
         row["stage"] = "unpaired"
-        return row
+        return with_unusable_capture(row, replay)
     row["save_sha256"] = sha256_file(spath)
     save = json.loads(spath.read_text())
     try:
@@ -1643,11 +1688,11 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
             row["encounter_source"] = "explicit_capture_pair"
     except Exception as exc:  # noqa: BLE001
         row.update(stage="no_encounter", detail=f"{type(exc).__name__}: {exc}"[:160])
-        return row
+        return with_unusable_capture(row, replay)
     row["node_type"] = kind
     if not encounter:
         row["stage"] = "no_encounter"
-        return row
+        return with_unusable_capture(row, replay)
     row["encounter"] = encounter
 
     try:
@@ -1723,6 +1768,49 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
     row.update(power_check_fields(row, line["power_mismatch"]))
     row.update(certification_verdict(row, line, powers_verdict))
     return row
+
+
+#: Why a capture can never be certified, whatever the engine does (#3421).
+#: The census headline is certified / eligible, and eligible is every fight
+#: less these. A reason is set only on positive evidence from the capture
+#: itself. A real combat the harness fails to pair or name an encounter
+#: for stays eligible, so the failure shows in the headline.
+UNUSABLE_NO_COMBAT = "no_combat_in_capture"
+UNUSABLE_TRUNCATED = "capture_truncated"
+
+
+def capture_holds_no_combat(replay: Dict[str, Any]) -> bool:
+    """True when the capture recorded no combat at all: no event, no checksum.
+
+    A combat capture always carries both: the recorded actions, and the
+    native checksum every completed action writes. A capture with neither
+    is a watcher copy taken at a node that held no fight (#3421).
+    """
+    return not replay.get("events") and not replay.get("checksums")
+
+
+def with_unusable_capture(row: Dict[str, Any],
+                          replay: Dict[str, Any]) -> Dict[str, Any]:
+    """A capture-pairing row, marked unusable when its capture holds no combat.
+
+    Only `unpaired` and `no_encounter` rows come here. A pairing failure
+    whose capture does hold a combat is left unmarked: it is a harness gap,
+    and it stays in the eligible count (#3421).
+    """
+    if capture_holds_no_combat(replay):
+        row["unusable"] = UNUSABLE_NO_COMBAT
+    return row
+
+
+def unusable_reason(row: Dict[str, Any]) -> Optional[str]:
+    """Why this fight is out of the eligible count, or None when it is in.
+
+    A truncated capture (#3277) is real but incomplete, so it can never
+    certify. A row with an `unusable` mark holds no combat.
+    """
+    if row.get("human") == "truncated":
+        return UNUSABLE_TRUNCATED
+    return row.get("unusable")
 
 
 def truncated_row_fields(row: Dict[str, Any],
@@ -1941,8 +2029,15 @@ def census_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     for row in checksummed:
         for field in row.get("opening_counter_drift", []) or []:
             drifting[field] = drifting.get(field, 0) + 1
+    excluded = _tally([{"reason": unusable_reason(r)} for r in rows], "reason")
     return {
         "fights": len(rows),
+        # #3421: the headline is certified / eligible. Eligible is every
+        # fight less the captures that can never certify, whose reasons are
+        # counted in `excluded_unusable`.
+        "certified": len(certified),
+        "eligible": len(rows) - sum(excluded.values()),
+        "excluded_unusable": excluded,
         "stages": _tally(rows, "stage"),
         "entry_refusal_classes": _tally(
             [r for r in rows if r.get("stage") in
@@ -2008,6 +2103,23 @@ def census_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def census_headline(summary: Dict[str, Any]) -> str:
+    """`**certified / eligible: C / E** (P%)`, the census headline (#3421)."""
+    certified = summary.get("certified", 0)
+    eligible = summary.get("eligible", 0)
+    share = f" ({100 * certified / eligible:.1f}%)" if eligible else ""
+    return f"**certified / eligible: {certified} / {eligible}**{share}"
+
+
+def census_excluded_line(summary: Dict[str, Any]) -> str:
+    """The unusable captures left out of the eligible count, by reason."""
+    excluded = summary.get("excluded_unusable") or {}
+    reasons = ", ".join(f"`{name}` {count}"
+                        for name, count in excluded.items())
+    return (f"excluded as unusable captures: {sum(excluded.values())}"
+            + (f" ({reasons})" if reasons else ""))
+
+
 def census_markdown(census: Dict[str, Any]) -> str:
     """The standing "done per encounter" report, as a pasteable table."""
     summary = census["summary"]
@@ -2020,6 +2132,10 @@ def census_markdown(census: Dict[str, Any]) -> str:
                  "--opening`), unspliced; every recorded line is replayed by "
                  "Rust and certified against the capture's native "
                  "checkpoints (#1282, #2999).")
+    lines.append("")
+    lines.append(census_headline(summary))
+    lines.append("")
+    lines.append(census_excluded_line(summary))
     lines.append("")
     lines.append("| stage | fights |")
     lines.append("|---|---:|")
@@ -3416,6 +3532,47 @@ def _self_test_labels() -> None:
         "human_line.json.step_digests: changed"]
 
 
+def _boss_save(cur: Dict[str, int], second: Optional[str]) -> Dict[str, Any]:
+    """A minimal act save whose map carries both boss nodes (#3426)."""
+    return {"current_act_index": 0, "visited_map_coords": [cur], "acts": [{
+        "saved_map": {
+            "points": [{"coord": {"col": 1, "row": 1}, "type": "monster"}],
+            "boss": {"coord": {"col": 3, "row": 16}, "type": "boss"},
+            "second_boss": ({"coord": {"col": 3, "row": 17}, "type": "boss"}
+                            if second else None)},
+        "rooms": {"boss_id": "ENCOUNTER.A_BOSS", "second_boss_id": second,
+                  "normal_encounter_ids": ["ENCOUNTER.N"],
+                  "normal_encounters_visited": 0}}]}
+
+
+def _self_test_boss_nodes() -> None:
+    """The act boss and the second boss resolve from their own map keys."""
+    nowhere = pathlib.Path("no-such-save")
+    boss = _boss_save({"col": 3, "row": 16}, "ENCOUNTER.B_BOSS")
+    assert node_type(boss) == "boss" and boss_room_slot(boss) == "boss_id"
+    assert derive_encounter(boss, ("s", 0, 16), nowhere, {}) == (
+        "ENCOUNTER.A_BOSS", "boss")
+    second = _boss_save({"col": 3, "row": 17}, "ENCOUNTER.B_BOSS")
+    assert node_type(second) == "boss"
+    assert boss_room_slot(second) == "second_boss_id"
+    assert derive_encounter(second, ("s", 0, 17), nowhere, {}) == (
+        "ENCOUNTER.B_BOSS", "boss")
+    # An ordinary point still reads `points`; an absent second boss matches
+    # nothing, and a boss kind off every boss node refuses by name.
+    plain = _boss_save({"col": 1, "row": 1}, None)
+    assert node_type(plain) == "monster" and boss_room_slot(plain) is None
+    assert derive_encounter(plain, ("s", 0, 1), nowhere, {}) == (
+        "ENCOUNTER.N", "monster")
+    off_map = _boss_save({"col": 3, "row": 17}, None)
+    assert node_type(off_map) is None and boss_room_slot(off_map) is None
+    try:
+        next_encounter(off_map, "boss")
+    except EvalRefusal as exc:
+        assert "saved_map.second_boss" in str(exc)
+    else:
+        raise AssertionError("a boss kind off every boss node must refuse")
+
+
 def self_test() -> None:
     """Every census branch that needs no binary and no corpus."""
     # 1. The registry pin against boundary.rs, and the type-strict walk.
@@ -3748,6 +3905,48 @@ def self_test() -> None:
     assert summary["entry_refusal_classes"] == {"epoch_provenance": 1}
     assert "Rust opening refusals" in census_markdown(
         {"captures": "c", "build": BUILD_ID, "summary": summary})
+    # Nothing here is unusable: every fight is eligible (#3421).
+    assert summary["certified"] == 1 and summary["eligible"] == len(rows)
+    assert summary["excluded_unusable"] == {}
+
+    # 5b. #3421: certified / eligible. Only captures proven unusable leave
+    # the eligible count; a combat the harness failed to pair stays in it.
+    empty = {"events": [], "checksums": []}
+    fought = {"events": [{"event_type": "GameAction"}], "checksums": [{}]}
+    assert capture_holds_no_combat(empty)
+    assert not capture_holds_no_combat(fought)
+    assert not capture_holds_no_combat({"events": [], "checksums": [{}]})
+    assert with_unusable_capture({"stage": "no_encounter"}, empty) == {
+        "stage": "no_encounter", "unusable": UNUSABLE_NO_COMBAT}
+    assert with_unusable_capture({"stage": "no_encounter"}, fought) == {
+        "stage": "no_encounter"}
+    assert with_unusable_capture({"stage": "unpaired"}, fought) == {
+        "stage": "unpaired"}
+    eligible_rows = rows + [
+        {"stage": "no_encounter", "unusable": UNUSABLE_NO_COMBAT},
+        {"stage": "no_encounter"},        # a real fight the harness missed
+        {"stage": "unpaired"},            # a real fight with no entry save
+        {"stage": "rooted", "rust": "admitted", "human": "truncated"},
+        {"stage": "rooted", "rust": "admitted", "human": "truncated"},
+    ]
+    assert unusable_reason(eligible_rows[-1]) == UNUSABLE_TRUNCATED
+    assert unusable_reason(eligible_rows[-3]) is None
+    split = census_summary(eligible_rows)
+    assert split["fights"] == len(rows) + 5
+    assert split["eligible"] == len(rows) + 2, split
+    assert split["certified"] == 1
+    assert split["excluded_unusable"] == {
+        UNUSABLE_TRUNCATED: 2, UNUSABLE_NO_COMBAT: 1}, split
+    # Every existing field is unchanged by the new rows' marks.
+    assert split["stages"]["no_encounter"] == 2
+    assert split["capture_truncated"] == 2
+    report = census_markdown(
+        {"captures": "c", "build": BUILD_ID, "summary": split})
+    assert "**certified / eligible: 1 / 7** (14.3%)" in report, report
+    assert ("excluded as unusable captures: 3 (`capture_truncated` 2, "
+            "`no_combat_in_capture` 1)") in report, report
+    assert census_headline({"certified": 0, "eligible": 0}) == \
+        "**certified / eligible: 0 / 0**"
 
     # 6. Each surface a refusal fixture can name, earliest first.
     surfaces = [
@@ -3770,6 +3969,7 @@ def self_test() -> None:
                           "human": "exact", "lockstep": "lockstep_ok"}) is None
 
     _self_test_labels()
+    _self_test_boss_nodes()
 
     print("self-test: registry and gate passed")
     print("self-test: recorded line decoder passed")

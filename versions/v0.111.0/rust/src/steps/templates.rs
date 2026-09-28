@@ -93,6 +93,7 @@ pub const IMPLEMENTED: &[StepKind] = &[
     StepKind::Juggernaut,
     StepKind::Loop,
     StepKind::MachineLearning,
+    StepKind::MadScienceCurious,
     StepKind::Mayhem,
     StepKind::MonarchsGaze,
     StepKind::NecroMastery,
@@ -662,7 +663,17 @@ pub(crate) fn blur(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 ///
 /// `engine::play` reads the amount in the early global energy-cost fold after
 /// local modifiers and Tangled, before every absolute-zero late listener.
+///
+/// #3427: refuses while a Curious is live, the other half of
+/// [`mad_science_curious`]'s listener-order refusal.
 pub(crate) fn borrowed_time(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
+    if !crate::engine::damage::damage_combat_is_ending(ctx.state)
+        && ctx.state.powers.value(PowerId::Curious) > 0
+    {
+        return Err(EngineRefusal::MalformedArgs(
+            "Borrowed Time beside Curious energy-cost listener order",
+        ));
+    }
     apply_exact_player_power(
         ctx,
         "borrowed_time",
@@ -1325,6 +1336,79 @@ pub(crate) fn free_power(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         "free_power",
         PowerId::FreePower,
         &[(CardId::Synthesis, 0, 1), (CardId::Synthesis, 1, 1)],
+    )
+}
+
+/// `("mad_science_curious", n)` — Mad Science's Curious rider (#3427): one
+/// CuriousPower application of `n` on the owner.
+///
+/// Current v0.111.0 authority (`sts2.dll` SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`,
+/// re-read for #3427 with `dump_type.py "MadScience/<OnPlay>d__51"
+/// "MadScience/<ExecutePower>d__54" CuriousPower`):
+///
+/// * `MadScience/<OnPlay>d__51::MoveNext` RVA `0x3aaf08` sends a Power-type
+///   variant (`TinkerTimeType` 3) to `ExecutePower` (IL_0158-IL_015f), then
+///   runs `ExecuteRider` only for rider 1 or 3..6 (IL_01c4-IL_01e2:
+///   `rider == 1 || (uint)(rider - 3) <= 3`). Curious is rider 8, so
+///   `<ExecuteRider>d__57` RVA `0x3aa9c4` (whose `rider - 1` switch has six
+///   arms, Sapping..Chaos) never runs for it: the whole body is ExecutePower.
+/// * `<ExecutePower>d__54::MoveNext` RVA `0x3aa660` awaits a cosmetic `Cast`
+///   `TriggerAnim` (IL_0034-IL_0054), switches on `rider - 7`
+///   (IL_00ae-IL_00b8), and the Curious arm (IL_01f5-IL_0228) calls
+///   `PowerCmd.Apply<T>(choiceContext, Owner.Creature,
+///   DynamicVars["CuriousReduction"].BaseValue, Owner.Creature, this, false)`
+///   through MethodSpec `0x2b002f8c`, whose instantiation is TypeDef 936
+///   `CuriousPower`. `CuriousReduction` is 1 at both levels
+///   (`data/canonical_vars.v0.111.0.json`), so the allowlist is the generated
+///   variant row's `(MadScience, 0|1, 1)`.
+/// * `CuriousPower::get_Type` RVA `0xa1026` is 1 (Buff) and `get_StackType`
+///   RVA `0xa1029` is 1 (Counter), so a second application adds to the amount;
+///   the type declares no hook but `TryModifyEnergyCostInCombat` (RVA
+///   `0xa102c`, read by [`crate::engine::play`]'s early cost fold).
+///
+/// The one refused shape is a Curious beside a live Borrowed Time. Both are
+/// early `TryModifyEnergyCostInCombat` listeners, and `Hook::
+/// ModifyEnergyCostInCombat` RVA `0x1052f0` folds them in listener order
+/// (IL_001d-IL_0043, each call reading the running value), where Borrowed
+/// Time's `+Amount` (RVA `0x9feb6` IL_001d-IL_002f) and Curious's
+/// "skip at or below zero, else subtract and clamp at zero" do not commute on
+/// a Power card whose cost is below the Curious amount. This crate carries no
+/// order between the two, so either application refuses while the other is
+/// live ([`borrowed_time`] is the other half). The third early listener that
+/// reads a Power card, `SpikedGauntlets::TryModifyEnergyCostInCombat` RVA
+/// `0x9bd30` (`+1` on the owner's Power cards, IL_0022-IL_0039), has no term
+/// in this crate's cost fold at all, so a Curious application refuses
+/// outright beside the relic rather than folding against a missing term.
+pub(crate) fn mad_science_curious(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
+    if !crate::catalog::is_mad_science_variant_program(ctx.spec, "Curious")
+        || ctx.target.is_some()
+        || ctx.selection.is_some()
+        || ctx.x_value != 0
+    {
+        return Err(EngineRefusal::MalformedArgs("mad_science_curious"));
+    }
+    if !crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        if ctx.state.powers.value(PowerId::BorrowedTime) > 0 {
+            return Err(EngineRefusal::MalformedArgs(
+                "Curious beside Borrowed Time energy-cost listener order",
+            ));
+        }
+        if ctx
+            .catalog
+            .hooks()
+            .owns(crate::ids::RelicId::RelicSpikedGauntlets)
+        {
+            return Err(EngineRefusal::MalformedArgs(
+                "Curious beside Spiked Gauntlets energy-cost listener",
+            ));
+        }
+    }
+    apply_exact_player_power(
+        ctx,
+        "mad_science_curious",
+        PowerId::Curious,
+        &[(CardId::MadScience, 0, 1), (CardId::MadScience, 1, 1)],
     )
 }
 
@@ -3353,7 +3437,7 @@ mod tests {
     /// `tests/hot_path_contract.rs`; what this list adds is the split between
     /// claimed and escalated, so that porting a kind means moving it into
     /// [`IMPLEMENTED`] in one deliberate edit.
-    const OWNED: [StepKind; 101] = [
+    const OWNED: [StepKind; 102] = [
         StepKind::Accelerant,
         StepKind::Accuracy,
         StepKind::Afterimage,
@@ -3406,6 +3490,7 @@ mod tests {
         StepKind::Knockdown,
         StepKind::Loop,
         StepKind::MachineLearning,
+        StepKind::MadScienceCurious,
         StepKind::Mayhem,
         StepKind::MonarchsGaze,
         StepKind::NecroMastery,
@@ -3486,8 +3571,8 @@ mod tests {
         }
         assert_eq!(
             IMPLEMENTED.len(),
-            100,
-            "poison, #1394's Focus/Orbit trio, #1406's player-power waves, Doom, #1487 replay powers, #1561 Free*/Star/generated/cost/Retain/Stampede/Foregone powers, #1751 TempStrengthEnemy/StrengthEnemy/Strangle, #1884 Hellraiser, and Creative AI's Trash-to-Treasure leaf"
+            101,
+            "poison, #1394's Focus/Orbit trio, #1406's player-power waves, Doom, #1487 replay powers, #1561 Free*/Star/generated/cost/Retain/Stampede/Foregone powers, #1751 TempStrengthEnemy/StrengthEnemy/Strangle, #1884 Hellraiser, Creative AI's Trash-to-Treasure leaf, and #3427 Mad Science's Curious rider"
         );
     }
 
@@ -6948,5 +7033,255 @@ mod tests {
         assert!(missing.is_empty(), "kinds with no current row: {missing:?}");
         assert!(problems.is_empty(), "{}", problems.join("\n"));
         assert!(rows >= 2 * PLAYER_POWER_APPLY_KINDS.len(), "{rows}");
+    }
+
+    /// One Curious Mad Science at `upgrade`, its compiled step and args.
+    fn curious_mad_science(
+        upgrade: u8,
+        relics: &[crate::ids::RelicId],
+    ) -> (
+        Catalog,
+        crate::catalog::CardSpec,
+        Vec<CompiledArg>,
+        crate::catalog::CardAtom,
+    ) {
+        let mut builder = CatalogBuilder::new();
+        builder.set_relics(relics).unwrap();
+        assert!(
+            builder.set_mad_science_variant(
+                crate::catalog::MadScienceVariant::from_saved(3, 8).unwrap()
+            )
+        );
+        let atom = builder
+            .intern(CardIdentity {
+                id: CardId::MadScience,
+                upgrade,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let spec = *catalog.spec(atom).unwrap();
+        let steps = catalog.steps(&spec);
+        assert_eq!(steps.len(), 1, "Curious's whole body is one apply");
+        assert_eq!(steps[0].kind, StepKind::MadScienceCurious);
+        let args = catalog.args(steps[0].args).to_vec();
+        (catalog, spec, args, atom)
+    }
+
+    fn curious_fixture(atom: crate::catalog::CardAtom, enemy_hp: i32) -> HotState {
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, enemy_hp));
+        state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+            uid: 0,
+            atom,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        });
+        state
+    }
+
+    /// #3427 witness: Mad Science's Curious rider applies CuriousPower
+    /// `CuriousReduction` (1 at both levels) and stacks it (Counter); it
+    /// writes nothing while combat is ending; it refuses by name beside a
+    /// live Borrowed Time or an owned Spiked Gauntlets, and for any spec that
+    /// is not the generated Curious row.
+    #[test]
+    fn mad_science_curious_applies_and_stacks_curious_power_or_refuses_by_name() {
+        for upgrade in [0, 1] {
+            let (catalog, spec, args, atom) = curious_mad_science(upgrade, &[]);
+            assert_eq!(args, [CompiledArg::I(1)]);
+            assert!(spec.is_power && !spec.targeted);
+
+            let mut state = curious_fixture(atom, 99);
+            let (result, events) = apply_power_row(
+                &mut state,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &args,
+                None,
+            );
+            assert_eq!(result, Ok(()));
+            assert_eq!(state.powers.value(PowerId::Curious), 1);
+            assert!(!events.is_empty());
+            let (result, _) = apply_power_row(
+                &mut state,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &args,
+                None,
+            );
+            assert_eq!(result, Ok(()));
+            assert_eq!(state.powers.value(PowerId::Curious), 2, "Counter stacks");
+
+            // PowerCmd.Apply is a no-op while combat is ending.
+            let mut ending = curious_fixture(atom, 0);
+            let before = ending.clone();
+            let (result, events) = apply_power_row(
+                &mut ending,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &args,
+                None,
+            );
+            assert_eq!(result, Ok(()));
+            assert_eq!(ending, before);
+            assert!(events.is_empty());
+
+            // Beside a live Borrowed Time the listener order is unknown.
+            let mut borrowed = curious_fixture(atom, 99);
+            borrowed.powers.set(PowerId::BorrowedTime, SlotWire::Int, 1);
+            let before = borrowed.clone();
+            let (result, _) = apply_power_row(
+                &mut borrowed,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &args,
+                None,
+            );
+            assert_eq!(
+                result,
+                Err(EngineRefusal::MalformedArgs(
+                    "Curious beside Borrowed Time energy-cost listener order"
+                ))
+            );
+            assert_eq!(borrowed, before);
+
+            // Spiked Gauntlets' Power-card surcharge has no fold term.
+            let (catalog, spec, args, atom) =
+                curious_mad_science(upgrade, &[crate::ids::RelicId::RelicSpikedGauntlets]);
+            let mut gauntlets = curious_fixture(atom, 99);
+            let before = gauntlets.clone();
+            let (result, _) = apply_power_row(
+                &mut gauntlets,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &args,
+                None,
+            );
+            assert_eq!(
+                result,
+                Err(EngineRefusal::MalformedArgs(
+                    "Curious beside Spiked Gauntlets energy-cost listener"
+                ))
+            );
+            assert_eq!(gauntlets, before);
+        }
+
+        // Any other program refuses: an Expertise Mad Science, a Synthesis.
+        let mut builder = CatalogBuilder::new();
+        assert!(
+            builder.set_mad_science_variant(
+                crate::catalog::MadScienceVariant::from_saved(3, 7).unwrap()
+            )
+        );
+        let expertise = builder
+            .intern(CardIdentity {
+                id: CardId::MadScience,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let synthesis = builder
+            .intern(CardIdentity {
+                id: CardId::Synthesis,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        for atom in [expertise, synthesis] {
+            let spec = *catalog.spec(atom).unwrap();
+            let mut state = curious_fixture(atom, 99);
+            let before = state.clone();
+            let (result, _) = apply_power_row(
+                &mut state,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &[CompiledArg::I(1)],
+                None,
+            );
+            assert_eq!(
+                result,
+                Err(EngineRefusal::MalformedArgs("mad_science_curious"))
+            );
+            assert_eq!(state, before);
+        }
+    }
+
+    /// #3427 witness: Borrowed Time refuses while a Curious is live (the
+    /// other half of the listener-order refusal), and still applies without
+    /// one.
+    #[test]
+    fn borrowed_time_refuses_beside_a_live_curious() {
+        let identity = CardIdentity {
+            id: CardId::BorrowedTime,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(identity).unwrap();
+        let catalog = builder.build();
+        let spec = *catalog.spec(atom).unwrap();
+        let compiled = catalog
+            .steps(&spec)
+            .iter()
+            .find(|step| step.kind == StepKind::BorrowedTime)
+            .copied()
+            .unwrap();
+        let args = catalog.args(compiled.args).to_vec();
+
+        let mut plain = curious_fixture(atom, 99);
+        let (result, _) = apply_power_row(
+            &mut plain,
+            &catalog,
+            &spec,
+            StepKind::BorrowedTime,
+            &args,
+            None,
+        );
+        assert_eq!(result, Ok(()));
+        assert!(plain.powers.value(PowerId::BorrowedTime) > 0);
+
+        let mut curious = curious_fixture(atom, 99);
+        curious.powers.set(PowerId::Curious, SlotWire::Int, 1);
+        let before = curious.clone();
+        let (result, _) = apply_power_row(
+            &mut curious,
+            &catalog,
+            &spec,
+            StepKind::BorrowedTime,
+            &args,
+            None,
+        );
+        assert_eq!(
+            result,
+            Err(EngineRefusal::MalformedArgs(
+                "Borrowed Time beside Curious energy-cost listener order"
+            ))
+        );
+        assert_eq!(curious, before);
+
+        // A combat that is ending writes nothing either way.
+        let mut ending = curious_fixture(atom, 0);
+        ending.powers.set(PowerId::Curious, SlotWire::Int, 1);
+        let before = ending.clone();
+        let (result, _) = apply_power_row(
+            &mut ending,
+            &catalog,
+            &spec,
+            StepKind::BorrowedTime,
+            &args,
+            None,
+        );
+        assert_eq!(result, Ok(()));
+        assert_eq!(ending, before);
     }
 }

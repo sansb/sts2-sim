@@ -1536,6 +1536,17 @@ fn player_attack_inner_apply(
                         _ => return Err(EngineRefusal::MalformedArgs("VIGOROUS status")),
                     }
                 }
+                // `TezcatarasEmber::EnchantDamageAdditive` RVA `0xd6673`:
+                // Sharp's body with `DynamicVars.Damage.BaseValue` — the
+                // constant `DamageVar(3m, …)` of `get_CanonicalVars` RVA
+                // `0xd6630` — in place of `Amount` (IL_000f-001f). See
+                // `play::tezcataras_ember_identity_is_exact`.
+                Some(enchantment) if matches!(enchantment.id, EnchantmentId::TezcatarasEmber) => {
+                    if !crate::engine::play::tezcataras_ember_identity_is_exact(source) {
+                        return Err(EngineRefusal::MalformedArgs("TEZCATARAS_EMBER owner"));
+                    }
+                    3
+                }
                 _ => 0,
             };
             let additive = sharp

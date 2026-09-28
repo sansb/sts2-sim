@@ -4948,6 +4948,9 @@ struct PreDeal {
     draw: u64,
     draw_id: &'static str,
     hand_head: u64,
+    /// Whispering Earring's turn-one AutoPre loop ran after the deal
+    /// (#3414): see [`check_card_identity_allocation`].
+    whispering_earring: bool,
 }
 
 /// A bare count is Blessed Antler's form: that many Dazed into Draw.
@@ -4957,6 +4960,7 @@ impl From<u64> for PreDeal {
             draw,
             draw_id: "DAZED",
             hand_head: 0,
+            whispering_earring: false,
         }
     }
 }
@@ -4981,13 +4985,13 @@ impl From<u64> for PreDeal {
 /// Every other pre-deal generator is still refused by a gate table.
 fn pre_deal_allocations(relics: &[String]) -> PreDeal {
     let owns = |id: &str| relics.iter().any(|relic| relic == id);
-    if owns("RELIC.BLESSED_ANTLER") {
+    let pre_deal = if owns("RELIC.BLESSED_ANTLER") {
         PreDeal::from(BLESSED_ANTLER_DAZED)
     } else if owns("RELIC.FUNERARY_MASK") {
         PreDeal {
             draw: FUNERARY_MASK_SOULS,
             draw_id: "SOUL",
-            hand_head: 0,
+            ..PreDeal::default()
         }
     } else if owns("RELIC.RADIANT_PEARL") {
         PreDeal {
@@ -4996,6 +5000,10 @@ fn pre_deal_allocations(relics: &[String]) -> PreDeal {
         }
     } else {
         PreDeal::default()
+    };
+    PreDeal {
+        whispering_earring: owns("RELIC.WHISPERING_EARRING"),
+        ..pre_deal
     }
 }
 
@@ -5115,6 +5123,27 @@ fn expected_identity_order(
 /// its result pile (Discard, Exhaust, ...), which leaves the rest of the
 /// sequence in order. Only an Imbued uid found outside `hand ++ draw` is
 /// dropped; anything else the play moved still fails the check.
+/// `observed` itself when it is a set of distinct uids of the dealt
+/// allocation `expected`, after Whispering Earring's turn-one loop (#3414):
+/// see [`check_card_identity_allocation`] for why its order is not compared.
+fn without_auto_played(
+    observed: &[Option<u64>],
+    expected: Vec<Option<u64>>,
+) -> Result<Vec<Option<u64>>, OpeningRefusal> {
+    let mut seen = std::collections::BTreeSet::new();
+    for uid in observed {
+        if !expected.contains(uid) || !seen.insert(*uid) {
+            return Err(OpeningRefusal::CardIdentityAllocationDiverged {
+                detail: format!(
+                    "hand + draw carries uid {uid:?} after Whispering Earring's loop, \
+                     outside the dealt allocation or twice"
+                ),
+            });
+        }
+    }
+    Ok(observed.to_vec())
+}
+
 fn without_auto_played_imbued(
     document: &CanonicalStateV2,
     expected: Vec<Option<u64>>,
@@ -5874,6 +5903,23 @@ fn monster_entity((index, spec): (usize, &MonsterSpec)) -> CanonicalEntityV2 {
 ///
 /// One removal is covered (#3381): an `IMBUED` card turn one's AutoPre phase
 /// played out of `hand ++ draw` ([`without_auto_played_imbued`]).
+///
+/// Whispering Earring's turn-one loop is covered (#3414). It AutoPlays live
+/// Hand cards after the deal (`engine::turn::whispering_earring_loop_is_ahead`),
+/// so every deck card it played leaves `hand ++ draw` for another pile, the
+/// top Draws its children take move Draw's head to Hand's tail (the
+/// concatenation keeps its order), and cards its children generate enter
+/// Hand in allocation order and may themselves be played later in the loop.
+/// A child may also put a card back on Draw's top (Cosmic Indifference's
+/// Discard pick, Glimmer's Hand pick), and a played Power leaves every pile.
+/// So a fresh uid may sit anywhere in Hand, in allocation order, and is set
+/// aside, and what is left of `hand ++ draw` must be distinct uids of the
+/// dealt allocation ([`without_auto_played`]); its order is not compared.
+/// That premise is instead checked card by card downstream, where every
+/// consumer of the root matches each deck uid's identity against the
+/// capture's recorded first cycle (`eval_suite._dealt_uids` reads the deck
+/// in uid order for these roots; `rust_replay.recorded_witness` checks each
+/// uid), so a numbering the loop could not have produced still refuses.
 fn check_card_identity_allocation(
     document: &CanonicalStateV2,
     expected: &[Option<u64>],
@@ -5883,6 +5929,7 @@ fn check_card_identity_allocation(
         draw: pre_deal,
         draw_id,
         hand_head,
+        whispering_earring,
     } = pre_deal.into();
     let empty = Vec::new();
     let deck = expected.len() as u64;
@@ -5950,24 +5997,51 @@ fn check_card_identity_allocation(
         .filter(keep)
         .collect();
     let after_deal = head_range.end;
-    let fresh = usize::try_from(next.saturating_sub(after_deal)).unwrap_or(usize::MAX);
-    let dealt = hand.len().saturating_sub(fresh);
-    let tail: Vec<Option<u64>> = hand[dealt..].iter().map(|card| card.uid).collect();
-    let allocated: Vec<Option<u64>> = (after_deal..next).map(Some).collect();
-    if tail != allocated {
-        return Err(OpeningRefusal::CardIdentityAllocationDiverged {
-            detail: format!(
-                "the {fresh} uid(s) allocated past the entering deck are not the \
-                 hand's tail in allocation order: tail {tail:?}, allocated {allocated:?}"
-            ),
-        });
-    }
-    let observed: Vec<Option<u64>> = hand[..dealt]
+    let dealt_hand: Vec<&CanonicalCardV2> = if whispering_earring {
+        let is_fresh = |card: &CanonicalCardV2| {
+            card.uid
+                .is_some_and(|uid| (after_deal..next).contains(&uid))
+        };
+        let fresh: Vec<u64> = hand
+            .iter()
+            .filter(|card| is_fresh(card))
+            .filter_map(|card| card.uid)
+            .collect();
+        if !fresh.is_sorted_by(|a, b| a < b) {
+            return Err(OpeningRefusal::CardIdentityAllocationDiverged {
+                detail: format!(
+                    "the uid(s) allocated past the entering deck are not in allocation \
+                     order in the hand after Whispering Earring's loop: {fresh:?}"
+                ),
+            });
+        }
+        hand.into_iter().filter(|card| !is_fresh(card)).collect()
+    } else {
+        let fresh = usize::try_from(next.saturating_sub(after_deal)).unwrap_or(usize::MAX);
+        let dealt = hand.len().saturating_sub(fresh);
+        let tail: Vec<Option<u64>> = hand[dealt..].iter().map(|card| card.uid).collect();
+        let allocated: Vec<Option<u64>> = (after_deal..next).map(Some).collect();
+        if tail != allocated {
+            return Err(OpeningRefusal::CardIdentityAllocationDiverged {
+                detail: format!(
+                    "the {fresh} uid(s) allocated past the entering deck are not the \
+                     hand's tail in allocation order: tail {tail:?}, allocated {allocated:?}"
+                ),
+            });
+        }
+        hand.truncate(dealt);
+        hand
+    };
+    let observed: Vec<Option<u64>> = dealt_hand
         .iter()
         .chain(&draw)
         .map(|card| card.uid)
         .collect();
-    let expected = without_auto_played_imbued(document, expected.to_vec());
+    let expected = if whispering_earring {
+        without_auto_played(&observed, expected.to_vec())?
+    } else {
+        without_auto_played_imbued(document, expected.to_vec())
+    };
     if observed.len() != expected.len() {
         return Err(OpeningRefusal::CardIdentityAllocationDiverged {
             detail: format!(
