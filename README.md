@@ -28,8 +28,8 @@ cargo build --release
 
 The census replays captured fights (the game's `.mcr` files, recorded with the
 Relay the Spire mod) through the release binary and checks every action against
-the game's own checksums. The captures themselves are not included; point it at
-your own:
+the game's own checksums. The census corpus is not included (only the test suite's
+own captures under `versions/v0.111.0/solver/testdata/` are); point it at your own:
 
 ```bash
 python3 versions/v0.111.0/rust/tools/eval_suite.py census --captures PATH_TO_CAPTURES
@@ -40,6 +40,10 @@ python3 versions/v0.111.0/rust/tools/eval_suite.py census --captures PATH_TO_CAP
 <!-- SEAN: current certified count, how to contribute, where to talk about it (Discord?). -->
 
 ## Notes
+
+This repo is synced from the private monorepo Relay the Spire is developed in;
+`SYNCED_FROM` names the commit the tree was exported from. Pull requests are
+welcome here and are landed upstream, then arrive in the next sync.
 
 Issue and PR numbers cited throughout (`#1282` etc.) refer to the private repo this
 code was developed in; they are kept as a record, not as links.
