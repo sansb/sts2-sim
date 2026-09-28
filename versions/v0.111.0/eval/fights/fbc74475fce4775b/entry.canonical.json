@@ -1,0 +1,329 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 46,
+   "kind": "BOWLBUG_ROCK",
+   "max_hp": 46
+  },
+  {
+   "hp": 23,
+   "kind": "BOWLBUG_EGG",
+   "max_hp": 23,
+   "slot": 1,
+   "uid": 1
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "CALCULATED_GAMBLE",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "SURVIVOR",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "ENVENOM",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "PIERCING_WAIL",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "PREPARED",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "ANTICIPATE",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "PRECISE_CUT",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "ANTICIPATE",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "DEADLY_POISON",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "SNAKEBITE",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 24,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "SUPPRESS",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "DEADLY_POISON",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "CALCULATED_GAMBLE",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "POOR_SLEEP",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "NOXIOUS_FUMES",
+    "uid": 6,
+    "upgrade": 1
+   }
+  ]
+ },
+ "player": {
+  "bag_draws": 2,
+  "block": 10,
+  "cards_drawn_combat": 7,
+  "fully_unlocked_potion_pool": true,
+  "gold": 100,
+  "hp": 61,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 1,
+  "max_hp": 70,
+  "next_card_uid": 25,
+  "orn_fan": 0,
+  "player_phase": 3,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "ps_strikes": 5,
+  "puzzle": true,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.RING_OF_THE_SNAKE",
+   "RELIC.SCROLL_BOXES",
+   "RELIC.ANCHOR",
+   "RELIC.ORNAMENTAL_FAN",
+   "RELIC.CENTENNIAL_PUZZLE",
+   "RELIC.ARCHAIC_TOOTH"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Silent",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 5,
+   "words": [
+    9610974399808664779,
+    8224310112307150095,
+    2263590096611809549,
+    2787475797530091490
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    675590331805696970,
+    8673934059487041820,
+    4662186307847099548,
+    8008820195747631885
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    17087199966793920378,
+    18341243523189479671,
+    11584595232764762192,
+    9305778500331946811
+   ]
+  },
+  "generation": {
+   "counter": 15,
+   "words": [
+    1965898778704188589,
+    5978639410552344923,
+    5405392897285770468,
+    15867576830222050203
+   ]
+  },
+  "niche": {
+   "counter": 16,
+   "words": [
+    6519496544451940345,
+    16001147205912015126,
+    7042449771214470476,
+    15247742266951506356
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    4731448922979737946,
+    4095466330554959578,
+    17426167349381892699,
+    8323391427949537663
+   ]
+  },
+  "rng": {
+   "counter": 268,
+   "words": [
+    11559004037077381703,
+    8705370150156875294,
+    16791944976629111975,
+    1579049803772955867
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    17279731689306856860,
+    4831747769356520778,
+    12893402605608509468,
+    16647487277300909803
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    8100544877736269077,
+    10934516755259245081,
+    17249227579802238223,
+    11681666647183362537
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

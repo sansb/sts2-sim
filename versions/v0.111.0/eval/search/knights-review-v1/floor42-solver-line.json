@@ -1,0 +1,138 @@
+{
+  "actions": [
+    {
+      "answer": {
+        "index": 1,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 0
+    },
+    {
+      "kind": "play",
+      "target": 1,
+      "uid": 3
+    },
+    {
+      "kind": "play",
+      "target": 1,
+      "uid": 5
+    },
+    {
+      "kind": "potion",
+      "slot": 0
+    },
+    {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 38
+    },
+    {
+      "kind": "potion",
+      "slot": 1
+    },
+    {
+      "kind": "play",
+      "uid": 4
+    },
+    {
+      "answer": {
+        "index": 5,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 13
+    },
+    {
+      "kind": "play",
+      "uid": 11
+    },
+    {
+      "kind": "play",
+      "uid": 15
+    },
+    {
+      "kind": "play",
+      "target": 2,
+      "uid": 12
+    },
+    {
+      "kind": "play",
+      "uid": 16
+    },
+    {
+      "kind": "play",
+      "target": 1,
+      "uid": 17
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 0,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "target": 2,
+      "uid": 21
+    },
+    {
+      "kind": "play",
+      "uid": 23
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 2,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 28
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 26
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 24
+    }
+  ],
+  "hp": 70,
+  "turn": 4,
+  "won": true,
+  "digest": "c8ced44325a33b90afb99abe77adef6e7b0e4db21cacb696a07a5169b7b14bc4"
+}

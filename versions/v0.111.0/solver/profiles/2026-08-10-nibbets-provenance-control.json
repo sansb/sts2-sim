@@ -1,0 +1,336 @@
+{
+  "configuration": {
+    "actual_deadline": 5.0,
+    "benchmark_deadline": 2.0,
+    "fight_index": 2,
+    "horizon": 12,
+    "k": 20,
+    "provenance_bundle": "solver/testdata/85920V7XQFSN_fight2_provenance.json",
+    "provenance_entry": null,
+    "recorded_replay": null,
+    "run": "solver/testdata/85920V7XQFSN.run",
+    "sampling_seed": "review-pipeline-v1"
+  },
+  "cpu_seconds": 45.760275,
+  "current_tracemalloc_bytes": null,
+  "hot_layers_self_seconds": {},
+  "instrumentation": {
+    "cprofile": false,
+    "phase_timers": true,
+    "tracemalloc": false
+  },
+  "nodes_per_second": 3200.881708009668,
+  "peak_tracemalloc_bytes": null,
+  "phases_seconds": {
+    "entry_and_world_construction": 0.0024693747982382774,
+    "other_loading_and_document_assembly": 0.004166958387941122,
+    "provenance_loading": 0.019121500197798014,
+    "recorded_line_replay": 0.004125415813177824,
+    "solve": 45.99451445881277,
+    "world_sampling": 0.002149208914488554
+  },
+  "pid": 4515,
+  "profiler_revision": "issue-1112-v3-quality-and-exact",
+  "quality": {
+    "actual_seed_deadline_hit": false,
+    "actual_seed_exact": true,
+    "benchmark_deadline_worlds": 14,
+    "benchmark_exact_worlds": 6,
+    "benchmark_worlds": 20,
+    "headline": {
+      "actual": {
+        "entry_hp": 45,
+        "final_hp": 35,
+        "hp_lost": 10,
+        "potions_used": {
+          "count": 0,
+          "names": []
+        },
+        "turns": 4,
+        "won": true
+      },
+      "benchmark": {
+        "deadline_worlds": 14,
+        "exact_worlds": 6,
+        "hp_lost": {
+          "count": 20,
+          "mean": {
+            "denominator": 20,
+            "numerator": -681
+          },
+          "median": {
+            "denominator": 1,
+            "numerator": -35
+          },
+          "p10": -35,
+          "p90": -32
+        },
+        "loss_risk": {
+          "kind": "upper_bound",
+          "value": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        "losses": 0,
+        "win_rate": {
+          "kind": "lower_bound",
+          "value": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        "wins": 20,
+        "world_count": 20
+      },
+      "best_actual_seed": {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 77,
+        "hp_lost": -32,
+        "potions_used": 1,
+        "turns": 4,
+        "won": true
+      },
+      "derived": {
+        "luck_percentile": {
+          "available": true,
+          "exact": false,
+          "kind": "achieved",
+          "percentile": {
+            "denominator": 2,
+            "numerator": 25
+          },
+          "tied_worlds": 5,
+          "world_count": 20,
+          "worse_worlds": 0
+        },
+        "skill_gap": {
+          "available": true,
+          "display": "42",
+          "exact": true,
+          "hp_lost": 42,
+          "kind": "exact"
+        }
+      }
+    },
+    "status": "ok"
+  },
+  "result": {
+    "metadata": {
+      "assumed_fully_unlocked": false,
+      "benchmark_name": "best play per sampled shuffle",
+      "counter_overrides": {
+        "combat_card_generation": 0,
+        "combat_card_selection": 0,
+        "combat_energy_costs": 0,
+        "combat_orbs": 0,
+        "combat_potion_generation": 0,
+        "combat_targets": 1,
+        "shuffle": 54
+      },
+      "deadlines_seconds": {
+        "benchmark_world": 2.0,
+        "best_actual_seed": 5.0
+      },
+      "elapsed_seconds": {
+        "benchmark": 43.77932966686785,
+        "best_actual_seed": 2.219450832810253,
+        "total": 46.00593683309853
+      },
+      "entry_caveats": [
+        "fight 1 (ENCOUNTER.SHRINKER_BEETLE_WEAK): deck held cards that can leave/alter the cycle unrecorded (STAMPEDE) \u2014 the counter is a baseline, not exact",
+        "fight 1 (ENCOUNTER.SHRINKER_BEETLE_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 1 (ENCOUNTER.SHRINKER_BEETLE_WEAK): modeled draw-cycle sources STAMPEDE had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+        "Niche-consuming on-obtain relics owned: {'RELIC.NEOWS_BONES'}",
+        "fight 1: deck held CombatTargets consumers (STAMPEDE) \u2014 plays unrecorded",
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+      ],
+      "entry_state_source": "resolved_save",
+      "fully_unlocked_card_pool": true,
+      "horizon": 12,
+      "k": 20,
+      "sampling_seed": "review-pipeline-v1",
+      "solver_build": "v0.110.1",
+      "trust_tier": "modeled",
+      "unlock_pool_source": "resolved_save"
+    },
+    "status": "ok"
+  },
+  "solves": [
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "actual",
+      "nodes_per_second": 3801.4095780487964,
+      "seconds": 2.2194398753345013,
+      "states": 8437
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 5043.219261549248,
+      "seconds": 2.257288333028555,
+      "states": 11384
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3959.9144634232084,
+      "seconds": 2.0689840842969716,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 0.4478548174519468,
+      "seconds": 2.2328664581291378,
+      "states": 1
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 4215.372247539708,
+      "seconds": 1.293361458927393,
+      "states": 5452
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 4009.820627143161,
+      "seconds": 2.0432335413061082,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3611.4777805371145,
+      "seconds": 2.2686004173010588,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3416.0151867277164,
+      "seconds": 2.3984085409902036,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3521.9488546261537,
+      "seconds": 2.326268875040114,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 1976.6908968689136,
+      "seconds": 2.0726558747701347,
+      "states": 4097
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 1934.8667282318947,
+      "seconds": 2.117458499968052,
+      "states": 4097
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 1830.7401828456382,
+      "seconds": 2.176715209148824,
+      "states": 3985
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3783.0182252732507,
+      "seconds": 2.165731041226536,
+      "states": 8193
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 4713.42313124322,
+      "seconds": 2.2102832081727684,
+      "states": 10418
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3230.437584647143,
+      "seconds": 2.53618891723454,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 1904.509591537131,
+      "seconds": 2.1512099588289857,
+      "states": 4097
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3123.6891604001157,
+      "seconds": 2.6228602076880634,
+      "states": 8193
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 3668.966837075782,
+      "seconds": 2.233053707983345,
+      "states": 8193
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 3001.330175029056,
+      "seconds": 1.703911166638136,
+      "states": 5114
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 3987.6463582588294,
+      "seconds": 2.0591093748807907,
+      "states": 8211
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 2888.026111566993,
+      "seconds": 2.8368857079185545,
+      "states": 8193
+    }
+  ],
+  "states": 147223,
+  "tool": "profile_review_pipeline.py",
+  "top_functions": [],
+  "wall_seconds": 46.02654691692442
+}

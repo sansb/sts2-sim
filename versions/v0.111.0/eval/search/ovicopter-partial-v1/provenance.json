@@ -1,0 +1,18 @@
+{
+  "game_build": "v0.111.0",
+  "encounter": "ENCOUNTER.OVICOPTER_NORMAL",
+  "character": "IRONCLAD",
+  "ascension": 10,
+  "capture_sha256": "63aac0e8c08022f77e0d8574209a009a8f18e09e6152d8671a205faf5c75968d",
+  "entry_digest": "0968082c7e3af5facd272624246aa4018b6c4032e0448fae0839f02f5e459554",
+  "recording": "partial",
+  "recorded_actions": 20,
+  "native_action_checkpoints": 14,
+  "native_checks": [
+    "HP, max HP, block, energy, turn",
+    "living monster identities, HP, max HP and block",
+    "ordered card identities and upgrade levels in all piles",
+    "all nine represented RNG streams: full state and counters"
+  ],
+  "native_full_checksum": "not certified: full power/affliction/cost serialization remains outside this fixture"
+}

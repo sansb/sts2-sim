@@ -1,0 +1,466 @@
+{
+  "build": "v0.111.0",
+  "cases": [
+    {
+      "encounter_id": "ENCOUNTER.TOADPOLES_WEAK",
+      "expected_entry_digest": "b2fc30cf4327c5bbea6075ac45c83fca3ff00ad41e27470ee55a47fdec591274",
+      "expected_witnesses": {
+        "monsters": [
+          [
+            "TOADPOLE",
+            26
+          ],
+          [
+            "TOADPOLE",
+            25
+          ]
+        ],
+        "piles.hand": [
+          "STRIKE_IRONCLAD",
+          "STRIKE_IRONCLAD",
+          "DEFEND_IRONCLAD",
+          "STRIKE_IRONCLAD",
+          "STRIKE_IRONCLAD"
+        ],
+        "player.potion_slots": [
+          null,
+          null
+        ],
+        "player.relics_entering_dispatch_ordered": true
+      },
+      "name": "ironclad_starter_vs_toadpoles",
+      "node_index": 1,
+      "node_type": "monster",
+      "relation_to_the_pinned_canonical_fixture": {
+        "explanation": "Measured 2026-09-16. The pinned fixture was rooted from a hand-written entry dict, not from a save. A schema-20 save carries max_potion_slot_count (so the empty belt materialises as [null, null]) and rng.rngs (so relics_entering_dispatch_ordered is true). Every other field \u2014 deck instantiation with uids, the opening shuffle and deal, monster creation and rolled HP, all nine RNG streams, every relic field \u2014 is byte-identical. Acceptance is therefore stated as 'Rust's save-rooted document equals PYTHON'S save-rooted document on the same save', never 'equals the checked-in fixture'.",
+        "identical_except": [
+          "player.potion_slots",
+          "player.relics_entering_dispatch_ordered"
+        ],
+        "pinned": "fixtures/canonical_state_v2_ironclad_toadpoles.json",
+        "pinned_digest": "97be893cf44c5451b13de2c2468096712b724f9ea67484b0131ea043321ed83c"
+      },
+      "save": {
+        "acts": [
+          {
+            "id": "ACT.UNDERDOCKS",
+            "rooms": {
+              "boss_encounters_visited": 0,
+              "boss_id": "ENCOUNTER.SOUL_FYSH_BOSS",
+              "elite_encounter_ids": [],
+              "elite_encounters_visited": 0,
+              "event_ids": [],
+              "normal_encounter_ids": [
+                "ENCOUNTER.TOADPOLES_WEAK"
+              ],
+              "normal_encounters_visited": 0
+            },
+            "saved_map": {
+              "points": [
+                {
+                  "can_modify": false,
+                  "children": [
+                    {
+                      "col": 3,
+                      "row": 1
+                    }
+                  ],
+                  "coord": {
+                    "col": 3,
+                    "row": 0
+                  },
+                  "type": "unknown"
+                },
+                {
+                  "can_modify": false,
+                  "children": [],
+                  "coord": {
+                    "col": 3,
+                    "row": 1
+                  },
+                  "type": "monster"
+                }
+              ]
+            }
+          }
+        ],
+        "ascension": 10,
+        "current_act_index": 0,
+        "events_seen": [],
+        "game_mode": "standard",
+        "map_point_history": [
+          []
+        ],
+        "modifiers": [],
+        "num_reloads": 0,
+        "players": [
+          {
+            "base_orb_slot_count": 0,
+            "character_id": "CHARACTER.IRONCLAD",
+            "current_hp": 68,
+            "deck": [
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.STRIKE_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.STRIKE_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.STRIKE_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.STRIKE_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.STRIKE_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.DEFEND_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.DEFEND_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.DEFEND_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.DEFEND_IRONCLAD"
+              },
+              {
+                "floor_added_to_deck": 1,
+                "id": "CARD.BASH"
+              }
+            ],
+            "gold": 99,
+            "max_energy": 3,
+            "max_hp": 80,
+            "max_potion_slot_count": 2,
+            "net_id": 1,
+            "potions": [],
+            "relic_grab_bag": {
+              "relic_id_lists": {}
+            },
+            "relics": [
+              {
+                "floor_added_to_deck": 1,
+                "id": "RELIC.BURNING_BLOOD"
+              }
+            ],
+            "unlock_state": {
+              "encounters_seen": [],
+              "number_of_runs": 1,
+              "unlocked_epochs": []
+            }
+          }
+        ],
+        "pre_finished_room": null,
+        "rng": {
+          "rngs": {
+            "combat_card_generation": {
+              "counter": 0,
+              "s0": 12227643034331527504,
+              "s1": 15435788670216592397,
+              "s2": 10853771780815554458,
+              "s3": 2728473906158725665
+            },
+            "combat_card_selection": {
+              "counter": 0,
+              "s0": 7557399763150217568,
+              "s1": 14092847658624760256,
+              "s2": 1697317569859099328,
+              "s3": 6227991489106853527
+            },
+            "combat_energy_costs": {
+              "counter": 0,
+              "s0": 8094771566706114574,
+              "s1": 10753743034168667217,
+              "s2": 9632650723074124962,
+              "s3": 559159816671775524
+            },
+            "combat_potion_generation": {
+              "counter": 0,
+              "s0": 10393160305098529657,
+              "s1": 7718541581003256493,
+              "s2": 15123970454127270348,
+              "s3": 10495919820082714198
+            },
+            "combat_targets": {
+              "counter": 0,
+              "s0": 8434190451361578055,
+              "s1": 17923574036259276623,
+              "s2": 4644508695626405717,
+              "s3": 9632872944875350050
+            },
+            "monster_ai": {
+              "counter": 0,
+              "s0": 1511027600742093213,
+              "s1": 16251170903561519497,
+              "s2": 12348828721540227439,
+              "s3": 15862077661637937000
+            },
+            "niche": {
+              "counter": 0,
+              "s0": 14073480017042375735,
+              "s1": 2014339587019794725,
+              "s2": 10333115920123273490,
+              "s3": 7680740182681148870
+            },
+            "shuffle": {
+              "counter": 0,
+              "s0": 16795047290245552480,
+              "s1": 8185354969474924270,
+              "s2": 17346846650764236152,
+              "s3": 12496586797358575303
+            },
+            "treasure_room_relics": {
+              "counter": 0,
+              "s0": 12458800112631351347,
+              "s1": 12635747314645979908,
+              "s2": 11541355693917505621,
+              "s3": 14724224029097393420
+            },
+            "unknown_map_point": {
+              "counter": 0,
+              "s0": 9229520258327044537,
+              "s1": 2208103010226485276,
+              "s2": 3129427607310059452,
+              "s3": 16891307273827019962
+            },
+            "up_front": {
+              "counter": 0,
+              "s0": 14317885237194047543,
+              "s1": 13955631070713679459,
+              "s2": 17369707842558282226,
+              "s3": 18016641492896462306
+            }
+          },
+          "seed": "ZPJHU3WSH2"
+        },
+        "schema_version": 20,
+        "shared_relic_grab_bag": {
+          "relic_id_lists": {}
+        },
+        "visited_map_coords": [
+          {
+            "col": 3,
+            "row": 0
+          },
+          {
+            "col": 3,
+            "row": 1
+          }
+        ]
+      },
+      "why": "The simplest root the engine accepts, in save form. Python roots it through the production path (live_coach.build_entry -> mcr_replay.start_from_save -> project_state) with no refusal, so the Rust builder must produce this exact digest from the same bytes."
+    }
+  ],
+  "dll": {
+    "build": "v0.111.0",
+    "sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+    "writer_types": [
+      "MegaCrit.Sts2.Core.Saves.SerializableRun",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializablePlayer",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableCard",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableRelic",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializablePotion",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableEnchantment",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableRunRngSet",
+      "MegaCrit.Sts2.Core.Saves.SerializableRng",
+      "MegaCrit.Sts2.Core.Saves.SerializablePlayerRngSet",
+      "MegaCrit.Sts2.Core.Unlocks.SerializableUnlockState",
+      "MegaCrit.Sts2.Core.Saves.Runs.SavedProperties",
+      "MegaCrit.Sts2.Core.Saves.Runs.SavedPropertyAttribute",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableActMap",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableRoomSet",
+      "MegaCrit.Sts2.Core.Saves.Runs.SerializableMapPoint",
+      "MegaCrit.Sts2.Core.Saves.Migrations.SerializableRuns.SerializableRunV19ToV20"
+    ]
+  },
+  "issue": 2511,
+  "purpose": "Acceptance inputs for the Rust entry builder (#1282 D2): a save the builder must root byte-identically, the schema-20 key vocabulary it must parse, and the measurement that lets it read RNG stream state out of the save instead of deriving it from a per-build seeding scheme. No captured save or .mcr bytes appear here; the one save is synthetic and the census carries key names and counts only.",
+  "refusal_cases": {
+    "card_owner_provenance": "SerializableCard has no Owner field (IL, v0.111.0). For a Colorless or off-character card whose generation pool depends on the owner, the save cannot answer and the builder refuses by name. This is the class Python refuses 79 times; whether Rust must refuse it too is a per-mechanic question the slice answers one generator at a time, not an assumption.",
+    "missing_map_point_history": "current_act_index >= 1 with no map_point_history. The global node index feeds total_floor and therefore the per-fight Encounter stream; 65 of 3092 schema-20 saves omit the key, which is harmless at act 0 and fatal after it.",
+    "multiplayer_save": "players.len() != 1. Mirrors relay_parser.require_single_player; every schema-20 save in the corpus is single-player, so this is unexercised and must refuse rather than select players[0].",
+    "note": "Names the Rust builder must be able to emit. Each is a fact the schema-20 save either genuinely lacks or records ambiguously; I5 says refuse by name rather than guess. The digest-parity corpus acceptance is what fixes the full list \u2014 these are the ones derivable statically from the save-writer IL and the corpus census.",
+    "saved_property_group_unhandled": "SavedProperties defines seven groups (ints, bools, strings, intArrays, modelIds, cards, cardArrays). Only five appear in the corpus (ints, bools, strings, cards, model_ids); intArrays and cardArrays must parse and refuse-by-name rather than be dropped, because Fur Coat's coordinate latch is an intArray.",
+    "unknown_node_type": "The visited coord is not in the current act's saved_map, or its type is 'unknown' (the ? node, 35547 points in the corpus). The encounter then comes from the NEXT save's pre_finished_room, which this input does not carry \u2014 the census's no_encounter class (17 fights).",
+    "unsupported_save_schema": "schema_version != 20. The corpus holds 16/18/19 saves; the SerializableRunV{n}To V{n+1} migration chain is the authority for what changed, and nothing below 20 is admitted."
+  },
+  "save_field_surface": {
+    "act": {
+      "id": 9276,
+      "rooms": 9276,
+      "saved_map": 3092
+    },
+    "act_rooms": {
+      "ancient_id": 9276,
+      "boss_encounters_visited": 9276,
+      "boss_id": 9276,
+      "elite_encounter_ids": 9276,
+      "elite_encounters_visited": 9276,
+      "event_ids": 9276,
+      "events_visited": 9276,
+      "normal_encounter_ids": 9276,
+      "normal_encounters_visited": 9276,
+      "second_boss_id": 9276
+    },
+    "deck_row": {
+      "current_upgrade_level": 10754,
+      "enchantment": 2909,
+      "floor_added_to_deck": 67541,
+      "id": 67541,
+      "props": 413
+    },
+    "player": {
+      "base_orb_slot_count": 3092,
+      "character_id": 3092,
+      "current_hp": 3092,
+      "deck": 3092,
+      "discovered_cards": 114,
+      "discovered_enemies": 32,
+      "discovered_epochs": 44,
+      "discovered_relics": 64,
+      "extra_fields": 3092,
+      "gold": 3092,
+      "max_energy": 3092,
+      "max_hp": 3092,
+      "max_potion_slot_count": 3092,
+      "net_id": 3092,
+      "odds": 3092,
+      "potions": 2166,
+      "relic_grab_bag": 3092,
+      "relics": 3092,
+      "rng": 3092,
+      "unlock_state": 3092
+    },
+    "player_rng_streams": {
+      "rewards": 3092,
+      "shops": 3092,
+      "transformations": 3092
+    },
+    "player_unlock_state": {
+      "encounters_seen": 3092,
+      "number_of_runs": 3092,
+      "unlocked_epochs": 3092
+    },
+    "players_per_save": {
+      "1": 3092
+    },
+    "potion_row": {
+      "id": 3642,
+      "slot_index": 3642
+    },
+    "props_groups": {
+      "bools": 974,
+      "cards": 107,
+      "ints": 2693,
+      "model_ids": 132,
+      "strings": 284
+    },
+    "props_row": {
+      "name": 4625,
+      "value": 4625
+    },
+    "relic_row": {
+      "floor_added_to_deck": 24697,
+      "id": 24697,
+      "props": 3746
+    },
+    "run": {
+      "acts": 3092,
+      "ascension": 3092,
+      "current_act_index": 3092,
+      "events_seen": 2552,
+      "extra_fields": 3092,
+      "game_mode": 3092,
+      "map_drawings": 3092,
+      "map_point_history": 3027,
+      "modifiers": 3092,
+      "num_reloads": 3092,
+      "odds": 3092,
+      "platform_type": 3092,
+      "players": 3092,
+      "pre_finished_room": 3092,
+      "rng": 3092,
+      "run_time": 3092,
+      "save_time": 3092,
+      "schema_version": 3092,
+      "shared_relic_grab_bag": 3092,
+      "start_time": 3092,
+      "visited_map_coords": 3092,
+      "win_time": 3092
+    },
+    "run_rng_streams": {
+      "combat_card_generation": 3092,
+      "combat_card_selection": 3092,
+      "combat_energy_costs": 3092,
+      "combat_orbs": 3092,
+      "combat_potion_generation": 3092,
+      "combat_targets": 3092,
+      "monster_ai": 3092,
+      "niche": 3092,
+      "shuffle": 3092,
+      "treasure_room_relics": 3092,
+      "unknown_map_point": 3092,
+      "up_front": 3092
+    },
+    "saved_map_point": {
+      "can_modify": 149844,
+      "children": 174529,
+      "coord": 174529,
+      "type": 174529
+    },
+    "saved_map_point_types": {
+      "elite": 24006,
+      "monster": 66332,
+      "rest_site": 28338,
+      "shop": 9224,
+      "treasure": 11082,
+      "unknown": 35547
+    },
+    "schema_20_saves": 3092
+  },
+  "save_schema_version": 20,
+  "schema": "sts-sim-entry-builder-fixtures-v1",
+  "seeding_falsification": {
+    "consequence": "The save's recorded (counter, s0..s3) and the derived state are interchangeable on every schema-20 capture we hold. The Rust entry builder therefore reads stream state out of the save and needs no v0.111.0 arm in rng::stream_seed; the derivation stays as a cross-check, not a dependency, so the next build's fork inherits no seeding scheme to re-verify for the nine combat streams.",
+    "corpus": "~/sts2-captures/*/*_save_*.save",
+    "measured_on": "2026-09-16",
+    "method": "live_coach.verify_stream_seeding(save, 'v0.111.0') \u2014 derive each stream as RunRngSet(seed).rngs[Name] fast-forwarded by the recorded counter, compare the four xoshiro words against the ones the save records.",
+    "save_files_scanned": 3382,
+    "saves_with_a_disagreeing_stream": 0,
+    "schema_20_saves_checked": 3092
+  },
+  "stream_map": {
+    "combat": {
+      "combat_card_generation": "generation",
+      "combat_card_selection": "sel",
+      "combat_energy_costs": "energy_costs",
+      "combat_orbs": "combat_orbs",
+      "combat_potion_generation": "potion_generation",
+      "combat_targets": "targets",
+      "monster_ai": "ai",
+      "niche": "niche",
+      "shuffle": "rng"
+    },
+    "not_combat_state": [
+      "up_front",
+      "unknown_map_point",
+      "treasure_room_relics",
+      "players[].rng.rngs.rewards",
+      "players[].rng.rngs.shops",
+      "players[].rng.rngs.transformations"
+    ],
+    "note": "save rng.rngs key -> canonical v2 rng key. Nine combat streams map one-to-one onto project_state.RNG_FIELDS / hot::RngStream; the remaining three run streams and the three player streams are not combat state and are not projected."
+  }
+}

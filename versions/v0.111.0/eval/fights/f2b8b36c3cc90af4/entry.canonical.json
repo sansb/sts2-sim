@@ -1,0 +1,367 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 399,
+   "kind": "KNOWLEDGE_DEMON",
+   "max_hp": 399
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "SETUP_STRIKE",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "CINDER",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "BURNING_PACT",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SHARP",
+     2
+    ],
+    "id": "FIEND_FIRE",
+    "uid": 10,
+    "upgrade": 1
+   },
+   {
+    "id": "OFFERING",
+    "uid": 11,
+    "upgrade": 1
+   },
+   {
+    "id": "TAUNT",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "DISMANTLE",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "ARMAMENTS",
+    "uid": 15,
+    "upgrade": 1
+   },
+   {
+    "id": "BULLY",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "BASH",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "CINDER",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "FLAME_BARRIER",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "FEEL_NO_PAIN",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "BULLY",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 26,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "id": "DEMON_FORM",
+    "uid": 28,
+    "upgrade": 1
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 29,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "LUMINESCE",
+    "uid": 30,
+    "upgrade": 0
+   },
+   {
+    "id": "RAGE",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "HAVOC",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "CLUMSY",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "BLOODLETTING",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "beating_remnant": true,
+  "blood_vial": true,
+  "bowler_hat": true,
+  "cards_drawn_combat": 5,
+  "energy": 4,
+  "entropy_card_pool": "ironclad",
+  "fully_unlocked_potion_pool": true,
+  "gold": 172,
+  "hp": 60,
+  "inky_attack_damage": 0,
+  "joss_paper_cards_exhausted": 2,
+  "lantern": true,
+  "max_hp": 90,
+  "next_card_uid": 31,
+  "next_generated_hook_uid": 1,
+  "owner_generated_cards_combat": 1,
+  "pendulum": 1,
+  "player_phase": 3,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "ps_strikes": 6,
+  "radiant_pearl": true,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD",
+   "RELIC.ARCANE_SCROLL",
+   "RELIC.BEATING_REMNANT",
+   "RELIC.BLOOD_VIAL",
+   "RELIC.BOWLER_HAT",
+   "RELIC.AMETHYST_AUBERGINE",
+   "RELIC.WAR_PAINT",
+   "RELIC.MINIATURE_TENT",
+   "RELIC.RADIANT_PEARL",
+   "RELIC.MEAL_TICKET",
+   "RELIC.BOOK_OF_FIVE_RINGS",
+   "RELIC.JOSS_PAPER",
+   "RELIC.PEAR",
+   "RELIC.LANTERN",
+   "RELIC.PENDULUM"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "BossEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 10,
+   "words": [
+    16522304281480981992,
+    9380852947788676719,
+    16387874083179168098,
+    11760590628498590092
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    4189034098736016763,
+    2511332083934641776,
+    3879079890864116063,
+    3173075875239055924
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    10763228070457211861,
+    18354910090992043600,
+    16314801065201832168,
+    8841815871972002433
+   ]
+  },
+  "generation": {
+   "counter": 75,
+   "words": [
+    15764965758308962135,
+    4685229905249402470,
+    1363773731747664018,
+    8584103389625739824
+   ]
+  },
+  "niche": {
+   "counter": 39,
+   "words": [
+    138953884218006756,
+    10478804774226026464,
+    16544821075521049392,
+    15385648226508874727
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    14533907561830091452,
+    5546692791922951600,
+    5460116841270155464,
+    7707662694430310931
+   ]
+  },
+  "rng": {
+   "counter": 481,
+   "words": [
+    1356122401637023104,
+    5164167734235782540,
+    423247764923036080,
+    8427121201001834988
+   ]
+  },
+  "sel": {
+   "counter": 5,
+   "words": [
+    13370525583828777780,
+    17181910399266406872,
+    439242131288908638,
+    11354019316712889110
+   ]
+  },
+  "targets": {
+   "counter": 5,
+   "words": [
+    10922025144202554439,
+    9751574125109126466,
+    8609619427676114836,
+    4361953017934118984
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

@@ -1,0 +1,7 @@
+target/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.dll
+*.pck
+.DS_Store

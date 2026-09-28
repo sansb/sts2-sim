@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "7UEE3Y1SPJCY",
+ "node": 29,
+ "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "dd69f34da0d69637590b24a863415a47d93d5546a75241d713e6f0f1f928ace5",
+ "save_sha256": "aeac8510e04f5cce18fbffe73010d50bde1a64c107c65f55ec5d6ba02befd4fb",
+ "entry_digest": "5a1f11937ab2beaaa3d1083e1316c059a756b97501bbfb1feb4459b6a3175cac",
+ "checksummed": true
+}

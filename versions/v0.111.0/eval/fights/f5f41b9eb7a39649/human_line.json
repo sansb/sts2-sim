@@ -1,0 +1,183 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "1856a1f4140266c8e9fc560d383cd4a1db99b556a14c05b9a321afd26b4cc97c",
+ "turns": 7,
+ "actions": [
+  {
+   "kind": "potion",
+   "slot": 0
+  },
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 5,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 13
+  },
+  {
+   "kind": "play",
+   "uid": 14
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 20
+  },
+  {
+   "kind": "play",
+   "uid": 16
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 3,
+   "target": 0
+  },
+  {
+   "kind": "potion",
+   "slot": 1
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 21,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 13
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 20
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 5,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "65934683114515f360db22a04fbaecb9f0bbc29c8ab15142f03e026b6ce63bc3",
+  "d7dd7368a96d66c2100e80dc2c38380df4f97db04264497933ba4010ffb4b766",
+  "03d02ec657f79574c8d90d32e7bb5492647ff4d32b49643f1a1c09fde1ff36dd",
+  "2cc4a365b74df7fd31aae05e4099303754323dc946eff1fe105d1d246dfb37f3",
+  "c4c9e198e6dd8bd24cb6e3a6014a16721da6ce5b368d5f18845d86d2b67f0a9a",
+  "66919245eb09daa77c235525dee283c74f1f9e80d8dc7346d31ec959411c2734",
+  "24b828f08db62a1e8a8b90e079979c1a3b47bd9010a275143fc130c6fedf3ebc",
+  "caae6fe68148105764a67635dd3bb9b40ee8216d16ae64dee48c7f8fdacd9e81",
+  "302c50fd8216dad7f76edbd97c3571d0a2e2cabcbf99f529718aaf0074b4d8ab",
+  "12f73d8011dd5ad4aaba44e883513c30bdf6d37b6ccd6a5ee1d98769be01eb83",
+  "b9aa186de8c2b7ca14222c84a1854513abba023510b118504afca1e9cd085469",
+  "aa1d7128cc5e87157fea6ca3f772645ce3871ac1effafcc3afc96473198a5560",
+  "61e2d28b9dca6e4dd25ea7507364dec346d5609f5adba4c05ec2a52dda53c001",
+  "eab4b8007205a4c1013deebff2daab0639f096110f58c97decbfdeaf5ac8cddd",
+  "2e2178da4e05508bb80b2db72e2d1b0b38300be3cfbe5739157660c6f6d63406",
+  "758ecfff8c4e8ecdeb9a78a42e9c8e527826eb2602a40c13ef15d3be5d281e58",
+  "51a3c6fc390f56bef39aaa5e9973bf279034440fd27406f25d6f1a55f3d29c60",
+  "e5f9870b06cb4cb3863189392dca0d96c57de2b5e12f30b50e7e0d4f2098e7b8",
+  "a5ef8e9ac30325a3424544c1986d8e0d889a334914dda8902b5d4cdb92d613b9",
+  "8f6cfb7ac6d6d5306c195074e9fc85ad9754d71b760972e6f3e3fb04e9659862",
+  "3d615c7e510581b893010e8513a8d8cf64ad22a24f9123a720cd7605b6d33bc4",
+  "96e40e08890978c12c73840a049e5ea161f3718ce919477f9eb8a467d895df56",
+  "2ddc8907d5c1cf101ff1a84484e3ee047f6c1884ab71ece5748c0949340cc30d",
+  "5d83e965b2ce6f891897dfd93636fae80b3e6d72af19b46d41e4b2fa041f4333",
+  "560895e29b97543f22f25de0dd8126a31c1bdd667c27237ebf99d97c0532c784",
+  "dd591a403de4b972f71a5983726067857a16534137185f299d7b197c1d073af9",
+  "b9705781c8f92af1af837e210067960756633a377670d6c389072d84ff473360",
+  "ad7d00d92cbe779fb945b5f76d319690ae13adf047f6cfd9c6b729e2d433e325",
+  "37a8e5233c6ac0680750f3c3a3fe9f6944d9e25cb739655629b8922900d154da",
+  "3f64d850ecd7ba62ce2473ebc62f8407349679b2ced704fe46195a158cdce08e",
+  "14beb0fc23cb440bb36afb34ec76bda6e94eb4b1a81e0843288edb27c1a63825",
+  "c97d5287e356893573b39255a1361b50114c7d1d8307b14c9e25b3465fee0caf"
+ ],
+ "terminal": {
+  "hp": 21,
+  "turn": 7,
+  "over": true,
+  "won": true
+ }
+}

@@ -1,0 +1,249 @@
+{
+  "actual": {
+    "entry_hp": 64,
+    "final_hp": 51,
+    "hp_lost": 13,
+    "potions_used": {
+      "count": 0,
+      "names": []
+    },
+    "turns": 4,
+    "won": true
+  },
+  "benchmark": {
+    "deadline_worlds": 5,
+    "distribution_kind": "achieved_lower_bound_biased",
+    "exact": false,
+    "exact_worlds": 5,
+    "hp_lost": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 23
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 4
+      },
+      "p10": 3,
+      "p90": 6
+    },
+    "loss_risk": {
+      "kind": "upper_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "losses": 0,
+    "outcomes": [
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "potions_used": 0,
+        "states": 6322,
+        "turns": 7,
+        "won": true,
+        "world": 0
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 58,
+        "hp_lost": 6,
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 5,
+        "won": true,
+        "world": 1
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 58,
+        "hp_lost": 6,
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 5,
+        "won": true,
+        "world": 2
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "potions_used": 0,
+        "states": 3967,
+        "turns": 6,
+        "won": true,
+        "world": 3
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 60,
+        "hp_lost": 4,
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 7,
+        "won": true,
+        "world": 4
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 56,
+        "hp_lost": 8,
+        "potions_used": 0,
+        "states": 11753,
+        "turns": 6,
+        "won": true,
+        "world": 5
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "potions_used": 0,
+        "states": 3894,
+        "turns": 5,
+        "won": true,
+        "world": 6
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 58,
+        "hp_lost": 6,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 7,
+        "won": true,
+        "world": 7
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "potions_used": 0,
+        "states": 5514,
+        "turns": 4,
+        "won": true,
+        "world": 8
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 60,
+        "hp_lost": 4,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 7,
+        "won": true,
+        "world": 9
+      }
+    ],
+    "potions_used": {
+      "count": 10,
+      "mean": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "p10": 0,
+      "p90": 0
+    },
+    "turns": {
+      "count": 10,
+      "mean": {
+        "denominator": 10,
+        "numerator": 59
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 6
+      },
+      "p10": 4,
+      "p90": 7
+    },
+    "win_rate": {
+      "kind": "lower_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "winning_worlds": 10,
+    "wins": 10,
+    "world_count": 10
+  },
+  "degraded_reasons": [
+    "upgrade_copy_assignment_ambiguous"
+  ],
+  "derived": {
+    "luck_percentile": {
+      "available": false,
+      "exact": false,
+      "kind": "unavailable",
+      "percentile": null,
+      "tied_worlds": null,
+      "world_count": 10,
+      "worse_worlds": null
+    },
+    "skill_gap": {
+      "available": false,
+      "display": null,
+      "exact": false,
+      "hp_lost": null,
+      "kind": "unavailable"
+    }
+  },
+  "fight": {
+    "encounter_id": "ENCOUNTER.SEAPUNK_WEAK",
+    "fight_index": 0,
+    "node_type": "monster",
+    "run_file": "8DVXPWUWRY.run",
+    "run_seed": "8DVXPWUWRY"
+  },
+  "metadata": {
+    "assumed_fully_unlocked": true,
+    "benchmark_name": "best play per sampled shuffle",
+    "counter_overrides": {},
+    "deadlines_seconds": {
+      "benchmark_world": 2.0,
+      "best_actual_seed": 5.0
+    },
+    "elapsed_seconds": {
+      "benchmark": 19.455929833929986,
+      "best_actual_seed": null,
+      "total": 19.45941083296202
+    },
+    "entry_caveats": [],
+    "fully_unlocked_card_pool": true,
+    "horizon": 12,
+    "k": 10,
+    "sampling_seed": "phase1a-fixtures-2026-08-08",
+    "solver_build": "v0.108.0",
+    "trust_tier": "modeled"
+  },
+  "schema_version": 2,
+  "status": "ok_benchmark_only"
+}

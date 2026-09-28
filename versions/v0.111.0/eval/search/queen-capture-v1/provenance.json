@@ -1,0 +1,23 @@
+{
+  "game_build": "v0.111.0",
+  "encounter": "ENCOUNTER.QUEEN_BOSS",
+  "character": "IRONCLAD",
+  "seed": "Y3NULJSNND7N",
+  "floor": 48,
+  "source_url": "https://relaythespire.com/seanb/Y3NULJSNND7N/0/floor/48",
+  "snapshot_sha256": "c575fc7072656cb35d45d3c0730df1561403f1747b3b7b0657e2bf166d50f190",
+  "capture_sha256": "18ac78bd58ec22d44ce68d231b8d5546498d34b47e94c7f7b423fd5c0f64610b",
+  "entry_digest": "151a40be9184679934c9bb5388dc5f30e48ee7ed801b69218f9fff490b51c537",
+  "recording": "complete five-turn human loss",
+  "recorded_actions": 35,
+  "native_action_checkpoints": 28,
+  "native_checks": [
+    "HP, max HP, block, energy, turn",
+    "living monster identities, HP, max HP and block",
+    "ordered card identities and upgrades in all piles",
+    "all nine represented RNG streams: complete words and counters",
+    "Joss Paper and Tuning Fork counters at completed actions"
+  ],
+  "native_full_checksum": "not certified: full power/affliction/cost serialization is outside this fixture",
+  "checkpoint_alignment": "Only completed-action checksums are compared. Native turn-start checksums can be recorded with a queued relic choice outstanding; Rust exposes its suspended choice before the remaining hook suffix."
+}

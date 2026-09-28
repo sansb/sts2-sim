@@ -1,0 +1,2182 @@
+{
+  "schema": "sts-sim-rss-origin/v1",
+  "diagnostic_only": true,
+  "command": [
+    "versions/v0.111.0/rust/tools/profile_rss_origin.py",
+    "--output",
+    "versions/v0.111.0/rust/benchmarks/2026-09-14-issue-2444-rss-origin.json"
+  ],
+  "work_directory": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809",
+  "harness_sha256": "c1bfae20765be8facd71744d64cf858dd93d8d5d7ed25f9c14c30f3862f299c8",
+  "common_harness_sha256": "50a219575b6b16f9fa9518ff8c395088599c9b780c10459e02469daf9f6e2023",
+  "environment": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python": "3.12.8",
+    "cpu": {
+      "command": [
+        "sysctl",
+        "-n",
+        "machdep.cpu.brand_string"
+      ],
+      "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+      "started_utc": "2026-09-14T21:50:21.386278+00:00",
+      "returncode": 0,
+      "stdout": "Apple M5 Max\n",
+      "stderr": ""
+    },
+    "rustc": {
+      "command": [
+        "rustc",
+        "-Vv"
+      ],
+      "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+      "started_utc": "2026-09-14T21:50:21.389165+00:00",
+      "returncode": 0,
+      "stdout": "rustc 1.97.1 (8bab26f4f 2026-07-14) (Homebrew)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.8\n",
+      "stderr": ""
+    },
+    "cargo": {
+      "command": [
+        "cargo",
+        "-V"
+      ],
+      "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+      "started_utc": "2026-09-14T21:50:21.400326+00:00",
+      "returncode": 0,
+      "stdout": "cargo 1.97.1 (c980f4866 2026-06-30) (Homebrew)\n",
+      "stderr": ""
+    }
+  },
+  "checkpoints": [
+    {
+      "ref": "b5b1ddd5",
+      "source_sha": "b5b1ddd558cd98a0b84c6cad6a9bbabb84965211",
+      "branch": "codex/issue2444-rss-sts2444-rss-q3yf2809-b5b1ddd5",
+      "directory": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5",
+      "commands": [
+        {
+          "command": [
+            "git",
+            "worktree",
+            "add",
+            "--no-checkout",
+            "-b",
+            "codex/issue2444-rss-sts2444-rss-q3yf2809-b5b1ddd5",
+            "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5",
+            "b5b1ddd558cd98a0b84c6cad6a9bbabb84965211"
+          ],
+          "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+          "started_utc": "2026-09-14T21:50:21.423939+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "Preparing worktree (new branch 'codex/issue2444-rss-sts2444-rss-q3yf2809-b5b1ddd5')\n"
+        },
+        {
+          "command": [
+            "git",
+            "sparse-checkout",
+            "set",
+            "versions/v0.111.0/rust"
+          ],
+          "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5",
+          "started_utc": "2026-09-14T21:50:21.499178+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "git",
+            "checkout",
+            "codex/issue2444-rss-sts2444-rss-q3yf2809-b5b1ddd5"
+          ],
+          "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5",
+          "started_utc": "2026-09-14T21:50:21.513106+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "Already on 'codex/issue2444-rss-sts2444-rss-q3yf2809-b5b1ddd5'\n"
+        }
+      ],
+      "source_tree": "9f5f93dda0416f44fbb7372a8b0a3669249a8565",
+      "original_bench_sha256": "dafd78a903f677b112407476a5851af9a7ad78d7a40d09639a3990418f8851c7",
+      "cargo_manifest": "[package]\nname = \"sts-sim\"\nversion = \"0.1.0\"\nedition = \"2024\"\nlicense = \"MIT\"\ndescription = \"Rust port of the v0.111.0 STS2 combat simulator (#1282)\"\n\n[features]\ndefault = []\nallocation-counting = []\n\n[lib]\nname = \"sts_sim\"\npath = \"src/lib.rs\"\n\n[[bin]]\nname = \"sts-sim\"\npath = \"src/main.rs\"\n\n[dependencies]\nrust_decimal = { version = \"1.38\", default-features = false, features = [\"serde\"] }\nserde = { version = \"1.0\", features = [\"derive\"] }\nserde_json = \"1.0\"\nsha2 = \"0.10\"\n\n# Benchmarks ship from release builds, so pin the codegen settings here rather\n# than leaving them to whatever profile a caller happens to use (PORT_PLAN \u00a72).\n# dev/test stay on cargo defaults for compile speed.\n[profile.release]\nlto = \"thin\"\ncodegen-units = 1\n",
+      "cargo_lock_sha256": "dbb9a05c85030c39e9ad6f70dadd8e04b8f0b3871d373f16b31ccedfac287a18",
+      "binaries": {
+        "plain": {
+          "path": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain",
+          "sha256": "6786651cb4f80ada07f8988a60c221f2ab04f0776e1c0dbbc64e8611ab8b5d2d",
+          "file_bytes": 1518592,
+          "build": {
+            "command": [
+              "cargo",
+              "build",
+              "--release",
+              "--locked",
+              "--manifest-path",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5/versions/v0.111.0/rust/Cargo.toml"
+            ],
+            "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5",
+            "started_utc": "2026-09-14T21:50:21.563620+00:00",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "   Compiling version_check v0.9.5\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.24\n   Compiling typenum v1.20.1\n   Compiling serde_core v1.0.229\n   Compiling libc v0.2.189\n   Compiling autocfg v1.5.1\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.151\n   Compiling rust_decimal v1.42.1\n   Compiling arrayvec v0.7.8\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.18\n   Compiling cfg-if v1.0.4\n   Compiling generic-array v0.14.7\n   Compiling num-traits v0.2.19\n   Compiling syn v3.0.3\n   Compiling serde_derive v1.0.229\n   Compiling cpufeatures v0.2.17\n   Compiling block-buffer v0.10.4\n   Compiling crypto-common v0.1.7\n   Compiling digest v0.10.7\n   Compiling sha2 v0.10.9\n   Compiling sts-sim v0.1.0 (/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5/versions/v0.111.0/rust)\n    Finished `release` profile [optimized] target(s) in 9.45s\n"
+          },
+          "sections": {
+            "command": [
+              "size",
+              "-m",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain"
+            ],
+            "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+            "started_utc": "2026-09-14T21:50:31.029863+00:00",
+            "returncode": 0,
+            "stdout": "Segment __PAGEZERO: 4294967296 (zero fill) \nSegment __TEXT: 901120\n\tSection __text: 662660\n\tSection __stubs: 888\n\tSection __stub_helper: 912\n\tSection __cstring: 12109\n\tSection __gcc_except_tab: 22148\n\tSection __const: 115520\n\tSection __unwind_info: 10352\n\tSection __eh_frame: 61136\n\ttotal 885725\nSegment __DATA_CONST: 360448\n\tSection __got: 16\n\tSection __const: 344672\n\ttotal 344688\nSegment __DATA: 16384\n\tSection __la_symbol_ptr: 592\n\tSection __data: 2560\n\tSection __thread_vars: 168\n\tSection __thread_data: 32\n\tSection __thread_bss: 168 (zerofill)\n\tSection __common: 81 (zerofill)\n\tSection __bss: 120 (zerofill)\n\ttotal 3721\nSegment __LINKEDIT: 245760\ntotal 4296491008\n",
+            "stderr": ""
+          }
+        },
+        "allocation-counting": {
+          "path": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+          "sha256": "c923cc82c271c835e6625da2b45507e9aa43aab37c4a982f2267463e0efedd2c",
+          "file_bytes": 1552480,
+          "build": {
+            "command": [
+              "cargo",
+              "build",
+              "--release",
+              "--locked",
+              "--manifest-path",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5/versions/v0.111.0/rust/Cargo.toml",
+              "--features",
+              "allocation-counting"
+            ],
+            "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5",
+            "started_utc": "2026-09-14T21:50:31.039979+00:00",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "   Compiling sts-sim v0.1.0 (/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5/versions/v0.111.0/rust)\n    Finished `release` profile [optimized] target(s) in 5.98s\n"
+          },
+          "sections": {
+            "command": [
+              "size",
+              "-m",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting"
+            ],
+            "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+            "started_utc": "2026-09-14T21:50:37.038192+00:00",
+            "returncode": 0,
+            "stdout": "Segment __PAGEZERO: 4294967296 (zero fill) \nSegment __TEXT: 933888\n\tSection __text: 696868\n\tSection __stubs: 888\n\tSection __stub_helper: 912\n\tSection __cstring: 12109\n\tSection __gcc_except_tab: 22056\n\tSection __const: 115584\n\tSection __unwind_info: 10272\n\tSection __eh_frame: 61280\n\ttotal 919969\nSegment __DATA_CONST: 360448\n\tSection __got: 16\n\tSection __const: 344648\n\ttotal 344664\nSegment __DATA: 16384\n\tSection __la_symbol_ptr: 592\n\tSection __data: 2560\n\tSection __thread_vars: 216\n\tSection __thread_data: 32\n\tSection __thread_bss: 184 (zerofill)\n\tSection __common: 104 (zerofill)\n\tSection __bss: 120 (zerofill)\n\ttotal 3808\nSegment __LINKEDIT: 245760\ntotal 4296523776\n",
+            "stderr": ""
+          }
+        }
+      },
+      "measurements": {
+        "plain": [
+          {
+            "repetition": 0,
+            "peak_rss_bytes": 2899968,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 115771.42228923016,
+                "nanos_per_transition": 508.250087770913,
+                "transitions_per_second": 1967535.3218054667,
+                "wall_nanos": 2073050458,
+                "wall_seconds": 2.073050458
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:14.322736+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":115771.42228923016,\"nanos_per_transition\":508.250087770913,\"transitions_per_second\":1967535.3218054667,\"wall_nanos\":2073050458,\"wall_seconds\":2.073050458},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.28 real         2.07 user         0.01 sys\n             2899968  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 375  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 543  involuntary context switches\n         46466396770  instructions retired\n          8966134141  cycles elapsed\n             1786168  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 1,
+            "peak_rss_bytes": 2867200,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 90942.88304530653,
+                "nanos_per_transition": 647.0086890752182,
+                "transitions_per_second": 1545574.2973549846,
+                "wall_nanos": 2639019041,
+                "wall_seconds": 2.639019041
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:45.581088+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":90942.88304530653,\"nanos_per_transition\":647.0086890752182,\"transitions_per_second\":1545574.2973549846,\"wall_nanos\":2639019041,\"wall_seconds\":2.639019041},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.65 real         2.39 user         0.08 sys\n             2867200  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 373  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n               20568  involuntary context switches\n         46344781827  instructions retired\n          9835990890  cycles elapsed\n             1753400  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 2,
+            "peak_rss_bytes": 2899968,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 115325.10929156384,
+                "nanos_per_transition": 510.21703687359025,
+                "transitions_per_second": 1959950.2324101275,
+                "wall_nanos": 2081073250,
+                "wall_seconds": 2.08107325
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:50.603152+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":115325.10929156384,\"nanos_per_transition\":510.21703687359025,\"transitions_per_second\":1959950.2324101275,\"wall_nanos\":2081073250,\"wall_seconds\":2.08107325},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.10 real         2.07 user         0.02 sys\n             2899968  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 375  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 402  involuntary context switches\n         46491315584  instructions retired\n          8983289675  cycles elapsed\n             1786168  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 3,
+            "peak_rss_bytes": 2883584,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 115305.69152141127,
+                "nanos_per_transition": 510.30295871334704,
+                "transitions_per_second": 1959620.2274063844,
+                "wall_nanos": 2081423708,
+                "wall_seconds": 2.081423708
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:20.508667+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":115305.69152141127,\"nanos_per_transition\":510.30295871334704,\"transitions_per_second\":1959620.2274063844,\"wall_nanos\":2081423708,\"wall_seconds\":2.081423708},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.10 real         2.08 user         0.01 sys\n             2883584  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 374  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 223  involuntary context switches\n         46384644628  instructions retired\n          9025563984  cycles elapsed\n             1769784  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 4,
+            "peak_rss_bytes": 2883584,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 116631.91096465709,
+                "nanos_per_transition": 504.5003125919388,
+                "transitions_per_second": 1982159.3268443472,
+                "wall_nanos": 2057755875,
+                "wall_seconds": 2.057755875
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:24.717029+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":116631.91096465709,\"nanos_per_transition\":504.5003125919388,\"transitions_per_second\":1982159.3268443472,\"wall_nanos\":2057755875,\"wall_seconds\":2.057755875},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.07 real         2.05 user         0.01 sys\n             2883584  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 374  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 272  involuntary context switches\n         46124182417  instructions retired\n          8912477131  cycles elapsed\n             1769784  peak memory footprint\n"
+            }
+          }
+        ],
+        "allocation-counting": [
+          {
+            "repetition": 0,
+            "peak_rss_bytes": 2850816,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3087816250,
+                "allocated_bytes_per_transition": 757.0403672648819,
+                "allocations": 69896921,
+                "allocations_per_transition": 17.136638472099637,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 116505.9572165853,
+                "nanos_per_transition": 505.04572423261743,
+                "transitions_per_second": 1980018.7428958672,
+                "wall_nanos": 2059980500,
+                "wall_seconds": 2.0599805
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:16.609382+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3087816250,\"allocated_bytes_per_transition\":757.0403672648819,\"allocations\":69896921,\"allocations_per_transition\":17.136638472099637,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":116505.9572165853,\"nanos_per_transition\":505.04572423261743,\"transitions_per_second\":1980018.7428958672,\"wall_nanos\":2059980500,\"wall_seconds\":2.0599805},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.25 real         2.06 user         0.01 sys\n             2850816  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 372  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 506  involuntary context switches\n         46938854250  instructions retired\n          8907542856  cycles elapsed\n             1737016  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 1,
+            "peak_rss_bytes": 2883584,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3087816250,
+                "allocated_bytes_per_transition": 757.0403672648819,
+                "allocations": 69896921,
+                "allocations_per_transition": 17.136638472099637,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 102877.95542024879,
+                "nanos_per_transition": 571.9479484162008,
+                "transitions_per_second": 1748410.8523671282,
+                "wall_nanos": 2332861292,
+                "wall_seconds": 2.332861292
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:48.241776+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3087816250,\"allocated_bytes_per_transition\":757.0403672648819,\"allocations\":69896921,\"allocations_per_transition\":17.136638472099637,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":102877.95542024879,\"nanos_per_transition\":571.9479484162008,\"transitions_per_second\":1748410.8523671282,\"wall_nanos\":2332861292,\"wall_seconds\":2.332861292},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.35 real         2.29 user         0.02 sys\n             2883584  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 374  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                5265  involuntary context switches\n         47023519628  instructions retired\n          9616326872  cycles elapsed\n             1769784  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 2,
+            "peak_rss_bytes": 2867200,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3087816250,
+                "allocated_bytes_per_transition": 757.0403672648819,
+                "allocations": 69896921,
+                "allocations_per_transition": 17.136638472099637,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 112094.64865602588,
+                "nanos_per_transition": 524.9210042169266,
+                "transitions_per_second": 1905048.55390916,
+                "wall_nanos": 2141047792,
+                "wall_seconds": 2.141047792
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:52.708484+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3087816250,\"allocated_bytes_per_transition\":757.0403672648819,\"allocations\":69896921,\"allocations_per_transition\":17.136638472099637,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":112094.64865602588,\"nanos_per_transition\":524.9210042169266,\"transitions_per_second\":1905048.55390916,\"wall_nanos\":2141047792,\"wall_seconds\":2.141047792},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.16 real         2.12 user         0.01 sys\n             2867200  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 373  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                1146  involuntary context switches\n         47231036232  instructions retired\n          9143291737  cycles elapsed\n             1753400  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 3,
+            "peak_rss_bytes": 2883584,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3087816250,
+                "allocated_bytes_per_transition": 757.0403672648819,
+                "allocations": 69896921,
+                "allocations_per_transition": 17.136638472099637,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 115364.7431974976,
+                "nanos_per_transition": 510.04175026968716,
+                "transitions_per_second": 1960623.8106414718,
+                "wall_nanos": 2080358291,
+                "wall_seconds": 2.080358291
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:22.612565+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3087816250,\"allocated_bytes_per_transition\":757.0403672648819,\"allocations\":69896921,\"allocations_per_transition\":17.136638472099637,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":115364.7431974976,\"nanos_per_transition\":510.04175026968716,\"transitions_per_second\":1960623.8106414718,\"wall_nanos\":2080358291,\"wall_seconds\":2.080358291},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.10 real         2.07 user         0.01 sys\n             2883584  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 374  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 227  involuntary context switches\n         47224179678  instructions retired\n          9010815723  cycles elapsed\n             1769784  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 4,
+            "peak_rss_bytes": 2867200,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3087816250,
+                "allocated_bytes_per_transition": 757.0403672648819,
+                "allocations": 69896921,
+                "allocations_per_transition": 17.136638472099637,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 113987.0613999024,
+                "nanos_per_transition": 516.2062677748357,
+                "transitions_per_second": 1937210.1084913414,
+                "wall_nanos": 2105502125,
+                "wall_seconds": 2.105502125
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:26.798294+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3087816250,\"allocated_bytes_per_transition\":757.0403672648819,\"allocations\":69896921,\"allocations_per_transition\":17.136638472099637,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":113987.0613999024,\"nanos_per_transition\":516.2062677748357,\"transitions_per_second\":1937210.1084913414,\"wall_nanos\":2105502125,\"wall_seconds\":2.105502125},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.12 real         2.10 user         0.02 sys\n             2867200  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 373  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 248  involuntary context switches\n         46922644543  instructions retired\n          9129140208  cycles elapsed\n             1753400  peak memory footprint\n"
+            }
+          }
+        ]
+      },
+      "source_status": "",
+      "vmmap": {
+        "command": [
+          "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/b5b1ddd5-allocation-counting",
+          "bench"
+        ],
+        "pid": 62471,
+        "stdout": "{\"allocation\":{\"allocated_bytes\":3087816250,\"allocated_bytes_per_transition\":757.0403672648819,\"allocations\":69896921,\"allocations_per_transition\":17.136638472099637,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":97959.37191539713,\"nanos_per_transition\":600.665708541728,\"transitions_per_second\":1664819.5257021743,\"wall_nanos\":2449995292,\"wall_seconds\":2.449995292},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+        "stderr": "",
+        "observer_command": [
+          "vmmap",
+          "-summary",
+          "62471"
+        ],
+        "observer_returncode": 0,
+        "observer_stdout": "Process:         b5b1ddd5-allocation-counting [62471]\nPath:            /private/var/folders/*/b5b1ddd5-allocation-counting\nLoad Address:    0x100208000\nIdentifier:      b5b1ddd5-allocation-counting\nVersion:         0\nCode Type:       ARM64\nPlatform:        macOS\nParent Process:  Python [58865]\nTarget Type:     live task\n\nDate/Time:       2026-09-14 14:54:41.882 -0700\nLaunch Time:     2026-09-14 14:54:41.712 -0700\nOS Version:      macOS 26.6.2 (25G83)\nReport Version:  7\nAnalysis Tool:   /usr/bin/vmmap\n\nPhysical footprint:         1728K\nPhysical footprint (peak):  1728K\nIdle exit:                  untracked\n----\n\nReadOnly portion of Libraries: Total=579.5M resident=45.0M(8%) swapped_out_or_unallocated=534.5M(92%)\nWritable regions: Total=85.2M written=1008K(1%) resident=1008K(1%) swapped_out=0K(0%) unallocated=84.2M(99%)\n\n                                VIRTUAL RESIDENT    DIRTY  SWAPPED VOLATILE   NONVOL    EMPTY   REGION \nREGION TYPE                        SIZE     SIZE     SIZE     SIZE     SIZE     SIZE     SIZE    COUNT (non-coalesced) \n===========                     ======= ========    =====  ======= ========   ======    =====  ======= \nKernel Alloc Once                   32K      16K      16K       0K       0K       0K       0K        1 \nMALLOC guard page                 4048K       0K       0K       0K       0K       0K       0K        4 \nMALLOC metadata                    880K     336K     336K       0K       0K       0K       0K        4 \nMALLOC_SMALL                      8192K     336K     336K       0K       0K       0K       0K        2         see MALLOC ZONE table below\nMALLOC_TINY                       4096K      48K      48K       0K       0K       0K       0K        1         see MALLOC ZONE table below\nMemory Tag 22                     64.0M      16K      16K       0K       0K       0K       0K        1 \nStack                             8160K      48K      48K       0K       0K       0K       0K        1 \nStack Guard                       56.0M       0K       0K       0K       0K       0K       0K        1 \nVM_ALLOCATE                         32K       0K       0K       0K       0K       0K       0K        2 \nVM_ALLOCATE (reserved)             128K       0K       0K       0K       0K       0K       0K        1         reserved VM address space (unallocated)\n__AUTH                              35K      35K       0K       0K       0K       0K       0K       12 \n__AUTH_CONST                       225K     208K       0K       0K       0K       0K       0K       45 \n__DATA                             206K     189K      90K       0K       0K       0K       0K       34 \n__DATA_CONST                       442K     442K     352K       0K       0K       0K       0K       43 \n__DATA_DIRTY                       153K     153K     132K       0K       0K       0K       0K       35 \n__LINKEDIT                       572.6M    38.6M       0K       0K       0K       0K       0K        2 \n__OBJC_RO                         79.2M    58.0M       0K       0K       0K       0K       0K        1 \n__OBJC_RW                         2599K    2263K      23K       0K       0K       0K       0K        1 \n__TEXT                            7068K    6572K       0K       0K       0K       0K       0K       46 \n__TPRO_CONST                       128K     112K      32K       0K       0K       0K       0K        2 \npage table in kernel               224K     224K     224K       0K       0K       0K       0K        1 \nshared memory                       32K      32K      32K       0K       0K       0K       0K        1 \nunused but dirty shlib __DATA       58K      58K      58K       0K       0K       0K       0K       19 \n===========                     ======= ========    =====  ======= ========   ======    =====  ======= \nTOTAL                            807.7M   107.5M    1744K       0K       0K       0K       0K      260 \nTOTAL, minus reserved VM space   807.6M   107.5M    1744K       0K       0K       0K       0K      260 \n\n                                 VIRTUAL   RESIDENT      DIRTY    SWAPPED ALLOCATION      BYTES DIRTY+SWAP          REGION\nMALLOC ZONE                         SIZE       SIZE       SIZE       SIZE      COUNT  ALLOCATED  FRAG SIZE  % FRAG   COUNT\n===========                      =======  =========  =========  =========  =========  =========  =========  ======  ======\nDefaultMallocZone_0x10083c000      12.8M       704K       704K         0K        228        15K       689K     98%       5\n\n",
+        "observer_stderr": ""
+      }
+    },
+    {
+      "ref": "49c0f490",
+      "source_sha": "49c0f490c06a11460269049a482d73e1d42ae958",
+      "branch": "codex/issue2444-rss-sts2444-rss-q3yf2809-49c0f490",
+      "directory": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490",
+      "commands": [
+        {
+          "command": [
+            "git",
+            "worktree",
+            "add",
+            "--no-checkout",
+            "-b",
+            "codex/issue2444-rss-sts2444-rss-q3yf2809-49c0f490",
+            "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490",
+            "49c0f490c06a11460269049a482d73e1d42ae958"
+          ],
+          "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+          "started_utc": "2026-09-14T21:50:37.083135+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "Preparing worktree (new branch 'codex/issue2444-rss-sts2444-rss-q3yf2809-49c0f490')\n"
+        },
+        {
+          "command": [
+            "git",
+            "sparse-checkout",
+            "set",
+            "versions/v0.111.0/rust"
+          ],
+          "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490",
+          "started_utc": "2026-09-14T21:50:37.153825+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "git",
+            "checkout",
+            "codex/issue2444-rss-sts2444-rss-q3yf2809-49c0f490"
+          ],
+          "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490",
+          "started_utc": "2026-09-14T21:50:37.167442+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "Already on 'codex/issue2444-rss-sts2444-rss-q3yf2809-49c0f490'\n"
+        }
+      ],
+      "source_tree": "487b0df12d008cd738eef62688289478ebda3abc",
+      "original_bench_sha256": "da7032c304cea1218f6caa6c95551d781129123236d274e38d8fa82bb6295e5f",
+      "cargo_manifest": "[package]\nname = \"sts-sim\"\nversion = \"0.1.0\"\nedition = \"2024\"\nlicense = \"MIT\"\ndescription = \"Rust port of the v0.111.0 STS2 combat simulator (#1282)\"\n\n[features]\ndefault = []\nallocation-counting = []\n\n[lib]\nname = \"sts_sim\"\npath = \"src/lib.rs\"\n\n[[bin]]\nname = \"sts-sim\"\npath = \"src/main.rs\"\n\n[dependencies]\nrust_decimal = { version = \"1.38\", default-features = false, features = [\"serde\"] }\nserde = { version = \"1.0\", features = [\"derive\"] }\nserde_json = { version = \"1.0\", features = [\"arbitrary_precision\"] }\nsha2 = \"0.10\"\n\n# Benchmarks ship from release builds, so pin the codegen settings here rather\n# than leaving them to whatever profile a caller happens to use (PORT_PLAN \u00a72).\n# dev/test stay on cargo defaults for compile speed.\n[profile.release]\nlto = \"thin\"\ncodegen-units = 1\n# The shipped CLI exposes typed refusals and never catches a panic.  Keeping\n# unwinding in this large binary only retains landing pads/unwind metadata in\n# the measured release image; dev/test keep Cargo's unwinding default for the\n# invariant tests that deliberately use `catch_unwind`.\npanic = \"abort\"\n",
+      "cargo_lock_sha256": "dbb9a05c85030c39e9ad6f70dadd8e04b8f0b3871d373f16b31ccedfac287a18",
+      "binaries": {
+        "plain": {
+          "path": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain",
+          "sha256": "6a2073b42a76d193af4a862c410888518a86d5ca116fa1270f38ddf73b70f701",
+          "file_bytes": 2940304,
+          "build": {
+            "command": [
+              "cargo",
+              "build",
+              "--release",
+              "--locked",
+              "--manifest-path",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490/versions/v0.111.0/rust/Cargo.toml"
+            ],
+            "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490",
+            "started_utc": "2026-09-14T21:50:37.229988+00:00",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "   Compiling typenum v1.20.1\n   Compiling serde_json v1.0.151\n   Compiling cfg-if v1.0.4\n   Compiling arrayvec v0.7.8\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.18\n   Compiling serde_core v1.0.229\n   Compiling libc v0.2.189\n   Compiling zmij v1.0.23\n   Compiling num-traits v0.2.19\n   Compiling cpufeatures v0.2.17\n   Compiling generic-array v0.14.7\n   Compiling crypto-common v0.1.7\n   Compiling block-buffer v0.10.4\n   Compiling digest v0.10.7\n   Compiling sha2 v0.10.9\n   Compiling serde v1.0.229\n   Compiling rust_decimal v1.42.1\n   Compiling sts-sim v0.1.0 (/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490/versions/v0.111.0/rust)\n    Finished `release` profile [optimized] target(s) in 24.05s\n"
+          },
+          "sections": {
+            "command": [
+              "size",
+              "-m",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain"
+            ],
+            "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+            "started_utc": "2026-09-14T21:51:01.300563+00:00",
+            "returncode": 0,
+            "stdout": "Segment __PAGEZERO: 4294967296 (zero fill) \nSegment __TEXT: 2097152\n\tSection __text: 1850056\n\tSection __stubs: 876\n\tSection __stub_helper: 900\n\tSection __cstring: 14099\n\tSection __gcc_except_tab: 4576\n\tSection __const: 186240\n\tSection __unwind_info: 10328\n\tSection __eh_frame: 27880\n\ttotal 2094955\nSegment __DATA_CONST: 376832\n\tSection __got: 16\n\tSection __const: 369320\n\ttotal 369336\nSegment __DATA: 16384\n\tSection __la_symbol_ptr: 584\n\tSection __data: 2704\n\tSection __thread_vars: 240\n\tSection __thread_data: 72\n\tSection __thread_bss: 192 (zerofill)\n\tSection __common: 81 (zerofill)\n\tSection __bss: 120 (zerofill)\n\ttotal 3993\nSegment __LINKEDIT: 458752\ntotal 4297916416\n",
+            "stderr": ""
+          }
+        },
+        "allocation-counting": {
+          "path": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+          "sha256": "035e136b7d897e21496f8b4d812a98526e646a90618e03de6ad66bb132f01f99",
+          "file_bytes": 3057824,
+          "build": {
+            "command": [
+              "cargo",
+              "build",
+              "--release",
+              "--locked",
+              "--manifest-path",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490/versions/v0.111.0/rust/Cargo.toml",
+              "--features",
+              "allocation-counting"
+            ],
+            "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490",
+            "started_utc": "2026-09-14T21:51:01.313025+00:00",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "   Compiling sts-sim v0.1.0 (/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490/versions/v0.111.0/rust)\n    Finished `release` profile [optimized] target(s) in 25.44s\n"
+          },
+          "sections": {
+            "command": [
+              "size",
+              "-m",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting"
+            ],
+            "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+            "started_utc": "2026-09-14T21:51:26.776624+00:00",
+            "returncode": 0,
+            "stdout": "Segment __PAGEZERO: 4294967296 (zero fill) \nSegment __TEXT: 2211840\n\tSection __text: 1963116\n\tSection __stubs: 876\n\tSection __stub_helper: 900\n\tSection __cstring: 14099\n\tSection __gcc_except_tab: 4624\n\tSection __const: 186112\n\tSection __unwind_info: 10136\n\tSection __eh_frame: 27968\n\ttotal 2207831\nSegment __DATA_CONST: 376832\n\tSection __got: 16\n\tSection __const: 369320\n\ttotal 369336\nSegment __DATA: 16384\n\tSection __la_symbol_ptr: 584\n\tSection __data: 2704\n\tSection __thread_vars: 288\n\tSection __thread_data: 72\n\tSection __thread_bss: 200 (zerofill)\n\tSection __common: 104 (zerofill)\n\tSection __bss: 120 (zerofill)\n\ttotal 4072\nSegment __LINKEDIT: 458752\ntotal 4298031104\n",
+            "stderr": ""
+          }
+        }
+      },
+      "measurements": {
+        "plain": [
+          {
+            "repetition": 0,
+            "peak_rss_bytes": 3768320,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 95286.44115836588,
+                "nanos_per_transition": 617.5153025399627,
+                "transitions_per_second": 1619393.0674864282,
+                "wall_nanos": 2518721416,
+                "wall_seconds": 2.518721416
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:18.868892+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":95286.44115836588,\"nanos_per_transition\":617.5153025399627,\"transitions_per_second\":1619393.0674864282,\"wall_nanos\":2518721416,\"wall_seconds\":2.518721416},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.72 real         2.52 user         0.01 sys\n             3768320  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 429  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 586  involuntary context switches\n         55676143362  instructions retired\n         10899411711  cycles elapsed\n             1802552  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 1,
+            "peak_rss_bytes": 3768320,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 94349.3734489855,
+                "nanos_per_transition": 623.648397322742,
+                "transitions_per_second": 1603467.6017655085,
+                "wall_nanos": 2543737083,
+                "wall_seconds": 2.543737083
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:40.327971+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":94349.3734489855,\"nanos_per_transition\":623.648397322742,\"transitions_per_second\":1603467.6017655085,\"wall_nanos\":2543737083,\"wall_seconds\":2.543737083},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.56 real         2.54 user         0.02 sys\n             3768320  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 429  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 256  involuntary context switches\n         55926388922  instructions retired\n         11021361153  cycles elapsed\n             1802552  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 2,
+            "peak_rss_bytes": 3768320,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 94969.90572654817,
+                "nanos_per_transition": 619.5734858291654,
+                "transitions_per_second": 1614013.547822686,
+                "wall_nanos": 2527116334,
+                "wall_seconds": 2.527116334
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:54.872889+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":94969.90572654817,\"nanos_per_transition\":619.5734858291654,\"transitions_per_second\":1614013.547822686,\"wall_nanos\":2527116334,\"wall_seconds\":2.527116334},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.55 real         2.52 user         0.02 sys\n             3768320  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 429  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 247  involuntary context switches\n         55674623390  instructions retired\n         10936801543  cycles elapsed\n             1802552  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 3,
+            "peak_rss_bytes": 3719168,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 95252.89186767649,
+                "nanos_per_transition": 617.7327993527508,
+                "transitions_per_second": 1618822.8972911618,
+                "wall_nanos": 2519608542,
+                "wall_seconds": 2.519608542
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:15.300189+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":95252.89186767649,\"nanos_per_transition\":617.7327993527508,\"transitions_per_second\":1618822.8972911618,\"wall_nanos\":2519608542,\"wall_seconds\":2.519608542},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.54 real         2.52 user         0.01 sys\n             3719168  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 426  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 278  involuntary context switches\n         55689747433  instructions retired\n         10922405450  cycles elapsed\n             1753400  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 4,
+            "peak_rss_bytes": 3751936,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 96131.09878596937,
+                "nanos_per_transition": 612.0894932333039,
+                "transitions_per_second": 1633748.0238675494,
+                "wall_nanos": 2496590625,
+                "wall_seconds": 2.496590625
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:28.927652+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":96131.09878596937,\"nanos_per_transition\":612.0894932333039,\"transitions_per_second\":1633748.0238675494,\"wall_nanos\":2496590625,\"wall_seconds\":2.496590625},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.52 real         2.49 user         0.02 sys\n             3751936  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 428  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 230  involuntary context switches\n         55662054162  instructions retired\n         10846704988  cycles elapsed\n             1786168  peak memory footprint\n"
+            }
+          }
+        ],
+        "allocation-counting": [
+          {
+            "repetition": 0,
+            "peak_rss_bytes": 3866624,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3384057399,
+                "allocated_bytes_per_transition": 829.6698536334216,
+                "allocations": 53905710,
+                "allocations_per_transition": 13.216070903206825,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 88649.46827927032,
+                "nanos_per_transition": 663.7471908404433,
+                "transitions_per_second": 1506597.7134061991,
+                "wall_nanos": 2707292042,
+                "wall_seconds": 2.707292042
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:21.600932+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3384057399,\"allocated_bytes_per_transition\":829.6698536334216,\"allocations\":53905710,\"allocations_per_transition\":13.216070903206825,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":88649.46827927032,\"nanos_per_transition\":663.7471908404433,\"transitions_per_second\":1506597.7134061991,\"wall_nanos\":2707292042,\"wall_seconds\":2.707292042},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.95 real         2.70 user         0.01 sys\n             3866624  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 435  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                1456  involuntary context switches\n         56214278578  instructions retired\n         11647847475  cycles elapsed\n             1818936  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 1,
+            "peak_rss_bytes": 3850240,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3384057399,
+                "allocated_bytes_per_transition": 829.6698536334216,
+                "allocations": 53905710,
+                "allocations_per_transition": 13.216070903206825,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 90412.18632075397,
+                "nanos_per_transition": 650.806466852996,
+                "transitions_per_second": 1536555.106521214,
+                "wall_nanos": 2654509417,
+                "wall_seconds": 2.654509417
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:42.898571+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3384057399,\"allocated_bytes_per_transition\":829.6698536334216,\"allocations\":53905710,\"allocations_per_transition\":13.216070903206825,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":90412.18632075397,\"nanos_per_transition\":650.806466852996,\"transitions_per_second\":1536555.106521214,\"wall_nanos\":2654509417,\"wall_seconds\":2.654509417},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.67 real         2.65 user         0.02 sys\n             3850240  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 434  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 304  involuntary context switches\n         56262260142  instructions retired\n         11487904835  cycles elapsed\n             1802552  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 2,
+            "peak_rss_bytes": 3850240,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3384057399,
+                "allocated_bytes_per_transition": 829.6698536334216,
+                "allocations": 53905710,
+                "allocations_per_transition": 13.216070903206825,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 89437.64265478686,
+                "nanos_per_transition": 657.8978805040698,
+                "transitions_per_second": 1519992.7369181027,
+                "wall_nanos": 2683433875,
+                "wall_seconds": 2.683433875
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:57.426943+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3384057399,\"allocated_bytes_per_transition\":829.6698536334216,\"allocations\":53905710,\"allocations_per_transition\":13.216070903206825,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":89437.64265478686,\"nanos_per_transition\":657.8978805040698,\"transitions_per_second\":1519992.7369181027,\"wall_nanos\":2683433875,\"wall_seconds\":2.683433875},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.70 real         2.68 user         0.02 sys\n             3850240  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 434  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 261  involuntary context switches\n         56254752467  instructions retired\n         11621678046  cycles elapsed\n             1802552  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 3,
+            "peak_rss_bytes": 3883008,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3384057399,
+                "allocated_bytes_per_transition": 829.6698536334216,
+                "allocations": 53905710,
+                "allocations_per_transition": 13.216070903206825,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 91097.8342343953,
+                "nanos_per_transition": 645.9081715210356,
+                "transitions_per_second": 1548207.692813548,
+                "wall_nanos": 2634530250,
+                "wall_seconds": 2.63453025
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:17.846338+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3384057399,\"allocated_bytes_per_transition\":829.6698536334216,\"allocations\":53905710,\"allocations_per_transition\":13.216070903206825,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":91097.8342343953,\"nanos_per_transition\":645.9081715210356,\"transitions_per_second\":1548207.692813548,\"wall_nanos\":2634530250,\"wall_seconds\":2.63453025},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.65 real         2.63 user         0.02 sys\n             3883008  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 436  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 281  involuntary context switches\n         56279768762  instructions retired\n         11427769497  cycles elapsed\n             1835320  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 4,
+            "peak_rss_bytes": 3866624,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3384057399,
+                "allocated_bytes_per_transition": 829.6698536334216,
+                "allocations": 53905710,
+                "allocations_per_transition": 13.216070903206825,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 90919.29780563907,
+                "nanos_per_transition": 647.1765286358733,
+                "transitions_per_second": 1545173.466206836,
+                "wall_nanos": 2639703625,
+                "wall_seconds": 2.639703625
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:31.451662+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3384057399,\"allocated_bytes_per_transition\":829.6698536334216,\"allocations\":53905710,\"allocations_per_transition\":13.216070903206825,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":90919.29780563907,\"nanos_per_transition\":647.1765286358733,\"transitions_per_second\":1545173.466206836,\"wall_nanos\":2639703625,\"wall_seconds\":2.639703625},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        2.66 real         2.63 user         0.02 sys\n             3866624  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 435  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 254  involuntary context switches\n         56206271514  instructions retired\n         11468096241  cycles elapsed\n             1818936  peak memory footprint\n"
+            }
+          }
+        ]
+      },
+      "source_status": "",
+      "vmmap": {
+        "command": [
+          "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/49c0f490-allocation-counting",
+          "bench"
+        ],
+        "pid": 62481,
+        "stdout": "{\"allocation\":{\"allocated_bytes\":3384057399,\"allocated_bytes_per_transition\":829.6698536334216,\"allocations\":53905710,\"allocations_per_transition\":13.216070903206825,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":80504.68950701284,\"nanos_per_transition\":730.8994780327547,\"transitions_per_second\":1368177.1981716831,\"wall_nanos\":2981192791,\"wall_seconds\":2.981192791},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+        "stderr": "",
+        "observer_command": [
+          "vmmap",
+          "-summary",
+          "62481"
+        ],
+        "observer_returncode": 0,
+        "observer_stdout": "Process:         49c0f490-allocation-counting [62481]\nPath:            /private/var/folders/*/49c0f490-allocation-counting\nLoad Address:    0x1005b8000\nIdentifier:      49c0f490-allocation-counting\nVersion:         0\nCode Type:       ARM64\nPlatform:        macOS\nParent Process:  Python [58865]\nTarget Type:     live task\n\nDate/Time:       2026-09-14 14:54:44.349 -0700\nLaunch Time:     2026-09-14 14:54:44.183 -0700\nOS Version:      macOS 26.6.2 (25G83)\nReport Version:  7\nAnalysis Tool:   /usr/bin/vmmap\n\nPhysical footprint:         1760K\nPhysical footprint (peak):  1760K\nIdle exit:                  untracked\n----\n\nReadOnly portion of Libraries: Total=580.9M resident=45.9M(8%) swapped_out_or_unallocated=535.0M(92%)\nWritable regions: Total=85.2M written=1024K(1%) resident=1024K(1%) swapped_out=0K(0%) unallocated=84.2M(99%)\n\n                                VIRTUAL RESIDENT    DIRTY  SWAPPED VOLATILE   NONVOL    EMPTY   REGION \nREGION TYPE                        SIZE     SIZE     SIZE     SIZE     SIZE     SIZE     SIZE    COUNT (non-coalesced) \n===========                     ======= ========    =====  ======= ========   ======    =====  ======= \nKernel Alloc Once                   32K      16K      16K       0K       0K       0K       0K        1 \nMALLOC guard page                 4080K       0K       0K       0K       0K       0K       0K        4 \nMALLOC metadata                    880K     336K     336K       0K       0K       0K       0K        4 \nMALLOC_SMALL                      8192K     352K     352K       0K       0K       0K       0K        2         see MALLOC ZONE table below\nMALLOC_TINY                       4096K      48K      48K       0K       0K       0K       0K        1         see MALLOC ZONE table below\nMemory Tag 22                     64.0M      16K      16K       0K       0K       0K       0K        1 \nStack                             8160K      48K      48K       0K       0K       0K       0K        1 \nStack Guard                       56.0M       0K       0K       0K       0K       0K       0K        1 \nVM_ALLOCATE                         32K       0K       0K       0K       0K       0K       0K        2 \nVM_ALLOCATE (reserved)             128K       0K       0K       0K       0K       0K       0K        1         reserved VM address space (unallocated)\n__AUTH                              35K      35K       0K       0K       0K       0K       0K       12 \n__AUTH_CONST                       225K     208K       0K       0K       0K       0K       0K       45 \n__DATA                             206K     189K      90K       0K       0K       0K       0K       34 \n__DATA_CONST                       458K     458K     368K       0K       0K       0K       0K       43 \n__DATA_DIRTY                       153K     153K     132K       0K       0K       0K       0K       35 \n__LINKEDIT                       572.8M    38.6M       0K       0K       0K       0K       0K        2 \n__OBJC_RO                         79.2M    58.0M       0K       0K       0K       0K       0K        1 \n__OBJC_RW                         2599K    2263K      23K       0K       0K       0K       0K        1 \n__TEXT                            8316K    7484K       0K       0K       0K       0K       0K       46 \n__TPRO_CONST                       128K     112K      32K       0K       0K       0K       0K        2 \npage table in kernel               224K     224K     224K       0K       0K       0K       0K        1 \nshared memory                       32K      32K      32K       0K       0K       0K       0K        1 \nunused but dirty shlib __DATA       58K      58K      58K       0K       0K       0K       0K       19 \n===========                     ======= ========    =====  ======= ========   ======    =====  ======= \nTOTAL                            809.1M   108.4M    1776K       0K       0K       0K       0K      260 \nTOTAL, minus reserved VM space   809.0M   108.4M    1776K       0K       0K       0K       0K      260 \n\n                                 VIRTUAL   RESIDENT      DIRTY    SWAPPED ALLOCATION      BYTES DIRTY+SWAP          REGION\nMALLOC ZONE                         SIZE       SIZE       SIZE       SIZE      COUNT  ALLOCATED  FRAG SIZE  % FRAG   COUNT\n===========                      =======  =========  =========  =========  =========  =========  =========  ======  ======\nDefaultMallocZone_0x100af0000      12.8M       720K       720K         0K        250        18K       702K     98%       5\n\n",
+        "observer_stderr": ""
+      }
+    },
+    {
+      "ref": "74ed4a23",
+      "source_sha": "74ed4a233e07a594fe48ee1793560dfab687975f",
+      "branch": "codex/issue2444-rss-sts2444-rss-q3yf2809-74ed4a23",
+      "directory": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23",
+      "commands": [
+        {
+          "command": [
+            "git",
+            "worktree",
+            "add",
+            "--no-checkout",
+            "-b",
+            "codex/issue2444-rss-sts2444-rss-q3yf2809-74ed4a23",
+            "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23",
+            "74ed4a233e07a594fe48ee1793560dfab687975f"
+          ],
+          "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+          "started_utc": "2026-09-14T21:51:26.847614+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "Preparing worktree (new branch 'codex/issue2444-rss-sts2444-rss-q3yf2809-74ed4a23')\n"
+        },
+        {
+          "command": [
+            "git",
+            "sparse-checkout",
+            "set",
+            "versions/v0.111.0/rust"
+          ],
+          "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23",
+          "started_utc": "2026-09-14T21:51:26.931443+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "git",
+            "checkout",
+            "codex/issue2444-rss-sts2444-rss-q3yf2809-74ed4a23"
+          ],
+          "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23",
+          "started_utc": "2026-09-14T21:51:26.948342+00:00",
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "Already on 'codex/issue2444-rss-sts2444-rss-q3yf2809-74ed4a23'\n"
+        }
+      ],
+      "source_tree": "53249f513a04d49f4885ebe63825084979c97878",
+      "original_bench_sha256": "bcddaaed60b0d9181fdcf0c68358fe4bfdf7cbf0000ff3d28ff521e0546633c3",
+      "cargo_manifest": "[package]\nname = \"sts-sim\"\nversion = \"0.1.0\"\nedition = \"2024\"\nlicense = \"MIT\"\ndescription = \"Rust port of the v0.111.0 STS2 combat simulator (#1282)\"\n\n[features]\ndefault = []\nallocation-counting = []\n\n[lib]\nname = \"sts_sim\"\npath = \"src/lib.rs\"\n\n[[bin]]\nname = \"sts-sim\"\npath = \"src/main.rs\"\n\n[dependencies]\nrust_decimal = { version = \"1.38\", default-features = false, features = [\"serde\"] }\nserde = { version = \"1.0\", features = [\"derive\"] }\nserde_json = { version = \"1.0\", features = [\"arbitrary_precision\"] }\nsha2 = \"0.10\"\n\n# Benchmarks ship from release builds, so pin the codegen settings here rather\n# than leaving them to whatever profile a caller happens to use (PORT_PLAN \u00a72).\n# dev/test stay on cargo defaults for compile speed.\n[profile.release]\nlto = \"thin\"\ncodegen-units = 1\n# The shipped CLI exposes typed refusals and never catches a panic.  Keeping\n# unwinding in this large binary only retains landing pads/unwind metadata in\n# the measured release image; dev/test keep Cargo's unwinding default for the\n# invariant tests that deliberately use `catch_unwind`.\npanic = \"abort\"\n",
+      "cargo_lock_sha256": "dbb9a05c85030c39e9ad6f70dadd8e04b8f0b3871d373f16b31ccedfac287a18",
+      "binaries": {
+        "plain": {
+          "path": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain",
+          "sha256": "8cd67c1205bc0fbb3166258add2d14a23d095e290e33bfc055990b9647711126",
+          "file_bytes": 4281424,
+          "build": {
+            "command": [
+              "cargo",
+              "build",
+              "--release",
+              "--locked",
+              "--manifest-path",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23/versions/v0.111.0/rust/Cargo.toml"
+            ],
+            "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23",
+            "started_utc": "2026-09-14T21:51:27.033397+00:00",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "   Compiling sts-sim v0.1.0 (/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23/versions/v0.111.0/rust)\n    Finished `release` profile [optimized] target(s) in 42.65s\n"
+          },
+          "sections": {
+            "command": [
+              "size",
+              "-m",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain"
+            ],
+            "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+            "started_utc": "2026-09-14T21:52:09.705775+00:00",
+            "returncode": 0,
+            "stdout": "Segment __PAGEZERO: 4294967296 (zero fill) \nSegment __TEXT: 3227648\n\tSection __text: 2915500\n\tSection __stubs: 888\n\tSection __stub_helper: 912\n\tSection __cstring: 14849\n\tSection __gcc_except_tab: 4576\n\tSection __const: 246656\n\tSection __unwind_info: 13064\n\tSection __eh_frame: 27984\n\ttotal 3224429\nSegment __DATA_CONST: 409600\n\tSection __got: 16\n\tSection __const: 396472\n\ttotal 396488\nSegment __DATA: 16384\n\tSection __la_symbol_ptr: 592\n\tSection __data: 2704\n\tSection __thread_vars: 336\n\tSection __thread_data: 96\n\tSection __thread_bss: 288 (zerofill)\n\tSection __common: 81 (zerofill)\n\tSection __bss: 120 (zerofill)\n\ttotal 4217\nSegment __LINKEDIT: 638976\ntotal 4299259904\n",
+            "stderr": ""
+          }
+        },
+        "allocation-counting": {
+          "path": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+          "sha256": "e5ad1f155dc82ce290266973eebc25be7e8a9f22eed3be758459e0f4427df57c",
+          "file_bytes": 4482096,
+          "build": {
+            "command": [
+              "cargo",
+              "build",
+              "--release",
+              "--locked",
+              "--manifest-path",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23/versions/v0.111.0/rust/Cargo.toml",
+              "--features",
+              "allocation-counting"
+            ],
+            "cwd": "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23",
+            "started_utc": "2026-09-14T21:52:09.716662+00:00",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "   Compiling sts-sim v0.1.0 (/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23/versions/v0.111.0/rust)\n    Finished `release` profile [optimized] target(s) in 37.44s\n"
+          },
+          "sections": {
+            "command": [
+              "size",
+              "-m",
+              "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting"
+            ],
+            "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+            "started_utc": "2026-09-14T21:52:47.180194+00:00",
+            "returncode": 0,
+            "stdout": "Segment __PAGEZERO: 4294967296 (zero fill) \nSegment __TEXT: 3424256\n\tSection __text: 3097120\n\tSection __stubs: 888\n\tSection __stub_helper: 912\n\tSection __cstring: 14849\n\tSection __gcc_except_tab: 4624\n\tSection __const: 246400\n\tSection __unwind_info: 12776\n\tSection __eh_frame: 28072\n\ttotal 3405641\nSegment __DATA_CONST: 409600\n\tSection __got: 16\n\tSection __const: 396472\n\ttotal 396488\nSegment __DATA: 16384\n\tSection __la_symbol_ptr: 592\n\tSection __data: 2704\n\tSection __thread_vars: 384\n\tSection __thread_data: 96\n\tSection __thread_bss: 304 (zerofill)\n\tSection __common: 104 (zerofill)\n\tSection __bss: 120 (zerofill)\n\ttotal 4304\nSegment __LINKEDIT: 638976\ntotal 4299456512\n",
+            "stderr": ""
+          }
+        }
+      },
+      "measurements": {
+        "plain": [
+          {
+            "repetition": 0,
+            "peak_rss_bytes": 4751360,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 63291.30684897241,
+                "nanos_per_transition": 929.6827395312347,
+                "transitions_per_second": 1075635.759898286,
+                "wall_nanos": 3791989958,
+                "wall_seconds": 3.791989958
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:24.555728+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":63291.30684897241,\"nanos_per_transition\":929.6827395312347,\"transitions_per_second\":1075635.759898286,\"wall_nanos\":3791989958,\"wall_seconds\":3.791989958},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        4.03 real         3.79 user         0.02 sys\n             4751360  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 491  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                1594  involuntary context switches\n         78946537078  instructions retired\n         16336695332  cycles elapsed\n             1851704  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 1,
+            "peak_rss_bytes": 4734976,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 64018.88984042892,
+                "nanos_per_transition": 919.1167745415319,
+                "transitions_per_second": 1088001.0328380894,
+                "wall_nanos": 3748893500,
+                "wall_seconds": 3.7488935
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:32.668762+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":64018.88984042892,\"nanos_per_transition\":919.1167745415319,\"transitions_per_second\":1088001.0328380894,\"wall_nanos\":3748893500,\"wall_seconds\":3.7488935},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.78 real         3.74 user         0.03 sys\n             4734976  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 490  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 382  involuntary context switches\n         78810016856  instructions retired\n         16238230467  cycles elapsed\n             1835320  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 2,
+            "peak_rss_bytes": 4751360,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 64523.76304333588,
+                "nanos_per_transition": 911.9250453564774,
+                "transitions_per_second": 1096581.3529214931,
+                "wall_nanos": 3719559875,
+                "wall_seconds": 3.719559875
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:00.138699+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":64523.76304333588,\"nanos_per_transition\":911.9250453564774,\"transitions_per_second\":1096581.3529214931,\"wall_nanos\":3719559875,\"wall_seconds\":3.719559875},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.75 real         3.71 user         0.03 sys\n             4751360  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 491  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 380  involuntary context switches\n         78931707730  instructions retired\n         16121600629  cycles elapsed\n             1851704  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 3,
+            "peak_rss_bytes": 4718592,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 65170.45189676322,
+                "nanos_per_transition": 902.8759787192312,
+                "transitions_per_second": 1107571.8299854908,
+                "wall_nanos": 3682650542,
+                "wall_seconds": 3.682650542
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:07.773101+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":65170.45189676322,\"nanos_per_transition\":902.8759787192312,\"transitions_per_second\":1107571.8299854908,\"wall_nanos\":3682650542,\"wall_seconds\":3.682650542},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.71 real         3.67 user         0.03 sys\n             4718592  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 489  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 389  involuntary context switches\n         78829515297  instructions retired\n         15971936982  cycles elapsed\n             1818936  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 4,
+            "peak_rss_bytes": 4751360,
+            "report": {
+              "allocation": {
+                "allocated_bytes": null,
+                "allocated_bytes_per_transition": null,
+                "allocations": null,
+                "allocations_per_transition": null,
+                "instrumented": false
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 63830.49456419855,
+                "nanos_per_transition": 921.8295415318231,
+                "transitions_per_second": 1084799.2551185542,
+                "wall_nanos": 3759958334,
+                "wall_seconds": 3.759958334
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-plain",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:34.119383+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":null,\"allocated_bytes_per_transition\":null,\"allocations\":null,\"allocations_per_transition\":null,\"instrumented\":false},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":63830.49456419855,\"nanos_per_transition\":921.8295415318231,\"transitions_per_second\":1084799.2551185542,\"wall_nanos\":3759958334,\"wall_seconds\":3.759958334},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.79 real         3.77 user         0.01 sys\n             4751360  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 491  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 435  involuntary context switches\n         78824443221  instructions retired\n         16300276470  cycles elapsed\n             1851704  peak memory footprint\n"
+            }
+          }
+        ],
+        "allocation-counting": [
+          {
+            "repetition": 0,
+            "peak_rss_bytes": 4784128,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3501511080,
+                "allocated_bytes_per_transition": 858.4659899970579,
+                "allocations": 53968550,
+                "allocations_per_transition": 13.231477395312346,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 62642.9252499607,
+                "nanos_per_transition": 939.3053613807982,
+                "transitions_per_second": 1064616.514623082,
+                "wall_nanos": 3831238708,
+                "wall_seconds": 3.831238708
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:28.592532+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3501511080,\"allocated_bytes_per_transition\":858.4659899970579,\"allocations\":53968550,\"allocations_per_transition\":13.231477395312346,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":62642.9252499607,\"nanos_per_transition\":939.3053613807982,\"transitions_per_second\":1064616.514623082,\"wall_nanos\":3831238708,\"wall_seconds\":3.831238708},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        4.07 real         3.83 user         0.03 sys\n             4784128  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 493  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 476  involuntary context switches\n         79365519830  instructions retired\n         16582683736  cycles elapsed\n             1818936  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 1,
+            "peak_rss_bytes": 4784128,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3501511080,
+                "allocated_bytes_per_transition": 858.4659899970579,
+                "allocations": 53968550,
+                "allocations_per_transition": 13.231477395312346,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 62574.69038890561,
+                "nanos_per_transition": 940.3296312640973,
+                "transitions_per_second": 1063456.863159451,
+                "wall_nanos": 3835416500,
+                "wall_seconds": 3.8354165
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:53:36.454718+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3501511080,\"allocated_bytes_per_transition\":858.4659899970579,\"allocations\":53968550,\"allocations_per_transition\":13.231477395312346,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":62574.69038890561,\"nanos_per_transition\":940.3296312640973,\"transitions_per_second\":1063456.863159451,\"wall_nanos\":3835416500,\"wall_seconds\":3.8354165},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.87 real         3.83 user         0.03 sys\n             4784128  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 493  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 465  involuntary context switches\n         79298095666  instructions retired\n         16598881135  cycles elapsed\n             1818936  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 2,
+            "peak_rss_bytes": 4833280,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3501511080,
+                "allocated_bytes_per_transition": 858.4659899970579,
+                "allocations": 53968550,
+                "allocations_per_transition": 13.231477395312346,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 62536.970505252146,
+                "nanos_per_transition": 940.8968017554182,
+                "transitions_per_second": 1062815.8137367603,
+                "wall_nanos": 3837729875,
+                "wall_seconds": 3.837729875
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:03.896264+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3501511080,\"allocated_bytes_per_transition\":858.4659899970579,\"allocations\":53968550,\"allocations_per_transition\":13.231477395312346,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":62536.970505252146,\"nanos_per_transition\":940.8968017554182,\"transitions_per_second\":1062815.8137367603,\"wall_nanos\":3837729875,\"wall_seconds\":3.837729875},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.87 real         3.83 user         0.03 sys\n             4833280  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 496  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 500  involuntary context switches\n         79412342093  instructions retired\n         16615054840  cycles elapsed\n             1868088  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 3,
+            "peak_rss_bytes": 4816896,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3501511080,
+                "allocated_bytes_per_transition": 858.4659899970579,
+                "allocations": 53968550,
+                "allocations_per_transition": 13.231477395312346,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 63675.447652664276,
+                "nanos_per_transition": 924.0741558791801,
+                "transitions_per_second": 1082164.2328570294,
+                "wall_nanos": 3769113667,
+                "wall_seconds": 3.769113667
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:11.492939+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3501511080,\"allocated_bytes_per_transition\":858.4659899970579,\"allocations\":53968550,\"allocations_per_transition\":13.231477395312346,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":63675.447652664276,\"nanos_per_transition\":924.0741558791801,\"transitions_per_second\":1082164.2328570294,\"wall_nanos\":3769113667,\"wall_seconds\":3.769113667},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.80 real         3.77 user         0.02 sys\n             4816896  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 495  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 395  involuntary context switches\n         79466300062  instructions retired\n         16352987389  cycles elapsed\n             1851704  peak memory footprint\n"
+            }
+          },
+          {
+            "repetition": 4,
+            "peak_rss_bytes": 4816896,
+            "report": {
+              "allocation": {
+                "allocated_bytes": 3501511080,
+                "allocated_bytes_per_transition": 858.4659899970579,
+                "allocations": 53968550,
+                "allocations_per_transition": 13.231477395312346,
+                "instrumented": true
+              },
+              "config": {
+                "actions": 64,
+                "seed": 6004515678751904326,
+                "trajectories": 240000,
+                "warmup": 2000
+              },
+              "crate_version": "0.1.0",
+              "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+              "schema": "sts-sim-bench/v1",
+              "timing": {
+                "complete_playouts_per_second": 63904.14875287374,
+                "nanos_per_transition": 920.7670658036677,
+                "transitions_per_second": 1086051.0080550893,
+                "wall_nanos": 3755624708,
+                "wall_seconds": 3.755624708
+              },
+              "work": {
+                "checksum": "5d4f992689b53874",
+                "legal_action_enumerations": 4078800,
+                "legal_actions_seen": 14332026,
+                "mean_branching_factor": 3.513784936746102,
+                "stops": {
+                  "budget": 0,
+                  "no_legal_actions": 0,
+                  "refused": 0,
+                  "terminal": 240000
+                },
+                "transitions": 4078800
+              },
+              "workload": "ironclad_toadpoles_uniform_v1"
+            },
+            "raw": {
+              "command": [
+                "/usr/bin/time",
+                "-l",
+                "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+                "bench"
+              ],
+              "cwd": "/Users/seanbloomfield/Documents/StsHistoryViewer-codex-perf-recovery",
+              "started_utc": "2026-09-14T21:54:37.917613+00:00",
+              "returncode": 0,
+              "stdout": "{\"allocation\":{\"allocated_bytes\":3501511080,\"allocated_bytes_per_transition\":858.4659899970579,\"allocations\":53968550,\"allocations_per_transition\":13.231477395312346,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":63904.14875287374,\"nanos_per_transition\":920.7670658036677,\"transitions_per_second\":1086051.0080550893,\"wall_nanos\":3755624708,\"wall_seconds\":3.755624708},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+              "stderr": "        3.78 real         3.74 user         0.03 sys\n             4816896  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 495  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 366  involuntary context switches\n         79425895304  instructions retired\n         16327294710  cycles elapsed\n             1851704  peak memory footprint\n"
+            }
+          }
+        ]
+      },
+      "source_status": "",
+      "vmmap": {
+        "command": [
+          "/var/folders/cs/jg0ynhqd2w17y288s3r4v66h0000gn/T/sts2444-rss-q3yf2809/74ed4a23-allocation-counting",
+          "bench"
+        ],
+        "pid": 62491,
+        "stdout": "{\"allocation\":{\"allocated_bytes\":3501511080,\"allocated_bytes_per_transition\":858.4659899970579,\"allocations\":53968550,\"allocations_per_transition\":13.231477395312346,\"instrumented\":true},\"config\":{\"actions\":64,\"seed\":6004515678751904326,\"trajectories\":240000,\"warmup\":2000},\"crate_version\":\"0.1.0\",\"entry_sha256\":\"6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2\",\"schema\":\"sts-sim-bench/v1\",\"timing\":{\"complete_playouts_per_second\":58161.407644857514,\"nanos_per_transition\":1011.681764979896,\"transitions_per_second\":988453.1229243533,\"wall_nanos\":4126447583,\"wall_seconds\":4.126447583},\"work\":{\"checksum\":\"5d4f992689b53874\",\"legal_action_enumerations\":4078800,\"legal_actions_seen\":14332026,\"mean_branching_factor\":3.513784936746102,\"stops\":{\"budget\":0,\"no_legal_actions\":0,\"refused\":0,\"terminal\":240000},\"transitions\":4078800},\"workload\":\"ironclad_toadpoles_uniform_v1\"}\n",
+        "stderr": "",
+        "observer_command": [
+          "vmmap",
+          "-summary",
+          "62491"
+        ],
+        "observer_returncode": 0,
+        "observer_stdout": "Process:         74ed4a23-allocation-counting [62491]\nPath:            /private/var/folders/*/74ed4a23-allocation-counting\nLoad Address:    0x102374000\nIdentifier:      74ed4a23-allocation-counting\nVersion:         0\nCode Type:       ARM64\nPlatform:        macOS\nParent Process:  Python [58865]\nTarget Type:     live task\n\nDate/Time:       2026-09-14 14:54:47.357 -0700\nLaunch Time:     2026-09-14 14:54:47.190 -0700\nOS Version:      macOS 26.6.2 (25G83)\nReport Version:  7\nAnalysis Tool:   /usr/bin/vmmap\n\nPhysical footprint:         1792K\nPhysical footprint (peak):  1792K\nIdle exit:                  untracked\n----\n\nReadOnly portion of Libraries: Total=582.2M resident=46.8M(8%) swapped_out_or_unallocated=535.5M(92%)\nWritable regions: Total=85.2M written=1024K(1%) resident=1024K(1%) swapped_out=0K(0%) unallocated=84.2M(99%)\n\n                                VIRTUAL RESIDENT    DIRTY  SWAPPED VOLATILE   NONVOL    EMPTY   REGION \nREGION TYPE                        SIZE     SIZE     SIZE     SIZE     SIZE     SIZE     SIZE    COUNT (non-coalesced) \n===========                     ======= ========    =====  ======= ========   ======    =====  ======= \nKernel Alloc Once                   32K      16K      16K       0K       0K       0K       0K        1 \nMALLOC guard page                 3360K       0K       0K       0K       0K       0K       0K        4 \nMALLOC metadata                    880K     336K     336K       0K       0K       0K       0K        4 \nMALLOC_SMALL                      8192K     352K     352K       0K       0K       0K       0K        2         see MALLOC ZONE table below\nMALLOC_TINY                       4096K      48K      48K       0K       0K       0K       0K        1         see MALLOC ZONE table below\nMemory Tag 22                     64.0M      16K      16K       0K       0K       0K       0K        1 \nStack                             8160K      48K      48K       0K       0K       0K       0K        1 \nStack Guard                       56.0M       0K       0K       0K       0K       0K       0K        1 \nVM_ALLOCATE                         32K       0K       0K       0K       0K       0K       0K        2 \nVM_ALLOCATE (reserved)             128K       0K       0K       0K       0K       0K       0K        1         reserved VM address space (unallocated)\n__AUTH                              35K      35K       0K       0K       0K       0K       0K       12 \n__AUTH_CONST                       225K     208K       0K       0K       0K       0K       0K       45 \n__DATA                             206K     189K      90K       0K       0K       0K       0K       34 \n__DATA_CONST                       490K     490K     400K       0K       0K       0K       0K       43 \n__DATA_DIRTY                       153K     153K     132K       0K       0K       0K       0K       35 \n__LINKEDIT                       573.0M    38.6M       0K       0K       0K       0K       0K        2 \n__OBJC_RO                         79.2M    58.0M       0K       0K       0K       0K       0K        1 \n__OBJC_RW                         2599K    2263K      23K       0K       0K       0K       0K        1 \n__TEXT                            9500K    8364K       0K       0K       0K       0K       0K       46 \n__TPRO_CONST                       128K     112K      32K       0K       0K       0K       0K        2 \npage table in kernel               224K     224K     224K       0K       0K       0K       0K        1 \nshared memory                       32K      32K      32K       0K       0K       0K       0K        1 \nunused but dirty shlib __DATA       58K      58K      58K       0K       0K       0K       0K       19 \n===========                     ======= ========    =====  ======= ========   ======    =====  ======= \nTOTAL                            809.8M   109.3M    1808K       0K       0K       0K       0K      260 \nTOTAL, minus reserved VM space   809.7M   109.3M    1808K       0K       0K       0K       0K      260 \n\n                                 VIRTUAL   RESIDENT      DIRTY    SWAPPED ALLOCATION      BYTES DIRTY+SWAP          REGION\nMALLOC ZONE                         SIZE       SIZE       SIZE       SIZE      COUNT  ALLOCATED  FRAG SIZE  % FRAG   COUNT\n===========                      =======  =========  =========  =========  =========  =========  =========  ======  ======\nDefaultMallocZone_0x102a90000      12.8M       720K       720K         0K        263        20K       700K     98%       5\n\n",
+        "observer_stderr": ""
+      }
+    }
+  ],
+  "measurement_started_utc": "2026-09-14T21:53:14.322712+00:00",
+  "load_average_start": [
+    6.3935546875,
+    6.357421875,
+    6.26513671875
+  ],
+  "load_average_end": [
+    4.42822265625,
+    5.77392578125,
+    6.0517578125
+  ],
+  "measurement_finished_utc": "2026-09-14T21:54:51.352041+00:00"
+}

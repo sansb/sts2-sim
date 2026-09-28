@@ -1,0 +1,532 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "escape_artist": 5,
+   "hp": 84,
+   "kind": "THIEVING_HOPPER",
+   "max_hp": 84
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "RESTLESSNESS",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "id": "SNAKEBITE",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "BLADE_DANCE",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "ENTRENCH",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "ACROBATICS",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "TRACKING",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "STRANGLE",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "ACCELERANT",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "CLOAK_AND_DAGGER",
+    "uid": 24,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "GLAM",
+     1
+    ],
+    "id": "DAGGER_SPRAY",
+    "uid": 3,
+    "upgrade": 1
+   },
+   {
+    "id": "SNAKEBITE",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "ANTICIPATE",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "PIERCING_WAIL",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "ABRASIVE",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "BLADE_DANCE",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "UP_MY_SLEEVE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "SURVIVOR",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "NEUTRALIZE",
+    "uid": 0,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "BACKSTAB",
+    "uid": 7,
+    "upgrade": 1
+   },
+   {
+    "id": "ASSASSINATE",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "DAGGER_THROW",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "POUNCE",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "id": "BACKFLIP",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "TACTICIAN",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "STRANGLE",
+    "uid": 17,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "bag_draws": 2,
+  "cards_drawn_combat": 7,
+  "exact_piles": true,
+  "flower": 1,
+  "fully_unlocked_potion_pool": true,
+  "gold": 348,
+  "hopper_master_deck": [
+   [
+    0,
+    [
+     "NEUTRALIZE",
+     0
+    ]
+   ],
+   [
+    1,
+    [
+     "SURVIVOR",
+     0
+    ]
+   ],
+   [
+    2,
+    [
+     "ASCENDERS_BANE",
+     0
+    ]
+   ],
+   [
+    3,
+    [
+     "DAGGER_SPRAY",
+     1,
+     [
+      "GLAM",
+      1
+     ]
+    ]
+   ],
+   [
+    4,
+    [
+     "SNAKEBITE",
+     0
+    ]
+   ],
+   [
+    5,
+    [
+     "PIERCING_WAIL",
+     0
+    ]
+   ],
+   [
+    6,
+    [
+     "BLADE_DANCE",
+     0
+    ]
+   ],
+   [
+    7,
+    [
+     "BACKSTAB",
+     1
+    ]
+   ],
+   [
+    8,
+    [
+     "UP_MY_SLEEVE",
+     0,
+     null,
+     [],
+     [],
+     null,
+     null,
+     [
+      "PHYSICAL_CARD_STATE",
+      [],
+      0,
+      false,
+      []
+     ]
+    ]
+   ],
+   [
+    9,
+    [
+     "STRANGLE",
+     0
+    ]
+   ],
+   [
+    10,
+    [
+     "TRACKING",
+     0
+    ]
+   ],
+   [
+    11,
+    [
+     "ENTRENCH",
+     0
+    ]
+   ],
+   [
+    12,
+    [
+     "SNAKEBITE",
+     0
+    ]
+   ],
+   [
+    13,
+    [
+     "ASSASSINATE",
+     0
+    ]
+   ],
+   [
+    14,
+    [
+     "BLADE_DANCE",
+     0
+    ]
+   ],
+   [
+    15,
+    [
+     "ACCELERANT",
+     0
+    ]
+   ],
+   [
+    16,
+    [
+     "DAGGER_THROW",
+     0
+    ]
+   ],
+   [
+    17,
+    [
+     "STRANGLE",
+     0
+    ]
+   ],
+   [
+    18,
+    [
+     "ACROBATICS",
+     0
+    ]
+   ],
+   [
+    19,
+    [
+     "BACKFLIP",
+     0
+    ]
+   ],
+   [
+    20,
+    [
+     "ABRASIVE",
+     0
+    ]
+   ],
+   [
+    21,
+    [
+     "TACTICIAN",
+     0
+    ]
+   ],
+   [
+    22,
+    [
+     "ANTICIPATE",
+     0
+    ]
+   ],
+   [
+    23,
+    [
+     "POUNCE",
+     0
+    ]
+   ],
+   [
+    24,
+    [
+     "CLOAK_AND_DAGGER",
+     1
+    ]
+   ],
+   [
+    25,
+    [
+     "RESTLESSNESS",
+     0
+    ]
+   ]
+  ],
+  "hp": 61,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 2,
+  "max_hp": 80,
+  "next_card_uid": 26,
+  "player_phase": 3,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.RING_OF_THE_SNAKE",
+   "RELIC.SILKEN_TRESS",
+   "RELIC.HAPPY_FLOWER",
+   "RELIC.PEAR",
+   "RELIC.WHETSTONE",
+   "RELIC.ETERNAL_FEATHER",
+   "RELIC.PANDORAS_BOX"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Silent",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 3,
+   "words": [
+    10146631528557899821,
+    240814393202245574,
+    5902556130403010358,
+    16131311068584095600
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    6941328312440488237,
+    2881610672608500882,
+    17094472061473281822,
+    5841301374361026310
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    4916712012626990167,
+    358687971707481359,
+    14734381608805916684,
+    16262102949993121496
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    12167223304972901836,
+    5739189500856624902,
+    1252204664254916020,
+    10741757465151000396
+   ]
+  },
+  "niche": {
+   "counter": 33,
+   "words": [
+    3120766531606875712,
+    12443729555610449967,
+    9611061931660150492,
+    7360882021219710684
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    14529466360288685485,
+    3682021027083181183,
+    15186408077702994940,
+    7801483981343803734
+   ]
+  },
+  "rng": {
+   "counter": 284,
+   "words": [
+    7242243655935685050,
+    12056950473034998096,
+    2993955331504449396,
+    4527065658357817682
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    18388177615465890491,
+    18445757591629244003,
+    6552786559823095410,
+    12567302917634136269
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    16729370217882885163,
+    12982246106783577699,
+    5382234401099775048,
+    16764577298856766000
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

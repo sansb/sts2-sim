@@ -1,0 +1,3876 @@
+{
+ "build": "v0.111.0",
+ "cards": {
+  "ABRASIVE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "ABUNDANCE": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "ACCELERANT": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "ACCURACY": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "ACROBATICS": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "ADAPTIVE_STRIKE": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "ADRENALINE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "AFTERIMAGE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "AFTERLIFE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "AGGRESSION": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "ALCHEMIZE": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "ALIGNMENT": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "ALL_FOR_ONE": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "ANGER": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "ANOINTED": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "ANTICIPATE": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "APOTHEOSIS": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "APPARITION": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "ARMAMENTS": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "ARSENAL": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "ASHEN_STRIKE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "ASSASSINATE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "ASTRAL_PULSE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "AUTOMATION": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "BACKFLIP": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "BACKSTAB": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "BALL_LIGHTNING": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "BANSHEES_CRY": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "BARRAGE": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "BARRICADE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "BASH": {
+   "pool": "ironclad",
+   "rarity": "basic"
+  },
+  "BATTLE_TRANCE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "BEACON_OF_HOPE": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "BEAM_CELL": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "BEAT_DOWN": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "BEAT_INTO_SHAPE": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "BEGONE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "BELIEVE_IN_YOU": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "BIASED_COGNITION": {
+   "pool": "defect",
+   "rarity": "ancient"
+  },
+  "BIG_BANG": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "BLACK_HOLE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "BLADE_DANCE": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "BLADE_OF_INK": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "BLADE_SYMPHONY": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "BLAZE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "BLIGHT_STRIKE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "BLOODLETTING": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "BLOOD_WALL": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "BLUDGEON": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "BLUR": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "BODYGUARD": {
+   "pool": "necrobinder",
+   "rarity": "basic"
+  },
+  "BODY_SLAM": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "BOLAS": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "BOMBARDMENT": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "BONE_SHARDS": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "BOOST_AWAY": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "BOOT_SEQUENCE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "BORROWED_TIME": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "BOUNCING_FLASK": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "BRAND": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "BREAK": {
+   "pool": "ironclad",
+   "rarity": "ancient"
+  },
+  "BREAKTHROUGH": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "BRIGHTEST_FLAME": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "BUBBLE_BUBBLE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "BUFFER": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "BULK_UP": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "BULLET_TIME": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "BULLY": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "BULWARK": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "BUNDLE_OF_JOY": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "BURNING_PACT": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "BURST": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "BURY": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "BYRD_SWOOP": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "CACOPHONY": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "CALAMITY": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "CALCIFY": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "CALCULATED_GAMBLE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "CALL_OF_THE_VOID": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "CALTROPS": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "CAPACITOR": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "CAPTURE_SPIRIT": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "CASCADE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "CATASTROPHE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "CELESTIAL_MIGHT": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "CHAOS": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "CHARGE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "CHARGE_BATTERY": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "CHILD_OF_THE_STARS": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "CHILL": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "CINDER": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "CLASH": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "CLAW": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "CLEANSE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "CLOAK_AND_DAGGER": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "CLOAK_OF_STARS": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "COLD_SNAP": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "COLLISION_COURSE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "COLOSSUS": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "COMET": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "COMPACT": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "COMPILE_DRIVER": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "CONCOCT": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "CONFLAGRATION": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "CONQUEROR": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "CONSTELLATION": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "CONSUMING_SHADOW": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "CONVERGENCE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "COOLANT": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "COOLHEADED": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "COORDINATE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "CORROSIVE_WAVE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "CORRUPTION": {
+   "pool": "ironclad",
+   "rarity": "ancient"
+  },
+  "COSMIC_INDIFFERENCE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "COUNTDOWN": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "CRASH_LANDING": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "CREATIVE_AI": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "CRESCENT_SPEAR": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "CRIMSON_MANTLE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "CRUELTY": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "CRUSH_UNDER": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "DAGGER_SPRAY": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "DAGGER_THROW": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "DANSE_MACABRE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DARKNESS": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "DARK_EMBRACE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "DARK_SHACKLES": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "DASH": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "DEADLY_POISON": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "DEATHBRINGER": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DEATHS_DOOR": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DEATH_MARCH": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DEBILITATE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DECISIONS_DECISIONS": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "DEFEND_DEFECT": {
+   "pool": "defect",
+   "rarity": "basic"
+  },
+  "DEFEND_IRONCLAD": {
+   "pool": "ironclad",
+   "rarity": "basic"
+  },
+  "DEFEND_NECROBINDER": {
+   "pool": "necrobinder",
+   "rarity": "basic"
+  },
+  "DEFEND_REGENT": {
+   "pool": "regent",
+   "rarity": "basic"
+  },
+  "DEFEND_SILENT": {
+   "pool": "silent",
+   "rarity": "basic"
+  },
+  "DEFILE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "DEFLECT": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "DEFRAGMENT": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "DEFY": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "DELAY": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DEMESNE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "DEMONIC_SHIELD": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "DEMON_FORM": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "DEVASTATE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "DEVOUR_LIFE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "DIRGE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DISCOVERY": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "DISMANTLE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "DISTRACTION": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "DODGE_AND_ROLL": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "DOMINATE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "DOUBLE_ENERGY": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "DRAIN_POWER": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "DRAMATIC_ENTRANCE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "DREDGE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "DRUM_OF_BATTLE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "DUALCAST": {
+   "pool": "defect",
+   "rarity": "basic"
+  },
+  "DUAL_WIELD": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "DYING_STAR": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "ECHOING_SLASH": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "ECHO_FORM": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "EIDOLON": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "END_OF_DAYS": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "ENERGY_SURGE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "ENFEEBLING_TOUCH": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "ENLIGHTENMENT": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "ENTRENCH": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "ENTROPY": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "ENVENOM": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "EQUILIBRIUM": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "ERADICATE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "ESCAPE_PLAN": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "ETERNAL_ARMOR": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "EVIL_EYE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "EXPECT_A_FIGHT": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "EXPERTISE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "EXPOSE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "EXTERMINATE": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "FADE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "FALLING_STAR": {
+   "pool": "regent",
+   "rarity": "basic"
+  },
+  "FAN_OF_KNIVES": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "FASTEN": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "FEAR": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "FEED": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "FEEDING_FRENZY": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "FEEL_NO_PAIN": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "FERAL": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "FETCH": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "FIEND_FIRE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "FIGHT_ME": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "FIGHT_THROUGH": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "FINESSE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "FINISHER": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "FISTICUFFS": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "FLAK_CANNON": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "FLAME_BARRIER": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "FLANKING": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "FLASH_OF_STEEL": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "FLATTEN": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "FLECHETTES": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "FLICK_FLACK": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "FOCUSED_STRIKE": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "FOOTWORK": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "FORBIDDEN_GRIMOIRE": {
+   "pool": "necrobinder",
+   "rarity": "ancient"
+  },
+  "FOREGONE_CONCLUSION": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "FORGOTTEN_RITUAL": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "FRIENDSHIP": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "FTL": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "FURNACE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "FUSION": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "GAMMA_BLAST": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "GANG_UP": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "GATHER_LIGHT": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "GENESIS": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "GENETIC_ALGORITHM": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "GLACIER": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "GLASSWORK": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "GLIMMER": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "GLIMPSE_BEYOND": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "GLITTERSTREAM": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "GLOW": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "GOLD_AXE": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "GO_FOR_THE_EYES": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "GRAND_FINALE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "GRAVEBLAST": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "GRAVE_WARDEN": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "GUARDS": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "GUIDING_STAR": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "GUNK_UP": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "HAILSTORM": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "HAMMER_TIME": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "HAND_OF_GREED": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "HAND_TRICK": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "HANG": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "HAUNT": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "HAVOC": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "HAZE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "HEADBUTT": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "HEAVENLY_DRILL": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "HEGEMONY": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "HEIRLOOM_HAMMER": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "HELIX_DRILL": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "HELLO_WORLD": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "HELLRAISER": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "HEMOKINESIS": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "HIBERNATE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "HIDDEN_CACHE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "HIDDEN_DAGGERS": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "HIDDEN_GEM": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "HIGH_FIVE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "HOLOGRAM": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "HOTFIX": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "HOWL_FROM_BEYOND": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "HUDDLE_UP": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "HYPERBEAM": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "ICE_LANCE": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "IGNITION": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "IMITATION_LEARNING": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "IMPATIENCE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "IMPERVIOUS": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "INFERNAL_BLADE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "INFERNO": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "INFINITE_BLADES": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "INFLAME": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "INTERCEPT": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "INVOKE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "IRON_WAVE": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "ITERATION": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "I_AM_INVINCIBLE": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "JACKPOT": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "JACK_OF_ALL_TRADES": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "JUGGERNAUT": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "JUGGLING": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "KINGLY_KICK": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "KINGLY_PUNCH": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "KNIFE_TRAP": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "KNOCKDOWN": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "KNOCKOUT_BLOW": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "KNOW_THY_PLACE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "LARGESSE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "LEADING_STRIKE": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "LEAP": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "LEGION_OF_BONE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "LEG_SWEEP": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "LETHALITY": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "LIFT": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "LIGHTNING_ROD": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "LOOP": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "LUNAR_BLAST": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "MACHINE_LEARNING": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "MAD_SCIENCE": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "MAKE_IT_SO": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "MALAISE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "MANGLE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "MANIFEST_AUTHORITY": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "MASTER_OF_STRATEGY": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "MASTER_PLANNER": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "MAUL": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "MAYHEM": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "MELANCHOLY": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "MEMENTO_MORI": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "METAMORPHOSIS": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "METEOR_SHOWER": {
+   "pool": "regent",
+   "rarity": "ancient"
+  },
+  "METEOR_STRIKE": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "MIDNIGHT": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "MIMIC": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "MIND_BLAST": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "MIRAGE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "MISERY": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "MODDED": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "MOLTEN_FIST": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "MOMENTUM_STRIKE": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "MONARCHS_GAZE": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "MONOLOGUE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "MULTI_CAST": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "MURDER": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "NECRO_MASTERY": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "NEGATIVE_PULSE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "NEOWS_FURY": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "NEUROSURGE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "NEUTRALIZE": {
+   "pool": "silent",
+   "rarity": "basic"
+  },
+  "NEUTRON_AEGIS": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "NIGHTMARE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "NOSTALGIA": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "NOT_YET": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "NOXIOUS_FUMES": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "NO_ESCAPE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "NULL": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "OBLIVION": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "OFFERING": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "OMNISLICE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "ONE_FOR_ALL": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "ONE_TWO_PUNCH": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "ORBIT": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "OUTBREAK": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "OUTMANEUVER": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "OUTRAGE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "OVERCLOCK": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "PACTS_END": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "PAGESTORM": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "PALE_BLUE_DOT": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "PANACHE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PANIC_BUTTON": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PARRY": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "PARSE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "PARTICLE_WALL": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "PATTER": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "PECK": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "PERFECTED_STRIKE": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "PHANTOM_BLADES": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "PHOTON_CUT": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "PIERCING_WAIL": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "PILLAGE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "PILLAR_OF_CREATION": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "PINPOINT": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "PLOT": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "POISONED_STAB": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "POKE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "POMMEL_STRIKE": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "POUNCE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "PRECISE_CUT": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "PREDATOR": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "PREPARED": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "PREP_TIME": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PRIMAL_FORCE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "PRODUCTION": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PROLONG": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PROPHESIZE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "PROTECTOR": {
+   "pool": "necrobinder",
+   "rarity": "ancient"
+  },
+  "PROWESS": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PULL_AGGRO": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "PULL_FROM_BELOW": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "PURITY": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "PUTREFY": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "PYRE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "QUADCAST": {
+   "pool": "defect",
+   "rarity": "ancient"
+  },
+  "QUASAR": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "RADIATE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "RAGE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "RAINBOW": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "RALLY": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "RAMPAGE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "RATTLE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "REANIMATE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "REAP": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "REAPER_FORM": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "REAVE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "REBOOT": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "REBOUND": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "REFINE_BLADE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "REFLECT": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "REFLEX": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "REFRACT": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "RELAX": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "REND": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "RESONANCE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "RESTLESSNESS": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "RICOCHET": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "RIGHT_HAND_HAND": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "RIP_AND_TEAR": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "ROCKET_PUNCH": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "ROLLING_BOULDER": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "ROYALTIES": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "ROYAL_GAMBLE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "RUPTURE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "SACRIFICE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "SALVO": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "SCAVENGE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SCOURGE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "SCRAPE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SCRAWL": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "SCULPTING_STRIKE": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "SEANCE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "SECOND_WIND": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "SECRET_TECHNIQUE": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "SECRET_WEAPON": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "SEEKER_STRIKE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "SEEKING_EDGE": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "SENTRY_MODE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "SERPENT_FORM": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "SETUP_STRIKE": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "SEVEN_STARS": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "SEVERANCE": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "SHADOWMELD": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "SHADOW_SHIELD": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SHADOW_STEP": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "SHARED_FATE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "SHATTER": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "SHINING_STRIKE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "SHOCKWAVE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "SHROUD": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "SHRUG_IT_OFF": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "SIC_EM": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "SIDESTEP": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "SIGNAL_BOOST": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "SKEWER": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "SKIM": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SLEIGHT_OF_FLESH": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "SLICE": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "SMOKESTACK": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SNAKEBITE": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "SNAP": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "SNEAKY": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "SOLAR_STRIKE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "SOULBOUND": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "SOUL_STORM": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "SOW": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "SPECTRUM_SHIFT": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "SPEEDSTER": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "SPINNER": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "SPIRIT_OF_ASH": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "SPITE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "SPLASH": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "SPOILS_OF_BATTLE": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "SPUR": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "SQUASH": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "SQUEEZE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "STACK": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "STAMPEDE": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "STARDUST": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "STOKE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "STOMP": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "STONE_ARMOR": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "STORM": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "STORM_OF_STEEL": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "STRANGLE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "STRATAGEM": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "STRIKE_DEFECT": {
+   "pool": "defect",
+   "rarity": "basic"
+  },
+  "STRIKE_IRONCLAD": {
+   "pool": "ironclad",
+   "rarity": "basic"
+  },
+  "STRIKE_NECROBINDER": {
+   "pool": "necrobinder",
+   "rarity": "basic"
+  },
+  "STRIKE_REGENT": {
+   "pool": "regent",
+   "rarity": "basic"
+  },
+  "STRIKE_SILENT": {
+   "pool": "silent",
+   "rarity": "basic"
+  },
+  "SUBROUTINE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SUCKER_PUNCH": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "SUMMON_FORTH": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "SUNDER": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SUPERCRITICAL": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "SUPERMASSIVE": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "SUPPRESS": {
+   "pool": "silent",
+   "rarity": "ancient"
+  },
+  "SURVIVOR": {
+   "pool": "silent",
+   "rarity": "basic"
+  },
+  "SWEEPING_BEAM": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "SWORD_BOOMERANG": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "SWORD_SAGE": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "SYNCHRONIZE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "SYNTHESIS": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "TACTICIAN": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "TAG_TEAM": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "TANK": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "TAUNT": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "TEAR_ASUNDER": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "TEMPEST": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "TERRAFORMING": {
+   "pool": "regent",
+   "rarity": "uncommon"
+  },
+  "TESLA_COIL": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "THE_BALL": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "THE_BOMB": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "THE_GAMBIT": {
+   "pool": "colorless",
+   "rarity": "rare"
+  },
+  "THE_HUNT": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "THE_SCYTHE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "THE_SEALED_THRONE": {
+   "pool": "regent",
+   "rarity": "ancient"
+  },
+  "THE_SMITH": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "THINKING_AHEAD": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "THRASH": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "THRUMMING_HATCHET": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "THUNDER": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "THUNDERCLAP": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "TIMES_UP": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "TOOLS_OF_THE_TRADE": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "TORIC_TOUGHNESS": {
+   "pool": "colorless",
+   "rarity": "event"
+  },
+  "TRACKING": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "TRANSFIGURE": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "TRASH_TO_TREASURE": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "TREMBLE": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "TRUE_GRIT": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "TURBO": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "TUTOR": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "TWIN_STRIKE": {
+   "pool": "ironclad",
+   "rarity": "common"
+  },
+  "TYRANNY": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "ULTIMATE_DEFEND": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "ULTIMATE_STRIKE": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "UNDEATH": {
+   "pool": "necrobinder",
+   "rarity": "rare"
+  },
+  "UNDERWORLD": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "UNLEASH": {
+   "pool": "necrobinder",
+   "rarity": "basic"
+  },
+  "UNMOVABLE": {
+   "pool": "ironclad",
+   "rarity": "rare"
+  },
+  "UNRELENTING": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "UNTOUCHABLE": {
+   "pool": "silent",
+   "rarity": "common"
+  },
+  "UPPERCUT": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "UPROAR": {
+   "pool": "defect",
+   "rarity": "common"
+  },
+  "UP_MY_SLEEVE": {
+   "pool": "silent",
+   "rarity": "uncommon"
+  },
+  "VEILPIERCER": {
+   "pool": "necrobinder",
+   "rarity": "uncommon"
+  },
+  "VENERATE": {
+   "pool": "regent",
+   "rarity": "basic"
+  },
+  "VICIOUS": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "VOID_FORM": {
+   "pool": "regent",
+   "rarity": "rare"
+  },
+  "VOLLEY": {
+   "pool": "colorless",
+   "rarity": "uncommon"
+  },
+  "VOLTAIC": {
+   "pool": "defect",
+   "rarity": "rare"
+  },
+  "WELL_LAID_PLANS": {
+   "pool": "silent",
+   "rarity": "rare"
+  },
+  "WHIRLWIND": {
+   "pool": "ironclad",
+   "rarity": "uncommon"
+  },
+  "WHISTLE": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "WHITE_NOISE": {
+   "pool": "defect",
+   "rarity": "uncommon"
+  },
+  "WISH": {
+   "pool": "colorless",
+   "rarity": "ancient"
+  },
+  "WISP": {
+   "pool": "necrobinder",
+   "rarity": "common"
+  },
+  "WRAITH_FORM": {
+   "pool": "silent",
+   "rarity": "ancient"
+  },
+  "WROUGHT_IN_WAR": {
+   "pool": "regent",
+   "rarity": "common"
+  },
+  "ZAP": {
+   "pool": "defect",
+   "rarity": "basic"
+  }
+ },
+ "characters": [
+  "IRONCLAD",
+  "SILENT",
+  "DEFECT",
+  "NECROBINDER",
+  "REGENT"
+ ],
+ "encounters": [
+  {
+   "key": "ENCOUNTER.AEONGLASS_BOSS",
+   "tier": "boss",
+   "title": "Aeonglass",
+   "wire_ids": [
+    "ENCOUNTER.AEONGLASS_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.AXEBOTS_NORMAL",
+   "tier": "normal",
+   "title": "Axebot",
+   "wire_ids": [
+    "ENCOUNTER.AXEBOTS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER",
+   "tier": "event",
+   "title": "Battleworn Dummy",
+   "wire_ids": [
+    "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER",
+   "tier": "event",
+   "title": "Battleworn Dummy",
+   "wire_ids": [
+    "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER",
+   "tier": "event",
+   "title": "Battleworn Dummy",
+   "wire_ids": [
+    "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BOWLBUGS_NORMAL",
+   "tier": "normal",
+   "title": "Bowlbug Swarm",
+   "wire_ids": [
+    "ENCOUNTER.BOWLBUGS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BOWLBUGS_WEAK",
+   "tier": "weak",
+   "title": "Bowlbugs",
+   "wire_ids": [
+    "ENCOUNTER.BOWLBUGS_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BYGONE_EFFIGY",
+   "tier": "elite",
+   "title": "Bygone Effigy",
+   "wire_ids": [
+    "ENCOUNTER.BYGONE_EFFIGY_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.BYRDONIS",
+   "tier": "elite",
+   "title": "Byrdonis",
+   "wire_ids": [
+    "ENCOUNTER.BYRDONIS_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+   "tier": "boss",
+   "title": "Ceremonial Beast",
+   "wire_ids": [
+    "ENCOUNTER.CEREMONIAL_BEAST_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CHOMPERS_NORMAL",
+   "tier": "normal",
+   "title": "An Automaton Pair",
+   "wire_ids": [
+    "ENCOUNTER.CHOMPERS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL",
+   "tier": "normal",
+   "title": "Construct Menagerie",
+   "wire_ids": [
+    "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
+   "tier": "normal",
+   "title": "Many Corpse Slugs",
+   "wire_ids": [
+    "ENCOUNTER.CORPSE_SLUGS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+   "tier": "weak",
+   "title": "Corpse Slugs",
+   "wire_ids": [
+    "ENCOUNTER.CORPSE_SLUGS_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+   "tier": "normal",
+   "title": "Cubex Construct",
+   "wire_ids": [
+    "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.CULTISTS_NORMAL",
+   "tier": "normal",
+   "title": "Cultists",
+   "wire_ids": [
+    "ENCOUNTER.CULTISTS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.DECIMILLIPEDE",
+   "tier": "elite",
+   "title": "The Decimillipede",
+   "wire_ids": [
+    "ENCOUNTER.DECIMILLIPEDE_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER",
+   "tier": "event",
+   "title": "Wrigglers",
+   "wire_ids": [
+    "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.DEVOTED_SCULPTOR_WEAK",
+   "tier": "weak",
+   "title": "Devoted Sculptor",
+   "wire_ids": [
+    "ENCOUNTER.DEVOTED_SCULPTOR_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.ENTOMANCER",
+   "tier": "elite",
+   "title": "Entomancer",
+   "wire_ids": [
+    "ENCOUNTER.ENTOMANCER_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.EXOSKELETONS_NORMAL",
+   "tier": "normal",
+   "title": "Many Exoskeletons",
+   "wire_ids": [
+    "ENCOUNTER.EXOSKELETONS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.EXOSKELETONS_WEAK",
+   "tier": "weak",
+   "title": "Exoskeletons",
+   "wire_ids": [
+    "ENCOUNTER.EXOSKELETONS_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FABRICATOR_NORMAL",
+   "tier": "normal",
+   "title": "Fabricator",
+   "wire_ids": [
+    "ENCOUNTER.FABRICATOR_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER",
+   "tier": "event",
+   "title": "The Merchant???",
+   "wire_ids": [
+    "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FLYCONID_NORMAL",
+   "tier": "normal",
+   "title": "Shroom and Slime",
+   "wire_ids": [
+    "ENCOUNTER.FLYCONID_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FOGMOG_NORMAL",
+   "tier": "normal",
+   "title": "Fogmog",
+   "wire_ids": [
+    "ENCOUNTER.FOGMOG_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+   "tier": "normal",
+   "title": "Fossil Stalker",
+   "wire_ids": [
+    "ENCOUNTER.FOSSIL_STALKER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FROG_KNIGHT_NORMAL",
+   "tier": "normal",
+   "title": "Frog Knight",
+   "wire_ids": [
+    "ENCOUNTER.FROG_KNIGHT_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+   "tier": "weak",
+   "title": "Fuzzy Wurm Crawler",
+   "wire_ids": [
+    "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.GLOBE_HEAD_NORMAL",
+   "tier": "normal",
+   "title": "A Lone Globe Head",
+   "wire_ids": [
+    "ENCOUNTER.GLOBE_HEAD_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.GREMLIN_MERC_NORMAL",
+   "tier": "normal",
+   "title": "Two Gremlins in a Trenchcoat",
+   "wire_ids": [
+    "ENCOUNTER.GREMLIN_MERC_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+   "tier": "normal",
+   "title": "Haunted Ship",
+   "wire_ids": [
+    "ENCOUNTER.HAUNTED_SHIP_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+   "tier": "normal",
+   "title": "Hunter Killer",
+   "wire_ids": [
+    "ENCOUNTER.HUNTER_KILLER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.INFESTED_PRISMS",
+   "tier": "elite",
+   "title": "Infested Prism",
+   "wire_ids": [
+    "ENCOUNTER.INFESTED_PRISMS_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.INKLETS_NORMAL",
+   "tier": "normal",
+   "title": "Inklets",
+   "wire_ids": [
+    "ENCOUNTER.INKLETS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.KAISER_CRAB_BOSS",
+   "tier": "boss",
+   "title": "Kaiser Crab",
+   "wire_ids": [
+    "ENCOUNTER.KAISER_CRAB_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.KNIGHTS_ELITE",
+   "tier": "elite",
+   "title": "Knight Gang",
+   "wire_ids": [
+    "ENCOUNTER.KNIGHTS_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "tier": "boss",
+   "title": "Knowledge Demon",
+   "wire_ids": [
+    "ENCOUNTER.KNOWLEDGE_DEMON_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "tier": "boss",
+   "title": "Lagavulin Matriarch",
+   "wire_ids": [
+    "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.LIVING_FOG_NORMAL",
+   "tier": "normal",
+   "title": "Living Fog",
+   "wire_ids": [
+    "ENCOUNTER.LIVING_FOG_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.LOUSE_PROGENITOR_NORMAL",
+   "tier": "normal",
+   "title": "Louse Progenitor",
+   "wire_ids": [
+    "ENCOUNTER.LOUSE_PROGENITOR_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.MAWLER_NORMAL",
+   "tier": "normal",
+   "title": "Mawler",
+   "wire_ids": [
+    "ENCOUNTER.MAWLER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "tier": "elite",
+   "title": "Mecha Knight",
+   "wire_ids": [
+    "ENCOUNTER.MECHA_KNIGHT_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER",
+   "tier": "event",
+   "title": "Mysterious Knight",
+   "wire_ids": [
+    "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.MYTES_NORMAL",
+   "tier": "normal",
+   "title": "Mass of Mytes",
+   "wire_ids": [
+    "ENCOUNTER.MYTES_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.NIBBITS_NORMAL",
+   "tier": "normal",
+   "title": "A Pair of Nibbits",
+   "wire_ids": [
+    "ENCOUNTER.NIBBITS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.NIBBITS_WEAK",
+   "tier": "weak",
+   "title": "A Lone Nibbit",
+   "wire_ids": [
+    "ENCOUNTER.NIBBITS_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.OVERGROWTH_CRAWLERS",
+   "tier": "normal",
+   "title": "Overgrowth Crawlers",
+   "wire_ids": [
+    "ENCOUNTER.OVERGROWTH_CRAWLERS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.OVICOPTER_NORMAL",
+   "tier": "normal",
+   "title": "Ovicopter",
+   "wire_ids": [
+    "ENCOUNTER.OVICOPTER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.OWL_MAGISTRATE_NORMAL",
+   "tier": "normal",
+   "title": "Owl Magistrate",
+   "wire_ids": [
+    "ENCOUNTER.OWL_MAGISTRATE_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.PHANTASMAL_GARDENERS",
+   "tier": "elite",
+   "title": "Phantasmal Gardeners",
+   "wire_ids": [
+    "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.PHROG_PARASITE",
+   "tier": "elite",
+   "title": "Phrog Parasite",
+   "wire_ids": [
+    "ENCOUNTER.PHROG_PARASITE_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL",
+   "tier": "normal",
+   "title": "Punch Construct",
+   "wire_ids": [
+    "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER",
+   "tier": "event",
+   "title": "Punch Constructs",
+   "wire_ids": [
+    "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.QUEEN_BOSS",
+   "tier": "boss",
+   "title": "Queen",
+   "wire_ids": [
+    "ENCOUNTER.QUEEN_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+   "tier": "normal",
+   "title": "Ruby Raiders",
+   "wire_ids": [
+    "ENCOUNTER.RUBY_RAIDERS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SCROLLS_OF_BITING_NORMAL",
+   "tier": "normal",
+   "title": "Many Scrolls of Biting",
+   "wire_ids": [
+    "ENCOUNTER.SCROLLS_OF_BITING_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SCROLLS_OF_BITING_WEAK",
+   "tier": "normal",
+   "title": "Scrolls of Biting",
+   "wire_ids": [
+    "ENCOUNTER.SCROLLS_OF_BITING_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SEAPUNK_NORMAL",
+   "tier": "normal",
+   "title": "Underdocks Wildlife",
+   "wire_ids": [
+    "ENCOUNTER.SEAPUNK_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SEAPUNK_WEAK",
+   "tier": "weak",
+   "title": "Seapunk",
+   "wire_ids": [
+    "ENCOUNTER.SEAPUNK_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SEWER_CLAM_NORMAL",
+   "tier": "normal",
+   "title": "Sewer Clam",
+   "wire_ids": [
+    "ENCOUNTER.SEWER_CLAM_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+   "tier": "weak",
+   "title": "Shrinker Beetle",
+   "wire_ids": [
+    "ENCOUNTER.SHRINKER_BEETLE_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SKULKING_COLONY",
+   "tier": "elite",
+   "title": "Skulking Colony",
+   "wire_ids": [
+    "ENCOUNTER.SKULKING_COLONY_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SLIMED_BERSERKER_NORMAL",
+   "tier": "normal",
+   "title": "Slimed Berserker",
+   "wire_ids": [
+    "ENCOUNTER.SLIMED_BERSERKER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SLIMES_NORMAL",
+   "tier": "normal",
+   "title": "Swarm of Slimes",
+   "wire_ids": [
+    "ENCOUNTER.SLIMES_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SLIMES_WEAK",
+   "tier": "weak",
+   "title": "Group of Slimes",
+   "wire_ids": [
+    "ENCOUNTER.SLIMES_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
+   "tier": "normal",
+   "title": "Strangler and Friend",
+   "wire_ids": [
+    "ENCOUNTER.SLITHERING_STRANGLER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+   "tier": "weak",
+   "title": "Sludge Spinner",
+   "wire_ids": [
+    "ENCOUNTER.SLUDGE_SPINNER_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
+   "tier": "normal",
+   "title": "Slumber Party",
+   "wire_ids": [
+    "ENCOUNTER.SLUMBERING_BEETLE_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
+   "tier": "normal",
+   "title": "Overgrowth Flora",
+   "wire_ids": [
+    "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "tier": "boss",
+   "title": "Soul Fysh",
+   "wire_ids": [
+    "ENCOUNTER.SOUL_FYSH_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SOUL_NEXUS",
+   "tier": "elite",
+   "title": "Soul Nexus",
+   "wire_ids": [
+    "ENCOUNTER.SOUL_NEXUS_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.SPINY_TOAD_NORMAL",
+   "tier": "normal",
+   "title": "Spiny Toad",
+   "wire_ids": [
+    "ENCOUNTER.SPINY_TOAD_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TERROR_EEL",
+   "tier": "elite",
+   "title": "Terror Eel",
+   "wire_ids": [
+    "ENCOUNTER.TERROR_EEL_ELITE"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TEST_SUBJECT_BOSS",
+   "tier": "boss",
+   "title": "Test Subject",
+   "wire_ids": [
+    "ENCOUNTER.TEST_SUBJECT_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "tier": "boss",
+   "title": "The Insatiable",
+   "wire_ids": [
+    "ENCOUNTER.THE_INSATIABLE_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.THE_KIN_BOSS",
+   "tier": "boss",
+   "title": "The Kin",
+   "wire_ids": [
+    "ENCOUNTER.THE_KIN_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+   "tier": "normal",
+   "title": "Lost and Forgotten",
+   "wire_ids": [
+    "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.THE_OBSCURA_NORMAL",
+   "tier": "normal",
+   "title": "The Obscura",
+   "wire_ids": [
+    "ENCOUNTER.THE_OBSCURA_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+   "tier": "normal",
+   "title": "Thieving Hopper",
+   "wire_ids": [
+    "ENCOUNTER.THIEVING_HOPPER_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TOADPOLES_WEAK",
+   "tier": "weak",
+   "title": "Toadpoles",
+   "wire_ids": [
+    "ENCOUNTER.TOADPOLES_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TUNNELER_NORMAL",
+   "tier": "normal",
+   "title": "Tunneling Twosome",
+   "wire_ids": [
+    "ENCOUNTER.TUNNELER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TUNNELER_WEAK",
+   "tier": "weak",
+   "title": "Tunneler",
+   "wire_ids": [
+    "ENCOUNTER.TUNNELER_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TURRET_OPERATOR_WEAK",
+   "tier": "weak",
+   "title": "Turret Operator",
+   "wire_ids": [
+    "ENCOUNTER.TURRET_OPERATOR_WEAK"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+   "tier": "normal",
+   "title": "Two-Tailed Rats",
+   "wire_ids": [
+    "ENCOUNTER.TWO_TAILED_RATS_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.VANTOM_BOSS",
+   "tier": "boss",
+   "title": "Vantom",
+   "wire_ids": [
+    "ENCOUNTER.VANTOM_BOSS"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
+   "tier": "normal",
+   "title": "Vine Shambler",
+   "wire_ids": [
+    "ENCOUNTER.VINE_SHAMBLER_NORMAL"
+   ]
+  },
+  {
+   "key": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "tier": "boss",
+   "title": "Waterfall Giant",
+   "wire_ids": [
+    "ENCOUNTER.WATERFALL_GIANT_BOSS"
+   ]
+  }
+ ],
+ "generated_by": "versions/v0.111.0/eval/coverage.py --refresh-universe",
+ "potions": [
+  "AMBERGRIS",
+  "ASHWATER",
+  "ATTACK_POTION",
+  "BEETLE_JUICE",
+  "BLESSING_OF_THE_FORGE",
+  "BLOCK_POTION",
+  "BLOOD_POTION",
+  "BONE_BREW",
+  "BOTTLED_POTENTIAL",
+  "CLARITY",
+  "COLORLESS_POTION",
+  "COSMIC_CONCOCTION",
+  "CUNNING_POTION",
+  "CURE_ALL",
+  "DEPRECATED_POTION",
+  "DEXTERITY_POTION",
+  "DISTILLED_CHAOS",
+  "DROPLET_OF_PRECOGNITION",
+  "DUPLICATOR",
+  "ENERGY_POTION",
+  "ENTROPIC_BREW",
+  "ESSENCE_OF_DARKNESS",
+  "EXPLOSIVE_AMPOULE",
+  "FAIRY_IN_A_BOTTLE",
+  "FIRE_POTION",
+  "FLEX_POTION",
+  "FOCUS_POTION",
+  "FORTIFIER",
+  "FOUL_POTION",
+  "FRUIT_JUICE",
+  "FYSH_OIL",
+  "GAMBLERS_BREW",
+  "GHOST_IN_A_JAR",
+  "GIGANTIFICATION_POTION",
+  "GLOWWATER_POTION",
+  "HEART_OF_IRON",
+  "KINGS_COURAGE",
+  "LIQUID_BRONZE",
+  "LIQUID_MEMORIES",
+  "LUCKY_TONIC",
+  "MAZALETHS_GIFT",
+  "MOCK_DISCARD_AND_ADD_SHIVS_POTION",
+  "OROBIC_ACID",
+  "POISON_POTION",
+  "POTION_OF_BINDING",
+  "POTION_OF_CAPACITY",
+  "POTION_OF_DOOM",
+  "POTION_SHAPED_ROCK",
+  "POT_OF_GHOULS",
+  "POWDERED_DEMISE",
+  "POWER_POTION",
+  "RADIANT_TINCTURE",
+  "REGEN_POTION",
+  "SHACKLING_POTION",
+  "SHIP_IN_A_BOTTLE",
+  "SKILL_POTION",
+  "SNECKO_OIL",
+  "SOLDIERS_STEW",
+  "SPEED_POTION",
+  "STABLE_SERUM",
+  "STAR_POTION",
+  "STRENGTH_POTION",
+  "SWIFT_POTION",
+  "TOUCH_OF_INSANITY",
+  "VULNERABLE_POTION",
+  "WEAK_POTION"
+ ],
+ "relics": {
+  "RELIC.AKABEKO": {
+   "pool": "shared"
+  },
+  "RELIC.ALCHEMICAL_COFFER": {
+   "pool": "event"
+  },
+  "RELIC.AMETHYST_AUBERGINE": {
+   "pool": "shared"
+  },
+  "RELIC.ANCHOR": {
+   "pool": "shared"
+  },
+  "RELIC.ARCANE_SCROLL": {
+   "pool": "event"
+  },
+  "RELIC.ARCHAIC_TOOTH": {
+   "pool": "event"
+  },
+  "RELIC.ART_OF_WAR": {
+   "pool": "shared"
+  },
+  "RELIC.ASTROLABE": {
+   "pool": "event"
+  },
+  "RELIC.BAG_OF_MARBLES": {
+   "pool": "shared"
+  },
+  "RELIC.BAG_OF_PREPARATION": {
+   "pool": "shared"
+  },
+  "RELIC.BEATING_REMNANT": {
+   "pool": "shared"
+  },
+  "RELIC.BEAUTIFUL_BRACELET": {
+   "pool": "event"
+  },
+  "RELIC.BELLOWS": {
+   "pool": "shared"
+  },
+  "RELIC.BELT_BUCKLE": {
+   "pool": "shared"
+  },
+  "RELIC.BIG_HAT": {
+   "pool": "necrobinder"
+  },
+  "RELIC.BIG_MUSHROOM": {
+   "pool": "event"
+  },
+  "RELIC.BIIIG_HUG": {
+   "pool": "event"
+  },
+  "RELIC.BING_BONG": {
+   "pool": "event"
+  },
+  "RELIC.BLACK_BLOOD": {
+   "pool": "event"
+  },
+  "RELIC.BLACK_STAR": {
+   "pool": "event"
+  },
+  "RELIC.BLESSED_ANTLER": {
+   "pool": "event"
+  },
+  "RELIC.BLOOD_SOAKED_ROSE": {
+   "pool": "event"
+  },
+  "RELIC.BLOOD_VIAL": {
+   "pool": "shared"
+  },
+  "RELIC.BONE_FLUTE": {
+   "pool": "necrobinder"
+  },
+  "RELIC.BONE_TEA": {
+   "pool": "event"
+  },
+  "RELIC.BOOKMARK": {
+   "pool": "necrobinder"
+  },
+  "RELIC.BOOK_OF_FIVE_RINGS": {
+   "pool": "shared"
+  },
+  "RELIC.BOOK_REPAIR_KNIFE": {
+   "pool": "necrobinder"
+  },
+  "RELIC.BOOMING_CONCH": {
+   "pool": "event"
+  },
+  "RELIC.BOUND_PHYLACTERY": {
+   "pool": "necrobinder"
+  },
+  "RELIC.BOWLER_HAT": {
+   "pool": "shared"
+  },
+  "RELIC.BREAD": {
+   "pool": "shared"
+  },
+  "RELIC.BRILLIANT_SCARF": {
+   "pool": "event"
+  },
+  "RELIC.BRIMSTONE": {
+   "pool": "ironclad"
+  },
+  "RELIC.BRONZE_SCALES": {
+   "pool": "shared"
+  },
+  "RELIC.BURNING_BLOOD": {
+   "pool": "ironclad"
+  },
+  "RELIC.BURNING_STICKS": {
+   "pool": "shared"
+  },
+  "RELIC.BYRDPIP": {
+   "pool": "event"
+  },
+  "RELIC.CALLING_BELL": {
+   "pool": "event"
+  },
+  "RELIC.CANDELABRA": {
+   "pool": "shared"
+  },
+  "RELIC.CAPTAINS_WHEEL": {
+   "pool": "shared"
+  },
+  "RELIC.CAULDRON": {
+   "pool": "shared"
+  },
+  "RELIC.CENTENNIAL_PUZZLE": {
+   "pool": "shared"
+  },
+  "RELIC.CHANDELIER": {
+   "pool": "shared"
+  },
+  "RELIC.CHARONS_ASHES": {
+   "pool": "ironclad"
+  },
+  "RELIC.CHEMICAL_X": {
+   "pool": "shared"
+  },
+  "RELIC.CHOICES_PARADOX": {
+   "pool": "event"
+  },
+  "RELIC.CHOSEN_CHEESE": {
+   "pool": "event"
+  },
+  "RELIC.CLAWS": {
+   "pool": "event"
+  },
+  "RELIC.CLOAK_CLASP": {
+   "pool": "shared"
+  },
+  "RELIC.CRACKED_CORE": {
+   "pool": "defect"
+  },
+  "RELIC.CROSSBOW": {
+   "pool": "event"
+  },
+  "RELIC.CURSED_PEARL": {
+   "pool": "event"
+  },
+  "RELIC.DARKSTONE_PERIAPT": {
+   "pool": "event"
+  },
+  "RELIC.DATA_DISK": {
+   "pool": "defect"
+  },
+  "RELIC.DAUGHTER_OF_THE_WIND": {
+   "pool": "event"
+  },
+  "RELIC.DELICATE_FROND": {
+   "pool": "event"
+  },
+  "RELIC.DEMON_TONGUE": {
+   "pool": "ironclad"
+  },
+  "RELIC.DIAMOND_DIADEM": {
+   "pool": "event"
+  },
+  "RELIC.DINGY_RUG": {
+   "pool": "shared"
+  },
+  "RELIC.DISTINGUISHED_CAPE": {
+   "pool": "event"
+  },
+  "RELIC.DIVINE_DESTINY": {
+   "pool": "event"
+  },
+  "RELIC.DIVINE_RIGHT": {
+   "pool": "regent"
+  },
+  "RELIC.DOLLYS_MIRROR": {
+   "pool": "shared"
+  },
+  "RELIC.DOWSING_ROD": {
+   "pool": "event"
+  },
+  "RELIC.DRAGON_FRUIT": {
+   "pool": "shared"
+  },
+  "RELIC.DREAM_CATCHER": {
+   "pool": "event"
+  },
+  "RELIC.DRIFTWOOD": {
+   "pool": "event"
+  },
+  "RELIC.DUSTY_TOME": {
+   "pool": "event"
+  },
+  "RELIC.ECTOPLASM": {
+   "pool": "event"
+  },
+  "RELIC.ELECTRIC_SHRYMP": {
+   "pool": "event"
+  },
+  "RELIC.EMBER_TEA": {
+   "pool": "event"
+  },
+  "RELIC.EMOTION_CHIP": {
+   "pool": "defect"
+  },
+  "RELIC.EMPTY_CAGE": {
+   "pool": "event"
+  },
+  "RELIC.ETERNAL_FEATHER": {
+   "pool": "shared"
+  },
+  "RELIC.FAKE_ANCHOR": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_BLOOD_VIAL": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_HAPPY_FLOWER": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_LEES_WAFFLE": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_MANGO": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_MERCHANTS_RUG": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_ORICHALCUM": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_SNECKO_EYE": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_STRIKE_DUMMY": {
+   "pool": "event"
+  },
+  "RELIC.FAKE_VENERABLE_TEA_SET": {
+   "pool": "event"
+  },
+  "RELIC.FENCING_MANUAL": {
+   "pool": "regent"
+  },
+  "RELIC.FESTIVE_POPPER": {
+   "pool": "shared"
+  },
+  "RELIC.FIDDLE": {
+   "pool": "event"
+  },
+  "RELIC.FISHING_ROD": {
+   "pool": "event"
+  },
+  "RELIC.FORGOTTEN_SOUL": {
+   "pool": "event"
+  },
+  "RELIC.FRAGRANT_MUSHROOM": {
+   "pool": "event"
+  },
+  "RELIC.FRESNEL_LENS": {
+   "pool": "shared"
+  },
+  "RELIC.FROZEN_EGG": {
+   "pool": "shared"
+  },
+  "RELIC.FUNERARY_MASK": {
+   "pool": "necrobinder"
+  },
+  "RELIC.FUR_COAT": {
+   "pool": "event"
+  },
+  "RELIC.GALACTIC_DUST": {
+   "pool": "regent"
+  },
+  "RELIC.GAMBLING_CHIP": {
+   "pool": "shared"
+  },
+  "RELIC.GAME_PIECE": {
+   "pool": "shared"
+  },
+  "RELIC.GHOST_SEED": {
+   "pool": "shared"
+  },
+  "RELIC.GIRYA": {
+   "pool": "shared"
+  },
+  "RELIC.GLASS_EYE": {
+   "pool": "event"
+  },
+  "RELIC.GLITTER": {
+   "pool": "event"
+  },
+  "RELIC.GNARLED_HAMMER": {
+   "pool": "shared"
+  },
+  "RELIC.GOLDEN_COMPASS": {
+   "pool": "event"
+  },
+  "RELIC.GOLDEN_PEARL": {
+   "pool": "event"
+  },
+  "RELIC.GOLD_PLATED_CABLES": {
+   "pool": "defect"
+  },
+  "RELIC.GORGET": {
+   "pool": "shared"
+  },
+  "RELIC.GREMLIN_HORN": {
+   "pool": "shared"
+  },
+  "RELIC.HAND_DRILL": {
+   "pool": "event"
+  },
+  "RELIC.HAPPY_FLOWER": {
+   "pool": "shared"
+  },
+  "RELIC.HEFTY_TABLET": {
+   "pool": "event"
+  },
+  "RELIC.HELICAL_DART": {
+   "pool": "silent"
+  },
+  "RELIC.HISTORY_COURSE": {
+   "pool": "event"
+  },
+  "RELIC.HORN_CLEAT": {
+   "pool": "shared"
+  },
+  "RELIC.ICE_CREAM": {
+   "pool": "shared"
+  },
+  "RELIC.INFUSED_CORE": {
+   "pool": "event"
+  },
+  "RELIC.INTIMIDATING_HELMET": {
+   "pool": "shared"
+  },
+  "RELIC.IRON_CLUB": {
+   "pool": "event"
+  },
+  "RELIC.IVORY_TILE": {
+   "pool": "necrobinder"
+  },
+  "RELIC.JEWELED_MASK": {
+   "pool": "event"
+  },
+  "RELIC.JEWELRY_BOX": {
+   "pool": "event"
+  },
+  "RELIC.JOSS_PAPER": {
+   "pool": "shared"
+  },
+  "RELIC.JUZU_BRACELET": {
+   "pool": "shared"
+  },
+  "RELIC.KALEIDOSCOPE": {
+   "pool": "event"
+  },
+  "RELIC.KIFUDA": {
+   "pool": "shared"
+  },
+  "RELIC.KUNAI": {
+   "pool": "shared"
+  },
+  "RELIC.KUSARIGAMA": {
+   "pool": "shared"
+  },
+  "RELIC.LANTERN": {
+   "pool": "shared"
+  },
+  "RELIC.LARGE_CAPSULE": {
+   "pool": "event"
+  },
+  "RELIC.LASTING_CANDY": {
+   "pool": "event"
+  },
+  "RELIC.LAVA_LAMP": {
+   "pool": "shared"
+  },
+  "RELIC.LAVA_ROCK": {
+   "pool": "event"
+  },
+  "RELIC.LEAD_PAPERWEIGHT": {
+   "pool": "event"
+  },
+  "RELIC.LEAFY_POULTICE": {
+   "pool": "event"
+  },
+  "RELIC.LEES_WAFFLE": {
+   "pool": "shared"
+  },
+  "RELIC.LETTER_OPENER": {
+   "pool": "shared"
+  },
+  "RELIC.LIZARD_TAIL": {
+   "pool": "shared"
+  },
+  "RELIC.LOOMING_FRUIT": {
+   "pool": "shared"
+  },
+  "RELIC.LORDS_PARASOL": {
+   "pool": "event"
+  },
+  "RELIC.LOST_COFFER": {
+   "pool": "event"
+  },
+  "RELIC.LOST_WISP": {
+   "pool": "event"
+  },
+  "RELIC.LUCKY_FYSH": {
+   "pool": "shared"
+  },
+  "RELIC.LUNAR_PASTRY": {
+   "pool": "regent"
+  },
+  "RELIC.MANGO": {
+   "pool": "shared"
+  },
+  "RELIC.MASSIVE_SCROLL": {
+   "pool": "event"
+  },
+  "RELIC.MAW_BANK": {
+   "pool": "event"
+  },
+  "RELIC.MEAL_TICKET": {
+   "pool": "shared"
+  },
+  "RELIC.MEAT_CLEAVER": {
+   "pool": "event"
+  },
+  "RELIC.MEAT_ON_THE_BONE": {
+   "pool": "shared"
+  },
+  "RELIC.MEMBERSHIP_CARD": {
+   "pool": "shared"
+  },
+  "RELIC.MERCURY_HOURGLASS": {
+   "pool": "shared"
+  },
+  "RELIC.METRONOME": {
+   "pool": "defect"
+  },
+  "RELIC.MINIATURE_CANNON": {
+   "pool": "shared"
+  },
+  "RELIC.MINIATURE_TENT": {
+   "pool": "shared"
+  },
+  "RELIC.MINI_REGENT": {
+   "pool": "regent"
+  },
+  "RELIC.MOLTEN_EGG": {
+   "pool": "shared"
+  },
+  "RELIC.MR_STRUGGLES": {
+   "pool": "event"
+  },
+  "RELIC.MUMMIFIED_HAND": {
+   "pool": "shared"
+  },
+  "RELIC.MUSIC_BOX": {
+   "pool": "event"
+  },
+  "RELIC.MYSTIC_LIGHTER": {
+   "pool": "shared"
+  },
+  "RELIC.NEOWS_BONES": {
+   "pool": "event"
+  },
+  "RELIC.NEOWS_SACRIFICE": {
+   "pool": "event"
+  },
+  "RELIC.NEOWS_TALISMAN": {
+   "pool": "event"
+  },
+  "RELIC.NEOWS_TORMENT": {
+   "pool": "event"
+  },
+  "RELIC.NEW_LEAF": {
+   "pool": "event"
+  },
+  "RELIC.NINJA_SCROLL": {
+   "pool": "silent"
+  },
+  "RELIC.NUNCHAKU": {
+   "pool": "shared"
+  },
+  "RELIC.NUTRITIOUS_OYSTER": {
+   "pool": "event"
+  },
+  "RELIC.NUTRITIOUS_SOUP": {
+   "pool": "event"
+  },
+  "RELIC.ODDLY_SMOOTH_STONE": {
+   "pool": "shared"
+  },
+  "RELIC.OLD_COIN": {
+   "pool": "shared"
+  },
+  "RELIC.ORANGE_DOUGH": {
+   "pool": "regent"
+  },
+  "RELIC.ORICHALCUM": {
+   "pool": "shared"
+  },
+  "RELIC.ORNAMENTAL_FAN": {
+   "pool": "shared"
+  },
+  "RELIC.ORRERY": {
+   "pool": "shared"
+  },
+  "RELIC.PAELS_BLOOD": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_CLAW": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_EYE": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_FLESH": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_GROWTH": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_HORN": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_LEGION": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_TEARS": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_TOOTH": {
+   "pool": "event"
+  },
+  "RELIC.PAELS_WING": {
+   "pool": "event"
+  },
+  "RELIC.PANDORAS_BOX": {
+   "pool": "event"
+  },
+  "RELIC.PANTOGRAPH": {
+   "pool": "shared"
+  },
+  "RELIC.PAPER_KRANE": {
+   "pool": "silent"
+  },
+  "RELIC.PAPER_PHROG": {
+   "pool": "ironclad"
+  },
+  "RELIC.PARRYING_SHIELD": {
+   "pool": "shared"
+  },
+  "RELIC.PEAR": {
+   "pool": "shared"
+  },
+  "RELIC.PENDULUM": {
+   "pool": "shared"
+  },
+  "RELIC.PEN_NIB": {
+   "pool": "shared"
+  },
+  "RELIC.PERMAFROST": {
+   "pool": "shared"
+  },
+  "RELIC.PETRIFIED_TOAD": {
+   "pool": "shared"
+  },
+  "RELIC.PHIAL_HOLSTER": {
+   "pool": "event"
+  },
+  "RELIC.PHILOSOPHERS_STONE": {
+   "pool": "event"
+  },
+  "RELIC.PHYLACTERY_UNBOUND": {
+   "pool": "event"
+  },
+  "RELIC.PLANISPHERE": {
+   "pool": "shared"
+  },
+  "RELIC.POCKETWATCH": {
+   "pool": "shared"
+  },
+  "RELIC.POLLINOUS_CORE": {
+   "pool": "event"
+  },
+  "RELIC.POMANDER": {
+   "pool": "event"
+  },
+  "RELIC.POTION_BELT": {
+   "pool": "shared"
+  },
+  "RELIC.POWER_CELL": {
+   "pool": "defect"
+  },
+  "RELIC.PRAYER_WHEEL": {
+   "pool": "shared"
+  },
+  "RELIC.PRECARIOUS_SHEARS": {
+   "pool": "event"
+  },
+  "RELIC.PRECISE_SCISSORS": {
+   "pool": "event"
+  },
+  "RELIC.PRESERVED_FOG": {
+   "pool": "event"
+  },
+  "RELIC.PRISMATIC_GEM": {
+   "pool": "event"
+  },
+  "RELIC.PUMPKIN_CANDLE": {
+   "pool": "event"
+  },
+  "RELIC.PUNCH_DAGGER": {
+   "pool": "shared"
+  },
+  "RELIC.RADIANT_PEARL": {
+   "pool": "event"
+  },
+  "RELIC.RAINBOW_RING": {
+   "pool": "shared"
+  },
+  "RELIC.RAZOR_TOOTH": {
+   "pool": "event"
+  },
+  "RELIC.RED_MASK": {
+   "pool": "shared"
+  },
+  "RELIC.RED_SKULL": {
+   "pool": "ironclad"
+  },
+  "RELIC.REGALITE": {
+   "pool": "regent"
+  },
+  "RELIC.REGAL_PILLOW": {
+   "pool": "shared"
+  },
+  "RELIC.REPTILE_TRINKET": {
+   "pool": "shared"
+  },
+  "RELIC.RINGING_TRIANGLE": {
+   "pool": "shared"
+  },
+  "RELIC.RING_OF_THE_DRAKE": {
+   "pool": "event"
+  },
+  "RELIC.RING_OF_THE_SNAKE": {
+   "pool": "silent"
+  },
+  "RELIC.RIPPLE_BASIN": {
+   "pool": "shared"
+  },
+  "RELIC.ROYAL_POISON": {
+   "pool": "event"
+  },
+  "RELIC.ROYAL_STAMP": {
+   "pool": "shared"
+  },
+  "RELIC.RUINED_HELMET": {
+   "pool": "ironclad"
+  },
+  "RELIC.RUNIC_CAPACITOR": {
+   "pool": "defect"
+  },
+  "RELIC.RUNIC_PYRAMID": {
+   "pool": "event"
+  },
+  "RELIC.SAI": {
+   "pool": "event"
+  },
+  "RELIC.SAND_CASTLE": {
+   "pool": "event"
+  },
+  "RELIC.SCREAMING_FLAGON": {
+   "pool": "shared"
+  },
+  "RELIC.SCROLL_BOXES": {
+   "pool": "event"
+  },
+  "RELIC.SEAL_OF_GOLD": {
+   "pool": "event"
+  },
+  "RELIC.SEA_GLASS": {
+   "pool": "event"
+  },
+  "RELIC.SELF_FORMING_CLAY": {
+   "pool": "ironclad"
+  },
+  "RELIC.SERE_TALON": {
+   "pool": "event"
+  },
+  "RELIC.SHOVEL": {
+   "pool": "shared"
+  },
+  "RELIC.SHURIKEN": {
+   "pool": "shared"
+  },
+  "RELIC.SIGNET_RING": {
+   "pool": "event"
+  },
+  "RELIC.SILKEN_TRESS": {
+   "pool": "event"
+  },
+  "RELIC.SILVER_CRUCIBLE": {
+   "pool": "event"
+  },
+  "RELIC.SLING_OF_COURAGE": {
+   "pool": "shared"
+  },
+  "RELIC.SMALL_CAPSULE": {
+   "pool": "event"
+  },
+  "RELIC.SNECKO_EYE": {
+   "pool": "event"
+  },
+  "RELIC.SNECKO_SKULL": {
+   "pool": "silent"
+  },
+  "RELIC.SOZU": {
+   "pool": "event"
+  },
+  "RELIC.SPARKLING_ROUGE": {
+   "pool": "event"
+  },
+  "RELIC.SPIKED_GAUNTLETS": {
+   "pool": "event"
+  },
+  "RELIC.STONE_CALENDAR": {
+   "pool": "shared"
+  },
+  "RELIC.STONE_CRACKER": {
+   "pool": "shared"
+  },
+  "RELIC.STONE_HUMIDIFIER": {
+   "pool": "event"
+  },
+  "RELIC.STORYBOOK": {
+   "pool": "event"
+  },
+  "RELIC.STRAWBERRY": {
+   "pool": "shared"
+  },
+  "RELIC.STRIKE_DUMMY": {
+   "pool": "shared"
+  },
+  "RELIC.STURDY_CLAMP": {
+   "pool": "shared"
+  },
+  "RELIC.SWORD_OF_JADE": {
+   "pool": "event"
+  },
+  "RELIC.SWORD_OF_STONE": {
+   "pool": "event"
+  },
+  "RELIC.SYMBIOTIC_VIRUS": {
+   "pool": "defect"
+  },
+  "RELIC.TANXS_WHISTLE": {
+   "pool": "event"
+  },
+  "RELIC.TEA_OF_DISCOURTESY": {
+   "pool": "event"
+  },
+  "RELIC.THE_ABACUS": {
+   "pool": "shared"
+  },
+  "RELIC.THE_BOOT": {
+   "pool": "event"
+  },
+  "RELIC.THE_COURIER": {
+   "pool": "shared"
+  },
+  "RELIC.THROWING_AXE": {
+   "pool": "event"
+  },
+  "RELIC.TINGSHA": {
+   "pool": "silent"
+  },
+  "RELIC.TINY_MAILBOX": {
+   "pool": "shared"
+  },
+  "RELIC.TOASTY_MITTENS": {
+   "pool": "event"
+  },
+  "RELIC.TOOLBOX": {
+   "pool": "shared"
+  },
+  "RELIC.TOUCH_OF_OROBAS": {
+   "pool": "event"
+  },
+  "RELIC.TOUGH_BANDAGES": {
+   "pool": "silent"
+  },
+  "RELIC.TOXIC_EGG": {
+   "pool": "shared"
+  },
+  "RELIC.TOY_BOX": {
+   "pool": "event"
+  },
+  "RELIC.TRI_BOOMERANG": {
+   "pool": "event"
+  },
+  "RELIC.TUNGSTEN_ROD": {
+   "pool": "shared"
+  },
+  "RELIC.TUNING_FORK": {
+   "pool": "shared"
+  },
+  "RELIC.TWISTED_FUNNEL": {
+   "pool": "silent"
+  },
+  "RELIC.UNCEASING_TOP": {
+   "pool": "shared"
+  },
+  "RELIC.UNDYING_SIGIL": {
+   "pool": "necrobinder"
+  },
+  "RELIC.UNSETTLING_LAMP": {
+   "pool": "shared"
+  },
+  "RELIC.VAJRA": {
+   "pool": "shared"
+  },
+  "RELIC.VAMBRACE": {
+   "pool": "shared"
+  },
+  "RELIC.VELVET_CHOKER": {
+   "pool": "event"
+  },
+  "RELIC.VENERABLE_TEA_SET": {
+   "pool": "shared"
+  },
+  "RELIC.VERY_HOT_COCOA": {
+   "pool": "shared"
+  },
+  "RELIC.VEXING_PUZZLEBOX": {
+   "pool": "shared"
+  },
+  "RELIC.VITRUVIAN_MINION": {
+   "pool": "regent"
+  },
+  "RELIC.WAR_HAMMER": {
+   "pool": "event"
+  },
+  "RELIC.WAR_PAINT": {
+   "pool": "shared"
+  },
+  "RELIC.WHETSTONE": {
+   "pool": "shared"
+  },
+  "RELIC.WHISPERING_EARRING": {
+   "pool": "event"
+  },
+  "RELIC.WHITE_BEAST_STATUE": {
+   "pool": "shared"
+  },
+  "RELIC.WHITE_STAR": {
+   "pool": "shared"
+  },
+  "RELIC.WINGED_BOOTS": {
+   "pool": "event"
+  },
+  "RELIC.WING_CHARM": {
+   "pool": "shared"
+  },
+  "RELIC.WONGOS_MYSTERY_TICKET": {
+   "pool": "event"
+  },
+  "RELIC.WONGO_CUSTOMER_APPRECIATION_BADGE": {
+   "pool": "event"
+  },
+  "RELIC.YUMMY_COOKIE": {
+   "pool": "event"
+  }
+ },
+ "schema": "sts-eval-coverage-universe-v1",
+ "sources": [
+  "data/cards.json",
+  "data/game_values.json (colors)",
+  "data/relics.json",
+  "data/loc_en.json (potions, encounter titles)",
+  "versions/v0.111.0/rust/ENCOUNTER_COVERAGE_CENSUS.json"
+ ]
+}

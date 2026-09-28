@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "G9BSN165F970",
+ "node": 7,
+ "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "e6f70ca0782a1816b766e213bf9f63cc1e24926c58f005d953b6d03b16429ee9",
+ "save_sha256": "924438def11f6280e3d4f9848d4ca58cbcc4bbf2a3bc15e42b7871762931e5e9",
+ "entry_digest": "ba5250ac875ba9d6ff31f0fe7fa8a373ed17d496b1ea13e9f4ad15b9bd32e569",
+ "checksummed": true
+}

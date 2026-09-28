@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "LGSGDLDD2JXT",
+ "node": 12,
+ "encounter": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "ed4f15301c090388cdea8c4f75668d0464424729df6186face7755d5cc1e5248",
+ "save_sha256": "39545cdefca68a2a665d9553fd88d8b441912e9aa0ff0685e00374c7ef03e08f",
+ "entry_digest": "75f74921ab2fe77199847185280f6b284a98a6b43b89cf5965bf92eb12cc204e",
+ "checksummed": true
+}

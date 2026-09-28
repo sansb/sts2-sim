@@ -1,0 +1,7163 @@
+[
+  {
+    "action": {
+      "answer": {
+        "index": 5,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    "digest_after": "73bb27b4aba3481eb435fc24d50dd90aba17d369b6f694387161b5d1e115fa5c",
+    "native": {
+      "player": {
+        "hp": 74,
+        "max_hp": 80,
+        "block": 14,
+        "energy": 4,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          108,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          97,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          89,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "INFERNO",
+            1
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "STAMPEDE",
+            1
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 3,
+      "target": 1
+    },
+    "digest_after": "1ec94b61ca2726cca6b509f021fc89045ae93505569878575e52e04d3ed23e58",
+    "native": {
+      "player": {
+        "hp": 74,
+        "max_hp": 80,
+        "block": 14,
+        "energy": 2,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          108,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          85,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          89,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "INFERNO",
+            1
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "STAMPEDE",
+            1
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 0
+    },
+    "digest_after": "a270c94d87c1f07b519950340eb5e0396840c74914365a0753510474cce2ec75",
+    "native": {
+      "player": {
+        "hp": 74,
+        "max_hp": 80,
+        "block": 14,
+        "energy": 1,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          108,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          85,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          89,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "STAMPEDE",
+            1
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 2
+    },
+    "digest_after": "f0f8ac1755c1b409472394e53674e6389749dc93fc77be78cd58441bc7a42464",
+    "native": {
+      "player": {
+        "hp": 71,
+        "max_hp": 80,
+        "block": 14,
+        "energy": 4,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          99,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          76,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          80,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "STAMPEDE",
+            1
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 7
+    },
+    "digest_after": "6d22a84743e1a8a954ed72980010572e7f0ca76034bc73c821e1a121b227e58d",
+    "native": {
+      "player": {
+        "hp": 69,
+        "max_hp": 80,
+        "block": 30,
+        "energy": 2,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          90,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          67,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          71,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "STAMPEDE",
+            1
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 6
+    },
+    "digest_after": "760780699e3b1bbf614468d6ba4a5128a7d071fbd2f61571412418bf9adc7df3",
+    "native": {
+      "player": {
+        "hp": 69,
+        "max_hp": 80,
+        "block": 30,
+        "energy": 1,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          90,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          67,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          71,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 38
+    },
+    "digest_after": "6d8f8de30a02933348e4322fd384ccc295880476fc46c9bc2053b9c48650f327",
+    "native": {
+      "player": {
+        "hp": 69,
+        "max_hp": 80,
+        "block": 65,
+        "energy": 1,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          90,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          67,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          71,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 1,
+      "target": 1
+    },
+    "digest_after": "9ace5527006857be17957faf4400240071c1a3863d7ce2d96f09f26191894d94",
+    "native": {
+      "player": {
+        "hp": 69,
+        "max_hp": 80,
+        "block": 65,
+        "energy": 0,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          90,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          57,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          71,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "BRAND",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 4
+    },
+    "digest_after": "ba31b087da02e0fe4315b2c713baa4433d6e099ecd478859d9a459870c98f497",
+    "native": {
+      "player": {
+        "hp": 68,
+        "max_hp": 80,
+        "block": 65,
+        "energy": 0,
+        "turn": 1
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          81,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          48,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          62,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            12913413729005332077,
+            6318420697741668286,
+            10399955655478965988,
+            16690993599285738012
+          ],
+          "counter": 7
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [],
+        "draw": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "end"
+    },
+    "digest_after": "3cdc01b43df6700d882e10b82bdd50faf4f539386abdb539293f90cdd553b0c1"
+  },
+  {
+    "action": {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    "digest_after": "47d865be52e2410744c02691943c826425677fdeb4bedf7b93f9117520075af3",
+    "native": {
+      "player": {
+        "hp": 67,
+        "max_hp": 80,
+        "block": 0,
+        "energy": 5,
+        "turn": 2
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          72,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          39,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          62,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            232059923400455119,
+            8416721836301008695,
+            3975101166389072009,
+            1347796753923138556
+          ],
+          "counter": 8
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 12,
+      "target": 1
+    },
+    "digest_after": "482e30d93089458972886897d1650c829c2096f3a0721e1038fcab0d40229797",
+    "native": {
+      "player": {
+        "hp": 67,
+        "max_hp": 80,
+        "block": 0,
+        "energy": 4,
+        "turn": 2
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          72,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          27,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          62,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            232059923400455119,
+            8416721836301008695,
+            3975101166389072009,
+            1347796753923138556
+          ],
+          "counter": 8
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ]
+        ],
+        "draw": [
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 9
+    },
+    "digest_after": "ddb3f8f9d3c7fbea92fc630965e067b1631fbab0527bc2ffd1fa935fc3bdcd7b",
+    "native": {
+      "player": {
+        "hp": 67,
+        "max_hp": 80,
+        "block": 12,
+        "energy": 2,
+        "turn": 2
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          72,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          27,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          62,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            232059923400455119,
+            8416721836301008695,
+            3975101166389072009,
+            1347796753923138556
+          ],
+          "counter": 8
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ]
+        ],
+        "draw": [
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 13
+    },
+    "digest_after": "97e85a71c6e523ad41d8091c7ce06fefa849da51007e9ba4357d6a6b59e4f5f9",
+    "native": {
+      "player": {
+        "hp": 67,
+        "max_hp": 80,
+        "block": 20,
+        "energy": 1,
+        "turn": 2
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          72,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          27,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          62,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            232059923400455119,
+            8416721836301008695,
+            3975101166389072009,
+            1347796753923138556
+          ],
+          "counter": 8
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 8,
+      "target": 1
+    },
+    "digest_after": "f231e692e4853e996e532e1cbc9ce8e1b10ca530816612e7b4207b6a1cdcb2d1",
+    "native": {
+      "player": {
+        "hp": 67,
+        "max_hp": 80,
+        "block": 20,
+        "energy": 0,
+        "turn": 2
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          72,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          27,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          62,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            16137434246897622215,
+            8776525252662262169,
+            11578150351230480095,
+            9608470495781849707
+          ],
+          "counter": 563
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            232059923400455119,
+            8416721836301008695,
+            3975101166389072009,
+            1347796753923138556
+          ],
+          "counter": 8
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            7626555656021531418,
+            4085541925683005815,
+            9482414109521642548,
+            8845843241639691652
+          ],
+          "counter": 11
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "PYRE",
+            1
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "end"
+    },
+    "digest_after": "80ca83bc400f9f24230ab5318e54a2c763a86f721f9a66d60cf19c157a06fa9a"
+  },
+  {
+    "action": {
+      "answer": {
+        "index": 0,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    "digest_after": "e5def4ecfa7f5924666d178b814dde7a5f5d319cfa44891239600c30c2e0e81c",
+    "native": {
+      "player": {
+        "hp": 51,
+        "max_hp": 80,
+        "block": 0,
+        "energy": 3,
+        "turn": 3
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          59,
+          108,
+          0
+        ],
+        [
+          "SPECTRAL_KNIGHT",
+          14,
+          97,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          41,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            2551272452227706677,
+            473458106375572353,
+            9885764913372361240,
+            9114827778859381273
+          ],
+          "counter": 564
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            11387175451930826538,
+            8527870156646256691,
+            8736131051646962754,
+            9729428210615219503
+          ],
+          "counter": 10
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ],
+          [
+            "PYRE",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 17,
+      "target": 1
+    },
+    "digest_after": "ffebe5649f48583d49d56e3d34d904fad34dd82a918747ca422216619f5113b7",
+    "native": {
+      "player": {
+        "hp": 51,
+        "max_hp": 80,
+        "block": 0,
+        "energy": 3,
+        "turn": 3
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          59,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          41,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            2551272452227706677,
+            473458106375572353,
+            9885764913372361240,
+            9114827778859381273
+          ],
+          "counter": 564
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            11387175451930826538,
+            8527870156646256691,
+            8736131051646962754,
+            9729428210615219503
+          ],
+          "counter": 10
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "PYRE",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 18
+    },
+    "digest_after": "607cb114d39c8a4a9bead182ff5c59636fadcef2da1e60a20b18e3ceead2bbde",
+    "native": {
+      "player": {
+        "hp": 51,
+        "max_hp": 80,
+        "block": 0,
+        "energy": 1,
+        "turn": 3
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          59,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          41,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            2551272452227706677,
+            473458106375572353,
+            9885764913372361240,
+            9114827778859381273
+          ],
+          "counter": 564
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            11387175451930826538,
+            8527870156646256691,
+            8736131051646962754,
+            9729428210615219503
+          ],
+          "counter": 10
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "FEEL_NO_PAIN",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 15
+    },
+    "digest_after": "a3a1fa4b3f30aebc8667309a087676a5aed5190e0c4e60b27e66c79895e02a4a",
+    "native": {
+      "player": {
+        "hp": 51,
+        "max_hp": 80,
+        "block": 0,
+        "energy": 0,
+        "turn": 3
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          59,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          41,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            2551272452227706677,
+            473458106375572353,
+            9885764913372361240,
+            9114827778859381273
+          ],
+          "counter": 564
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            11387175451930826538,
+            8527870156646256691,
+            8736131051646962754,
+            9729428210615219503
+          ],
+          "counter": 10
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "THUNDERCLAP",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "end"
+    },
+    "digest_after": "2cf02ad7a769a73f38e2f0dcb130a1b6431c3d5a4a4aee7f8e0031da8b4f1ef5"
+  },
+  {
+    "action": {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    "digest_after": "43aa383fecb431fd095b47b7d588e35cb08aeebb950be94d613de8755ceda22c",
+    "native": {
+      "player": {
+        "hp": 39,
+        "max_hp": 80,
+        "block": 3,
+        "energy": 4,
+        "turn": 4
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          39,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          21,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8024170356552954422,
+            10476133472941493083,
+            14864276007185668968,
+            10134117496609449757
+          ],
+          "counter": 11
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 19
+    },
+    "digest_after": "f6d5e33020b8743e01c117403046cf81e9b1eb808d00b12d9a9504065fbf9606",
+    "native": {
+      "player": {
+        "hp": 39,
+        "max_hp": 80,
+        "block": 19,
+        "energy": 3,
+        "turn": 4
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          39,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          21,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8024170356552954422,
+            10476133472941493083,
+            14864276007185668968,
+            10134117496609449757
+          ],
+          "counter": 11
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 21,
+      "target": 2
+    },
+    "digest_after": "c28556ea147245edb23c6b4f555042104347cfcb43c83a667624604ec91e47d6",
+    "native": {
+      "player": {
+        "hp": 39,
+        "max_hp": 80,
+        "block": 19,
+        "energy": 3,
+        "turn": 4
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          39,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          9,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8024170356552954422,
+            10476133472941493083,
+            14864276007185668968,
+            10134117496609449757
+          ],
+          "counter": 11
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 23
+    },
+    "digest_after": "0648cf9ae52fcefa8f6269fe02eb5e3c5710756d3390d0c0c7b1f8dad8c9e1ea",
+    "native": {
+      "player": {
+        "hp": 39,
+        "max_hp": 80,
+        "block": 31,
+        "energy": 2,
+        "turn": 4
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          39,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          9,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8024170356552954422,
+            10476133472941493083,
+            14864276007185668968,
+            10134117496609449757
+          ],
+          "counter": 11
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "CLUMSY",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "end"
+    },
+    "digest_after": "e9e5768420a43a409b9ab84dc679413c6179ab979b3505e931726fc8bac3a1a5"
+  },
+  {
+    "action": {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    "digest_after": "fc1f726370245e28d2c66acc001d31378303ad9315e1e67b57542869778af19c",
+    "native": {
+      "player": {
+        "hp": 38,
+        "max_hp": 80,
+        "block": 3,
+        "energy": 4,
+        "turn": 5
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          30,
+          108,
+          0
+        ],
+        [
+          "MAGI_KNIGHT",
+          9,
+          89,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8258116985002729072,
+            3490751271322182149,
+            14327099031771228510,
+            9045695047247922023
+          ],
+          "counter": 12
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            0
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STONE_ARMOR",
+            0
+          ],
+          [
+            "CRIMSON_MANTLE",
+            0
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            0
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            0
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 25,
+      "target": 2
+    },
+    "digest_after": "8d411ab9b61601ab2be04d5d929620673984680277f65f1a18ddf7e4ba5bd573",
+    "native": {
+      "player": {
+        "hp": 38,
+        "max_hp": 80,
+        "block": 3,
+        "energy": 2,
+        "turn": 5
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          30,
+          108,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8258116985002729072,
+            3490751271322182149,
+            14327099031771228510,
+            9045695047247922023
+          ],
+          "counter": 12
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ],
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 26,
+      "target": 0
+    },
+    "digest_after": "852ac98e4ce830f94b4f0ed0e423b42be49e62074d3e540c6e94c63803558676",
+    "native": {
+      "player": {
+        "hp": 38,
+        "max_hp": 80,
+        "block": 3,
+        "energy": 1,
+        "turn": 5
+      },
+      "monsters": [
+        [
+          "FLAIL_KNIGHT",
+          11,
+          108,
+          0
+        ]
+      ],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8258116985002729072,
+            3490751271322182149,
+            14327099031771228510,
+            9045695047247922023
+          ],
+          "counter": 12
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "CONFLAGRATION",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ]
+        ],
+        "play": []
+      },
+      "relic_counters": {}
+    }
+  },
+  {
+    "action": {
+      "kind": "play",
+      "uid": 28
+    },
+    "digest_after": "babe1bdf0c1f8c6d15e421a645c43950b5520016b3bc1a2c56871dd785c23f9b",
+    "native": {
+      "player": {
+        "hp": 38,
+        "max_hp": 80,
+        "block": 3,
+        "energy": 0,
+        "turn": 5
+      },
+      "monsters": [],
+      "rng": {
+        "rng": {
+          "words": [
+            6596543058123724461,
+            12449275017552352940,
+            13047481311975169325,
+            12047990047690335657
+          ],
+          "counter": 565
+        },
+        "niche": {
+          "words": [
+            7596841617491893077,
+            17215988295246902788,
+            6586560220217017820,
+            6434148884293725412
+          ],
+          "counter": 45
+        },
+        "ai": {
+          "words": [
+            8258116985002729072,
+            3490751271322182149,
+            14327099031771228510,
+            9045695047247922023
+          ],
+          "counter": 12
+        },
+        "sel": {
+          "words": [
+            5803220591559104171,
+            8098187842617176329,
+            4755744258694245659,
+            10213560313427454939
+          ],
+          "counter": 9
+        },
+        "generation": {
+          "words": [
+            5854202554346322061,
+            7968670422586253188,
+            2496125573850249919,
+            5792295385179454896
+          ],
+          "counter": 1171
+        },
+        "potion_generation": {
+          "words": [
+            17665587066651242159,
+            2654801496103203195,
+            2253664297667837172,
+            17332627740014084960
+          ],
+          "counter": 0
+        },
+        "targets": {
+          "words": [
+            3145353972355471337,
+            15203158585230317145,
+            8013816925194182446,
+            9916478113995715838
+          ],
+          "counter": 12
+        },
+        "combat_orbs": {
+          "words": [
+            6979380669500369632,
+            13983001487977461786,
+            18262446783464726171,
+            11567872481875379684
+          ],
+          "counter": 0
+        },
+        "energy_costs": {
+          "words": [
+            8860760574191364555,
+            14146872684756366372,
+            8426835349841007094,
+            14215552320681694440
+          ],
+          "counter": 0
+        }
+      },
+      "piles": {
+        "hand": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEBT",
+            0
+          ],
+          [
+            "DRUM_OF_BATTLE",
+            0
+          ],
+          [
+            "ASCENDERS_BANE",
+            0
+          ]
+        ],
+        "draw": [
+          [
+            "BURNING_PACT",
+            1
+          ],
+          [
+            "TAUNT",
+            0
+          ],
+          [
+            "CINDER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STONE_ARMOR",
+            1
+          ],
+          [
+            "CRIMSON_MANTLE",
+            1
+          ]
+        ],
+        "discard": [
+          [
+            "FIGHT_ME",
+            0
+          ],
+          [
+            "BLOODLETTING",
+            1
+          ],
+          [
+            "BLOOD_WALL",
+            0
+          ],
+          [
+            "EXPECT_A_FIGHT",
+            0
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "BRAND",
+            0
+          ],
+          [
+            "PILLAGE",
+            0
+          ],
+          [
+            "FLAME_BARRIER",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            1
+          ],
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "SPITE",
+            1
+          ],
+          [
+            "THUNDERCLAP",
+            0
+          ],
+          [
+            "EVIL_EYE",
+            0
+          ],
+          [
+            "BULLY",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "BASH",
+            0
+          ],
+          [
+            "POMMEL_STRIKE",
+            1
+          ]
+        ],
+        "exhaust": [
+          [
+            "STRIKE_IRONCLAD",
+            0
+          ],
+          [
+            "DEFEND_IRONCLAD",
+            0
+          ],
+          [
+            "TREMBLE",
+            0
+          ],
+          [
+            "INJURY",
+            0
+          ],
+          [
+            "POOR_SLEEP",
+            0
+          ],
+          [
+            "CLUMSY",
+            0
+          ],
+          [
+            "HOWL_FROM_BEYOND",
+            0
+          ]
+        ],
+        "play": [
+          [
+            "CONFLAGRATION",
+            0
+          ]
+        ]
+      },
+      "relic_counters": {}
+    }
+  }
+]

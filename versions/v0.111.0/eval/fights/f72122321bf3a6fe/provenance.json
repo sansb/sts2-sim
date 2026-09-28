@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "NA4SLXKS9923",
+ "node": 48,
+ "encounter": null,
+ "node_type": null,
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "d776a57d2e77fd6a4b535ac1d763a9bef3b2ffe109e002f7ea65eb5fa2973e04",
+ "save_sha256": null,
+ "entry_digest": null,
+ "checksummed": null
+}

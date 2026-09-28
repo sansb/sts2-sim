@@ -1,0 +1,78 @@
+{
+  "issue": 223,
+  "installed_build": "v0.111.0/41cef1ea",
+  "installed_archive_dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+  "capture": {
+    "build": "v0.111.0",
+    "seed": "WQQ1NTPA1BW3",
+    "ascension": 10,
+    "current_act_index": 1,
+    "global_node_index": 32,
+    "total_floor": 33,
+    "save": "2026-08-15/110036.000_save_4b23967a.save",
+    "save_sha256": "d82ab6b626d4d32fb7d9f237e09fd68c2ef3ae4b68b0fe818859fe4631a922a4",
+    "mcr": "2026-08-15/110036.003_mcr_56844ab9.mcr",
+    "mcr_sha256": "bb536c877096c751476e0ee1eaa2ed32bccca538584a770ca7012698687a4ce8",
+    "follow_up_saves": [
+      {
+        "path": "2026-08-15/110043.545_save_d74bf97d.save",
+        "sha256": "10b05ede0cddec9ac5bb15d93c2047fc238e16592439a137a1691893999ae0fa"
+      },
+      {
+        "path": "2026-08-15/110049.589_save_19b34965.save",
+        "sha256": "dc74579c00a79852d7b9a626669c52233181c72c36f2d6d992c67a31d4fe04e5"
+      },
+      {
+        "path": "2026-08-15/110057.639_save_a9e28565.save",
+        "sha256": "afbd1b077a1b09298007cf9c2d5765faa7b788401ff3aa758eaa11b14c7e6ff0"
+      }
+    ],
+    "rng_counters_before_roster": {
+      "shuffle": 540,
+      "combat_card_selection": 6,
+      "combat_targets": 2,
+      "monster_ai": 14,
+      "niche": 27
+    },
+    "rng_counters_after_roster": {
+      "niche": 29
+    },
+    "roster": ["CRUSHER", "ROCKET"],
+    "max_hp": [219, 209],
+    "opening_hp_after_relic_damage": [210, 200],
+    "opening_strength": [1, 1],
+    "opening_facing": 0,
+    "opening_player": {
+      "hp": 62,
+      "max_hp": 95,
+      "block": 10,
+      "strength": 3
+    },
+    "turn_1_fractional_block_boundary": {
+      "player_block_before_enemy_actions": 26,
+      "crusher_thrash_base_plus_strength": 15,
+      "crusher_back_multiplier": "3/2",
+      "block_after_crusher": 4,
+      "rocket_reticle_base_plus_strength": 5,
+      "player_hp_after_both": 61
+    },
+    "targeted_card_facing_checks": [
+      {"turn": 3, "target": "CRUSHER"},
+      {"turn": 4, "target": "ROCKET"},
+      {"turn": 6, "target": "CRUSHER"},
+      {"turn": 7, "target": "ROCKET"}
+    ],
+    "crusher_death_boundary": {
+      "survivor": "ROCKET",
+      "strength_before": 9,
+      "strength_after": 15,
+      "block_granted": 99,
+      "block_after_later_36_damage": 63,
+      "survivor_crab_rage_removed": true,
+      "facing_after_death": 0
+    },
+    "turns_taken": 9,
+    "checksum_events": 76,
+    "mcr_events": 53
+  }
+}

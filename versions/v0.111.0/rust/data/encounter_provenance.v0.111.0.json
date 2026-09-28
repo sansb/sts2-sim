@@ -1,0 +1,787 @@
+{
+ "build": "v0.111.0",
+ "note": "Frozen Python-oracle provenance per registered encounter key: which content/encounters module and builder define it in the v0.111.0 Python simulator, its line span there, and the tabular/procedural verdict. Written once by `encounter_coverage_census.py --write-provenance` (#2827 item D); the Python simulator is frozen and slated for deletion, so this never regenerates.",
+ "rows": {
+  "aeonglassboss": {
+   "builder": "_aeonglass",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.AEONGLASS_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L32-L35"
+  },
+  "axebotsnormal": {
+   "builder": "_axebots",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.AXEBOTS_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L358-L364"
+  },
+  "battleworndummyeventv1encounter": {
+   "builder": "_battleworn_dummy_v1",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L48-L49"
+  },
+  "battleworndummyeventv2encounter": {
+   "builder": "_battleworn_dummy_v2",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L52-L53"
+  },
+  "battleworndummyeventv3encounter": {
+   "builder": "_battleworn_dummy_v3",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L56-L57"
+  },
+  "bowlbugsnormal": {
+   "builder": "_bowlbugs_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.BOWLBUGS_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "source": "L754-L776"
+  },
+  "bowlbugsweak": {
+   "builder": "_bowlbugs",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.BOWLBUGS_WEAK",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L231-L243"
+  },
+  "bygoneeffigy": {
+   "builder": "_effigy",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.BYGONE_EFFIGY",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L81-L82"
+  },
+  "byrdonis": {
+   "builder": "_byrdonis",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.BYRDONIS",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L85-L89"
+  },
+  "ceremonialbeastboss": {
+   "builder": "_ceremonial_beast",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L124-L125"
+  },
+  "chompersnormal": {
+   "builder": "_chompers",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.CHOMPERS_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L849-L865"
+  },
+  "constructmenagerienormal": {
+   "builder": "_construct_menagerie",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L947-L962"
+  },
+  "corpseslugsnormal": {
+   "builder": "_corpse_slugs_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "encounter_rng"
+   ],
+   "source": "L71-L72"
+  },
+  "corpseslugsweak": {
+   "builder": "_corpse_slugs_weak",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "encounter_rng"
+   ],
+   "source": "L62-L63"
+  },
+  "cubexconstructnormal": {
+   "builder": "_cubex_construct",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L940-L944"
+  },
+  "cultistsnormal": {
+   "builder": "_cultists",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.CULTISTS_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L297-L307"
+  },
+  "decimillipede": {
+   "builder": "_decimillipede",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.DECIMILLIPEDE",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "ctx:tier",
+    "encounter_rng",
+    "loop_while"
+   ],
+   "source": "L119-L141"
+  },
+  "densevegetationeventencounter": {
+   "builder": "_dense_vegetation",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L60-L73"
+  },
+  "devotedsculptorweak": {
+   "builder": "_devoted_sculptor",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.DEVOTED_SCULPTOR_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L211-L212"
+  },
+  "entomancer": {
+   "builder": "_entomancer",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.ENTOMANCER",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L92-L93"
+  },
+  "exoskeletonsnormal": {
+   "builder": "_exoskeletons_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.EXOSKELETONS_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching"
+   ],
+   "source": "L634-L653"
+  },
+  "exoskeletonsweak": {
+   "builder": "_exoskeletons",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.EXOSKELETONS_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L164-L180"
+  },
+  "fabricatornormal": {
+   "builder": "_fabricator",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.FABRICATOR_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L258-L264"
+  },
+  "fakemerchanteventencounter": {
+   "builder": "_fake_merchant",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "raw_niche_draw"
+   ],
+   "source": "L25-L39"
+  },
+  "flyconidnormal": {
+   "builder": "_flyconid_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.FLYCONID_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L694-L717"
+  },
+  "fogmognormal": {
+   "builder": "_fogmog",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.FOGMOG_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L1034-L1038"
+  },
+  "fossilstalkernormal": {
+   "builder": "_fossil_stalker",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L626-L631"
+  },
+  "frogknightnormal": {
+   "builder": "_frog_knight",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.FROG_KNIGHT_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L352-L355"
+  },
+  "fuzzywurmcrawlerweak": {
+   "builder": "_fuzzy_wurm_crawler",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L258-L262"
+  },
+  "globeheadnormal": {
+   "builder": "_globe_head",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.GLOBE_HEAD_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L328-L331"
+  },
+  "gremlinmercnormal": {
+   "builder": "_gremlin_merc",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.GREMLIN_MERC_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L345-L349"
+  },
+  "hauntedshipnormal": {
+   "builder": "_haunted_ship",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L490-L491"
+  },
+  "hunterkillernormal": {
+   "builder": "_hunter_killer",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L334-L342"
+  },
+  "infestedprisms": {
+   "builder": "_prisms",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.INFESTED_PRISMS",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L96-L98"
+  },
+  "inkletsnormal": {
+   "builder": "_inklets_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.INKLETS_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L656-L675"
+  },
+  "kaisercrabboss": {
+   "builder": "_kaiser_crab",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.KAISER_CRAB_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L310-L318"
+  },
+  "knightselite": {
+   "builder": "_knights",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.KNIGHTS_ELITE",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "raw_niche_draw"
+   ],
+   "source": "L165-L180"
+  },
+  "knowledgedemonboss": {
+   "builder": "_knowledge_demon",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L82-L83"
+  },
+  "lagavulinmatriarchboss": {
+   "builder": "_lagavulin_matriarch",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L103-L107"
+  },
+  "livingfognormal": {
+   "builder": "_living_fog",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.LIVING_FOG_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L277-L280"
+  },
+  "louseprogenitornormal": {
+   "builder": "_louse_progenitor",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.LOUSE_PROGENITOR_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier"
+   ],
+   "source": "L250-L255"
+  },
+  "mawlernormal": {
+   "builder": "_mawler",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.MAWLER_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L527-L529"
+  },
+  "mechaknightelite": {
+   "builder": "_mecha_knight",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L202-L203"
+  },
+  "mysteriousknighteventencounter": {
+   "builder": "_mysterious_knight",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "raw_niche_draw"
+   ],
+   "source": "L76-L95"
+  },
+  "mytesnormal": {
+   "builder": "_mytes",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.MYTES_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L513-L519"
+  },
+  "nibbitsnormal": {
+   "builder": "_nibbits_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.NIBBITS_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L310-L325"
+  },
+  "nibbitsweak": {
+   "builder": "_nibbit",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.NIBBITS_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L203-L208"
+  },
+  "overgrowthcrawlers": {
+   "builder": "_overgrowth_crawlers",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.OVERGROWTH_CRAWLERS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L807-L819"
+  },
+  "ovicopternormal": {
+   "builder": "_ovicopter",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.OVICOPTER_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L267-L274"
+  },
+  "owlmagistratenormal": {
+   "builder": "_owl_magistrate",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.OWL_MAGISTRATE_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L469-L470"
+  },
+  "phantasmalgardeners": {
+   "builder": "_gardeners",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.PHANTASMAL_GARDENERS",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "helper:AscensionTier"
+   ],
+   "source": "L101-L111"
+  },
+  "phrogparasite": {
+   "builder": "_phrog",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.PHROG_PARASITE",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L114-L116"
+  },
+  "punchconstructnormal": {
+   "builder": "_punch_construct",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L416-L419"
+  },
+  "punchoffeventencounter": {
+   "builder": "_punch_off",
+   "module": "content/encounters/event.py",
+   "registered_key": "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "source": "L98-L117"
+  },
+  "queenboss": {
+   "builder": "_queen",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.QUEEN_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L153-L163"
+  },
+  "rubyraidersnormal": {
+   "builder": "_ruby_raiders",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "source": "L556-L569"
+  },
+  "scrollsofbitingnormal": {
+   "builder": "_scrolls_of_biting",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SCROLLS_OF_BITING_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L1013-L1031"
+  },
+  "scrollsofbitingweak": {
+   "builder": "_scrolls_of_biting",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SCROLLS_OF_BITING_WEAK",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L1013-L1031"
+  },
+  "seapunknormal": {
+   "builder": "_seapunk_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SEAPUNK_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L367-L381"
+  },
+  "seapunkweak": {
+   "builder": "_seapunk",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.SEAPUNK_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L151-L153"
+  },
+  "sewerclamnormal": {
+   "builder": "_sewer_clam",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SEWER_CLAM_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L443-L444"
+  },
+  "shrinkerbeetleweak": {
+   "builder": "_shrinker_beetle",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L226-L228"
+  },
+  "skulkingcolony": {
+   "builder": "_colony",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.SKULKING_COLONY",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L77-L78"
+  },
+  "slimedberserkernormal": {
+   "builder": "_slimed_berserker",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SLIMED_BERSERKER_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L902-L903"
+  },
+  "slimesnormal": {
+   "builder": "_slimes_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SLIMES_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L822-L835"
+  },
+  "slimesweak": {
+   "builder": "_slimes_weak",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.SLIMES_WEAK",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L295-L312"
+  },
+  "slitheringstranglernormal": {
+   "builder": "_slithering_strangler",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "source": "L572-L612"
+  },
+  "sludgespinnerweak": {
+   "builder": "_sludge",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L156-L161"
+  },
+  "slumberingbeetlenormal": {
+   "builder": "_slumbering_beetle",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier"
+   ],
+   "source": "L734-L751"
+  },
+  "snappingjaxfruitnormal": {
+   "builder": "_snapping_jaxfruit",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L678-L691"
+  },
+  "soulfyshboss": {
+   "builder": "_soul_fysh",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L50-L51"
+  },
+  "soulnexus": {
+   "builder": "_soul_nexus",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.SOUL_NEXUS",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L144-L151"
+  },
+  "spinytoadnormal": {
+   "builder": "_spiny_toad",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.SPINY_TOAD_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L802-L804"
+  },
+  "terroreel": {
+   "builder": "_eel",
+   "module": "content/encounters/elite.py",
+   "registered_key": "ENCOUNTER.TERROR_EEL",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L73-L74"
+  },
+  "testsubjectboss": {
+   "builder": "_test_subject",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.TEST_SUBJECT_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L283-L286"
+  },
+  "theinsatiableboss": {
+   "builder": "_the_insatiable",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L259-L260"
+  },
+  "thekinboss": {
+   "builder": "_the_kin",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.THE_KIN_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L187-L202"
+  },
+  "thelostandforgottennormal": {
+   "builder": "_the_lost_and_forgotten",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L101-L108"
+  },
+  "theobscuranormal": {
+   "builder": "_the_obscura",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.THE_OBSCURA_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L972-L978"
+  },
+  "thievinghopperweak": {
+   "builder": "_thieving_hopper",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L384-L387"
+  },
+  "toadpolesweak": {
+   "builder": "_toadpoles",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.TOADPOLES_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L183-L194"
+  },
+  "tunnelernormal": {
+   "builder": "_tunneler_normal",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.TUNNELER_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L868-L884"
+  },
+  "tunnelerweak": {
+   "builder": "_tunneler",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.TUNNELER_WEAK",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "source": "L197-L200"
+  },
+  "turretoperatorweak": {
+   "builder": "_turret_operator",
+   "module": "content/encounters/weak.py",
+   "registered_key": "ENCOUNTER.TURRET_OPERATOR_WEAK",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L246-L255"
+  },
+  "twotailedratsnormal": {
+   "builder": "_two_tailed_rats",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "source": "L283-L294"
+  },
+  "vantomboss": {
+   "builder": "_vantom",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.VANTOM_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L217-L218"
+  },
+  "vineshamblernormal": {
+   "builder": "_vine_shambler",
+   "module": "content/encounters/normal.py",
+   "registered_key": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L918-L919"
+  },
+  "waterfallgiantboss": {
+   "builder": "_waterfall_giant",
+   "module": "content/encounters/boss.py",
+   "registered_key": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "shape": "tabular",
+   "shape_signals": [],
+   "source": "L240-L243"
+  }
+ },
+ "schema": "sts-encounter-provenance-v1"
+}

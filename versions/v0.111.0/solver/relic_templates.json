@@ -1,0 +1,1349 @@
+{
+ "refused": {
+  "RELIC.ART_OF_WAR": "unsupported hook AfterCardPlayed",
+  "RELIC.BEATING_REMNANT": "unsupported hook ModifyHpLostAfterOsty",
+  "RELIC.BELLOWS": "ldarg 2 unmapped",
+  "RELIC.BELT_BUCKLE": "call BeltBuckle::set_DexterityApplied",
+  "RELIC.BIG_HAT": "call CharacterModel::get_CardPool",
+  "RELIC.BIG_MUSHROOM": "call BigMushroom::Grow",
+  "RELIC.BIIIG_HUG": "unsupported hook AfterShuffle",
+  "RELIC.BING_BONG": "unsupported hook AfterCardChangedPiles",
+  "RELIC.BLESSED_ANTLER": "newobj List`1::.ctor",
+  "RELIC.BONE_FLUTE": "unsupported hook AfterAttack",
+  "RELIC.BONE_TEA": "call RelicModel::get_IsUsedUp",
+  "RELIC.BOOKMARK": "unsupported hook AfterFlush",
+  "RELIC.BOOK_OF_FIVE_RINGS": "unsupported hook IsAllowed",
+  "RELIC.BOOMING_CONCH": "call Player::get_RunState",
+  "RELIC.BREAD": "data-dependent branch on pcs at IL_0023",
+  "RELIC.BRIMSTONE": "call ICombatState::GetOpponentsOf",
+  "RELIC.BURNING_STICKS": "call BurningSticks::set_WasUsedThisCombat",
+  "RELIC.CENTENNIAL_PUZZLE": "unsupported hook AfterDamageReceived",
+  "RELIC.CHARONS_ASHES": "unsupported hook AfterCardExhausted",
+  "RELIC.CHEMICAL_X": "unsupported hook BeforeCardPlayed",
+  "RELIC.CHOICES_PARADOX": "call CharacterModel::get_CardPool",
+  "RELIC.CLOAK_CLASP": "call CardPile::get_Cards",
+  "RELIC.CRACKED_CORE": "hook arg field <i>5__2",
+  "RELIC.CROSSBOW": "call CharacterModel::get_CardPool",
+  "RELIC.DARKSTONE_PERIAPT": "unsupported hook AfterCardChangedPiles",
+  "RELIC.DAUGHTER_OF_THE_WIND": "unsupported hook AfterCardPlayed",
+  "RELIC.DEMON_TONGUE": "unsupported hook AfterDamageReceived",
+  "RELIC.EMBER_TEA": "call RelicModel::get_IsUsedUp",
+  "RELIC.EMOTION_CHIP": "unsupported hook AfterDamageReceived",
+  "RELIC.ETERNAL_FEATHER": "hook arg field <healAmount>5__2",
+  "RELIC.FAKE_HAPPY_FLOWER": "call FakeHappyFlower::get_TurnsSeen",
+  "RELIC.FAKE_ORICHALCUM": "unsupported hook BeforeSideTurnEndVeryEarly",
+  "RELIC.FAKE_SNECKO_EYE": "call FakeSneckoEye::ApplyPower",
+  "RELIC.FAKE_STRIKE_DUMMY": "unsupported hook ModifyDamageAdditive",
+  "RELIC.FAKE_VENERABLE_TEA_SET": "call FakeVenerableTeaSet::set_GainEnergyInNextCombat",
+  "RELIC.FENCING_MANUAL": "call ForgeCmd::Forge",
+  "RELIC.FIDDLE": "unsupported hook ModifyHandDrawLate",
+  "RELIC.FORGOTTEN_SOUL": "unsupported hook AfterCardExhausted",
+  "RELIC.FUNERARY_MASK": "hook arg field <i>5__2",
+  "RELIC.GAMBLING_CHIP": "call Enumerable::ToList",
+  "RELIC.GAME_PIECE": "unsupported hook AfterCardPlayed",
+  "RELIC.GHOST_SEED": "unsupported hook AfterCardEnteredCombat",
+  "RELIC.GIRYA": "unsupported hook IsAllowed",
+  "RELIC.GOLD_PLATED_CABLES": "unsupported hook ModifyOrbPassiveTriggerCounts",
+  "RELIC.GREMLIN_HORN": "unsupported hook AfterDeath",
+  "RELIC.HAPPY_FLOWER": "call HappyFlower::get_TurnsSeen",
+  "RELIC.HELICAL_DART": "unsupported hook AfterCardPlayed",
+  "RELIC.HISTORY_COURSE": "unsupported hook AfterAutoPrePlayPhaseEntered",
+  "RELIC.ICE_CREAM": "unsupported hook ShouldPlayerResetEnergy",
+  "RELIC.INFUSED_CORE": "hook arg field <i>5__2",
+  "RELIC.INTIMIDATING_HELMET": "unsupported hook BeforeCardPlayed",
+  "RELIC.IVORY_TILE": "unsupported hook AfterCardPlayed",
+  "RELIC.JEWELED_MASK": "GetPile args [('int', 1), ('harg', 'player')]",
+  "RELIC.KUNAI": "ldarg 3 unmapped",
+  "RELIC.KUSARIGAMA": "call Kusarigama::set_AttacksPlayedThisTurn",
+  "RELIC.LARGE_CAPSULE": "unsupported hook GetStrikeForCharacter",
+  "RELIC.LAVA_LAMP": "call LavaLamp::set_TookDamageThisCombat",
+  "RELIC.LETTER_OPENER": "call LetterOpener::set_SkillsPlayedThisTurn",
+  "RELIC.LOOMING_FRUIT": "unsupported hook HasCornucopia",
+  "RELIC.LOST_WISP": "unsupported hook AfterCardPlayed",
+  "RELIC.LUCKY_FYSH": "unsupported hook IsAllowed",
+  "RELIC.MEAL_TICKET": "unsupported hook IsAllowed",
+  "RELIC.METRONOME": "call Metronome::set_OrbsChanneled",
+  "RELIC.MINIATURE_CANNON": "unsupported hook ModifyDamageAdditive",
+  "RELIC.MR_STRUGGLES": "op_Implicit on turnnum",
+  "RELIC.MUMMIFIED_HAND": "unsupported hook AfterCardPlayed",
+  "RELIC.MYSTIC_LIGHTER": "unsupported hook ModifyDamageAdditive",
+  "RELIC.NINJA_SCROLL": "call Shiv::CreateInHand",
+  "RELIC.NUNCHAKU": "unsupported hook AfterCardPlayed",
+  "RELIC.ORANGE_DOUGH": "call ModelDb::CardPool",
+  "RELIC.ORICHALCUM": "unsupported hook BeforeSideTurnEndVeryEarly",
+  "RELIC.ORNAMENTAL_FAN": "ldarg 3 unmapped",
+  "RELIC.PAELS_FLESH": "ldarg 3 unmapped",
+  "RELIC.PAELS_TEARS": "ldarg 3 unmapped",
+  "RELIC.PAELS_WING": "unsupported hook TryModifyCardRewardAlternatives",
+  "RELIC.PANTOGRAPH": "call Creature::get_IsDead",
+  "RELIC.PAPER_KRANE": "unsupported hook ModifyWeakMultiplier",
+  "RELIC.PAPER_PHROG": "unsupported hook ModifyVulnerableMultiplier",
+  "RELIC.PARRYING_SHIELD": "call Creature::get_Block",
+  "RELIC.PENDULUM": "call Pendulum::get_TurnsSeen",
+  "RELIC.PEN_NIB": "unsupported hook NotifyAttackPlayed",
+  "RELIC.PERMAFROST": "call Permafrost::set_ActivatedThisCombat",
+  "RELIC.PHILOSOPHERS_STONE": "unsupported hook AfterCreatureAddedToCombat",
+  "RELIC.PLANISPHERE": "unsupported hook IsAllowed",
+  "RELIC.POCKETWATCH": "unsupported hook AfterCardPlayed",
+  "RELIC.POLLINOUS_CORE": "call PollinousCore::get_TurnsSeen",
+  "RELIC.POWER_CELL": "call CardPile::get_Cards",
+  "RELIC.PUMPKIN_CANDLE": "call PumpkinCandle::get_KindleCount",
+  "RELIC.RADIANT_PEARL": "newobj List`1::.ctor",
+  "RELIC.RAINBOW_RING": "ldarg 3 unmapped",
+  "RELIC.RAZOR_TOOTH": "unsupported hook AfterCardPlayed",
+  "RELIC.RED_SKULL": "call RedSkull::ModifyStrengthIfNecessary",
+  "RELIC.REPTILE_TRINKET": "unsupported hook AfterPotionUsed",
+  "RELIC.RINGING_TRIANGLE": "unsupported hook ShouldFlush",
+  "RELIC.RING_OF_THE_DRAKE": "op_Implicit on turnnum",
+  "RELIC.RIPPLE_BASIN": "call CombatManager::get_Instance",
+  "RELIC.ROYAL_POISON": "relic Damage shape [('ctx',), ('player',), ('var', 'Damage'), ('null',), ('null',), ('null',)]",
+  "RELIC.RUINED_HELMET": "unsupported hook TryModifyPowerAmountReceived",
+  "RELIC.RUNIC_CAPACITOR": "call OrbCmd::AddSlots",
+  "RELIC.RUNIC_PYRAMID": "unsupported hook ShouldFlush",
+  "RELIC.SCREAMING_FLAGON": "call CardPile::get_IsEmpty",
+  "RELIC.SEAL_OF_GOLD": "call Player::get_Gold",
+  "RELIC.SELF_FORMING_CLAY": "unsupported hook AfterDamageReceived",
+  "RELIC.SHURIKEN": "ldarg 3 unmapped",
+  "RELIC.SLING_OF_COURAGE": "call AbstractRoom::get_RoomType",
+  "RELIC.SNECKO_EYE": "call SneckoEye::ApplyPower",
+  "RELIC.SNECKO_SKULL": "unsupported hook ModifyPowerAmountGivenAdditive",
+  "RELIC.SPIKED_GAUNTLETS": "unsupported hook TryModifyEnergyCostInCombat",
+  "RELIC.STONE_CALENDAR": "ldarg 2 unmapped",
+  "RELIC.STONE_CRACKER": "call CardPile::get_Cards",
+  "RELIC.STRIKE_DUMMY": "unsupported hook ModifyDamageAdditive",
+  "RELIC.STURDY_CLAMP": "unsupported hook ShouldClearBlock",
+  "RELIC.SYMBIOTIC_VIRUS": "hook arg field <i>5__2",
+  "RELIC.TEA_OF_DISCOURTESY": "call TeaOfDiscourtesy::get_CombatsLeft",
+  "RELIC.THE_ABACUS": "unsupported hook AfterShuffle",
+  "RELIC.THE_BOOT": "unsupported hook ModifyHpLostAfterOstyLate",
+  "RELIC.THROWING_AXE": "call ThrowingAxe::set_UsedThisCombat",
+  "RELIC.TINGSHA": "unsupported hook AfterCardDiscarded",
+  "RELIC.TOASTY_MITTENS": "call Creature::get_Player",
+  "RELIC.TOOLBOX": "call ModelDb::CardPool",
+  "RELIC.TOUGH_BANDAGES": "unsupported hook AfterCardDiscarded",
+  "RELIC.TUNGSTEN_ROD": "unsupported hook ModifyHpLostAfterOsty",
+  "RELIC.TWISTED_FUNNEL": "call IEnumerable`1::GetEnumerator",
+  "RELIC.UNDYING_SIGIL": "unsupported hook ModifyDamageMultiplicative",
+  "RELIC.UNSETTLING_LAMP": "call UnsettlingLamp::set_TriggeringCard",
+  "RELIC.VAKUU_CARD_SELECTOR": "unsupported hook GetSelectedCards",
+  "RELIC.VAMBRACE": "call Vambrace::set_TriggeringCard",
+  "RELIC.VELVET_CHOKER": "unsupported hook ShouldPlay",
+  "RELIC.VENERABLE_TEA_SET": "call VenerableTeaSet::set_GainEnergyInNextCombat",
+  "RELIC.VEXING_PUZZLEBOX": "call CharacterModel::get_CardPool",
+  "RELIC.VITRUVIAN_MINION": "unsupported hook ModifyDamageMultiplicative",
+  "RELIC.WHISPERING_EARRING": "unsupported hook AfterAutoPrePlayPhaseEnteredLate"
+ },
+ "relics": {
+  "RELIC.AKABEKO": {
+   "class": "Akabeko",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "VigorPower",
+         "self",
+         {
+          "var": "VigorPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "VigorPower": {
+     "base": 8,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.ANCHOR": {
+   "class": "Anchor",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [],
+       "steps": [
+        [
+         "block",
+         {
+          "var": "Block"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "BeforeCombatStart"
+    }
+   ],
+   "vars": {
+    "Block": {
+     "base": 10,
+     "class": "BlockVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.BAG_OF_MARBLES": {
+   "class": "BagOfMarbles",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "power_all",
+         "VulnerablePower",
+         {
+          "var": "VulnerablePower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "BeforeSideTurnStart"
+    }
+   ],
+   "vars": {
+    "VulnerablePower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.BAG_OF_PREPARATION": {
+   "class": "BagOfPreparation",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "draw_bonus",
+         {
+          "var": "Cards"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyHandDraw"
+    }
+   ],
+   "vars": {
+    "Cards": {
+     "base": 2,
+     "class": "CardsVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.BLOOD_SOAKED_ROSE": {
+   "class": "BloodSoakedRose",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ]
+       ],
+       "steps": [
+        [
+         "max_energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyMaxEnergy"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 1,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.BLOOD_VIAL": {
+   "class": "BloodVial",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "heal",
+         {
+          "var": "Heal"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterPlayerTurnStartLate"
+    }
+   ],
+   "vars": {
+    "Heal": {
+     "base": 2,
+     "class": "HealVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.BRONZE_SCALES": {
+   "class": "BronzeScales",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "ThornsPower",
+         "self",
+         {
+          "var": "ThornsPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "ThornsPower": {
+     "base": 3,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.CANDELABRA": {
+   "class": "Candelabra",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "eq",
+         2
+        ]
+       ],
+       "steps": [
+        [
+         "energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 2,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.CAPTAINS_WHEEL": {
+   "class": "CaptainsWheel",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "eq",
+         3
+        ]
+       ],
+       "steps": [
+        [
+         "block",
+         {
+          "var": "Block"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterBlockCleared"
+    }
+   ],
+   "vars": {
+    "Block": {
+     "base": 18,
+     "class": "BlockVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.CHANDELIER": {
+   "class": "Chandelier",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "eq",
+         3
+        ]
+       ],
+       "steps": [
+        [
+         "energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 3,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.DATA_DISK": {
+   "class": "DataDisk",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "FocusPower",
+         "self",
+         {
+          "var": "FocusPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "FocusPower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.DIAMOND_DIADEM": {
+   "class": "DiamondDiadem",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "block",
+         {
+          "var": "Block"
+         }
+        ],
+        [
+         "power",
+         "BlurPower",
+         "self",
+         1
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Block": {
+     "base": 20,
+     "class": "BlockVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.DIVINE_DESTINY": {
+   "class": "DivineDestiny",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "stars",
+         {
+          "var": "Stars"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Stars": {
+     "base": 7,
+     "class": "StarsVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.DIVINE_RIGHT": {
+   "class": "DivineRight",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "stars",
+         {
+          "var": "Stars"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "Stars": {
+     "base": 3,
+     "class": "StarsVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.ECTOPLASM": {
+   "class": "Ectoplasm",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ]
+       ],
+       "steps": [
+        [
+         "max_energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyMaxEnergy"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 1,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.FAKE_ANCHOR": {
+   "class": "FakeAnchor",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [],
+       "steps": [
+        [
+         "block",
+         {
+          "var": "Block"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "BeforeCombatStart"
+    }
+   ],
+   "vars": {
+    "Block": {
+     "base": 4,
+     "class": "BlockVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.FAKE_BLOOD_VIAL": {
+   "class": "FakeBloodVial",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "heal",
+         {
+          "var": "Heal"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterPlayerTurnStartLate"
+    }
+   ],
+   "vars": {
+    "Heal": {
+     "base": 1,
+     "class": "HealVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.FESTIVE_POPPER": {
+   "class": "FestivePopper",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "eq",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "damage_all",
+         {
+          "var": "Damage"
+         },
+         4
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterPlayerTurnStart"
+    }
+   ],
+   "vars": {
+    "Damage": {
+     "base": 9,
+     "class": "DamageVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.GORGET": {
+   "class": "Gorget",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "PlatingPower",
+         "self",
+         {
+          "var": "PlatingPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "PlatingPower": {
+     "base": 4,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.HORN_CLEAT": {
+   "class": "HornCleat",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "eq",
+         2
+        ]
+       ],
+       "steps": [
+        [
+         "block",
+         {
+          "var": "Block"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterBlockCleared"
+    }
+   ],
+   "vars": {
+    "Block": {
+     "base": 14,
+     "class": "BlockVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.LANTERN": {
+   "class": "Lantern",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 1,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.LUNAR_PASTRY": {
+   "class": "LunarPastry",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ]
+       ],
+       "steps": [
+        [
+         "stars",
+         {
+          "var": "Stars"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnEnd"
+    }
+   ],
+   "vars": {
+    "Stars": {
+     "base": 1,
+     "class": "StarsVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.MERCURY_HOURGLASS": {
+   "class": "MercuryHourglass",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ]
+       ],
+       "steps": [
+        [
+         "damage_all",
+         {
+          "var": "Damage"
+         },
+         4
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterPlayerTurnStart"
+    }
+   ],
+   "vars": {
+    "Damage": {
+     "base": 3,
+     "class": "DamageVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.ODDLY_SMOOTH_STONE": {
+   "class": "OddlySmoothStone",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "DexterityPower",
+         "self",
+         {
+          "var": "DexterityPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "DexterityPower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.PAELS_BLOOD": {
+   "class": "PaelsBlood",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ]
+       ],
+       "steps": [
+        [
+         "draw_bonus",
+         {
+          "var": "Cards"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyHandDraw"
+    }
+   ],
+   "vars": {
+    "Cards": {
+     "base": 1,
+     "class": "CardsVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.PRISMATIC_GEM": {
+   "class": "PrismaticGem",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ]
+       ],
+       "steps": [
+        [
+         "max_energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyMaxEnergy"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 1,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.RED_MASK": {
+   "class": "RedMask",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "power_all",
+         "WeakPower",
+         {
+          "var": "WeakPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "BeforeSideTurnStart"
+    }
+   ],
+   "vars": {
+    "WeakPower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.RING_OF_THE_SNAKE": {
+   "class": "RingOfTheSnake",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "draw_bonus",
+         {
+          "var": "Cards"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyHandDraw"
+    }
+   ],
+   "vars": {
+    "Cards": {
+     "base": 2,
+     "class": "CardsVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.SAI": {
+   "class": "Sai",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ]
+       ],
+       "steps": [
+        [
+         "block",
+         {
+          "var": "Block"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Block": {
+     "base": 7,
+     "class": "BlockVar",
+     "props": 4
+    }
+   }
+  },
+  "RELIC.SOZU": {
+   "class": "Sozu",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ]
+       ],
+       "steps": [
+        [
+         "max_energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "ModifyMaxEnergy"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 1,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  },
+  "RELIC.SPARKLING_ROUGE": {
+   "class": "SparklingRouge",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "is_owner"
+        ],
+        [
+         "turn",
+         "eq",
+         3
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "StrengthPower",
+         "self",
+         {
+          "var": "StrengthPower"
+         }
+        ],
+        [
+         "power",
+         "DexterityPower",
+         "self",
+         {
+          "var": "DexterityPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterBlockCleared"
+    }
+   ],
+   "vars": {
+    "DexterityPower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    },
+    "StrengthPower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.SWORD_OF_JADE": {
+   "class": "SwordOfJade",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "StrengthPower",
+         "self",
+         {
+          "var": "StrengthPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "StrengthPower": {
+     "base": 3,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.VAJRA": {
+   "class": "Vajra",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "room_type",
+         "CombatRoom"
+        ]
+       ],
+       "steps": [
+        [
+         "power",
+         "StrengthPower",
+         "self",
+         {
+          "var": "StrengthPower"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterRoomEntered"
+    }
+   ],
+   "vars": {
+    "StrengthPower": {
+     "base": 1,
+     "class": "PowerVar`1",
+     "props": null
+    }
+   }
+  },
+  "RELIC.VERY_HOT_COCOA": {
+   "class": "VeryHotCocoa",
+   "hooks": [
+    {
+     "guarded": [
+      {
+       "conds": [
+        [
+         "own_side"
+        ],
+        [
+         "turn",
+         "le",
+         1
+        ]
+       ],
+       "steps": [
+        [
+         "energy",
+         {
+          "var": "Energy"
+         }
+        ]
+       ]
+      }
+     ],
+     "hook": "AfterSideTurnStart"
+    }
+   ],
+   "vars": {
+    "Energy": {
+     "base": 4,
+     "class": "EnergyVar",
+     "props": null
+    }
+   }
+  }
+ }
+}

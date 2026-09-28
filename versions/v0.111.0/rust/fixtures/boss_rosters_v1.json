@@ -1,0 +1,2673 @@
+{
+ "build": "v0.111.0",
+ "cases": [
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.AEONGLASS_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12158754135494129009,
+     7460735554496512094,
+     14060281715871248350,
+     11733189863622687423
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     17465263809385379562,
+     6206467654083638895,
+     4422408337967894987,
+     2397658570513435413
+    ]
+   },
+   "node_index": 47,
+   "registered_key": "AEONGLASS_BOSS",
+   "roster": [
+    {
+     "hp": 535,
+     "initial_state": [
+      [
+       "artifact",
+       3
+      ]
+     ],
+     "kind": "AEONGLASS",
+     "loop_pos": 0,
+     "max_hp": 535,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 48
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.AEONGLASS_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2140852941549779141,
+     11846555055317123116,
+     9360280332203978450,
+     9691128627595515424
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 47,
+   "registered_key": "AEONGLASS_BOSS",
+   "roster": [
+    {
+     "hp": 512,
+     "initial_state": [
+      [
+       "artifact",
+       3
+      ]
+     ],
+     "kind": "AEONGLASS",
+     "loop_pos": 0,
+     "max_hp": 512,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 48
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.AEONGLASS_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4020739833502380607,
+     6771523952978543482,
+     6338012835029998465,
+     15353147936574649277
+    ]
+   },
+   "fixture": "f2582451d01471d0",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18073045360560400777,
+     7218852772716532624,
+     10448774905304033365,
+     3414007788739826417
+    ]
+   },
+   "node_index": 47,
+   "registered_key": "AEONGLASS_BOSS",
+   "roster": [
+    {
+     "hp": 535,
+     "initial_state": [
+      [
+       "artifact",
+       3
+      ]
+     ],
+     "kind": "AEONGLASS",
+     "loop_pos": 0,
+     "max_hp": 535,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 48
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5649410097587386469,
+     8055844786605642071,
+     12165110424725530558,
+     4395230313948520549
+    ]
+   },
+   "fixture": "f016d6f285290648",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11099009746865745377,
+     5207185220175444273,
+     9321261608544625589,
+     12055107004873769761
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8433111396613117937,
+     5989787344473339749,
+     6764614404004384340,
+     8593463895452395101
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "CEREMONIAL_BEAST_BOSS",
+   "roster": [
+    {
+     "hp": 262,
+     "initial_state": [],
+     "kind": "CEREMONIAL_BEAST",
+     "loop_pos": 0,
+     "max_hp": 262,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "AW56G6M5C6C7",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8260147629955741004,
+     8829187912649265614,
+     10824998107696902513,
+     14926392119743797021
+    ]
+   },
+   "fixture": "f72f65ed57263fbb",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "CEREMONIAL_BEAST_BOSS",
+   "roster": [
+    {
+     "hp": 262,
+     "initial_state": [],
+     "kind": "CEREMONIAL_BEAST",
+     "loop_pos": 0,
+     "max_hp": 262,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7895149793294767383,
+     1808986418015521720,
+     2615111202939406257,
+     17197127467456919732
+    ]
+   },
+   "fixture": "f794661cfc8e1b4e",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     12339133568989384482,
+     377053627746477558,
+     8669479149986390308,
+     7274050213237057117
+    ]
+   },
+   "niche_out": {
+    "counter": 2,
+    "words": [
+     925453725643685457,
+     17240439665371163007,
+     10527614270405124751,
+     2187369276111320447
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "KAISER_CRAB_BOSS",
+   "roster": [
+    {
+     "hp": 219,
+     "initial_state": [
+      [
+       "crab_rage",
+       1
+      ]
+     ],
+     "kind": "CRUSHER",
+     "loop_pos": 0,
+     "max_hp": 219,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 209,
+     "initial_state": [
+      [
+       "crab_rage",
+       1
+      ]
+     ],
+     "kind": "ROCKET",
+     "loop_pos": 0,
+     "max_hp": 209,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    }
+   ],
+   "seed": "0XPN2X98ZW1V",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11830871854581198877,
+     218124063591338450,
+     14262593593429161397,
+     12164180761775396874
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 2,
+    "words": [
+     12059729910452045822,
+     13254297980619267933,
+     210539017900966856,
+     2002428205480328715
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "KAISER_CRAB_BOSS",
+   "roster": [
+    {
+     "hp": 219,
+     "initial_state": [
+      [
+       "crab_rage",
+       1
+      ]
+     ],
+     "kind": "CRUSHER",
+     "loop_pos": 0,
+     "max_hp": 219,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 209,
+     "initial_state": [
+      [
+       "crab_rage",
+       1
+      ]
+     ],
+     "kind": "ROCKET",
+     "loop_pos": 0,
+     "max_hp": 209,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 33
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7457288021779653121,
+     4729149971632970201,
+     9514719628168149647,
+     12958852652742762762
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4800458244033376337,
+     15147591989066610640,
+     429339205379096094,
+     3499579955849790653
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11545162998237315900,
+     10762750188447512991,
+     6501732561584164431,
+     16604134473402460075
+    ]
+   },
+   "node_index": 34,
+   "registered_key": "KNOWLEDGE_DEMON_BOSS",
+   "roster": [
+    {
+     "hp": 379,
+     "initial_state": [],
+     "kind": "KNOWLEDGE_DEMON",
+     "loop_pos": 0,
+     "max_hp": 379,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "74XMKZ2WMBKP",
+   "total_floor": 35
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7906879175025939270,
+     340965251333254039,
+     4258515479660082557,
+     6610838106318221810
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     10856700263023995407,
+     18309681591456209550,
+     15003782961040434098,
+     13419769938975860419
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15172390271514170946,
+     13297885207969485619,
+     6511792473879923133,
+     15531130077855732651
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "KNOWLEDGE_DEMON_BOSS",
+   "roster": [
+    {
+     "hp": 399,
+     "initial_state": [],
+     "kind": "KNOWLEDGE_DEMON",
+     "loop_pos": 0,
+     "max_hp": 399,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "9U27KAL35CJY",
+   "total_floor": 33
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     176639129510917282,
+     13767510864147123064,
+     14870420054353229810,
+     2425948247851949070
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1394777703100106948,
+     15804963690215561478,
+     12254398345731663557,
+     12029460015114555672
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "KNOWLEDGE_DEMON_BOSS",
+   "roster": [
+    {
+     "hp": 399,
+     "initial_state": [],
+     "kind": "KNOWLEDGE_DEMON",
+     "loop_pos": 0,
+     "max_hp": 399,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 33
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17548737796912288073,
+     15764335330748045538,
+     10061898191337696048,
+     12288742051272196007
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1801741717140745462,
+     3656618501469849020,
+     15835870634115140865,
+     12891689362836797878
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11049443700710559996,
+     17328630755599803467,
+     1480510607649939959,
+     6881869713002032437
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "KNOWLEDGE_DEMON_BOSS",
+   "roster": [
+    {
+     "hp": 379,
+     "initial_state": [],
+     "kind": "KNOWLEDGE_DEMON",
+     "loop_pos": 0,
+     "max_hp": 379,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "KBC46J02JWT3",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6292005799410710176,
+     2869795232629711322,
+     557866611906185246,
+     10415268278470803677
+    ]
+   },
+   "fixture": "f960d49055bd158f",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "KNOWLEDGE_DEMON_BOSS",
+   "roster": [
+    {
+     "hp": 399,
+     "initial_state": [],
+     "kind": "KNOWLEDGE_DEMON",
+     "loop_pos": 0,
+     "max_hp": 399,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 33
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     3504945444344047423,
+     8492224545542727212,
+     5544852498177671629,
+     4003494912114215413
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6105420206528481394,
+     13400335809781408917,
+     6923231229143760016,
+     6897421610737711137
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12895443277967742150,
+     10185175470621446263,
+     2916367336132080866,
+     258566419543776605
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "LAGAVULIN_MATRIARCH_BOSS",
+   "roster": [
+    {
+     "hp": 233,
+     "initial_state": [
+      [
+       "mplating",
+       12
+      ],
+      [
+       "asleep",
+       3
+      ]
+     ],
+     "kind": "LAGAVULIN_MATRIARCH",
+     "loop_pos": 0,
+     "max_hp": 233,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0G2YX1QL2GE1",
+   "total_floor": 17
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     1345918502459798049,
+     7051351759966847322,
+     10818029681319299004,
+     12760586693735775236
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2349100595252521094,
+     9753516292498701416,
+     14928573377247599917,
+     11803430190175147926
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     291864087538893688,
+     7561033101112216003,
+     683938368845591979,
+     10196084215566276795
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "LAGAVULIN_MATRIARCH_BOSS",
+   "roster": [
+    {
+     "hp": 222,
+     "initial_state": [
+      [
+       "mplating",
+       12
+      ],
+      [
+       "asleep",
+       3
+      ]
+     ],
+     "kind": "LAGAVULIN_MATRIARCH",
+     "loop_pos": 0,
+     "max_hp": 222,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "4ZGJK2STYA0W",
+   "total_floor": 17
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13660216737687293293,
+     448197113445968913,
+     5199543117451292380,
+     14509956805758628606
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11357046027192488997,
+     902590558500706957,
+     12787705680879036718,
+     6436507574433613118
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14432314890077440918,
+     2336804108764555142,
+     7368515423043714315,
+     10085365765702924326
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "LAGAVULIN_MATRIARCH_BOSS",
+   "roster": [
+    {
+     "hp": 222,
+     "initial_state": [
+      [
+       "mplating",
+       12
+      ],
+      [
+       "asleep",
+       3
+      ]
+     ],
+     "kind": "LAGAVULIN_MATRIARCH",
+     "loop_pos": 0,
+     "max_hp": 222,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "G7EXRC2T27LK",
+   "total_floor": 17
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12816503204910473852,
+     4801749478344488017,
+     14094556660646449742,
+     17908548428307658155
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1801741717140745462,
+     3656618501469849020,
+     15835870634115140865,
+     12891689362836797878
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11049443700710559996,
+     17328630755599803467,
+     1480510607649939959,
+     6881869713002032437
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "LAGAVULIN_MATRIARCH_BOSS",
+   "roster": [
+    {
+     "hp": 222,
+     "initial_state": [
+      [
+       "mplating",
+       12
+      ],
+      [
+       "asleep",
+       3
+      ]
+     ],
+     "kind": "LAGAVULIN_MATRIARCH",
+     "loop_pos": 0,
+     "max_hp": 222,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "KBC46J02JWT3",
+   "total_floor": 17
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4812896296263318208,
+     13907021190806745835,
+     1654258325963917465,
+     12926905279949498305
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "LAGAVULIN_MATRIARCH_BOSS",
+   "roster": [
+    {
+     "hp": 222,
+     "initial_state": [
+      [
+       "mplating",
+       12
+      ],
+      [
+       "asleep",
+       3
+      ]
+     ],
+     "kind": "LAGAVULIN_MATRIARCH",
+     "loop_pos": 0,
+     "max_hp": 222,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.QUEEN_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     1582288686397966985,
+     8471034986206727907,
+     6774420134682135808,
+     13757553824352267085
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 2,
+    "words": [
+     9585604290846788496,
+     11033631513776263502,
+     6186810244605536033,
+     10930041600458805616
+    ]
+   },
+   "node_index": 48,
+   "registered_key": "QUEEN_BOSS",
+   "roster": [
+    {
+     "hp": 211,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "TORCH_HEAD_AMALGAM",
+     "loop_pos": 0,
+     "max_hp": 211,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 419,
+     "initial_state": [],
+     "kind": "QUEEN",
+     "loop_pos": 0,
+     "max_hp": 419,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 49
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.QUEEN_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16759158036602856608,
+     13463119580236158032,
+     10516636420096909555,
+     3242176822837558364
+    ]
+   },
+   "fixture": "fc5779009bf481bf",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 2,
+    "words": [
+     8955495585473558033,
+     1795293506698660443,
+     15243279928871456930,
+     4839339862615250590
+    ]
+   },
+   "node_index": 47,
+   "registered_key": "QUEEN_BOSS",
+   "roster": [
+    {
+     "hp": 211,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "TORCH_HEAD_AMALGAM",
+     "loop_pos": 0,
+     "max_hp": 211,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 419,
+     "initial_state": [],
+     "kind": "QUEEN",
+     "loop_pos": 0,
+     "max_hp": 419,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 48
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16860853567814048869,
+     1155422648279203302,
+     16404420827240726001,
+     12450293336129592351
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     10856700263023995407,
+     18309681591456209550,
+     15003782961040434098,
+     13419769938975860419
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15172390271514170946,
+     13297885207969485619,
+     6511792473879923133,
+     15531130077855732651
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "SOUL_FYSH_BOSS",
+   "roster": [
+    {
+     "hp": 221,
+     "initial_state": [],
+     "kind": "SOUL_FYSH",
+     "loop_pos": 0,
+     "max_hp": 221,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "9U27KAL35CJY",
+   "total_floor": 17
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16664777869104500267,
+     16123266911731323961,
+     17167917305646721447,
+     18411140594478798648
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1542459860030166462,
+     17257064393067301722,
+     15900996447419385397,
+     15120438401507727558
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3155920723671713314,
+     2788066499562723537,
+     1767723002696291211,
+     5941241684473408923
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "SOUL_FYSH_BOSS",
+   "roster": [
+    {
+     "hp": 211,
+     "initial_state": [],
+     "kind": "SOUL_FYSH",
+     "loop_pos": 0,
+     "max_hp": 211,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "DXLGWV6KZ1BF",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     3885679925079473320,
+     10278413550079084248,
+     9851557021151573769,
+     3306408162995244573
+    ]
+   },
+   "fixture": "f4a3dee0adeb1b4f",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2249077601126720316,
+     6431575325491952990,
+     16110201448806605754,
+     7296065989511296771
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2537508853911546209,
+     11089323926419324376,
+     15562688580753539206,
+     9893185175383070871
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "SOUL_FYSH_BOSS",
+   "roster": [
+    {
+     "hp": 221,
+     "initial_state": [],
+     "kind": "SOUL_FYSH",
+     "loop_pos": 0,
+     "max_hp": 221,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "ECN6B749UETJ",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7765851314632951360,
+     8865209142422317560,
+     131780421362144573,
+     14649956960931809148
+    ]
+   },
+   "fixture": "fef98e398dcc2c55",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14662186756976885732,
+     8911199796717287078,
+     4902366055807699656,
+     13671916553261891416
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     967178288594417178,
+     17643080068296016778,
+     7886635706756298028,
+     1819411105753427653
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "SOUL_FYSH_BOSS",
+   "roster": [
+    {
+     "hp": 221,
+     "initial_state": [],
+     "kind": "SOUL_FYSH",
+     "loop_pos": 0,
+     "max_hp": 221,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "J2NX7EVU3VXN",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17676235348507162719,
+     11878680978563302570,
+     8419120041951062267,
+     16849619486054696269
+    ]
+   },
+   "fixture": "f931766126de896a",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18073045360560400777,
+     7218852772716532624,
+     10448774905304033365,
+     3414007788739826417
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "SOUL_FYSH_BOSS",
+   "roster": [
+    {
+     "hp": 221,
+     "initial_state": [],
+     "kind": "SOUL_FYSH",
+     "loop_pos": 0,
+     "max_hp": 221,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TEST_SUBJECT_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4267936786170884911,
+     1856399889455972114,
+     17858344827993851287,
+     9508884380467424086
+    ]
+   },
+   "fixture": "f87fde0f951d7b0c",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 48,
+   "registered_key": "TEST_SUBJECT_BOSS",
+   "roster": [
+    {
+     "hp": 111,
+     "initial_state": [
+      [
+       "adaptable",
+       1
+      ],
+      [
+       "enrage",
+       3
+      ]
+     ],
+     "kind": "TEST_SUBJECT",
+     "loop_pos": 1,
+     "max_hp": 111,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 49
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11038622650104406592,
+     12052186962667173568,
+     3628899822749833742,
+     1996031411890983403
+    ]
+   },
+   "fixture": "f827c4e3317ce313",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     17465263809385379562,
+     6206467654083638895,
+     4422408337967894987,
+     2397658570513435413
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 341,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 341,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 33
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8808084754159906911,
+     14891714262325681949,
+     17604361542014338936,
+     12188575841679500245
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 321,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 321,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 33
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13472701760459202561,
+     12879167840077718895,
+     16163964256079665300,
+     13977397386347036012
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2349100595252521094,
+     9753516292498701416,
+     14928573377247599917,
+     11803430190175147926
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     291864087538893688,
+     7561033101112216003,
+     683938368845591979,
+     10196084215566276795
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 321,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 321,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "4ZGJK2STYA0W",
+   "total_floor": 33
+  },
+  {
+   "ascension": 9,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2846053662322959297,
+     9069794773696607522,
+     5983310367095427888,
+     8634913798246456058
+    ]
+   },
+   "fixture": "f143c7e6993ed27c",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3232093630501993390,
+     2700691352052752020,
+     1019025213755883280,
+     14251997839428021841
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14729366693414472555,
+     541613354538015274,
+     12830021025687291070,
+     16580208832746090549
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 341,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 341,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "7UEE3Y1SPJCY",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13738895898921467326,
+     6851459599709547950,
+     14175878861403693182,
+     16221371944283363096
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 341,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 341,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 33
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8895998833462747411,
+     15328781636040495511,
+     14998471539355268755,
+     10544614474896898981
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 321,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 321,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6495976673664855103,
+     12161450383933902822,
+     3589838109323799101,
+     9446885978010592998
+    ]
+   },
+   "fixture": "faa08bc8df2fad51",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18073045360560400777,
+     7218852772716532624,
+     10448774905304033365,
+     3414007788739826417
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 341,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 341,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14179390619941492982,
+     15173215900291141468,
+     16007974193285622751,
+     6496073530192292093
+    ]
+   },
+   "fixture": "fc78829c88941121",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2827994986865244158,
+     17880240222914277074,
+     13956459038758919743,
+     9306899592433661743
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6788312309178084867,
+     2212142936932943635,
+     6480628263119481281,
+     1387019768603355593
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "THE_INSATIABLE_BOSS",
+   "roster": [
+    {
+     "hp": 341,
+     "initial_state": [],
+     "kind": "THE_INSATIABLE",
+     "loop_pos": 0,
+     "max_hp": 341,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "YLVVPKPH1MTW",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.THE_KIN_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     1376975894426364551,
+     11196037616968976774,
+     7529348990464047527,
+     12758445952872568334
+    ]
+   },
+   "fixture": "f6e632d43956976b",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     10067502139355450286,
+     5314891962194034175,
+     8796512015889460401,
+     14413702257347492308
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "THE_KIN_BOSS",
+   "roster": [
+    {
+     "hp": 62,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "KIN_FOLLOWER",
+     "loop_pos": 2,
+     "max_hp": 62,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 63,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "KIN_FOLLOWER",
+     "loop_pos": 0,
+     "max_hp": 63,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 199,
+     "initial_state": [],
+     "kind": "KIN_PRIEST",
+     "loop_pos": 0,
+     "max_hp": 199,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.THE_KIN_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12409893200192111005,
+     7068614049453571408,
+     4308967591195547625,
+     10885604779838319219
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     2849283025433127636,
+     13198190627765202152,
+     18166994444672657075,
+     16400046576497800344
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "THE_KIN_BOSS",
+   "roster": [
+    {
+     "hp": 62,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "KIN_FOLLOWER",
+     "loop_pos": 2,
+     "max_hp": 62,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 63,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "KIN_FOLLOWER",
+     "loop_pos": 0,
+     "max_hp": 63,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 199,
+     "initial_state": [],
+     "kind": "KIN_PRIEST",
+     "loop_pos": 0,
+     "max_hp": 199,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 17
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.THE_KIN_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8341653172124988689,
+     667954493019040685,
+     5889655554177953180,
+     11831579806876366958
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7182981718296780481,
+     12658004713732496075,
+     4014344740280547371,
+     15027161039135842999
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     17563220076621360916,
+     14905374910542814291,
+     14440726933554257957,
+     7632714550244831736
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "THE_KIN_BOSS",
+   "roster": [
+    {
+     "hp": 62,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "KIN_FOLLOWER",
+     "loop_pos": 2,
+     "max_hp": 62,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 63,
+     "initial_state": [
+      [
+       "secondary",
+       1
+      ]
+     ],
+     "kind": "KIN_FOLLOWER",
+     "loop_pos": 0,
+     "max_hp": 63,
+     "move_log": [],
+     "next_move": "",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 199,
+     "initial_state": [],
+     "kind": "KIN_PRIEST",
+     "loop_pos": 0,
+     "max_hp": 199,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "XEKJR4WDWVB6",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.VANTOM_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2344277306421923227,
+     3163501194030051395,
+     9700106231205539780,
+     3783106674708791180
+    ]
+   },
+   "fixture": "f10158ac7ccfae5d",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     12339133568989384482,
+     377053627746477558,
+     8669479149986390308,
+     7274050213237057117
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14624427127713647753,
+     15444766745934695408,
+     17573305177438547462,
+     1185973069518010664
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "VANTOM_BOSS",
+   "roster": [
+    {
+     "hp": 183,
+     "initial_state": [
+      [
+       "slippery",
+       9
+      ]
+     ],
+     "kind": "VANTOM",
+     "loop_pos": 0,
+     "max_hp": 183,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0XPN2X98ZW1V",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.VANTOM_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17095603965612896592,
+     9421650961185719553,
+     13126217255665292519,
+     2431800379604165024
+    ]
+   },
+   "fixture": "f5f41b9eb7a39649",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15983617878134681436,
+     11848933488916230804,
+     5843556955527866100,
+     15109154775784458832
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12110295719384946584,
+     2929193446396164924,
+     3511936864764594600,
+     8005305259310295714
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "VANTOM_BOSS",
+   "roster": [
+    {
+     "hp": 183,
+     "initial_state": [
+      [
+       "slippery",
+       9
+      ]
+     ],
+     "kind": "VANTOM",
+     "loop_pos": 0,
+     "max_hp": 183,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "24184VPSWK9L",
+   "total_floor": 17
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.VANTOM_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     1006035328117057113,
+     8430623707776659100,
+     4504202699643586223,
+     13796276953959262343
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "VANTOM_BOSS",
+   "roster": [
+    {
+     "hp": 173,
+     "initial_state": [
+      [
+       "slippery",
+       8
+      ]
+     ],
+     "kind": "VANTOM",
+     "loop_pos": 0,
+     "max_hp": 173,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.VANTOM_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     1690822647650821661,
+     91016606481880989,
+     14771382609051252098,
+     7420444330723602421
+    ]
+   },
+   "fixture": "f0b390784b854232",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17183113501290211657,
+     6602716559558448404,
+     7977453246476055855,
+     10288843245577705441
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     4259966960120048572,
+     15808402684013234546,
+     11508931127948270694,
+     9250035937327065064
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "VANTOM_BOSS",
+   "roster": [
+    {
+     "hp": 183,
+     "initial_state": [
+      [
+       "slippery",
+       9
+      ]
+     ],
+     "kind": "VANTOM",
+     "loop_pos": 0,
+     "max_hp": 183,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "70022CD6G3J0",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.VANTOM_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10039918921610083045,
+     4569448285003357347,
+     16015384061102132487,
+     583377404925737172
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     631470861688011501,
+     708672516633862978,
+     9037723878084002410,
+     15916464925057246931
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15993546733131349884,
+     8969670151282891717,
+     2189732978646268039,
+     7544156814232543297
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "VANTOM_BOSS",
+   "roster": [
+    {
+     "hp": 183,
+     "initial_state": [
+      [
+       "slippery",
+       9
+      ]
+     ],
+     "kind": "VANTOM",
+     "loop_pos": 0,
+     "max_hp": 183,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "GS2AN48YDL3N",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.VANTOM_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10745366208675993858,
+     18357176706447049148,
+     8088853641014245016,
+     487629168021518830
+    ]
+   },
+   "fixture": "f4f408cd23234242",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6801311465874104000,
+     2960979283152667884,
+     13511462004224497837,
+     2947667177967786039
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6889568345200624155,
+     14769209032175616641,
+     16145941858870265453,
+     4871593249768915112
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "VANTOM_BOSS",
+   "roster": [
+    {
+     "hp": 183,
+     "initial_state": [
+      [
+       "slippery",
+       9
+      ]
+     ],
+     "kind": "VANTOM",
+     "loop_pos": 0,
+     "max_hp": 183,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "MFKRHBXBVZ7V",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2743745942794267913,
+     13335902178432407604,
+     728154418400038788,
+     11390328202775505996
+    ]
+   },
+   "fixture": "fd98d7de707b9fd7",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6766555281204553173,
+     14374493556075575733,
+     6523400626575223240,
+     15302819846701319384
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     5676046281161906360,
+     13842958978866787752,
+     17011745535432068125,
+     1706198385826271117
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "WATERFALL_GIANT_BOSS",
+   "roster": [
+    {
+     "hp": 250,
+     "initial_state": [
+      [
+       "pressure_gun_damage",
+       23
+      ]
+     ],
+     "kind": "WATERFALL_GIANT",
+     "loop_pos": 0,
+     "max_hp": 250,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "6VYM269L9SH1",
+   "total_floor": 17
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     3248221509556308502,
+     14319375067497943573,
+     554683348968408808,
+     14193567245880025232
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4800458244033376337,
+     15147591989066610640,
+     429339205379096094,
+     3499579955849790653
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11545162998237315900,
+     10762750188447512991,
+     6501732561584164431,
+     16604134473402460075
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "WATERFALL_GIANT_BOSS",
+   "roster": [
+    {
+     "hp": 240,
+     "initial_state": [
+      [
+       "pressure_gun_damage",
+       20
+      ]
+     ],
+     "kind": "WATERFALL_GIANT",
+     "loop_pos": 0,
+     "max_hp": 240,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "74XMKZ2WMBKP",
+   "total_floor": 17
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6295822470133329646,
+     10817002373454202750,
+     609618389029009238,
+     5949296939913253990
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1394777703100106948,
+     15804963690215561478,
+     12254398345731663557,
+     12029460015114555672
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "WATERFALL_GIANT_BOSS",
+   "roster": [
+    {
+     "hp": 250,
+     "initial_state": [
+      [
+       "pressure_gun_damage",
+       20
+      ]
+     ],
+     "kind": "WATERFALL_GIANT",
+     "loop_pos": 0,
+     "max_hp": 250,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 17
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4451773343617764263,
+     6895550372718888070,
+     5557651552182907512,
+     9613547844768824257
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14547571760749681070,
+     16757382711656570005,
+     10853055458769361510,
+     9669705378729231045
+    ]
+   },
+   "node_index": 16,
+   "registered_key": "WATERFALL_GIANT_BOSS",
+   "roster": [
+    {
+     "hp": 250,
+     "initial_state": [
+      [
+       "pressure_gun_damage",
+       23
+      ]
+     ],
+     "kind": "WATERFALL_GIANT",
+     "loop_pos": 0,
+     "max_hp": 250,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 17
+  }
+ ],
+ "corpus_fights": 46,
+ "explicit_fixture_fights": 3,
+ "family": "E4b F5 \u2014 boss pool (#2535)",
+ "fixture_fights": 20,
+ "generated_by": "versions/v0.111.0/rust/tools/gen_roster_pins.py",
+ "per_encounter": {
+  "ENCOUNTER.AEONGLASS_BOSS": {
+   "corpus": 3,
+   "fixtures": 1
+  },
+  "ENCOUNTER.CEREMONIAL_BEAST_BOSS": {
+   "corpus": 2,
+   "fixtures": 2
+  },
+  "ENCOUNTER.KAISER_CRAB_BOSS": {
+   "corpus": 2,
+   "fixtures": 1
+  },
+  "ENCOUNTER.KNOWLEDGE_DEMON_BOSS": {
+   "corpus": 5,
+   "fixtures": 1
+  },
+  "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS": {
+   "corpus": 5,
+   "fixtures": 0
+  },
+  "ENCOUNTER.QUEEN_BOSS": {
+   "corpus": 2,
+   "fixtures": 1
+  },
+  "ENCOUNTER.SOUL_FYSH_BOSS": {
+   "corpus": 5,
+   "fixtures": 3
+  },
+  "ENCOUNTER.TEST_SUBJECT_BOSS": {
+   "corpus": 1,
+   "fixtures": 1
+  },
+  "ENCOUNTER.THE_INSATIABLE_BOSS": {
+   "corpus": 8,
+   "fixtures": 4
+  },
+  "ENCOUNTER.THE_KIN_BOSS": {
+   "corpus": 3,
+   "fixtures": 1
+  },
+  "ENCOUNTER.VANTOM_BOSS": {
+   "corpus": 6,
+   "fixtures": 4
+  },
+  "ENCOUNTER.WATERFALL_GIANT_BOSS": {
+   "corpus": 4,
+   "fixtures": 1
+  }
+ },
+ "registered_keys": [
+  "AEONGLASS_BOSS",
+  "CEREMONIAL_BEAST_BOSS",
+  "KAISER_CRAB_BOSS",
+  "KNOWLEDGE_DEMON_BOSS",
+  "LAGAVULIN_MATRIARCH_BOSS",
+  "QUEEN_BOSS",
+  "SOUL_FYSH_BOSS",
+  "TEST_SUBJECT_BOSS",
+  "THE_INSATIABLE_BOSS",
+  "THE_KIN_BOSS",
+  "VANTOM_BOSS",
+  "WATERFALL_GIANT_BOSS"
+ ],
+ "schema": "sts-sim-boss-roster-pins-v1",
+ "unpinned_fixtures": [
+  "f049d495b4530e41",
+  "f05e7dbfd34be8e7",
+  "f066148b82434548",
+  "f17e1193c4864ed4",
+  "f1bd35a4da5dc7cc",
+  "f27c19109e5244d1",
+  "f2a887a9533f9a63",
+  "f2b8b36c3cc90af4",
+  "f3176cbf06f74463",
+  "f39a2ac4c9678347",
+  "f41a3d66c3383f12",
+  "f42d7c9308f48522",
+  "f46849f7c0e639f9",
+  "f4a6011e0a75b91d",
+  "f4a92e8c10631d30",
+  "f4b5fc8722d50803",
+  "f4ca826efcfa76b6",
+  "f50bddfb744da3db",
+  "f5549cb3085a3c2b",
+  "f55d1931137eb0d5",
+  "f56a192660d7f3e8",
+  "f581b9fee332669c",
+  "f5d48ea18938c50a",
+  "f63284eef765c876",
+  "f6aceb7447b4d471",
+  "f6bca781f6a127a9",
+  "f72948a46ec9dadd",
+  "f7a85afc2b8c148e",
+  "f7d6dd85d06f4d4d",
+  "f8db2d95e9c641ba",
+  "f9229624d2cb6754",
+  "f96da6a5ad6c9271",
+  "f9789b43ded6d6f5",
+  "fa0c1dc0349d3f87",
+  "fa1ff66e17a54ebd",
+  "fa3612a2f39a5826",
+  "faf9054c56d0828f",
+  "fb7567f62087f4e2",
+  "fbc1de5429f71f7f",
+  "fbf4967d62018611",
+  "fc26893352ad9faa",
+  "fc638a95503e82bb",
+  "fcc9975437e245a9",
+  "fdc2a370ea3d4980",
+  "fe0f180ce2a6b755",
+  "fe4f7a300bbcfe56",
+  "fe510ffeb95c6fa0",
+  "feb7a1406a9fd885",
+  "feca9736747504e2",
+  "ff063e5941421799",
+  "ff567b2d220dea6d",
+  "ff9da317acc9cc1a",
+  "ffd21a6b2755bbe7"
+ ]
+}

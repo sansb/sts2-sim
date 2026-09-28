@@ -1,0 +1,1893 @@
+{
+  "manifest": {
+    "schema": "sts-search-suite-v1",
+    "selection": "Development challenge set selected by no-win outcomes in the 0.3-second random screen. Not held out.",
+    "game_build": "v0.111.0",
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "seconds_per_search": 5,
+    "methods": [
+      "random",
+      "uct"
+    ],
+    "fights": [
+      {
+        "id": "fc53621e544a3773",
+        "character": "DEFECT",
+        "ascension": 1,
+        "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+        "human_won": false,
+        "human_hp": 0,
+        "human_turns": 1
+      },
+      {
+        "id": "ff048525e2583950",
+        "character": "IRONCLAD",
+        "ascension": 10,
+        "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+        "human_won": false,
+        "human_hp": 0,
+        "human_turns": 1
+      }
+    ]
+  },
+  "binary_sha256": "3ae8baff819973db790bf61261623cc81ee9581be1dae159828ea109c7e82073",
+  "playout_cap": null,
+  "runs": [
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 122,
+        "final_digest": "d632e5982200c99ad384f578ed89f9bc350f8f9faef589241a884bbfb745de2a",
+        "turn": 1,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 538560,
+      "elapsed_seconds": 5.000170041,
+      "end_weight": 0.05,
+      "entry_digest": "f48e70626c01618fda44776eb9a14c7bdc94341e698e6e0a79f990349a72a4ac",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 149,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000262291,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 138,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.00034975,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 132,
+          "hp": 0,
+          "playout": 5,
+          "seconds": 0.000391708,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 10,
+          "seconds": 0.000465083,
+          "turn": 1,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 538560,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 2617316,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "fc53621e544a3773"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 122,
+        "final_digest": "94fc2caba7bc14b4753d0c7a0a22b4024a8dbeb067b316baade0335c34019153",
+        "turn": 1,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 613433,
+      "elapsed_seconds": 5.000133291,
+      "end_weight": 0.05,
+      "entry_digest": "f48e70626c01618fda44776eb9a14c7bdc94341e698e6e0a79f990349a72a4ac",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 149,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 7.675e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 138,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000135583,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.000187458,
+          "turn": 1,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 613433,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 2754373,
+      "tree_nodes": 478,
+      "win_visits": 0,
+      "fight_id": "fc53621e544a3773"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 122,
+        "final_digest": "d632e5982200c99ad384f578ed89f9bc350f8f9faef589241a884bbfb745de2a",
+        "turn": 1,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 542968,
+      "elapsed_seconds": 5.000137375,
+      "end_weight": 0.05,
+      "entry_digest": "f48e70626c01618fda44776eb9a14c7bdc94341e698e6e0a79f990349a72a4ac",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 149,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 6.925e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 132,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000141,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 130,
+          "hp": 0,
+          "playout": 13,
+          "seconds": 0.00026375,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 26,
+          "seconds": 0.000415084,
+          "turn": 1,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 542968,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 2639177,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "fc53621e544a3773"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 122,
+        "final_digest": "a3f3a8606965f2543fa1dc45063286f90a5b197444c698d9cf6735d6cb40070d",
+        "turn": 1,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 614720,
+      "elapsed_seconds": 5.000157667,
+      "end_weight": 0.05,
+      "entry_digest": "f48e70626c01618fda44776eb9a14c7bdc94341e698e6e0a79f990349a72a4ac",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 149,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 6.4459e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 138,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000121125,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 130,
+          "hp": 0,
+          "playout": 8,
+          "seconds": 0.000190584,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 9,
+          "seconds": 0.000220167,
+          "turn": 1,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 614720,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 2760322,
+      "tree_nodes": 478,
+      "win_visits": 0,
+      "fight_id": "fc53621e544a3773"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 122,
+        "final_digest": "d632e5982200c99ad384f578ed89f9bc350f8f9faef589241a884bbfb745de2a",
+        "turn": 1,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 538212,
+      "elapsed_seconds": 5.000134792,
+      "end_weight": 0.05,
+      "entry_digest": "f48e70626c01618fda44776eb9a14c7bdc94341e698e6e0a79f990349a72a4ac",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 156,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 7.3042e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 143,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000116167,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 138,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000157542,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.000234125,
+          "turn": 1,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 538212,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 2616121,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "fc53621e544a3773"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 122,
+        "final_digest": "d632e5982200c99ad384f578ed89f9bc350f8f9faef589241a884bbfb745de2a",
+        "turn": 1,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 623486,
+      "elapsed_seconds": 5.000122334,
+      "end_weight": 0.05,
+      "entry_digest": "f48e70626c01618fda44776eb9a14c7bdc94341e698e6e0a79f990349a72a4ac",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 156,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 6.9459e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 143,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000112584,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 141,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.0001465,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 138,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000173792,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 132,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.000213709,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 130,
+          "hp": 0,
+          "playout": 8,
+          "seconds": 0.000245709,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 24,
+          "seconds": 0.00040075,
+          "turn": 1,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 623486,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 2801010,
+      "tree_nodes": 478,
+      "win_visits": 0,
+      "fight_id": "fc53621e544a3773"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "potion",
+            "slot": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0,
+            "target": 0
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 6
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 12
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 16
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 4
+          }
+        ],
+        "combat_hp": 1,
+        "enemy_hp": 0,
+        "final_digest": "42aecd3697d68957d6c336cfcb0f7c1c1284441f8f72edeb822f10a38ccb02e9",
+        "turn": 5,
+        "won": true
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 59344,
+      "elapsed_seconds": 5.000373542,
+      "end_weight": 0.05,
+      "entry_digest": "e637c6f78e80527bdea0c9d99eb6c43b14f1da6fa0937daeef75571e2a85c916",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000281083,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 120,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000345417,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 86,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.000560292,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 80,
+          "hp": 0,
+          "playout": 7,
+          "seconds": 0.000611917,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 73,
+          "hp": 0,
+          "playout": 9,
+          "seconds": 0.000929917,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 26,
+          "hp": 0,
+          "playout": 282,
+          "seconds": 0.025930042,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 19,
+          "hp": 0,
+          "playout": 675,
+          "seconds": 0.058246,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 13,
+          "hp": 0,
+          "playout": 1105,
+          "seconds": 0.093553125,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 12,
+          "hp": 0,
+          "playout": 12220,
+          "seconds": 1.0888773330000001,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 4,
+          "hp": 0,
+          "playout": 12836,
+          "seconds": 1.140137125,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 1,
+          "hp": 0,
+          "playout": 51397,
+          "seconds": 4.329659458,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 1,
+          "playout": 52296,
+          "seconds": 4.404570667,
+          "turn": 5,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 59345,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 526733,
+      "tree_nodes": 1,
+      "win_visits": 1,
+      "fight_id": "ff048525e2583950"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "potion",
+            "slot": 0,
+            "target": 0
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 12
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          },
+          {
+            "answer": {
+              "index": 2,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 16
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 18
+          }
+        ],
+        "combat_hp": 1,
+        "enemy_hp": 0,
+        "final_digest": "2bc87e3a3f709c4b627cd2d073e4ed39f7592454ff16b298926b47e1f9af201b",
+        "turn": 4,
+        "won": true
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 80782,
+      "elapsed_seconds": 5.00032925,
+      "end_weight": 0.05,
+      "entry_digest": "e637c6f78e80527bdea0c9d99eb6c43b14f1da6fa0937daeef75571e2a85c916",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 122,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000239917,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 120,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000409708,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 119,
+          "hp": 0,
+          "playout": 8,
+          "seconds": 0.00064925,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 109,
+          "hp": 0,
+          "playout": 12,
+          "seconds": 0.000940708,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 88,
+          "hp": 0,
+          "playout": 31,
+          "seconds": 0.00180525,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 83,
+          "hp": 0,
+          "playout": 40,
+          "seconds": 0.002452958,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 75,
+          "hp": 0,
+          "playout": 179,
+          "seconds": 0.009698833,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 19,
+          "hp": 0,
+          "playout": 207,
+          "seconds": 0.011452417,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 11,
+          "hp": 0,
+          "playout": 1325,
+          "seconds": 0.061477917,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 9,
+          "hp": 0,
+          "playout": 12499,
+          "seconds": 0.550079875,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 6,
+          "hp": 0,
+          "playout": 45460,
+          "seconds": 2.460303417,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 4,
+          "hp": 0,
+          "playout": 74565,
+          "seconds": 4.560513833,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 1,
+          "playout": 75923,
+          "seconds": 4.656521542,
+          "turn": 4,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 80783,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 696113,
+      "tree_nodes": 46265,
+      "win_visits": 1,
+      "fight_id": "ff048525e2583950"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0,
+            "target": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "answer": {
+              "index": 7,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 12
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 18
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 2,
+        "final_digest": "fd1428146f8e10fdfaef04d07f8b5acf6c585af951c83a4d1d3b49d5fa6d92f6",
+        "turn": 4,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 75410,
+      "elapsed_seconds": 5.00028175,
+      "end_weight": 0.05,
+      "entry_digest": "e637c6f78e80527bdea0c9d99eb6c43b14f1da6fa0937daeef75571e2a85c916",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 114,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.00037275,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 90,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000643292,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 82,
+          "hp": 0,
+          "playout": 29,
+          "seconds": 0.002847917,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 78,
+          "hp": 0,
+          "playout": 32,
+          "seconds": 0.003086209,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 21,
+          "hp": 0,
+          "playout": 104,
+          "seconds": 0.0084345,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 14,
+          "hp": 0,
+          "playout": 750,
+          "seconds": 0.05110875,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 11,
+          "hp": 0,
+          "playout": 1243,
+          "seconds": 0.083687917,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 10,
+          "hp": 0,
+          "playout": 5501,
+          "seconds": 0.359967417,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 2,
+          "hp": 0,
+          "playout": 22553,
+          "seconds": 1.547198709,
+          "turn": 4,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 75410,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 669345,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "ff048525e2583950"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "potion",
+            "slot": 1
+          },
+          {
+            "kind": "potion",
+            "slot": 0,
+            "target": 0
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 12
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 11
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 16
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 18
+          }
+        ],
+        "combat_hp": 1,
+        "enemy_hp": 0,
+        "final_digest": "2f3035d26814863d2622d7e5bf146f9df61a3c9983672395813f2679150b637b",
+        "turn": 4,
+        "won": true
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 81837,
+      "elapsed_seconds": 5.000316209,
+      "end_weight": 0.05,
+      "entry_digest": "e637c6f78e80527bdea0c9d99eb6c43b14f1da6fa0937daeef75571e2a85c916",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 114,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000341125,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 90,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000581542,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 82,
+          "hp": 0,
+          "playout": 15,
+          "seconds": 0.001304167,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 79,
+          "hp": 0,
+          "playout": 119,
+          "seconds": 0.006571834,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 72,
+          "hp": 0,
+          "playout": 288,
+          "seconds": 0.0134085,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 23,
+          "hp": 0,
+          "playout": 396,
+          "seconds": 0.018182334,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 15,
+          "hp": 0,
+          "playout": 1352,
+          "seconds": 0.054427917,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 14,
+          "hp": 0,
+          "playout": 1484,
+          "seconds": 0.060974375,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 13,
+          "hp": 0,
+          "playout": 5401,
+          "seconds": 0.217808375,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 9,
+          "hp": 0,
+          "playout": 6546,
+          "seconds": 0.266561167,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 7,
+          "hp": 0,
+          "playout": 19289,
+          "seconds": 0.878012584,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 7,
+          "hp": 0,
+          "playout": 42050,
+          "seconds": 2.223547834,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 4,
+          "hp": 0,
+          "playout": 50884,
+          "seconds": 2.791793417,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 1,
+          "hp": 0,
+          "playout": 59256,
+          "seconds": 3.387453125,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 1,
+          "playout": 64923,
+          "seconds": 3.7943805,
+          "turn": 4,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 81840,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 711526,
+      "tree_nodes": 47185,
+      "win_visits": 3,
+      "fight_id": "ff048525e2583950"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "potion",
+            "slot": 0,
+            "target": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "potion",
+            "slot": 1
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          },
+          {
+            "answer": {
+              "index": 3,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 12
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 11
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 18
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 1,
+        "final_digest": "bb30b159add9fb8570e0dcd0d55b5e5d7b579334fe5283a08c7b5a475adb00b7",
+        "turn": 4,
+        "won": false
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 58819,
+      "elapsed_seconds": 5.000380416,
+      "end_weight": 0.05,
+      "entry_digest": "e637c6f78e80527bdea0c9d99eb6c43b14f1da6fa0937daeef75571e2a85c916",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 128,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 8.1958e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 125,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000294333,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 88,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000448125,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 24,
+          "hp": 0,
+          "playout": 12,
+          "seconds": 0.001640458,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 14,
+          "hp": 0,
+          "playout": 592,
+          "seconds": 0.048476208,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 13,
+          "hp": 0,
+          "playout": 1462,
+          "seconds": 0.120925458,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 12,
+          "hp": 0,
+          "playout": 5595,
+          "seconds": 0.460849083,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 1,
+          "hp": 0,
+          "playout": 6294,
+          "seconds": 0.521126083,
+          "turn": 4,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 58819,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 521824,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "ff048525e2583950"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0,
+            "target": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "potion",
+            "slot": 1
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 12
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          },
+          {
+            "answer": {
+              "index": 2,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 11
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 3
+          },
+          {
+            "answer": {
+              "index": 5,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 16
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 8
+          }
+        ],
+        "combat_hp": 1,
+        "enemy_hp": 0,
+        "final_digest": "f007eaa64108c141ecba8545c9b696a2d1406acbd74d417952c90f9b4593b2a8",
+        "turn": 4,
+        "won": true
+      },
+      "budget_seconds": 5.0,
+      "cutoffs": 0,
+      "deaths": 66050,
+      "elapsed_seconds": 5.000395375,
+      "end_weight": 0.05,
+      "entry_digest": "e637c6f78e80527bdea0c9d99eb6c43b14f1da6fa0937daeef75571e2a85c916",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 128,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 9.0292e-05,
+          "turn": 1,
+          "won": false
+        },
+        {
+          "enemy_hp": 125,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000347708,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 88,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000511625,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 83,
+          "hp": 0,
+          "playout": 57,
+          "seconds": 0.004991125,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 79,
+          "hp": 0,
+          "playout": 81,
+          "seconds": 0.006448333,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 77,
+          "hp": 0,
+          "playout": 220,
+          "seconds": 0.015725542,
+          "turn": 2,
+          "won": false
+        },
+        {
+          "enemy_hp": 73,
+          "hp": 0,
+          "playout": 363,
+          "seconds": 0.024325708,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 26,
+          "hp": 0,
+          "playout": 576,
+          "seconds": 0.035411167,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 25,
+          "hp": 0,
+          "playout": 1689,
+          "seconds": 0.093540583,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 16,
+          "hp": 0,
+          "playout": 3298,
+          "seconds": 0.170268917,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 14,
+          "hp": 0,
+          "playout": 6514,
+          "seconds": 0.343314208,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 11,
+          "hp": 0,
+          "playout": 8501,
+          "seconds": 0.451970125,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 1,
+          "playout": 14933,
+          "seconds": 0.828907375,
+          "turn": 5,
+          "won": true
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 1,
+          "playout": 19444,
+          "seconds": 1.170275167,
+          "turn": 4,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 66054,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 542980,
+      "tree_nodes": 37075,
+      "win_visits": 4,
+      "fight_id": "ff048525e2583950"
+    }
+  ]
+}

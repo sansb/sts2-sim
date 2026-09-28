@@ -1,0 +1,677 @@
+{
+  "enabled": true,
+  "rng_streams_checked": 9,
+  "actions_checked": 0,
+  "opening_rng_drift": [],
+  "state_divergences": [
+    {
+      "context": "After player turn start",
+      "field": "player.piles.Draw",
+      "predicted": [
+        [
+          "SCAVENGE",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "BALL_LIGHTNING",
+          1,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "CLAW",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "GLASSWORK",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ZAP",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "DEFEND_DEFECT",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ITERATION",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "CLUMSY",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Ethereal",
+            "Unplayable"
+          ]
+        ],
+        [
+          "DUALCAST",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "DEFEND_DEFECT",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "GO_FOR_THE_EYES",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "COOLHEADED",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "GLACIER",
+          1,
+          [
+            "NIMBLE",
+            2
+          ],
+          null,
+          null,
+          []
+        ],
+        [
+          "GLACIER",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ICE_LANCE",
+          1,
+          [
+            "CORRUPTED",
+            1
+          ],
+          null,
+          null,
+          []
+        ],
+        [
+          "JACK_OF_ALL_TRADES",
+          1,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "CHILL",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "FERAL",
+          1,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "LIGHTNING_ROD",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "BOOST_AWAY",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "EQUILIBRIUM",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "SHADOW_SHIELD",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "FTL",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "HOLOGRAM",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "SHATTER",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "COOLANT",
+          1,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ASCENDERS_BANE",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Eternal",
+            "Ethereal",
+            "Unplayable"
+          ]
+        ],
+        [
+          "FIGHT_THROUGH",
+          0,
+          null,
+          null,
+          null,
+          []
+        ]
+      ],
+      "recorded": [
+        [
+          "SCAVENGE",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "BALL_LIGHTNING",
+          1,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "CLAW",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "GLASSWORK",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ZAP",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "DEFEND_DEFECT",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ITERATION",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "CLUMSY",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Ethereal",
+            "Unplayable"
+          ]
+        ],
+        [
+          "DUALCAST",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "DEFEND_DEFECT",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "GO_FOR_THE_EYES",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "COOLHEADED",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "GLACIER",
+          1,
+          [
+            "NIMBLE",
+            2
+          ],
+          null,
+          null,
+          []
+        ],
+        [
+          "GLACIER",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ICE_LANCE",
+          1,
+          [
+            "CORRUPTED",
+            1
+          ],
+          null,
+          null,
+          []
+        ],
+        [
+          "JACK_OF_ALL_TRADES",
+          1,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "CHILL",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "FERAL",
+          1,
+          null,
+          null,
+          1,
+          []
+        ],
+        [
+          "LIGHTNING_ROD",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "BOOST_AWAY",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "EQUILIBRIUM",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "SHADOW_SHIELD",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "FTL",
+          0,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "HOLOGRAM",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "SHATTER",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Exhaust"
+          ]
+        ],
+        [
+          "COOLANT",
+          1,
+          null,
+          null,
+          null,
+          []
+        ],
+        [
+          "ASCENDERS_BANE",
+          0,
+          null,
+          null,
+          null,
+          [
+            "Eternal",
+            "Ethereal",
+            "Unplayable"
+          ]
+        ],
+        [
+          "FIGHT_THROUGH",
+          0,
+          null,
+          null,
+          null,
+          []
+        ]
+      ]
+    }
+  ],
+  "state_refusals": [
+    {
+      "context": "finished action execution UsePotionAction 1  index: 0 target: 0 (Creature The Defect) combat: True",
+      "field": "full_state",
+      "reason": "player power 'CLARITY_POWER'"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.LOOP (62825371) index: 1 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.CHARGE_BATTERY (55690330) index: 3 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['energy_next_turn', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.SCAVENGE (14622914) index: 5 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['energy_next_turn', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.GLASSWORK (56904011) index: 8 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.ZAP (42374058) index: 9 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.CLAW (43605370) index: 7 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.BALL_LIGHTNING (64497364) index: 6 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.DEFEND_DEFECT (45822207) index: 10 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.FRANTIC_ESCAPE (38836445) index: 34 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.FRANTIC_ESCAPE (13983693) index: 35 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.GO_FOR_THE_EYES (60352030) index: 15 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.COOLHEADED (6297365) index: 16 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.GLACIER (56676289) index: 17 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.JACK_OF_ALL_TRADES (45063493) index: 20 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.ICE_LANCE (27376676) index: 19 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.FTL (61908948) index: 27 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.SHADOW_SHIELD (51618014) index: 26 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.SHATTER (48568914) index: 29 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.SHADOW_SHIELD (51618014) index: 26 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.COOLANT (34467043) index: 30 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.HOLOGRAM (20309626) index: 28 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.FRANTIC_ESCAPE (41597862) index: 33 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.FIGHT_THROUGH (40367104) index: 32 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.GO_FOR_THE_EYES (60352030) index: 15 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.FRANTIC_ESCAPE (58744373) index: 36 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.CHILL (2918255) index: 21 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.GLASSWORK (56904011) index: 8 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.CHARGE_BATTERY (55690330) index: 3 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'energy_next_turn', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.CLAW (43605370) index: 7 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.ICE_LANCE (27376676) index: 19 targetid: 1",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.BOOST_AWAY (47033511) index: 24 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    },
+    {
+      "context": "finished action execution PlayCardAction card: CARD.DEFEND_DEFECT (45822207) index: 10 targetid: ",
+      "field": "full_state",
+      "reason": "player solver powers lack exact native checksum projection: ['coolant', 'loop']"
+    }
+  ],
+  "limited_numeric_check": {
+    "actions_checked": 33,
+    "divergences": []
+  }
+}

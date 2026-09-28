@@ -1,0 +1,120 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "f1cd987a7ae7cb221f85d796213d84ed72c5ae9b1462fc2c702dbde1428141e9",
+ "turns": 5,
+ "actions": [
+  {
+   "kind": "potion",
+   "slot": 0
+  },
+  {
+   "kind": "potion",
+   "slot": 1
+  },
+  {
+   "kind": "play",
+   "uid": 1,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "play",
+   "uid": 3,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 10,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 17
+  },
+  {
+   "kind": "play",
+   "uid": 15
+  },
+  {
+   "kind": "play",
+   "uid": 14,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 21
+  },
+  {
+   "kind": "play",
+   "uid": 22
+  },
+  {
+   "kind": "play",
+   "uid": 19,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 23,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 13,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "085c44f0841bcc2fb522f91985cf1c9b21cef2e7f329fe2ed61a324473c8d863",
+  "01a86bd4cf4a3c4dd2adfccd885b0e621db07aca1d7ea25a54ede6eb91dbd39e",
+  "876ae87d83c322614f9dcc53bd2cb52113d100c973f17eebed1c0d8ed005f355",
+  "31440b63520ef619516623c0bf1b56d711aea1aee99202149d480009d150dc0a",
+  "e71debff72fbcfab8d583d5aa7aab5fdcee7a2a3f50c7268a9450d2c35f15dbb",
+  "b1fd6aa8643f5d49f94fb60bca2d163792c291598b09ca4562219ca1190bbfc0",
+  "34fd54907111aa715e1772b25ac5200f04fdf8854f18905807a45f740663d2cb",
+  "a98ea272b9ebe3a224b5d3b300de851ed98880c014d9f95a079db8018d106bb1",
+  "6baf473c37a6743586d036dc1630c9622269a547962067539170670286321944",
+  "82016b3fc0ebe0e570dff043816ad14c0953e6e30f25876761883150f1a70361",
+  "2fe0f6a974d56ad1b48aeacaa2595a1cf64ae55f50ed2c86907f23e9c526469d",
+  "8a7dcd48855a44a0077342070e94fcf7b3aeea0204fa8e528acb5688181a7d2c",
+  "883168be29a0d291f40ee10234c581a7ca443b7ffa7a1a9f6e15b6d0e50806ad",
+  "0423e8beac6709b1751a87f7e5de3092ff706f6f6b32e5bf65fd481c4df19aa8",
+  "b90277f137d19fc0be8c6ccb0d6cd1ae8c93165ceee3ae0669b605ee06904163",
+  "7db336282e77298b068678a7552c5c70d31c39612233f8930dd106dedbfec988",
+  "16dd30a0db08b2ba001308bcccb094764d927c3b737357355596994e47ad1077",
+  "77687166f17fcfb731930ac13328b890ead561eaa5e6be20b64ea3cc2e4f39a7",
+  "b8f0fcdfe38fb1c54cae6a7aa33dca4f9edfdee0ae20e0888a686c80e8add352",
+  "9d5fb342eb00d9a882d27cd1c9554df664b25961cb63a668b64e9f1a51a9f927"
+ ],
+ "terminal": {
+  "hp": 53,
+  "turn": 5,
+  "over": true,
+  "won": true
+ }
+}

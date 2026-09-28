@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "ZU7KKADQBNCR",
+ "node": 10,
+ "encounter": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "c13fd90a39648076ac4f50a03bc8abd7d2dd65bc0e61813269696524adebb70e",
+ "save_sha256": "1a4f70d68b44826886d518e0879e2c2e786024625a10c92f4b3424ddd8c58596",
+ "entry_digest": null,
+ "checksummed": null
+}

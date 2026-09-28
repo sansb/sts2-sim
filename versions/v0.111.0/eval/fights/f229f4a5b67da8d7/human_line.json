@@ -1,0 +1,93 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "013a2c9357f3865a13a283812db750e9861fd1b0f748299acc8b199c77877fbe",
+ "turns": 3,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 22
+  },
+  {
+   "kind": "play",
+   "uid": 0,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 1
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 13
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 16,
+   "target": 2
+  },
+  {
+   "kind": "play",
+   "uid": 15
+  },
+  {
+   "kind": "play",
+   "uid": 19
+  },
+  {
+   "kind": "play",
+   "uid": 20
+  },
+  {
+   "kind": "play",
+   "uid": 18,
+   "target": 2
+  }
+ ],
+ "step_digests": [
+  "b0754dc4b3b7b745c47c0a51baa978b4de6a1a6da660a310a790fcb75cf8b5fe",
+  "f4b22ac724a6666ac027a7ec9ee0a767723f227912a25cb28daa2d803667df3d",
+  "ee2ced16a48c0a8b48a823a3b8027f5021e6b683494e3b429d84460fcd51af0f",
+  "ed76e633247b4eae5e3e6bb95f555676e003280d373bb7890e6cc39036ebe042",
+  "4231e0848b47b1bf476a91931e5f4571be648adb5b4329f356cbd8f21dafc9ef",
+  "19220a3c8d6da87653b041d72a016ab40652c44d570df465a56d1852d4625d09",
+  "bc1f4461af17574cbc50371b76a9881caeb362b6b220bd0c2b215f236fb47301",
+  "0e288565cfdee0f512f609ff2bf574c5cad6af5704531be381af8863d03611f2",
+  "8ece1ea7ea3ed66ac9d70d2e602418903c92872682255c037134bf782a8330f6",
+  "1df81ae1f3abdaf2a5591d1c9a84241abe52d51f476b4a4c884f593cdd9f1680",
+  "d07f7aabd0aede722e6ee8187da281189b2462335b9aa3b7c7fe706ee68acc58",
+  "98425a889ab7a1241480b63d5038ecdf3b03c17f4685b53e7161276067e3386a",
+  "7eff0da57836f94f5fb0f4582ffda59f5849f0c94e609e64c78c14e228baae82",
+  "99c5926693764248f1e9820c8ea0ae4685141db14d8aea055de7234b0b0fad09",
+  "69e145ff450ae3ac57721fab40f9fab4ed6c76f31bf820991fcebccae88b72a1"
+ ],
+ "terminal": {
+  "hp": 93,
+  "turn": 3,
+  "over": true,
+  "won": true
+ }
+}

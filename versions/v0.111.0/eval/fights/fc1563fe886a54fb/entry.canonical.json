@@ -1,0 +1,335 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 80,
+   "kind": "SKULKING_COLONY",
+   "max_hp": 80
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "COLLISION_COURSE",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "KNOW_THY_PLACE",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "CLOAK_OF_STARS",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "PATTER",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "GLAM",
+     1
+    ],
+    "id": "ASTRAL_PULSE",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 16,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "FALLING_STAR",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "GLOW",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "VENERATE",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "cards_drawn_combat": 5,
+  "dexterity": 1,
+  "entropy_card_pool": "regent",
+  "fully_unlocked_potion_pool": true,
+  "gold": 118,
+  "hp": 21,
+  "inky_attack_damage": 0,
+  "max_hp": 75,
+  "next_card_uid": 17,
+  "plating": 4,
+  "player_phase": 3,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "ps_strikes": 4,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.DIVINE_RIGHT",
+   "RELIC.SILKEN_TRESS",
+   "RELIC.GORGET",
+   "RELIC.ODDLY_SMOOTH_STONE"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Regent",
+  "reward_card_rarity_odds": "EliteEncounter",
+  "spectrum_shift_generation_pool": [
+   "ANOINTED",
+   "AUTOMATION",
+   "BEAT_DOWN",
+   "BOLAS",
+   "CALAMITY",
+   "CATASTROPHE",
+   "DARK_SHACKLES",
+   "DISCOVERY",
+   "DRAMATIC_ENTRANCE",
+   "ENTROPY",
+   "EQUILIBRIUM",
+   "ETERNAL_ARMOR",
+   "FASTEN",
+   "FINESSE",
+   "FISTICUFFS",
+   "FLASH_OF_STEEL",
+   "GOLD_AXE",
+   "IMPATIENCE",
+   "JACK_OF_ALL_TRADES",
+   "JACKPOT",
+   "MASTER_OF_STRATEGY",
+   "MAYHEM",
+   "MIND_BLAST",
+   "NOSTALGIA",
+   "OMNISLICE",
+   "PANACHE",
+   "PANIC_BUTTON",
+   "PREP_TIME",
+   "PRODUCTION",
+   "PROLONG",
+   "PROWESS",
+   "PURITY",
+   "REND",
+   "RESTLESSNESS",
+   "ROLLING_BOULDER",
+   "SALVO",
+   "SCRAWL",
+   "SECRET_TECHNIQUE",
+   "SECRET_WEAPON",
+   "SEEKER_STRIKE",
+   "SHOCKWAVE",
+   "SPLASH",
+   "STRATAGEM",
+   "THE_BOMB",
+   "THE_GAMBIT",
+   "THINKING_AHEAD",
+   "THRUMMING_HATCHET",
+   "ULTIMATE_DEFEND",
+   "ULTIMATE_STRIKE",
+   "VOLLEY"
+  ],
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "stars": 3,
+  "stars_gained_this_turn": 3,
+  "template_relics": [
+   "RELIC.DIVINE_RIGHT"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 2,
+   "words": [
+    18069588683113847369,
+    2573384902316914887,
+    1065320819802478811,
+    9130577652386579826
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    12326408404515533925,
+    11763396223530964851,
+    8640431733520787217,
+    3771218339671055828
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    6589154175305916489,
+    17679201040101690172,
+    17191244610352621820,
+    9759235090018850238
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    3823614716507929618,
+    10709611276021309775,
+    6811816169777918111,
+    10795982189785846805
+   ]
+  },
+  "niche": {
+   "counter": 14,
+   "words": [
+    6973919084125684031,
+    8032648339770959526,
+    1886881455947648389,
+    7248428821424706853
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    9884548969870517305,
+    16859631623627933637,
+    830331617848307286,
+    14418213013666513957
+   ]
+  },
+  "rng": {
+   "counter": 171,
+   "words": [
+    4754786701694795813,
+    7940467124033914481,
+    7409502490327887041,
+    15088307329093114976
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    4669571310163009261,
+    7034090033057134680,
+    17521608058880995822,
+    4165723459063126482
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    730591273841701810,
+    11194151260735587557,
+    15839205362843622649,
+    13867669222657026422
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

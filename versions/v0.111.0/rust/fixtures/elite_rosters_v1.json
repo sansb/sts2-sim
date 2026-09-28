@@ -1,0 +1,7814 @@
+{
+ "build": "v0.111.0",
+ "cases": [
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9094716769829492441,
+     3041736323627201630,
+     5724313104476356269,
+     9524692843868920648
+    ]
+   },
+   "fixture": "f1a7d54ee1d71c94",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     12339133568989384482,
+     377053627746477558,
+     8669479149986390308,
+     7274050213237057117
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14624427127713647753,
+     15444766745934695408,
+     17573305177438547462,
+     1185973069518010664
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0XPN2X98ZW1V",
+   "total_floor": 8
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2391631683945651178,
+     3451688225996594439,
+     13416248803285054463,
+     4583089967126616503
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15983617878134681436,
+     11848933488916230804,
+     5843556955527866100,
+     15109154775784458832
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12110295719384946584,
+     2929193446396164924,
+     3511936864764594600,
+     8005305259310295714
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "24184VPSWK9L",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2973919656184996058,
+     14405078771144516321,
+     16581045206550313580,
+     3925062653777823656
+    ]
+   },
+   "fixture": "f7a73b5b897fbea4",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11955621471553315282,
+     15716256748981218823,
+     16508719742529241413,
+     7942420384559823198
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1281449047326586507,
+     11163151889925967504,
+     17910047132867813527,
+     14045379804777127915
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "2J7Y9YVCXKYU",
+   "total_floor": 13
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14249063790845148465,
+     14962321461370783314,
+     16287604532811298748,
+     9232362465824551374
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 127,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 127,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10597671377227564697,
+     7716602987573725515,
+     96203641538813279,
+     11998693293740646088
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17183113501290211657,
+     6602716559558448404,
+     7977453246476055855,
+     10288843245577705441
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     4259966960120048572,
+     15808402684013234546,
+     11508931127948270694,
+     9250035937327065064
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "70022CD6G3J0",
+   "total_floor": 8
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     3100622655616026893,
+     18093491150730287753,
+     4022313406508307679,
+     15302184789400961187
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11099009746865745377,
+     5207185220175444273,
+     9321261608544625589,
+     12055107004873769761
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8433111396613117937,
+     5989787344473339749,
+     6764614404004384340,
+     8593463895452395101
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "AW56G6M5C6C7",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4692190139630750384,
+     2449362079308676263,
+     4419143677153436852,
+     4544397909959363611
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6801311465874104000,
+     2960979283152667884,
+     13511462004224497837,
+     2947667177967786039
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6889568345200624155,
+     14769209032175616641,
+     16145941858870265453,
+     4871593249768915112
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "MFKRHBXBVZ7V",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17449883149986735313,
+     8800246211569462827,
+     6539951695237571852,
+     4920413753898370128
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4294909323049721409,
+     17489801337857853563,
+     9686293468053518230,
+     4206628095429925706
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 7
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7839130804368371887,
+     16346803175354835061,
+     14110534596141179701,
+     4450002475879261864
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7182981718296780481,
+     12658004713732496075,
+     4014344740280547371,
+     15027161039135842999
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2057692791198361277,
+     18136143780068965409,
+     15882925850430236394,
+     16073223805311138542
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "XEKJR4WDWVB6",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16083723737462427074,
+     8844431720604533397,
+     9032735844642675092,
+     16996731616601150869
+    ]
+   },
+   "fixture": "f9f42d19f9a86266",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5659040183181922362,
+     9964038881743300768,
+     7067044036470492313,
+     8500496440315893480
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12770035890961870450,
+     12023692474105525251,
+     17131597261598727331,
+     12090229816454640959
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "BYGONE_EFFIGY",
+   "roster": [
+    {
+     "hp": 132,
+     "initial_state": [],
+     "kind": "BYGONE_EFFIGY",
+     "loop_pos": 0,
+     "max_hp": 132,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "ZU7KKADQBNCR",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11145780292906330310,
+     8268596849220352855,
+     14848552244425045324,
+     2004465873862911950
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     12339133568989384482,
+     377053627746477558,
+     8669479149986390308,
+     7274050213237057117
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14624427127713647753,
+     15444766745934695408,
+     17573305177438547462,
+     1185973069518010664
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0XPN2X98ZW1V",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15324650649335556361,
+     4594117752044654525,
+     12687317399949994896,
+     4993102766989632836
+    ]
+   },
+   "fixture": "f21c7f01401880d3",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     17465263809385379562,
+     6206467654083638895,
+     4422408337967894987,
+     2397658570513435413
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 14
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8897519830652426340,
+     11447501500997304695,
+     14194301356200615730,
+     9059720898149347354
+    ]
+   },
+   "fixture": "f59f10efed9fb15f",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11955621471553315282,
+     15716256748981218823,
+     16508719742529241413,
+     7942420384559823198
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1281449047326586507,
+     11163151889925967504,
+     17910047132867813527,
+     14045379804777127915
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "2J7Y9YVCXKYU",
+   "total_floor": 11
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17331840713301116513,
+     9915518447706969235,
+     3548274932634573831,
+     3394223081178657021
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 81,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 81,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 8
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9912384474865749590,
+     10794165016775668426,
+     6364598256658634448,
+     18168771255953960535
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17183113501290211657,
+     6602716559558448404,
+     7977453246476055855,
+     10288843245577705441
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     4259966960120048572,
+     15808402684013234546,
+     11508931127948270694,
+     9250035937327065064
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "70022CD6G3J0",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2405637766565484822,
+     11255166573833500493,
+     8342491369752888268,
+     841052699391421250
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11099009746865745377,
+     5207185220175444273,
+     9321261608544625589,
+     12055107004873769761
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8433111396613117937,
+     5989787344473339749,
+     6764614404004384340,
+     8593463895452395101
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "AW56G6M5C6C7",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6137365719337557026,
+     7909316999178768469,
+     16339451038699600860,
+     7647509270696584140
+    ]
+   },
+   "fixture": "ff8f1da571145864",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5926980640855789992,
+     2187723147169630736,
+     12744695096819543759,
+     17935470161442749648
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     13041035786563626856,
+     18213338969682670967,
+     6315847896871010151,
+     8563626403230200371
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "BTRXG0M6FWSP",
+   "total_floor": 14
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14368409848550260042,
+     12469788545495081844,
+     13992677853203742092,
+     3904137253619706520
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6801311465874104000,
+     2960979283152667884,
+     13511462004224497837,
+     2947667177967786039
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6889568345200624155,
+     14769209032175616641,
+     16145941858870265453,
+     4871593249768915112
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "MFKRHBXBVZ7V",
+   "total_floor": 8
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11637834002561104783,
+     11518558316726883460,
+     16219341330637385854,
+     3259411273419502206
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11576727017209776922,
+     1193363583748633220,
+     7375337728608563842,
+     6724375383127950233
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14489151793163233644,
+     7881212062937082517,
+     15685405829738820408,
+     10202726439421267038
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 13
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12213277187170262657,
+     16223485299204690,
+     1305454965798393470,
+     10797020034122433218
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7182981718296780481,
+     12658004713732496075,
+     4014344740280547371,
+     15027161039135842999
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2057692791198361277,
+     18136143780068965409,
+     15882925850430236394,
+     16073223805311138542
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "BYRDONIS",
+   "roster": [
+    {
+     "hp": 90,
+     "initial_state": [
+      [
+       "territorial",
+       1
+      ]
+     ],
+     "kind": "BYRDONIS",
+     "loop_pos": 0,
+     "max_hp": 90,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "XEKJR4WDWVB6",
+   "total_floor": 8
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7012271632975685418,
+     15734440229288041818,
+     10316391525626722292,
+     9903016594663298858
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6105420206528481394,
+     13400335809781408917,
+     6923231229143760016,
+     6897421610737711137
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     1894548368471426154,
+     13196205845825259931,
+     960290139099494856,
+     18136212088746507338
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 48,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 48,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "0G2YX1QL2GE1",
+   "total_floor": 27
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7531727126243797729,
+     18432301142984536320,
+     10092585279041678139,
+     14643169516536641268
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2349100595252521094,
+     9753516292498701416,
+     14928573377247599917,
+     11803430190175147926
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     9668399858744396753,
+     15448492150588611523,
+     10513586500285965523,
+     15220527325754395539
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 44,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 44,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 42,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 42,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "4ZGJK2STYA0W",
+   "total_floor": 27
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10478529188779886609,
+     2331958897684145068,
+     1987176236901658513,
+     9360939886932605971
+    ]
+   },
+   "fixture": "fa1467462f0c75d3",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17183113501290211657,
+     6602716559558448404,
+     7977453246476055855,
+     10288843245577705441
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     4772159915826010415,
+     14967948853779958868,
+     17982298339239277308,
+     7170051952165982335
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 48,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 48,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "70022CD6G3J0",
+   "total_floor": 24
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10775406898993942950,
+     14676408893235714480,
+     16108159897274968386,
+     13321918644360514051
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4800458244033376337,
+     15147591989066610640,
+     429339205379096094,
+     3499579955849790653
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     9192402521336449614,
+     13177160437829854359,
+     17189741937987457147,
+     16927014026854802882
+    ]
+   },
+   "node_index": 32,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 40,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 40,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 44,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 44,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "74XMKZ2WMBKP",
+   "total_floor": 33
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12268006401361566370,
+     10394150003684145825,
+     9221613017809372696,
+     15697950279198824598
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11099009746865745377,
+     5207185220175444273,
+     9321261608544625589,
+     12055107004873769761
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     5225765047166226357,
+     18302616992503558572,
+     15857781554731622252,
+     3544195716982298766
+    ]
+   },
+   "node_index": 29,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 48,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 48,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "AW56G6M5C6C7",
+   "total_floor": 30
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12352902392547237622,
+     14696839931593384691,
+     10878945264837264208,
+     7385152346367228812
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1542459860030166462,
+     17257064393067301722,
+     15900996447419385397,
+     15120438401507727558
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     18181876093474317691,
+     2221642188236450745,
+     3132632142017750721,
+     15186828898703148010
+    ]
+   },
+   "node_index": 30,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 44,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 44,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 40,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 40,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "DXLGWV6KZ1BF",
+   "total_floor": 31
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4045431280561561059,
+     8420412253085208899,
+     8931242895123516696,
+     7835134395488705075
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     13106226761396399791,
+     12741759449070164444,
+     1645933593474608859,
+     16559378917081154967
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 27
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     3008055718359844291,
+     10552964288971533643,
+     17380932062969606090,
+     8231267133356004212
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     13106226761396399791,
+     12741759449070164444,
+     1645933593474608859,
+     16559378917081154967
+    ]
+   },
+   "node_index": 30,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 31
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7662431140429207091,
+     17221478220907087821,
+     14595166181271480745,
+     13518483089668288014
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14662186756976885732,
+     8911199796717287078,
+     4902366055807699656,
+     13671916553261891416
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     4171687981820201826,
+     10080021730855917791,
+     6727447670885488739,
+     3028383974365856650
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "J2NX7EVU3VXN",
+   "total_floor": 24
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9005716199328799137,
+     7281385067971714348,
+     2982721684245812854,
+     5591819123352862718
+    ]
+   },
+   "fixture": "f781a46c22ca1d9a",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     9826247748580112865,
+     12157884149622897663,
+     1667882960947513430,
+     14049685557676943877
+    ]
+   },
+   "node_index": 29,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 48,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 48,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 30
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4580176906206966544,
+     12202185680819753650,
+     6493933251359400593,
+     2556037885019543389
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     821467576800929448,
+     1317163941750643563,
+     15430242239645156406,
+     12982423653097651779
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 48,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 48,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 24
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5609098384444655930,
+     4730475842462505345,
+     13314114501586924684,
+     14274532751882412264
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     9311006684803753285,
+     370258397928643706,
+     15960429054634534570,
+     15099071013590951113
+    ]
+   },
+   "node_index": 30,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 44,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 44,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 42,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 42,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 31
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9544577142910959927,
+     13461964192950398475,
+     16191695365360835064,
+     15849185421186587823
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7182981718296780481,
+     12658004713732496075,
+     4014344740280547371,
+     15027161039135842999
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     17563220076621360916,
+     14905374910542814291,
+     14440726933554257957,
+     7632714550244831736
+    ]
+   },
+   "node_index": 29,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 48,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 48,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "XEKJR4WDWVB6",
+   "total_floor": 30
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14937800693529205576,
+     17805022855270852808,
+     11192082834025691222,
+     16024769610059912356
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2827994986865244158,
+     17880240222914277074,
+     13956459038758919743,
+     9306899592433661743
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     3389872968396379137,
+     8468167781837342666,
+     3055827217320298267,
+     10564054489665272008
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "DECIMILLIPEDE",
+   "roster": [
+    {
+     "hp": 46,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 2,
+     "max_hp": 46,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 52,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 1,
+     "max_hp": 52,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 50,
+     "initial_state": [],
+     "kind": "DECIMILLIPEDE_SEGMENT",
+     "loop_pos": 0,
+     "max_hp": 50,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    }
+   ],
+   "seed": "YLVVPKPH1MTW",
+   "total_floor": 25
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     218122385271219979,
+     10639955207769929185,
+     18165919028255335777,
+     17761828127846510666
+    ]
+   },
+   "fixture": "fa7c6be4e8c21a27",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15983617878134681436,
+     11848933488916230804,
+     5843556955527866100,
+     15109154775784458832
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12110295719384946584,
+     2929193446396164924,
+     3511936864764594600,
+     8005305259310295714
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "24184VPSWK9L",
+   "total_floor": 24
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8852387025021474559,
+     10865866071871624058,
+     7544047203668830054,
+     3996228704226700335
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 29,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 145,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 145,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 30
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11474510298294118013,
+     10326071520567854262,
+     10353239662495733463,
+     2046429904755496987
+    ]
+   },
+   "fixture": "f340c11b10d706dd",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17183113501290211657,
+     6602716559558448404,
+     7977453246476055855,
+     10288843245577705441
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     4259966960120048572,
+     15808402684013234546,
+     11508931127948270694,
+     9250035937327065064
+    ]
+   },
+   "node_index": 28,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "70022CD6G3J0",
+   "total_floor": 29
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6612280993444585589,
+     14543223256534506267,
+     9327433902850267939,
+     17695023529290044056
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4800458244033376337,
+     15147591989066610640,
+     429339205379096094,
+     3499579955849790653
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11545162998237315900,
+     10762750188447512991,
+     6501732561584164431,
+     16604134473402460075
+    ]
+   },
+   "node_index": 30,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 145,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 145,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "74XMKZ2WMBKP",
+   "total_floor": 31
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16030394002641754258,
+     8629188708798145987,
+     17377997756324311461,
+     13714094897143327726
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     10856700263023995407,
+     18309681591456209550,
+     15003782961040434098,
+     13419769938975860419
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15172390271514170946,
+     13297885207969485619,
+     6511792473879923133,
+     15531130077855732651
+    ]
+   },
+   "node_index": 30,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "9U27KAL35CJY",
+   "total_floor": 31
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12569002326102270988,
+     13322805362906908404,
+     11094877993719269551,
+     17883374165877237238
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11099009746865745377,
+     5207185220175444273,
+     9321261608544625589,
+     12055107004873769761
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8433111396613117937,
+     5989787344473339749,
+     6764614404004384340,
+     8593463895452395101
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "AW56G6M5C6C7",
+   "total_floor": 25
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13246995209108186752,
+     17614554699126567856,
+     10677510304013780196,
+     13633351714814906589
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1542459860030166462,
+     17257064393067301722,
+     15900996447419385397,
+     15120438401507727558
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3155920723671713314,
+     2788066499562723537,
+     1767723002696291211,
+     5941241684473408923
+    ]
+   },
+   "node_index": 27,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 145,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 145,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "DXLGWV6KZ1BF",
+   "total_floor": 28
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6072518483403795270,
+     6431593993711177432,
+     6863887544013396244,
+     11533444123864781148
+    ]
+   },
+   "fixture": "fd1488962a45e412",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2249077601126720316,
+     6431575325491952990,
+     16110201448806605754,
+     7296065989511296771
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2537508853911546209,
+     11089323926419324376,
+     15562688580753539206,
+     9893185175383070871
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "ECN6B749UETJ",
+   "total_floor": 27
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     1333190675208387031,
+     11794472881592117092,
+     4128591846192451893,
+     13599272735634063369
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1394777703100106948,
+     15804963690215561478,
+     12254398345731663557,
+     12029460015114555672
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 24
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14010358047206176681,
+     5909568240874696106,
+     17265799235780770291,
+     3370029048812938904
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11357046027192488997,
+     902590558500706957,
+     12787705680879036718,
+     6436507574433613118
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14432314890077440918,
+     2336804108764555142,
+     7368515423043714315,
+     10085365765702924326
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 145,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 145,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "G7EXRC2T27LK",
+   "total_floor": 25
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17148902727095366254,
+     7164584141201129086,
+     14680230059092576195,
+     10591279250081922668
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     631470861688011501,
+     708672516633862978,
+     9037723878084002410,
+     15916464925057246931
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15993546733131349884,
+     8969670151282891717,
+     2189732978646268039,
+     7544156814232543297
+    ]
+   },
+   "node_index": 28,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "GS2AN48YDL3N",
+   "total_floor": 29
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8010609854523053124,
+     18190749201909080419,
+     14416182632964903861,
+     11409782309336291749
+    ]
+   },
+   "fixture": "fe2ba91acc42d0b6",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14662186756976885732,
+     8911199796717287078,
+     4902366055807699656,
+     13671916553261891416
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     967178288594417178,
+     17643080068296016778,
+     7886635706756298028,
+     1819411105753427653
+    ]
+   },
+   "node_index": 29,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "J2NX7EVU3VXN",
+   "total_floor": 30
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4959793204571518198,
+     12779564975360990022,
+     2821737515886708333,
+     4771404477561563035
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 27
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2391475685206747308,
+     7492906607388456101,
+     10077720389383056104,
+     2632516816521921736
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 27,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 165,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 165,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 28
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5957163442968032074,
+     17522272437349005357,
+     3836952153269525941,
+     13697383343029313393
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 28,
+   "registered_key": "ENTOMANCER",
+   "roster": [
+    {
+     "hp": 145,
+     "initial_state": [
+      [
+       "hive",
+       1
+      ]
+     ],
+     "kind": "ENTOMANCER",
+     "loop_pos": 0,
+     "max_hp": 145,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 29
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9134903834804267324,
+     2889696515136292218,
+     1061164328031392065,
+     4904731042678384023
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 161,
+     "initial_state": [
+      [
+       "vital",
+       2
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 161,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 25
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     894160280113062885,
+     14051151297884679243,
+     17136980468168263990,
+     12272470341035743343
+    ]
+   },
+   "fixture": "f6f2775d7978fcd0",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17183113501290211657,
+     6602716559558448404,
+     7977453246476055855,
+     10288843245577705441
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     4259966960120048572,
+     15808402684013234546,
+     11508931127948270694,
+     9250035937327065064
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "70022CD6G3J0",
+   "total_floor": 27
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5581906175860313145,
+     6033697714470118369,
+     17052264355036564317,
+     1607399661149915749
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     10856700263023995407,
+     18309681591456209550,
+     15003782961040434098,
+     13419769938975860419
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15172390271514170946,
+     13297885207969485619,
+     6511792473879923133,
+     15531130077855732651
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       2
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "9U27KAL35CJY",
+   "total_floor": 24
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14407158173255333361,
+     9154015336273669210,
+     12918870994476570971,
+     4918344811435712114
+    ]
+   },
+   "fixture": "f340b9bb56bc2599",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11099009746865745377,
+     5207185220175444273,
+     9321261608544625589,
+     12055107004873769761
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8433111396613117937,
+     5989787344473339749,
+     6764614404004384340,
+     8593463895452395101
+    ]
+   },
+   "node_index": 26,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "AW56G6M5C6C7",
+   "total_floor": 27
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17200445397529524110,
+     551028122942047813,
+     17056695994575323855,
+     14391271226156126653
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1394777703100106948,
+     15804963690215561478,
+     12254398345731663557,
+     12029460015114555672
+    ]
+   },
+   "node_index": 28,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       2
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 29
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8780120131165378748,
+     13918367358759411067,
+     2075633349167073762,
+     6728871793018992723
+    ]
+   },
+   "fixture": "fcf9a129cddb7715",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6801311465874104000,
+     2960979283152667884,
+     13511462004224497837,
+     2947667177967786039
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6889568345200624155,
+     14769209032175616641,
+     16145941858870265453,
+     4871593249768915112
+    ]
+   },
+   "node_index": 23,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "MFKRHBXBVZ7V",
+   "total_floor": 24
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10861315640741414476,
+     9058796143201544592,
+     12395563802235508454,
+     16700850968232667700
+    ]
+   },
+   "fixture": "f2a7fa38e21f4687",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 25
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10857146049129256650,
+     2117509488508091724,
+     8624564766695124036,
+     17259009915733702386
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14547571760749681070,
+     16757382711656570005,
+     10853055458769361510,
+     9669705378729231045
+    ]
+   },
+   "node_index": 29,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 30
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16928012344297243158,
+     14349513429818979695,
+     16394086682756566353,
+     14117086984135503650
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 161,
+     "initial_state": [
+      [
+       "vital",
+       2
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 161,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 25
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14262663790380295497,
+     11129907607991157673,
+     11313674135350200195,
+     11456084950084452263
+    ]
+   },
+   "fixture": "f2069fc258db870a",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18073045360560400777,
+     7218852772716532624,
+     10448774905304033365,
+     3414007788739826417
+    ]
+   },
+   "node_index": 24,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 25
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     945833327999489602,
+     2477488633705913363,
+     15483642433950473968,
+     2669052514461202092
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2827994986865244158,
+     17880240222914277074,
+     13956459038758919743,
+     9306899592433661743
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6788312309178084867,
+     2212142936932943635,
+     6480628263119481281,
+     1387019768603355593
+    ]
+   },
+   "node_index": 30,
+   "registered_key": "INFESTED_PRISMS",
+   "roster": [
+    {
+     "hp": 171,
+     "initial_state": [
+      [
+       "vital",
+       3
+      ]
+     ],
+     "kind": "INFESTED_PRISM",
+     "loop_pos": 0,
+     "max_hp": 171,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "YLVVPKPH1MTW",
+   "total_floor": 31
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5176186501965203326,
+     8233412616857728851,
+     13047063505256007954,
+     10600797333209168043
+    ]
+   },
+   "fixture": "f79da5970dfaff6a",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     12339133568989384482,
+     377053627746477558,
+     8669479149986390308,
+     7274050213237057117
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     18288730022501605969,
+     8181948347122824609,
+     3449214316751297758,
+     16969596532276431782
+    ]
+   },
+   "node_index": 45,
+   "registered_key": "KNIGHTS_ELITE",
+   "roster": [
+    {
+     "hp": 108,
+     "initial_state": [],
+     "kind": "FLAIL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 108,
+     "move_log": [
+      "RAM_MOVE"
+     ],
+     "next_move": "RAM_MOVE",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 97,
+     "initial_state": [],
+     "kind": "SPECTRAL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 97,
+     "move_log": [
+      "HEX_MOVE"
+     ],
+     "next_move": "HEX_MOVE",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 89,
+     "initial_state": [],
+     "kind": "MAGI_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 89,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "0XPN2X98ZW1V",
+   "total_floor": 46
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4258755363728190648,
+     1666937112668650320,
+     12204341981349534458,
+     11051092472687197163
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     10067502139355450286,
+     5314891962194034175,
+     8796512015889460401,
+     14413702257347492308
+    ]
+   },
+   "node_index": 45,
+   "registered_key": "KNIGHTS_ELITE",
+   "roster": [
+    {
+     "hp": 108,
+     "initial_state": [],
+     "kind": "FLAIL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 108,
+     "move_log": [
+      "RAM_MOVE"
+     ],
+     "next_move": "RAM_MOVE",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 97,
+     "initial_state": [],
+     "kind": "SPECTRAL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 97,
+     "move_log": [
+      "HEX_MOVE"
+     ],
+     "next_move": "HEX_MOVE",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 89,
+     "initial_state": [],
+     "kind": "MAGI_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 89,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 46
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17766954576326869615,
+     13273741251627084437,
+     11440104118514204040,
+     18100088908894972840
+    ]
+   },
+   "fixture": "f964364640ec239d",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     2849283025433127636,
+     13198190627765202152,
+     18166994444672657075,
+     16400046576497800344
+    ]
+   },
+   "node_index": 39,
+   "registered_key": "KNIGHTS_ELITE",
+   "roster": [
+    {
+     "hp": 108,
+     "initial_state": [],
+     "kind": "FLAIL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 108,
+     "move_log": [
+      "RAM_MOVE"
+     ],
+     "next_move": "RAM_MOVE",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 97,
+     "initial_state": [],
+     "kind": "SPECTRAL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 97,
+     "move_log": [
+      "HEX_MOVE"
+     ],
+     "next_move": "HEX_MOVE",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 89,
+     "initial_state": [],
+     "kind": "MAGI_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 89,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 40
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4138040304255935301,
+     1247269913182615340,
+     9977421020283913388,
+     13980299784737441662
+    ]
+   },
+   "fixture": "f1b2e68c28256c93",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     821467576800929448,
+     1317163941750643563,
+     15430242239645156406,
+     12982423653097651779
+    ]
+   },
+   "node_index": 41,
+   "registered_key": "KNIGHTS_ELITE",
+   "roster": [
+    {
+     "hp": 108,
+     "initial_state": [],
+     "kind": "FLAIL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 108,
+     "move_log": [
+      "RAM_MOVE"
+     ],
+     "next_move": "RAM_MOVE",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 97,
+     "initial_state": [],
+     "kind": "SPECTRAL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 97,
+     "move_log": [
+      "HEX_MOVE"
+     ],
+     "next_move": "HEX_MOVE",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 89,
+     "initial_state": [],
+     "kind": "MAGI_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 89,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 42
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7657621710759716618,
+     9711606435512172334,
+     9228267500754367707,
+     11519487310556128396
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     9311006684803753285,
+     370258397928643706,
+     15960429054634534570,
+     15099071013590951113
+    ]
+   },
+   "node_index": 44,
+   "registered_key": "KNIGHTS_ELITE",
+   "roster": [
+    {
+     "hp": 101,
+     "initial_state": [],
+     "kind": "FLAIL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 101,
+     "move_log": [
+      "RAM_MOVE"
+     ],
+     "next_move": "RAM_MOVE",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 93,
+     "initial_state": [],
+     "kind": "SPECTRAL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 93,
+     "move_log": [
+      "HEX_MOVE"
+     ],
+     "next_move": "HEX_MOVE",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 82,
+     "initial_state": [],
+     "kind": "MAGI_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 82,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 45
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15096670556789454939,
+     367611753891520984,
+     15344217197767251449,
+     8659289150896360697
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 3,
+    "words": [
+     454113685566936671,
+     15925750584839797624,
+     7969931995919444276,
+     2294292615655020599
+    ]
+   },
+   "node_index": 44,
+   "registered_key": "KNIGHTS_ELITE",
+   "roster": [
+    {
+     "hp": 108,
+     "initial_state": [],
+     "kind": "FLAIL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 108,
+     "move_log": [
+      "RAM_MOVE"
+     ],
+     "next_move": "RAM_MOVE",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 97,
+     "initial_state": [],
+     "kind": "SPECTRAL_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 97,
+     "move_log": [
+      "HEX_MOVE"
+     ],
+     "next_move": "HEX_MOVE",
+     "slot": 1,
+     "uid": 1
+    },
+    {
+     "hp": 89,
+     "initial_state": [],
+     "kind": "MAGI_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 89,
+     "move_log": [],
+     "next_move": "",
+     "slot": 2,
+     "uid": 2
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 45
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15416618700813664886,
+     7896525137571575650,
+     15609656801361984848,
+     8213764545260599712
+    ]
+   },
+   "fixture": "f27704b822c0ee65",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     17465263809385379562,
+     6206467654083638895,
+     4422408337967894987,
+     2397658570513435413
+    ]
+   },
+   "node_index": 42,
+   "registered_key": "MECHA_KNIGHT_ELITE",
+   "roster": [
+    {
+     "hp": 320,
+     "initial_state": [
+      [
+       "artifact",
+       3
+      ]
+     ],
+     "kind": "MECHA_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 320,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 43
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8591520794228524008,
+     1772421451664993400,
+     8114368102981114276,
+     9197779442562161848
+    ]
+   },
+   "fixture": "fde05b1163268f4d",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 39,
+   "registered_key": "MECHA_KNIGHT_ELITE",
+   "roster": [
+    {
+     "hp": 320,
+     "initial_state": [
+      [
+       "artifact",
+       3
+      ]
+     ],
+     "kind": "MECHA_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 320,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 40
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6373985825708488465,
+     1457489124339574553,
+     8606656740311859991,
+     12006326744634449691
+    ]
+   },
+   "fixture": "ff7b64466076ff83",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18073045360560400777,
+     7218852772716532624,
+     10448774905304033365,
+     3414007788739826417
+    ]
+   },
+   "node_index": 39,
+   "registered_key": "MECHA_KNIGHT_ELITE",
+   "roster": [
+    {
+     "hp": 320,
+     "initial_state": [
+      [
+       "artifact",
+       3
+      ]
+     ],
+     "kind": "MECHA_KNIGHT",
+     "loop_pos": 0,
+     "max_hp": 320,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 40
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8928184531457986984,
+     15317076815223327162,
+     4663359839897985115,
+     8858670780339712437
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7091257824916603659,
+     9748659298040611957,
+     15727282673631317176,
+     15291562553591104835
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     14574555425929398130,
+     8654535678075260187,
+     12097322885983949128,
+     11062023079131265969
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 26,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 26,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 28,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 28,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "1M7XJ818TLXP",
+   "total_floor": 8
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13263416767009614292,
+     4109409786906939164,
+     13796619874688186018,
+     3107995196367762897
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2349100595252521094,
+     9753516292498701416,
+     14928573377247599917,
+     11803430190175147926
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     9471970820527790977,
+     13956334768337990849,
+     3769234956371406594,
+     2452773684845649105
+    ]
+   },
+   "node_index": 11,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "4ZGJK2STYA0W",
+   "total_floor": 12
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     7473936835529598758,
+     7876503382831540927,
+     14798734169410013070,
+     3968127258490979087
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     10856700263023995407,
+     18309681591456209550,
+     15003782961040434098,
+     13419769938975860419
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     13477972251133195681,
+     14228347905486702107,
+     4311811411606586354,
+     10947904184392872851
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 28,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 28,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 32,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 32,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "9U27KAL35CJY",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2988788076853233184,
+     8519040637545982463,
+     17495346310236360059,
+     7358735981104996997
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2249077601126720316,
+     6431575325491952990,
+     16110201448806605754,
+     7296065989511296771
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     368330744949999108,
+     15397667260701337211,
+     11675591094653933453,
+     7964625702965269769
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 28,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 28,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 32,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 32,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "ECN6B749UETJ",
+   "total_floor": 15
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     667778957300559237,
+     9829838649381203664,
+     11868919968958710906,
+     13642528678015736789
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     16212890603438666468,
+     1434113462558153128,
+     459000710878953588,
+     6595920380479324511
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 32,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 32,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 14
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4943310946589784437,
+     18322311342636079567,
+     6648125633945519020,
+     1118851648768081827
+    ]
+   },
+   "fixture": "f3929324689faa7e",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14662186756976885732,
+     8911199796717287078,
+     4902366055807699656,
+     13671916553261891416
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     10953112097664946231,
+     17247392688737799134,
+     13262861052367753985,
+     6010814825468185358
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "J2NX7EVU3VXN",
+   "total_floor": 13
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9409832188751077488,
+     9381109695166263827,
+     5992913644117179058,
+     13228563988933720901
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1801741717140745462,
+     3656618501469849020,
+     15835870634115140865,
+     12891689362836797878
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     15525837274972613913,
+     585638513472638255,
+     16566253003314671846,
+     12587221941455730858
+    ]
+   },
+   "node_index": 11,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 26,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 26,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "KBC46J02JWT3",
+   "total_floor": 12
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     4311172822231555046,
+     7171561725794776187,
+     94920330660874857,
+     11361740994460811523
+    ]
+   },
+   "fixture": "f01a8fc3889892c5",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6426672942274004392,
+     371458585262125863,
+     12420335372892483273,
+     15753167254297589076
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     8056425333513709793,
+     11932000993853296344,
+     14542444152609541662,
+     12310777355281173324
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 32,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 32,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "MCM06RJZDFVB",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6790063077590350363,
+     8965501428919300750,
+     12272166613999612572,
+     10165155002334184936
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11419818876058563627,
+     2580986434557756818,
+     16962295306592598539,
+     14506673859564150090
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     7815044489210897785,
+     6686581101510065743,
+     15183132231921350521,
+     13135576970072464222
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 32,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 32,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "SWZ7319NCMUL",
+   "total_floor": 7
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15709978249981934567,
+     13330892219326375976,
+     11807461127236868910,
+     11546393916722165863
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     9941011633188232971,
+     6026641671038868964,
+     10405813329448895777,
+     1463649967096900150
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     4784173367101048337,
+     11133307087276680460,
+     8120649815431436933,
+     7116821320464878218
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 28,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 28,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "V41M2P4U03V3",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     18117934069534422207,
+     3239802432567653488,
+     11599596214101174146,
+     73894087206581714
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     12469099917848855424,
+     14916707397710871029,
+     15998472497043956382,
+     8405147153118585264
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 31,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 31,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       7
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 11
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6256449295883558153,
+     10327565117259699794,
+     6065895148476577115,
+     6635572090377701921
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 4,
+    "words": [
+     6169533624360885750,
+     6443224569329688469,
+     9535164801389904879,
+     510730389063693851
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "PHANTASMAL_GARDENERS",
+   "roster": [
+    {
+     "hp": 30,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 2,
+     "max_hp": 30,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    },
+    {
+     "hp": 27,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 0,
+     "max_hp": 27,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 1
+    },
+    {
+     "hp": 28,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 1,
+     "max_hp": 28,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 2
+    },
+    {
+     "hp": 29,
+     "initial_state": [
+      [
+       "skittish",
+       6
+      ]
+     ],
+     "kind": "PHANTASMAL_GARDENER",
+     "loop_pos": 3,
+     "max_hp": 29,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 3
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10311938887954958789,
+     13989754749111759627,
+     12735533293218502245,
+     4396478902401360334
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     8953424443301936347,
+     6486336564096804772,
+     8098916714634997008,
+     15286897478775287189
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     17465263809385379562,
+     6206467654083638895,
+     4422408337967894987,
+     2397658570513435413
+    ]
+   },
+   "node_index": 11,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 67,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 67,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "1KJJGR1GFZR6",
+   "total_floor": 12
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11745801402808874669,
+     15018318901809655567,
+     1247255637540869804,
+     18408093633926710559
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15983617878134681436,
+     11848933488916230804,
+     5843556955527866100,
+     15109154775784458832
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12110295719384946584,
+     2929193446396164924,
+     3511936864764594600,
+     8005305259310295714
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 68,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 68,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "24184VPSWK9L",
+   "total_floor": 15
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13046034868168674427,
+     11131873546738891531,
+     12224073473777040811,
+     15411652978235564830
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     15877514484728852544,
+     2299531336958555193,
+     5567917237898611601,
+     14205448936897124157
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     473498459322635076,
+     10301113223211012072,
+     13132468893512334289,
+     16456323846289703679
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 61,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 61,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "43QCZTHXG4V1",
+   "total_floor": 14
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15023607894477279375,
+     10549146729207432669,
+     3534555193489290508,
+     7045103926560731779
+    ]
+   },
+   "fixture": "f894ddbe5d917d64",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7129505318364814620,
+     18111794109905733406,
+     8626253246191975859,
+     11494799852927564857
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     445478165693900347,
+     17158019722239813553,
+     2078172825579790511,
+     9756182847414798080
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 67,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 67,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "6P96T755CNZ3",
+   "total_floor": 14
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9652799576563462110,
+     13831842363770943444,
+     10580630714385301900,
+     14856039698152012676
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5926980640855789992,
+     2187723147169630736,
+     12744695096819543759,
+     17935470161442749648
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     13041035786563626856,
+     18213338969682670967,
+     6315847896871010151,
+     8563626403230200371
+    ]
+   },
+   "node_index": 11,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 66,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 66,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "BTRXG0M6FWSP",
+   "total_floor": 12
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17576909977157086984,
+     17551579510079311797,
+     12179202129785381280,
+     14061592918566193392
+    ]
+   },
+   "fixture": "fa57a667f19929bd",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     631470861688011501,
+     708672516633862978,
+     9037723878084002410,
+     15916464925057246931
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15993546733131349884,
+     8969670151282891717,
+     2189732978646268039,
+     7544156814232543297
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 66,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 66,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "GS2AN48YDL3N",
+   "total_floor": 14
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10620652755397241405,
+     16664136706496568039,
+     2702728535715280562,
+     12081479206851596249
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     212832840036382082,
+     18326353801818186321,
+     756616646794920473,
+     202300427813520939
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18333833929500086776,
+     17735282176275813834,
+     11181078340328896411,
+     10704879925855300103
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 67,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 67,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "NEMBXNSRT970",
+   "total_floor": 8
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15752102526964639935,
+     5382883260364961443,
+     1520422021304745711,
+     5356407135965584479
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3679271783193127007,
+     14294206255223037327,
+     2116976072651225243,
+     9418523767059651188
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8639328629006692260,
+     16731255718199741771,
+     6907323138819133636,
+     14483409951461311250
+    ]
+   },
+   "node_index": 8,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 67,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 67,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "T9JWAAZGF66G",
+   "total_floor": 9
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10577482543312612437,
+     14822809271016766878,
+     9671430926242088476,
+     17681423324118204885
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7182981718296780481,
+     12658004713732496075,
+     4014344740280547371,
+     15027161039135842999
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2057692791198361277,
+     18136143780068965409,
+     15882925850430236394,
+     16073223805311138542
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 67,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 67,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "XEKJR4WDWVB6",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     309847737004756215,
+     3838150563083259550,
+     529881351836889573,
+     16691125243017367036
+    ]
+   },
+   "fixture": "f5e39546f8571bdb",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5659040183181922362,
+     9964038881743300768,
+     7067044036470492313,
+     8500496440315893480
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12770035890961870450,
+     12023692474105525251,
+     17131597261598727331,
+     12090229816454640959
+    ]
+   },
+   "node_index": 8,
+   "registered_key": "PHROG_PARASITE",
+   "roster": [
+    {
+     "hp": 66,
+     "initial_state": [],
+     "kind": "PHROG_PARASITE",
+     "loop_pos": 0,
+     "max_hp": 66,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "ZU7KKADQBNCR",
+   "total_floor": 9
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     91243191852141563,
+     950279177977639619,
+     1100509037090285263,
+     6815926637107362927
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6105420206528481394,
+     13400335809781408917,
+     6923231229143760016,
+     6897421610737711137
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12895443277967742150,
+     10185175470621446263,
+     2916367336132080866,
+     258566419543776605
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0G2YX1QL2GE1",
+   "total_floor": 15
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10885495676040893114,
+     8769535088204626099,
+     3835963891665820260,
+     15182795763324144102
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     7091257824916603659,
+     9748659298040611957,
+     15727282673631317176,
+     15291562553591104835
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3536890927847998013,
+     4567086336123292614,
+     15843097388438015923,
+     8081369161992543854
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 75,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 75,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "1M7XJ818TLXP",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11127337199561555381,
+     8421642054802977829,
+     3740938793783274118,
+     8591476241764418795
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6766555281204553173,
+     14374493556075575733,
+     6523400626575223240,
+     15302819846701319384
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     5676046281161906360,
+     13842958978866787752,
+     17011745535432068125,
+     1706198385826271117
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "6VYM269L9SH1",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     6944531023381668753,
+     11822652484698072400,
+     18057827482872872151,
+     7170472776186693464
+    ]
+   },
+   "fixture": "f34e6cceb9fbcce4",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17922549142072170856,
+     13357515392794324080,
+     4453920785070276894,
+     15057516479480986990
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     10453357708293507190,
+     8946756201529947142,
+     2270698792276088950,
+     10530485981453346635
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "73WAG17274JJ",
+   "total_floor": 7
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2170130498753861694,
+     9061641044759868162,
+     16134663108283044611,
+     10777664468872533568
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4800458244033376337,
+     15147591989066610640,
+     429339205379096094,
+     3499579955849790653
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11545162998237315900,
+     10762750188447512991,
+     6501732561584164431,
+     16604134473402460075
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 75,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 75,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "74XMKZ2WMBKP",
+   "total_floor": 11
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8166089913441185799,
+     14700501010749221219,
+     14896649322691660112,
+     5463543288875536261
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     10856700263023995407,
+     18309681591456209550,
+     15003782961040434098,
+     13419769938975860419
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15172390271514170946,
+     13297885207969485619,
+     6511792473879923133,
+     15531130077855732651
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "9U27KAL35CJY",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13246739655018365360,
+     12647292541279720871,
+     17485101768657272178,
+     2804232101450667759
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2249077601126720316,
+     6431575325491952990,
+     16110201448806605754,
+     7296065989511296771
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2537508853911546209,
+     11089323926419324376,
+     15562688580753539206,
+     9893185175383070871
+    ]
+   },
+   "node_index": 8,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "ECN6B749UETJ",
+   "total_floor": 9
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     930626215544362626,
+     760629033325944984,
+     13596045181533498285,
+     5587216258482063682
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14009075247336128333,
+     3423069298216714179,
+     3944474229714557320,
+     18352214916322396234
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     1394777703100106948,
+     15804963690215561478,
+     12254398345731663557,
+     12029460015114555672
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "FQNCA5TSJ8U6",
+   "total_floor": 11
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13728944000718418710,
+     17476862814142023874,
+     4363795101894701978,
+     4000407708348093330
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11357046027192488997,
+     902590558500706957,
+     12787705680879036718,
+     6436507574433613118
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14432314890077440918,
+     2336804108764555142,
+     7368515423043714315,
+     10085365765702924326
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 75,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 75,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "G7EXRC2T27LK",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2243847468515311354,
+     16648946605321282058,
+     12066149449204182254,
+     12970509470779957658
+    ]
+   },
+   "fixture": "fd6fd0bc484ff4a4",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14662186756976885732,
+     8911199796717287078,
+     4902366055807699656,
+     13671916553261891416
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     967178288594417178,
+     17643080068296016778,
+     7886635706756298028,
+     1819411105753427653
+    ]
+   },
+   "node_index": 7,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "J2NX7EVU3VXN",
+   "total_floor": 8
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10132967356557735466,
+     9635560010984128661,
+     14973841477881237121,
+     11546355971331024129
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1801741717140745462,
+     3656618501469849020,
+     15835870634115140865,
+     12891689362836797878
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11049443700710559996,
+     17328630755599803467,
+     1480510607649939959,
+     6881869713002032437
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 75,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 75,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "KBC46J02JWT3",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12172584091413588047,
+     6646880793823026612,
+     9549603945251776837,
+     18360683374689558541
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6426672942274004392,
+     371458585262125863,
+     12420335372892483273,
+     15753167254297589076
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     9694544963008922587,
+     17314768641571657798,
+     12274344627584953185,
+     634580899269657373
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "MCM06RJZDFVB",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2265708840529005964,
+     13901445660913994448,
+     9528326973361946896,
+     5150603691176609159
+    ]
+   },
+   "fixture": "ff319f50a02eb5f7",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14007424366075754132,
+     18013870684220783870,
+     9725873944960519922,
+     17004129690219484897
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15015155164457819275,
+     13646891070192911512,
+     8897236509988354150,
+     4414620826847269599
+    ]
+   },
+   "node_index": 12,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "RDKU5CU45T2S",
+   "total_floor": 13
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5406598741784449297,
+     6210787272524662975,
+     827690494132408514,
+     6447488158943142677
+    ]
+   },
+   "fixture": "f133662e088cb023",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11419818876058563627,
+     2580986434557756818,
+     16962295306592598539,
+     14506673859564150090
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8428722807661898995,
+     6254642304545819570,
+     8639265971331878432,
+     15788245150021445061
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "SWZ7319NCMUL",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10645706494426852970,
+     14042748651219043974,
+     7138650540664768538,
+     10908275550233084852
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14547571760749681070,
+     16757382711656570005,
+     10853055458769361510,
+     9669705378729231045
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 7
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     8933645386636341408,
+     8431920863843706365,
+     14056443420799163197,
+     2988696655946182623
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14547571760749681070,
+     16757382711656570005,
+     10853055458769361510,
+     9669705378729231045
+    ]
+   },
+   "node_index": 13,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 14
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     3293401014621278138,
+     4524567327976099476,
+     12460074866618615524,
+     8546413862825801618
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 75,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 75,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     11445209981061747806,
+     16975208534063990638,
+     5035755272198594700,
+     9903929553741556690
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2827994986865244158,
+     17880240222914277074,
+     13956459038758919743,
+     9306899592433661743
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     6788312309178084867,
+     2212142936932943635,
+     6480628263119481281,
+     1387019768603355593
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "SKULKING_COLONY",
+   "roster": [
+    {
+     "hp": 80,
+     "initial_state": [],
+     "kind": "SKULKING_COLONY",
+     "loop_pos": 0,
+     "max_hp": 80,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "YLVVPKPH1MTW",
+   "total_floor": 15
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     2154411175394302046,
+     2516650358374995250,
+     15899894951257392490,
+     841883424047941545
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2349100595252521094,
+     9753516292498701416,
+     14928573377247599917,
+     11803430190175147926
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     291864087538893688,
+     7561033101112216003,
+     683938368845591979,
+     10196084215566276795
+    ]
+   },
+   "node_index": 45,
+   "registered_key": "SOUL_NEXUS",
+   "roster": [
+    {
+     "hp": 234,
+     "initial_state": [],
+     "kind": "SOUL_NEXUS",
+     "loop_pos": 0,
+     "max_hp": 234,
+     "move_log": [
+      "SOUL_BURN"
+     ],
+     "next_move": "SOUL_BURN",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "4ZGJK2STYA0W",
+   "total_floor": 46
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12344807130108823292,
+     15835822659849649759,
+     1695858692100039457,
+     18356394408847262060
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     3714484795622916489,
+     8237273543919150348,
+     2575909564376088188,
+     8227223157304413138
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     3742732391878815575,
+     7089603152506084089,
+     5294445529198198773,
+     3304445924602758079
+    ]
+   },
+   "node_index": 43,
+   "registered_key": "SOUL_NEXUS",
+   "roster": [
+    {
+     "hp": 254,
+     "initial_state": [],
+     "kind": "SOUL_NEXUS",
+     "loop_pos": 0,
+     "max_hp": 254,
+     "move_log": [
+      "SOUL_BURN"
+     ],
+     "next_move": "SOUL_BURN",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "TZZ1FU1T6K9G",
+   "total_floor": 44
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17881909743323780835,
+     7393768064481065368,
+     8560668095473664093,
+     13424057539470780230
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 42,
+   "registered_key": "SOUL_NEXUS",
+   "roster": [
+    {
+     "hp": 234,
+     "initial_state": [],
+     "kind": "SOUL_NEXUS",
+     "loop_pos": 0,
+     "max_hp": 234,
+     "move_log": [
+      "SOUL_BURN"
+     ],
+     "next_move": "SOUL_BURN",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 43
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9461692479551498557,
+     867473390862424497,
+     9087088654119383052,
+     16877502549034654196
+    ]
+   },
+   "fixture": "fc96ee08cc1e8241",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1524320076339090062,
+     5599342463970933701,
+     4376690820994284251,
+     11692468631957274818
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     18073045360560400777,
+     7218852772716532624,
+     10448774905304033365,
+     3414007788739826417
+    ]
+   },
+   "node_index": 42,
+   "registered_key": "SOUL_NEXUS",
+   "roster": [
+    {
+     "hp": 254,
+     "initial_state": [],
+     "kind": "SOUL_NEXUS",
+     "loop_pos": 0,
+     "max_hp": 254,
+     "move_log": [
+      "SOUL_BURN"
+     ],
+     "next_move": "SOUL_BURN",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y4RZYNMTUZ9C",
+   "total_floor": 43
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     10389136876266662840,
+     17207488971186890626,
+     15615373934506057898,
+     15461499670552368703
+    ]
+   },
+   "fixture": "ff048525e2583950",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     17524488135831864753,
+     5674691572025490513,
+     358394301808822876,
+     2195991647860701120
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11784312961273892384,
+     13333668937131619260,
+     17013676203459645421,
+     12209867818680054401
+    ]
+   },
+   "node_index": 11,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0AEH67DUEY8Z",
+   "total_floor": 12
+  },
+  {
+   "ascension": 8,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     14405031778908373775,
+     13681975206060283139,
+     8314651798180097729,
+     11150136289038357213
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     6105420206528481394,
+     13400335809781408917,
+     6923231229143760016,
+     6897421610737711137
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     12895443277967742150,
+     10185175470621446263,
+     2916367336132080866,
+     258566419543776605
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "0G2YX1QL2GE1",
+   "total_floor": 7
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5514088292537428069,
+     13291161082726257947,
+     9359873514241458768,
+     9988280556544184147
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2349100595252521094,
+     9753516292498701416,
+     14928573377247599917,
+     11803430190175147926
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     291864087538893688,
+     7561033101112216003,
+     683938368845591979,
+     10196084215566276795
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 140,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 140,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "4ZGJK2STYA0W",
+   "total_floor": 7
+  },
+  {
+   "ascension": 0,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12727177511464853477,
+     4701087073983309369,
+     16418333876943030778,
+     18336370008217740865
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4800458244033376337,
+     15147591989066610640,
+     429339205379096094,
+     3499579955849790653
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11545162998237315900,
+     10762750188447512991,
+     6501732561584164431,
+     16604134473402460075
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 140,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 140,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "74XMKZ2WMBKP",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     9036002726083875141,
+     3006497745024045249,
+     18036464107614852167,
+     1791938425185191897
+    ]
+   },
+   "fixture": "f4da53bdf3186079",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     2249077601126720316,
+     6431575325491952990,
+     16110201448806605754,
+     7296065989511296771
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     2537508853911546209,
+     11089323926419324376,
+     15562688580753539206,
+     9893185175383070871
+    ]
+   },
+   "node_index": 11,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "ECN6B749UETJ",
+   "total_floor": 12
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13881519399599893621,
+     12802789772435219405,
+     7533753087667593603,
+     2082554619648481508
+    ]
+   },
+   "fixture": "f7a13618b931c130",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14662186756976885732,
+     8911199796717287078,
+     4902366055807699656,
+     13671916553261891416
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     967178288594417178,
+     17643080068296016778,
+     7886635706756298028,
+     1819411105753427653
+    ]
+   },
+   "node_index": 14,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "J2NX7EVU3VXN",
+   "total_floor": 15
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     15797163890446745089,
+     2322336548428402585,
+     9942374337401098455,
+     11170051256452664491
+    ]
+   },
+   "fixture": "f49c163325b0dc77",
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     14007424366075754132,
+     18013870684220783870,
+     9725873944960519922,
+     17004129690219484897
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     15015155164457819275,
+     13646891070192911512,
+     8897236509988354150,
+     4414620826847269599
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "RDKU5CU45T2S",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     16395268117515684665,
+     2771132344214210220,
+     156281579774163097,
+     2883140512137724039
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     11419818876058563627,
+     2580986434557756818,
+     16962295306592598539,
+     14506673859564150090
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     8428722807661898995,
+     6254642304545819570,
+     8639265971331878432,
+     15788245150021445061
+    ]
+   },
+   "node_index": 8,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "SWZ7319NCMUL",
+   "total_floor": 9
+  },
+  {
+   "ascension": 1,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     12645781710233874739,
+     14626523757797331723,
+     12801861080825511055,
+     11475449115973854553
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     9941011633188232971,
+     6026641671038868964,
+     10405813329448895777,
+     1463649967096900150
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14850780444281137369,
+     5350170620760999886,
+     14180670651159697962,
+     9726166599415174992
+    ]
+   },
+   "node_index": 10,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 140,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 140,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "V41M2P4U03V3",
+   "total_floor": 11
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     5337339576360312662,
+     9649013832503172110,
+     9221071675453857084,
+     16943176381073084006
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     5159284352966797347,
+     1512846046137812723,
+     13540615939597857349,
+     11134195491016423294
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     14547571760749681070,
+     16757382711656570005,
+     10853055458769361510,
+     9669705378729231045
+    ]
+   },
+   "node_index": 8,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WQQ1NTPA1BW3",
+   "total_floor": 9
+  },
+  {
+   "ascension": 7,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     13843348521221171367,
+     16939919305503781679,
+     5353267440865904186,
+     8990121247554754777
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     4410990722071145148,
+     6401156793054610517,
+     16146726464253614979,
+     18091393526358528108
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     11453230064937188997,
+     9653242236044653930,
+     2973164833560490303,
+     17475994571687584511
+    ]
+   },
+   "node_index": 8,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 140,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 140,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "WV9GZBQ50ZHH",
+   "total_floor": 9
+  },
+  {
+   "ascension": 10,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "encounter_stream": {
+    "counter": 0,
+    "words": [
+     17770217854811950639,
+     3056143605898324332,
+     15129553002223753871,
+     2264757539470849671
+    ]
+   },
+   "fixture": null,
+   "niche_in": {
+    "counter": 0,
+    "words": [
+     1336542181911953970,
+     13852286247851682513,
+     3737543021349872584,
+     11515098650032003497
+    ]
+   },
+   "niche_out": {
+    "counter": 1,
+    "words": [
+     5583539730113802570,
+     16244208325422926635,
+     5238924347768218106,
+     15451582032579700944
+    ]
+   },
+   "node_index": 6,
+   "registered_key": "TERROR_EEL",
+   "roster": [
+    {
+     "hp": 150,
+     "initial_state": [
+      [
+       "shriek",
+       1
+      ]
+     ],
+     "kind": "TERROR_EEL",
+     "loop_pos": 0,
+     "max_hp": 150,
+     "move_log": [],
+     "next_move": "",
+     "slot": 0,
+     "uid": 0
+    }
+   ],
+   "seed": "Y3H5TY3THSEK",
+   "total_floor": 7
+  }
+ ],
+ "corpus_fights": 128,
+ "explicit_fixture_fights": 3,
+ "family": "E4b F2 \u2014 elite pool (#2532)",
+ "fixture_fights": 37,
+ "generated_by": "versions/v0.111.0/rust/tools/gen_roster_pins.py",
+ "per_encounter": {
+  "ENCOUNTER.BYGONE_EFFIGY_ELITE": {
+   "corpus": 11,
+   "fixtures": 3
+  },
+  "ENCOUNTER.BYRDONIS_ELITE": {
+   "corpus": 12,
+   "fixtures": 3
+  },
+  "ENCOUNTER.DECIMILLIPEDE_ELITE": {
+   "corpus": 14,
+   "fixtures": 2
+  },
+  "ENCOUNTER.ENTOMANCER_ELITE": {
+   "corpus": 15,
+   "fixtures": 4
+  },
+  "ENCOUNTER.INFESTED_PRISMS_ELITE": {
+   "corpus": 11,
+   "fixtures": 5
+  },
+  "ENCOUNTER.KNIGHTS_ELITE": {
+   "corpus": 6,
+   "fixtures": 3
+  },
+  "ENCOUNTER.MECHA_KNIGHT_ELITE": {
+   "corpus": 3,
+   "fixtures": 3
+  },
+  "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE": {
+   "corpus": 12,
+   "fixtures": 2
+  },
+  "ENCOUNTER.PHROG_PARASITE_ELITE": {
+   "corpus": 10,
+   "fixtures": 3
+  },
+  "ENCOUNTER.SKULKING_COLONY_ELITE": {
+   "corpus": 18,
+   "fixtures": 4
+  },
+  "ENCOUNTER.SOUL_NEXUS_ELITE": {
+   "corpus": 4,
+   "fixtures": 1
+  },
+  "ENCOUNTER.TERROR_EEL_ELITE": {
+   "corpus": 12,
+   "fixtures": 4
+  }
+ },
+ "registered_keys": [
+  "BYGONE_EFFIGY",
+  "BYRDONIS",
+  "DECIMILLIPEDE",
+  "ENTOMANCER",
+  "INFESTED_PRISMS",
+  "KNIGHTS_ELITE",
+  "MECHA_KNIGHT_ELITE",
+  "PHANTASMAL_GARDENERS",
+  "PHROG_PARASITE",
+  "SKULKING_COLONY",
+  "SOUL_NEXUS",
+  "TERROR_EEL"
+ ],
+ "schema": "sts-sim-elite-roster-pins-v1",
+ "unpinned_fixtures": [
+  "f012ed2351735549",
+  "f01876c8adf01e86",
+  "f05dd1ba1ed95d4a",
+  "f0673f7dd520ea1f",
+  "f076a21649735927",
+  "f0794dc8c5c2def5",
+  "f07c33c5b6c8c4b4",
+  "f0942a34bff6b546",
+  "f0a19e39f167594f",
+  "f0e7e54f7de80b85",
+  "f1092391282cb818",
+  "f10b187826242ac5",
+  "f12c50ec2c3ad13d",
+  "f13774c66bbeebb3",
+  "f146003af50f4cd0",
+  "f16d1fb1d0a0d1fe",
+  "f1b20dde922644e8",
+  "f1c399132fa069ed",
+  "f1e17a89e32a62dc",
+  "f1e5a224f607f7d8",
+  "f208d0bc1efca221",
+  "f227d8d9def8ac60",
+  "f23306e652a8b0cb",
+  "f2380252a120c695",
+  "f252278e9e841c6c",
+  "f25a5fda04e82415",
+  "f25de514675098c8",
+  "f264bd6a1f3d71c9",
+  "f26ff808e5fcd4eb",
+  "f27cbed4c28847bd",
+  "f29e8ebdad08c5ee",
+  "f2cd8a72136c5cce",
+  "f331c346ca60bf53",
+  "f3abaf833b0644d8",
+  "f4148aa9fdac0f7c",
+  "f4231f8751497c7c",
+  "f4683789ba0a3d2c",
+  "f56c516b384937ef",
+  "f5e5c9da44952ffc",
+  "f644b44ff047b254",
+  "f651e6d9316fcacb",
+  "f66b49ec15d1235d",
+  "f692cad2797d9b2a",
+  "f69a9ead0a012bb9",
+  "f72518ad2b222569",
+  "f7386f3a77ebff92",
+  "f74b06aad8d2e41f",
+  "f79e55579a8c5974",
+  "f7a183fca5e71e81",
+  "f7f9f3e207af6c59",
+  "f7fa80886d8619af",
+  "f8272d3e92c6291e",
+  "f830aea0cf1ef4f6",
+  "f83de385c21dbec1",
+  "f8703765d69f7ec6",
+  "f895982da494a444",
+  "f89c3e611bf72889",
+  "f8c8189dde3f65d0",
+  "f8d7b1b9158dedcc",
+  "f9237b6871a3d40e",
+  "f964c134fcf51b69",
+  "f9992efc482836f9",
+  "f99f5a448228a286",
+  "f9a46d53d73d3452",
+  "f9d41915161f9438",
+  "f9f52626c7a0885d",
+  "fa966f63692f4a1d",
+  "fae227072bbaa5c9",
+  "fb5c72e7444ac807",
+  "fb92aa172b9a5eaa",
+  "fb99b503e401bcdf",
+  "fbe9106e7d27b939",
+  "fc1563fe886a54fb",
+  "fc2b02f206ce21ea",
+  "fd1d17f91116eb46",
+  "fd48ba9d266bd56b",
+  "fd701fc2558ed811",
+  "fdbcbb3cc4685140",
+  "fdf75ef08ebc70f8",
+  "fe5903e6db12aa28",
+  "fe9f74a8236bbf82",
+  "fec533c1eef1df7f",
+  "feddbf19f99ef6bb",
+  "ff0518784f87ab1a",
+  "ff4902c21ff9b9c5",
+  "ff6c5615724e8f7c",
+  "ff8297204f1955fe",
+  "ff8e6d84d0bfd3fa",
+  "ff9a03be947aba35",
+  "ff9d384d4cf02f16",
+  "ffab7ff3a453d873",
+  "fff541f76041131f"
+ ]
+}

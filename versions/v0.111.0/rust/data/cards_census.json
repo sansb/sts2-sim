@@ -1,0 +1,5862 @@
+{
+ "CARD.ABRASIVE": {
+  "adds_cards": false,
+  "class": "Abrasive",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ABUNDANCE": {
+  "adds_cards": true,
+  "class": "Abundance",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ACCELERANT": {
+  "adds_cards": false,
+  "class": "Accelerant",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ACCURACY": {
+  "adds_cards": false,
+  "class": "Accuracy",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ACROBATICS": {
+  "adds_cards": false,
+  "class": "Acrobatics",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ADAPTIVE_STRIKE": {
+  "adds_cards": true,
+  "class": "AdaptiveStrike",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ADRENALINE": {
+  "adds_cards": false,
+  "class": "Adrenaline",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.AFTERIMAGE": {
+  "adds_cards": false,
+  "class": "Afterimage",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.AFTERLIFE": {
+  "adds_cards": false,
+  "class": "Afterlife",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.AGGRESSION": {
+  "adds_cards": false,
+  "class": "Aggression",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ALCHEMIZE": {
+  "adds_cards": false,
+  "class": "Alchemize",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ALIGNMENT": {
+  "adds_cards": false,
+  "class": "Alignment",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ALL_FOR_ONE": {
+  "adds_cards": true,
+  "class": "AllForOne",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ANGER": {
+  "adds_cards": true,
+  "class": "Anger",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ANOINTED": {
+  "adds_cards": true,
+  "class": "Anointed",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ANTICIPATE": {
+  "adds_cards": false,
+  "class": "Anticipate",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.APOTHEOSIS": {
+  "adds_cards": false,
+  "class": "Apotheosis",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust",
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.APPARITION": {
+  "adds_cards": false,
+  "class": "Apparition",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal",
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ARMAMENTS": {
+  "adds_cards": false,
+  "class": "Armaments",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ARSENAL": {
+  "adds_cards": false,
+  "class": "Arsenal",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ASCENDERS_BANE": {
+  "adds_cards": false,
+  "class": "AscendersBane",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal",
+   "Ethereal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.ASHEN_STRIKE": {
+  "adds_cards": false,
+  "class": "AshenStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ASSASSINATE": {
+  "adds_cards": false,
+  "class": "Assassinate",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust",
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ASTRAL_PULSE": {
+  "adds_cards": false,
+  "class": "AstralPulse",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.AUTOMATION": {
+  "adds_cards": false,
+  "class": "Automation",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BACKFLIP": {
+  "adds_cards": false,
+  "class": "Backflip",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BACKSTAB": {
+  "adds_cards": false,
+  "class": "Backstab",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust",
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BAD_LUCK": {
+  "adds_cards": false,
+  "class": "BadLuck",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.BALL_LIGHTNING": {
+  "adds_cards": false,
+  "class": "BallLightning",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BANSHEES_CRY": {
+  "adds_cards": false,
+  "class": "BansheesCry",
+  "cost": 9,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BARRAGE": {
+  "adds_cards": false,
+  "class": "Barrage",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BARRICADE": {
+  "adds_cards": false,
+  "class": "Barricade",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BASH": {
+  "adds_cards": false,
+  "class": "Bash",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BATTLE_TRANCE": {
+  "adds_cards": false,
+  "class": "BattleTrance",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BEACON_OF_HOPE": {
+  "adds_cards": false,
+  "class": "BeaconOfHope",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BEAM_CELL": {
+  "adds_cards": false,
+  "class": "BeamCell",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BEAT_DOWN": {
+  "adds_cards": false,
+  "class": "BeatDown",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BEAT_INTO_SHAPE": {
+  "adds_cards": false,
+  "class": "BeatIntoShape",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BECKON": {
+  "adds_cards": false,
+  "class": "Beckon",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.BEGONE": {
+  "adds_cards": false,
+  "class": "Begone",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BELIEVE_IN_YOU": {
+  "adds_cards": false,
+  "class": "BelieveInYou",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BIASED_COGNITION": {
+  "adds_cards": false,
+  "class": "BiasedCognition",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BIG_BANG": {
+  "adds_cards": false,
+  "class": "BigBang",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLACK_HOLE": {
+  "adds_cards": false,
+  "class": "BlackHole",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BLADE_DANCE": {
+  "adds_cards": false,
+  "class": "BladeDance",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLADE_OF_INK": {
+  "adds_cards": false,
+  "class": "BladeOfInk",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLADE_SYMPHONY": {
+  "adds_cards": false,
+  "class": "BladeSymphony",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLAZE": {
+  "adds_cards": false,
+  "class": "Blaze",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLIGHT_STRIKE": {
+  "adds_cards": false,
+  "class": "BlightStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BLOODLETTING": {
+  "adds_cards": false,
+  "class": "Bloodletting",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLOOD_WALL": {
+  "adds_cards": false,
+  "class": "BloodWall",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BLUDGEON": {
+  "adds_cards": false,
+  "class": "Bludgeon",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BLUR": {
+  "adds_cards": false,
+  "class": "Blur",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BODYGUARD": {
+  "adds_cards": false,
+  "class": "Bodyguard",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BODY_SLAM": {
+  "adds_cards": false,
+  "class": "BodySlam",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BOLAS": {
+  "adds_cards": true,
+  "class": "Bolas",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BOMBARDMENT": {
+  "adds_cards": false,
+  "class": "Bombardment",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BONE_SHARDS": {
+  "adds_cards": false,
+  "class": "BoneShards",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BOOST_AWAY": {
+  "adds_cards": true,
+  "class": "BoostAway",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BOOT_SEQUENCE": {
+  "adds_cards": false,
+  "class": "BootSequence",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust",
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BORROWED_TIME": {
+  "adds_cards": false,
+  "class": "BorrowedTime",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BOUNCING_FLASK": {
+  "adds_cards": false,
+  "class": "BouncingFlask",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BRAND": {
+  "adds_cards": false,
+  "class": "Brand",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BREAK": {
+  "adds_cards": false,
+  "class": "Break",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BREAKTHROUGH": {
+  "adds_cards": false,
+  "class": "Breakthrough",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BRIGHTEST_FLAME": {
+  "adds_cards": false,
+  "class": "BrightestFlame",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BUBBLE_BUBBLE": {
+  "adds_cards": false,
+  "class": "BubbleBubble",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BUFFER": {
+  "adds_cards": false,
+  "class": "Buffer",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BULK_UP": {
+  "adds_cards": false,
+  "class": "BulkUp",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.BULLET_TIME": {
+  "adds_cards": false,
+  "class": "BulletTime",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BULLY": {
+  "adds_cards": false,
+  "class": "Bully",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BULWARK": {
+  "adds_cards": false,
+  "class": "Bulwark",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BUNDLE_OF_JOY": {
+  "adds_cards": true,
+  "class": "BundleOfJoy",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BURN": {
+  "adds_cards": false,
+  "class": "Burn",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.BURNING_PACT": {
+  "adds_cards": false,
+  "class": "BurningPact",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BURST": {
+  "adds_cards": false,
+  "class": "Burst",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.BURY": {
+  "adds_cards": false,
+  "class": "Bury",
+  "cost": 4,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.BYRDONIS_EGG": {
+  "adds_cards": false,
+  "class": "ByrdonisEgg",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "quest"
+ },
+ "CARD.BYRD_SWOOP": {
+  "adds_cards": false,
+  "class": "ByrdSwoop",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CACOPHONY": {
+  "adds_cards": false,
+  "class": "Cacophony",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CALAMITY": {
+  "adds_cards": false,
+  "class": "Calamity",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CALCIFY": {
+  "adds_cards": false,
+  "class": "Calcify",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CALCULATED_GAMBLE": {
+  "adds_cards": false,
+  "class": "CalculatedGamble",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CALL_OF_THE_VOID": {
+  "adds_cards": false,
+  "class": "CallOfTheVoid",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CALTROPS": {
+  "adds_cards": false,
+  "class": "Caltrops",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CAPACITOR": {
+  "adds_cards": false,
+  "class": "Capacitor",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CAPTURE_SPIRIT": {
+  "adds_cards": true,
+  "class": "CaptureSpirit",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CASCADE": {
+  "adds_cards": false,
+  "class": "Cascade",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CATASTROPHE": {
+  "adds_cards": false,
+  "class": "Catastrophe",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CELESTIAL_MIGHT": {
+  "adds_cards": false,
+  "class": "CelestialMight",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CHAOS": {
+  "adds_cards": false,
+  "class": "Chaos",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CHARGE": {
+  "adds_cards": false,
+  "class": "Charge",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CHARGE_BATTERY": {
+  "adds_cards": false,
+  "class": "ChargeBattery",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CHILD_OF_THE_STARS": {
+  "adds_cards": false,
+  "class": "ChildOfTheStars",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CHILL": {
+  "adds_cards": false,
+  "class": "Chill",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CINDER": {
+  "adds_cards": false,
+  "class": "Cinder",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CLASH": {
+  "adds_cards": false,
+  "class": "Clash",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CLAW": {
+  "adds_cards": false,
+  "class": "Claw",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CLEANSE": {
+  "adds_cards": false,
+  "class": "Cleanse",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CLOAK_AND_DAGGER": {
+  "adds_cards": false,
+  "class": "CloakAndDagger",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CLOAK_OF_STARS": {
+  "adds_cards": false,
+  "class": "CloakOfStars",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CLUMSY": {
+  "adds_cards": false,
+  "class": "Clumsy",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.COLD_SNAP": {
+  "adds_cards": false,
+  "class": "ColdSnap",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.COLLISION_COURSE": {
+  "adds_cards": true,
+  "class": "CollisionCourse",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.COLOSSUS": {
+  "adds_cards": false,
+  "class": "Colossus",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.COMET": {
+  "adds_cards": false,
+  "class": "Comet",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.COMPACT": {
+  "adds_cards": false,
+  "class": "Compact",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.COMPILE_DRIVER": {
+  "adds_cards": false,
+  "class": "CompileDriver",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CONCOCT": {
+  "adds_cards": false,
+  "class": "Concoct",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CONFLAGRATION": {
+  "adds_cards": false,
+  "class": "Conflagration",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CONQUEROR": {
+  "adds_cards": false,
+  "class": "Conqueror",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CONSTELLATION": {
+  "adds_cards": false,
+  "class": "Constellation",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CONSUMING_SHADOW": {
+  "adds_cards": false,
+  "class": "ConsumingShadow",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CONVERGENCE": {
+  "adds_cards": false,
+  "class": "Convergence",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.COOLANT": {
+  "adds_cards": false,
+  "class": "Coolant",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.COOLHEADED": {
+  "adds_cards": false,
+  "class": "Coolheaded",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.COORDINATE": {
+  "adds_cards": false,
+  "class": "Coordinate",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CORROSIVE_WAVE": {
+  "adds_cards": false,
+  "class": "CorrosiveWave",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.CORRUPTION": {
+  "adds_cards": false,
+  "class": "Corruption",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.COSMIC_INDIFFERENCE": {
+  "adds_cards": true,
+  "class": "CosmicIndifference",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.COUNTDOWN": {
+  "adds_cards": false,
+  "class": "Countdown",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CRASH_LANDING": {
+  "adds_cards": true,
+  "class": "CrashLanding",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CREATIVE_AI": {
+  "adds_cards": false,
+  "class": "CreativeAi",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CRESCENT_SPEAR": {
+  "adds_cards": false,
+  "class": "CrescentSpear",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CRIMSON_MANTLE": {
+  "adds_cards": false,
+  "class": "CrimsonMantle",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CRUELTY": {
+  "adds_cards": false,
+  "class": "Cruelty",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.CRUSH_UNDER": {
+  "adds_cards": false,
+  "class": "CrushUnder",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.CURSE_OF_THE_BELL": {
+  "adds_cards": false,
+  "class": "CurseOfTheBell",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.DAGGER_SPRAY": {
+  "adds_cards": false,
+  "class": "DaggerSpray",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DAGGER_THROW": {
+  "adds_cards": false,
+  "class": "DaggerThrow",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DANSE_MACABRE": {
+  "adds_cards": false,
+  "class": "DanseMacabre",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.DARKNESS": {
+  "adds_cards": false,
+  "class": "Darkness",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DARK_EMBRACE": {
+  "adds_cards": false,
+  "class": "DarkEmbrace",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.DARK_SHACKLES": {
+  "adds_cards": false,
+  "class": "DarkShackles",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DASH": {
+  "adds_cards": false,
+  "class": "Dash",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DAZED": {
+  "adds_cards": false,
+  "class": "Dazed",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.DEADLY_POISON": {
+  "adds_cards": false,
+  "class": "DeadlyPoison",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEATHBRINGER": {
+  "adds_cards": false,
+  "class": "Deathbringer",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEATHS_DOOR": {
+  "adds_cards": false,
+  "class": "DeathsDoor",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEATH_MARCH": {
+  "adds_cards": false,
+  "class": "DeathMarch",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DEBILITATE": {
+  "adds_cards": false,
+  "class": "Debilitate",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DEBRIS": {
+  "adds_cards": false,
+  "class": "Debris",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.DEBT": {
+  "adds_cards": false,
+  "class": "Debt",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.DECAY": {
+  "adds_cards": false,
+  "class": "Decay",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.DECISIONS_DECISIONS": {
+  "adds_cards": false,
+  "class": "DecisionsDecisions",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFEND_DEFECT": {
+  "adds_cards": false,
+  "class": "DefendDefect",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFEND_IRONCLAD": {
+  "adds_cards": false,
+  "class": "DefendIronclad",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFEND_NECROBINDER": {
+  "adds_cards": false,
+  "class": "DefendNecrobinder",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFEND_REGENT": {
+  "adds_cards": false,
+  "class": "DefendRegent",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFEND_SILENT": {
+  "adds_cards": false,
+  "class": "DefendSilent",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFILE": {
+  "adds_cards": false,
+  "class": "Defile",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DEFLECT": {
+  "adds_cards": false,
+  "class": "Deflect",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEFRAGMENT": {
+  "adds_cards": false,
+  "class": "Defragment",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.DEFY": {
+  "adds_cards": false,
+  "class": "Defy",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DELAY": {
+  "adds_cards": false,
+  "class": "Delay",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEMESNE": {
+  "adds_cards": false,
+  "class": "Demesne",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.DEMONIC_SHIELD": {
+  "adds_cards": false,
+  "class": "DemonicShield",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DEMON_FORM": {
+  "adds_cards": false,
+  "class": "DemonForm",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.DEPRECATED_CARD": {
+  "adds_cards": false,
+  "class": "DeprecatedCard",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.DEVASTATE": {
+  "adds_cards": false,
+  "class": "Devastate",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DEVOUR_LIFE": {
+  "adds_cards": false,
+  "class": "DevourLife",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.DIRGE": {
+  "adds_cards": true,
+  "class": "Dirge",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DISCOVERY": {
+  "adds_cards": true,
+  "class": "Discovery",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DISINTEGRATION": {
+  "adds_cards": false,
+  "class": "Disintegration",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.DISMANTLE": {
+  "adds_cards": false,
+  "class": "Dismantle",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DISTRACTION": {
+  "adds_cards": true,
+  "class": "Distraction",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DODGE_AND_ROLL": {
+  "adds_cards": false,
+  "class": "DodgeAndRoll",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DOMINATE": {
+  "adds_cards": false,
+  "class": "Dominate",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DOUBLE_ENERGY": {
+  "adds_cards": false,
+  "class": "DoubleEnergy",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DOUBT": {
+  "adds_cards": false,
+  "class": "Doubt",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.DOWSING": {
+  "adds_cards": false,
+  "class": "Dowsing",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "quest"
+ },
+ "CARD.DRAIN_POWER": {
+  "adds_cards": false,
+  "class": "DrainPower",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DRAMATIC_ENTRANCE": {
+  "adds_cards": false,
+  "class": "DramaticEntrance",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust",
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.DREDGE": {
+  "adds_cards": true,
+  "class": "Dredge",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DRUM_OF_BATTLE": {
+  "adds_cards": false,
+  "class": "DrumOfBattle",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DUALCAST": {
+  "adds_cards": false,
+  "class": "Dualcast",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DUAL_WIELD": {
+  "adds_cards": true,
+  "class": "DualWield",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.DYING_STAR": {
+  "adds_cards": false,
+  "class": "DyingStar",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ECHOING_SLASH": {
+  "adds_cards": false,
+  "class": "EchoingSlash",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ECHO_FORM": {
+  "adds_cards": false,
+  "class": "EchoForm",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.EIDOLON": {
+  "adds_cards": false,
+  "class": "Eidolon",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.END_OF_DAYS": {
+  "adds_cards": false,
+  "class": "EndOfDays",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ENERGY_SURGE": {
+  "adds_cards": false,
+  "class": "EnergySurge",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ENFEEBLING_TOUCH": {
+  "adds_cards": false,
+  "class": "EnfeeblingTouch",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ENLIGHTENMENT": {
+  "adds_cards": false,
+  "class": "Enlightenment",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ENTHRALLED": {
+  "adds_cards": false,
+  "class": "Enthralled",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.ENTRENCH": {
+  "adds_cards": false,
+  "class": "Entrench",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ENTROPY": {
+  "adds_cards": false,
+  "class": "Entropy",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ENVENOM": {
+  "adds_cards": false,
+  "class": "Envenom",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.EQUILIBRIUM": {
+  "adds_cards": false,
+  "class": "Equilibrium",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ERADICATE": {
+  "adds_cards": false,
+  "class": "Eradicate",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ESCAPE_PLAN": {
+  "adds_cards": false,
+  "class": "EscapePlan",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ETERNAL_ARMOR": {
+  "adds_cards": false,
+  "class": "EternalArmor",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.EVIL_EYE": {
+  "adds_cards": false,
+  "class": "EvilEye",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.EXPECT_A_FIGHT": {
+  "adds_cards": false,
+  "class": "ExpectAFight",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.EXPERTISE": {
+  "adds_cards": false,
+  "class": "Expertise",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.EXPOSE": {
+  "adds_cards": false,
+  "class": "Expose",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.EXTERMINATE": {
+  "adds_cards": false,
+  "class": "Exterminate",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FADE": {
+  "adds_cards": false,
+  "class": "Fade",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FALLING_STAR": {
+  "adds_cards": false,
+  "class": "FallingStar",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FAN_OF_KNIVES": {
+  "adds_cards": false,
+  "class": "FanOfKnives",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FASTEN": {
+  "adds_cards": false,
+  "class": "Fasten",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FEAR": {
+  "adds_cards": false,
+  "class": "Fear",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FEED": {
+  "adds_cards": false,
+  "class": "Feed",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FEEDING_FRENZY": {
+  "adds_cards": false,
+  "class": "FeedingFrenzy",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FEEL_NO_PAIN": {
+  "adds_cards": false,
+  "class": "FeelNoPain",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FERAL": {
+  "adds_cards": false,
+  "class": "Feral",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FETCH": {
+  "adds_cards": false,
+  "class": "Fetch",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FIEND_FIRE": {
+  "adds_cards": false,
+  "class": "FiendFire",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": true,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FIGHT_ME": {
+  "adds_cards": false,
+  "class": "FightMe",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FIGHT_THROUGH": {
+  "adds_cards": true,
+  "class": "FightThrough",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FINESSE": {
+  "adds_cards": false,
+  "class": "Finesse",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FINISHER": {
+  "adds_cards": false,
+  "class": "Finisher",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FISTICUFFS": {
+  "adds_cards": false,
+  "class": "Fisticuffs",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FLAK_CANNON": {
+  "adds_cards": false,
+  "class": "FlakCannon",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FLAME_BARRIER": {
+  "adds_cards": false,
+  "class": "FlameBarrier",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FLANKING": {
+  "adds_cards": false,
+  "class": "Flanking",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FLASH_OF_STEEL": {
+  "adds_cards": false,
+  "class": "FlashOfSteel",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FLATTEN": {
+  "adds_cards": false,
+  "class": "Flatten",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FLECHETTES": {
+  "adds_cards": false,
+  "class": "Flechettes",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FLICK_FLACK": {
+  "adds_cards": false,
+  "class": "FlickFlack",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FOCUSED_STRIKE": {
+  "adds_cards": false,
+  "class": "FocusedStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FOLLY": {
+  "adds_cards": false,
+  "class": "Folly",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal",
+   "Ethereal",
+   "Innate",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.FOOTWORK": {
+  "adds_cards": false,
+  "class": "Footwork",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FORBIDDEN_GRIMOIRE": {
+  "adds_cards": false,
+  "class": "ForbiddenGrimoire",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FOREGONE_CONCLUSION": {
+  "adds_cards": false,
+  "class": "ForegoneConclusion",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FORGOTTEN_RITUAL": {
+  "adds_cards": false,
+  "class": "ForgottenRitual",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FRANTIC_ESCAPE": {
+  "adds_cards": false,
+  "class": "FranticEscape",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.FRIENDSHIP": {
+  "adds_cards": false,
+  "class": "Friendship",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FTL": {
+  "adds_cards": false,
+  "class": "Ftl",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.FUEL": {
+  "adds_cards": false,
+  "class": "Fuel",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.FURNACE": {
+  "adds_cards": false,
+  "class": "Furnace",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.FUSION": {
+  "adds_cards": false,
+  "class": "Fusion",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GAMMA_BLAST": {
+  "adds_cards": false,
+  "class": "GammaBlast",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GANG_UP": {
+  "adds_cards": false,
+  "class": "GangUp",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GATHER_LIGHT": {
+  "adds_cards": false,
+  "class": "GatherLight",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GENESIS": {
+  "adds_cards": false,
+  "class": "Genesis",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.GENETIC_ALGORITHM": {
+  "adds_cards": false,
+  "class": "GeneticAlgorithm",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GIANT_ROCK": {
+  "adds_cards": false,
+  "class": "GiantRock",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GLACIER": {
+  "adds_cards": false,
+  "class": "Glacier",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GLASSWORK": {
+  "adds_cards": false,
+  "class": "Glasswork",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GLIMMER": {
+  "adds_cards": true,
+  "class": "Glimmer",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GLIMPSE_BEYOND": {
+  "adds_cards": true,
+  "class": "GlimpseBeyond",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GLITTERSTREAM": {
+  "adds_cards": false,
+  "class": "Glitterstream",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GLOW": {
+  "adds_cards": false,
+  "class": "Glow",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GOLD_AXE": {
+  "adds_cards": false,
+  "class": "GoldAxe",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GO_FOR_THE_EYES": {
+  "adds_cards": false,
+  "class": "GoForTheEyes",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GRAND_FINALE": {
+  "adds_cards": false,
+  "class": "GrandFinale",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GRAVEBLAST": {
+  "adds_cards": true,
+  "class": "Graveblast",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GRAVE_WARDEN": {
+  "adds_cards": true,
+  "class": "GraveWarden",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GREED": {
+  "adds_cards": false,
+  "class": "Greed",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Eternal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.GUARDS": {
+  "adds_cards": false,
+  "class": "Guards",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.GUIDING_STAR": {
+  "adds_cards": false,
+  "class": "GuidingStar",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.GUILTY": {
+  "adds_cards": false,
+  "class": "Guilty",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.GUNK_UP": {
+  "adds_cards": true,
+  "class": "GunkUp",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HAILSTORM": {
+  "adds_cards": false,
+  "class": "Hailstorm",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.HAMMER_TIME": {
+  "adds_cards": false,
+  "class": "HammerTime",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.HAND_OF_GREED": {
+  "adds_cards": false,
+  "class": "HandOfGreed",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HAND_TRICK": {
+  "adds_cards": false,
+  "class": "HandTrick",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HANG": {
+  "adds_cards": false,
+  "class": "Hang",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HAUNT": {
+  "adds_cards": false,
+  "class": "Haunt",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.HAVOC": {
+  "adds_cards": false,
+  "class": "Havoc",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HAZE": {
+  "adds_cards": false,
+  "class": "Haze",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HEADBUTT": {
+  "adds_cards": true,
+  "class": "Headbutt",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HEAVENLY_DRILL": {
+  "adds_cards": false,
+  "class": "HeavenlyDrill",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HEGEMONY": {
+  "adds_cards": false,
+  "class": "Hegemony",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HEIRLOOM_HAMMER": {
+  "adds_cards": true,
+  "class": "HeirloomHammer",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HELIX_DRILL": {
+  "adds_cards": false,
+  "class": "HelixDrill",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HELLO_WORLD": {
+  "adds_cards": false,
+  "class": "HelloWorld",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.HELLRAISER": {
+  "adds_cards": false,
+  "class": "Hellraiser",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.HEMOKINESIS": {
+  "adds_cards": false,
+  "class": "Hemokinesis",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HIBERNATE": {
+  "adds_cards": false,
+  "class": "Hibernate",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HIDDEN_CACHE": {
+  "adds_cards": false,
+  "class": "HiddenCache",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HIDDEN_DAGGERS": {
+  "adds_cards": false,
+  "class": "HiddenDaggers",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HIDDEN_GEM": {
+  "adds_cards": false,
+  "class": "HiddenGem",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HIGH_FIVE": {
+  "adds_cards": false,
+  "class": "HighFive",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HOLOGRAM": {
+  "adds_cards": true,
+  "class": "Hologram",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HOTFIX": {
+  "adds_cards": false,
+  "class": "Hotfix",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HOWL_FROM_BEYOND": {
+  "adds_cards": false,
+  "class": "HowlFromBeyond",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.HUDDLE_UP": {
+  "adds_cards": false,
+  "class": "HuddleUp",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.HYPERBEAM": {
+  "adds_cards": false,
+  "class": "Hyperbeam",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ICE_LANCE": {
+  "adds_cards": false,
+  "class": "IceLance",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.IGNITION": {
+  "adds_cards": false,
+  "class": "Ignition",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.IMITATION_LEARNING": {
+  "adds_cards": false,
+  "class": "ImitationLearning",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.IMPATIENCE": {
+  "adds_cards": false,
+  "class": "Impatience",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.IMPERVIOUS": {
+  "adds_cards": false,
+  "class": "Impervious",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.INFECTION": {
+  "adds_cards": false,
+  "class": "Infection",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.INFERNAL_BLADE": {
+  "adds_cards": true,
+  "class": "InfernalBlade",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.INFERNO": {
+  "adds_cards": false,
+  "class": "Inferno",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.INFINITE_BLADES": {
+  "adds_cards": false,
+  "class": "InfiniteBlades",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.INFLAME": {
+  "adds_cards": false,
+  "class": "Inflame",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.INJURY": {
+  "adds_cards": false,
+  "class": "Injury",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.INTERCEPT": {
+  "adds_cards": false,
+  "class": "Intercept",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.INVOKE": {
+  "adds_cards": false,
+  "class": "Invoke",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.IRON_WAVE": {
+  "adds_cards": false,
+  "class": "IronWave",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ITERATION": {
+  "adds_cards": false,
+  "class": "Iteration",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.I_AM_INVINCIBLE": {
+  "adds_cards": false,
+  "class": "IAmInvincible",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.JACKPOT": {
+  "adds_cards": true,
+  "class": "Jackpot",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.JACK_OF_ALL_TRADES": {
+  "adds_cards": true,
+  "class": "JackOfAllTrades",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.JUGGERNAUT": {
+  "adds_cards": false,
+  "class": "Juggernaut",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.JUGGLING": {
+  "adds_cards": false,
+  "class": "Juggling",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.KINGLY_KICK": {
+  "adds_cards": false,
+  "class": "KinglyKick",
+  "cost": 4,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.KINGLY_PUNCH": {
+  "adds_cards": false,
+  "class": "KinglyPunch",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.KNIFE_TRAP": {
+  "adds_cards": false,
+  "class": "KnifeTrap",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.KNOCKDOWN": {
+  "adds_cards": false,
+  "class": "Knockdown",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.KNOCKOUT_BLOW": {
+  "adds_cards": false,
+  "class": "KnockoutBlow",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.KNOW_THY_PLACE": {
+  "adds_cards": false,
+  "class": "KnowThyPlace",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LANTERN_KEY": {
+  "adds_cards": false,
+  "class": "LanternKey",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "quest"
+ },
+ "CARD.LARGESSE": {
+  "adds_cards": true,
+  "class": "Largesse",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LEADING_STRIKE": {
+  "adds_cards": false,
+  "class": "LeadingStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.LEAP": {
+  "adds_cards": false,
+  "class": "Leap",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LEGION_OF_BONE": {
+  "adds_cards": false,
+  "class": "LegionOfBone",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LEG_SWEEP": {
+  "adds_cards": false,
+  "class": "LegSweep",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LETHALITY": {
+  "adds_cards": false,
+  "class": "Lethality",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.LIFT": {
+  "adds_cards": false,
+  "class": "Lift",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LIGHTNING_ROD": {
+  "adds_cards": false,
+  "class": "LightningRod",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LOOP": {
+  "adds_cards": false,
+  "class": "Loop",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.LUMINESCE": {
+  "adds_cards": false,
+  "class": "Luminesce",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust",
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.LUNAR_BLAST": {
+  "adds_cards": false,
+  "class": "LunarBlast",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MACHINE_LEARNING": {
+  "adds_cards": false,
+  "class": "MachineLearning",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.MAD_SCIENCE": {
+  "adds_cards": true,
+  "class": "MadScience",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MAKE_IT_SO": {
+  "adds_cards": true,
+  "class": "MakeItSo",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MALAISE": {
+  "adds_cards": false,
+  "class": "Malaise",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MANGLE": {
+  "adds_cards": false,
+  "class": "Mangle",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MANIFEST_AUTHORITY": {
+  "adds_cards": true,
+  "class": "ManifestAuthority",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MASTER_OF_STRATEGY": {
+  "adds_cards": false,
+  "class": "MasterOfStrategy",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MASTER_PLANNER": {
+  "adds_cards": false,
+  "class": "MasterPlanner",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.MAUL": {
+  "adds_cards": false,
+  "class": "Maul",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MAYHEM": {
+  "adds_cards": false,
+  "class": "Mayhem",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.MELANCHOLY": {
+  "adds_cards": false,
+  "class": "Melancholy",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MEMENTO_MORI": {
+  "adds_cards": false,
+  "class": "MementoMori",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.METAMORPHOSIS": {
+  "adds_cards": true,
+  "class": "Metamorphosis",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.METEOR_SHOWER": {
+  "adds_cards": false,
+  "class": "MeteorShower",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.METEOR_STRIKE": {
+  "adds_cards": false,
+  "class": "MeteorStrike",
+  "cost": 5,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MIDNIGHT": {
+  "adds_cards": false,
+  "class": "Midnight",
+  "cost": 12,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MIMIC": {
+  "adds_cards": false,
+  "class": "Mimic",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MIND_BLAST": {
+  "adds_cards": false,
+  "class": "MindBlast",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MIND_ROT": {
+  "adds_cards": false,
+  "class": "MindRot",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.MINION_DIVE_BOMB": {
+  "adds_cards": false,
+  "class": "MinionDiveBomb",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MINION_SACRIFICE": {
+  "adds_cards": false,
+  "class": "MinionSacrifice",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MINION_STRIKE": {
+  "adds_cards": false,
+  "class": "MinionStrike",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MIRAGE": {
+  "adds_cards": false,
+  "class": "Mirage",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MISERY": {
+  "adds_cards": false,
+  "class": "Misery",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MODDED": {
+  "adds_cards": false,
+  "class": "Modded",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MOLTEN_FIST": {
+  "adds_cards": false,
+  "class": "MoltenFist",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MOMENTUM_STRIKE": {
+  "adds_cards": false,
+  "class": "MomentumStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.MONARCHS_GAZE": {
+  "adds_cards": false,
+  "class": "MonarchsGaze",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.MONOLOGUE": {
+  "adds_cards": false,
+  "class": "Monologue",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MULTI_CAST": {
+  "adds_cards": false,
+  "class": "MultiCast",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.MURDER": {
+  "adds_cards": false,
+  "class": "Murder",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.NECRO_MASTERY": {
+  "adds_cards": false,
+  "class": "NecroMastery",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.NEGATIVE_PULSE": {
+  "adds_cards": false,
+  "class": "NegativePulse",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.NEOWS_FURY": {
+  "adds_cards": true,
+  "class": "NeowsFury",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.NEUROSURGE": {
+  "adds_cards": false,
+  "class": "Neurosurge",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.NEUTRALIZE": {
+  "adds_cards": false,
+  "class": "Neutralize",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.NEUTRON_AEGIS": {
+  "adds_cards": false,
+  "class": "NeutronAegis",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.NIGHTMARE": {
+  "adds_cards": false,
+  "class": "Nightmare",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.NORMALITY": {
+  "adds_cards": false,
+  "class": "Normality",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.NOSTALGIA": {
+  "adds_cards": false,
+  "class": "Nostalgia",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.NOT_YET": {
+  "adds_cards": false,
+  "class": "NotYet",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.NOXIOUS_FUMES": {
+  "adds_cards": false,
+  "class": "NoxiousFumes",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.NO_ESCAPE": {
+  "adds_cards": false,
+  "class": "NoEscape",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.NULL": {
+  "adds_cards": false,
+  "class": "Null",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.OBLIVION": {
+  "adds_cards": false,
+  "class": "Oblivion",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.OFFERING": {
+  "adds_cards": false,
+  "class": "Offering",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.OMNISLICE": {
+  "adds_cards": false,
+  "class": "Omnislice",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ONE_FOR_ALL": {
+  "adds_cards": false,
+  "class": "OneForAll",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ONE_TWO_PUNCH": {
+  "adds_cards": false,
+  "class": "OneTwoPunch",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ORBIT": {
+  "adds_cards": false,
+  "class": "Orbit",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.OUTBREAK": {
+  "adds_cards": false,
+  "class": "Outbreak",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.OUTMANEUVER": {
+  "adds_cards": false,
+  "class": "Outmaneuver",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.OUTRAGE": {
+  "adds_cards": true,
+  "class": "Outrage",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.OVERCLOCK": {
+  "adds_cards": true,
+  "class": "Overclock",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PACTS_END": {
+  "adds_cards": false,
+  "class": "PactsEnd",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PAGESTORM": {
+  "adds_cards": false,
+  "class": "Pagestorm",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PALE_BLUE_DOT": {
+  "adds_cards": false,
+  "class": "PaleBlueDot",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PANACHE": {
+  "adds_cards": false,
+  "class": "Panache",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PANIC_BUTTON": {
+  "adds_cards": false,
+  "class": "PanicButton",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PARRY": {
+  "adds_cards": false,
+  "class": "Parry",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PARSE": {
+  "adds_cards": false,
+  "class": "Parse",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PARTICLE_WALL": {
+  "adds_cards": false,
+  "class": "ParticleWall",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PATTER": {
+  "adds_cards": false,
+  "class": "Patter",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PECK": {
+  "adds_cards": false,
+  "class": "Peck",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PERFECTED_STRIKE": {
+  "adds_cards": false,
+  "class": "PerfectedStrike",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PHANTOM_BLADES": {
+  "adds_cards": false,
+  "class": "PhantomBlades",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PHOTON_CUT": {
+  "adds_cards": true,
+  "class": "PhotonCut",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PIERCING_WAIL": {
+  "adds_cards": false,
+  "class": "PiercingWail",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PILLAGE": {
+  "adds_cards": false,
+  "class": "Pillage",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PILLAR_OF_CREATION": {
+  "adds_cards": false,
+  "class": "PillarOfCreation",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PINPOINT": {
+  "adds_cards": false,
+  "class": "Pinpoint",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PLOT": {
+  "adds_cards": false,
+  "class": "Plot",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.POISONED_STAB": {
+  "adds_cards": false,
+  "class": "PoisonedStab",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.POKE": {
+  "adds_cards": false,
+  "class": "Poke",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.POMMEL_STRIKE": {
+  "adds_cards": false,
+  "class": "PommelStrike",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.POOR_SLEEP": {
+  "adds_cards": false,
+  "class": "PoorSleep",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.POUNCE": {
+  "adds_cards": false,
+  "class": "Pounce",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PRECISE_CUT": {
+  "adds_cards": false,
+  "class": "PreciseCut",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PREDATOR": {
+  "adds_cards": false,
+  "class": "Predator",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PREPARED": {
+  "adds_cards": false,
+  "class": "Prepared",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PREP_TIME": {
+  "adds_cards": false,
+  "class": "PrepTime",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PRIMAL_FORCE": {
+  "adds_cards": false,
+  "class": "PrimalForce",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PRODUCTION": {
+  "adds_cards": false,
+  "class": "Production",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PROLONG": {
+  "adds_cards": false,
+  "class": "Prolong",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PROPHESIZE": {
+  "adds_cards": false,
+  "class": "Prophesize",
+  "cost": 2,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PROTECTOR": {
+  "adds_cards": false,
+  "class": "Protector",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PROWESS": {
+  "adds_cards": false,
+  "class": "Prowess",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.PULL_AGGRO": {
+  "adds_cards": false,
+  "class": "PullAggro",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PULL_FROM_BELOW": {
+  "adds_cards": false,
+  "class": "PullFromBelow",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.PURITY": {
+  "adds_cards": false,
+  "class": "Purity",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": true,
+  "keywords": [
+   "Exhaust",
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PUTREFY": {
+  "adds_cards": false,
+  "class": "Putrefy",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.PYRE": {
+  "adds_cards": false,
+  "class": "Pyre",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.QUADCAST": {
+  "adds_cards": false,
+  "class": "Quadcast",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.QUASAR": {
+  "adds_cards": true,
+  "class": "Quasar",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RADIATE": {
+  "adds_cards": false,
+  "class": "Radiate",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.RAGE": {
+  "adds_cards": false,
+  "class": "Rage",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RAINBOW": {
+  "adds_cards": false,
+  "class": "Rainbow",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RALLY": {
+  "adds_cards": false,
+  "class": "Rally",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RAMPAGE": {
+  "adds_cards": false,
+  "class": "Rampage",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.RATTLE": {
+  "adds_cards": false,
+  "class": "Rattle",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.REANIMATE": {
+  "adds_cards": false,
+  "class": "Reanimate",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.REAP": {
+  "adds_cards": false,
+  "class": "Reap",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.REAPER_FORM": {
+  "adds_cards": false,
+  "class": "ReaperForm",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.REAVE": {
+  "adds_cards": true,
+  "class": "Reave",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.REBOOT": {
+  "adds_cards": true,
+  "class": "Reboot",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": true,
+  "type": "skill"
+ },
+ "CARD.REBOUND": {
+  "adds_cards": false,
+  "class": "Rebound",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.REFINE_BLADE": {
+  "adds_cards": false,
+  "class": "RefineBlade",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.REFLECT": {
+  "adds_cards": false,
+  "class": "Reflect",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.REFLEX": {
+  "adds_cards": false,
+  "class": "Reflex",
+  "cost": 3,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.REFRACT": {
+  "adds_cards": false,
+  "class": "Refract",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.REGRET": {
+  "adds_cards": false,
+  "class": "Regret",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.RELAX": {
+  "adds_cards": false,
+  "class": "Relax",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.REND": {
+  "adds_cards": false,
+  "class": "Rend",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.RESONANCE": {
+  "adds_cards": false,
+  "class": "Resonance",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RESTLESSNESS": {
+  "adds_cards": false,
+  "class": "Restlessness",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RICOCHET": {
+  "adds_cards": false,
+  "class": "Ricochet",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.RIGHT_HAND_HAND": {
+  "adds_cards": true,
+  "class": "RightHandHand",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.RIP_AND_TEAR": {
+  "adds_cards": false,
+  "class": "RipAndTear",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ROCKET_PUNCH": {
+  "adds_cards": false,
+  "class": "RocketPunch",
+  "cost": 2,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ROLLING_BOULDER": {
+  "adds_cards": false,
+  "class": "RollingBoulder",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ROYALTIES": {
+  "adds_cards": false,
+  "class": "Royalties",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ROYAL_GAMBLE": {
+  "adds_cards": false,
+  "class": "RoyalGamble",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.RUPTURE": {
+  "adds_cards": false,
+  "class": "Rupture",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SACRIFICE": {
+  "adds_cards": false,
+  "class": "Sacrifice",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SALVO": {
+  "adds_cards": false,
+  "class": "Salvo",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SCAVENGE": {
+  "adds_cards": false,
+  "class": "Scavenge",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SCOURGE": {
+  "adds_cards": false,
+  "class": "Scourge",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SCRAPE": {
+  "adds_cards": false,
+  "class": "Scrape",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SCRAWL": {
+  "adds_cards": false,
+  "class": "Scrawl",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SCULPTING_STRIKE": {
+  "adds_cards": false,
+  "class": "SculptingStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SEANCE": {
+  "adds_cards": false,
+  "class": "Seance",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SECOND_WIND": {
+  "adds_cards": false,
+  "class": "SecondWind",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SECRET_TECHNIQUE": {
+  "adds_cards": true,
+  "class": "SecretTechnique",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SECRET_WEAPON": {
+  "adds_cards": true,
+  "class": "SecretWeapon",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SEEKER_STRIKE": {
+  "adds_cards": true,
+  "class": "SeekerStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SEEKING_EDGE": {
+  "adds_cards": false,
+  "class": "SeekingEdge",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SENTRY_MODE": {
+  "adds_cards": false,
+  "class": "SentryMode",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SERPENT_FORM": {
+  "adds_cards": false,
+  "class": "SerpentForm",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SETUP_STRIKE": {
+  "adds_cards": false,
+  "class": "SetupStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SEVEN_STARS": {
+  "adds_cards": false,
+  "class": "SevenStars",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SEVERANCE": {
+  "adds_cards": true,
+  "class": "Severance",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SHADOWMELD": {
+  "adds_cards": false,
+  "class": "Shadowmeld",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SHADOW_SHIELD": {
+  "adds_cards": false,
+  "class": "ShadowShield",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SHADOW_STEP": {
+  "adds_cards": false,
+  "class": "ShadowStep",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SHAME": {
+  "adds_cards": false,
+  "class": "Shame",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.SHARED_FATE": {
+  "adds_cards": false,
+  "class": "SharedFate",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SHATTER": {
+  "adds_cards": false,
+  "class": "Shatter",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SHINING_STRIKE": {
+  "adds_cards": false,
+  "class": "ShiningStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SHIV": {
+  "adds_cards": true,
+  "class": "Shiv",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SHOCKWAVE": {
+  "adds_cards": false,
+  "class": "Shockwave",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SHROUD": {
+  "adds_cards": false,
+  "class": "Shroud",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SHRUG_IT_OFF": {
+  "adds_cards": false,
+  "class": "ShrugItOff",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SIC_EM": {
+  "adds_cards": false,
+  "class": "SicEm",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SIDESTEP": {
+  "adds_cards": false,
+  "class": "Sidestep",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SIGNAL_BOOST": {
+  "adds_cards": false,
+  "class": "SignalBoost",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SKEWER": {
+  "adds_cards": false,
+  "class": "Skewer",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SKIM": {
+  "adds_cards": false,
+  "class": "Skim",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SLEIGHT_OF_FLESH": {
+  "adds_cards": false,
+  "class": "SleightOfFlesh",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SLICE": {
+  "adds_cards": false,
+  "class": "Slice",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SLIMED": {
+  "adds_cards": false,
+  "class": "Slimed",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.SLOTH": {
+  "adds_cards": false,
+  "class": "Sloth",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.SMOKESTACK": {
+  "adds_cards": false,
+  "class": "Smokestack",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SNAKEBITE": {
+  "adds_cards": false,
+  "class": "Snakebite",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SNAP": {
+  "adds_cards": false,
+  "class": "Snap",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SNEAKY": {
+  "adds_cards": false,
+  "class": "Sneaky",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SOLAR_STRIKE": {
+  "adds_cards": false,
+  "class": "SolarStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SOOT": {
+  "adds_cards": false,
+  "class": "Soot",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.SOUL": {
+  "adds_cards": true,
+  "class": "Soul",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SOULBOUND": {
+  "adds_cards": false,
+  "class": "Soulbound",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SOUL_STORM": {
+  "adds_cards": false,
+  "class": "SoulStorm",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SOVEREIGN_BLADE": {
+  "adds_cards": false,
+  "class": "SovereignBlade",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SOW": {
+  "adds_cards": false,
+  "class": "Sow",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SPECTRUM_SHIFT": {
+  "adds_cards": false,
+  "class": "SpectrumShift",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SPEEDSTER": {
+  "adds_cards": false,
+  "class": "Speedster",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SPINNER": {
+  "adds_cards": false,
+  "class": "Spinner",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SPIRIT_OF_ASH": {
+  "adds_cards": false,
+  "class": "SpiritOfAsh",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SPITE": {
+  "adds_cards": false,
+  "class": "Spite",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SPLASH": {
+  "adds_cards": true,
+  "class": "Splash",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SPOILS_MAP": {
+  "adds_cards": false,
+  "class": "SpoilsMap",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "quest"
+ },
+ "CARD.SPOILS_OF_BATTLE": {
+  "adds_cards": false,
+  "class": "SpoilsOfBattle",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SPORE_MIND": {
+  "adds_cards": false,
+  "class": "SporeMind",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.SPUR": {
+  "adds_cards": false,
+  "class": "Spur",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Retain"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SQUASH": {
+  "adds_cards": false,
+  "class": "Squash",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SQUEEZE": {
+  "adds_cards": false,
+  "class": "Squeeze",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STACK": {
+  "adds_cards": false,
+  "class": "Stack",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.STAMPEDE": {
+  "adds_cards": false,
+  "class": "Stampede",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.STARDUST": {
+  "adds_cards": false,
+  "class": "Stardust",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STOKE": {
+  "adds_cards": true,
+  "class": "Stoke",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.STOMP": {
+  "adds_cards": false,
+  "class": "Stomp",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STONE_ARMOR": {
+  "adds_cards": false,
+  "class": "StoneArmor",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.STORM": {
+  "adds_cards": false,
+  "class": "Storm",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.STORM_OF_STEEL": {
+  "adds_cards": false,
+  "class": "StormOfSteel",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.STRANGLE": {
+  "adds_cards": false,
+  "class": "Strangle",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STRATAGEM": {
+  "adds_cards": false,
+  "class": "Stratagem",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.STRIKE_DEFECT": {
+  "adds_cards": false,
+  "class": "StrikeDefect",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STRIKE_IRONCLAD": {
+  "adds_cards": false,
+  "class": "StrikeIronclad",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STRIKE_NECROBINDER": {
+  "adds_cards": false,
+  "class": "StrikeNecrobinder",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STRIKE_REGENT": {
+  "adds_cards": false,
+  "class": "StrikeRegent",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.STRIKE_SILENT": {
+  "adds_cards": false,
+  "class": "StrikeSilent",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SUBROUTINE": {
+  "adds_cards": false,
+  "class": "Subroutine",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SUCKER_PUNCH": {
+  "adds_cards": false,
+  "class": "SuckerPunch",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SUMMON_FORTH": {
+  "adds_cards": true,
+  "class": "SummonForth",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SUNDER": {
+  "adds_cards": false,
+  "class": "Sunder",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SUPERCRITICAL": {
+  "adds_cards": false,
+  "class": "Supercritical",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SUPERMASSIVE": {
+  "adds_cards": false,
+  "class": "Supermassive",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SUPPRESS": {
+  "adds_cards": false,
+  "class": "Suppress",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Innate"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SURVIVOR": {
+  "adds_cards": false,
+  "class": "Survivor",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SWEEPING_BEAM": {
+  "adds_cards": false,
+  "class": "SweepingBeam",
+  "cost": 1,
+  "draws": true,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SWEEPING_GAZE": {
+  "adds_cards": false,
+  "class": "SweepingGaze",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal",
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SWORD_BOOMERANG": {
+  "adds_cards": false,
+  "class": "SwordBoomerang",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.SWORD_SAGE": {
+  "adds_cards": false,
+  "class": "SwordSage",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.SYNCHRONIZE": {
+  "adds_cards": false,
+  "class": "Synchronize",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.SYNTHESIS": {
+  "adds_cards": false,
+  "class": "Synthesis",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.TACTICIAN": {
+  "adds_cards": false,
+  "class": "Tactician",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TAG_TEAM": {
+  "adds_cards": false,
+  "class": "TagTeam",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.TANK": {
+  "adds_cards": false,
+  "class": "Tank",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.TAUNT": {
+  "adds_cards": false,
+  "class": "Taunt",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TEAR_ASUNDER": {
+  "adds_cards": false,
+  "class": "TearAsunder",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.TEMPEST": {
+  "adds_cards": false,
+  "class": "Tempest",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TERRAFORMING": {
+  "adds_cards": false,
+  "class": "Terraforming",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TESLA_COIL": {
+  "adds_cards": false,
+  "class": "TeslaCoil",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.THE_BALL": {
+  "adds_cards": false,
+  "class": "TheBall",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.THE_BOMB": {
+  "adds_cards": false,
+  "class": "TheBomb",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.THE_GAMBIT": {
+  "adds_cards": false,
+  "class": "TheGambit",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.THE_HUNT": {
+  "adds_cards": false,
+  "class": "TheHunt",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.THE_SCYTHE": {
+  "adds_cards": false,
+  "class": "TheScythe",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.THE_SEALED_THRONE": {
+  "adds_cards": false,
+  "class": "TheSealedThrone",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.THE_SMITH": {
+  "adds_cards": false,
+  "class": "TheSmith",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.THINKING_AHEAD": {
+  "adds_cards": true,
+  "class": "ThinkingAhead",
+  "cost": 0,
+  "draws": true,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.THRASH": {
+  "adds_cards": false,
+  "class": "Thrash",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.THRUMMING_HATCHET": {
+  "adds_cards": true,
+  "class": "ThrummingHatchet",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.THUNDER": {
+  "adds_cards": false,
+  "class": "Thunder",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.THUNDERCLAP": {
+  "adds_cards": false,
+  "class": "Thunderclap",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.TIMES_UP": {
+  "adds_cards": false,
+  "class": "TimesUp",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.TOOLS_OF_THE_TRADE": {
+  "adds_cards": false,
+  "class": "ToolsOfTheTrade",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.TORIC_TOUGHNESS": {
+  "adds_cards": false,
+  "class": "ToricToughness",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TOXIC": {
+  "adds_cards": false,
+  "class": "Toxic",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.TRACKING": {
+  "adds_cards": false,
+  "class": "Tracking",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.TRANSFIGURE": {
+  "adds_cards": false,
+  "class": "Transfigure",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TRASH_TO_TREASURE": {
+  "adds_cards": false,
+  "class": "TrashToTreasure",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.TREMBLE": {
+  "adds_cards": false,
+  "class": "Tremble",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TRUE_GRIT": {
+  "adds_cards": false,
+  "class": "TrueGrit",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": true,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TURBO": {
+  "adds_cards": true,
+  "class": "Turbo",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TUTOR": {
+  "adds_cards": true,
+  "class": "Tutor",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.TWIN_STRIKE": {
+  "adds_cards": false,
+  "class": "TwinStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.TYRANNY": {
+  "adds_cards": false,
+  "class": "Tyranny",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.ULTIMATE_DEFEND": {
+  "adds_cards": false,
+  "class": "UltimateDefend",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.ULTIMATE_STRIKE": {
+  "adds_cards": false,
+  "class": "UltimateStrike",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.UNDEATH": {
+  "adds_cards": true,
+  "class": "Undeath",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.UNDERWORLD": {
+  "adds_cards": false,
+  "class": "Underworld",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.UNLEASH": {
+  "adds_cards": false,
+  "class": "Unleash",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.UNMOVABLE": {
+  "adds_cards": false,
+  "class": "Unmovable",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.UNRELENTING": {
+  "adds_cards": false,
+  "class": "Unrelenting",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.UNTOUCHABLE": {
+  "adds_cards": false,
+  "class": "Untouchable",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Sly"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.UPPERCUT": {
+  "adds_cards": false,
+  "class": "Uppercut",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.UPROAR": {
+  "adds_cards": false,
+  "class": "Uproar",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.UP_MY_SLEEVE": {
+  "adds_cards": false,
+  "class": "UpMySleeve",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.VEILPIERCER": {
+  "adds_cards": false,
+  "class": "Veilpiercer",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.VENERATE": {
+  "adds_cards": false,
+  "class": "Venerate",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.VICIOUS": {
+  "adds_cards": false,
+  "class": "Vicious",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.VOID": {
+  "adds_cards": false,
+  "class": "Void",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.VOID_FORM": {
+  "adds_cards": false,
+  "class": "VoidForm",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Ethereal"
+  ],
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.VOLLEY": {
+  "adds_cards": false,
+  "class": "Volley",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.VOLTAIC": {
+  "adds_cards": false,
+  "class": "Voltaic",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.WASTE_AWAY": {
+  "adds_cards": false,
+  "class": "WasteAway",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.WELL_LAID_PLANS": {
+  "adds_cards": false,
+  "class": "WellLaidPlans",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.WHIRLWIND": {
+  "adds_cards": false,
+  "class": "Whirlwind",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.WHISTLE": {
+  "adds_cards": false,
+  "class": "Whistle",
+  "cost": 2,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.WHITE_NOISE": {
+  "adds_cards": true,
+  "class": "WhiteNoise",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.WISH": {
+  "adds_cards": true,
+  "class": "Wish",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.WISP": {
+  "adds_cards": false,
+  "class": "Wisp",
+  "cost": 0,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Exhaust"
+  ],
+  "shuffles": false,
+  "type": "skill"
+ },
+ "CARD.WITHER": {
+  "adds_cards": false,
+  "class": "Wither",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.WOUND": {
+  "adds_cards": false,
+  "class": "Wound",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "status"
+ },
+ "CARD.WRAITH_FORM": {
+  "adds_cards": false,
+  "class": "WraithForm",
+  "cost": 3,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "power"
+ },
+ "CARD.WRITHE": {
+  "adds_cards": false,
+  "class": "Writhe",
+  "cost": -1,
+  "draws": false,
+  "exhausts_other": false,
+  "keywords": [
+   "Innate",
+   "Unplayable"
+  ],
+  "shuffles": false,
+  "type": "curse"
+ },
+ "CARD.WROUGHT_IN_WAR": {
+  "adds_cards": false,
+  "class": "WroughtInWar",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "attack"
+ },
+ "CARD.ZAP": {
+  "adds_cards": false,
+  "class": "Zap",
+  "cost": 1,
+  "draws": false,
+  "exhausts_other": false,
+  "shuffles": false,
+  "type": "skill"
+ }
+}

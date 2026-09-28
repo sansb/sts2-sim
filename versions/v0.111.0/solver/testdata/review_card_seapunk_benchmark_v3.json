@@ -1,0 +1,2326 @@
+{
+  "actual": {
+    "entry_hp": 64,
+    "final_hp": 51,
+    "hp_lost": 13,
+    "potions_used": {
+      "count": 0,
+      "names": []
+    },
+    "turns": 4,
+    "won": true
+  },
+  "benchmark": {
+    "deadline_worlds": 5,
+    "distribution_kind": "achieved_lower_bound_biased",
+    "exact": false,
+    "exact_worlds": 5,
+    "hp_lost": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 23
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 4
+      },
+      "p10": 3,
+      "p90": 6
+    },
+    "loss_risk": {
+      "kind": "upper_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "losses": 0,
+    "outcomes": [
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "ASCENDERS_BANE",
+              "UNMOVABLE"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 35)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 34)"
+                ],
+                "kind": "play",
+                "target": "35hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 61, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 61)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 57)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 53)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 49)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 5
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 26)"
+                ],
+                "kind": "play",
+                "target": "34hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 17)"
+                ],
+                "kind": "play",
+                "target": "26hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH"
+            ],
+            "hp": 61,
+            "turn": 6
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 16)"
+                ],
+                "kind": "play",
+                "target": "17hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 7)"
+                ],
+                "kind": "play",
+                "target": "16hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -2)"
+                ],
+                "kind": "play",
+                "target": "7hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 7
+          }
+        ],
+        "potions_used": 0,
+        "states": 6322,
+        "turns": 7,
+        "won": true,
+        "world": 0
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 58,
+        "hp_lost": 6,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 41)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 3)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 1)",
+                  "enemy SPINNING_KICK hits for 1 (hp 60, block 0)",
+                  "enemy SPINNING_KICK hits for 2 (hp 58, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "BASH",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 12 (enemy 29)"
+                ],
+                "kind": "play",
+                "target": "41hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 20)"
+                ],
+                "kind": "play",
+                "target": "29hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 58, block 15)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 12 (enemy 8)"
+                ],
+                "kind": "play",
+                "target": "20hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -1)"
+                ],
+                "kind": "play",
+                "target": "8hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 5
+          }
+        ],
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 5,
+        "won": true,
+        "world": 1
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 58,
+        "hp_lost": 6,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 35)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 3)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 1)",
+                  "enemy SPINNING_KICK hits for 1 (hp 60, block 0)",
+                  "enemy SPINNING_KICK hits for 2 (hp 58, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 26)"
+                ],
+                "kind": "play",
+                "target": "35hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 17)"
+                ],
+                "kind": "play",
+                "target": "26hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 58, block 15)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 9)"
+                ],
+                "kind": "play",
+                "target": "17hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 0)"
+                ],
+                "kind": "play",
+                "target": "9hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "UNMOVABLE"
+            ],
+            "hp": 58,
+            "turn": 5
+          }
+        ],
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 5,
+        "won": true,
+        "world": 2
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 37)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "ASCENDERS_BANE",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 31)"
+                ],
+                "kind": "play",
+                "target": "37hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 25)"
+                ],
+                "kind": "play",
+                "target": "31hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 19)"
+                ],
+                "kind": "play",
+                "target": "25hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 61, block 5)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 13)"
+                ],
+                "kind": "play",
+                "target": "19hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 56)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 52)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 48)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 44)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 5
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 5)"
+                ],
+                "kind": "play",
+                "target": "13hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -4)"
+                ],
+                "kind": "play",
+                "target": "5hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 6
+          }
+        ],
+        "potions_used": 0,
+        "states": 3967,
+        "turns": 6,
+        "won": true,
+        "world": 3
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 60,
+        "hp_lost": 4,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 35)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 26)"
+                ],
+                "kind": "play",
+                "target": "35hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "BASH"
+            ],
+            "hp": 61,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 25)"
+                ],
+                "kind": "play",
+                "target": "26hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 61, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 11)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 7)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 3)",
+                  "enemy SPINNING_KICK hits for 1 (hp 60, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 5
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 17)"
+                ],
+                "kind": "play",
+                "target": "25hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 8)"
+                ],
+                "kind": "play",
+                "target": "17hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 60,
+            "turn": 6
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 7)"
+                ],
+                "kind": "play",
+                "target": "8hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -2)"
+                ],
+                "kind": "play",
+                "target": "7hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS"
+            ],
+            "hp": 60,
+            "turn": 7
+          }
+        ],
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 7,
+        "won": true,
+        "world": 4
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 56,
+        "hp_lost": 8,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 37)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SEA_KICK hits for 8 (hp 56, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "ASCENDERS_BANE",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH",
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 56,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 29)"
+                ],
+                "kind": "play",
+                "target": "37hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 20)"
+                ],
+                "kind": "play",
+                "target": "29hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 56,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 19)"
+                ],
+                "kind": "play",
+                "target": "20hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 56, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 56,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 13)"
+                ],
+                "kind": "play",
+                "target": "19hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 56)",
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 52)",
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 48)",
+                  "enemy SPINNING_KICK hits for 0 (hp 56, block 44)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS"
+            ],
+            "hp": 56,
+            "turn": 5
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 5)"
+                ],
+                "kind": "play",
+                "target": "13hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -4)"
+                ],
+                "kind": "play",
+                "target": "5hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH"
+            ],
+            "hp": 56,
+            "turn": 6
+          }
+        ],
+        "potions_used": 0,
+        "states": 11753,
+        "turns": 6,
+        "won": true,
+        "world": 5
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 41)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH",
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 32)"
+                ],
+                "kind": "play",
+                "target": "41hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 23)"
+                ],
+                "kind": "play",
+                "target": "32hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 14)"
+                ],
+                "kind": "play",
+                "target": "23hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS"
+            ],
+            "hp": 61,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 0 (enemy 14)"
+                ],
+                "kind": "play",
+                "target": "14hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 61, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS"
+            ],
+            "hp": 61,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 8)"
+                ],
+                "kind": "play",
+                "target": "14hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 2)"
+                ],
+                "kind": "play",
+                "target": "8hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy -4)"
+                ],
+                "kind": "play",
+                "target": "2hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 5
+          }
+        ],
+        "potions_used": 0,
+        "states": 3894,
+        "turns": 5,
+        "won": true,
+        "world": 6
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 58,
+        "hp_lost": 6,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 64, block 17)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS",
+              "BASH"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 64, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 64, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 64, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 64, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 37)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 0 (enemy 37)"
+                ],
+                "kind": "play",
+                "target": "37hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 4 (enemy 33)"
+                ],
+                "kind": "play",
+                "target": "37hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 5 (hp 59, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 64,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 27)"
+                ],
+                "kind": "play",
+                "target": "33hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 59, block 11)",
+                  "enemy SPINNING_KICK hits for 0 (hp 59, block 7)",
+                  "enemy SPINNING_KICK hits for 0 (hp 59, block 3)",
+                  "enemy SPINNING_KICK hits for 1 (hp 58, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 59,
+            "turn": 5
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 19)"
+                ],
+                "kind": "play",
+                "target": "27hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 6
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 18)"
+                ],
+                "kind": "play",
+                "target": "19hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 9)"
+                ],
+                "kind": "play",
+                "target": "18hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 0)"
+                ],
+                "kind": "play",
+                "target": "9hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 58,
+            "turn": 7
+          }
+        ],
+        "potions_used": 0,
+        "states": 1,
+        "turns": 7,
+        "won": true,
+        "world": 7
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 61,
+        "hp_lost": 3,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 64, block 17)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS",
+              "UNMOVABLE"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 35)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SPINNING_KICK hits for 0 (hp 64, block 3)",
+                  "enemy SPINNING_KICK hits for 0 (hp 64, block 1)",
+                  "enemy SPINNING_KICK hits for 1 (hp 63, block 0)",
+                  "enemy SPINNING_KICK hits for 2 (hp 61, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "ASCENDERS_BANE",
+              "STRIKE_IRONCLAD",
+              "BASH"
+            ],
+            "hp": 64,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 12 (enemy 23)"
+                ],
+                "kind": "play",
+                "target": "35hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 14)"
+                ],
+                "kind": "play",
+                "target": "23hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 1 (enemy 13)"
+                ],
+                "kind": "play",
+                "target": "14hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 4)"
+                ],
+                "kind": "play",
+                "target": "13hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -5)"
+                ],
+                "kind": "play",
+                "target": "4hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE"
+            ],
+            "hp": 61,
+            "turn": 4
+          }
+        ],
+        "potions_used": 0,
+        "states": 5514,
+        "turns": 4,
+        "won": true,
+        "world": 8
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 60,
+        "hp_lost": 4,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 3 (hp 61, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS",
+              "BASH"
+            ],
+            "hp": 64,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 43)"
+                ],
+                "kind": "play",
+                "target": "49hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 37)"
+                ],
+                "kind": "play",
+                "target": "43hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 8)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 6)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 4)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 2)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 8 (enemy 29)"
+                ],
+                "kind": "play",
+                "target": "37hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 20)"
+                ],
+                "kind": "play",
+                "target": "29hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SEA_KICK hits for 0 (hp 61, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 14)"
+                ],
+                "kind": "play",
+                "target": "20hp SEAPUNK"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 11)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 7)",
+                  "enemy SPINNING_KICK hits for 0 (hp 61, block 3)",
+                  "enemy SPINNING_KICK hits for 1 (hp 60, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 61,
+            "turn": 5
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 8)"
+                ],
+                "kind": "play",
+                "target": "14hp SEAPUNK"
+              },
+              {
+                "events": [
+                  "enemy: BUBBLE_BURP: block 8, +2 Strength",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 60,
+            "turn": 6
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH",
+                "events": [
+                  "BASH hits for 0 (enemy 8)"
+                ],
+                "kind": "play",
+                "target": "8hp SEAPUNK"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -1)"
+                ],
+                "kind": "play",
+                "target": "8hp SEAPUNK"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 60,
+            "turn": 7
+          }
+        ],
+        "potions_used": 0,
+        "states": 4097,
+        "turns": 7,
+        "won": true,
+        "world": 9
+      }
+    ],
+    "potions_used": {
+      "count": 10,
+      "mean": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "p10": 0,
+      "p90": 0
+    },
+    "turns": {
+      "count": 10,
+      "mean": {
+        "denominator": 10,
+        "numerator": 59
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 6
+      },
+      "p10": 4,
+      "p90": 7
+    },
+    "win_rate": {
+      "kind": "lower_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "winning_worlds": 10,
+    "wins": 10,
+    "world_count": 10
+  },
+  "degraded_reasons": [
+    "upgrade_copy_assignment_ambiguous"
+  ],
+  "derived": {
+    "luck_percentile": {
+      "available": false,
+      "exact": false,
+      "kind": "unavailable",
+      "percentile": null,
+      "tied_worlds": null,
+      "world_count": 10,
+      "worse_worlds": null
+    },
+    "skill_gap": {
+      "available": false,
+      "display": null,
+      "exact": false,
+      "hp_lost": null,
+      "kind": "unavailable"
+    }
+  },
+  "fight": {
+    "encounter_id": "ENCOUNTER.SEAPUNK_WEAK",
+    "fight_index": 0,
+    "node_type": "monster",
+    "run_file": "8DVXPWUWRY.run",
+    "run_seed": "8DVXPWUWRY"
+  },
+  "metadata": {
+    "assumed_fully_unlocked": true,
+    "benchmark_name": "best play per sampled shuffle",
+    "counter_overrides": {},
+    "deadlines_seconds": {
+      "benchmark_world": 2.0,
+      "best_actual_seed": 5.0
+    },
+    "elapsed_seconds": {
+      "benchmark": 17.898138457909226,
+      "best_actual_seed": null,
+      "total": 17.90158350020647
+    },
+    "entry_caveats": [],
+    "fully_unlocked_card_pool": true,
+    "horizon": 12,
+    "k": 10,
+    "sampling_seed": "phase1a-fixtures-2026-08-08",
+    "solver_build": "v0.108.0",
+    "trust_tier": "modeled"
+  },
+  "schema_version": 3,
+  "status": "ok_benchmark_only"
+}

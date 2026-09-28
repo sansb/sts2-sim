@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "PV50J5A2QDVZ",
+ "node": 7,
+ "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "db27260544d71155beaf5acea581e5f1a7eb0e7a0ee2fc4c192d5237dd1e5d36",
+ "save_sha256": "0421672193dcaf5d646a20d53495f8b268b07082ef0dd7a4cb16939a20c31474",
+ "entry_digest": "4ce14ab3eeccd83f2695b590a045de35fa142087ee094885c7ed3fa81c0cbdb8",
+ "checksummed": true
+}

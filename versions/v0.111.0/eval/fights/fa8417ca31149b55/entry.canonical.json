@@ -1,0 +1,441 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hard_to_kill": 9,
+   "hp": 30,
+   "kind": "EXOSKELETON",
+   "max_hp": 30,
+   "move_log": [
+    "SKITTER_MOVE"
+   ],
+   "next_move": "SKITTER_MOVE"
+  },
+  {
+   "hard_to_kill": 9,
+   "hp": 29,
+   "kind": "EXOSKELETON",
+   "max_hp": 29,
+   "move_log": [
+    "MANDIBLES_MOVE"
+   ],
+   "next_move": "MANDIBLES_MOVE",
+   "slot": 1,
+   "uid": 1
+  },
+  {
+   "hard_to_kill": 9,
+   "hp": 28,
+   "kind": "EXOSKELETON",
+   "max_hp": 28,
+   "move_log": [
+    "ENRAGE_MOVE"
+   ],
+   "next_move": "ENRAGE_MOVE",
+   "slot": 2,
+   "uid": 2
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "PHOTON_CUT",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "INJURY",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "MANIFEST_AUTHORITY",
+    "uid": 8,
+    "upgrade": 1
+   },
+   {
+    "id": "POOR_SLEEP",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "LUNAR_BLAST",
+    "uid": 10,
+    "upgrade": 1
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "CRASH_LANDING",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "GUIDING_STAR",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "ROYAL_GAMBLE",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "ALIGNMENT",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "HEAVENLY_DRILL",
+    "uid": 17,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "VENERATE",
+    "uid": 19,
+    "upgrade": 1
+   },
+   {
+    "id": "ALIGNMENT",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "TYRANNY",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "BLACK_HOLE",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "PILLAR_OF_CREATION",
+    "uid": 23,
+    "upgrade": 1
+   }
+  ],
+  "hand": [
+   {
+    "id": "FALLING_STAR",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "ROYAL_GAMBLE",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "CLUMSY",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "PILLAR_OF_CREATION",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "block": 10,
+  "cards_drawn_combat": 5,
+  "entropy_card_pool": "regent",
+  "fully_unlocked_potion_pool": true,
+  "gambling_chip": true,
+  "gold": 241,
+  "hp": 60,
+  "inky_attack_damage": 0,
+  "lightning_channeled": 0,
+  "max_hp": 75,
+  "next_card_uid": 24,
+  "pending": [
+   "gambling_chip_select",
+   [
+    [
+     0,
+     [
+      "FALLING_STAR",
+      0
+     ]
+    ],
+    [
+     1,
+     [
+      "ROYAL_GAMBLE",
+      0
+     ]
+    ],
+    [
+     2,
+     [
+      "CLUMSY",
+      0
+     ]
+    ],
+    [
+     3,
+     [
+      "PILLAR_OF_CREATION",
+      0
+     ]
+    ],
+    [
+     4,
+     [
+      "DEFEND_REGENT",
+      0
+     ]
+    ]
+   ]
+  ],
+  "potion_slots": [
+   "FIRE_POTION",
+   "FLEX_POTION"
+  ],
+  "potions": [
+   "FIRE_POTION",
+   "FLEX_POTION"
+  ],
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.DIVINE_RIGHT",
+   "RELIC.HEFTY_TABLET",
+   "RELIC.ANCHOR",
+   "RELIC.LASTING_CANDY",
+   "RELIC.GAMBLING_CHIP",
+   "RELIC.MEAL_TICKET",
+   "RELIC.ASTROLABE"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Regent",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "spectrum_shift_generation_pool": [
+   "ANOINTED",
+   "AUTOMATION",
+   "BEAT_DOWN",
+   "BOLAS",
+   "CALAMITY",
+   "CATASTROPHE",
+   "DARK_SHACKLES",
+   "DISCOVERY",
+   "DRAMATIC_ENTRANCE",
+   "ENTROPY",
+   "EQUILIBRIUM",
+   "ETERNAL_ARMOR",
+   "FASTEN",
+   "FINESSE",
+   "FISTICUFFS",
+   "FLASH_OF_STEEL",
+   "GOLD_AXE",
+   "IMPATIENCE",
+   "JACK_OF_ALL_TRADES",
+   "JACKPOT",
+   "MASTER_OF_STRATEGY",
+   "MAYHEM",
+   "MIND_BLAST",
+   "NOSTALGIA",
+   "OMNISLICE",
+   "PANACHE",
+   "PANIC_BUTTON",
+   "PREP_TIME",
+   "PRODUCTION",
+   "PROLONG",
+   "PROWESS",
+   "PURITY",
+   "REND",
+   "RESTLESSNESS",
+   "ROLLING_BOULDER",
+   "SALVO",
+   "SCRAWL",
+   "SECRET_TECHNIQUE",
+   "SECRET_WEAPON",
+   "SEEKER_STRIKE",
+   "SHOCKWAVE",
+   "SPLASH",
+   "STRATAGEM",
+   "THE_BOMB",
+   "THE_GAMBIT",
+   "THINKING_AHEAD",
+   "THRUMMING_HATCHET",
+   "ULTIMATE_DEFEND",
+   "ULTIMATE_STRIKE",
+   "VOLLEY"
+  ],
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "stars": 3,
+  "stars_gained_this_turn": 3,
+  "template_relics": [
+   "RELIC.DIVINE_RIGHT"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 0,
+   "words": [
+    3943245515344416501,
+    6532678287310449110,
+    17579777883432882120,
+    15832140087776413386
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    14376991690744756776,
+    11799034834621035484,
+    18358745110116090196,
+    14301655039337072273
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    3001087710111086893,
+    13984841859601621434,
+    14102006822569100930,
+    8044134131396992792
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    6260265789037524162,
+    9239273841623196042,
+    1842338337431588412,
+    11817813759745353788
+   ]
+  },
+  "niche": {
+   "counter": 17,
+   "words": [
+    16219604574740049567,
+    17513119512291059145,
+    16850279425135488002,
+    4891739062583174843
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    9026017211990640908,
+    14949845351978252915,
+    5406638389317513742,
+    5371280898585351228
+   ]
+  },
+  "rng": {
+   "counter": 241,
+   "words": [
+    6444305776586649620,
+    3350174418990597580,
+    8642473065983990884,
+    14307497595538007460
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    4477459553857631330,
+    4036964748873658324,
+    10635040777033641294,
+    13533181112059574235
+   ]
+  },
+  "targets": {
+   "counter": 1,
+   "words": [
+    13497853964529819782,
+    3776085587410232624,
+    5080532261882327344,
+    17214808488722685401
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

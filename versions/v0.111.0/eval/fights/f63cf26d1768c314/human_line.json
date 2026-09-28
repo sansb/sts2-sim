@@ -1,0 +1,96 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "5de7f8eea3afd01b46fa35c7672b131f6fb3d9f6efb3595a67ad85b028de44e3",
+ "turns": 5,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 3
+  },
+  {
+   "kind": "play",
+   "uid": 4
+  },
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 2,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 1,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 2,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "c00dfb6aee515edf846234b4431f424086eb313d2434a8af4374340c45c5a559",
+  "9dc1e7dc4a97fc670af917bc12bb53f78d0d48a0755615e9d63a39c0a189d387",
+  "d0964de6a1519ea5e13538007b7dc9a208b10823857e0358de72b16ee5d73df9",
+  "1d06e4ebb3fa1b8430abf31321a1956d09c890a4ab599eba5fb16aacafb55485",
+  "f5e0857842dc27fb2490c0ee4181fc1b65eedd898890d8a9802330f039aa3712",
+  "4bbf536ac1cc731b19fc0d1182d3a0286a0d665f2f77c5312ca72904229f9738",
+  "ec19cf4a07829c158dc77907325d2f4e20fe337904c815ea5a9264c7f64d7f42",
+  "06301d6537b55c8a466887c70d26f71a8d5375ccd1db483f5d39258218dbe68e",
+  "d8a8c87dc3d1f108a3e386bf76697830ed40a2b2f5fae3e89cd02e0396dc23df",
+  "40ae4ad88fff971b12689b2acc6fa0677af0583b8d2fafceda103b1d093e7b97",
+  "395a0f22a789e116ba710867f1d803d5c4cc71923abb33ae482e2c89b351e468",
+  "0c5fb68b2bc6625dcb37e2fa3225ff80c69ebc78220f2b0013a045843e336ff3",
+  "8cf4858ebc3b2010e938a5bdb129860b64671d88003e8a22b769ac444d01aba5",
+  "68d40cfc3796c8ccd744b5cb35dbd9b527d66ca31b1f5643883e079d11adecb9",
+  "43db2044c807d92d15835548fe50434159fe84a316fcbb9fe9eb162451d11418",
+  "4c1bd476549ceed521f47f7965ed5f1263a8c2dc2d3fd0696bf22984d6375287"
+ ],
+ "terminal": {
+  "hp": 55,
+  "turn": 5,
+  "over": true,
+  "won": true
+ }
+}

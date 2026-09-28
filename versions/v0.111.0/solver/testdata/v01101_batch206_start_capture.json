@@ -1,0 +1,140 @@
+{
+  "schema": "sts2-harness-start-projection/v1",
+  "captured_at": "2026-08-01",
+  "provenance": {
+    "source": "versions/v0.111.0/solver/harness/experiment.py fresh-process local engine run",
+    "build": {
+      "version": "v0.110.1",
+      "commit": "db5d3552",
+      "release_date": "2026-07-31T01:18:29-07:00",
+      "main_assembly_hash": 348485714,
+      "sts2_dll_sha256": "5a8fb7eb62510a86fd03653b9210cd8f67b511b632331a1f174042de39c92bd9"
+    },
+    "command": "versions/v0.111.0/solver/harness/venv/bin/python solver/harness/experiment.py /tmp/batch206-v01101-start-spec.json",
+    "normalization": "Dropped process-local CardModel and Monster object suffixes; retained exact model ids, values, order, counters, and input spec."
+  },
+  "spec": {
+    "character": "Ironclad",
+    "ascension": 10,
+    "deck": [
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD"
+    ],
+    "relics": [],
+    "potions": [],
+    "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+    "seed": "TESTSEED",
+    "line": []
+  },
+  "input_rng_counters": {
+    "Shuffle": 0,
+    "CombatCardSelection": 0,
+    "CombatEnergyCosts": 0,
+    "CombatTargets": 0,
+    "MonsterAi": 0,
+    "Niche": 0
+  },
+  "observed_start": {
+    "player": {
+      "hp": 80,
+      "block": 0,
+      "energy": 3
+    },
+    "monsters": [
+      {
+        "id": "MONSTER.CALCIFIED_CULTIST",
+        "hp": 42,
+        "block": 0
+      },
+      {
+        "id": "MONSTER.DAMP_CULTIST",
+        "hp": 53,
+        "block": 0
+      }
+    ],
+    "hand": [
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD",
+      "CARD.STRIKE_IRONCLAD"
+    ],
+    "rng_counters": {
+      "UpFront": 0,
+      "Shuffle": 7,
+      "UnknownMapPoint": 0,
+      "CombatCardGeneration": 0,
+      "CombatPotionGeneration": 0,
+      "CombatCardSelection": 0,
+      "CombatEnergyCosts": 0,
+      "CombatTargets": 0,
+      "MonsterAi": 0,
+      "Niche": 2,
+      "CombatOrbGeneration": 0,
+      "TreasureRoomRelics": 0
+    }
+  },
+  "solver_entry": {
+    "node_index": 0,
+    "node_type": "monster",
+    "encounter_id": "ENCOUNTER.CULTISTS_NORMAL",
+    "monster_ids": [
+      "MONSTER.CALCIFIED_CULTIST",
+      "MONSTER.DAMP_CULTIST"
+    ],
+    "hp_entering": 80,
+    "max_hp_entering": 80,
+    "gold_entering": 0,
+    "deck_entering": [
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      },
+      {
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_level": 0,
+        "floor_added": 0
+      }
+    ],
+    "relics_entering": [],
+    "potions_entering": [],
+    "caveats": []
+  }
+}

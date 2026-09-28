@@ -1,0 +1,94 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "8f4f97fdedcce3361be0f237828e449e9835f6588070aa0392ad422f42213dd9",
+ "turns": 4,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 3
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 10
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 0
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 11
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 13,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 15
+  },
+  {
+   "kind": "play",
+   "uid": 5,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "play",
+   "uid": 0,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "a1ef5783db869af118b3e742a23373a327e84189338f2929e5f96ba4b0310056",
+  "9a16298fb047bcce3207a9cd5ad5e7dd50f313089eb97a4f393082228f00e96d",
+  "89dc58ebe652e83b810c52c7ae9716af6e650c7a7057140db36361ec656f8423",
+  "b9ff40afc4fe79fe5fff3c5221da84ff7b44aad8dc6e620f7ac65b6c61440b4b",
+  "849257dbcb1debc52b7d1a2e44b12eb9c204e5352eed355ef97ae357c3fd7c92",
+  "51fedbdda1da9c7534459ab1ec363c6ad0fb2cdf2abf49ae6d2904c2a6fb6033",
+  "6ea688a2a4026e81fdfbf6cf6bfd0c0c9a7a2f63fbe7f468b720fc268702e9f8",
+  "86f87653e51bf55f1d02d8daaff82ab12a0b07bd94ecd9c369919c0c25f01754",
+  "4336eaa08cc8e0bb07d89d54dac75ae7fed948044106f26e9e02b73b5e26b575",
+  "ce9dd58751eb45bf9f248327531611caa07f50a3cb724face1642b393d4252e5",
+  "0dc9490dd933c33328b6e778b99ecc06b82c0f77927ee39f9b5d4f4ab5b763c3",
+  "a0b4eefdfc07136b557e311e57ba3fd41844b390179a3f69b8fc767aaab9455b",
+  "45e0e02758025e93202551b9a477c43dadce114c98d6e73011796a117a276d63",
+  "6c71a55d30fa954777b4aebc78437a948dd5f35cfc60ac2ef7a55dcb55952fe0",
+  "f09845d187f59d390b0edef4bacefb6a7e079beed5f67bb2cbb729a78996617c"
+ ],
+ "terminal": {
+  "hp": 48,
+  "turn": 4,
+  "over": true,
+  "won": true
+ }
+}

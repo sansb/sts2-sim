@@ -1,0 +1,12 @@
+{
+  "base_sha": "1617eec612eff8440344baa1e1f544d6b084d90c",
+  "save_sha256": "bf50c88e2b05f9cb490306333267d8d732488d15ee0780ac791e7803c06dc439",
+  "mcr_sha256": "bbb304b7585d9bbce4e0a04d6f8b190691c41ea438b45a42d7dd6a41e932cc64",
+  "entry_digest": "4a376c907805cae7a5c831c25ae76bc74e0f187446138536a573c076956ad299",
+  "game_build": "v0.111.0",
+  "search_source_sha256": "3af7e38e1aaf3877bbd6078679bfc47114deca3b58cc3256155496c665ad6dee",
+  "driver_source_sha256": "ffe42dadda6258e117cda5d9270f99fedcdef09281e98d8ef2200aae2886dcdd",
+  "measurement_note": "Sequential 30 s searches in the shared workload lane; loaded-host timings, not isolated performance floors. Initial binary predates the optional fixed-playout CLI argument; full 70,250-playout best-run reproduction verifies equivalent search behavior.",
+  "advisory_python_limit": "uct-2 Python replay exceeded a 45-second process-group deadline at Select action 23; Rust replay passed. uct-1 passed full Python lockstep. Other winning lines were verified Rust-only.",
+  "search_binary_current_sha256": "3ae8baff819973db790bf61261623cc81ee9581be1dae159828ea109c7e82073"
+}

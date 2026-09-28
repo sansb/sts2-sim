@@ -1,0 +1,50 @@
+{
+  "schema": "sts-search-suite-v1",
+  "game_build": "v0.111.0",
+  "selection": "Synthetic post-opening HP stress states. No native provenance or human baseline; not held out. Original RNG, cards and relic state fixed.",
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "seconds_per_search": 2,
+  "methods": [
+    "random",
+    "uct"
+  ],
+  "fights": [
+    {
+      "id": "synthetic-insatiable-hp33",
+      "entry": "search/generated/insatiable-hp33.json",
+      "entry_sha256": "fb7aebf0770c1b70e58504156f3f59c8b46945d3f0bba5eb351bd508184c119b",
+      "derived_from": "f143c7e6993ed27c",
+      "source_sha256": "b623eb94a6c4d5304ca2cf0b386b047ae8ebd1c36e2db92e9862440b41273dc0",
+      "mutation": {
+        "player.hp": 33
+      },
+      "synthetic": true
+    },
+    {
+      "id": "synthetic-insatiable-hp16",
+      "entry": "search/generated/insatiable-hp16.json",
+      "entry_sha256": "37b110a34b4f75891a9cac0103ba09287dd28903b6050353b6a27b01f5f1f407",
+      "derived_from": "f143c7e6993ed27c",
+      "source_sha256": "b623eb94a6c4d5304ca2cf0b386b047ae8ebd1c36e2db92e9862440b41273dc0",
+      "mutation": {
+        "player.hp": 16
+      },
+      "synthetic": true
+    },
+    {
+      "id": "synthetic-insatiable-hp8",
+      "entry": "search/generated/insatiable-hp8.json",
+      "entry_sha256": "76a8ba35aab1fc47f0c06c112e75cb627af1ae8ea0957d7ee7e52068e964cb59",
+      "derived_from": "f143c7e6993ed27c",
+      "source_sha256": "b623eb94a6c4d5304ca2cf0b386b047ae8ebd1c36e2db92e9862440b41273dc0",
+      "mutation": {
+        "player.hp": 8
+      },
+      "synthetic": true
+    }
+  ]
+}

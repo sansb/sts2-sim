@@ -1,0 +1,89 @@
+{
+  "schema": "sts-search-suite-v1",
+  "selection": "Frozen before pilot results: longest/death-first certified human line per character; longest distinct boss per character when available; two shortest action-count fixtures; Insatiable positive control. Research/development subset, not a held-out test set.",
+  "game_build": "v0.111.0",
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "seconds_per_search": 2,
+  "methods": [
+    "random",
+    "uct"
+  ],
+  "fights": [
+    {
+      "id": "f143c7e6993ed27c",
+      "character": "DEFECT",
+      "ascension": 9,
+      "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 9
+    },
+    {
+      "id": "fa7c6be4e8c21a27",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 7
+    },
+    {
+      "id": "f016d6f285290648",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+      "human_won": true,
+      "human_hp": 31,
+      "human_turns": 9
+    },
+    {
+      "id": "fab3197748431ab3",
+      "character": "SILENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 5
+    },
+    {
+      "id": "f151a654a6389b80",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 9
+    },
+    {
+      "id": "f7a73b5b897fbea4",
+      "character": "REGENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 3
+    },
+    {
+      "id": "f0d7d781f0657414",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 70,
+      "human_turns": 1
+    },
+    {
+      "id": "fd0576ab4397cc19",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.INKLETS_NORMAL",
+      "human_won": true,
+      "human_hp": 26,
+      "human_turns": 1
+    }
+  ]
+}

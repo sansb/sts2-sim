@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "LGSGDLDD2JXT",
+ "node": 8,
+ "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "8773e0c593a72be88229c5d335d2b756b0d6daabe535c4e1712630c5cdbd5549",
+ "save_sha256": "05d9ea54340e94cc9c0b598cb0b521e84dbfd620f756448a930da652c454a657",
+ "entry_digest": "a5ddc37db408d0156532d273ec285abf928dff37b3f0d0e6ba486140602d381a",
+ "checksummed": true
+}

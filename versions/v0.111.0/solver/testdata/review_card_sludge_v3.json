@@ -1,0 +1,1629 @@
+{
+  "actual": {
+    "entry_hp": 57,
+    "final_hp": 55,
+    "hp_lost": 2,
+    "potions_used": {
+      "count": 0,
+      "names": []
+    },
+    "turns": 5,
+    "won": true
+  },
+  "benchmark": {
+    "deadline_worlds": 6,
+    "distribution_kind": "achieved_lower_bound_biased",
+    "exact": false,
+    "exact_worlds": 4,
+    "hp_lost": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 9
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "p10": 0,
+      "p90": 9
+    },
+    "loss_risk": {
+      "kind": "upper_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "losses": 0,
+    "outcomes": [
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 48,
+        "hp_lost": 9,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 18 (enemy 23)",
+                  "exhaust UNMOVABLE"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 17)"
+                ],
+                "kind": "play",
+                "target": "23hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy OIL_SPRAY hits for 9 (hp 48, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "CINDER",
+              "UNMOVABLE",
+              "ASCENDERS_BANE",
+              "BASH+"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 6 (enemy 11)"
+                ],
+                "kind": "play",
+                "target": "17hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 4 (enemy 7)"
+                ],
+                "kind": "play",
+                "target": "11hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy RAGE hits for 0 (hp 48, block 3)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD+",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 48,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 10 (enemy -3)"
+                ],
+                "kind": "play",
+                "target": "7hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS",
+              "BASH+",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 48,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 16385,
+        "turns": 3,
+        "won": true,
+        "world": 0
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 18 (enemy 23)",
+                  "exhaust DEFEND_IRONCLAD"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "CINDER"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 6 (enemy 17)"
+                ],
+                "kind": "play",
+                "target": "23hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy RAGE hits for 0 (hp 57, block 23)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD+",
+              "IMPERVIOUS",
+              "BASH+",
+              "ASCENDERS_BANE"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 10 (enemy 7)"
+                ],
+                "kind": "play",
+                "target": "17hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy -2)"
+                ],
+                "kind": "play",
+                "target": "7hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH+",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 1120,
+        "turns": 3,
+        "won": true,
+        "world": 1
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 13 (enemy 28)",
+                  "exhaust IMPERVIOUS"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SLAM hits for 0 (hp 57, block 8)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH+",
+              "IMPERVIOUS",
+              "CINDER",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 18 (enemy 10)",
+                  "exhaust STRIKE_IRONCLAD"
+                ],
+                "kind": "play",
+                "target": "28hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "CINDER",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 7 (enemy 3)"
+                ],
+                "kind": "play",
+                "target": "10hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 10 (enemy -7)"
+                ],
+                "kind": "play",
+                "target": "3hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD+",
+              "STRIKE_IRONCLAD",
+              "BASH+",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 4
+          }
+        ],
+        "potions_used": 1,
+        "states": 8193,
+        "turns": 4,
+        "won": true,
+        "world": 2
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 35)"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 21)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SLAM hits for 0 (hp 57, block 8)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH+"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 9 (enemy 26)"
+                ],
+                "kind": "play",
+                "target": "35hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 20)"
+                ],
+                "kind": "play",
+                "target": "26hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD+",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 4 (enemy 16)"
+                ],
+                "kind": "play",
+                "target": "20hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "enemy SLAM hits for 0 (hp 57, block 3)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "CINDER",
+              "BASH+",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 4
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 9 (enemy 7)"
+                ],
+                "kind": "play",
+                "target": "16hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 1)"
+                ],
+                "kind": "play",
+                "target": "7hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy -5)"
+                ],
+                "kind": "play",
+                "target": "1hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD+",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 5
+          }
+        ],
+        "potions_used": 1,
+        "states": 5547,
+        "turns": 5,
+        "won": true,
+        "world": 3
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 9 (enemy 32)"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 26)"
+                ],
+                "kind": "play",
+                "target": "32hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 4 (enemy 22)"
+                ],
+                "kind": "play",
+                "target": "26hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy RAGE hits for 0 (hp 57, block 23)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH+",
+              "IMPERVIOUS",
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 18 (enemy 4)",
+                  "exhaust DEFEND_IRONCLAD"
+                ],
+                "kind": "play",
+                "target": "22hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy -2)"
+                ],
+                "kind": "play",
+                "target": "4hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 12289,
+        "turns": 3,
+        "won": true,
+        "world": 4
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 18 (enemy 23)",
+                  "exhaust ASCENDERS_BANE"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "CINDER",
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy RAGE hits for 0 (hp 57, block 28)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 10 (enemy 13)"
+                ],
+                "kind": "play",
+                "target": "23hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 13 (enemy 0)"
+                ],
+                "kind": "play",
+                "target": "13hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "BASH+",
+              "STRIKE_IRONCLAD+",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 6873,
+        "turns": 3,
+        "won": true,
+        "world": 5
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 10 (enemy 31)"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "BASH+",
+              "ASCENDERS_BANE"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy RAGE hits for 0 (hp 57, block 23)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 13 (enemy 18)"
+                ],
+                "kind": "play",
+                "target": "31hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 9)"
+                ],
+                "kind": "play",
+                "target": "18hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 9 (enemy 0)"
+                ],
+                "kind": "play",
+                "target": "9hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD+",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 12289,
+        "turns": 3,
+        "won": true,
+        "world": 6
+      },
+      {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 9 (enemy 32)"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 21)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD",
+              "BASH+",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "UNMOVABLE",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy RAGE hits for 0 (hp 57, block 3)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 9 (enemy 23)"
+                ],
+                "kind": "play",
+                "target": "32hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "enemy SLAM hits for 0 (hp 57, block 0)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 3
+          },
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 10 (enemy 13)"
+                ],
+                "kind": "play",
+                "target": "23hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 13 (enemy 0)"
+                ],
+                "kind": "play",
+                "target": "13hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "STRIKE_IRONCLAD",
+              "BASH+",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 4
+          }
+        ],
+        "potions_used": 0,
+        "states": 4797,
+        "turns": 4,
+        "won": true,
+        "world": 7
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 48,
+        "hp_lost": 9,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "BASH+",
+                "events": [
+                  "BASH+ hits for 10 (enemy 31)"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 13 (enemy 18)"
+                ],
+                "kind": "play",
+                "target": "31hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "events": [
+                  "enemy OIL_SPRAY hits for 9 (hp 48, block 0)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "BASH+",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "UNMOVABLE",
+              "STRIKE_IRONCLAD+"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 12)"
+                ],
+                "kind": "play",
+                "target": "18hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy SLAM hits for 0 (hp 48, block 18)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "ASCENDERS_BANE",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "IMPERVIOUS"
+            ],
+            "hp": 48,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 27 (enemy -15)",
+                  "exhaust UNMOVABLE"
+                ],
+                "kind": "play",
+                "target": "12hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "UNMOVABLE"
+            ],
+            "hp": 48,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 16385,
+        "turns": 3,
+        "won": true,
+        "world": 8
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "line": [
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 35)"
+                ],
+                "kind": "play",
+                "target": "41hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 6 (enemy 29)"
+                ],
+                "kind": "play",
+                "target": "35hp SLUDGE_SPINNER"
+              },
+              {
+                "events": [
+                  "potion SPEED_POTION"
+                ],
+                "kind": "potion",
+                "potion": "SPEED_POTION"
+              },
+              {
+                "card": "DEFEND_IRONCLAD",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "ASCENDERS_BANE exhausts (ethereal)",
+                  "enemy OIL_SPRAY hits for 0 (hp 57, block 1)"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "UNMOVABLE",
+              "DEFEND_IRONCLAD",
+              "ASCENDERS_BANE",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD"
+            ],
+            "hp": 57,
+            "turn": 1
+          },
+          {
+            "actions": [
+              {
+                "card": "STRIKE_IRONCLAD",
+                "events": [
+                  "STRIKE_IRONCLAD hits for 4 (enemy 25)"
+                ],
+                "kind": "play",
+                "target": "29hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "IMPERVIOUS",
+                "kind": "play"
+              },
+              {
+                "events": [
+                  "enemy SLAM hits for 0 (hp 57, block 18)",
+                  "reshuffle"
+                ],
+                "kind": "end"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "IMPERVIOUS",
+              "DEFEND_IRONCLAD",
+              "DEFEND_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH+"
+            ],
+            "hp": 57,
+            "turn": 2
+          },
+          {
+            "actions": [
+              {
+                "card": "CINDER",
+                "events": [
+                  "CINDER hits for 18 (enemy 7)",
+                  "exhaust BASH+"
+                ],
+                "kind": "play",
+                "target": "25hp SLUDGE_SPINNER"
+              },
+              {
+                "card": "STRIKE_IRONCLAD+",
+                "events": [
+                  "STRIKE_IRONCLAD+ hits for 9 (enemy -2)"
+                ],
+                "kind": "play",
+                "target": "7hp SLUDGE_SPINNER"
+              }
+            ],
+            "block": 0,
+            "hand": [
+              "CINDER",
+              "STRIKE_IRONCLAD+",
+              "STRIKE_IRONCLAD",
+              "STRIKE_IRONCLAD",
+              "BASH+"
+            ],
+            "hp": 57,
+            "turn": 3
+          }
+        ],
+        "potions_used": 1,
+        "states": 12289,
+        "turns": 3,
+        "won": true,
+        "world": 9
+      }
+    ],
+    "potions_used": {
+      "count": 10,
+      "mean": {
+        "denominator": 10,
+        "numerator": 9
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "p10": 0,
+      "p90": 1
+    },
+    "turns": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 17
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 3
+      },
+      "p10": 3,
+      "p90": 4
+    },
+    "win_rate": {
+      "kind": "lower_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "winning_worlds": 10,
+    "wins": 10,
+    "world_count": 10
+  },
+  "best_actual_seed": {
+    "bound": "exact",
+    "deadline_hit": false,
+    "exact": true,
+    "final_hp": 57,
+    "hp_lost": 0,
+    "line": [
+      {
+        "actions": [
+          {
+            "card": "DEFEND_IRONCLAD",
+            "kind": "play"
+          },
+          {
+            "card": "IMPERVIOUS",
+            "kind": "play"
+          },
+          {
+            "events": [
+              "enemy OIL_SPRAY hits for 0 (hp 57, block 26)"
+            ],
+            "kind": "end"
+          }
+        ],
+        "block": 0,
+        "hand": [
+          "DEFEND_IRONCLAD",
+          "STRIKE_IRONCLAD+",
+          "IMPERVIOUS",
+          "CINDER",
+          "BASH+"
+        ],
+        "hp": 57,
+        "turn": 1
+      },
+      {
+        "actions": [
+          {
+            "card": "UNMOVABLE",
+            "kind": "play"
+          },
+          {
+            "card": "DEFEND_IRONCLAD",
+            "kind": "play"
+          },
+          {
+            "events": [
+              "enemy RAGE hits for 0 (hp 57, block 3)",
+              "reshuffle"
+            ],
+            "kind": "end"
+          }
+        ],
+        "block": 0,
+        "hand": [
+          "STRIKE_IRONCLAD",
+          "UNMOVABLE",
+          "STRIKE_IRONCLAD",
+          "DEFEND_IRONCLAD",
+          "STRIKE_IRONCLAD"
+        ],
+        "hp": 57,
+        "turn": 2
+      },
+      {
+        "actions": [
+          {
+            "card": "DEFEND_IRONCLAD",
+            "kind": "play"
+          },
+          {
+            "card": "DEFEND_IRONCLAD",
+            "kind": "play"
+          },
+          {
+            "card": "STRIKE_IRONCLAD",
+            "events": [
+              "STRIKE_IRONCLAD hits for 6 (enemy 35)"
+            ],
+            "kind": "play",
+            "target": "41hp SLUDGE_SPINNER"
+          },
+          {
+            "events": [
+              "ASCENDERS_BANE exhausts (ethereal)",
+              "enemy OIL_SPRAY hits for 0 (hp 57, block 3)"
+            ],
+            "kind": "end"
+          }
+        ],
+        "block": 0,
+        "hand": [
+          "ASCENDERS_BANE",
+          "DEFEND_IRONCLAD",
+          "DEFEND_IRONCLAD",
+          "BASH+",
+          "STRIKE_IRONCLAD"
+        ],
+        "hp": 57,
+        "turn": 3
+      },
+      {
+        "actions": [
+          {
+            "card": "DEFEND_IRONCLAD",
+            "kind": "play"
+          },
+          {
+            "card": "CINDER",
+            "events": [
+              "CINDER hits for 13 (enemy 22)",
+              "exhaust STRIKE_IRONCLAD"
+            ],
+            "kind": "play",
+            "target": "35hp SLUDGE_SPINNER"
+          },
+          {
+            "events": [
+              "enemy RAGE hits for 0 (hp 57, block 0)",
+              "reshuffle"
+            ],
+            "kind": "end"
+          }
+        ],
+        "block": 0,
+        "hand": [
+          "STRIKE_IRONCLAD",
+          "CINDER",
+          "DEFEND_IRONCLAD",
+          "STRIKE_IRONCLAD+",
+          "STRIKE_IRONCLAD"
+        ],
+        "hp": 57,
+        "turn": 4
+      },
+      {
+        "actions": [
+          {
+            "card": "BASH+",
+            "events": [
+              "BASH+ hits for 10 (enemy 12)"
+            ],
+            "kind": "play",
+            "target": "22hp SLUDGE_SPINNER"
+          },
+          {
+            "card": "STRIKE_IRONCLAD+",
+            "events": [
+              "STRIKE_IRONCLAD+ hits for 13 (enemy -1)"
+            ],
+            "kind": "play",
+            "target": "12hp SLUDGE_SPINNER"
+          }
+        ],
+        "block": 0,
+        "hand": [
+          "DEFEND_IRONCLAD",
+          "STRIKE_IRONCLAD",
+          "CINDER",
+          "BASH+",
+          "STRIKE_IRONCLAD+"
+        ],
+        "hp": 57,
+        "turn": 5
+      }
+    ],
+    "potions_used": 0,
+    "states": 21118,
+    "turns": 5,
+    "won": true
+  },
+  "degraded_reasons": [],
+  "derived": {
+    "luck_percentile": {
+      "available": true,
+      "exact": false,
+      "kind": "achieved",
+      "percentile": {
+        "denominator": 1,
+        "numerator": 60
+      },
+      "tied_worlds": 8,
+      "world_count": 10,
+      "worse_worlds": 2
+    },
+    "skill_gap": {
+      "available": true,
+      "display": "2",
+      "exact": true,
+      "hp_lost": 2,
+      "kind": "exact"
+    }
+  },
+  "fight": {
+    "encounter_id": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+    "fight_index": 1,
+    "node_type": "monster",
+    "run_file": "8DVXPWUWRY.run",
+    "run_seed": "8DVXPWUWRY"
+  },
+  "metadata": {
+    "assumed_fully_unlocked": true,
+    "benchmark_name": "best play per sampled shuffle",
+    "counter_overrides": {},
+    "deadlines_seconds": {
+      "benchmark_world": 2.0,
+      "best_actual_seed": 5.0
+    },
+    "elapsed_seconds": {
+      "benchmark": 18.010832582600415,
+      "best_actual_seed": 3.8476549168117344,
+      "total": 21.864222540985793
+    },
+    "entry_caveats": [
+      "fight 0 (ENCOUNTER.SEAPUNK_WEAK): deck held cards that can leave/alter the cycle unrecorded (IMPERVIOUS, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+    ],
+    "fully_unlocked_card_pool": true,
+    "horizon": 12,
+    "k": 10,
+    "sampling_seed": "phase1a-fixtures-2026-08-08",
+    "solver_build": "v0.108.0",
+    "trust_tier": "certified"
+  },
+  "schema_version": 3,
+  "status": "ok"
+}

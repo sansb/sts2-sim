@@ -1,0 +1,46 @@
+[package]
+name = "sts-sim"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Rust port of the v0.111.0 STS2 combat simulator (#1282)"
+
+[features]
+default = []
+allocation-counting = []
+
+[lib]
+name = "sts_sim"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sts-sim"
+path = "src/main.rs"
+
+[dependencies]
+rust_decimal = { version = "1.38", default-features = false, features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+sha2 = "0.10"
+
+# Benchmarks ship from release builds, so pin the codegen settings here rather
+# than leaving them to whatever profile a caller happens to use (PORT_PLAN §2).
+# dev/test stay on cargo defaults for compile speed.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+# The shipped CLI exposes typed refusals and never catches a panic.  Keeping
+# unwinding in this large binary only retains landing pads/unwind metadata in
+# the measured release image; dev/test keep Cargo's unwinding default for the
+# invariant tests that deliberately use `catch_unwind`.
+panic = "abort"
+
+[lints.clippy]
+debug_assert_with_mut_call = "deny"
+
+# Dev-profile codegen with debug assertions OFF (#2472). See the guard test
+# comment; used only to run the certified pins the way the shipped release
+# binary runs them.
+[profile.assertless]
+inherits = "dev"
+debug-assertions = false

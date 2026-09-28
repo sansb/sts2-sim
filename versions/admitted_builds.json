@@ -1,0 +1,47 @@
+{
+  "schema": "sts-solver-admitted-builds/v1",
+  "authority": "This file is the SOLE admission authority for combat semantics (#1258, I11). A build absent from `builds` is refused; there is no range, no `latest` fallback, and no default. Adding an entry is a deliberate act that must cite the evidence listed in solver/SIM_VERSIONING.md: the archived DLL pinned by sha256, a completed version-impact triage, a green harness oracle corpus, and regenerated build-owned data artifacts.",
+  "states": {
+    "pending": "the DLL is archived so this build COULD be admitted, but none of the four admission criteria have been met; a run on it is deferred, not refused. Not a queue promise and not a document status. Copying a predecessor must never itself enable a build",
+    "admitted": "all four admission criteria met",
+    "revoked": "terminal, per revision, retained for auditability; a corrected successor is a new revision"
+  },
+  "builds": {
+    "v0.111.0": {
+      "state": "admitted",
+      "bundle": "versions/v0.111.0/solver",
+      "game_commit": "41cef1ea",
+      "dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+      "evidence": "#1214 version-impact triage against pinned v0.110.1 foundations; batches 294-298 remodels (#1215 cards, #1216 encounters, #1217 shared combat, #1218 RNG/relics, #1222 Inky)"
+    },
+    "v0.110.1": {
+      "state": "pending",
+      "bundle": null,
+      "game_commit": "db5d3552",
+      "dll_sha256": "5a8fb7eb62510a86fd03653b9210cd8f67b511b632331a1f174042de39c92bd9",
+      "evidence": "DLL archived 2026-08-01 (solver/dll-archive/index.json), so admission remains possible at explicit cost. No bundle, no version-impact triage, no harness oracle corpus, no regenerated data artifacts -- none of the four admission criteria are met."
+    },
+    "v0.109.1": {
+      "state": "pending",
+      "bundle": null,
+      "game_commit": "c8c577f6",
+      "dll_sha256": "2cb39e2eee651743829abcc0df4dd9cd7e65f46287c7ca264481115c9602382f",
+      "evidence": "DLL archived 2026-07-26 (solver/dll-archive/index.json), so admission remains possible at explicit cost. No bundle, no version-impact triage, no harness oracle corpus, no regenerated data artifacts -- none of the four admission criteria are met."
+    },
+    "v0.109.0": {
+      "state": "pending",
+      "bundle": null,
+      "game_commit": "c12f634d",
+      "dll_sha256": "06c78d946ca70658e85abb28f6dc2ee0a023a4467faf0708ff542180fe5f4c82",
+      "evidence": "DLL archived 2026-07-17 (solver/dll-archive/index.json), so admission remains possible at explicit cost. No bundle, no version-impact triage, no harness oracle corpus, no regenerated data artifacts -- none of the four admission criteria are met."
+    },
+    "v0.107.1": {
+      "state": "pending",
+      "bundle": null,
+      "game_commit": "59260271",
+      "dll_sha256": "e7ceb80669bfaf5c8fccabaa126ae2bb283aba514be5b5b55612579cfd285f18",
+      "evidence": "DLL archived 2026-08-06 (solver/dll-archive/index.json), so admission remains possible at explicit cost. No bundle, no version-impact triage, no harness oracle corpus, no regenerated data artifacts -- none of the four admission criteria are met."
+    }
+  },
+  "deferral": "A build absent from `builds` can never be admitted -- its DLL was never archived, so its combat semantics can never be verified (#309: Steam deletes old builds on update). A run on such a build is permanently unreviewable and refuses terminally. A run on a `pending` build is DEFERRED: stored with no result yet, and regenerated if that build is ever admitted. The difference is whether the evidence still exists, not how old the build is (#1268)."
+}

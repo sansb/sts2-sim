@@ -1,0 +1,413 @@
+{
+  "rows": [
+    {
+      "end_turn_digests": [
+        "ce9c7f4486ca1ae721b42e94001c1e471ebcf57cc7a4109244bdecc4d10071a2",
+        "e7aa808cd809ef300bda62b52ca85ec79f46677b3a17a422efc823abe690301e"
+      ],
+      "entry": {
+        "game_build": "v0.111.0",
+        "monsters": [
+          {
+            "hp": 14,
+            "kind": "LEAF_SLIME_S",
+            "max_hp": 14,
+            "move_log": [
+              "TACKLE_MOVE"
+            ],
+            "next_move": "TACKLE_MOVE"
+          },
+          {
+            "hp": 28,
+            "kind": "TWIG_SLIME_M",
+            "max_hp": 28,
+            "move_log": [
+              "STICKY_SHOT_MOVE"
+            ],
+            "next_move": "STICKY_SHOT_MOVE",
+            "slot": 1,
+            "uid": 1
+          },
+          {
+            "hp": 8,
+            "kind": "TWIG_SLIME_S",
+            "max_hp": 8,
+            "slot": 2,
+            "uid": 2
+          }
+        ],
+        "piles": {
+          "discard": [],
+          "draw": [
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 5,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 6,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 7,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 8,
+              "upgrade": 0
+            },
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 9,
+              "upgrade": 0
+            },
+            {
+              "id": "ASCENDERS_BANE",
+              "uid": 10,
+              "upgrade": 0
+            }
+          ],
+          "hand": [
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 0,
+              "upgrade": 0
+            },
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 1,
+              "upgrade": 0
+            },
+            {
+              "id": "BASH",
+              "uid": 2,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 3,
+              "upgrade": 0
+            },
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 4,
+              "upgrade": 0
+            }
+          ]
+        },
+        "player": {
+          "cards_drawn_combat": 5,
+          "gold": 249,
+          "hp": 64,
+          "inky_attack_damage": 0,
+          "max_hp": 80,
+          "next_card_uid": 11,
+          "player_phase": 3,
+          "ps_strikes": 5,
+          "regalite_block_amount": 4,
+          "relics_entering": [
+            "RELIC.BURNING_BLOOD",
+            "RELIC.GOLDEN_PEARL"
+          ],
+          "reward_card_pool": "Ironclad",
+          "reward_card_rarity_odds": "RegularEncounter"
+        },
+        "rng": {
+          "ai": {
+            "counter": 1,
+            "words": [
+              4576486692958027991,
+              13763485724632240395,
+              9893721308214196362,
+              15551378541965251223
+            ]
+          },
+          "combat_orbs": {
+            "counter": 0,
+            "words": [
+              12341880074988765446,
+              14087352892144607914,
+              1533351461823161729,
+              5313927986255503873
+            ]
+          },
+          "energy_costs": {
+            "counter": 0,
+            "words": [
+              3356263516232038877,
+              18349475325317496985,
+              3118402253226567489,
+              3113767189748824282
+            ]
+          },
+          "generation": {
+            "counter": 0,
+            "words": [
+              8923584941125578409,
+              16108283390745545788,
+              10373971032938852887,
+              7009263313074812283
+            ]
+          },
+          "niche": {
+            "counter": 3,
+            "words": [
+              18421383392444883322,
+              10467990696851251515,
+              7775302486902865950,
+              15347724501345472327
+            ]
+          },
+          "potion_generation": {
+            "counter": 0,
+            "words": [
+              7896960147434130262,
+              16657942201566272939,
+              3080985172652343737,
+              2869702574705540984
+            ]
+          },
+          "rng": {
+            "counter": 10,
+            "words": [
+              5396331302709621533,
+              6111604390457850275,
+              14414072246568773691,
+              12689744160856564873
+            ]
+          },
+          "sel": {
+            "counter": 0,
+            "words": [
+              3312481799708634942,
+              6316216944795565248,
+              13958158469413649848,
+              7748210327879491790
+            ]
+          },
+          "targets": {
+            "counter": 0,
+            "words": [
+              9616068660393633003,
+              3547981973738774106,
+              2715949566228164862,
+              11866779017172273660
+            ]
+          }
+        },
+        "schema": "sts-sim-canonical-v2"
+      },
+      "entry_digest": "fcac9954e668f82f68126cd23635b46f1131b209e05de63cd002c130be12b090",
+      "id": "direct-6p96-fight-0"
+    },
+    {
+      "end_turn_digests": [
+        "7df0dd295b5fc55ffbf46c233e61b0bb06f88acb82c6c6bc27419a3f8bc8dc9c",
+        "e3400e688fdcd4d7f269deaf056904e8f3311b37aa0eed46a46f15f2d3ed35ef",
+        "472ff83596ea93b2ff302bc72145853869a8d70ed9c28e12f9902092211a0ddb",
+        "1641a4514531a92f856d78a51d49c1543b2b5535460ab5bc7c12e019383939b7"
+      ],
+      "entry": {
+        "game_build": "v0.111.0",
+        "monsters": [
+          {
+            "hp": 29,
+            "kind": "TWIG_SLIME_M",
+            "max_hp": 29,
+            "move_log": [
+              "STICKY_SHOT_MOVE"
+            ],
+            "next_move": "STICKY_SHOT_MOVE"
+          },
+          {
+            "hp": 36,
+            "kind": "LEAF_SLIME_M",
+            "max_hp": 36,
+            "slot": 1,
+            "uid": 1
+          },
+          {
+            "hp": 13,
+            "kind": "LEAF_SLIME_S",
+            "max_hp": 13,
+            "move_log": [
+              "TACKLE_MOVE"
+            ],
+            "next_move": "TACKLE_MOVE",
+            "slot": 2,
+            "uid": 2
+          },
+          {
+            "hp": 10,
+            "kind": "TWIG_SLIME_S",
+            "max_hp": 10,
+            "slot": 3,
+            "uid": 3
+          }
+        ],
+        "piles": {
+          "discard": [],
+          "draw": [
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 5,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 6,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 7,
+              "upgrade": 0
+            },
+            {
+              "id": "BASH",
+              "uid": 8,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 9,
+              "upgrade": 0
+            }
+          ],
+          "hand": [
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 0,
+              "upgrade": 0
+            },
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 1,
+              "upgrade": 0
+            },
+            {
+              "id": "DEFEND_IRONCLAD",
+              "uid": 2,
+              "upgrade": 0
+            },
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 3,
+              "upgrade": 0
+            },
+            {
+              "id": "STRIKE_IRONCLAD",
+              "uid": 4,
+              "upgrade": 0
+            }
+          ]
+        },
+        "player": {
+          "cards_drawn_combat": 5,
+          "gold": 99,
+          "hp": 999,
+          "inky_attack_damage": 0,
+          "next_card_uid": 10,
+          "player_phase": 3,
+          "ps_strikes": 5,
+          "regalite_block_amount": 4,
+          "relics_entering": [
+            "RELIC.BURNING_BLOOD"
+          ],
+          "reward_card_pool": "Ironclad",
+          "reward_card_rarity_odds": "RegularEncounter"
+        },
+        "rng": {
+          "ai": {
+            "counter": 1,
+            "words": [
+              2980984770716981116,
+              6782460650723619195,
+              4327062275640979698,
+              9861800941660424172
+            ]
+          },
+          "combat_orbs": {
+            "counter": 0,
+            "words": [
+              16452943454101452638,
+              5525124908612069843,
+              10373153506651793454,
+              1658981437511799834
+            ]
+          },
+          "energy_costs": {
+            "counter": 0,
+            "words": [
+              8094771566706114574,
+              10753743034168667217,
+              9632650723074124962,
+              559159816671775524
+            ]
+          },
+          "generation": {
+            "counter": 0,
+            "words": [
+              12227643034331527504,
+              15435788670216592397,
+              10853771780815554458,
+              2728473906158725665
+            ]
+          },
+          "niche": {
+            "counter": 4,
+            "words": [
+              1031678771118902314,
+              16291530915776360773,
+              8653434322517662755,
+              17623650845863023641
+            ]
+          },
+          "potion_generation": {
+            "counter": 0,
+            "words": [
+              10393160305098529657,
+              7718541581003256493,
+              15123970454127270348,
+              10495919820082714198
+            ]
+          },
+          "rng": {
+            "counter": 9,
+            "words": [
+              14118584688975139523,
+              5690387697838979155,
+              7833465613803712846,
+              11750194295494494842
+            ]
+          },
+          "sel": {
+            "counter": 0,
+            "words": [
+              7557399763150217568,
+              14092847658624760256,
+              1697317569859099328,
+              6227991489106853527
+            ]
+          },
+          "targets": {
+            "counter": 0,
+            "words": [
+              8434190451361578055,
+              17923574036259276623,
+              4644508695626405717,
+              9632872944875350050
+            ]
+          }
+        },
+        "schema": "sts-sim-canonical-v2"
+      },
+      "entry_digest": "f8224e3b73c00aa6d673cc5a4995c59e10c98cdf60f7147cc22b80024ae881d7",
+      "id": "slimes-normal-two-cycles"
+    }
+  ],
+  "schema": "sts-sim-mawler-admission-v1"
+}

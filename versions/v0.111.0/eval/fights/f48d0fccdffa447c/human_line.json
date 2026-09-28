@@ -1,0 +1,65 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "c63ee4b78bb8f9ceacdf36828ef2301ad2c6b942580528ed6016a73dfa19615e",
+ "turns": 3,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 14
+  },
+  {
+   "kind": "play",
+   "uid": 12
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 19,
+   "target": 1
+  }
+ ],
+ "step_digests": [
+  "e29f2488291d46251f454670ee9860b0e7bf662cbf63cd5fe47487cd2e32fbd5",
+  "501cda734456173e3940dd4b9e8a9fad82ffa4bfd7c1d3043c88b06392e2b44b",
+  "25f18ea692944ce543556c3dfdbdfa28a07a07cfb66d982e965c2c38eb70028a",
+  "1b8089ea3d3bfdd777e2fdca0309b9a7fc42761ef700dd83d8810aa84922e056",
+  "7f5a390098eaef3cf39ef530a462d9f6bb203b86939872e9c0d6252b9cd0516c",
+  "ea1ae8867ac537fa02ae8fd99acfb4a259f867016fb0712a497a23bc1b6863ea",
+  "6900e1c9843fbd55aaf8953985b05a21bab50b7eadc2e7ae92e74a9a673338b3",
+  "4383a6db52fc9620b1e39e4d7925421a08e9a22e3786ff49a2b25880aa4113a7",
+  "106865b127d719190c566efadc6da4845e1493daff66b9fe5cb189bd374afb26",
+  "1f49792cc62f3bc057910cbe6c26486ef26aefdb131e7bf175ee2959848179ef"
+ ],
+ "terminal": {
+  "hp": 62,
+  "turn": 3,
+  "over": true,
+  "won": true
+ }
+}

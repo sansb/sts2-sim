@@ -1,0 +1,1372 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 208,
+   "kind": "TORCH_HEAD_AMALGAM",
+   "max_hp": 211,
+   "secondary": true
+  },
+  {
+   "hp": 416,
+   "kind": "QUEEN",
+   "max_hp": 419,
+   "slot": 1,
+   "uid": 1
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "MIND_BLAST",
+    "uid": 10,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 11,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 13,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 14,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 15,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 16,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 17,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 18,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 19,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 20,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 21,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 22,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 23,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 24,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 25,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 26,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 27,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 28,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 29,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 30,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 31,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 32,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 33,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 34,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 35,
+    "upgrade": 1
+   },
+   {
+    "id": "BOOT_SEQUENCE",
+    "uid": 36,
+    "upgrade": 0
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 37,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 38,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 39,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 40,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 41,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 42,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 43,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 44,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 45,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 46,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 47,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 48,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 49,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 50,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "ROYALLY_APPROVED",
+     1
+    ],
+    "id": "BATTLE_TRANCE",
+    "uid": 51,
+    "upgrade": 0
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 52,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 53,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 54,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 55,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "ROYALLY_APPROVED",
+     1
+    ],
+    "id": "BATTLE_TRANCE",
+    "uid": 56,
+    "upgrade": 0
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 57,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 58,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 59,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 60,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 61,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 62,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 63,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 64,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 65,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 66,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 67,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 68,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 69,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 70,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 71,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 72,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 73,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 74,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 75,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 76,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 77,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 78,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 79,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 80,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 81,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 82,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 83,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 84,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 85,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 86,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 87,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 88,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 89,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 90,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 91,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 92,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 93,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 94,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 95,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 96,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 97,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 98,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 99,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 100,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 101,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 102,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 103,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 104,
+    "upgrade": 1
+   },
+   {
+    "id": "BOOT_SEQUENCE",
+    "uid": 105,
+    "upgrade": 0
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 106,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 107,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 108,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 109,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 110,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 111,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 112,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 113,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 114,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 115,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 116,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 117,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 118,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 119,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 120,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 121,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 122,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 123,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 124,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 125,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 126,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 127,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 128,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 129,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 130,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 131,
+    "upgrade": 1
+   },
+   {
+    "id": "CRUELTY",
+    "uid": 132,
+    "upgrade": 0
+   },
+   {
+    "id": "GREED",
+    "uid": 133,
+    "upgrade": 0
+   },
+   {
+    "id": "BREAKTHROUGH",
+    "uid": 134,
+    "upgrade": 1
+   },
+   {
+    "id": "UPPERCUT",
+    "uid": 135,
+    "upgrade": 0
+   },
+   {
+    "id": "UPPERCUT",
+    "uid": 136,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 137,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 138,
+    "upgrade": 0
+   },
+   {
+    "id": "ICE_LANCE",
+    "uid": 139,
+    "upgrade": 0
+   },
+   {
+    "id": "UNMOVABLE",
+    "uid": 140,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 141,
+    "upgrade": 0
+   },
+   {
+    "id": "BREAKTHROUGH",
+    "uid": 142,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 143,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SOULS_POWER",
+     1
+    ],
+    "id": "NOT_YET",
+    "uid": 144,
+    "upgrade": 0
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 145,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 146,
+    "upgrade": 0
+   },
+   {
+    "id": "FLAME_BARRIER",
+    "uid": 147,
+    "upgrade": 1
+   },
+   {
+    "id": "DISMANTLE",
+    "uid": 148,
+    "upgrade": 0
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 149,
+    "upgrade": 1
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 150,
+    "upgrade": 0
+   },
+   {
+    "id": "TREMBLE",
+    "uid": 151,
+    "upgrade": 0
+   },
+   {
+    "id": "TAUNT",
+    "uid": 152,
+    "upgrade": 1
+   },
+   {
+    "id": "TAUNT",
+    "uid": 153,
+    "upgrade": 1
+   },
+   {
+    "id": "ARMAMENTS",
+    "uid": 154,
+    "upgrade": 0
+   },
+   {
+    "id": "CATASTROPHE",
+    "uid": 155,
+    "upgrade": 0
+   },
+   {
+    "id": "TAUNT",
+    "uid": 156,
+    "upgrade": 0
+   },
+   {
+    "id": "FIGHT_ME",
+    "uid": 157,
+    "upgrade": 0
+   },
+   {
+    "id": "TREMBLE",
+    "uid": 158,
+    "upgrade": 0
+   },
+   {
+    "id": "COLOSSUS",
+    "uid": 159,
+    "upgrade": 0
+   },
+   {
+    "id": "BAD_LUCK",
+    "uid": 160,
+    "upgrade": 0
+   },
+   {
+    "id": "UPPERCUT",
+    "uid": 161,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 162,
+    "upgrade": 0
+   },
+   {
+    "id": "PRODUCTION",
+    "uid": 163,
+    "upgrade": 0
+   },
+   {
+    "id": "UNMOVABLE",
+    "uid": 164,
+    "upgrade": 0
+   },
+   {
+    "id": "TREMBLE",
+    "uid": 165,
+    "upgrade": 0
+   },
+   {
+    "id": "UPPERCUT",
+    "uid": 166,
+    "upgrade": 0
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 167,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 168,
+    "upgrade": 0
+   },
+   {
+    "id": "DISMANTLE",
+    "uid": 169,
+    "upgrade": 0
+   },
+   {
+    "id": "BREAKTHROUGH",
+    "uid": 170,
+    "upgrade": 1
+   },
+   {
+    "id": "BATTLE_TRANCE",
+    "uid": 171,
+    "upgrade": 0
+   },
+   {
+    "id": "CRUELTY",
+    "uid": 172,
+    "upgrade": 0
+   },
+   {
+    "id": "STOMP",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 173,
+    "upgrade": 1
+   },
+   {
+    "id": "TAUNT",
+    "uid": 174,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 175,
+    "upgrade": 0
+   },
+   {
+    "id": "SECRET_WEAPON",
+    "uid": 176,
+    "upgrade": 0
+   },
+   {
+    "id": "MOLTEN_FIST",
+    "uid": 177,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 178,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 179,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 180,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 181,
+    "upgrade": 0
+   },
+   {
+    "id": "PRODUCTION",
+    "uid": 182,
+    "upgrade": 0
+   },
+   {
+    "id": "FIGHT_ME",
+    "uid": 183,
+    "upgrade": 0
+   },
+   {
+    "id": "SECRET_WEAPON",
+    "uid": 184,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 185,
+    "upgrade": 0
+   },
+   {
+    "id": "HEADBUTT",
+    "uid": 186,
+    "upgrade": 0
+   },
+   {
+    "id": "MOLTEN_FIST",
+    "uid": 187,
+    "upgrade": 0
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 188,
+    "upgrade": 0
+   },
+   {
+    "id": "ANGER",
+    "uid": 189,
+    "upgrade": 1
+   },
+   {
+    "id": "LEAP",
+    "uid": 190,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 191,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 192,
+    "upgrade": 0
+   },
+   {
+    "id": "ICE_LANCE",
+    "uid": 193,
+    "upgrade": 0
+   },
+   {
+    "id": "DECAY",
+    "uid": 194,
+    "upgrade": 0
+   },
+   {
+    "id": "SHRUG_IT_OFF",
+    "uid": 195,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 196,
+    "upgrade": 0
+   },
+   {
+    "id": "LEAP",
+    "uid": 197,
+    "upgrade": 1
+   },
+   {
+    "id": "FORGOTTEN_RITUAL",
+    "uid": 198,
+    "upgrade": 0
+   },
+   {
+    "id": "ARMAMENTS",
+    "uid": 199,
+    "upgrade": 0
+   },
+   {
+    "id": "INFERNAL_BLADE",
+    "uid": 200,
+    "upgrade": 0
+   },
+   {
+    "id": "FORGOTTEN_RITUAL",
+    "uid": 201,
+    "upgrade": 0
+   },
+   {
+    "id": "GREED",
+    "uid": 202,
+    "upgrade": 0
+   },
+   {
+    "id": "HEADBUTT",
+    "uid": 203,
+    "upgrade": 0
+   },
+   {
+    "id": "TREMBLE",
+    "uid": 204,
+    "upgrade": 1
+   },
+   {
+    "id": "BASH",
+    "uid": 205,
+    "upgrade": 1
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 206,
+    "upgrade": 0
+   },
+   {
+    "id": "CATASTROPHE",
+    "uid": 207,
+    "upgrade": 0
+   },
+   {
+    "id": "COLOSSUS",
+    "uid": 208,
+    "upgrade": 0
+   },
+   {
+    "id": "BURNING_PACT",
+    "uid": 209,
+    "upgrade": 1
+   },
+   {
+    "id": "BREAKTHROUGH",
+    "uid": 210,
+    "upgrade": 0
+   },
+   {
+    "id": "BURNING_PACT",
+    "uid": 211,
+    "upgrade": 1
+   },
+   {
+    "id": "INFERNAL_BLADE",
+    "uid": 212,
+    "upgrade": 0
+   },
+   {
+    "id": "STOMP",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 213,
+    "upgrade": 1
+   },
+   {
+    "id": "FLAME_BARRIER",
+    "uid": 214,
+    "upgrade": 1
+   },
+   {
+    "id": "DECAY",
+    "uid": 215,
+    "upgrade": 0
+   },
+   {
+    "id": "SHRUG_IT_OFF",
+    "uid": 216,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SOULS_POWER",
+     1
+    ],
+    "id": "NOT_YET",
+    "uid": 217,
+    "upgrade": 0
+   },
+   {
+    "id": "ANGER",
+    "uid": 218,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 219,
+    "upgrade": 0
+   },
+   {
+    "id": "BASH",
+    "uid": 220,
+    "upgrade": 1
+   }
+  ],
+  "hand": [
+   {
+    "id": "MIND_BLAST",
+    "uid": 0,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 1,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 2,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 3,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 4,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 5,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 6,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 7,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 8,
+    "upgrade": 1
+   },
+   {
+    "id": "MIND_BLAST",
+    "uid": 9,
+    "upgrade": 1
+   }
+  ]
+ },
+ "player": {
+  "after_side_turn_start_power_order": [
+   "plating",
+   "blur"
+  ],
+  "block": 20,
+  "blur": 1,
+  "cards_drawn_combat": 10,
+  "demon_tongue": true,
+  "dragon_fruit": true,
+  "entropy_card_pool": "ironclad",
+  "exact_piles": true,
+  "fully_unlocked_potion_pool": true,
+  "gold": 29,
+  "hp": 84,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 132,
+  "max_hp": 84,
+  "next_card_uid": 221,
+  "pen_nib": 8,
+  "permafrost": true,
+  "plating": 4,
+  "player_phase": 3,
+  "potion_slots": [
+   "TOUCH_OF_INSANITY",
+   "SWIFT_POTION"
+  ],
+  "potions": [
+   "TOUCH_OF_INSANITY",
+   "SWIFT_POTION"
+  ],
+  "ps_strikes": 8,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD",
+   "RELIC.LEAD_PAPERWEIGHT",
+   "RELIC.SLING_OF_COURAGE",
+   "RELIC.RIPPLE_BASIN",
+   "RELIC.OLD_COIN",
+   "RELIC.MEMBERSHIP_CARD",
+   "RELIC.GORGET",
+   "RELIC.WHETSTONE",
+   "RELIC.SWORD_OF_STONE",
+   "RELIC.PAELS_GROWTH",
+   "RELIC.VAMBRACE",
+   "RELIC.BOOK_OF_FIVE_RINGS",
+   "RELIC.PERMAFROST",
+   "RELIC.ROYAL_STAMP",
+   "RELIC.DIAMOND_DIADEM",
+   "RELIC.DRAGON_FRUIT",
+   "RELIC.BRONZE_SCALES",
+   "RELIC.DEMON_TONGUE",
+   "RELIC.PEN_NIB",
+   "RELIC.MERCURY_HOURGLASS",
+   "RELIC.AKABEKO"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "BossEncounter",
+  "ripple_basin": true,
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "template_relics": [
+   "RELIC.DIAMOND_DIADEM",
+   "RELIC.MERCURY_HOURGLASS"
+  ],
+  "thorns": 3,
+  "vambrace_available": true,
+  "vigor": 8,
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 8,
+   "words": [
+    9868418775932003913,
+    3504436577437472211,
+    13404768456780933390,
+    17390880566269910133
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    7413138395118328623,
+    4829695852369185015,
+    9085022054251951146,
+    6249709633407112153
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    1050576210491079055,
+    7415325478071206527,
+    10857535512495697618,
+    7393722748646588581
+   ]
+  },
+  "generation": {
+   "counter": 384,
+   "words": [
+    16314474494157003762,
+    121744525839163344,
+    10343037049001938428,
+    9934027795712059839
+   ]
+  },
+  "niche": {
+   "counter": 78,
+   "words": [
+    14722157114472828143,
+    15324475924026683043,
+    11495219380582409891,
+    1491018616849396160
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    38673173300516183,
+    1158930836409098520,
+    10413196793855562341,
+    7419500949313775451
+   ]
+  },
+  "rng": {
+   "counter": 1292,
+   "words": [
+    9169776770542710838,
+    3078350100689220893,
+    15776703929273256986,
+    11513281398307268439
+   ]
+  },
+  "sel": {
+   "counter": 6,
+   "words": [
+    9594497617552220977,
+    2616557296633881861,
+    904276750674896413,
+    9948861232280694567
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    12420050966497193074,
+    3318858659803499707,
+    5582343260393589974,
+    10597372328907057731
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

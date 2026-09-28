@@ -1,0 +1,44 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "fd46e32845c24a262e75e3ac34c836eb12b5983dd9d59cc6e5b5effbc1bd6151",
+ "turns": 3,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 3
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "play",
+   "uid": 4
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 10,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "f109b7c67ee496aae39d5092023592f25731d344919f52cb9ba1ad3178f4a472",
+  "ac0f182dcc6e99b51a20942f6122638cc0180a4a1b3a4ae0b19c0c1da712be84",
+  "60a601cc258647c623fe3d54be8417d8503c52438d8a36043c9c7e68e78a42a1",
+  "e9fd619dede68a50de9523f7f280fc67c43a44c9f1aaa65683fda57a8390d48e",
+  "21e4e9ce3f794a5fcaac81b332c4ba67514e4e722d641eef98b48180f9922acf",
+  "3db2c8b3e4ec9ac635acb28052b39d7e4d69e9eef06e046b9d599894dbba9c45"
+ ],
+ "terminal": {
+  "hp": 55,
+  "turn": 3,
+  "over": true,
+  "won": true
+ }
+}

@@ -1,0 +1,5 @@
+dotnet
+venv
+spike.runtimeconfig.json
+mock_saves/
+__pycache__/

@@ -1,0 +1,2265 @@
+{
+ "RELIC.AKABEKO": {
+  "class": "Akabeko",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ALCHEMICAL_COFFER": {
+  "class": "AlchemicalCoffer",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.AMETHYST_AUBERGINE": {
+  "class": "AmethystAubergine",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ANCHOR": {
+  "class": "Anchor",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ARCANE_SCROLL": {
+  "class": "ArcaneScroll",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ARCHAIC_TOOTH": {
+  "class": "ArchaicTooth",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ART_OF_WAR": {
+  "class": "ArtOfWar",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "AfterEnergyReset",
+   "AfterSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ASTROLABE": {
+  "class": "Astrolabe",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BAG_OF_MARBLES": {
+  "class": "BagOfMarbles",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BAG_OF_PREPARATION": {
+  "class": "BagOfPreparation",
+  "combat_active": true,
+  "hooks": [
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BEATING_REMNANT": {
+  "class": "BeatingRemnant",
+  "combat_active": true,
+  "hooks": [
+   "AfterDamageReceived",
+   "AfterModifyingHpLostAfterOsty",
+   "BeforeSideTurnStart",
+   "ModifyHpLostAfterOsty"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BEAUTIFUL_BRACELET": {
+  "class": "BeautifulBracelet",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BELLOWS": {
+  "class": "Bellows",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BELT_BUCKLE": {
+  "class": "BeltBuckle",
+  "combat_active": true,
+  "hooks": [
+   "AfterPotionDiscarded",
+   "AfterPotionUsed",
+   "ApplyDexterity",
+   "BeforeCombatStart",
+   "RemoveDexterity"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BIG_HAT": {
+  "class": "BigHat",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BIG_MUSHROOM": {
+  "class": "BigMushroom",
+  "combat_active": true,
+  "hooks": [
+   "Grow",
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BIIIG_HUG": {
+  "class": "BiiigHug",
+  "combat_active": true,
+  "hooks": [
+   "AfterShuffle"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BING_BONG": {
+  "class": "BingBong",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BLACK_BLOOD": {
+  "class": "BlackBlood",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BLACK_STAR": {
+  "class": "BlackStar",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BLESSED_ANTLER": {
+  "class": "BlessedAntler",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw",
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BLOOD_SOAKED_ROSE": {
+  "class": "BloodSoakedRose",
+  "combat_active": true,
+  "hooks": [
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BLOOD_VIAL": {
+  "class": "BloodVial",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStartLate"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BONE_FLUTE": {
+  "class": "BoneFlute",
+  "combat_active": true,
+  "hooks": [
+   "AfterAttack"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BONE_TEA": {
+  "class": "BoneTea",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BOOKMARK": {
+  "class": "Bookmark",
+  "combat_active": true,
+  "hooks": [
+   "AfterFlush"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BOOK_OF_FIVE_RINGS": {
+  "class": "BookOfFiveRings",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardChangedPiles"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BOOK_REPAIR_KNIFE": {
+  "class": "BookRepairKnife",
+  "combat_active": true,
+  "hooks": [
+   "AfterDiedToDoom"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BOOMING_CONCH": {
+  "class": "BoomingConch",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BOUND_PHYLACTERY": {
+  "class": "BoundPhylactery",
+  "combat_active": true,
+  "hooks": [
+   "AfterEnergyResetLate",
+   "BeforeCombatStart",
+   "SummonPet"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BOWLER_HAT": {
+  "class": "BowlerHat",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BREAD": {
+  "class": "Bread",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BRILLIANT_SCARF": {
+  "class": "BrilliantScarf",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnStart",
+   "ShouldModifyCost",
+   "TryModifyEnergyCostInCombatLate"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BRIMSTONE": {
+  "class": "Brimstone",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BRONZE_SCALES": {
+  "class": "BronzeScales",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BURNING_BLOOD": {
+  "class": "BurningBlood",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.BURNING_STICKS": {
+  "class": "BurningSticks",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardExhausted"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.BYRDPIP": {
+  "class": "Byrdpip",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStart",
+   "SummonPet"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CALLING_BELL": {
+  "class": "CallingBell",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.CANDELABRA": {
+  "class": "Candelabra",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CAPTAINS_WHEEL": {
+  "class": "CaptainsWheel",
+  "combat_active": true,
+  "hooks": [
+   "AfterBlockCleared"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CAULDRON": {
+  "class": "Cauldron",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.CENTENNIAL_PUZZLE": {
+  "class": "CentennialPuzzle",
+  "combat_active": true,
+  "hooks": [
+   "AfterDamageReceived"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CHANDELIER": {
+  "class": "Chandelier",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CHARONS_ASHES": {
+  "class": "CharonsAshes",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardExhausted"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CHEMICAL_X": {
+  "class": "ChemicalX",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCardPlayed",
+   "ModifyXValue"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CHOICES_PARADOX": {
+  "class": "ChoicesParadox",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CHOSEN_CHEESE": {
+  "class": "ChosenCheese",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.CIRCLET": {
+  "class": "Circlet",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.CLAWS": {
+  "class": "Claws",
+  "combat_active": true,
+  "hooks": [
+   "CreateMaulFromOriginal"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CLOAK_CLASP": {
+  "class": "CloakClasp",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CRACKED_CORE": {
+  "class": "CrackedCore",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CROSSBOW": {
+  "class": "Crossbow",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.CURSED_PEARL": {
+  "class": "CursedPearl",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DARKSTONE_PERIAPT": {
+  "class": "DarkstonePeriapt",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DATA_DISK": {
+  "class": "DataDisk",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DAUGHTER_OF_THE_WIND": {
+  "class": "DaughterOfTheWind",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DELICATE_FROND": {
+  "class": "DelicateFrond",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DEMON_TONGUE": {
+  "class": "DemonTongue",
+  "combat_active": true,
+  "hooks": [
+   "AfterDamageReceived",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DEPRECATED_RELIC": {
+  "class": "DeprecatedRelic",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DIAMOND_DIADEM": {
+  "class": "DiamondDiadem",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DINGY_RUG": {
+  "class": "DingyRug",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DISTINGUISHED_CAPE": {
+  "class": "DistinguishedCape",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DIVINE_DESTINY": {
+  "class": "DivineDestiny",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DIVINE_RIGHT": {
+  "class": "DivineRight",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PlayerCmd::GainStars]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.DOLLYS_MIRROR": {
+  "class": "DollysMirror",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DOWSING_ROD": {
+  "class": "DowsingRod",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DRAGON_FRUIT": {
+  "class": "DragonFruit",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DREAM_CATCHER": {
+  "class": "DreamCatcher",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DRIFTWOOD": {
+  "class": "Driftwood",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.DUSTY_TOME": {
+  "class": "DustyTome",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ECTOPLASM": {
+  "class": "Ectoplasm",
+  "combat_active": true,
+  "hooks": [
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ELECTRIC_SHRYMP": {
+  "class": "ElectricShrymp",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.EMBER_TEA": {
+  "class": "EmberTea",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.EMOTION_CHIP": {
+  "class": "EmotionChip",
+  "combat_active": true,
+  "hooks": [
+   "AfterDamageReceived",
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.EMPTY_CAGE": {
+  "class": "EmptyCage",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ETERNAL_FEATHER": {
+  "class": "EternalFeather",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[CreatureCmd::Heal]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_ANCHOR": {
+  "class": "FakeAnchor",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_BLOOD_VIAL": {
+  "class": "FakeBloodVial",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStartLate"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_HAPPY_FLOWER": {
+  "class": "FakeHappyFlower",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_LEES_WAFFLE": {
+  "class": "FakeLeesWaffle",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_MANGO": {
+  "class": "FakeMango",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_MERCHANTS_RUG": {
+  "class": "FakeMerchantsRug",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_ORICHALCUM": {
+  "class": "FakeOrichalcum",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnEnd",
+   "BeforeSideTurnEndVeryEarly",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_SNECKO_EYE": {
+  "class": "FakeSneckoEye",
+  "combat_active": true,
+  "hooks": [
+   "ApplyPower",
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_STRIKE_DUMMY": {
+  "class": "FakeStrikeDummy",
+  "combat_active": true,
+  "hooks": [
+   "ModifyDamageAdditive"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FAKE_VENERABLE_TEA_SET": {
+  "class": "FakeVenerableTeaSet",
+  "combat_active": true,
+  "hooks": [
+   "AfterEnergyReset"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FENCING_MANUAL": {
+  "class": "FencingManual",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FESTIVE_POPPER": {
+  "class": "FestivePopper",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FIDDLE": {
+  "class": "Fiddle",
+  "combat_active": true,
+  "hooks": [
+   "AfterPreventingDraw",
+   "ModifyHandDrawLate",
+   "ShouldDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FISHING_ROD": {
+  "class": "FishingRod",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FORGOTTEN_SOUL": {
+  "class": "ForgottenSoul",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardExhausted"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FRAGRANT_MUSHROOM": {
+  "class": "FragrantMushroom",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FRESNEL_LENS": {
+  "class": "FresnelLens",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FROZEN_EGG": {
+  "class": "FrozenEgg",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.FUNERARY_MASK": {
+  "class": "FuneraryMask",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.FUR_COAT": {
+  "class": "FurCoat",
+  "combat_active": true,
+  "hooks": [
+   "AfterCreatureAddedToCombat",
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GALACTIC_DUST": {
+  "class": "GalacticDust",
+  "combat_active": true,
+  "hooks": [
+   "AfterStarsSpent"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GAMBLING_CHIP": {
+  "class": "GamblingChip",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GAME_PIECE": {
+  "class": "GamePiece",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GHOST_SEED": {
+  "class": "GhostSeed",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardEnteredCombat",
+   "AfterRoomEntered[CardCmd::ApplyKeyword]",
+   "CanAffect"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GIRYA": {
+  "class": "Girya",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GLASS_EYE": {
+  "class": "GlassEye",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.GLITTER": {
+  "class": "Glitter",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.GNARLED_HAMMER": {
+  "class": "GnarledHammer",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.GOLDEN_COMPASS": {
+  "class": "GoldenCompass",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.GOLDEN_PEARL": {
+  "class": "GoldenPearl",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.GOLD_PLATED_CABLES": {
+  "class": "GoldPlatedCables",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingOrbPassiveTriggerCount",
+   "ModifyOrbPassiveTriggerCounts"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GORGET": {
+  "class": "Gorget",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.GREMLIN_HORN": {
+  "class": "GremlinHorn",
+  "combat_active": true,
+  "hooks": [
+   "AfterDeath"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.HAND_DRILL": {
+  "class": "HandDrill",
+  "combat_active": true,
+  "hooks": [
+   "AfterBlockBroken"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.HAPPY_FLOWER": {
+  "class": "HappyFlower",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.HEFTY_TABLET": {
+  "class": "HeftyTablet",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.HELICAL_DART": {
+  "class": "HelicalDart",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.HISTORY_COURSE": {
+  "class": "HistoryCourse",
+  "combat_active": true,
+  "hooks": [
+   "AfterAutoPrePlayPhaseEntered"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.HORN_CLEAT": {
+  "class": "HornCleat",
+  "combat_active": true,
+  "hooks": [
+   "AfterBlockCleared"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ICE_CREAM": {
+  "class": "IceCream",
+  "combat_active": true,
+  "hooks": [
+   "ShouldPlayerResetEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.INFUSED_CORE": {
+  "class": "InfusedCore",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "ModifyOrbValue"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.INTIMIDATING_HELMET": {
+  "class": "IntimidatingHelmet",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.IRON_CLUB": {
+  "class": "IronClub",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.IVORY_TILE": {
+  "class": "IvoryTile",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.JEWELED_MASK": {
+  "class": "JeweledMask",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.JEWELRY_BOX": {
+  "class": "JewelryBox",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.JOSS_PAPER": {
+  "class": "JossPaper",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardExhausted",
+   "AfterSideTurnEnd",
+   "DrawIfThresholdMet"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.JUZU_BRACELET": {
+  "class": "JuzuBracelet",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.KALEIDOSCOPE": {
+  "class": "Kaleidoscope",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.KIFUDA": {
+  "class": "Kifuda",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.KUNAI": {
+  "class": "Kunai",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.KUSARIGAMA": {
+  "class": "Kusarigama",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "AfterSideTurnEnd",
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LANTERN": {
+  "class": "Lantern",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LARGE_CAPSULE": {
+  "class": "LargeCapsule",
+  "combat_active": true,
+  "hooks": [
+   "GetDefendForCharacter",
+   "GetStrikeForCharacter"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LASTING_CANDY": {
+  "class": "LastingCandy",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LAVA_LAMP": {
+  "class": "LavaLamp",
+  "combat_active": true,
+  "hooks": [
+   "AfterDamageReceived"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LAVA_ROCK": {
+  "class": "LavaRock",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LEAD_PAPERWEIGHT": {
+  "class": "LeadPaperweight",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LEAFY_POULTICE": {
+  "class": "LeafyPoultice",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LEES_WAFFLE": {
+  "class": "LeesWaffle",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LETTER_OPENER": {
+  "class": "LetterOpener",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "AfterSideTurnStart",
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LIZARD_TAIL": {
+  "class": "LizardTail",
+  "combat_active": true,
+  "hooks": [
+   "AfterPreventingDeath",
+   "ShouldDieLate"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LOOMING_FRUIT": {
+  "class": "LoomingFruit",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LORDS_PARASOL": {
+  "class": "LordsParasol",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LOST_COFFER": {
+  "class": "LostCoffer",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LOST_WISP": {
+  "class": "LostWisp",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.LUCKY_FYSH": {
+  "class": "LuckyFysh",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.LUNAR_PASTRY": {
+  "class": "LunarPastry",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MANGO": {
+  "class": "Mango",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MASSIVE_SCROLL": {
+  "class": "MassiveScroll",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MAW_BANK": {
+  "class": "MawBank",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MEAL_TICKET": {
+  "class": "MealTicket",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[CreatureCmd::Heal]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MEAT_CLEAVER": {
+  "class": "MeatCleaver",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MEAT_ON_THE_BONE": {
+  "class": "MeatOnTheBone",
+  "combat_active": true,
+  "hooks": [
+   "AfterCurrentHpChanged",
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MEMBERSHIP_CARD": {
+  "class": "MembershipCard",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MERCURY_HOURGLASS": {
+  "class": "MercuryHourglass",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.METRONOME": {
+  "class": "Metronome",
+  "combat_active": true,
+  "hooks": [
+   "AfterOrbChanneled"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MINIATURE_CANNON": {
+  "class": "MiniatureCannon",
+  "combat_active": true,
+  "hooks": [
+   "ModifyDamageAdditive"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MINIATURE_TENT": {
+  "class": "MiniatureTent",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MINI_REGENT": {
+  "class": "MiniRegent",
+  "combat_active": true,
+  "hooks": [
+   "AfterStarsSpent",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MOLTEN_EGG": {
+  "class": "MoltenEgg",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.MR_STRUGGLES": {
+  "class": "MrStruggles",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MUMMIFIED_HAND": {
+  "class": "MummifiedHand",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MUSIC_BOX": {
+  "class": "MusicBox",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeCardPlayed",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.MYSTIC_LIGHTER": {
+  "class": "MysticLighter",
+  "combat_active": true,
+  "hooks": [
+   "ModifyDamageAdditive"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.NEOWS_BONES": {
+  "class": "NeowsBones",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.NEOWS_SACRIFICE": {
+  "class": "NeowsSacrifice",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.NEOWS_TALISMAN": {
+  "class": "NeowsTalisman",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.NEOWS_TORMENT": {
+  "class": "NeowsTorment",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.NEW_LEAF": {
+  "class": "NewLeaf",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.NINJA_SCROLL": {
+  "class": "NinjaScroll",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.NUNCHAKU": {
+  "class": "Nunchaku",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.NUTRITIOUS_OYSTER": {
+  "class": "NutritiousOyster",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.NUTRITIOUS_SOUP": {
+  "class": "NutritiousSoup",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ODDLY_SMOOTH_STONE": {
+  "class": "OddlySmoothStone",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.OLD_COIN": {
+  "class": "OldCoin",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.ORANGE_DOUGH": {
+  "class": "OrangeDough",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ORICHALCUM": {
+  "class": "Orichalcum",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnEnd",
+   "BeforeSideTurnEndVeryEarly",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ORNAMENTAL_FAN": {
+  "class": "OrnamentalFan",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ORRERY": {
+  "class": "Orrery",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_BLOOD": {
+  "class": "PaelsBlood",
+  "combat_active": true,
+  "hooks": [
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_CLAW": {
+  "class": "PaelsClaw",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_EYE": {
+  "class": "PaelsEye",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "AfterTakingExtraTurn",
+   "AnyCardsPlayedThisTurn",
+   "BeforeCardPlayed",
+   "BeforeSideTurnEndEarly",
+   "ShouldTakeExtraTurn"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_FLESH": {
+  "class": "PaelsFlesh",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "BeforeCombatStart",
+   "BeforeSideTurnStart",
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_GROWTH": {
+  "class": "PaelsGrowth",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_HORN": {
+  "class": "PaelsHorn",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_LEGION": {
+  "class": "PaelsLegion",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "AfterModifyingBlockAmount",
+   "AfterSideTurnStart",
+   "BeforeCombatStart",
+   "ModifyBlockMultiplicative",
+   "SummonPet"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_TEARS": {
+  "class": "PaelsTears",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "BeforeSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_TOOTH": {
+  "class": "PaelsTooth",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PAELS_WING": {
+  "class": "PaelsWing",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PANDORAS_BOX": {
+  "class": "PandorasBox",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PANTOGRAPH": {
+  "class": "Pantograph",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAPER_KRANE": {
+  "class": "PaperKrane",
+  "combat_active": true,
+  "hooks": [
+   "ModifyWeakMultiplier"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PAPER_PHROG": {
+  "class": "PaperPhrog",
+  "combat_active": true,
+  "hooks": [
+   "ModifyVulnerableMultiplier"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PARRYING_SHIELD": {
+  "class": "ParryingShield",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PEAR": {
+  "class": "Pear",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PENDULUM": {
+  "class": "Pendulum",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PEN_NIB": {
+  "class": "PenNib",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeCardPlayed",
+   "ModifyDamageMultiplicative",
+   "NotifyAttackPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PERMAFROST": {
+  "class": "Permafrost",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PETRIFIED_TOAD": {
+  "class": "PetrifiedToad",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStartLate"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PHIAL_HOLSTER": {
+  "class": "PhialHolster",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PHILOSOPHERS_STONE": {
+  "class": "PhilosophersStone",
+  "combat_active": true,
+  "hooks": [
+   "AfterCreatureAddedToCombat",
+   "AfterRoomEntered[PowerCmd::Apply]",
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PHYLACTERY_UNBOUND": {
+  "class": "PhylacteryUnbound",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PLANISPHERE": {
+  "class": "Planisphere",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[CreatureCmd::Heal]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.POCKETWATCH": {
+  "class": "Pocketwatch",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "AfterModifyingHandDraw",
+   "AfterSideTurnStart",
+   "BeforeSideTurnStart",
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.POLLINOUS_CORE": {
+  "class": "PollinousCore",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingHandDraw",
+   "BeforeHandDraw",
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.POMANDER": {
+  "class": "Pomander",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.POTION_BELT": {
+  "class": "PotionBelt",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.POWER_CELL": {
+  "class": "PowerCell",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PRAYER_WHEEL": {
+  "class": "PrayerWheel",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PRECARIOUS_SHEARS": {
+  "class": "PrecariousShears",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PRECISE_SCISSORS": {
+  "class": "PreciseScissors",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PRESERVED_FOG": {
+  "class": "PreservedFog",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.PRISMATIC_GEM": {
+  "class": "PrismaticGem",
+  "combat_active": true,
+  "hooks": [
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PUMPKIN_CANDLE": {
+  "class": "PumpkinCandle",
+  "combat_active": true,
+  "hooks": [
+   "ModifyMaxEnergy",
+   "Rekindle"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.PUNCH_DAGGER": {
+  "class": "PunchDagger",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.RADIANT_PEARL": {
+  "class": "RadiantPearl",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RAINBOW_RING": {
+  "class": "RainbowRing",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RAZOR_TOOTH": {
+  "class": "RazorTooth",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RED_MASK": {
+  "class": "RedMask",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RED_SKULL": {
+  "class": "RedSkull",
+  "combat_active": true,
+  "hooks": [
+   "AfterCurrentHpChanged",
+   "ModifyStrengthIfNecessary"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.REGALITE": {
+  "class": "Regalite",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardGeneratedForCombat"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.REGAL_PILLOW": {
+  "class": "RegalPillow",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.REPTILE_TRINKET": {
+  "class": "ReptileTrinket",
+  "combat_active": true,
+  "hooks": [
+   "AfterPotionUsed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RINGING_TRIANGLE": {
+  "class": "RingingTriangle",
+  "combat_active": true,
+  "hooks": [
+   "ShouldFlush"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RING_OF_THE_DRAKE": {
+  "class": "RingOfTheDrake",
+  "combat_active": true,
+  "hooks": [
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RING_OF_THE_SNAKE": {
+  "class": "RingOfTheSnake",
+  "combat_active": true,
+  "hooks": [
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RIPPLE_BASIN": {
+  "class": "RippleBasin",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnEnd",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ROYAL_POISON": {
+  "class": "RoyalPoison",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.ROYAL_STAMP": {
+  "class": "RoyalStamp",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.RUINED_HELMET": {
+  "class": "RuinedHelmet",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingPowerAmountReceived",
+   "TryModifyPowerAmountReceived"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RUNIC_CAPACITOR": {
+  "class": "RunicCapacitor",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.RUNIC_PYRAMID": {
+  "class": "RunicPyramid",
+  "combat_active": true,
+  "hooks": [
+   "ShouldFlush"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SAI": {
+  "class": "Sai",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SAND_CASTLE": {
+  "class": "SandCastle",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SCREAMING_FLAGON": {
+  "class": "ScreamingFlagon",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SCROLL_BOXES": {
+  "class": "ScrollBoxes",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SEAL_OF_GOLD": {
+  "class": "SealOfGold",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SEA_GLASS": {
+  "class": "SeaGlass",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SELF_FORMING_CLAY": {
+  "class": "SelfFormingClay",
+  "combat_active": true,
+  "hooks": [
+   "AfterDamageReceived"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SERE_TALON": {
+  "class": "SereTalon",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SHOVEL": {
+  "class": "Shovel",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SHURIKEN": {
+  "class": "Shuriken",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SIGNET_RING": {
+  "class": "SignetRing",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SILKEN_TRESS": {
+  "class": "SilkenTress",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SILVER_CRUCIBLE": {
+  "class": "SilverCrucible",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SLING_OF_COURAGE": {
+  "class": "SlingOfCourage",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SMALL_CAPSULE": {
+  "class": "SmallCapsule",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SNECKO_EYE": {
+  "class": "SneckoEye",
+  "combat_active": true,
+  "hooks": [
+   "ApplyPower",
+   "BeforeCombatStart",
+   "ModifyHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SNECKO_SKULL": {
+  "class": "SneckoSkull",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingPowerAmountGiven",
+   "ModifyPowerAmountGivenAdditive"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SOZU": {
+  "class": "Sozu",
+  "combat_active": true,
+  "hooks": [
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SPARKLING_ROUGE": {
+  "class": "SparklingRouge",
+  "combat_active": true,
+  "hooks": [
+   "AfterBlockCleared"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SPIKED_GAUNTLETS": {
+  "class": "SpikedGauntlets",
+  "combat_active": true,
+  "hooks": [
+   "ModifyMaxEnergy",
+   "TryModifyEnergyCostInCombat"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.STONE_CALENDAR": {
+  "class": "StoneCalendar",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart",
+   "BeforeSideTurnEnd"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.STONE_CRACKER": {
+  "class": "StoneCracker",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[CardCmd::Preview,CardCmd::Upgrade]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.STONE_HUMIDIFIER": {
+  "class": "StoneHumidifier",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.STORYBOOK": {
+  "class": "Storybook",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.STRAWBERRY": {
+  "class": "Strawberry",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.STRIKE_DUMMY": {
+  "class": "StrikeDummy",
+  "combat_active": true,
+  "hooks": [
+   "ModifyDamageAdditive"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.STURDY_CLAMP": {
+  "class": "SturdyClamp",
+  "combat_active": true,
+  "hooks": [
+   "AfterPreventingBlockClear",
+   "ShouldClearBlock"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SWORD_OF_JADE": {
+  "class": "SwordOfJade",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.SWORD_OF_STONE": {
+  "class": "SwordOfStone",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.SYMBIOTIC_VIRUS": {
+  "class": "SymbioticVirus",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TANXS_WHISTLE": {
+  "class": "TanxsWhistle",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.TEA_OF_DISCOURTESY": {
+  "class": "TeaOfDiscourtesy",
+  "combat_active": true,
+  "hooks": [
+   "BeforeCombatStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.THE_ABACUS": {
+  "class": "TheAbacus",
+  "combat_active": true,
+  "hooks": [
+   "AfterShuffle"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.THE_BOOT": {
+  "class": "TheBoot",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingHpLostAfterOsty",
+   "ModifyHpLostAfterOstyLate"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.THE_COURIER": {
+  "class": "TheCourier",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.THROWING_AXE": {
+  "class": "ThrowingAxe",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingCardPlayCount",
+   "ModifyCardPlayCount"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TINGSHA": {
+  "class": "Tingsha",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardDiscarded"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TINY_MAILBOX": {
+  "class": "TinyMailbox",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.TOASTY_MITTENS": {
+  "class": "ToastyMittens",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TOOLBOX": {
+  "class": "Toolbox",
+  "combat_active": true,
+  "hooks": [
+   "BeforeHandDraw"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TOUCH_OF_OROBAS": {
+  "class": "TouchOfOrobas",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.TOUGH_BANDAGES": {
+  "class": "ToughBandages",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardDiscarded"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TOXIC_EGG": {
+  "class": "ToxicEgg",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.TOY_BOX": {
+  "class": "ToyBox",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.TRI_BOOMERANG": {
+  "class": "TriBoomerang",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.TUNGSTEN_ROD": {
+  "class": "TungstenRod",
+  "combat_active": true,
+  "hooks": [
+   "AfterModifyingHpLostAfterOsty",
+   "ModifyHpLostAfterOsty"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TUNING_FORK": {
+  "class": "TuningFork",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "NotifySkillPlayed"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.TWISTED_FUNNEL": {
+  "class": "TwistedFunnel",
+  "combat_active": true,
+  "hooks": [
+   "BeforeSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.UNCEASING_TOP": {
+  "class": "UnceasingTop",
+  "combat_active": true,
+  "hooks": [
+   "AfterHandEmptied",
+   "IsValidPhase"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.UNDYING_SIGIL": {
+  "class": "UndyingSigil",
+  "combat_active": true,
+  "hooks": [
+   "ModifyDamageMultiplicative"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.UNSETTLING_LAMP": {
+  "class": "UnsettlingLamp",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeCombatStart",
+   "BeforePowerAmountChanged",
+   "HasDoubledTemporaryPowerSource",
+   "ModifyPowerAmountGivenMultiplicative"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VAJRA": {
+  "class": "Vajra",
+  "combat_active": true,
+  "hooks": [
+   "AfterRoomEntered[PowerCmd::Apply]"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VAMBRACE": {
+  "class": "Vambrace",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "AfterModifyingBlockAmount",
+   "BeforeCombatStart",
+   "ModifyBlockMultiplicative"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VELVET_CHOKER": {
+  "class": "VelvetChoker",
+  "combat_active": true,
+  "hooks": [
+   "AfterCardPlayed",
+   "BeforeSideTurnStart",
+   "ModifyMaxEnergy",
+   "ShouldPlay"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VENERABLE_TEA_SET": {
+  "class": "VenerableTeaSet",
+  "combat_active": true,
+  "hooks": [
+   "AfterEnergyReset"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VERY_HOT_COCOA": {
+  "class": "VeryHotCocoa",
+  "combat_active": true,
+  "hooks": [
+   "AfterSideTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VEXING_PUZZLEBOX": {
+  "class": "VexingPuzzlebox",
+  "combat_active": true,
+  "hooks": [
+   "AfterPlayerTurnStart"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.VITRUVIAN_MINION": {
+  "class": "VitruvianMinion",
+  "combat_active": true,
+  "hooks": [
+   "ModifyBlockMultiplicative",
+   "ModifyDamageMultiplicative"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.WAR_HAMMER": {
+  "class": "WarHammer",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WAR_PAINT": {
+  "class": "WarPaint",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WHETSTONE": {
+  "class": "Whetstone",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WHISPERING_EARRING": {
+  "class": "WhisperingEarring",
+  "combat_active": true,
+  "hooks": [
+   "AfterAutoPrePlayPhaseEnteredLate",
+   "GetTarget",
+   "ModifyMaxEnergy"
+  ],
+  "unknown_hooks": []
+ },
+ "RELIC.WHITE_BEAST_STATUE": {
+  "class": "WhiteBeastStatue",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WHITE_STAR": {
+  "class": "WhiteStar",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WINGED_BOOTS": {
+  "class": "WingedBoots",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WING_CHARM": {
+  "class": "WingCharm",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WONGOS_MYSTERY_TICKET": {
+  "class": "WongosMysteryTicket",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.WONGO_CUSTOMER_APPRECIATION_BADGE": {
+  "class": "WongoCustomerAppreciationBadge",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ },
+ "RELIC.YUMMY_COOKIE": {
+  "class": "YummyCookie",
+  "combat_active": false,
+  "hooks": [],
+  "unknown_hooks": []
+ }
+}

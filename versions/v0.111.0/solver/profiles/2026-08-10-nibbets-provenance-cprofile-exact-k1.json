@@ -1,0 +1,1590 @@
+{
+  "configuration": {
+    "actual_deadline": null,
+    "benchmark_deadline": null,
+    "fight_index": 2,
+    "horizon": 12,
+    "k": 1,
+    "provenance_bundle": "solver/testdata/85920V7XQFSN_fight2_provenance.json",
+    "provenance_entry": null,
+    "recorded_replay": null,
+    "run": "solver/testdata/85920V7XQFSN.run",
+    "sampling_seed": "review-pipeline-v1"
+  },
+  "cpu_seconds": 15.635005000000001,
+  "current_tracemalloc_bytes": null,
+  "hot_layers_self_seconds": {
+    "line_serialization_and_document_assembly": 0.00028316500000000004,
+    "search_pruning_and_rollout": 0.4803678430000001,
+    "state_key_hash_and_memo": 0.3878598100000001,
+    "state_transition_and_action_enumeration": 0.6641229120000001
+  },
+  "instrumentation": {
+    "cprofile": true,
+    "phase_timers": true,
+    "tracemalloc": false
+  },
+  "nodes_per_second": 1226.746306467192,
+  "peak_tracemalloc_bytes": null,
+  "phases_seconds": {
+    "entry_and_world_construction": 0.005351709201931953,
+    "other_loading_and_document_assembly": 0.004544749390333891,
+    "provenance_loading": 0.03357904125005007,
+    "recorded_line_replay": 0.017915792297571898,
+    "solve": 16.157374915666878,
+    "world_sampling": 0.0010184170678257942
+  },
+  "pid": 3795,
+  "profiler_revision": "issue-1112-v3-quality-and-exact",
+  "quality": {
+    "actual_seed_deadline_hit": false,
+    "actual_seed_exact": true,
+    "benchmark_deadline_worlds": 0,
+    "benchmark_exact_worlds": 1,
+    "benchmark_worlds": 1,
+    "headline": {
+      "actual": {
+        "entry_hp": 45,
+        "final_hp": 35,
+        "hp_lost": 10,
+        "potions_used": {
+          "count": 0,
+          "names": []
+        },
+        "turns": 4,
+        "won": true
+      },
+      "benchmark": {
+        "deadline_worlds": 0,
+        "exact_worlds": 1,
+        "hp_lost": {
+          "count": 1,
+          "mean": {
+            "denominator": 1,
+            "numerator": -32
+          },
+          "median": {
+            "denominator": 1,
+            "numerator": -32
+          },
+          "p10": -32,
+          "p90": -32
+        },
+        "loss_risk": {
+          "kind": "exact",
+          "value": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        "losses": 0,
+        "win_rate": {
+          "kind": "exact",
+          "value": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        "wins": 1,
+        "world_count": 1
+      },
+      "best_actual_seed": {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 77,
+        "hp_lost": -32,
+        "potions_used": 1,
+        "turns": 4,
+        "won": true
+      },
+      "derived": {
+        "luck_percentile": {
+          "available": true,
+          "exact": true,
+          "kind": "exact",
+          "percentile": {
+            "denominator": 1,
+            "numerator": 50
+          },
+          "tied_worlds": 1,
+          "world_count": 1,
+          "worse_worlds": 0
+        },
+        "skill_gap": {
+          "available": true,
+          "display": "42",
+          "exact": true,
+          "hp_lost": 42,
+          "kind": "exact"
+        }
+      }
+    },
+    "status": "ok"
+  },
+  "result": {
+    "metadata": {
+      "assumed_fully_unlocked": false,
+      "benchmark_name": "best play per sampled shuffle",
+      "counter_overrides": {
+        "combat_card_generation": 0,
+        "combat_card_selection": 0,
+        "combat_energy_costs": 0,
+        "combat_orbs": 0,
+        "combat_potion_generation": 0,
+        "combat_targets": 1,
+        "shuffle": 54
+      },
+      "deadlines_seconds": {
+        "benchmark_world": null,
+        "best_actual_seed": null
+      },
+      "elapsed_seconds": {
+        "benchmark": 7.747193582821637,
+        "best_actual_seed": 8.411678249947727,
+        "total": 16.184312040917575
+      },
+      "entry_caveats": [
+        "fight 1 (ENCOUNTER.SHRINKER_BEETLE_WEAK): deck held cards that can leave/alter the cycle unrecorded (STAMPEDE) \u2014 the counter is a baseline, not exact",
+        "fight 1 (ENCOUNTER.SHRINKER_BEETLE_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 1 (ENCOUNTER.SHRINKER_BEETLE_WEAK): modeled draw-cycle sources STAMPEDE had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+        "Niche-consuming on-obtain relics owned: {'RELIC.NEOWS_BONES'}",
+        "fight 1: deck held CombatTargets consumers (STAMPEDE) \u2014 plays unrecorded",
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+      ],
+      "entry_state_source": "resolved_save",
+      "fully_unlocked_card_pool": true,
+      "horizon": 12,
+      "k": 1,
+      "sampling_seed": "review-pipeline-v1",
+      "solver_build": "v0.110.1",
+      "trust_tier": "modeled",
+      "unlock_pool_source": "resolved_save"
+    },
+    "status": "ok"
+  },
+  "solves": [
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "actual",
+      "nodes_per_second": 1003.0161170354748,
+      "seconds": 8.411629540845752,
+      "states": 8437
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 1469.71007296543,
+      "seconds": 7.7457453748211265,
+      "states": 11384
+    }
+  ],
+  "states": 19821,
+  "tool": "profile_review_pipeline.py",
+  "top_functions": [
+    {
+      "calls": 1,
+      "cumulative_seconds": 16.185230833000002,
+      "function": "review_summary_v2.py:98(generate_review_document)",
+      "primitive_calls": 1,
+      "self_seconds": 0.00019062400000000002
+    },
+    {
+      "calls": 1,
+      "cumulative_seconds": 16.184525,
+      "function": "review_summary_v2.py:195(_generate_provenance_entry_document)",
+      "primitive_calls": 1,
+      "self_seconds": 4.3082000000000005e-05
+    },
+    {
+      "calls": 1,
+      "cumulative_seconds": 16.176939625,
+      "function": "review_summary.py:329(_complete_document)",
+      "primitive_calls": 1,
+      "self_seconds": 0.00014866600000000002
+    },
+    {
+      "calls": 2,
+      "cumulative_seconds": 16.157436791000002,
+      "function": "profile_review_pipeline.py:76(timed)",
+      "primitive_calls": 2,
+      "self_seconds": 0.000364626
+    },
+    {
+      "calls": 2,
+      "cumulative_seconds": 16.157070875000002,
+      "function": "review_summary.py:490(solve_state)",
+      "primitive_calls": 2,
+      "self_seconds": 0.000371
+    },
+    {
+      "calls": 2,
+      "cumulative_seconds": 16.139018666000002,
+      "function": "solve_fight.py:751(solve)",
+      "primitive_calls": 2,
+      "self_seconds": 0.00066449
+    },
+    {
+      "calls": 24650,
+      "cumulative_seconds": 14.317662453,
+      "function": "combat_sim.py:41972(apply_action)",
+      "primitive_calls": 24650,
+      "self_seconds": 0.024542773
+    },
+    {
+      "calls": 24650,
+      "cumulative_seconds": 14.26832843,
+      "function": "combat_sim.py:42106(_apply_action_impl)",
+      "primitive_calls": 24650,
+      "self_seconds": 0.44177163300000005
+    },
+    {
+      "calls": 19821,
+      "cumulative_seconds": 13.227035249,
+      "function": "solve_fight.py:900(best)",
+      "primitive_calls": 111,
+      "self_seconds": 0.11098295400000001
+    },
+    {
+      "calls": 47742,
+      "cumulative_seconds": 12.069916555,
+      "function": "combat_sim.py:41600(_drain_continuations)",
+      "primitive_calls": 23784,
+      "self_seconds": 0.120055698
+    },
+    {
+      "calls": 9960,
+      "cumulative_seconds": 8.135660551,
+      "function": "combat_sim.py:38340(end_player_turn)",
+      "primitive_calls": 9960,
+      "self_seconds": 0.045574789000000004
+    },
+    {
+      "calls": 29024,
+      "cumulative_seconds": 8.020162576,
+      "function": "combat_sim.py:11332(_start_auto_phase)",
+      "primitive_calls": 9964,
+      "self_seconds": 0.032892206
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 5.247058927,
+      "function": "combat_sim.py:40671(_advance_card_play_frame)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.245835925
+    },
+    {
+      "calls": 70187,
+      "cumulative_seconds": 5.236414813000001,
+      "function": "combat_sim.py:11351(_advance_phase_frame)",
+      "primitive_calls": 13007,
+      "self_seconds": 0.055580489000000004
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 5.186332708,
+      "function": "combat_sim.py:39161(_end_player_turn_after_auto_post)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.05931825600000001
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 4.845368649,
+      "function": "combat_sim.py:38596(_finish_player_turn_after_wrappers)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.066617575
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 3.8565048660000003,
+      "function": "combat_sim.py:38830(_finish_player_turn_after_consuming_shadow)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.005020311
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 3.8514845550000003,
+      "function": "combat_sim.py:38865(_finish_player_turn_after_joss)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.034430260000000004
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 3.77723004,
+      "function": "combat_sim.py:38464(_finish_side_switch_after_disintegration)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.031312369
+    },
+    {
+      "calls": 8696,
+      "cumulative_seconds": 3.461263107,
+      "function": "combat_sim.py:39493(_run_enemy_phase)",
+      "primitive_calls": 8696,
+      "self_seconds": 0.081134996
+    },
+    {
+      "calls": 9532,
+      "cumulative_seconds": 3.1518928820000003,
+      "function": "combat_sim.py:34205(begin_player_turn)",
+      "primitive_calls": 9532,
+      "self_seconds": 0.07972857600000001
+    },
+    {
+      "calls": 2,
+      "cumulative_seconds": 2.8215272920000003,
+      "function": "solve_fight.py:626(greedy_rollout)",
+      "primitive_calls": 2,
+      "self_seconds": 0.00020033100000000002
+    },
+    {
+      "calls": 24,
+      "cumulative_seconds": 2.821326961,
+      "function": "solve_fight.py:569(_beam_rollout)",
+      "primitive_calls": 24,
+      "self_seconds": 0.032141825
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 2.708880583,
+      "function": "combat_sim.py:51637(_run_steps)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.027730212
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 2.671070254,
+      "function": "combat_sim.py:47139(_run_steps_inner)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.363200275
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 2.537367202,
+      "function": "combat_sim.py:33938(_begin_before_hand_draw_powers)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.015258362000000001
+    },
+    {
+      "calls": 6070,
+      "cumulative_seconds": 2.5346604360000002,
+      "function": "combat_sim.py:11221(_advance_live_listener_frame)",
+      "primitive_calls": 6070,
+      "self_seconds": 0.007796099000000001
+    },
+    {
+      "calls": 6070,
+      "cumulative_seconds": 2.491910544,
+      "function": "combat_sim.py:11237(_advance_live_listener_frame_unchecked)",
+      "primitive_calls": 6070,
+      "self_seconds": 0.0077902940000000006
+    },
+    {
+      "calls": 3035,
+      "cumulative_seconds": 2.464401012,
+      "function": "combat_sim.py:43783(_stampede_hand_attack_iteration)",
+      "primitive_calls": 3035,
+      "self_seconds": 0.014999654000000001
+    },
+    {
+      "calls": 4898,
+      "cumulative_seconds": 2.426854458,
+      "function": "combat_sim.py:43750(_auto_play_card)",
+      "primitive_calls": 2449,
+      "self_seconds": 0.008672107
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 2.4248083890000003,
+      "function": "combat_sim.py:34647(_begin_before_hand_draw_relics)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.006778728
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 2.4180296610000003,
+      "function": "combat_sim.py:34662(_continue_before_hand_draw_relics)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.005431747000000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 2.412597914,
+      "function": "combat_sim.py:34679(_finish_before_hand_draw_relics)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.029507311
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 2.194913214,
+      "function": "combat_sim.py:34864(_begin_player_turn_hand_draw)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.044251834000000004
+    },
+    {
+      "calls": 2192318,
+      "cumulative_seconds": 1.7517673900000001,
+      "function": "~:0(<built-in method builtins.any>)",
+      "primitive_calls": 2192298,
+      "self_seconds": 0.9114237980000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.2226607630000002,
+      "function": "combat_sim.py:34963(_after_turn_start_hand_draw)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.010725758
+    },
+    {
+      "calls": 11041,
+      "cumulative_seconds": 1.2121224050000001,
+      "function": "combat_sim.py:27946(player_attack)",
+      "primitive_calls": 11041,
+      "self_seconds": 0.12302130200000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.2119350050000002,
+      "function": "combat_sim.py:45771(_begin_turn_start_hand_choice_listeners)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.012355988
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.142093304,
+      "function": "combat_sim.py:45779(_advance_turn_start_hand_choice_listener)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.036683262
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.0811848130000001,
+      "function": "combat_sim.py:35421(_begin_player_turn_after_entropy)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.007909115000000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.073275698,
+      "function": "combat_sim.py:35429(_continue_after_generation_relic_choice)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.006941247
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.0663344510000001,
+      "function": "combat_sim.py:35502(_continue_after_gambling_chip)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.008676577000000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.057657874,
+      "function": "combat_sim.py:35611(_continue_after_toasty_mittens)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.009876627
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 1.047781247,
+      "function": "combat_sim.py:35090(_turn_start_after_royal)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.07377035600000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 0.9250890930000001,
+      "function": "combat_sim.py:11816(draw_cards)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.084557537
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 0.916952615,
+      "function": "combat_sim.py:35065(_turn_start_after_inferno)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.007352694000000001
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 0.9095999210000001,
+      "function": "combat_sim.py:35048(_turn_start_after_crimson)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.017299645000000002
+    },
+    {
+      "calls": 25699,
+      "cumulative_seconds": 0.908448205,
+      "function": "combat_sim.py:8656(_commit_live_card_piles)",
+      "primitive_calls": 25699,
+      "self_seconds": 0.13694144800000002
+    },
+    {
+      "calls": 98641,
+      "cumulative_seconds": 0.8872561800000001,
+      "function": "combat_sim.py:9244(_locate_physical_card_uid_among_legacy)",
+      "primitive_calls": 98641,
+      "self_seconds": 0.536525041
+    },
+    {
+      "calls": 109538,
+      "cumulative_seconds": 0.867701673,
+      "function": "combat_sim.py:8821(_normalize_card_identities)",
+      "primitive_calls": 109538,
+      "self_seconds": 0.50825261
+    },
+    {
+      "calls": 95320,
+      "cumulative_seconds": 0.783651544,
+      "function": "combat_sim.py:11938(_draw_one_iteration)",
+      "primitive_calls": 95320,
+      "self_seconds": 0.226633769
+    },
+    {
+      "calls": 467804,
+      "cumulative_seconds": 0.7623169780000001,
+      "function": "combat_sim.py:10456(_validate_continuation_frame)",
+      "primitive_calls": 467804,
+      "self_seconds": 0.555003032
+    },
+    {
+      "calls": 16169,
+      "cumulative_seconds": 0.753822202,
+      "function": "combat_sim.py:8932(_map_combat_cards)",
+      "primitive_calls": 16169,
+      "self_seconds": 0.063297806
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.752622431,
+      "function": "combat_sim.py:55181(_advance_card_finish_frame)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.08444879100000001
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.747122752,
+      "function": "combat_sim.py:54342(_after_card_played)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.023554128
+    },
+    {
+      "calls": 67152,
+      "cumulative_seconds": 0.7251233850000001,
+      "function": "combat_sim.py:11299(_auto_phase_snapshot)",
+      "primitive_calls": 67152,
+      "self_seconds": 0.167303847
+    },
+    {
+      "calls": 16537,
+      "cumulative_seconds": 0.597450425,
+      "function": "combat_sim.py:8130(key)",
+      "primitive_calls": 16537,
+      "self_seconds": 0.22612062400000002
+    },
+    {
+      "calls": 11041,
+      "cumulative_seconds": 0.593162115,
+      "function": "combat_sim.py:17864(damage_monster)",
+      "primitive_calls": 11041,
+      "self_seconds": 0.11448291000000001
+    },
+    {
+      "calls": 25699,
+      "cumulative_seconds": 0.591689382,
+      "function": "combat_sim.py:8876(_prepare_card_pile_updates)",
+      "primitive_calls": 25699,
+      "self_seconds": 0.324472504
+    },
+    {
+      "calls": 9323191,
+      "cumulative_seconds": 0.586910283,
+      "function": "~:0(<built-in method builtins.isinstance>)",
+      "primitive_calls": 9323191,
+      "self_seconds": 0.507847173
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.562685194,
+      "function": "combat_sim.py:54615(_after_card_played_body)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.038420756
+    },
+    {
+      "calls": 23593,
+      "cumulative_seconds": 0.5500029280000001,
+      "function": "solve_fight.py:422(final_hp_ceiling)",
+      "primitive_calls": 23593,
+      "self_seconds": 0.07186421100000001
+    },
+    {
+      "calls": 4898,
+      "cumulative_seconds": 0.539756953,
+      "function": "combat_sim.py:43479(_start_auto_card_frame)",
+      "primitive_calls": 4898,
+      "self_seconds": 0.11807150300000001
+    },
+    {
+      "calls": 9930,
+      "cumulative_seconds": 0.5121691460000001,
+      "function": "solve_fight.py:159(_legal_actions)",
+      "primitive_calls": 9930,
+      "self_seconds": 0.011125608
+    },
+    {
+      "calls": 9930,
+      "cumulative_seconds": 0.501043538,
+      "function": "combat_sim.py:40066(legal_actions)",
+      "primitive_calls": 9930,
+      "self_seconds": 0.105484385
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.49426102000000005,
+      "function": "combat_sim.py:54903(_after_card_played_counter_relics)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.038114767
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 0.462516391,
+      "function": "combat_sim.py:11443(_cleanup_all_cards_at_turn_end)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.006015726000000001
+    },
+    {
+      "calls": 1094774,
+      "cumulative_seconds": 0.44828623300000003,
+      "function": "combat_sim.py:1742(card_spec)",
+      "primitive_calls": 1094774,
+      "self_seconds": 0.28373096200000003
+    },
+    {
+      "calls": 8696,
+      "cumulative_seconds": 0.41844698100000005,
+      "function": "combat_sim.py:36338(monster_act)",
+      "primitive_calls": 8696,
+      "self_seconds": 0.068756962
+    },
+    {
+      "calls": 9530,
+      "cumulative_seconds": 0.39526133300000005,
+      "function": "combat_sim.py:2831(_clear_turn_transient_card_keywords)",
+      "primitive_calls": 9530,
+      "self_seconds": 0.033597467
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 0.347649156,
+      "function": "combat_sim.py:33722(_freeze_batch139_before_hand_draw_card_listeners)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.031037164000000003
+    },
+    {
+      "calls": 71752,
+      "cumulative_seconds": 0.33655568700000005,
+      "function": "combat_sim.py:2966(card_cost_in_state)",
+      "primitive_calls": 71752,
+      "self_seconds": 0.126933596
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.322377372,
+      "function": "combat_sim.py:53267(_powers_before_card_played)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.095696529
+    },
+    {
+      "calls": 153940,
+      "cumulative_seconds": 0.312112162,
+      "function": "combat_sim.py:11165(_replace_top_continuation)",
+      "primitive_calls": 153940,
+      "self_seconds": 0.064032936
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.299442435,
+      "function": "combat_sim.py:54250(_physical_cards_after_card_played)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.019512229000000002
+    },
+    {
+      "calls": 105867,
+      "cumulative_seconds": 0.29453131400000004,
+      "function": "combat_sim.py:9312(_active_play_card)",
+      "primitive_calls": 105867,
+      "self_seconds": 0.06632389200000001
+    },
+    {
+      "calls": 7223,
+      "cumulative_seconds": 0.292443599,
+      "function": "combat_sim.py:29499(monster_attack_player)",
+      "primitive_calls": 7223,
+      "self_seconds": 0.023171346000000002
+    },
+    {
+      "calls": 32720,
+      "cumulative_seconds": 0.278184414,
+      "function": "combat_sim.py:40036(_card_can_play)",
+      "primitive_calls": 32720,
+      "self_seconds": 0.055809955
+    },
+    {
+      "calls": 3647465,
+      "cumulative_seconds": 0.274351135,
+      "function": "~:0(<built-in method builtins.getattr>)",
+      "primitive_calls": 3647465,
+      "self_seconds": 0.274351135
+    },
+    {
+      "calls": 4986914,
+      "cumulative_seconds": 0.267974369,
+      "function": "~:0(<built-in method builtins.len>)",
+      "primitive_calls": 4986914,
+      "self_seconds": 0.267974369
+    },
+    {
+      "calls": 1600203,
+      "cumulative_seconds": 0.26082624600000004,
+      "function": "~:0(<built-in method builtins.max>)",
+      "primitive_calls": 1600203,
+      "self_seconds": 0.178155017
+    },
+    {
+      "calls": 45133,
+      "cumulative_seconds": 0.259416886,
+      "function": "combat_sim.py:33842(_validated_before_hand_draw_power_order)",
+      "primitive_calls": 45133,
+      "self_seconds": 0.127614752
+    },
+    {
+      "calls": 11041,
+      "cumulative_seconds": 0.25490823700000004,
+      "function": "combat_sim.py:9367(_attack_card_provenance)",
+      "primitive_calls": 11041,
+      "self_seconds": 0.014290797000000001
+    },
+    {
+      "calls": 106162,
+      "cumulative_seconds": 0.25302233700000004,
+      "function": "fractions.py:613(forward)",
+      "primitive_calls": 106162,
+      "self_seconds": 0.06486180200000001
+    },
+    {
+      "calls": 22082,
+      "cumulative_seconds": 0.251762834,
+      "function": "combat_sim.py:9332(_validate_active_card_provenance)",
+      "primitive_calls": 22082,
+      "self_seconds": 0.039577322000000005
+    },
+    {
+      "calls": 23593,
+      "cumulative_seconds": 0.247559567,
+      "function": "solve_fight.py:235(heal_potential)",
+      "primitive_calls": 23593,
+      "self_seconds": 0.048311899000000005
+    },
+    {
+      "calls": 63509,
+      "cumulative_seconds": 0.244167825,
+      "function": "combat_sim.py:8032(clone)",
+      "primitive_calls": 63509,
+      "self_seconds": 0.068632856
+    },
+    {
+      "calls": 2936353,
+      "cumulative_seconds": 0.224097764,
+      "function": "~:0(<method 'add' of 'set' objects>)",
+      "primitive_calls": 2936353,
+      "self_seconds": 0.224097764
+    },
+    {
+      "calls": 243536,
+      "cumulative_seconds": 0.207938049,
+      "function": "combat_sim.py:2684(card_effective_keywords)",
+      "primitive_calls": 243536,
+      "self_seconds": 0.079528024
+    },
+    {
+      "calls": 5236,
+      "cumulative_seconds": 0.204554907,
+      "function": "combat_sim.py:44461(_gain_powered_card_block)",
+      "primitive_calls": 5236,
+      "self_seconds": 0.012736986
+    },
+    {
+      "calls": 44167,
+      "cumulative_seconds": 0.203778491,
+      "function": "combat_sim.py:8615(_has_distinguishable_sort_ties)",
+      "primitive_calls": 44167,
+      "self_seconds": 0.15618557600000002
+    },
+    {
+      "calls": 38128,
+      "cumulative_seconds": 0.183884234,
+      "function": "combat_sim.py:33771(_complete_batch139_before_hand_draw_card_listeners)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.025015713000000002
+    },
+    {
+      "calls": 1072116,
+      "cumulative_seconds": 0.183739107,
+      "function": "combat_sim.py:1958(card_ench)",
+      "primitive_calls": 1072116,
+      "self_seconds": 0.183739107
+    },
+    {
+      "calls": 5236,
+      "cumulative_seconds": 0.183609569,
+      "function": "combat_sim.py:44455(_modify_powered_card_block)",
+      "primitive_calls": 5236,
+      "self_seconds": 0.003099554
+    },
+    {
+      "calls": 69865,
+      "cumulative_seconds": 0.183367532,
+      "function": "combat_sim.py:11160(_push_continuation)",
+      "primitive_calls": 69865,
+      "self_seconds": 0.026125382000000003
+    },
+    {
+      "calls": 7223,
+      "cumulative_seconds": 0.18191304900000002,
+      "function": "combat_sim.py:29419(_commit_monster_attack_hit)",
+      "primitive_calls": 7223,
+      "self_seconds": 0.023146998000000002
+    },
+    {
+      "calls": 105676,
+      "cumulative_seconds": 0.174147341,
+      "function": "sts2_rng.py:431(next_int)",
+      "primitive_calls": 105676,
+      "self_seconds": 0.021213276
+    },
+    {
+      "calls": 129842,
+      "cumulative_seconds": 0.173807927,
+      "function": "__init__.py:457(_replace)",
+      "primitive_calls": 129842,
+      "self_seconds": 0.062957048
+    },
+    {
+      "calls": 10623,
+      "cumulative_seconds": 0.17075958600000002,
+      "function": "sts2_rng.py:464(shuffle)",
+      "primitive_calls": 10623,
+      "self_seconds": 0.018471079
+    },
+    {
+      "calls": 164574,
+      "cumulative_seconds": 0.170179983,
+      "function": "fractions.py:933(_richcmp)",
+      "primitive_calls": 164574,
+      "self_seconds": 0.07580424100000001
+    },
+    {
+      "calls": 66724,
+      "cumulative_seconds": 0.167116229,
+      "function": "combat_sim.py:33700(_validate_batch139_self_return_state)",
+      "primitive_calls": 66724,
+      "self_seconds": 0.10108613500000001
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.165946159,
+      "function": "combat_sim.py:9413(_set_active_play_card)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.031725762000000005
+    },
+    {
+      "calls": 23593,
+      "cumulative_seconds": 0.162455986,
+      "function": "solve_fight.py:286(<genexpr>)",
+      "primitive_calls": 23593,
+      "self_seconds": 0.0416559
+    },
+    {
+      "calls": 105676,
+      "cumulative_seconds": 0.152934065,
+      "function": "sts2_rng.py:325(next)",
+      "primitive_calls": 105676,
+      "self_seconds": 0.027334953000000002
+    },
+    {
+      "calls": 5236,
+      "cumulative_seconds": 0.15283563900000002,
+      "function": "combat_sim.py:44400(_modify_powered_card_block_decimal)",
+      "primitive_calls": 5236,
+      "self_seconds": 0.020304671
+    },
+    {
+      "calls": 1854128,
+      "cumulative_seconds": 0.150582988,
+      "function": "~:0(<method 'append' of 'list' objects>)",
+      "primitive_calls": 1854128,
+      "self_seconds": 0.150582988
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.143730453,
+      "function": "combat_sim.py:16653(_imitation_learning_after_local_card_played)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.0092142
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.141683799,
+      "function": "combat_sim.py:53907(_powers_after_card_played)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.06994784200000001
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.133949427,
+      "function": "combat_sim.py:16519(_validated_imitation_learning_state)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.047641787000000005
+    },
+    {
+      "calls": 633549,
+      "cumulative_seconds": 0.131687095,
+      "function": "~:0(<built-in method __new__ of type object at 0x104288a30>)",
+      "primitive_calls": 633549,
+      "self_seconds": 0.131687095
+    },
+    {
+      "calls": 855797,
+      "cumulative_seconds": 0.130648328,
+      "function": "~:0(<method 'get' of 'dict' objects>)",
+      "primitive_calls": 855797,
+      "self_seconds": 0.130648328
+    },
+    {
+      "calls": 80584,
+      "cumulative_seconds": 0.129030577,
+      "function": "combat_sim.py:16846(_has_after_power_amount_changed_listeners)",
+      "primitive_calls": 80584,
+      "self_seconds": 0.02415026
+    },
+    {
+      "calls": 69865,
+      "cumulative_seconds": 0.12876230900000002,
+      "function": "combat_sim.py:11182(_pop_continuation)",
+      "primitive_calls": 69865,
+      "self_seconds": 0.027202728000000002
+    },
+    {
+      "calls": 105676,
+      "cumulative_seconds": 0.125599112,
+      "function": "sts2_rng.py:311(next_double)",
+      "primitive_calls": 105676,
+      "self_seconds": 0.027266137000000003
+    },
+    {
+      "calls": 170454,
+      "cumulative_seconds": 0.123206852,
+      "function": "fractions.py:186(__new__)",
+      "primitive_calls": 170454,
+      "self_seconds": 0.084462564
+    },
+    {
+      "calls": 32288,
+      "cumulative_seconds": 0.12315297800000001,
+      "function": "combat_sim.py:53058(_before_card_block_preflight)",
+      "primitive_calls": 32288,
+      "self_seconds": 0.023451632
+    },
+    {
+      "calls": 133110,
+      "cumulative_seconds": 0.11590681500000001,
+      "function": "~:0(<function Counter.update at 0x10388a160>)",
+      "primitive_calls": 133110,
+      "self_seconds": 0.11590402200000001
+    },
+    {
+      "calls": 1094774,
+      "cumulative_seconds": 0.112741374,
+      "function": "combat_sim.py:745(_runtime_card_spec)",
+      "primitive_calls": 1094774,
+      "self_seconds": 0.112741374
+    },
+    {
+      "calls": 35533,
+      "cumulative_seconds": 0.11161416900000001,
+      "function": "combat_sim.py:36074(_validated_enemy_after_card_played_power_order)",
+      "primitive_calls": 35533,
+      "self_seconds": 0.07148217400000001
+    },
+    {
+      "calls": 129842,
+      "cumulative_seconds": 0.11085087900000001,
+      "function": "__init__.py:447(_make)",
+      "primitive_calls": 129842,
+      "self_seconds": 0.031535946
+    },
+    {
+      "calls": 509924,
+      "cumulative_seconds": 0.10478498200000001,
+      "function": "combat_sim.py:1814(card_uid)",
+      "primitive_calls": 509924,
+      "self_seconds": 0.077517707
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.10320632,
+      "function": "combat_sim.py:55157(_finish_card_play)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.029104789000000002
+    },
+    {
+      "calls": 11041,
+      "cumulative_seconds": 0.101252744,
+      "function": "combat_sim.py:47326(card_damage)",
+      "primitive_calls": 11041,
+      "self_seconds": 0.004741556
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.100884572,
+      "function": "combat_sim.py:55086(_route_card_play_result)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.023019708
+    },
+    {
+      "calls": 105789,
+      "cumulative_seconds": 0.09840088400000001,
+      "function": "sts2_rng.py:298(next_ulong)",
+      "primitive_calls": 105789,
+      "self_seconds": 0.06460017
+    },
+    {
+      "calls": 11041,
+      "cumulative_seconds": 0.09651118800000001,
+      "function": "combat_sim.py:3201(_powered_card_damage_base)",
+      "primitive_calls": 11041,
+      "self_seconds": 0.022025476000000002
+    },
+    {
+      "calls": 21646,
+      "cumulative_seconds": 0.089864123,
+      "function": "combat_sim.py:44362(_validate_native_block_decimal)",
+      "primitive_calls": 21646,
+      "self_seconds": 0.015487371000000002
+    },
+    {
+      "calls": 308022,
+      "cumulative_seconds": 0.089677319,
+      "function": "combat_sim.py:8935(<genexpr>)",
+      "primitive_calls": 308022,
+      "self_seconds": 0.040809511
+    },
+    {
+      "calls": 53279,
+      "cumulative_seconds": 0.088255952,
+      "function": "~:0(<built-in method builtins.sorted>)",
+      "primitive_calls": 53279,
+      "self_seconds": 0.036935395
+    },
+    {
+      "calls": 27998,
+      "cumulative_seconds": 0.085759339,
+      "function": "combat_sim.py:8249(_validated_multiplayer_players)",
+      "primitive_calls": 27998,
+      "self_seconds": 0.049575093
+    },
+    {
+      "calls": 18264,
+      "cumulative_seconds": 0.08423199,
+      "function": "combat_sim.py:28548(_evaluate_player_hp_loss)",
+      "primitive_calls": 18264,
+      "self_seconds": 0.034674153
+    },
+    {
+      "calls": 55316,
+      "cumulative_seconds": 0.083164154,
+      "function": "fractions.py:959(__gt__)",
+      "primitive_calls": 55316,
+      "self_seconds": 0.014436001
+    },
+    {
+      "calls": 127018,
+      "cumulative_seconds": 0.081870568,
+      "function": "combat_sim.py:8038(<genexpr>)",
+      "primitive_calls": 127018,
+      "self_seconds": 0.023589299
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.08008475100000001,
+      "function": "combat_sim.py:54504(_after_card_played_enemy_suffix)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.024699931
+    },
+    {
+      "calls": 270557,
+      "cumulative_seconds": 0.07906311,
+      "function": "<frozen abc>:117(__instancecheck__)",
+      "primitive_calls": 270557,
+      "self_seconds": 0.041140645
+    },
+    {
+      "calls": 246586,
+      "cumulative_seconds": 0.078592088,
+      "function": "combat_sim.py:2599(_batch61_enchantment)",
+      "primitive_calls": 246586,
+      "self_seconds": 0.038107481000000006
+    },
+    {
+      "calls": 375049,
+      "cumulative_seconds": 0.07778486200000001,
+      "function": "combat_sim.py:8885(<genexpr>)",
+      "primitive_calls": 375049,
+      "self_seconds": 0.053898589000000004
+    },
+    {
+      "calls": 1403,
+      "cumulative_seconds": 0.07730772100000001,
+      "function": "combat_sim.py:18290(_finish_monster_death)",
+      "primitive_calls": 1403,
+      "self_seconds": 0.005473234
+    },
+    {
+      "calls": 17315,
+      "cumulative_seconds": 0.07476603200000001,
+      "function": "combat_sim.py:9437(_remove_active_play_card)",
+      "primitive_calls": 17315,
+      "self_seconds": 0.027540111000000003
+    },
+    {
+      "calls": 7223,
+      "cumulative_seconds": 0.073362119,
+      "function": "combat_sim.py:28667(_commit_player_hp_loss)",
+      "primitive_calls": 7223,
+      "self_seconds": 0.015713665
+    },
+    {
+      "calls": 113764,
+      "cumulative_seconds": 0.072979468,
+      "function": "~:0(<built-in method builtins.min>)",
+      "primitive_calls": 113764,
+      "self_seconds": 0.023473642000000003
+    },
+    {
+      "calls": 62386,
+      "cumulative_seconds": 0.072022156,
+      "function": "combat_sim.py:29725(_validate_relic_pets)",
+      "primitive_calls": 62386,
+      "self_seconds": 0.072022156
+    },
+    {
+      "calls": 10614,
+      "cumulative_seconds": 0.071464708,
+      "function": "dotnet_sort.py:45(dotnet_list_sort)",
+      "primitive_calls": 10614,
+      "self_seconds": 0.026751457000000003
+    },
+    {
+      "calls": 71752,
+      "cumulative_seconds": 0.07134756,
+      "function": "combat_sim.py:2849(card_cost)",
+      "primitive_calls": 71752,
+      "self_seconds": 0.025318132
+    },
+    {
+      "calls": 32288,
+      "cumulative_seconds": 0.07078577100000001,
+      "function": "combat_sim.py:3086(_matching_free_power_amounts)",
+      "primitive_calls": 32288,
+      "self_seconds": 0.032001763
+    },
+    {
+      "calls": 54792,
+      "cumulative_seconds": 0.069769394,
+      "function": "fractions.py:955(__lt__)",
+      "primitive_calls": 54792,
+      "self_seconds": 0.011898897
+    },
+    {
+      "calls": 7223,
+      "cumulative_seconds": 0.067857552,
+      "function": "combat_sim.py:29148(_monster_attack_damage_snapshot)",
+      "primitive_calls": 7223,
+      "self_seconds": 0.017607497
+    },
+    {
+      "calls": 99941,
+      "cumulative_seconds": 0.067635518,
+      "function": "combat_sim.py:16303(_validate_music_box_state)",
+      "primitive_calls": 99941,
+      "self_seconds": 0.067635518
+    },
+    {
+      "calls": 1403,
+      "cumulative_seconds": 0.067081887,
+      "function": "combat_sim.py:18487(_finish_monster_death_suffix)",
+      "primitive_calls": 1403,
+      "self_seconds": 0.0025573230000000002
+    },
+    {
+      "calls": 23593,
+      "cumulative_seconds": 0.065892093,
+      "function": "solve_fight.py:351(_eidolon_replay_disables_alpha)",
+      "primitive_calls": 23593,
+      "self_seconds": 0.008999448
+    },
+    {
+      "calls": 87744,
+      "cumulative_seconds": 0.065769942,
+      "function": "combat_sim.py:38069(_has_turn_end_in_hand_effect)",
+      "primitive_calls": 87744,
+      "self_seconds": 0.031805729000000005
+    },
+    {
+      "calls": 32973,
+      "cumulative_seconds": 0.064591577,
+      "function": "~:0(<built-in method builtins.next>)",
+      "primitive_calls": 32973,
+      "self_seconds": 0.010411879
+    },
+    {
+      "calls": 322336,
+      "cumulative_seconds": 0.063088265,
+      "function": "combat_sim.py:16847(<genexpr>)",
+      "primitive_calls": 322336,
+      "self_seconds": 0.041314670000000005
+    },
+    {
+      "calls": 37854,
+      "cumulative_seconds": 0.06288561200000001,
+      "function": "combat_sim.py:39190(<genexpr>)",
+      "primitive_calls": 37854,
+      "self_seconds": 0.012681497000000002
+    },
+    {
+      "calls": 79836,
+      "cumulative_seconds": 0.062431519000000005,
+      "function": "combat_sim.py:40009(_has_exact_normality)",
+      "primitive_calls": 79836,
+      "self_seconds": 0.04907239
+    },
+    {
+      "calls": 1403,
+      "cumulative_seconds": 0.061648851000000005,
+      "function": "combat_sim.py:18711(_physical_cards_after_actual_death)",
+      "primitive_calls": 1403,
+      "self_seconds": 0.0008785570000000001
+    },
+    {
+      "calls": 1403,
+      "cumulative_seconds": 0.060770002000000004,
+      "function": "combat_sim.py:9196(_map_card_id_in_all_piles)",
+      "primitive_calls": 1403,
+      "self_seconds": 0.0009732780000000001
+    },
+    {
+      "calls": 135237,
+      "cumulative_seconds": 0.060177814,
+      "function": "combat_sim.py:8795(_card_identities_validated)",
+      "primitive_calls": 135237,
+      "self_seconds": 0.045905305
+    },
+    {
+      "calls": 10823,
+      "cumulative_seconds": 0.060136453000000006,
+      "function": "combat_sim.py:44372(_validated_native_gain_block_amount)",
+      "primitive_calls": 10823,
+      "self_seconds": 0.008678141
+    },
+    {
+      "calls": 95320,
+      "cumulative_seconds": 0.059291447000000004,
+      "function": "combat_sim.py:11620(_physical_card_after_drawn)",
+      "primitive_calls": 95320,
+      "self_seconds": 0.024639152
+    },
+    {
+      "calls": 95320,
+      "cumulative_seconds": 0.059140993,
+      "function": "combat_sim.py:9016(_chains_after_card_drawn)",
+      "primitive_calls": 95320,
+      "self_seconds": 0.020382064000000002
+    },
+    {
+      "calls": 467805,
+      "cumulative_seconds": 0.058800157000000006,
+      "function": "~:0(<built-in method builtins.hash>)",
+      "primitive_calls": 467805,
+      "self_seconds": 0.058800157000000006
+    },
+    {
+      "calls": 63509,
+      "cumulative_seconds": 0.058281269000000004,
+      "function": "combat_sim.py:5177(clone)",
+      "primitive_calls": 63509,
+      "self_seconds": 0.023691265000000003
+    },
+    {
+      "calls": 4,
+      "cumulative_seconds": 0.057872583000000005,
+      "function": "profile_review_pipeline.py:62(timed)",
+      "primitive_calls": 4,
+      "self_seconds": 4.4875e-05
+    },
+    {
+      "calls": 61368,
+      "cumulative_seconds": 0.057846123000000006,
+      "function": "combat_sim.py:40024(_normality_blocks_card_plays)",
+      "primitive_calls": 61368,
+      "self_seconds": 0.025862721
+    },
+    {
+      "calls": 355896,
+      "cumulative_seconds": 0.057717568000000004,
+      "function": "combat_sim.py:8872(<genexpr>)",
+      "primitive_calls": 355896,
+      "self_seconds": 0.039717057
+    },
+    {
+      "calls": 19064,
+      "cumulative_seconds": 0.057485713,
+      "function": "combat_sim.py:45749(_validated_turn_start_hand_choice_order)",
+      "primitive_calls": 19064,
+      "self_seconds": 0.036362723
+    },
+    {
+      "calls": 26069,
+      "cumulative_seconds": 0.057444523000000004,
+      "function": "combat_sim.py:16363(_validate_delayed_block_power_state)",
+      "primitive_calls": 26069,
+      "self_seconds": 0.039731970000000005
+    },
+    {
+      "calls": 10664,
+      "cumulative_seconds": 0.056784588000000004,
+      "function": "combat_sim.py:9228(_locate_card_uid)",
+      "primitive_calls": 10664,
+      "self_seconds": 0.028086818000000003
+    },
+    {
+      "calls": 23593,
+      "cumulative_seconds": 0.055126017000000006,
+      "function": "solve_fight.py:368(_nightmare_copy_disables_alpha)",
+      "primitive_calls": 23593,
+      "self_seconds": 0.008925986
+    },
+    {
+      "calls": 284713,
+      "cumulative_seconds": 0.05477709,
+      "function": "combat_sim.py:1822(_card_payload)",
+      "primitive_calls": 284713,
+      "self_seconds": 0.041376477
+    },
+    {
+      "calls": 67152,
+      "cumulative_seconds": 0.053154674000000006,
+      "function": "combat_sim.py:11256(_auto_phase_subphase_index)",
+      "primitive_calls": 67152,
+      "self_seconds": 0.032508461
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.052145201,
+      "function": "combat_sim.py:39891(_tag_team_play_count_changes)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.017712942000000002
+    },
+    {
+      "calls": 43734,
+      "cumulative_seconds": 0.051486321,
+      "function": "fractions.py:742(_mul)",
+      "primitive_calls": 43734,
+      "self_seconds": 0.028523503000000002
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.051377093000000006,
+      "function": "combat_sim.py:16239(_record_card_play_finished)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.022089476
+    },
+    {
+      "calls": 256793,
+      "cumulative_seconds": 0.051202462000000004,
+      "function": "combat_sim.py:716(is_attack)",
+      "primitive_calls": 256793,
+      "self_seconds": 0.051202462000000004
+    },
+    {
+      "calls": 71752,
+      "cumulative_seconds": 0.049556999000000004,
+      "function": "combat_sim.py:2928(_void_form_should_modify_cost)",
+      "primitive_calls": 71752,
+      "self_seconds": 0.018002799
+    },
+    {
+      "calls": 10398,
+      "cumulative_seconds": 0.049035376000000006,
+      "function": "combat_sim.py:39353(<genexpr>)",
+      "primitive_calls": 10398,
+      "self_seconds": 0.009323408
+    },
+    {
+      "calls": 109712,
+      "cumulative_seconds": 0.04885897,
+      "function": "combat_sim.py:44323(_validated_void_form_state)",
+      "primitive_calls": 109712,
+      "self_seconds": 0.04885897
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.048357409000000004,
+      "function": "combat_sim.py:55015(_resolve_card_play_result_location)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.023080766000000003
+    },
+    {
+      "calls": 17065,
+      "cumulative_seconds": 0.046454793,
+      "function": "combat_sim.py:11173(_replace_continuation_at)",
+      "primitive_calls": 17065,
+      "self_seconds": 0.011166466
+    },
+    {
+      "calls": 11041,
+      "cumulative_seconds": 0.046423215000000004,
+      "function": "combat_sim.py:18146(_player_powers_after_damage_given)",
+      "primitive_calls": 11041,
+      "self_seconds": 0.024909306000000003
+    },
+    {
+      "calls": 174778,
+      "cumulative_seconds": 0.045788441000000006,
+      "function": "combat_sim.py:8190(<genexpr>)",
+      "primitive_calls": 174778,
+      "self_seconds": 0.021013124
+    },
+    {
+      "calls": 37186,
+      "cumulative_seconds": 0.044720847,
+      "function": "combat_sim.py:20394(_validate_w195_entry_spec)",
+      "primitive_calls": 37186,
+      "self_seconds": 0.019997222000000002
+    },
+    {
+      "calls": 33074,
+      "cumulative_seconds": 0.044435848,
+      "function": "combat_sim.py:8203(<genexpr>)",
+      "primitive_calls": 33074,
+      "self_seconds": 0.044435848
+    },
+    {
+      "calls": 10614,
+      "cumulative_seconds": 0.044254611000000006,
+      "function": "combat_sim.py:11560(_perfect_fit_modify_shuffle_order)",
+      "primitive_calls": 10614,
+      "self_seconds": 0.014294327
+    },
+    {
+      "calls": 182149,
+      "cumulative_seconds": 0.044065506000000004,
+      "function": "combat_sim.py:2834(<genexpr>)",
+      "primitive_calls": 182149,
+      "self_seconds": 0.023130111000000002
+    },
+    {
+      "calls": 44164,
+      "cumulative_seconds": 0.043750293,
+      "function": "fractions.py:710(_add)",
+      "primitive_calls": 44164,
+      "self_seconds": 0.024461993
+    },
+    {
+      "calls": 628412,
+      "cumulative_seconds": 0.04321022,
+      "function": "combat_sim.py:754(_body_uses_step_kind)",
+      "primitive_calls": 628412,
+      "self_seconds": 0.04321022
+    },
+    {
+      "calls": 134499,
+      "cumulative_seconds": 0.042603191000000006,
+      "function": "combat_sim.py:11445(<lambda>)",
+      "primitive_calls": 134499,
+      "self_seconds": 0.021823228
+    },
+    {
+      "calls": 406197,
+      "cumulative_seconds": 0.040947027000000004,
+      "function": "combat_sim.py:33848(<genexpr>)",
+      "primitive_calls": 406197,
+      "self_seconds": 0.040947027000000004
+    },
+    {
+      "calls": 95320,
+      "cumulative_seconds": 0.038758929000000004,
+      "function": "combat_sim.py:8941(_validate_card_affliction_power_overlap)",
+      "primitive_calls": 95320,
+      "self_seconds": 0.028330594
+    },
+    {
+      "calls": 7223,
+      "cumulative_seconds": 0.038222618,
+      "function": "combat_sim.py:28892(_monster_attack_after_paper_cuts)",
+      "primitive_calls": 7223,
+      "self_seconds": 0.015584440000000001
+    },
+    {
+      "calls": 270557,
+      "cumulative_seconds": 0.037922465,
+      "function": "~:0(<built-in method _abc._abc_instancecheck>)",
+      "primitive_calls": 270557,
+      "self_seconds": 0.037873049
+    },
+    {
+      "calls": 141029,
+      "cumulative_seconds": 0.036354263000000005,
+      "function": "combat_sim.py:8198(<genexpr>)",
+      "primitive_calls": 141029,
+      "self_seconds": 0.017847870000000002
+    },
+    {
+      "calls": 106335,
+      "cumulative_seconds": 0.035756349,
+      "function": "fractions.py:317(_from_coprime_ints)",
+      "primitive_calls": 106335,
+      "self_seconds": 0.026927457000000002
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.035561428,
+      "function": "combat_sim.py:21590(_validate_batch264_nightmare_body)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.007539149
+    },
+    {
+      "calls": 36936,
+      "cumulative_seconds": 0.035069063000000004,
+      "function": "combat_sim.py:54307(_music_box_matches_after_card_played)",
+      "primitive_calls": 36936,
+      "self_seconds": 0.010804936000000001
+    },
+    {
+      "calls": 18468,
+      "cumulative_seconds": 0.034833139,
+      "function": "combat_sim.py:21809(_validate_batch238_transfigure_body)",
+      "primitive_calls": 18468,
+      "self_seconds": 0.00761267
+    },
+    {
+      "calls": 13820,
+      "cumulative_seconds": 0.034522653,
+      "function": "combat_sim.py:9203(_ensure_active_play_card)",
+      "primitive_calls": 13820,
+      "self_seconds": 0.022772064
+    }
+  ],
+  "wall_seconds": 16.219784624874592
+}

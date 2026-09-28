@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "WQQ1NTPA1BW3",
+ "node": 38,
+ "encounter": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "4259bd6420933b2784ba9552f969f4c537e50ed555fb3256fc69e8aeb50c9793",
+ "save_sha256": "a3445ddc806ca7a60b358b313b5346cc49efa44c6b6c573d6521a26c8b73f7ab",
+ "entry_digest": "4eb9ce1c1e89cd7fa545e1183f74e3753149e8424ed08b6d1ce09801a99e0acf",
+ "checksummed": true
+}

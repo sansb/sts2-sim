@@ -1,0 +1,11 @@
+{
+ "surface": "rust-load",
+ "class": "card_enchantment",
+ "kind": "not_admitted",
+ "detail": "entry needs enchantment \"TEZCATARAS_EMBER\"",
+ "missing": [
+  "enchantment \"TEZCATARAS_EMBER\""
+ ],
+ "schema": "sts-eval-refusal-v1",
+ "stage": "rooted"
+}

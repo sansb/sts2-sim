@@ -1,0 +1,2034 @@
+{
+ "debt": [
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "attack_wounds"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "ponder"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "queen_youre_mine"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "soul_siphon"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "test_subject_burning_growl"
+  },
+  {
+   "axis": "moves",
+   "family": "elite",
+   "kind": "attack_pile_inject"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "add_status_hand"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_charge"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_smoggy"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "buff_team_block"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "explode"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "haunt"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "weak_player"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "weak_player_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "add_status_discard"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_frail"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_weak_frail"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_weak_player"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "block"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "buff_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "frail_player"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "headbutt"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "none"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "shrink"
+  },
+  {
+   "axis": "moves",
+   "family": "spawned",
+   "kind": "attack_vuln_weak_player"
+  },
+  {
+   "axis": "moves",
+   "family": "spawned",
+   "kind": "buff_team_strength"
+  },
+  {
+   "axis": "steps",
+   "family": "block_next",
+   "kind": "block_next_body"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_common",
+   "kind": "gunk_up_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_common",
+   "kind": "uproar_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_rare",
+   "kind": "adaptive_strike_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_rare",
+   "kind": "flak_cannon_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "hand_cap",
+   "kind": "hand_cap_body"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_rare",
+   "kind": "autoplay_draw_x"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_rare",
+   "kind": "hang_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_rare",
+   "kind": "the_scythe_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "abundance_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "beacon_of_hope_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "catastrophe_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "jackpot_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "panic_button_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "purity_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "restlessness_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "seeker_strike_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_lifecycle",
+   "kind": "master_planner"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_forge",
+   "kind": "sovereign_blade_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "largesse_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "manifest_authority_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "quasar_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "resource_powers",
+   "kind": "friendship_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_context_result_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_random"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_result"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "energy_next_turn"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "generate_fixed_status"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "haunt_power"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "heal"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "select"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "serpent_form"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "shadowmeld"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "shroud"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "temp_strength"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_rare",
+   "kind": "knife_trap_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "expertise_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "generate_shivs_then_upgrade_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "arsenal"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "black_hole"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "borrowed_time"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "child_of_the_stars"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "corruption"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "demesne"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_attack"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_ethereal"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_power"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_skill"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "genesis"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "phantom_blades"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "pillar_of_creation"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "reflect"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "retain_hand"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "sealed_throne"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "smokestack"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "sneaky"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "star_next_turn"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "wraith_form"
+  }
+ ],
+ "implemented": [
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "attack_beckon"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "attack_wounds"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "beast_cry"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "beast_stamp"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "beckon"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "fade"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "insatiable_liquify"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "ponder"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "queen_youre_mine"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "scream"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "soul_siphon"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "test_subject_burning_growl"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "test_subject_multi_claw"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "test_subject_respawn"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "test_subject_skull_bash"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_about"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_explode"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_pressure_gun"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_pressure_up"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_pressurize"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_ram"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_siphon"
+  },
+  {
+   "axis": "moves",
+   "family": "boss",
+   "kind": "waterfall_stomp"
+  },
+  {
+   "axis": "moves",
+   "family": "elite",
+   "kind": "add_status"
+  },
+  {
+   "axis": "moves",
+   "family": "elite",
+   "kind": "attack_block_vital"
+  },
+  {
+   "axis": "moves",
+   "family": "elite",
+   "kind": "attack_pile_inject"
+  },
+  {
+   "axis": "moves",
+   "family": "elite",
+   "kind": "attack_vigor"
+  },
+  {
+   "axis": "moves",
+   "family": "elite",
+   "kind": "ento_spit"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "add_status_hand"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_charge"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_dexterity"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_scroll_branch"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_smoggy"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_spawn_aggro"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_strength_branch"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_tangle"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "attack_vulnerable_deferred_ovicopter"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "axebot_bootup"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "bloat"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "buff_team_block"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "explode"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "fabricate"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "hatch_tough_egg"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "haunt"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "lay_tough_eggs"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "louse_curl_grow"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "louse_pounce"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "louse_web"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "noise_status"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "pile_inject"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "possess_speed"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "possess_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "soar"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "summon_illusion"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "summon_rat"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "verdict"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "vuln_player"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "weak_player"
+  },
+  {
+   "axis": "moves",
+   "family": "normal",
+   "kind": "weak_player_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "add_status_discard"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_block"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_frail"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_weak_frail"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "attack_weak_player"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "block"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "block_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "buff_strength"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "buff_thorns"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "burrow"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "frail_player"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "headbutt"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "none"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "ritual"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "shrink"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "spit_attack"
+  },
+  {
+   "axis": "moves",
+   "family": "shared",
+   "kind": "wriggle"
+  },
+  {
+   "axis": "moves",
+   "family": "spawned",
+   "kind": "attack_vuln_weak_player"
+  },
+  {
+   "axis": "moves",
+   "family": "spawned",
+   "kind": "buff_team_strength"
+  },
+  {
+   "axis": "steps",
+   "family": "block_next",
+   "kind": "block_next_body"
+  },
+  {
+   "axis": "steps",
+   "family": "calculated_history",
+   "kind": "crescent_spear_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "calculated_history",
+   "kind": "helix_drill_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "calculated_history",
+   "kind": "radiate_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "calculated_history",
+   "kind": "rattle_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "calculated_history",
+   "kind": "tear_asunder_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "curses",
+   "kind": "turn_end_gold_loss_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_common",
+   "kind": "gunk_up_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_common",
+   "kind": "uproar_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "channel_hittable_snapshot"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "channel_voltaic"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "channel_x"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "compile_driver_unique_orb_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "darkness"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "evoke_front_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "evoke_front_x"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "hyperbeam_focus_down_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "lightning_rod"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "remove_orb_slots_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "shatter_orbs_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "storm"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "synchronize_unique_orb_focus_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "temp_focus"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "tesla_coil"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_orb",
+   "kind": "thunder"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_rare",
+   "kind": "adaptive_strike_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_rare",
+   "kind": "all_for_one_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_rare",
+   "kind": "flak_cannon_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_rare",
+   "kind": "imitation_learning_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_uncommon",
+   "kind": "gain_current_energy_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "defect_uncommon",
+   "kind": "scrape_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "hand_cap",
+   "kind": "hand_cap_body"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_common",
+   "kind": "anger_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_common",
+   "kind": "attack_per_strike"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_common",
+   "kind": "exhaust_random"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_common",
+   "kind": "havoc"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_common",
+   "kind": "molten_vuln"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_common",
+   "kind": "thunderclap_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_rare",
+   "kind": "autoplay_draw_x"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_rare",
+   "kind": "fiend_fire_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_rare",
+   "kind": "heavenly_drill_x"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_rare",
+   "kind": "pacts_end_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "attack_all_x"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "attack_per_vuln"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "discard_hand_draw"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "drum_of_battle_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "exhaust_draw"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "exhaust_nonattacks_block"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "infernal_blade_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "inferno"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "juggling_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "shockwave_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "stomp_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "ironclad_uncommon",
+   "kind": "vulnerable_then_strength_current"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_osty",
+   "kind": "osty_body"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_osty",
+   "kind": "osty_summon_heal"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_osty",
+   "kind": "sacrifice_osty_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_osty",
+   "kind": "sic_em_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_rare",
+   "kind": "hang_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_rare",
+   "kind": "shared_fate_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_rare",
+   "kind": "the_scythe_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_uncommon",
+   "kind": "calculated_doom_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_uncommon",
+   "kind": "deaths_door_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "necrobinder_uncommon",
+   "kind": "dirge_x_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "abundance_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "beacon_of_hope_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "beat_down_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "believe_in_you_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "brightest_flame_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "catastrophe_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "coordinate_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "draw_if_no_hand_attacks"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "eidolon_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "enlightenment_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "gain_current_block_card_unpowered_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "intercept_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "jackpot_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "lift_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "mimic_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "panic_button_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "purity_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "rally_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "rend_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "restlessness_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "neutral",
+   "kind": "seeker_strike_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_cost",
+   "kind": "claw_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_cost",
+   "kind": "maul_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_cost",
+   "kind": "momentum_strike_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_cost",
+   "kind": "physical_damage_attack"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_cost",
+   "kind": "rampage_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "physical_lifecycle",
+   "kind": "master_planner"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_ancient",
+   "kind": "meteor_shower_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_forge",
+   "kind": "sovereign_blade_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "bundle_of_joy_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "guiding_star_draw_next_turn_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "huddle_up_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "largesse_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "manifest_authority_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "plot_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "regent_uncommon",
+   "kind": "quasar_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "resource_powers",
+   "kind": "friendship_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "same_turn_history",
+   "kind": "forgotten_ritual_energy_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "same_turn_history",
+   "kind": "same_turn_history_body"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "add_orb_slots_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_all"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_all_temp_strength_snapshot"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_context_result_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_random"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_result"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "attack_x"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "block"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "calcify"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "calculated_attack"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "calculated_block"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "calculated_hits"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "channel"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "dexterity"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "draw"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "energy"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "energy_next_turn"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "generate_fixed_shivs"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "generate_fixed_status"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "haunt_power"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "heal"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "hp_loss"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "power_all_serial"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "select"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "serpent_form"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "shadowmeld"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "shroud"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "spinner"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "stars"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "strength"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "temp_strength"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "vulnerable"
+  },
+  {
+   "axis": "steps",
+   "family": "shared",
+   "kind": "weak"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_rare",
+   "kind": "knife_trap_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_rare",
+   "kind": "malaise_x"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_rare",
+   "kind": "storm_of_steel_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_special",
+   "kind": "shiv_attack"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "blade_symphony_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "escape_plan_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "expertise_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "expose_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "generate_shivs_then_upgrade_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "mirage_total_poison_block_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "pillage_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "poison_if_poisoned"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "poison_random_serial"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "up_my_sleeve_cost_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "silent_uncommon",
+   "kind": "well_laid_plans"
+  },
+  {
+   "axis": "steps",
+   "family": "single_pile_selection",
+   "kind": "glimmer_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "status",
+   "kind": "frantic_escape_exact"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "accuracy"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "afterimage"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "aggression"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "arsenal"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "automation"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "barricade"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "biased_cognition"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "black_hole"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "blur"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "borrowed_time"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "buffer"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "burst"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "cacophony"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "child_of_the_stars"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "colossus"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "coolant"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "corrosive_wave"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "corruption"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "countdown"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "cruelty"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "danse_macabre"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "dark_embrace"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "demesne"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "demon_form"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "devour_life"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "doom"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "draw_next_turn"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "echo_form"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "envenom"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "fasten"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "feel_no_pain"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "flame_barrier"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "focus"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_attack"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_ethereal"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_power"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "free_skill"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "genesis"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "hailstorm"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "infinite_blades"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "intangible"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "iteration"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "juggernaut"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "loop"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "machine_learning"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "mayhem"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "monarchs_gaze"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "neurosurge"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "no_draw"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "noxious_fumes"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "one_two_punch"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "orbit"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "pagestorm"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "pale_blue_dot"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "panache"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "phantom_blades"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "pillar_of_creation"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "plating"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "poison"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "prep_time"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "pyre"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "rage"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "reaper_form"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "reflect"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "retain_hand"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "rolling_boulder"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "rupture"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "sealed_throne"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "signal_boost"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "sleight_of_flesh"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "smokestack"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "sneaky"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "speedster"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "spirit_of_ash"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "star_next_turn"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "stratagem"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "subroutine"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "temp_dexterity"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "temp_strength_enemy"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "the_gambit"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "thorns"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "tracking"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "unmovable"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "vigor"
+  },
+  {
+   "axis": "steps",
+   "family": "templates",
+   "kind": "wraith_form"
+  }
+ ],
+ "implemented_totals": {
+  "all": 319,
+  "moves": 80,
+  "steps": 239
+ },
+ "meaning": "exact implemented vocabulary plus implemented-but-not-declared must_cover debt; static declaration evidence only, never execution evidence",
+ "schema": "rust-port-must-cover-declaration-debt-v2",
+ "snapshot_base": "fe05eb42e0b44e7af150cb0cfc42b96a384759da",
+ "totals": {
+  "all": 84,
+  "moves": 26,
+  "steps": 58
+ }
+}

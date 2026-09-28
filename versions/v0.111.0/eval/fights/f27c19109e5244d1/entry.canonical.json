@@ -1,0 +1,383 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "artifact": 3,
+   "hp": 535,
+   "kind": "AEONGLASS",
+   "max_hp": 535
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "BLUR",
+    "uid": 10,
+    "upgrade": 1
+   },
+   {
+    "id": "PIERCING_WAIL",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "CALCULATED_GAMBLE",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "ANGER",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "CONFLAGRATION",
+    "uid": 14,
+    "upgrade": 1
+   },
+   {
+    "id": "NEUTRALIZE",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "BLADE_DANCE",
+    "uid": 16,
+    "upgrade": 1
+   },
+   {
+    "id": "SURVIVOR",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "BATTLE_TRANCE",
+    "uid": 18,
+    "upgrade": 1
+   },
+   {
+    "id": "BLUR",
+    "uid": 19,
+    "upgrade": 1
+   },
+   {
+    "id": "UNTOUCHABLE",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "KNIFE_TRAP",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "BACKFLIP",
+    "uid": 22,
+    "upgrade": 1
+   },
+   {
+    "id": "FOOTWORK",
+    "uid": 23,
+    "upgrade": 1
+   },
+   {
+    "id": "HIDDEN_DAGGERS",
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "AUTOMATION",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "MAD_SCIENCE_TINKER",
+      2,
+      5
+     ]
+    ],
+    "id": "MAD_SCIENCE",
+    "uid": 26,
+    "upgrade": 0
+   },
+   {
+    "id": "HIDDEN_DAGGERS",
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "id": "ABRASIVE",
+    "uid": 28,
+    "upgrade": 1
+   },
+   {
+    "id": "ACROBATICS",
+    "uid": 29,
+    "upgrade": 0
+   },
+   {
+    "id": "PREPARED",
+    "uid": 30,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "INFINITE_BLADES",
+    "uid": 0,
+    "upgrade": 1
+   },
+   {
+    "id": "UP_MY_SLEEVE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "MALAISE",
+    "uid": 2,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "REFLEX",
+    "uid": 4,
+    "upgrade": 1
+   },
+   {
+    "id": "BLADE_DANCE",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "ACCURACY",
+    "uid": 6,
+    "upgrade": 1
+   }
+  ]
+ },
+ "player": {
+  "after_card_played_power_order": [
+   [
+    "withering",
+    0
+   ]
+  ],
+  "bag_draws": 2,
+  "cards_drawn_combat": 7,
+  "energy": 4,
+  "fully_unlocked_potion_pool": true,
+  "gold": 108,
+  "horn_cleat": true,
+  "hp": 52,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 1,
+  "lantern": true,
+  "max_hp": 74,
+  "next_after_side_turn_end_power_uid": 1,
+  "next_card_uid": 31,
+  "paels_flesh": true,
+  "player_phase": 3,
+  "potion_slots": [
+   "GAMBLERS_BREW",
+   null
+  ],
+  "potions": [
+   "GAMBLERS_BREW"
+  ],
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.RING_OF_THE_SNAKE",
+   "RELIC.SILVER_CRUCIBLE",
+   "RELIC.HORN_CLEAT",
+   "RELIC.UNCEASING_TOP",
+   "RELIC.PAELS_FLESH",
+   "RELIC.WAR_PAINT",
+   "RELIC.STRIKE_DUMMY",
+   "RELIC.MEAT_CLEAVER",
+   "RELIC.JUZU_BRACELET",
+   "RELIC.FRAGRANT_MUSHROOM",
+   "RELIC.VAJRA",
+   "RELIC.LANTERN"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Silent",
+  "reward_card_rarity_odds": "BossEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "strength": 1,
+  "strike_dummy": true,
+  "unceasing_top": true,
+  "withering_cards_left": 6,
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 9,
+   "words": [
+    15642774534888600876,
+    12759303612765701634,
+    14994038077454706929,
+    425057628503148792
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    1767535873488243358,
+    972855011393568381,
+    9053740334060883732,
+    18390939957458693937
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    3211807308744642097,
+    4704437705666942737,
+    7999371219489915427,
+    16337266708171717705
+   ]
+  },
+  "generation": {
+   "counter": 128,
+   "words": [
+    3692214422389578685,
+    5192083654233667995,
+    13107953860030218773,
+    18124684915075147296
+   ]
+  },
+  "niche": {
+   "counter": 63,
+   "words": [
+    8581321319654119000,
+    5263882060988816587,
+    7574845397100231031,
+    7818701367848095016
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    5465699593259020824,
+    3420927966766767094,
+    8743479182238585895,
+    7871849043402606081
+   ]
+  },
+  "rng": {
+   "counter": 870,
+   "words": [
+    16485793331840708267,
+    4473167044050117542,
+    10558460655979219648,
+    6037407331335528230
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    4507191163922617206,
+    7212348064392251194,
+    7345257354017983558,
+    12171137160384139105
+   ]
+  },
+  "targets": {
+   "counter": 37,
+   "words": [
+    11623907533428086426,
+    17167578203072149911,
+    3533762557458824941,
+    9886381956955152287
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

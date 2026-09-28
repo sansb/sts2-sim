@@ -1,0 +1,77 @@
+{
+  "issue": 194,
+  "installed_build": "v0.111.0/41cef1ea",
+  "installed_archive_dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+  "captures": [
+    {
+      "mechanic": "ruby_raiders",
+      "build": "v0.111.0",
+      "seed": "24184VPSWK9L",
+      "total_floor": 8,
+      "save": "2026-08-14/234709.817_save_2cb8c415.save",
+      "save_sha256": "58dd63eb16d75a95b82544a350c0598db35f6c4ab764b0bcddc8253fb5be9c53",
+      "mcr": "2026-08-14/234709.818_mcr_9ccd662c.mcr",
+      "mcr_sha256": "249566fb84b17018a274135b9baf88adcfd0b27ce928870ebedaaad0800d4893",
+      "roster": ["AXE_RUBY_RAIDER", "CROSSBOW_RUBY_RAIDER", "BRUTE_RUBY_RAIDER"],
+      "encounter_indices": [0, 2, 1],
+      "encounter_counter_after_roster": 3,
+      "starting_hp": [23, 20, 32]
+    },
+    {
+      "mechanic": "ruby_raiders",
+      "build": "v0.110.1",
+      "seed": "NZG2C7M7KWUB",
+      "total_floor": 12,
+      "save": "2026-08-08/102532.496_save_b21b77dd.save",
+      "save_sha256": "777a60a8eb2532ff49d5905534b71230669ef6feff3fd80c06a9252471b86969",
+      "mcr": "2026-08-08/102532.498_mcr_9d40a088.mcr",
+      "mcr_sha256": "9d9933be4462c2b728c50f9a122e08eeabe18fbbbee2e2f0882a4b0ef6fa387a",
+      "roster": ["ASSASSIN_RUBY_RAIDER", "BRUTE_RUBY_RAIDER", "AXE_RUBY_RAIDER"],
+      "encounter_indices": [1, 1, 0],
+      "encounter_counter_after_roster": 3,
+      "starting_hp": [23, 31, 21]
+    },
+    {
+      "mechanic": "ruby_raiders",
+      "build": "v0.108.0",
+      "seed": "329ZSST9P3",
+      "total_floor": 13,
+      "save": "2026-07-14/232343.560_save_fcdbbe84.save",
+      "save_sha256": "c3f48f86795fcf9cc49046597562f59d656ef4790b722736611119ac8e3c96e3",
+      "mcr": "2026-07-14/232343.560_mcr_8c11a6eb.mcr",
+      "mcr_sha256": "cf34465de115fa9b0e3fd2774a31dff3016d6d5dd772facf815aeeb63ab32a54",
+      "roster": ["AXE_RUBY_RAIDER", "TRACKER_RUBY_RAIDER", "ASSASSIN_RUBY_RAIDER"],
+      "encounter_indices": [0, 3, 0],
+      "encounter_counter_after_roster": 3
+    },
+    {
+      "mechanic": "slithering_strangler",
+      "build": "v0.110.1",
+      "seed": "KGBFBD7L4T0T",
+      "total_floor": 6,
+      "save": "2026-08-01/165748.349_save_892506b2.save",
+      "save_sha256": "df1e618f38077046ba2a1d0ff0e05b7e972991d0b1dcce8c7fc1bcca14ad3c56",
+      "mcr": "2026-08-01/165748.350_mcr_845b9bec.mcr",
+      "mcr_sha256": "63dee8b0c999748608b1fe035844e58e6337a6d14f828d09a5863acfaabf8f2c",
+      "roster": ["SNAPPING_JAXFRUIT", "SLITHERING_STRANGLER"],
+      "encounter_indices": [0],
+      "encounter_counter_after_roster": 1,
+      "starting_hp": [35, 55],
+      "constrict_amounts_observed": [3, 6],
+      "monster_ai_counter_after_turn_1": 1
+    },
+    {
+      "mechanic": "slithering_strangler",
+      "build": "v0.110.1",
+      "seed": "K60C6UC6053G",
+      "total_floor": 15,
+      "save": "2026-08-08/182954.637_save_9e70d49f.save",
+      "save_sha256": "67f690b54d5a193fb5be4b02f1b4816cc1e549771a580944e632befc25e1aed3",
+      "mcr": "2026-08-08/182954.638_mcr_e5015f52.mcr",
+      "mcr_sha256": "7b19c7a95c73d19b3deb1000a5a421723ebf4ca93623bce7d86e5cca3c6f4e04",
+      "roster": ["SNAPPING_JAXFRUIT", "SLITHERING_STRANGLER"],
+      "encounter_indices": [0],
+      "encounter_counter_after_roster": 1
+    }
+  ]
+}

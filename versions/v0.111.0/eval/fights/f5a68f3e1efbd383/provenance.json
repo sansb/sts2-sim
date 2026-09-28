@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "UE7YGG9XC3ZB",
+ "node": 26,
+ "encounter": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "106373876a616921fc9a6cb1776f80d4e76e3c2e501d6d9a6d9e02030ab9738d",
+ "save_sha256": "c317f50367a433cf9fc052d9d7938f31215f72f0015479dbe09603d0d73d220d",
+ "entry_digest": "18ab8c8d068d7ea341adb6954ee354ad4f470a402b7a31366e58d50600782bf4",
+ "checksummed": true
+}

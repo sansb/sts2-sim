@@ -1,0 +1,157 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "61088c9dc0c25a0122d25745df8627029a751fdb681bcb9ada6a3879ea5ed341",
+ "turns": 5,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 1
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 4
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 3,
+   "target": 2
+  },
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 2
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "play",
+   "uid": 10
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 2
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 1
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 1
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 17
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 6,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 18
+  },
+  {
+   "kind": "play",
+   "uid": 3,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 0,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  }
+ ],
+ "step_digests": [
+  "0b7beb8dd7c8d3d0fd858fe1d6537f6ff2f4b0d1f2cb626f950175385b60e35f",
+  "e92224e63356f8f37966b17925b6d5b52019969a2a68ceb1779f2fb15c8d1373",
+  "09393bc679b79debd2d0247975f344d90301636826422f406f44d2536a2c8199",
+  "be637c3e7e30988505f20dcf532c7ab21e1c7956284454d788f352c268efc48b",
+  "1be4cf1622c25bc7c86b26b303e0314fb2b8c568453019b022c6254fbcae9cab",
+  "0801ba2f3edeb986d68cea5b9813f9a86e864bd59f3c4f6ebc1cb050d832edb2",
+  "b103f5d2214611fb5cde82eebd441575eb7e23ffe2e0b9be4eb540f7bb278d38",
+  "cc464038c2197efd85a55ea747711f985e722c5483b0347becace59994740b3e",
+  "57e5d97d4c058cc0ac10a7b16d9c23226cefffa25fda84cfbc27f5e68defd14d",
+  "23b82b0b735d75b4fd50de8b91ae15e4622331229ae277aa6a4c437d100c7874",
+  "82ef7af69fa93f54dd693f9769efdf1e90393fc78950c155dfa203cad591a251",
+  "ec8c39691370bd11aaa0d774f0ae562ef1bc73db3a801504e4d018d9336ba852",
+  "762d76169cd494e5b478f307ccb12bc0a11dbaf8c73d47e1edfdf36c94ebe2e7",
+  "333183ec9ccef3c36a69d3e9d0c7ce86e63a41322c710e073c633edd72b6c0c0",
+  "f995d306be5b6958a6ae132c8f678b492bf3259be910d12ac7968beea6e11deb",
+  "c3738d9f8a8cae159d140ebe651c3be61b0d96610d93b30090fa408c0565eaec",
+  "4855293d1cac7e3226e1a24672c07cbeb8d5343f32e30c7baf7a93c0ec9f18e6",
+  "530d7ac509e97b50edfdd8d1da1d4f54e35e2169fa694d617fe326e4fdeb0e3f",
+  "3ff39523d587ceb2b31f38746ae9ed7f1631562479e8fca46a228e4bbf178992",
+  "15e79a852a066a660c694ce405db8d8066ce0ce223dcc24127c1779d3851d100",
+  "f7cf13a8cb5f06fdcd588200ab39aa87d20a0c2e57235f4c3dde7eb8564a4985",
+  "4fe41e3a07d55207d4a00df796849cc5e6982f809761615e499e06a31e9060fe",
+  "074bcdc00e3152857640e041afa3873d276723c3bb37a98027c284057d4912db",
+  "427bd816f5ab86e5ad680c9084729b22a9e9dede82d5fcc7b5fda0b6372c9a1b",
+  "d2540be148c074e91b08119becaeb309a1ac5a24212d36205ac52d11737001ea",
+  "92df184b95bdade23991b478fff03e71ca99d93f437f5d03ec369fa0a3542297"
+ ],
+ "terminal": {
+  "hp": 55,
+  "turn": 5,
+  "over": true,
+  "won": true
+ }
+}

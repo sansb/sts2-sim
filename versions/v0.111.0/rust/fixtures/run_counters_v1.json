@@ -1,0 +1,4673 @@
+{
+ "cases": [
+  {
+   "expected": [
+    {
+     "build": "v0.111.0",
+     "caveats": [],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      }
+     },
+     "encounter_id": "ENCOUNTER.SLIMES_WEAK",
+     "fight_index": 0,
+     "floor": 2,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 3
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 27
+      }
+     },
+     "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+     "fight_index": 1,
+     "floor": 3,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 4
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 46
+      }
+     },
+     "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+     "fight_index": 2,
+     "floor": 4,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 5
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 66
+      }
+     },
+     "encounter_id": "ENCOUNTER.MAWLER_NORMAL",
+     "fight_index": 3,
+     "floor": 5,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 6
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 96
+      }
+     },
+     "encounter_id": "ENCOUNTER.INKLETS_NORMAL",
+     "fight_index": 4,
+     "floor": 8,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 9
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 109
+      }
+     },
+     "encounter_id": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+     "fight_index": 5,
+     "floor": 12,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 5: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [
+        "fight 5: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 10
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 139
+      }
+     },
+     "encounter_id": "ENCOUNTER.PHROG_PARASITE_ELITE",
+     "fight_index": 6,
+     "floor": 14,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): PHROG_PARASITE, WRIGGLER add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 5: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+      "fight 6: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [
+        "fight 5: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+        "fight 6: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [
+        "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact"
+       ],
+       "status": "baseline",
+       "value": 12
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): PHROG_PARASITE, WRIGGLER add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 166
+      }
+     },
+     "encounter_id": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+     "fight_index": 7,
+     "floor": 15,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): PHROG_PARASITE, WRIGGLER add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 5: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+      "fight 6: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+      "fight 7: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [
+        "fight 5: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+        "fight 6: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events",
+        "fight 7: relics ['RELIC.KUSARIGAMA'] consume CombatTargets draws per unrecorded in-fight events"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [
+        "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact"
+       ],
+       "status": "baseline",
+       "value": 15
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S, TWIG_SLIME_M add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 6 (ENCOUNTER.PHROG_PARASITE_ELITE): PHROG_PARASITE, WRIGGLER add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 194
+      }
+     },
+     "encounter_id": "ENCOUNTER.THE_KIN_BOSS",
+     "fight_index": 8,
+     "floor": 17,
+     "schema": "sts-sim-run-counters-v1"
+    }
+   ],
+   "history": {
+    "fights": [
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.SLIMES_WEAK",
+      "monster_ids": [
+       "MONSTER.LEAF_SLIME_S",
+       "MONSTER.TWIG_SLIME_M",
+       "MONSTER.TWIG_SLIME_S"
+      ],
+      "node_index": 1,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL"
+      ],
+      "turns_taken": 5
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "monster_ids": [
+       "MONSTER.SHRINKER_BEETLE"
+      ],
+      "node_index": 2,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL"
+      ],
+      "turns_taken": 3
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+      "monster_ids": [
+       "MONSTER.NIBBIT"
+      ],
+      "node_index": 3,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL"
+      ],
+      "turns_taken": 3
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.THUNDERCLAP",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.MAWLER_NORMAL",
+      "monster_ids": [
+       "MONSTER.MAWLER"
+      ],
+      "node_index": 4,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL"
+      ],
+      "turns_taken": 5
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.SHARP",
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.THUNDERCLAP",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.INKLETS_NORMAL",
+      "monster_ids": [
+       "MONSTER.INKLET",
+       "MONSTER.INKLET",
+       "MONSTER.INKLET"
+      ],
+      "node_index": 7,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL"
+      ],
+      "turns_taken": 2
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.SHARP",
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.THUNDERCLAP",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TEAR_ASUNDER",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+      "monster_ids": [
+       "MONSTER.CUBEX_CONSTRUCT"
+      ],
+      "node_index": 11,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL",
+       "RELIC.KUSARIGAMA"
+      ],
+      "turns_taken": 5
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.SHARP",
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.THUNDERCLAP",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TEAR_ASUNDER",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BLUDGEON",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.PHROG_PARASITE_ELITE",
+      "monster_ids": [
+       "MONSTER.PHROG_PARASITE",
+       "MONSTER.WRIGGLER"
+      ],
+      "node_index": 13,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL",
+       "RELIC.KUSARIGAMA"
+      ],
+      "turns_taken": 5
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.SHARP",
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.THUNDERCLAP",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TEAR_ASUNDER",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BLUDGEON",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ONE_TWO_PUNCH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+      "monster_ids": [
+       "MONSTER.TRACKER_RUBY_RAIDER",
+       "MONSTER.BRUTE_RUBY_RAIDER",
+       "MONSTER.CROSSBOW_RUBY_RAIDER"
+      ],
+      "node_index": 14,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL",
+       "RELIC.KUSARIGAMA",
+       "RELIC.PEN_NIB"
+      ],
+      "turns_taken": 4
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ASCENDERS_BANE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.SHARP",
+        "id": "CARD.TWIN_STRIKE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BREAKTHROUGH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.THUNDERCLAP",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TEAR_ASUNDER",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BLUDGEON",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ONE_TWO_PUNCH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.THE_KIN_BOSS",
+      "monster_ids": [
+       "MONSTER.KIN_FOLLOWER",
+       "MONSTER.KIN_FOLLOWER",
+       "MONSTER.KIN_PRIEST"
+      ],
+      "node_index": 16,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.GOLDEN_PEARL",
+       "RELIC.KUSARIGAMA",
+       "RELIC.PEN_NIB"
+      ],
+      "turns_taken": 5
+     }
+    ],
+    "run": {
+     "acts": [
+      "ACT.OVERGROWTH",
+      "ACT.HIVE",
+      "ACT.GLORY"
+     ],
+     "ascension": 10,
+     "build_id": "v0.111.0",
+     "game_mode": "standard",
+     "killed_by_encounter": "ENCOUNTER.THE_KIN_BOSS",
+     "killed_by_event": "NONE.NONE",
+     "map_point_history": [
+      [
+       {
+        "map_point_type": "ancient",
+        "player_stats": [
+         {
+          "ancient_choice": [
+           {
+            "TextKey": "GOLDEN_PEARL",
+            "title": {
+             "key": "GOLDEN_PEARL.title",
+             "table": "relics"
+            },
+            "was_chosen": true
+           },
+           {
+            "TextKey": "SCROLL_BOXES",
+            "title": {
+             "key": "SCROLL_BOXES.title",
+             "table": "relics"
+            },
+            "was_chosen": false
+           },
+           {
+            "TextKey": "LEAFY_POULTICE",
+            "title": {
+             "key": "LEAFY_POULTICE.title",
+             "table": "relics"
+            },
+            "was_chosen": false
+           }
+          ],
+          "current_gold": 249,
+          "current_hp": 64,
+          "damage_taken": 0,
+          "event_choices": [
+           {
+            "title": {
+             "key": "GOLDEN_PEARL.title",
+             "table": "relics"
+            }
+           }
+          ],
+          "gold_gained": 150,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 64,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "relic_choices": [
+           {
+            "choice": "RELIC.GOLDEN_PEARL",
+            "was_picked": true
+           }
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.NEOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "floor_added_to_deck": 2,
+             "id": "CARD.TWIN_STRIKE"
+            },
+            "was_picked": true
+           },
+           {
+            "card": {
+             "id": "CARD.JUGGLING"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.CRUELTY"
+            },
+            "was_picked": false
+           }
+          ],
+          "cards_gained": [
+           {
+            "id": "CARD.TWIN_STRIKE"
+           }
+          ],
+          "current_gold": 257,
+          "current_hp": 56,
+          "damage_taken": 14,
+          "gold_gained": 8,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.SLIMES_WEAK",
+          "monster_ids": [
+           "MONSTER.LEAF_SLIME_S",
+           "MONSTER.TWIG_SLIME_M",
+           "MONSTER.TWIG_SLIME_S"
+          ],
+          "room_type": "monster",
+          "turns_taken": 5
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "floor_added_to_deck": 3,
+             "id": "CARD.BREAKTHROUGH"
+            },
+            "was_picked": true
+           },
+           {
+            "card": {
+             "id": "CARD.CRUELTY"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.JUGGLING"
+            },
+            "was_picked": false
+           }
+          ],
+          "cards_gained": [
+           {
+            "id": "CARD.BREAKTHROUGH"
+           }
+          ],
+          "current_gold": 265,
+          "current_hp": 54,
+          "damage_taken": 8,
+          "gold_gained": 8,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+          "monster_ids": [
+           "MONSTER.SHRINKER_BEETLE"
+          ],
+          "room_type": "monster",
+          "turns_taken": 3
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "floor_added_to_deck": 4,
+             "id": "CARD.THUNDERCLAP"
+            },
+            "was_picked": true
+           },
+           {
+            "card": {
+             "id": "CARD.DRUM_OF_BATTLE"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.HEADBUTT"
+            },
+            "was_picked": false
+           }
+          ],
+          "cards_gained": [
+           {
+            "id": "CARD.THUNDERCLAP"
+           }
+          ],
+          "current_gold": 279,
+          "current_hp": 45,
+          "damage_taken": 15,
+          "gold_gained": 14,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "potion_choices": [
+           {
+            "choice": "POTION.POWDERED_DEMISE",
+            "was_picked": true
+           }
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.NIBBITS_WEAK",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 3
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "id": "CARD.POMMEL_STRIKE"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.SWORD_BOOMERANG"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.HOWL_FROM_BEYOND"
+            },
+            "was_picked": false
+           }
+          ],
+          "current_gold": 287,
+          "current_hp": 30,
+          "damage_taken": 21,
+          "gold_gained": 8,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "potion_choices": [
+           {
+            "choice": "POTION.WEAK_POTION",
+            "was_picked": true
+           }
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.MAWLER_NORMAL",
+          "monster_ids": [
+           "MONSTER.MAWLER"
+          ],
+          "room_type": "monster",
+          "turns_taken": 5
+         }
+        ]
+       },
+       {
+        "map_point_type": "unknown",
+        "player_stats": [
+         {
+          "cards_enchanted": [
+           {
+            "card": {
+             "enchantment": {
+              "amount": 2,
+              "id": "ENCHANTMENT.SHARP"
+             },
+             "floor_added_to_deck": 2,
+             "id": "CARD.TWIN_STRIKE"
+            },
+            "enchantment": "ENCHANTMENT.SHARP"
+           }
+          ],
+          "current_gold": 287,
+          "current_hp": 30,
+          "damage_taken": 0,
+          "event_choices": [
+           {
+            "title": {
+             "key": "SELF_HELP_BOOK.pages.INITIAL.options.READ_THE_BACK.title",
+             "table": "events"
+            },
+            "variables": {
+             "Enchantment1": {
+              "bool_value": false,
+              "decimal_value": 0,
+              "string_value": "Sharp",
+              "type": "DynamicString"
+             },
+             "Enchantment2": {
+              "bool_value": false,
+              "decimal_value": 0,
+              "string_value": "Nimble",
+              "type": "DynamicString"
+             },
+             "Enchantment3": {
+              "bool_value": false,
+              "decimal_value": 0,
+              "string_value": "Swift",
+              "type": "DynamicString"
+             }
+            }
+           }
+          ],
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 0,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.SELF_HELP_BOOK",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "rest_site",
+        "player_stats": [
+         {
+          "current_gold": 287,
+          "current_hp": 54,
+          "damage_taken": 0,
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 24,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "rest_site_choices": [
+           "HEAL"
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "room_type": "rest_site",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "id": "CARD.BLOOD_WALL"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.HAVOC"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.HEMOKINESIS"
+            },
+            "was_picked": false
+           }
+          ],
+          "current_gold": 296,
+          "current_hp": 56,
+          "damage_taken": 4,
+          "gold_gained": 9,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.INKLETS_NORMAL",
+          "monster_ids": [
+           "MONSTER.INKLET",
+           "MONSTER.INKLET",
+           "MONSTER.INKLET"
+          ],
+          "room_type": "monster",
+          "turns_taken": 2
+         }
+        ]
+       },
+       {
+        "map_point_type": "rest_site",
+        "player_stats": [
+         {
+          "current_gold": 296,
+          "current_hp": 80,
+          "damage_taken": 0,
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 24,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "rest_site_choices": [
+           "HEAL"
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "room_type": "rest_site",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "treasure",
+        "player_stats": [
+         {
+          "current_gold": 335,
+          "current_hp": 80,
+          "damage_taken": 0,
+          "gold_gained": 39,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 0,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "relic_choices": [
+           {
+            "choice": "RELIC.KUSARIGAMA",
+            "was_picked": true
+           }
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "room_type": "treasure",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "unknown",
+        "player_stats": [
+         {
+          "cards_transformed": [
+           {
+            "final_card": {
+             "floor_added_to_deck": 11,
+             "id": "CARD.TEAR_ASUNDER"
+            },
+            "original_card": {
+             "floor_added_to_deck": 1,
+             "id": "CARD.STRIKE_IRONCLAD"
+            }
+           }
+          ],
+          "current_gold": 335,
+          "current_hp": 71,
+          "damage_taken": 9,
+          "event_choices": [
+           {
+            "title": {
+             "key": "WHISPERING_HOLLOW.pages.INITIAL.options.HUG.title",
+             "table": "events"
+            },
+            "variables": {}
+           }
+          ],
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 0,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.WHISPERING_HOLLOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "floor_added_to_deck": 12,
+             "id": "CARD.BLUDGEON"
+            },
+            "was_picked": true
+           },
+           {
+            "card": {
+             "id": "CARD.HAVOC"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.TWIN_STRIKE"
+            },
+            "was_picked": false
+           }
+          ],
+          "cards_gained": [
+           {
+            "id": "CARD.BLUDGEON"
+           }
+          ],
+          "current_gold": 347,
+          "current_hp": 51,
+          "damage_taken": 26,
+          "gold_gained": 12,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "potion_choices": [
+           {
+            "choice": "POTION.WEAK_POTION",
+            "was_picked": false
+           }
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+          "monster_ids": [
+           "MONSTER.CUBEX_CONSTRUCT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 5
+         }
+        ]
+       },
+       {
+        "map_point_type": "rest_site",
+        "player_stats": [
+         {
+          "current_gold": 347,
+          "current_hp": 75,
+          "damage_taken": 0,
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 24,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "rest_site_choices": [
+           "HEAL"
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "room_type": "rest_site",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "elite",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "floor_added_to_deck": 14,
+             "id": "CARD.ONE_TWO_PUNCH"
+            },
+            "was_picked": true
+           },
+           {
+            "card": {
+             "id": "CARD.VICIOUS"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.COLOSSUS"
+            },
+            "was_picked": false
+           }
+          ],
+          "cards_gained": [
+           {
+            "id": "CARD.ONE_TWO_PUNCH"
+           }
+          ],
+          "current_gold": 378,
+          "current_hp": 57,
+          "damage_taken": 24,
+          "gold_gained": 31,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "potion_choices": [
+           {
+            "choice": "POTION.ATTACK_POTION",
+            "was_picked": false
+           }
+          ],
+          "relic_choices": [
+           {
+            "choice": "RELIC.PEN_NIB",
+            "was_picked": true
+           }
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.PHROG_PARASITE_ELITE",
+          "monster_ids": [
+           "MONSTER.PHROG_PARASITE",
+           "MONSTER.WRIGGLER"
+          ],
+          "room_type": "elite",
+          "turns_taken": 5
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "card_choices": [
+           {
+            "card": {
+             "id": "CARD.HAVOC"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.POMMEL_STRIKE"
+            },
+            "was_picked": false
+           },
+           {
+            "card": {
+             "id": "CARD.TREMBLE"
+            },
+            "was_picked": false
+           }
+          ],
+          "current_gold": 388,
+          "current_hp": 46,
+          "damage_taken": 17,
+          "gold_gained": 10,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 6,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+          "monster_ids": [
+           "MONSTER.TRACKER_RUBY_RAIDER",
+           "MONSTER.BRUTE_RUBY_RAIDER",
+           "MONSTER.CROSSBOW_RUBY_RAIDER"
+          ],
+          "room_type": "monster",
+          "turns_taken": 4
+         }
+        ]
+       },
+       {
+        "map_point_type": "rest_site",
+        "player_stats": [
+         {
+          "current_gold": 388,
+          "current_hp": 70,
+          "damage_taken": 0,
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 24,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "rest_site_choices": [
+           "HEAL"
+          ],
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "room_type": "rest_site",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "boss",
+        "player_stats": [
+         {
+          "current_gold": 388,
+          "current_hp": 0,
+          "damage_taken": 70,
+          "gold_gained": 0,
+          "gold_lost": 0,
+          "gold_spent": 0,
+          "gold_stolen": 0,
+          "hp_healed": 0,
+          "is_affected_by_fur_coat": false,
+          "max_hp": 80,
+          "max_hp_gained": 0,
+          "max_hp_lost": 0,
+          "player_id": 1,
+          "stolen_loot": 0
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.THE_KIN_BOSS",
+          "monster_ids": [
+           "MONSTER.KIN_FOLLOWER",
+           "MONSTER.KIN_FOLLOWER",
+           "MONSTER.KIN_PRIEST"
+          ],
+          "room_type": "boss",
+          "turns_taken": 5
+         }
+        ]
+       }
+      ]
+     ],
+     "modifiers": [],
+     "platform_type": "steam",
+     "players": [
+      {
+       "badges": [],
+       "character": "CHARACTER.IRONCLAD",
+       "deck": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.BASH"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.ASCENDERS_BANE"
+        },
+        {
+         "enchantment": {
+          "amount": 2,
+          "id": "ENCHANTMENT.SHARP"
+         },
+         "floor_added_to_deck": 2,
+         "id": "CARD.TWIN_STRIKE"
+        },
+        {
+         "floor_added_to_deck": 3,
+         "id": "CARD.BREAKTHROUGH"
+        },
+        {
+         "floor_added_to_deck": 4,
+         "id": "CARD.THUNDERCLAP"
+        },
+        {
+         "floor_added_to_deck": 11,
+         "id": "CARD.TEAR_ASUNDER"
+        },
+        {
+         "floor_added_to_deck": 12,
+         "id": "CARD.BLUDGEON"
+        },
+        {
+         "floor_added_to_deck": 14,
+         "id": "CARD.ONE_TWO_PUNCH"
+        }
+       ],
+       "id": 1,
+       "max_potion_slot_count": 2,
+       "potions": [
+        {
+         "id": "POTION.POWDERED_DEMISE",
+         "slot_index": 0
+        },
+        {
+         "id": "POTION.WEAK_POTION",
+         "slot_index": 1
+        }
+       ],
+       "relics": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "RELIC.BURNING_BLOOD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "RELIC.GOLDEN_PEARL"
+        },
+        {
+         "floor_added_to_deck": 10,
+         "id": "RELIC.KUSARIGAMA"
+        },
+        {
+         "floor_added_to_deck": 14,
+         "id": "RELIC.PEN_NIB",
+         "props": {
+          "ints": [
+           {
+            "name": "AttacksPlayed",
+            "value": 7
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ],
+     "run_time": 523,
+     "schema_version": 10,
+     "seed": "6P96T755CNZ3",
+     "start_time": 1787072184,
+     "was_abandoned": false,
+     "win": false
+    },
+    "schema": "sts-sim-run-history-v1"
+   },
+   "name": "6P96T755CNZ3"
+  },
+  {
+   "expected": [
+    {
+     "build": "v0.111.0",
+     "caveats": [],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      }
+     },
+     "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+     "fight_index": 0,
+     "floor": 2,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 1
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 19
+      }
+     },
+     "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+     "fight_index": 1,
+     "floor": 3,
+     "schema": "sts-sim-run-counters-v1"
+    }
+   ],
+   "history": {
+    "fights": [
+     {
+      "deck_entering": [],
+      "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+      "monster_ids": [
+       "MONSTER.NIBBIT"
+      ],
+      "node_index": 1,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 4
+     },
+     {
+      "deck_entering": [],
+      "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "monster_ids": [
+       "MONSTER.SHRINKER_BEETLE"
+      ],
+      "node_index": 2,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 2
+     }
+    ],
+    "run": {
+     "build_id": "v0.111.0",
+     "map_point_history": [
+      [
+       {
+        "map_point_type": "ancient",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.NEOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.NIBBITS_WEAK",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 4
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+          "monster_ids": [
+           "MONSTER.SHRINKER_BEETLE"
+          ],
+          "room_type": "monster",
+          "turns_taken": 2
+         }
+        ]
+       }
+      ]
+     ],
+     "players": [
+      {
+       "deck": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.ASCENDERS_BANE"
+        }
+       ]
+      }
+     ],
+     "seed": "SEEDED0000"
+    },
+    "schema": "sts-sim-run-history-v1"
+   },
+   "name": "seeded_by_build"
+  },
+  {
+   "expected": [
+    {
+     "build": "v0.111.0",
+     "caveats": [],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      }
+     },
+     "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+     "fight_index": 0,
+     "floor": 2,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 1
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 19
+      }
+     },
+     "encounter_id": "ENCOUNTER.SLIMES_WEAK",
+     "fight_index": 1,
+     "floor": 3,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 1 (ENCOUNTER.SLIMES_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+      "fight 1 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 2
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 1 (ENCOUNTER.SLIMES_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+        "fight 1 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 38
+      }
+     },
+     "encounter_id": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+     "fight_index": 2,
+     "floor": 5,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 1 (ENCOUNTER.SLIMES_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+      "fight 2 (ENCOUNTER.CUBEX_CONSTRUCT_NORMAL): deck held cards that can leave/alter the cycle unrecorded (CLOTHESLINE (not in cards_census), INFLAME, POMMEL_STRIKE) \u2014 the counter is a baseline, not exact",
+      "fight 1 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 3
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 1 (ENCOUNTER.SLIMES_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+        "fight 2 (ENCOUNTER.CUBEX_CONSTRUCT_NORMAL): deck held cards that can leave/alter the cycle unrecorded (CLOTHESLINE (not in cards_census), INFLAME, POMMEL_STRIKE) \u2014 the counter is a baseline, not exact",
+        "fight 1 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 76
+      }
+     },
+     "encounter_id": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+     "fight_index": 3,
+     "floor": 6,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 1 (ENCOUNTER.SLIMES_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+      "fight 2 (ENCOUNTER.CUBEX_CONSTRUCT_NORMAL): deck held cards that can leave/alter the cycle unrecorded (CLOTHESLINE (not in cards_census), INFLAME, POMMEL_STRIKE) \u2014 the counter is a baseline, not exact",
+      "fight 3 (ENCOUNTER.BYGONE_EFFIGY_ELITE): deck held cards that can leave/alter the cycle unrecorded (CLOTHESLINE (not in cards_census), INFLAME, NOT_IN_CENSUS (not in cards_census)) \u2014 the counter is a baseline, not exact",
+      "fight 1 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 4
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 1 (ENCOUNTER.SLIMES_WEAK) is an event-node combat: cards the event granted BEFORE its fight (ordering unrecorded) would shift its deck size and reshuffle boundaries \u2014 counter is a baseline",
+        "fight 2 (ENCOUNTER.CUBEX_CONSTRUCT_NORMAL): deck held cards that can leave/alter the cycle unrecorded (CLOTHESLINE (not in cards_census), INFLAME, POMMEL_STRIKE) \u2014 the counter is a baseline, not exact",
+        "fight 3 (ENCOUNTER.BYGONE_EFFIGY_ELITE): deck held cards that can leave/alter the cycle unrecorded (CLOTHESLINE (not in cards_census), INFLAME, NOT_IN_CENSUS (not in cards_census)) \u2014 the counter is a baseline, not exact",
+        "fight 1 (ENCOUNTER.SLIMES_WEAK): LEAF_SLIME_S add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)"
+       ],
+       "status": "baseline",
+       "value": 88
+      }
+     },
+     "encounter_id": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+     "fight_index": 4,
+     "floor": 7,
+     "schema": "sts-sim-run-counters-v1"
+    }
+   ],
+   "history": {
+    "fights": [
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+      "monster_ids": [
+       "MONSTER.NIBBIT"
+      ],
+      "node_index": 1,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 4
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.SLIMES_WEAK",
+      "monster_ids": [
+       "MONSTER.LEAF_SLIME_S"
+      ],
+      "node_index": 2,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 3
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+      "monster_ids": [
+       "MONSTER.CUBEX_CONSTRUCT"
+      ],
+      "node_index": 4,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 7
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "monster_ids": [
+       "MONSTER.BYGONE_EFFIGY"
+      ],
+      "node_index": 5,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 1
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+      "monster_ids": [
+       "MONSTER.CEREMONIAL_BEAST"
+      ],
+      "node_index": 6,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 9
+     }
+    ],
+    "run": {
+     "build_id": "v0.111.0",
+     "map_point_history": [
+      [
+       {
+        "map_point_type": "ancient",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.NEOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "cards_removed": [
+           {
+            "floor_added_to_deck": 1,
+            "id": "CARD.DEFEND_IRONCLAD"
+           }
+          ]
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.NIBBITS_WEAK",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 4
+         }
+        ]
+       },
+       {
+        "map_point_type": "unknown",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.DENSE_VEGETATION",
+          "room_type": "event"
+         },
+         {
+          "model_id": "ENCOUNTER.SLIMES_WEAK",
+          "monster_ids": [
+           "MONSTER.LEAF_SLIME_S"
+          ],
+          "room_type": "monster",
+          "turns_taken": 3
+         }
+        ]
+       },
+       {
+        "map_point_type": "shop",
+        "player_stats": [
+         {
+          "cards_removed": [
+           {
+            "floor_added_to_deck": 1,
+            "id": "CARD.PERFECTED_STRIKE"
+           }
+          ],
+          "cards_transformed": [
+           {
+            "final_card": {
+             "floor_added_to_deck": 4,
+             "id": "CARD.CLOTHESLINE"
+            },
+            "original_card": {
+             "floor_added_to_deck": 1,
+             "id": "CARD.BASH"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {
+          "cards_removed": [
+           {
+            "floor_added_to_deck": 3,
+            "id": "CARD.POMMEL_STRIKE"
+           }
+          ]
+         }
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+          "monster_ids": [
+           "MONSTER.CUBEX_CONSTRUCT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 7
+         }
+        ]
+       },
+       {
+        "map_point_type": "elite",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+          "monster_ids": [
+           "MONSTER.BYGONE_EFFIGY"
+          ],
+          "room_type": "elite",
+          "turns_taken": 1
+         }
+        ]
+       },
+       {
+        "map_point_type": "boss",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+          "monster_ids": [
+           "MONSTER.CEREMONIAL_BEAST"
+          ],
+          "room_type": "boss",
+          "turns_taken": 9
+         }
+        ]
+       }
+      ]
+     ],
+     "players": [
+      {
+       "deck": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.ASCENDERS_BANE"
+        },
+        {
+         "floor_added_to_deck": 2,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 3,
+         "id": "CARD.INFLAME"
+        },
+        {
+         "floor_added_to_deck": 4,
+         "id": "CARD.CLOTHESLINE"
+        },
+        {
+         "floor_added_to_deck": 5,
+         "id": "CARD.NOT_IN_CENSUS"
+        }
+       ]
+      }
+     ],
+     "seed": "RUNCOUNTERSA"
+    },
+    "schema": "sts-sim-run-history-v1"
+   },
+   "name": "shuffle_model"
+  },
+  {
+   "expected": [
+    {
+     "build": "v0.111.0",
+     "caveats": [],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      }
+     },
+     "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+     "fight_index": 0,
+     "floor": 2,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 1
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 1
+      }
+     },
+     "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+     "fight_index": 1,
+     "floor": 3,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 2
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 2
+      }
+     },
+     "encounter_id": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+     "fight_index": 2,
+     "floor": 4,
+     "schema": "sts-sim-run-counters-v1"
+    }
+   ],
+   "history": {
+    "fights": [
+     {
+      "deck_entering": [],
+      "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+      "monster_ids": [
+       "MONSTER.NIBBIT"
+      ],
+      "node_index": 1,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 3
+     },
+     {
+      "deck_entering": [],
+      "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "monster_ids": [
+       "MONSTER.SHRINKER_BEETLE"
+      ],
+      "node_index": 2,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 2
+     },
+     {
+      "deck_entering": [],
+      "encounter_id": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+      "monster_ids": [
+       "MONSTER.FUZZY_WURM_CRAWLER"
+      ],
+      "node_index": 3,
+      "potions_used": [],
+      "relics_entering": [],
+      "turns_taken": 2
+     }
+    ],
+    "run": {
+     "build_id": "v0.111.0",
+     "map_point_history": [
+      [
+       {
+        "map_point_type": "ancient",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.NEOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.NIBBITS_WEAK",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 3
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+          "monster_ids": [
+           "MONSTER.SHRINKER_BEETLE"
+          ],
+          "room_type": "monster",
+          "turns_taken": 2
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+          "monster_ids": [
+           "MONSTER.FUZZY_WURM_CRAWLER"
+          ],
+          "room_type": "monster",
+          "turns_taken": 2
+         }
+        ]
+       }
+      ]
+     ],
+     "players": [
+      {
+       "deck": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.ASCENDERS_BANE"
+        }
+       ]
+      }
+     ],
+     "seed": "RUNCOUNTERSB"
+    },
+    "schema": "sts-sim-run-history-v1"
+   },
+   "name": "tiny_cycle"
+  },
+  {
+   "expected": [
+    {
+     "build": "v0.111.0",
+     "caveats": [],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      }
+     },
+     "encounter_id": "ENCOUNTER.KITCHEN_SINK",
+     "fight_index": 0,
+     "floor": 2,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): LEAF_SLIME_M, PHROG_PARASITE add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw/cycle relics RELIC.CROSSBOW, RELIC.SNECKO_EYE, RELIC.WHISPERING_EARRING had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled pile-changing potions used: POTION.DISTILLED_CHAOS, POTION.SNECKO_OIL, POTION.SWIFT_POTION; the .run records use but not exact timing/selection, so reshuffle boundaries are unaccounted \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw-cycle sources HAVOC, ENCHANTMENT.IMBUED had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): Forge sources BEAT_INTO_SHAPE, POTION.KINGS_COURAGE, RELIC.FENCING_MANUAL had unrecorded exact trigger/play timing \u2014 Forge may create a Sovereign Blade and change reshuffle size/timing; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): BIIIG_HUG generated one Soot at a random draw position after each reshuffle (timing/count unrecorded) \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): BLOAT spawned GasBombs (one Niche draw each, 0-5 per fight) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): rats may have summoned (one Niche draw each, 2 summons max) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): Stock may have replaced Axebot one or two times (one unrecorded Niche draw per replacement) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0: STONE_CRACKER owned but CARD.STRIKE_IRONCLAD upgradability is unresolvable \u2014 its draw count is unknown",
+      "fight 0: deck held CombatCardSelection consumers (ANOINTED, TRUE_GRIT) \u2014 plays unrecorded",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatCardSelection consumer, plays unrecorded",
+      "fight 0: relics ['RELIC.BOOKMARK'] consume CombatCardSelection draws per unrecorded in-fight events",
+      "fight 0: deck held CombatTargets consumers (CHAOS, HAVOC, TRASH_TO_TREASURE) \u2014 plays unrecorded",
+      "fight 0: targeted IMBUED cards (STRIKE_IRONCLAD) auto-played with null targets \u2014 plays unrecorded",
+      "fight 0: relics ['RELIC.KUSARIGAMA', 'RELIC.TINGSHA', 'RELIC.WHISPERING_EARRING'] consume CombatTargets draws per unrecorded in-fight events",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatTargets consumer, plays unrecorded",
+      "fight 0: POTION.DISTILLED_CHAOS auto-played null-targeted cards \u2014 enemy-targeted flips rolled CombatTargets, count unrecorded",
+      "fight 0: Slither cards (BASH) consumed CombatEnergyCosts on unrecorded draws",
+      "fight 0: relics ['RELIC.FAKE_SNECKO_EYE', 'RELIC.SNECKO_EYE'] applied ConfusedPower and consumed CombatEnergyCosts on unrecorded draws",
+      "fight 0: used potions ['POTION.SNECKO_OIL'] consumed CombatEnergyCosts for unrecorded hand cards",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly",
+      "fight 0: deck held CombatOrbGeneration consumers (CHAOS, TRASH_TO_TREASURE) \u2014 plays/triggers unrecorded",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated Chaos/TrashToTreasure could consume CombatOrbGeneration"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [
+        "fight 0: STONE_CRACKER owned but CARD.STRIKE_IRONCLAD upgradability is unresolvable \u2014 its draw count is unknown",
+        "fight 0: deck held CombatCardSelection consumers (ANOINTED, TRUE_GRIT) \u2014 plays unrecorded",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatCardSelection consumer, plays unrecorded",
+        "fight 0: relics ['RELIC.BOOKMARK'] consume CombatCardSelection draws per unrecorded in-fight events"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_energy_costs": {
+       "caveats": [
+        "fight 0: Slither cards (BASH) consumed CombatEnergyCosts on unrecorded draws",
+        "fight 0: relics ['RELIC.FAKE_SNECKO_EYE', 'RELIC.SNECKO_EYE'] applied ConfusedPower and consumed CombatEnergyCosts on unrecorded draws",
+        "fight 0: used potions ['POTION.SNECKO_OIL'] consumed CombatEnergyCosts for unrecorded hand cards"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_orbs": {
+       "caveats": [
+        "fight 0: deck held CombatOrbGeneration consumers (CHAOS, TRASH_TO_TREASURE) \u2014 plays/triggers unrecorded",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated Chaos/TrashToTreasure could consume CombatOrbGeneration"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [
+        "fight 0: deck held CombatTargets consumers (CHAOS, HAVOC, TRASH_TO_TREASURE) \u2014 plays unrecorded",
+        "fight 0: targeted IMBUED cards (STRIKE_IRONCLAD) auto-played with null targets \u2014 plays unrecorded",
+        "fight 0: relics ['RELIC.KUSARIGAMA', 'RELIC.TINGSHA', 'RELIC.WHISPERING_EARRING'] consume CombatTargets draws per unrecorded in-fight events",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatTargets consumer, plays unrecorded",
+        "fight 0: POTION.DISTILLED_CHAOS auto-played null-targeted cards \u2014 enemy-targeted flips rolled CombatTargets, count unrecorded"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): BLOAT spawned GasBombs (one Niche draw each, 0-5 per fight) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): rats may have summoned (one Niche draw each, 2 summons max) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): Stock may have replaced Axebot one or two times (one unrecorded Niche draw per replacement) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact"
+       ],
+       "status": "baseline",
+       "value": 6
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): LEAF_SLIME_M, PHROG_PARASITE add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw/cycle relics RELIC.CROSSBOW, RELIC.SNECKO_EYE, RELIC.WHISPERING_EARRING had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled pile-changing potions used: POTION.DISTILLED_CHAOS, POTION.SNECKO_OIL, POTION.SWIFT_POTION; the .run records use but not exact timing/selection, so reshuffle boundaries are unaccounted \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw-cycle sources HAVOC, ENCHANTMENT.IMBUED had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): Forge sources BEAT_INTO_SHAPE, POTION.KINGS_COURAGE, RELIC.FENCING_MANUAL had unrecorded exact trigger/play timing \u2014 Forge may create a Sovereign Blade and change reshuffle size/timing; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): BIIIG_HUG generated one Soot at a random draw position after each reshuffle (timing/count unrecorded) \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter"
+       ],
+       "status": "baseline",
+       "value": 12
+      }
+     },
+     "encounter_id": "ENCOUNTER.STONE_CRACKER_CLEAN",
+     "fight_index": 1,
+     "floor": 3,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): LEAF_SLIME_M, PHROG_PARASITE add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw/cycle relics RELIC.CROSSBOW, RELIC.SNECKO_EYE, RELIC.WHISPERING_EARRING had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled pile-changing potions used: POTION.DISTILLED_CHAOS, POTION.SNECKO_OIL, POTION.SWIFT_POTION; the .run records use but not exact timing/selection, so reshuffle boundaries are unaccounted \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw-cycle sources HAVOC, ENCHANTMENT.IMBUED had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): Forge sources BEAT_INTO_SHAPE, POTION.KINGS_COURAGE, RELIC.FENCING_MANUAL had unrecorded exact trigger/play timing \u2014 Forge may create a Sovereign Blade and change reshuffle size/timing; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): BIIIG_HUG generated one Soot at a random draw position after each reshuffle (timing/count unrecorded) \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): BLOAT spawned GasBombs (one Niche draw each, 0-5 per fight) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): rats may have summoned (one Niche draw each, 2 summons max) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): Stock may have replaced Axebot one or two times (one unrecorded Niche draw per replacement) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0: STONE_CRACKER owned but CARD.STRIKE_IRONCLAD upgradability is unresolvable \u2014 its draw count is unknown",
+      "fight 0: deck held CombatCardSelection consumers (ANOINTED, TRUE_GRIT) \u2014 plays unrecorded",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatCardSelection consumer, plays unrecorded",
+      "fight 0: relics ['RELIC.BOOKMARK'] consume CombatCardSelection draws per unrecorded in-fight events",
+      "fight 0: deck held CombatTargets consumers (CHAOS, HAVOC, TRASH_TO_TREASURE) \u2014 plays unrecorded",
+      "fight 0: targeted IMBUED cards (STRIKE_IRONCLAD) auto-played with null targets \u2014 plays unrecorded",
+      "fight 0: relics ['RELIC.KUSARIGAMA', 'RELIC.TINGSHA', 'RELIC.WHISPERING_EARRING'] consume CombatTargets draws per unrecorded in-fight events",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatTargets consumer, plays unrecorded",
+      "fight 0: POTION.DISTILLED_CHAOS auto-played null-targeted cards \u2014 enemy-targeted flips rolled CombatTargets, count unrecorded",
+      "fight 0: Slither cards (BASH) consumed CombatEnergyCosts on unrecorded draws",
+      "fight 0: relics ['RELIC.FAKE_SNECKO_EYE', 'RELIC.SNECKO_EYE'] applied ConfusedPower and consumed CombatEnergyCosts on unrecorded draws",
+      "fight 0: used potions ['POTION.SNECKO_OIL'] consumed CombatEnergyCosts for unrecorded hand cards",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly",
+      "fight 0: deck held CombatOrbGeneration consumers (CHAOS, TRASH_TO_TREASURE) \u2014 plays/triggers unrecorded",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated Chaos/TrashToTreasure could consume CombatOrbGeneration"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [
+        "fight 0: STONE_CRACKER owned but CARD.STRIKE_IRONCLAD upgradability is unresolvable \u2014 its draw count is unknown",
+        "fight 0: deck held CombatCardSelection consumers (ANOINTED, TRUE_GRIT) \u2014 plays unrecorded",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatCardSelection consumer, plays unrecorded",
+        "fight 0: relics ['RELIC.BOOKMARK'] consume CombatCardSelection draws per unrecorded in-fight events"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_energy_costs": {
+       "caveats": [
+        "fight 0: Slither cards (BASH) consumed CombatEnergyCosts on unrecorded draws",
+        "fight 0: relics ['RELIC.FAKE_SNECKO_EYE', 'RELIC.SNECKO_EYE'] applied ConfusedPower and consumed CombatEnergyCosts on unrecorded draws",
+        "fight 0: used potions ['POTION.SNECKO_OIL'] consumed CombatEnergyCosts for unrecorded hand cards"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_orbs": {
+       "caveats": [
+        "fight 0: deck held CombatOrbGeneration consumers (CHAOS, TRASH_TO_TREASURE) \u2014 plays/triggers unrecorded",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated Chaos/TrashToTreasure could consume CombatOrbGeneration"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [
+        "fight 0: deck held CombatTargets consumers (CHAOS, HAVOC, TRASH_TO_TREASURE) \u2014 plays unrecorded",
+        "fight 0: targeted IMBUED cards (STRIKE_IRONCLAD) auto-played with null targets \u2014 plays unrecorded",
+        "fight 0: relics ['RELIC.KUSARIGAMA', 'RELIC.TINGSHA', 'RELIC.WHISPERING_EARRING'] consume CombatTargets draws per unrecorded in-fight events",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatTargets consumer, plays unrecorded",
+        "fight 0: POTION.DISTILLED_CHAOS auto-played null-targeted cards \u2014 enemy-targeted flips rolled CombatTargets, count unrecorded"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): BLOAT spawned GasBombs (one Niche draw each, 0-5 per fight) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): rats may have summoned (one Niche draw each, 2 summons max) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): Stock may have replaced Axebot one or two times (one unrecorded Niche draw per replacement) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact"
+       ],
+       "status": "baseline",
+       "value": 8
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): LEAF_SLIME_M, PHROG_PARASITE add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw/cycle relics RELIC.CROSSBOW, RELIC.SNECKO_EYE, RELIC.WHISPERING_EARRING had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled pile-changing potions used: POTION.DISTILLED_CHAOS, POTION.SNECKO_OIL, POTION.SWIFT_POTION; the .run records use but not exact timing/selection, so reshuffle boundaries are unaccounted \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw-cycle sources HAVOC, ENCHANTMENT.IMBUED had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): Forge sources BEAT_INTO_SHAPE, POTION.KINGS_COURAGE, RELIC.FENCING_MANUAL had unrecorded exact trigger/play timing \u2014 Forge may create a Sovereign Blade and change reshuffle size/timing; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): BIIIG_HUG generated one Soot at a random draw position after each reshuffle (timing/count unrecorded) \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter"
+       ],
+       "status": "baseline",
+       "value": 20
+      }
+     },
+     "encounter_id": "ENCOUNTER.STONE_CRACKER_UNKNOWN",
+     "fight_index": 2,
+     "floor": 4,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): LEAF_SLIME_M, PHROG_PARASITE add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw/cycle relics RELIC.CROSSBOW, RELIC.SNECKO_EYE, RELIC.WHISPERING_EARRING had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled pile-changing potions used: POTION.DISTILLED_CHAOS, POTION.SNECKO_OIL, POTION.SWIFT_POTION; the .run records use but not exact timing/selection, so reshuffle boundaries are unaccounted \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw-cycle sources HAVOC, ENCHANTMENT.IMBUED had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): Forge sources BEAT_INTO_SHAPE, POTION.KINGS_COURAGE, RELIC.FENCING_MANUAL had unrecorded exact trigger/play timing \u2014 Forge may create a Sovereign Blade and change reshuffle size/timing; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): BIIIG_HUG generated one Soot at a random draw position after each reshuffle (timing/count unrecorded) \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): BLOAT spawned GasBombs (one Niche draw each, 0-5 per fight) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): rats may have summoned (one Niche draw each, 2 summons max) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK): Stock may have replaced Axebot one or two times (one unrecorded Niche draw per replacement) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+      "Niche-consuming on-obtain relics owned: {'RELIC.ASTROLABE', 'RELIC.BEAUTIFUL_BRACELET'}",
+      "Beautiful Bracelet shuffles its complete eligible acquisition-time deck pool before taking up to 4 cards, consuming max(0, eligible_count - 1) Niche draws. The .run record does not preserve that acquisition-time pool/order, so the predicted Niche counter is a baseline, not exact",
+      "fight 0 (ENCOUNTER.KITCHEN_SINK) consumed MonsterAi draws (unrecorded count) \u2014 segment revive rolls need an exact --ai-counter",
+      "fight 1 (ENCOUNTER.STONE_CRACKER_CLEAN) consumed MonsterAi draws (unrecorded count) \u2014 segment revive rolls need an exact --ai-counter",
+      "fight 0: STONE_CRACKER owned but CARD.STRIKE_IRONCLAD upgradability is unresolvable \u2014 its draw count is unknown",
+      "fight 0: deck held CombatCardSelection consumers (ANOINTED, TRUE_GRIT) \u2014 plays unrecorded",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatCardSelection consumer, plays unrecorded",
+      "fight 0: relics ['RELIC.BOOKMARK'] consume CombatCardSelection draws per unrecorded in-fight events",
+      "fight 2: STONE_CRACKER owned but CARD.NOT_A_CARD upgradability is unresolvable \u2014 its draw count is unknown",
+      "fight 0: deck held CombatTargets consumers (CHAOS, HAVOC, TRASH_TO_TREASURE) \u2014 plays unrecorded",
+      "fight 0: targeted IMBUED cards (STRIKE_IRONCLAD) auto-played with null targets \u2014 plays unrecorded",
+      "fight 0: relics ['RELIC.KUSARIGAMA', 'RELIC.TINGSHA', 'RELIC.WHISPERING_EARRING'] consume CombatTargets draws per unrecorded in-fight events",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatTargets consumer, plays unrecorded",
+      "fight 0: POTION.DISTILLED_CHAOS auto-played null-targeted cards \u2014 enemy-targeted flips rolled CombatTargets, count unrecorded",
+      "fight 0: Slither cards (BASH) consumed CombatEnergyCosts on unrecorded draws",
+      "fight 0: relics ['RELIC.FAKE_SNECKO_EYE', 'RELIC.SNECKO_EYE'] applied ConfusedPower and consumed CombatEnergyCosts on unrecorded draws",
+      "fight 0: used potions ['POTION.SNECKO_OIL'] consumed CombatEnergyCosts for unrecorded hand cards",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly",
+      "fight 0: deck held CombatOrbGeneration consumers (CHAOS, TRASH_TO_TREASURE) \u2014 plays/triggers unrecorded",
+      "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated Chaos/TrashToTreasure could consume CombatOrbGeneration"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [
+        "fight 0: STONE_CRACKER owned but CARD.STRIKE_IRONCLAD upgradability is unresolvable \u2014 its draw count is unknown",
+        "fight 0: deck held CombatCardSelection consumers (ANOINTED, TRUE_GRIT) \u2014 plays unrecorded",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatCardSelection consumer, plays unrecorded",
+        "fight 0: relics ['RELIC.BOOKMARK'] consume CombatCardSelection draws per unrecorded in-fight events",
+        "fight 2: STONE_CRACKER owned but CARD.NOT_A_CARD upgradability is unresolvable \u2014 its draw count is unknown"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_energy_costs": {
+       "caveats": [
+        "fight 0: Slither cards (BASH) consumed CombatEnergyCosts on unrecorded draws",
+        "fight 0: relics ['RELIC.FAKE_SNECKO_EYE', 'RELIC.SNECKO_EYE'] applied ConfusedPower and consumed CombatEnergyCosts on unrecorded draws",
+        "fight 0: used potions ['POTION.SNECKO_OIL'] consumed CombatEnergyCosts for unrecorded hand cards"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_orbs": {
+       "caveats": [
+        "fight 0: deck held CombatOrbGeneration consumers (CHAOS, TRASH_TO_TREASURE) \u2014 plays/triggers unrecorded",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated Chaos/TrashToTreasure could consume CombatOrbGeneration"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [
+        "fight 0: deck held CombatTargets consumers (CHAOS, HAVOC, TRASH_TO_TREASURE) \u2014 plays unrecorded",
+        "fight 0: targeted IMBUED cards (STRIKE_IRONCLAD) auto-played with null targets \u2014 plays unrecorded",
+        "fight 0: relics ['RELIC.KUSARIGAMA', 'RELIC.TINGSHA', 'RELIC.WHISPERING_EARRING'] consume CombatTargets draws per unrecorded in-fight events",
+        "fight 0: card-generation sources present (ABUNDANCE, RELIC.CROSSBOW, POTION.ATTACK_POTION) \u2014 a generated card could be a CombatTargets consumer, plays unrecorded",
+        "fight 0: POTION.DISTILLED_CHAOS auto-played null-targeted cards \u2014 enemy-targeted flips rolled CombatTargets, count unrecorded"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "monster_ai": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK) consumed MonsterAi draws (unrecorded count) \u2014 segment revive rolls need an exact --ai-counter",
+        "fight 1 (ENCOUNTER.STONE_CRACKER_CLEAN) consumed MonsterAi draws (unrecorded count) \u2014 segment revive rolls need an exact --ai-counter"
+       ],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): BLOAT spawned GasBombs (one Niche draw each, 0-5 per fight) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): rats may have summoned (one Niche draw each, 2 summons max) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): 4 Wrigglers spawned on the phrog's death (one Niche draw each) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): Stock may have replaced Axebot one or two times (one unrecorded Niche draw per replacement) \u2014 monster_ids is the end-of-combat roster and under-counts mid-fight creature creations; the predicted Niche counter is a baseline, not exact",
+        "Niche-consuming on-obtain relics owned: {'RELIC.ASTROLABE', 'RELIC.BEAUTIFUL_BRACELET'}",
+        "Beautiful Bracelet shuffles its complete eligible acquisition-time deck pool before taking up to 4 cards, consuming max(0, eligible_count - 1) Niche draws. The .run record does not preserve that acquisition-time pool/order, so the predicted Niche counter is a baseline, not exact"
+       ],
+       "status": "baseline",
+       "value": 9
+      },
+      "shuffle": {
+       "caveats": [
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): LEAF_SLIME_M, PHROG_PARASITE add cards mid-combat \u2014 the predicted Shuffle counter is a baseline; each afflicted card in a pre-reshuffle discard adds +1 (enumerate with --counter)",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw/cycle relics RELIC.CROSSBOW, RELIC.SNECKO_EYE, RELIC.WHISPERING_EARRING had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled pile-changing potions used: POTION.DISTILLED_CHAOS, POTION.SNECKO_OIL, POTION.SWIFT_POTION; the .run records use but not exact timing/selection, so reshuffle boundaries are unaccounted \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): modeled draw-cycle sources HAVOC, ENCHANTMENT.IMBUED had unrecorded exact play timing; their draw, auto-play, insertion, or retention effects can shift the run-lifetime Shuffle stream \u2014 the predicted counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): Forge sources BEAT_INTO_SHAPE, POTION.KINGS_COURAGE, RELIC.FENCING_MANUAL had unrecorded exact trigger/play timing \u2014 Forge may create a Sovereign Blade and change reshuffle size/timing; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+        "fight 0 (ENCOUNTER.KITCHEN_SINK): BIIIG_HUG generated one Soot at a random draw position after each reshuffle (timing/count unrecorded) \u2014 the predicted Shuffle counter is a hypothesis; enumerate with --counter"
+       ],
+       "status": "baseline",
+       "value": 28
+      }
+     },
+     "encounter_id": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+     "fight_index": 3,
+     "floor": 5,
+     "schema": "sts-sim-run-counters-v1"
+    }
+   ],
+   "history": {
+    "fights": [
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.HAVOC",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BEAT_INTO_SHAPE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ANOINTED",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TRUE_GRIT",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TRUE_GRIT",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 1
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.ABUNDANCE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.CHAOS",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.TRASH_TO_TREASURE",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.IMBUED",
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.IMBUED",
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": "ENCHANTMENT.SLITHER",
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": true,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.KITCHEN_SINK",
+      "monster_ids": [
+       "MONSTER.LIVING_FOG",
+       "MONSTER.TWO_TAILED_RAT",
+       "MONSTER.PHROG_PARASITE",
+       "MONSTER.AXEBOT",
+       "MONSTER.LEAF_SLIME_M",
+       "MONSTER.DECIMILLIPEDE_SEGMENT_FRONT"
+      ],
+      "node_index": 1,
+      "potions_used": [
+       "POTION.SWIFT_POTION",
+       "POTION.KINGS_COURAGE",
+       "POTION.DISTILLED_CHAOS",
+       "POTION.SNECKO_OIL",
+       "POTION.ATTACK_POTION"
+      ],
+      "relics_entering": [
+       "RELIC.STONE_CRACKER",
+       "RELIC.BOOKMARK",
+       "RELIC.KUSARIGAMA",
+       "RELIC.SNECKO_EYE",
+       "RELIC.FENCING_MANUAL",
+       "RELIC.BIIIG_HUG",
+       "RELIC.CROSSBOW",
+       "RELIC.TINGSHA",
+       "RELIC.FAKE_SNECKO_EYE",
+       "RELIC.WHISPERING_EARRING"
+      ],
+      "turns_taken": 3
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 1
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.STONE_CRACKER_CLEAN",
+      "monster_ids": [
+       "MONSTER.TWO_TAILED_RAT",
+       "MONSTER.TWO_TAILED_RAT"
+      ],
+      "node_index": 2,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.STONE_CRACKER"
+      ],
+      "turns_taken": 2
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.NOT_A_CARD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.STONE_CRACKER_UNKNOWN",
+      "monster_ids": [
+       "MONSTER.NIBBIT"
+      ],
+      "node_index": 3,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.STONE_CRACKER"
+      ],
+      "turns_taken": 2
+     },
+     {
+      "deck_entering": [],
+      "encounter_id": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+      "monster_ids": [
+       "MONSTER.DECIMILLIPEDE_SEGMENT_FRONT"
+      ],
+      "node_index": 4,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.BEAUTIFUL_BRACELET",
+       "RELIC.ASTROLABE"
+      ],
+      "turns_taken": 3
+     }
+    ],
+    "run": {
+     "build_id": "v0.111.0",
+     "map_point_history": [
+      [
+       {
+        "map_point_type": "ancient",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.NEOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.KITCHEN_SINK",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 3
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.STONE_CRACKER_CLEAN",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 2
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.STONE_CRACKER_UNKNOWN",
+          "monster_ids": [
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 2
+         }
+        ]
+       },
+       {
+        "map_point_type": "elite",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+          "monster_ids": [
+           "MONSTER.DECIMILLIPEDE"
+          ],
+          "room_type": "elite",
+          "turns_taken": 3
+         }
+        ]
+       }
+      ]
+     ],
+     "players": [
+      {
+       "deck": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        }
+       ]
+      }
+     ],
+     "seed": "RUNCOUNTERSC"
+    },
+    "schema": "sts-sim-run-history-v1"
+   },
+   "name": "stream_consumers"
+  },
+  {
+   "expected": [
+    {
+     "build": "v0.111.0",
+     "caveats": [],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      }
+     },
+     "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+     "fight_index": 0,
+     "floor": 2,
+     "schema": "sts-sim-run-counters-v1"
+    },
+    {
+     "build": "v0.111.0",
+     "caveats": [
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+     ],
+     "counters": {
+      "combat_card_generation": {
+       "caveats": [
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+       ],
+       "status": "unknown",
+       "value": null
+      },
+      "combat_card_selection": {
+       "caveats": [],
+       "status": "exact",
+       "value": 3
+      },
+      "combat_energy_costs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_orbs": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "combat_potion_generation": {
+       "caveats": [],
+       "status": "not_predicted",
+       "value": null
+      },
+      "combat_targets": {
+       "caveats": [],
+       "status": "exact",
+       "value": 0
+      },
+      "monster_ai": {
+       "caveats": [],
+       "status": "assumed",
+       "value": 0
+      },
+      "niche": {
+       "caveats": [],
+       "status": "exact",
+       "value": 2
+      },
+      "shuffle": {
+       "caveats": [],
+       "status": "exact",
+       "value": 18
+      }
+     },
+     "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+     "fight_index": 1,
+     "floor": 3,
+     "schema": "sts-sim-run-counters-v1"
+    }
+   ],
+   "history": {
+    "fights": [
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 1
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.NIBBITS_WEAK",
+      "monster_ids": [
+       "MONSTER.NIBBIT",
+       "MONSTER.NIBBIT"
+      ],
+      "node_index": 1,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.STONE_CRACKER"
+      ],
+      "turns_taken": 3
+     },
+     {
+      "deck_entering": [
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.STRIKE_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.BASH",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 1
+       },
+       {
+        "enchantment": null,
+        "id": "CARD.DEFEND_IRONCLAD",
+        "upgrade_ambiguous": false,
+        "upgrade_level": 0
+       }
+      ],
+      "encounter_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "monster_ids": [
+       "MONSTER.SHRINKER_BEETLE"
+      ],
+      "node_index": 2,
+      "potions_used": [],
+      "relics_entering": [
+       "RELIC.STONE_CRACKER"
+      ],
+      "turns_taken": 4
+     }
+    ],
+    "run": {
+     "build_id": "v0.111.0",
+     "map_point_history": [
+      [
+       {
+        "map_point_type": "ancient",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "EVENT.NEOW",
+          "room_type": "event",
+          "turns_taken": 0
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.NIBBITS_WEAK",
+          "monster_ids": [
+           "MONSTER.NIBBIT",
+           "MONSTER.NIBBIT"
+          ],
+          "room_type": "monster",
+          "turns_taken": 3
+         }
+        ]
+       },
+       {
+        "map_point_type": "monster",
+        "player_stats": [
+         {}
+        ],
+        "rooms": [
+         {
+          "model_id": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+          "monster_ids": [
+           "MONSTER.SHRINKER_BEETLE"
+          ],
+          "room_type": "monster",
+          "turns_taken": 4
+         }
+        ]
+       }
+      ]
+     ],
+     "players": [
+      {
+       "deck": [
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.STRIKE_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        },
+        {
+         "floor_added_to_deck": 1,
+         "id": "CARD.DEFEND_IRONCLAD"
+        }
+       ]
+      }
+     ],
+     "seed": "RUNCOUNTERSD"
+    },
+    "schema": "sts-sim-run-history-v1"
+   },
+   "name": "clean_prefix"
+  }
+ ],
+ "schema": "run-counters-pins-v1",
+ "tool": "rust/tools/gen_run_counters_pins.py"
+}

@@ -1,0 +1,3513 @@
+{
+  "entry": {
+    "schema": "sts-sim-canonical-v2",
+    "player": {
+      "next_card_uid": 22,
+      "gold": 322,
+      "reward_card_pool": "Necrobinder",
+      "reward_card_rarity_odds": "RegularEncounter",
+      "hp": 50,
+      "max_hp": 59,
+      "cards_drawn_combat": 5,
+      "player_phase": 3,
+      "rainbow_ring": true,
+      "regalite_block_amount": 4,
+      "inky_attack_damage": 0,
+      "splash_unlock_epochs": [
+        "ACT2_B_EPOCH",
+        "ACT3_B_EPOCH",
+        "COLORLESS1_EPOCH",
+        "COLORLESS2_EPOCH",
+        "COLORLESS3_EPOCH",
+        "COLORLESS4_EPOCH",
+        "COLORLESS5_EPOCH",
+        "CUSTOM_AND_SEEDS_EPOCH",
+        "DAILY_RUN_EPOCH",
+        "DARV_EPOCH",
+        "DEFECT1_EPOCH",
+        "DEFECT2_EPOCH",
+        "DEFECT3_EPOCH",
+        "DEFECT4_EPOCH",
+        "DEFECT5_EPOCH",
+        "DEFECT6_EPOCH",
+        "DEFECT7_EPOCH",
+        "EVENT1_EPOCH",
+        "EVENT2_EPOCH",
+        "EVENT3_EPOCH",
+        "IRONCLAD2_EPOCH",
+        "IRONCLAD3_EPOCH",
+        "IRONCLAD4_EPOCH",
+        "IRONCLAD5_EPOCH",
+        "IRONCLAD6_EPOCH",
+        "IRONCLAD7_EPOCH",
+        "NECROBINDER1_EPOCH",
+        "NECROBINDER2_EPOCH",
+        "NECROBINDER3_EPOCH",
+        "NECROBINDER4_EPOCH",
+        "NECROBINDER5_EPOCH",
+        "NECROBINDER6_EPOCH",
+        "NECROBINDER7_EPOCH",
+        "NEOW_EPOCH",
+        "OROBAS_EPOCH",
+        "POTION1_EPOCH",
+        "POTION2_EPOCH",
+        "REGENT1_EPOCH",
+        "REGENT2_EPOCH",
+        "REGENT3_EPOCH",
+        "REGENT4_EPOCH",
+        "REGENT5_EPOCH",
+        "REGENT6_EPOCH",
+        "REGENT7_EPOCH",
+        "RELIC1_EPOCH",
+        "RELIC2_EPOCH",
+        "RELIC3_EPOCH",
+        "RELIC4_EPOCH",
+        "RELIC5_EPOCH",
+        "SILENT1_EPOCH",
+        "SILENT2_EPOCH",
+        "SILENT3_EPOCH",
+        "SILENT4_EPOCH",
+        "SILENT5_EPOCH",
+        "SILENT6_EPOCH",
+        "SILENT7_EPOCH",
+        "UNDERDOCKS_EPOCH"
+      ],
+      "ps_strikes": 4,
+      "ally": [
+        "OSTY",
+        7,
+        7
+      ],
+      "phylactery_unbound": true,
+      "potions": [
+        "EXPLOSIVE_AMPOULE"
+      ],
+      "potion_slots": [
+        "EXPLOSIVE_AMPOULE",
+        null
+      ],
+      "fully_unlocked_potion_pool": true,
+      "relics_entering": [
+        "RELIC.PHYLACTERY_UNBOUND",
+        "RELIC.DOWSING_ROD",
+        "RELIC.FRESNEL_LENS",
+        "RELIC.RAINBOW_RING",
+        "RELIC.WAR_PAINT",
+        "RELIC.TOUCH_OF_OROBAS"
+      ],
+      "relics_entering_dispatch_ordered": true,
+      "entropy_card_pool": "necrobinder",
+      "call_of_the_void_generation_pool": [
+        "AFTERLIFE",
+        "BANSHEES_CRY",
+        "BLIGHT_STRIKE",
+        "BONE_SHARDS",
+        "BORROWED_TIME",
+        "BURY",
+        "CALCIFY",
+        "CALL_OF_THE_VOID",
+        "CAPTURE_SPIRIT",
+        "CLEANSE",
+        "COUNTDOWN",
+        "DANSE_MACABRE",
+        "DEATH_MARCH",
+        "DEATHBRINGER",
+        "DEATHS_DOOR",
+        "DEBILITATE",
+        "DEFILE",
+        "DEFY",
+        "DELAY",
+        "DEMESNE",
+        "DEVOUR_LIFE",
+        "DIRGE",
+        "DRAIN_POWER",
+        "DREDGE",
+        "END_OF_DAYS",
+        "ENFEEBLING_TOUCH",
+        "ERADICATE",
+        "FEAR",
+        "FETCH",
+        "FLATTEN",
+        "FRIENDSHIP",
+        "GRAVE_WARDEN",
+        "GRAVEBLAST",
+        "HANG",
+        "HAUNT",
+        "HIGH_FIVE",
+        "INVOKE",
+        "LETHALITY",
+        "MELANCHOLY",
+        "MISERY",
+        "NECRO_MASTERY",
+        "NEGATIVE_PULSE",
+        "NEUROSURGE",
+        "NO_ESCAPE",
+        "OBLIVION",
+        "PAGESTORM",
+        "PARSE",
+        "POKE",
+        "PULL_AGGRO",
+        "PULL_FROM_BELOW",
+        "PUTREFY",
+        "RATTLE",
+        "REANIMATE",
+        "REAP",
+        "REAPER_FORM",
+        "REAVE",
+        "RIGHT_HAND_HAND",
+        "SACRIFICE",
+        "SCOURGE",
+        "SCULPTING_STRIKE",
+        "SEANCE",
+        "SENTRY_MODE",
+        "SEVERANCE",
+        "SHARED_FATE",
+        "SHROUD",
+        "SIC_EM",
+        "SLEIGHT_OF_FLESH",
+        "SNAP",
+        "SOUL_STORM",
+        "SOW",
+        "SPIRIT_OF_ASH",
+        "SPUR",
+        "SQUEEZE",
+        "THE_SCYTHE",
+        "TIMES_UP",
+        "UNDEATH",
+        "VEILPIERCER",
+        "WISP"
+      ]
+    },
+    "game_build": "v0.111.0",
+    "monsters": [
+      {
+        "kind": "TUNNELER",
+        "hp": 92,
+        "max_hp": 92
+      }
+    ],
+    "piles": {
+      "draw": [
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 0,
+          "uid": 5
+        },
+        {
+          "id": "LETHALITY",
+          "upgrade": 0,
+          "uid": 6
+        },
+        {
+          "id": "DEMESNE",
+          "upgrade": 0,
+          "uid": 7
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 8
+        },
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 0,
+          "uid": 9
+        },
+        {
+          "id": "ABUNDANCE",
+          "upgrade": 1,
+          "uid": 10
+        },
+        {
+          "id": "PULL_AGGRO",
+          "upgrade": 0,
+          "uid": 11,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 12
+        },
+        {
+          "id": "BODYGUARD",
+          "upgrade": 1,
+          "uid": 13
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 14
+        },
+        {
+          "id": "UNLEASH",
+          "upgrade": 0,
+          "uid": 15
+        },
+        {
+          "id": "SPOILS_MAP",
+          "upgrade": 0,
+          "uid": 16
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 17
+        },
+        {
+          "id": "ASCENDERS_BANE",
+          "upgrade": 0,
+          "uid": 18
+        },
+        {
+          "id": "CLASH",
+          "upgrade": 0,
+          "uid": 19
+        },
+        {
+          "id": "REAP",
+          "upgrade": 0,
+          "uid": 20
+        },
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 1,
+          "uid": 21
+        }
+      ],
+      "hand": [
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 0,
+          "uid": 0
+        },
+        {
+          "id": "NEGATIVE_PULSE",
+          "upgrade": 1,
+          "uid": 1,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "FEAR",
+          "upgrade": 0,
+          "uid": 2
+        },
+        {
+          "id": "DELAY",
+          "upgrade": 0,
+          "uid": 3
+        },
+        {
+          "id": "WISP",
+          "upgrade": 0,
+          "uid": 4
+        }
+      ],
+      "discard": []
+    },
+    "rng": {
+      "rng": {
+        "words": [
+          9055601505126590539,
+          690758172232319372,
+          5561748167820556255,
+          11248280381728435490
+        ],
+        "counter": 297
+      },
+      "niche": {
+        "words": [
+          10899531663817713496,
+          6329962415064393045,
+          4654872035673184053,
+          811361088462379494
+        ],
+        "counter": 18
+      },
+      "ai": {
+        "words": [
+          1619985016520589977,
+          12733701688238147031,
+          13180250579663231610,
+          17647754088974282457
+        ],
+        "counter": 2
+      },
+      "sel": {
+        "words": [
+          3930876220218627710,
+          823402353806394893,
+          15814526992492130673,
+          8964509078302892305
+        ],
+        "counter": 0
+      },
+      "generation": {
+        "words": [
+          16654494903108229816,
+          5911588366325607512,
+          11475938063296743527,
+          15584319624074875196
+        ],
+        "counter": 65
+      },
+      "targets": {
+        "words": [
+          1055111286289190653,
+          17212008773032296180,
+          17806937594366306665,
+          13872471340052720849
+        ],
+        "counter": 0
+      },
+      "energy_costs": {
+        "words": [
+          15630592754900395182,
+          9953689215280020677,
+          5819836938315476664,
+          6514508726314031575
+        ],
+        "counter": 0
+      },
+      "combat_orbs": {
+        "words": [
+          13419515372248766359,
+          4947101863367337768,
+          5479124784649532243,
+          6001665135347807621
+        ],
+        "counter": 0
+      },
+      "potion_generation": {
+        "words": [
+          11393936942966903794,
+          6652097730291907404,
+          7712692335301824603,
+          12455193528193292531
+        ],
+        "counter": 0
+      }
+    }
+  },
+  "steps": [
+    {
+      "action": {
+        "kind": "play",
+        "uid": 3
+      },
+      "digest_after": "0ce378ef195731dcc1c56662b3142e774096523d3e20aef0c5d865abc83399c1",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 11,
+          "energy": 1,
+          "turn": 1
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            92,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          7,
+          7
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "WISP",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "LETHALITY",
+              0
+            ],
+            [
+              "DEMESNE",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ]
+          ],
+          "exhaust": [],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              16654494903108229816,
+              5911588366325607512,
+              11475938063296743527,
+              15584319624074875196
+            ],
+            "counter": 65
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 1
+      },
+      "digest_after": "b90b1daafb767a7c1b839c951ce48e0f686544a86ba8c7d318b11d95c0189ab2",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 19,
+          "energy": 0,
+          "turn": 1
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            92,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          7,
+          7
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "WISP",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "LETHALITY",
+              0
+            ],
+            [
+              "DEMESNE",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ]
+          ],
+          "exhaust": [],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              16654494903108229816,
+              5911588366325607512,
+              11475938063296743527,
+              15584319624074875196
+            ],
+            "counter": 65
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 4
+      },
+      "digest_after": "66df5ef5e56f71f9da09fce1b864fd1cd32c6b51f6ada41afd59e2a6cbe248b4",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 19,
+          "energy": 1,
+          "turn": 1
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            92,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          7,
+          7
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "FEAR",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "LETHALITY",
+              0
+            ],
+            [
+              "DEMESNE",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              16654494903108229816,
+              5911588366325607512,
+              11475938063296743527,
+              15584319624074875196
+            ],
+            "counter": 65
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 2,
+        "target": 0
+      },
+      "digest_after": "21f3beeb010be0b043f8acd32f0051a4ccbd2d99e19a0e70d41270a0c348951c",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 19,
+          "energy": 0,
+          "turn": 1
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          7,
+          7
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "LETHALITY",
+              0
+            ],
+            [
+              "DEMESNE",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              16654494903108229816,
+              5911588366325607512,
+              11475938063296743527,
+              15584319624074875196
+            ],
+            "counter": 65
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest_after": "fd7b984f866affe317df9696a663030e7bd1358ee8a3c287e463ec47ee943551"
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 7
+      },
+      "digest_after": "ab1d980240040cbe89ec88c6bb2826c4dbeb092128cd82be399b1b8ada0837e7",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 0,
+          "energy": 1,
+          "turn": 2
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          9,
+          9
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "LETHALITY",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              16654494903108229816,
+              5911588366325607512,
+              11475938063296743527,
+              15584319624074875196
+            ],
+            "counter": 65
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 6
+      },
+      "digest_after": "a159bd2c554cd8b7101787cb1445ea96b5aa8cf7ef12cdc310dbd506c32f8ac6",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 0,
+          "energy": 0,
+          "turn": 2
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          9,
+          9
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              16654494903108229816,
+              5911588366325607512,
+              11475938063296743527,
+              15584319624074875196
+            ],
+            "counter": 65
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest_after": "4bc8a05ad1124159ca7a30c5dd72cdcd1329c19142de05dc0074e3a1738c363b"
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 10
+      },
+      "digest_after": "34efa689bbacdb2be4bc1f9a76181ce00f4e02795139a0642bd3243b410fd329"
+    },
+    {
+      "action": {
+        "kind": "select",
+        "answer": {
+          "kind": "option_index",
+          "index": 0
+        }
+      },
+      "digest_after": "2892bb252d8113cda8fc803061a214179602737aa4283956415f3544508cb313",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 0,
+          "energy": 4,
+          "turn": 3
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            37
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          11,
+          11
+        ],
+        "piles": {
+          "hand": [
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "SPIRIT_OF_ASH",
+              1
+            ]
+          ],
+          "draw": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 22
+      },
+      "digest_after": "c9b838dbc711cfb61a5a714b7615d888c0b9d0b190d2d3e273ac4e403c1a6631",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 0,
+          "energy": 4,
+          "turn": 3
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            37
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          11,
+          11
+        ],
+        "piles": {
+          "hand": [
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 11
+      },
+      "digest_after": "676baaee60b00177ab60a539513c366e0d2f89d85ca8370b35597dc4de924a80",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 9,
+          "energy": 2,
+          "turn": 3
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            37
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          15,
+          15
+        ],
+        "piles": {
+          "hand": [
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 13
+      },
+      "digest_after": "b7fd07cb3e1e43375c5578b13b19194e72fe4eb641572084d7fa4fd3f5ed1705",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 9,
+          "energy": 1,
+          "turn": 3
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            85,
+            92,
+            37
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          22,
+          22
+        ],
+        "piles": {
+          "hand": [
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 15,
+        "target": 0
+      },
+      "digest_after": "e91ed5fa2dbd15318945cef6d46283520f431b69db8ff8fb3c819a29ed90087b",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 9,
+          "energy": 0,
+          "turn": 3
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            80,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          22,
+          22
+        ],
+        "piles": {
+          "hand": [
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "UNLEASH",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest_after": "bfec7c04ca86a8a78a2b97dd4b29d66f8232377d62abb114f2ea413bcbd25e4b"
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 20,
+        "target": 0
+      },
+      "digest_after": "8a4f35b79a85c37c7533efa5df77fdb4d6eba37cff1be201fdc9d42333a78c30",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 0,
+          "energy": 1,
+          "turn": 4
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            38,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          24,
+          24
+        ],
+        "piles": {
+          "hand": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "draw": [],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 21
+      },
+      "digest_after": "d405b477b5d4e512bcb80210b7c9c0cee9a9dffad02ee2650271832808320677",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 9,
+          "energy": 0,
+          "turn": 4
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            38,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          24,
+          24
+        ],
+        "piles": {
+          "hand": [
+            [
+              "SPOILS_MAP",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ]
+          ],
+          "draw": [],
+          "discard": [
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "PULL_AGGRO",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "UNLEASH",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              9055601505126590539,
+              690758172232319372,
+              5561748167820556255,
+              11248280381728435490
+            ],
+            "counter": 297
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest_after": "9875a28d5e0ecf4cd9c4709edda307e89ce0a55c49df32cc99667428694a397a"
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 11
+      },
+      "digest_after": "96e509a6e3cbc501623d478886ffa948ff1c21e22d8bb0e9a88e0555bfb8de4b",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 10,
+          "energy": 2,
+          "turn": 5
+        },
+        "monsters": [
+          [
+            "TUNNELER",
+            38,
+            92,
+            0
+          ]
+        ],
+        "ally": [
+          "OSTY",
+          24,
+          30
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ],
+            [
+              "UNLEASH",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ]
+          ],
+          "discard": [
+            [
+              "PULL_AGGRO",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ]
+          ],
+          "play": []
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              8203801168345899520,
+              5834533222259381142,
+              16644368741113885599,
+              12831939943073712460
+            ],
+            "counter": 313
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 15,
+        "target": 0
+      },
+      "digest_after": "c208cafaea95aea1375bf90fbe9d096cd5b18295b66bf30c14afec7ceb60b938",
+      "native": {
+        "player": {
+          "hp": 50,
+          "max_hp": 59,
+          "block": 10,
+          "energy": 1,
+          "turn": 5
+        },
+        "monsters": [],
+        "ally": [
+          "OSTY",
+          24,
+          30
+        ],
+        "piles": {
+          "hand": [
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "NEGATIVE_PULSE",
+              1
+            ],
+            [
+              "FEAR",
+              0
+            ],
+            [
+              "CLASH",
+              0
+            ]
+          ],
+          "draw": [
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "BODYGUARD",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "DELAY",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              1
+            ],
+            [
+              "STRIKE_NECROBINDER",
+              0
+            ],
+            [
+              "REAP",
+              0
+            ],
+            [
+              "DEFEND_NECROBINDER",
+              0
+            ],
+            [
+              "SPOILS_MAP",
+              0
+            ]
+          ],
+          "discard": [
+            [
+              "PULL_AGGRO",
+              0
+            ]
+          ],
+          "exhaust": [
+            [
+              "WISP",
+              0
+            ],
+            [
+              "ABUNDANCE",
+              1
+            ],
+            [
+              "ASCENDERS_BANE",
+              0
+            ]
+          ],
+          "play": [
+            [
+              "UNLEASH",
+              0
+            ]
+          ]
+        },
+        "rng": {
+          "rng": {
+            "words": [
+              8203801168345899520,
+              5834533222259381142,
+              16644368741113885599,
+              12831939943073712460
+            ],
+            "counter": 313
+          },
+          "niche": {
+            "words": [
+              10899531663817713496,
+              6329962415064393045,
+              4654872035673184053,
+              811361088462379494
+            ],
+            "counter": 18
+          },
+          "ai": {
+            "words": [
+              1619985016520589977,
+              12733701688238147031,
+              13180250579663231610,
+              17647754088974282457
+            ],
+            "counter": 2
+          },
+          "sel": {
+            "words": [
+              3930876220218627710,
+              823402353806394893,
+              15814526992492130673,
+              8964509078302892305
+            ],
+            "counter": 0
+          },
+          "generation": {
+            "words": [
+              7215479454969785875,
+              11615659128653640411,
+              8072247812109592426,
+              16574437871987502291
+            ],
+            "counter": 81
+          },
+          "potion_generation": {
+            "words": [
+              11393936942966903794,
+              6652097730291907404,
+              7712692335301824603,
+              12455193528193292531
+            ],
+            "counter": 0
+          },
+          "targets": {
+            "words": [
+              1055111286289190653,
+              17212008773032296180,
+              17806937594366306665,
+              13872471340052720849
+            ],
+            "counter": 0
+          },
+          "combat_orbs": {
+            "words": [
+              13419515372248766359,
+              4947101863367337768,
+              5479124784649532243,
+              6001665135347807621
+            ],
+            "counter": 0
+          },
+          "energy_costs": {
+            "words": [
+              15630592754900395182,
+              9953689215280020677,
+              5819836938315476664,
+              6514508726314031575
+            ],
+            "counter": 0
+          }
+        }
+      }
+    }
+  ]
+}

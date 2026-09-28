@@ -1,0 +1,320 @@
+{
+  "configuration": {
+    "actual_deadline": 5.0,
+    "benchmark_deadline": 2.0,
+    "fight_index": 1,
+    "horizon": 12,
+    "k": 20,
+    "provenance_bundle": null,
+    "provenance_entry": null,
+    "recorded_replay": null,
+    "run": "solver/testdata/8DVXPWUWRY.run",
+    "sampling_seed": "review-pipeline-v1"
+  },
+  "cpu_seconds": 44.401726000000004,
+  "current_tracemalloc_bytes": null,
+  "hot_layers_self_seconds": {},
+  "instrumentation": {
+    "cprofile": false,
+    "phase_timers": true,
+    "tracemalloc": false
+  },
+  "nodes_per_second": 5139.508664076604,
+  "peak_tracemalloc_bytes": null,
+  "phases_seconds": {
+    "entry_and_world_construction": 0.0027408748865127563,
+    "other_loading_and_document_assembly": 0.005983876530081034,
+    "recorded_line_replay": 8.330680429935455e-07,
+    "solve": 44.63617341546342,
+    "world_sampling": 0.0022448748350143433
+  },
+  "pid": 5327,
+  "profiler_revision": "issue-1112-v3-quality-and-exact",
+  "quality": {
+    "actual_seed_deadline_hit": false,
+    "actual_seed_exact": true,
+    "benchmark_deadline_worlds": 13,
+    "benchmark_exact_worlds": 7,
+    "benchmark_worlds": 20,
+    "headline": {
+      "actual": {
+        "entry_hp": 57,
+        "final_hp": 55,
+        "hp_lost": 2,
+        "potions_used": {
+          "count": 0,
+          "names": []
+        },
+        "turns": 5,
+        "won": true
+      },
+      "benchmark": {
+        "deadline_worlds": 13,
+        "exact_worlds": 7,
+        "hp_lost": {
+          "count": 20,
+          "mean": {
+            "denominator": 10,
+            "numerator": 1
+          },
+          "median": {
+            "denominator": 1,
+            "numerator": 0
+          },
+          "p10": 0,
+          "p90": 0
+        },
+        "loss_risk": {
+          "kind": "upper_bound",
+          "value": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        "losses": 0,
+        "win_rate": {
+          "kind": "lower_bound",
+          "value": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        "wins": 20,
+        "world_count": 20
+      },
+      "best_actual_seed": {
+        "bound": "exact",
+        "deadline_hit": false,
+        "exact": true,
+        "final_hp": 57,
+        "hp_lost": 0,
+        "potions_used": 0,
+        "turns": 5,
+        "won": true
+      },
+      "derived": {
+        "luck_percentile": {
+          "available": true,
+          "exact": false,
+          "kind": "achieved",
+          "percentile": {
+            "denominator": 2,
+            "numerator": 105
+          },
+          "tied_worlds": 19,
+          "world_count": 20,
+          "worse_worlds": 1
+        },
+        "skill_gap": {
+          "available": true,
+          "display": "2",
+          "exact": true,
+          "hp_lost": 2,
+          "kind": "exact"
+        }
+      }
+    },
+    "status": "ok"
+  },
+  "result": {
+    "metadata": {
+      "assumed_fully_unlocked": true,
+      "benchmark_name": "best play per sampled shuffle",
+      "counter_overrides": {},
+      "deadlines_seconds": {
+        "benchmark_world": 2.0,
+        "best_actual_seed": 5.0
+      },
+      "elapsed_seconds": {
+        "benchmark": 40.74495045887306,
+        "best_actual_seed": 3.895556708332151,
+        "total": 44.64330833405256
+      },
+      "entry_caveats": [
+        "fight 0 (ENCOUNTER.SEAPUNK_WEAK): deck held cards that can leave/alter the cycle unrecorded (IMPERVIOUS, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+        "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+      ],
+      "fully_unlocked_card_pool": true,
+      "horizon": 12,
+      "k": 20,
+      "sampling_seed": "review-pipeline-v1",
+      "solver_build": "v0.108.0",
+      "trust_tier": "certified"
+    },
+    "status": "ok"
+  },
+  "solves": [
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "actual",
+      "nodes_per_second": 5421.058346579299,
+      "seconds": 3.895549291279167,
+      "states": 21118
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5671.397022506235,
+      "seconds": 2.1668382501229644,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 4843.509846788222,
+      "seconds": 2.5372096658684313,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5090.009075652335,
+      "seconds": 2.4143375419080257,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5195.850585948109,
+      "seconds": 2.3651565411128104,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 4686.320593282874,
+      "seconds": 2.6223131250590086,
+      "states": 12289
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 5533.3675179432485,
+      "seconds": 1.5999298747628927,
+      "states": 8853
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 2837.1207862528554,
+      "seconds": 0.18610416678711772,
+      "states": 528
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 4888.9391867647,
+      "seconds": 1.8629808332771063,
+      "states": 9108
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 4506.1487903255365,
+      "seconds": 2.727162499912083,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 4903.6340717563635,
+      "seconds": 2.5061005409806967,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5623.092855546357,
+      "seconds": 2.185452084057033,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5644.652387920549,
+      "seconds": 2.1771048340015113,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 4682.475169049579,
+      "seconds": 2.6244666669517756,
+      "states": 12289
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5206.187153261457,
+      "seconds": 2.360460666939616,
+      "states": 12289
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 5824.586486734975,
+      "seconds": 1.3278195830062032,
+      "states": 7734
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 5332.200245096406,
+      "seconds": 1.8945275000296533,
+      "states": 10102
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5001.0644411255935,
+      "seconds": 2.4572768746875226,
+      "states": 12289
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 4960.501461080674,
+      "seconds": 1.2569293747656047,
+      "states": 6235
+    },
+    {
+      "deadline_hit": false,
+      "exact": true,
+      "kind": "benchmark",
+      "nodes_per_second": 4796.6443556432,
+      "seconds": 1.2452455419115722,
+      "states": 5973
+    },
+    {
+      "deadline_hit": true,
+      "exact": false,
+      "kind": "benchmark",
+      "nodes_per_second": 5527.598061865342,
+      "seconds": 2.2232079580426216,
+      "states": 12289
+    }
+  ],
+  "states": 229408,
+  "tool": "profile_review_pipeline.py",
+  "top_functions": [],
+  "wall_seconds": 44.64714387478307
+}

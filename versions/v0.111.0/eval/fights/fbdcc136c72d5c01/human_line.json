@@ -1,0 +1,181 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "587fab4873d7d2b609c98ab3397a4d70937eab3d54076b27eea7a0905d35d051",
+ "turns": 8,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 16
+  },
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "play",
+   "uid": 10
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 14,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 17
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "play",
+   "uid": 3
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "play",
+   "uid": 10
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 14,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "play",
+   "uid": 18
+  },
+  {
+   "kind": "play",
+   "uid": 3
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 1
+  }
+ ],
+ "step_digests": [
+  "5d62273c847b137ebf948203ac197ed17a4a2dfe2399e93243e84df78654dc8d",
+  "594ba404709af22e717fdba5650230073fabeb63cfe95b46ec593a5a728857d4",
+  "38992d663be1542a1ba90df96f6a61ecb4d778a0efb13843278fd8f7eb3ecd13",
+  "b49e00bbfdb6a8dd37850a0858a63e7369010635b30892691479532e5359b843",
+  "4bf0cd2b01048a625dffbefef31aab364463e8ce92703765be7c47d98a31f0ec",
+  "e34dfc344e490407c78bd77a159bc844cafdb61d8aa6421a849c57e8352cfbba",
+  "9de8c4da70676931a4661056b6fcdec341223a57555fba85be85939655248497",
+  "2708aeb69b117ee44ba731f4cd8ce7ff15f40c6c977ff28b719d590ace25f3f7",
+  "e352466ffac1030354f85dadf4c65be38d7dc6bffa8972c85ba4b6a2de7ce777",
+  "22db0557b0415926bc1069e5a1080a3fe39da8505445d68e773f7efef7bb72c7",
+  "11d2431db88cbacb66fc46cc491a60db281508e92b42fde6aba377d0759e6aaf",
+  "bbebfdcdc1b0f8eed3716013d4cac54907f229e4863692dcf2c32ec468612b1f",
+  "c596382659a38e6ca44b8da818be179f84e5849d64dfbd71e605e35e37a7143d",
+  "3cc495539253ee62f98657118126fa62807e0f9d5df78a4471145690e9331445",
+  "82ad3e737dccf4963d3f09f05f79d3c9cd913ca77715877817b3e983720f3e87",
+  "01181e298f0dffbd1c6ebdf6fad77fc7e8c363f11e8f278e6efa3cee492cb946",
+  "f4f39385cd30ffe3c4bf3c398996b32afb9249f8bfe008248247e48eade3639f",
+  "8aa8997f28b5f5a76a7e06416e958d526d0e7d08e8556334f31bfde2445ca6f2",
+  "8a5436fec36cd3cb508dae4f80141507cd73636ce8b7ca94f9129a71f6905d1c",
+  "0a781f3b3b36d0a76c5de27644d13f4e93001d64b45a6fbd33631fb25691564d",
+  "f00eb5dbb2502770db776a01a32d01476dca500012899d80e7b54198e378078c",
+  "2e0dcba6a09ddacc775206265866a5b0ea90950090bd486b1d54c1268cc01779",
+  "ee195d6eda138f9dcce2710dba96865b28eeb35311f551c8de3f5a3ad0988bf1",
+  "51379f53e5fccee6c54d7e8ede02807a0e8278eb1ac787cfe008e55803bdf6b5",
+  "f1562ac3432db52e4df914c005225477b26c9b2f71a5a2ee76321182d561858f",
+  "12a4a4e54a0504144c27a365f7d77dc051838aa8a1c88067eeeb18729792c1c8",
+  "3f7513b4d17e12288fd0a00323fad9a5f67a1a86392ac06fa63f52f84dba403b",
+  "b1cd518c7a62f358ab11148aa45c4ab7a59ef4e3acc04147a36cfb042bf3fe19",
+  "d6bb7d1f8387e44ae1d9f41bedac80ea90c4d32b0cc68cfd89b8be73462bd7bd",
+  "88c9f5fb1512d17c854ac683e5e6cf264cac45e2ad0241db6d6898e1e297ab7c",
+  "ee093001d3049c2813ccf2678bcc55bf1180bd073f9fe948d346cfe55b84076f",
+  "1a4148beca8ccc7523b01a9d07d0a4261a53b2359fe120023bfbd21d72717128",
+  "93224770b3b509b6ecb05149308de1bfa319c527a09ae2f0659195d88ceb430e"
+ ],
+ "terminal": {
+  "hp": 64,
+  "turn": 8,
+  "over": true,
+  "won": true
+ }
+}

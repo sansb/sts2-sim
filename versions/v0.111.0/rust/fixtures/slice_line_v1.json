@@ -1,0 +1,333 @@
+{
+  "entry_digest": "97be893cf44c5451b13de2c2468096712b724f9ea67484b0131ea043321ed83c",
+  "game_build": "v0.111.0",
+  "schema": "sts-sim-slice-line-v1",
+  "steps": [
+    {
+      "action": {
+        "kind": "play",
+        "target": 1,
+        "uid": 0
+      },
+      "digest": "8bf9bf423a0e958193db6124df8dbc4bb58f7c9b6fd456443fc44ecc1da0c48b",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 1,
+          "uid": 0
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 0
+        },
+        {
+          "kind": "play",
+          "uid": 2
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 1,
+        "uid": 1
+      },
+      "digest": "4fef68fd79fbfe0ce8ab6eba5dc9edb07bb772cc358376d28e3ce43d8127abf2",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 1,
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "uid": 2
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 1,
+        "uid": 3
+      },
+      "digest": "710ff546a4fab4832f9ad028c7866c4f658ca07b98375beb057b3f6e237d4675",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 1,
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 2
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest": "81d38e20dcc09d413a5cc1628fd5abb261bd44631bc53e2a7bbd903ce9dc9a69",
+      "legal": [
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 1,
+        "uid": 5
+      },
+      "digest": "88346dfff61a320b7d90217c2fa2ef34c4b702db3d29f4587ee0a4e087834506",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 1,
+          "uid": 5
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 5
+        },
+        {
+          "kind": "play",
+          "target": 1,
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "uid": 6
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 1,
+        "uid": 8
+      },
+      "digest": "154f028bdf141008dc69fd1b6c35800673bef81fab8d4ddbcd41ef458e69957a",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 1,
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "uid": 6
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest": "0634c57e41d08d369da9937ad92c92092b5c5eba6f4584be8c7ce764d99ed9c2",
+      "legal": [
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 3
+      },
+      "digest": "e5ad886ba56c80ac671354b2d59d79d6d216b83e92a9124990256ea4c64c7929",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 6
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 6
+      },
+      "digest": "bb4b0d3279d0dff0d7e2380c3f0b3f7d1ba577f951d667b74a0206a2c6a53a28",
+      "legal": [
+        {
+          "kind": "play",
+          "uid": 6
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "uid": 2
+      },
+      "digest": "08331898da066ae12be8e0343c16cd10bbdb81cb20a8aa6bcd6a18a8d8d69886",
+      "legal": [
+        {
+          "kind": "play",
+          "uid": 2
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest": "3fc9c228c080df8e6d8fa75fa8bac8c5cfff2442b03c546999fc186c7f91b298",
+      "legal": [
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 8
+      },
+      "digest": "9302dcb45b5876ded38656731c9d4b14361db448ebf38edebd5d2369f4e5e86a",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 1
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 1
+      },
+      "digest": "f452c63a128aace13a62aeb6d2d72c6a5822d1c62e3eaa4388b105995b0da3ae",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 1
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "end"
+      },
+      "digest": "332c167222a32302f12d6557d875046f81612c57ea041904e58d50622f03dc3b",
+      "legal": [
+        {
+          "kind": "end"
+        }
+      ],
+      "over": false
+    },
+    {
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 8
+      },
+      "digest": "60d05c3ac318ab8f5c4b9a67fb89973c4e944ec4d34293081e5cbf3df371fa60",
+      "legal": [
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 0
+        },
+        {
+          "kind": "play",
+          "uid": 9
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "over": true
+    }
+  ]
+}

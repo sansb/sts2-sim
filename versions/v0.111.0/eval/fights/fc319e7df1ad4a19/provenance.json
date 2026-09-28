@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "73WAG17274JJ",
+ "node": 4,
+ "encounter": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "caf26e185c4ff6fa65160602a17d652a27a542832b91da21b6a6c5e643a73ddd",
+ "save_sha256": "0a254c208e3adb37ccad59be01c371ff894542465540f2c0f54f09e5cb613094",
+ "entry_digest": "137db32b68ec66c362bdcbde55e56c53a1a7acdfbde274695c056f17f17d9d3a",
+ "checksummed": true
+}

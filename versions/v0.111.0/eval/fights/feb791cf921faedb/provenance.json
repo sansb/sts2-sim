@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "SWZ7319NCMUL",
+ "node": 13,
+ "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "fbb8a17c46cda581675266f2f1fcbab5c986fcf7db4518d180c9d65ce0d7e632",
+ "save_sha256": "210484027134823082bf2867af3d6d74deb101432d9d124da6107cbe715ac3bb",
+ "entry_digest": "3463bdfa0d76bbbcdfd8ca276c67f825b77b9b80441ac9865e16ad012a81811a",
+ "checksummed": true
+}

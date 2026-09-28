@@ -1,0 +1,6808 @@
+{
+  "manifest": {
+    "schema": "sts-search-suite-v1",
+    "game_build": "v0.111.0",
+    "selection": "Synthetic post-opening HP stress states. No native provenance or human baseline; not held out. Original RNG, cards and relic state fixed.",
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "seconds_per_search": 2,
+    "methods": [
+      "random",
+      "uct"
+    ],
+    "fights": [
+      {
+        "id": "synthetic-insatiable-hp33",
+        "entry": "search/generated/insatiable-hp33.json",
+        "entry_sha256": "fb7aebf0770c1b70e58504156f3f59c8b46945d3f0bba5eb351bd508184c119b",
+        "derived_from": "f143c7e6993ed27c",
+        "source_sha256": "b623eb94a6c4d5304ca2cf0b386b047ae8ebd1c36e2db92e9862440b41273dc0",
+        "mutation": {
+          "player.hp": 33
+        },
+        "synthetic": true
+      },
+      {
+        "id": "synthetic-insatiable-hp16",
+        "entry": "search/generated/insatiable-hp16.json",
+        "entry_sha256": "37b110a34b4f75891a9cac0103ba09287dd28903b6050353b6a27b01f5f1f407",
+        "derived_from": "f143c7e6993ed27c",
+        "source_sha256": "b623eb94a6c4d5304ca2cf0b386b047ae8ebd1c36e2db92e9862440b41273dc0",
+        "mutation": {
+          "player.hp": 16
+        },
+        "synthetic": true
+      },
+      {
+        "id": "synthetic-insatiable-hp8",
+        "entry": "search/generated/insatiable-hp8.json",
+        "entry_sha256": "76a8ba35aab1fc47f0c06c112e75cb627af1ae8ea0957d7ee7e52068e964cb59",
+        "derived_from": "f143c7e6993ed27c",
+        "source_sha256": "b623eb94a6c4d5304ca2cf0b386b047ae8ebd1c36e2db92e9862440b41273dc0",
+        "mutation": {
+          "player.hp": 8
+        },
+        "synthetic": true
+      }
+    ]
+  },
+  "binary_sha256": "3ae8baff819973db790bf61261623cc81ee9581be1dae159828ea109c7e82073",
+  "playout_cap": null,
+  "runs": [
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 34
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 7,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          }
+        ],
+        "combat_hp": 5,
+        "enemy_hp": 0,
+        "final_digest": "42fd859c44abda682ab77b1a133ac1089e3c0a0bd05a9e373c1e604e8ec1ddff",
+        "turn": 14,
+        "won": true
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 5692,
+      "elapsed_seconds": 2.000868708,
+      "end_weight": 0.05,
+      "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 191,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000512083,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 139,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.001790583,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 138,
+          "hp": 0,
+          "playout": 7,
+          "seconds": 0.004095875,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 131,
+          "hp": 0,
+          "playout": 11,
+          "seconds": 0.005595875,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 22,
+          "hp": 0,
+          "playout": 15,
+          "seconds": 0.007458333,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 4,
+          "playout": 534,
+          "seconds": 0.183038708,
+          "turn": 13,
+          "won": true
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 5,
+          "playout": 2772,
+          "seconds": 0.975676208,
+          "turn": 14,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 5694,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 240017,
+      "tree_nodes": 1,
+      "win_visits": 2,
+      "fight_id": "synthetic-insatiable-hp33"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 14,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 34
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          }
+        ],
+        "combat_hp": 7,
+        "enemy_hp": 0,
+        "final_digest": "d2d849a9c58f47b3b7af7c60a8ec5afeef61151fb3b89fb1d6b19d270ae2667a",
+        "turn": 14,
+        "won": true
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 6145,
+      "elapsed_seconds": 2.000904917,
+      "end_weight": 0.05,
+      "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 191,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000240125,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 169,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.002207625,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 143,
+          "hp": 0,
+          "playout": 8,
+          "seconds": 0.003533375,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 107,
+          "hp": 0,
+          "playout": 31,
+          "seconds": 0.012037834,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 78,
+          "hp": 0,
+          "playout": 210,
+          "seconds": 0.078483459,
+          "turn": 13,
+          "won": false
+        },
+        {
+          "enemy_hp": 21,
+          "hp": 0,
+          "playout": 302,
+          "seconds": 0.109655709,
+          "turn": 14,
+          "won": false
+        },
+        {
+          "enemy_hp": 17,
+          "hp": 0,
+          "playout": 2401,
+          "seconds": 0.800746834,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 5,
+          "playout": 3309,
+          "seconds": 1.0899825,
+          "turn": 13,
+          "won": true
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 7,
+          "playout": 3566,
+          "seconds": 1.170745792,
+          "turn": 14,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 6147,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 220788,
+      "tree_nodes": 6135,
+      "win_visits": 2,
+      "fight_id": "synthetic-insatiable-hp33"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 42
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          }
+        ],
+        "combat_hp": 8,
+        "enemy_hp": 0,
+        "final_digest": "e9c984e9c47589e6cd7aa7db318a54eb91ae30f4cd6f10182a5161baf38db4db",
+        "turn": 11,
+        "won": true
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 5141,
+      "elapsed_seconds": 2.000231292,
+      "end_weight": 0.05,
+      "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 196,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000225459,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 146,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.00119075,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 145,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.002247084,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 103,
+          "hp": 0,
+          "playout": 16,
+          "seconds": 0.005304875,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 75,
+          "hp": 0,
+          "playout": 87,
+          "seconds": 0.035243959,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 74,
+          "hp": 0,
+          "playout": 165,
+          "seconds": 0.06521525,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 2,
+          "hp": 0,
+          "playout": 174,
+          "seconds": 0.068690709,
+          "turn": 13,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 7,
+          "playout": 619,
+          "seconds": 0.244844959,
+          "turn": 11,
+          "won": true
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 8,
+          "playout": 5068,
+          "seconds": 1.969189042,
+          "turn": 11,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 5146,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 217344,
+      "tree_nodes": 1,
+      "win_visits": 5,
+      "fight_id": "synthetic-insatiable-hp33"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 44
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 3,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 9,
+        "final_digest": "730bbdaed57fb918b6925112308f4247e0808ad19f9be69d8164d7664e15d9c4",
+        "turn": 11,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 6252,
+      "elapsed_seconds": 2.00091425,
+      "end_weight": 0.05,
+      "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 196,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000222625,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 146,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.001136708,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 145,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.001615792,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 117,
+          "hp": 0,
+          "playout": 10,
+          "seconds": 0.003809208,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 45,
+          "hp": 0,
+          "playout": 15,
+          "seconds": 0.006327208,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 32,
+          "hp": 0,
+          "playout": 583,
+          "seconds": 0.202591708,
+          "turn": 13,
+          "won": false
+        },
+        {
+          "enemy_hp": 21,
+          "hp": 0,
+          "playout": 772,
+          "seconds": 0.26280475,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 9,
+          "hp": 0,
+          "playout": 4439,
+          "seconds": 1.423016708,
+          "turn": 11,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 6252,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 224062,
+      "tree_nodes": 6240,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp33"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          }
+        ],
+        "combat_hp": 9,
+        "enemy_hp": 0,
+        "final_digest": "87580768432119696f005774cf71261ed2cf650551aaad23928a0eaa1ba84667",
+        "turn": 15,
+        "won": true
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 5595,
+      "elapsed_seconds": 2.000555583,
+      "end_weight": 0.05,
+      "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 226,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000556333,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 192,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.000723667,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 103,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.00134725,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 2,
+          "hp": 0,
+          "playout": 66,
+          "seconds": 0.024242417,
+          "turn": 15,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 4,
+          "playout": 1543,
+          "seconds": 0.552852583,
+          "turn": 15,
+          "won": true
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 7,
+          "playout": 1797,
+          "seconds": 0.640843125,
+          "turn": 10,
+          "won": true
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 9,
+          "playout": 5532,
+          "seconds": 1.9755617079999999,
+          "turn": 15,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 5599,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 239084,
+      "tree_nodes": 1,
+      "win_visits": 4,
+      "fight_id": "synthetic-insatiable-hp33"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 34
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 23,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          }
+        ],
+        "combat_hp": 6,
+        "enemy_hp": 0,
+        "final_digest": "c7853296a2cf3085cbbe7ffa775e050184ac987e407962d987751bfcabec3bdb",
+        "turn": 14,
+        "won": true
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 6174,
+      "elapsed_seconds": 2.001191417,
+      "end_weight": 0.05,
+      "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 226,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.00055075,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 192,
+          "hp": 0,
+          "playout": 2,
+          "seconds": 0.00072675,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 178,
+          "hp": 0,
+          "playout": 5,
+          "seconds": 0.0023255,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 123,
+          "hp": 0,
+          "playout": 7,
+          "seconds": 0.003511875,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 117,
+          "hp": 0,
+          "playout": 34,
+          "seconds": 0.013609209,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 107,
+          "hp": 0,
+          "playout": 51,
+          "seconds": 0.020645209,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 101,
+          "hp": 0,
+          "playout": 63,
+          "seconds": 0.025088334,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 81,
+          "hp": 0,
+          "playout": 98,
+          "seconds": 0.038578084,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 61,
+          "hp": 0,
+          "playout": 187,
+          "seconds": 0.067382417,
+          "turn": 13,
+          "won": false
+        },
+        {
+          "enemy_hp": 6,
+          "hp": 0,
+          "playout": 213,
+          "seconds": 0.075229375,
+          "turn": 13,
+          "won": false
+        },
+        {
+          "enemy_hp": 0,
+          "hp": 6,
+          "playout": 4741,
+          "seconds": 1.528106459,
+          "turn": 14,
+          "won": true
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 6176,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 223328,
+      "tree_nodes": 6164,
+      "win_visits": 2,
+      "fight_id": "synthetic-insatiable-hp33"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 98,
+        "final_digest": "3fd3f3f8b4631f8301573d91c38d2ccf101684fd173ffc6e2a4410e7649258f2",
+        "turn": 10,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 15515,
+      "elapsed_seconds": 2.000685209,
+      "end_weight": 0.05,
+      "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000171834,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 249,
+          "hp": 0,
+          "playout": 21,
+          "seconds": 0.004842209,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 238,
+          "hp": 0,
+          "playout": 34,
+          "seconds": 0.006561584,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 237,
+          "hp": 0,
+          "playout": 62,
+          "seconds": 0.010085334,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 199,
+          "hp": 0,
+          "playout": 73,
+          "seconds": 0.011631959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 192,
+          "hp": 0,
+          "playout": 152,
+          "seconds": 0.022272959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 120,
+          "hp": 0,
+          "playout": 201,
+          "seconds": 0.029797084,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 99,
+          "hp": 0,
+          "playout": 625,
+          "seconds": 0.082987584,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 98,
+          "hp": 0,
+          "playout": 12112,
+          "seconds": 1.564955167,
+          "turn": 10,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 15515,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 327766,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp16"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 34
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 24,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 34
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 92,
+        "final_digest": "28c37db46acace3c408354489c7c29116623bf01b28b861b108e87a58e12568d",
+        "turn": 11,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 12002,
+      "elapsed_seconds": 2.0007995,
+      "end_weight": 0.05,
+      "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000156917,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 262,
+          "hp": 0,
+          "playout": 23,
+          "seconds": 0.003082125,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 202,
+          "hp": 0,
+          "playout": 33,
+          "seconds": 0.004091958,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 146,
+          "hp": 0,
+          "playout": 197,
+          "seconds": 0.033882542,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 143,
+          "hp": 0,
+          "playout": 430,
+          "seconds": 0.070305917,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 133,
+          "hp": 0,
+          "playout": 1779,
+          "seconds": 0.305471333,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 107,
+          "hp": 0,
+          "playout": 1802,
+          "seconds": 0.309464083,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 92,
+          "hp": 0,
+          "playout": 7069,
+          "seconds": 1.195286792,
+          "turn": 11,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 12002,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 228324,
+      "tree_nodes": 11929,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp16"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 79,
+        "final_digest": "3ca5ecca07faaee1112ed993a4c675b143a64744f50fb8bdd1a528c19669522c",
+        "turn": 11,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 15857,
+      "elapsed_seconds": 2.000325417,
+      "end_weight": 0.05,
+      "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000141292,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 9,
+          "seconds": 0.001609917,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 207,
+          "hp": 0,
+          "playout": 30,
+          "seconds": 0.004964167,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 205,
+          "hp": 0,
+          "playout": 155,
+          "seconds": 0.021535125,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 203,
+          "hp": 0,
+          "playout": 160,
+          "seconds": 0.022896959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 181,
+          "hp": 0,
+          "playout": 212,
+          "seconds": 0.028563834,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 171,
+          "hp": 0,
+          "playout": 374,
+          "seconds": 0.049196084,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 170,
+          "hp": 0,
+          "playout": 513,
+          "seconds": 0.066337875,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 166,
+          "hp": 0,
+          "playout": 688,
+          "seconds": 0.086441667,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 158,
+          "hp": 0,
+          "playout": 832,
+          "seconds": 0.104737959,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 146,
+          "hp": 0,
+          "playout": 1212,
+          "seconds": 0.151801375,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 130,
+          "hp": 0,
+          "playout": 2226,
+          "seconds": 0.279137542,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 125,
+          "hp": 0,
+          "playout": 3185,
+          "seconds": 0.407764875,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 103,
+          "hp": 0,
+          "playout": 6464,
+          "seconds": 0.806231917,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 79,
+          "hp": 0,
+          "playout": 10261,
+          "seconds": 1.288724,
+          "turn": 11,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 15857,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 334978,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp16"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 18,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 2,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 121,
+        "final_digest": "bdbbce96bd8089124bd80d8e3471cb3de74459e7a8e8aabf2017c3f8f2c8fcb2",
+        "turn": 12,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 13732,
+      "elapsed_seconds": 2.001241334,
+      "end_weight": 0.05,
+      "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000158709,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 258,
+          "hp": 0,
+          "playout": 5,
+          "seconds": 0.00143775,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 255,
+          "hp": 0,
+          "playout": 9,
+          "seconds": 0.00255825,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 203,
+          "hp": 0,
+          "playout": 15,
+          "seconds": 0.003592292,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 191,
+          "hp": 0,
+          "playout": 35,
+          "seconds": 0.0069475,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 190,
+          "hp": 0,
+          "playout": 37,
+          "seconds": 0.007183,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 181,
+          "hp": 0,
+          "playout": 679,
+          "seconds": 0.10426975,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 160,
+          "hp": 0,
+          "playout": 708,
+          "seconds": 0.109028959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 144,
+          "hp": 0,
+          "playout": 1379,
+          "seconds": 0.211698125,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 137,
+          "hp": 0,
+          "playout": 3645,
+          "seconds": 0.545139209,
+          "turn": 10,
+          "won": false
+        },
+        {
+          "enemy_hp": 121,
+          "hp": 0,
+          "playout": 5289,
+          "seconds": 0.787140334,
+          "turn": 12,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 13732,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 259698,
+      "tree_nodes": 13649,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp16"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 40
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 2,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 40,
+        "final_digest": "aee6d9a9de29acadc5ef6f0dc5a5f2d4f5551db509a218adc3f48bac91555a00",
+        "turn": 10,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 15506,
+      "elapsed_seconds": 2.000893084,
+      "end_weight": 0.05,
+      "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 275,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.0001545,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 273,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000748125,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000824459,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 262,
+          "hp": 0,
+          "playout": 15,
+          "seconds": 0.002658667,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 205,
+          "hp": 0,
+          "playout": 18,
+          "seconds": 0.003112959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 203,
+          "hp": 0,
+          "playout": 35,
+          "seconds": 0.004558667,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 203,
+          "hp": 0,
+          "playout": 69,
+          "seconds": 0.008808375,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 146,
+          "hp": 0,
+          "playout": 101,
+          "seconds": 0.013304709,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 119,
+          "hp": 0,
+          "playout": 3094,
+          "seconds": 0.409933959,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 104,
+          "hp": 0,
+          "playout": 6952,
+          "seconds": 0.897444459,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 98,
+          "hp": 0,
+          "playout": 12858,
+          "seconds": 1.6561664999999999,
+          "turn": 12,
+          "won": false
+        },
+        {
+          "enemy_hp": 40,
+          "hp": 0,
+          "playout": 13322,
+          "seconds": 1.718239292,
+          "turn": 10,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 15506,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 327845,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp16"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 98,
+        "final_digest": "64bb2f8751a4513dd88016c42c047af50bf28543aaf2c29cd25e10ae096661b3",
+        "turn": 10,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 13714,
+      "elapsed_seconds": 2.000293041,
+      "end_weight": 0.05,
+      "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 275,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000150583,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 273,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000731041,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000806833,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 247,
+          "hp": 0,
+          "playout": 5,
+          "seconds": 0.001142833,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 209,
+          "hp": 0,
+          "playout": 14,
+          "seconds": 0.002198041,
+          "turn": 5,
+          "won": false
+        },
+        {
+          "enemy_hp": 175,
+          "hp": 0,
+          "playout": 16,
+          "seconds": 0.002570375,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 173,
+          "hp": 0,
+          "playout": 583,
+          "seconds": 0.088460416,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 134,
+          "hp": 0,
+          "playout": 935,
+          "seconds": 0.1365,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 98,
+          "hp": 0,
+          "playout": 3191,
+          "seconds": 0.467698416,
+          "turn": 10,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 13714,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 258944,
+      "tree_nodes": 13631,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp16"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 13
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 125,
+        "final_digest": "648ce4d873ccf18e14dadf782a82d92eeb4170abacf1da1a3e56f700fc8e63e8",
+        "turn": 9,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 14972,
+      "elapsed_seconds": 2.000452292,
+      "end_weight": 0.05,
+      "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000148875,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 249,
+          "hp": 0,
+          "playout": 21,
+          "seconds": 0.003209625,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 214,
+          "hp": 0,
+          "playout": 29,
+          "seconds": 0.004397125,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 209,
+          "hp": 0,
+          "playout": 74,
+          "seconds": 0.010396292,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 206,
+          "hp": 0,
+          "playout": 273,
+          "seconds": 0.037457042,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 205,
+          "hp": 0,
+          "playout": 293,
+          "seconds": 0.040221959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 191,
+          "hp": 0,
+          "playout": 345,
+          "seconds": 0.046784459,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 175,
+          "hp": 0,
+          "playout": 391,
+          "seconds": 0.05154725,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 174,
+          "hp": 0,
+          "playout": 1430,
+          "seconds": 0.185542959,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 171,
+          "hp": 0,
+          "playout": 1892,
+          "seconds": 0.247342125,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 125,
+          "hp": 0,
+          "playout": 2354,
+          "seconds": 0.30959025,
+          "turn": 9,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 14972,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 305675,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp8"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 9,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 144,
+        "final_digest": "8768102e6a3d8ee500080e03b41fc49d96d6c3719efc2eb7456695a42510d148",
+        "turn": 8,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 17632,
+      "elapsed_seconds": 2.000666167,
+      "end_weight": 0.05,
+      "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000154834,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 262,
+          "hp": 0,
+          "playout": 23,
+          "seconds": 0.00286925,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 220,
+          "hp": 0,
+          "playout": 34,
+          "seconds": 0.004331,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 200,
+          "hp": 0,
+          "playout": 93,
+          "seconds": 0.011204709,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 189,
+          "hp": 0,
+          "playout": 441,
+          "seconds": 0.051550459,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 163,
+          "hp": 0,
+          "playout": 816,
+          "seconds": 0.097804084,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 156,
+          "hp": 0,
+          "playout": 6574,
+          "seconds": 0.761665417,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 144,
+          "hp": 0,
+          "playout": 9380,
+          "seconds": 1.07145775,
+          "turn": 8,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 17632,
+      "seed": 1,
+      "status": "incomplete",
+      "transitions_including_replay": 284611,
+      "tree_nodes": 17515,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp8"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 114,
+        "final_digest": "a84fae4286ae9a0924248ead3e9c2f2d352f8d653ae12b058e8248afd7802687",
+        "turn": 8,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 16818,
+      "elapsed_seconds": 2.000563333,
+      "end_weight": 0.05,
+      "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000149542,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 9,
+          "seconds": 0.001608833,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 231,
+          "hp": 0,
+          "playout": 30,
+          "seconds": 0.0046035,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 230,
+          "hp": 0,
+          "playout": 224,
+          "seconds": 0.027505625,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 212,
+          "hp": 0,
+          "playout": 271,
+          "seconds": 0.03184575,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 211,
+          "hp": 0,
+          "playout": 280,
+          "seconds": 0.032365375,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 197,
+          "hp": 0,
+          "playout": 452,
+          "seconds": 0.054688958,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 189,
+          "hp": 0,
+          "playout": 713,
+          "seconds": 0.084047542,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 186,
+          "hp": 0,
+          "playout": 1782,
+          "seconds": 0.212109208,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 145,
+          "hp": 0,
+          "playout": 2314,
+          "seconds": 0.274212625,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 136,
+          "hp": 0,
+          "playout": 7949,
+          "seconds": 0.939076292,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 114,
+          "hp": 0,
+          "playout": 11504,
+          "seconds": 1.373214792,
+          "turn": 8,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 16818,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 343425,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp8"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 1,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 25,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 164,
+        "final_digest": "570e108163b1eef4c42444b105d56f7a2237e3404968cbc55db3cb0f1aee6e61",
+        "turn": 7,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 17493,
+      "elapsed_seconds": 2.000661292,
+      "end_weight": 0.05,
+      "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000140708,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 262,
+          "hp": 0,
+          "playout": 6,
+          "seconds": 0.001116875,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 231,
+          "hp": 0,
+          "playout": 125,
+          "seconds": 0.013922917,
+          "turn": 4,
+          "won": false
+        },
+        {
+          "enemy_hp": 206,
+          "hp": 0,
+          "playout": 179,
+          "seconds": 0.021980667,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 195,
+          "hp": 0,
+          "playout": 201,
+          "seconds": 0.024936667,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 164,
+          "hp": 0,
+          "playout": 302,
+          "seconds": 0.037674333,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 164,
+          "hp": 0,
+          "playout": 10918,
+          "seconds": 1.257705125,
+          "turn": 7,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 17493,
+      "seed": 2,
+      "status": "incomplete",
+      "transitions_including_replay": 282897,
+      "tree_nodes": 17377,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp8"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "play",
+            "uid": 2
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "uid": 41
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 21,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 38
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 11
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 14
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 39
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "end"
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 103,
+        "final_digest": "4c9bbb818621897a0b1f310d7b9cd5e19bcb34114e5c177eed35e6dbfdfa02be",
+        "turn": 13,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 15093,
+      "elapsed_seconds": 2.000518125,
+      "end_weight": 0.05,
+      "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 275,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000154625,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 273,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000754708,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000834125,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 262,
+          "hp": 0,
+          "playout": 15,
+          "seconds": 0.003052458,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 203,
+          "hp": 0,
+          "playout": 36,
+          "seconds": 0.004975291,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 186,
+          "hp": 0,
+          "playout": 184,
+          "seconds": 0.024015541,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 179,
+          "hp": 0,
+          "playout": 509,
+          "seconds": 0.069995041,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 173,
+          "hp": 0,
+          "playout": 1496,
+          "seconds": 0.1979085,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 171,
+          "hp": 0,
+          "playout": 2337,
+          "seconds": 0.310644541,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 156,
+          "hp": 0,
+          "playout": 2514,
+          "seconds": 0.334090083,
+          "turn": 8,
+          "won": false
+        },
+        {
+          "enemy_hp": 119,
+          "hp": 0,
+          "playout": 3193,
+          "seconds": 0.427111416,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 110,
+          "hp": 0,
+          "playout": 13232,
+          "seconds": 1.7489437909999999,
+          "turn": 11,
+          "won": false
+        },
+        {
+          "enemy_hp": 103,
+          "hp": 0,
+          "playout": 13382,
+          "seconds": 1.769995666,
+          "turn": 13,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "random",
+      "playouts": 15093,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 308273,
+      "tree_nodes": 1,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp8"
+    },
+    {
+      "best": {
+        "actions": [
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 0
+          },
+          {
+            "kind": "play",
+            "uid": 4
+          },
+          {
+            "kind": "potion",
+            "slot": 0
+          },
+          {
+            "kind": "play",
+            "uid": 5
+          },
+          {
+            "answer": {
+              "index": 0,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 3
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 9
+          },
+          {
+            "kind": "play",
+            "uid": 8
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 6
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "uid": 10
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "uid": 36
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 16
+          },
+          {
+            "kind": "play",
+            "uid": 17
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 21
+          },
+          {
+            "kind": "play",
+            "uid": 35
+          },
+          {
+            "kind": "play",
+            "uid": 20
+          },
+          {
+            "kind": "play",
+            "uid": 18
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 24
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 25
+          },
+          {
+            "kind": "play",
+            "uid": 32
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 15
+          },
+          {
+            "kind": "play",
+            "uid": 29
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 28
+          },
+          {
+            "answer": {
+              "index": 3,
+              "kind": "option_index"
+            },
+            "kind": "select"
+          },
+          {
+            "kind": "play",
+            "uid": 22
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 27
+          },
+          {
+            "kind": "play",
+            "uid": 1
+          },
+          {
+            "kind": "play",
+            "uid": 30
+          },
+          {
+            "kind": "play",
+            "uid": 26
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "uid": 23
+          },
+          {
+            "kind": "play",
+            "uid": 37
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 7
+          },
+          {
+            "kind": "end"
+          },
+          {
+            "kind": "play",
+            "target": 0,
+            "uid": 19
+          }
+        ],
+        "combat_hp": 0,
+        "enemy_hp": 133,
+        "final_digest": "f03dbbdf58a3eb1003e8dd76b4721c45e27d03f8948ba5bfff1f6ae1809e9a5e",
+        "turn": 9,
+        "won": false
+      },
+      "budget_seconds": 2.0,
+      "cutoffs": 0,
+      "deaths": 17623,
+      "elapsed_seconds": 2.000592584,
+      "end_weight": 0.05,
+      "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+      "exploration": 1.414,
+      "improvements": [
+        {
+          "enemy_hp": 275,
+          "hp": 0,
+          "playout": 1,
+          "seconds": 0.000154917,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 273,
+          "hp": 0,
+          "playout": 3,
+          "seconds": 0.000736292,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 267,
+          "hp": 0,
+          "playout": 4,
+          "seconds": 0.000812792,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 266,
+          "hp": 0,
+          "playout": 10,
+          "seconds": 0.001624,
+          "turn": 3,
+          "won": false
+        },
+        {
+          "enemy_hp": 245,
+          "hp": 0,
+          "playout": 31,
+          "seconds": 0.004528584,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 234,
+          "hp": 0,
+          "playout": 161,
+          "seconds": 0.021769042,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 230,
+          "hp": 0,
+          "playout": 189,
+          "seconds": 0.024522584,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 218,
+          "hp": 0,
+          "playout": 331,
+          "seconds": 0.043325875,
+          "turn": 6,
+          "won": false
+        },
+        {
+          "enemy_hp": 197,
+          "hp": 0,
+          "playout": 528,
+          "seconds": 0.068299209,
+          "turn": 7,
+          "won": false
+        },
+        {
+          "enemy_hp": 145,
+          "hp": 0,
+          "playout": 1558,
+          "seconds": 0.18213,
+          "turn": 9,
+          "won": false
+        },
+        {
+          "enemy_hp": 133,
+          "hp": 0,
+          "playout": 2653,
+          "seconds": 0.310299167,
+          "turn": 9,
+          "won": false
+        }
+      ],
+      "max_actions": 256,
+      "max_playouts": 18446744073709551615,
+      "max_tree_nodes": 250000,
+      "max_turns": 20,
+      "mode": "uct",
+      "playouts": 17623,
+      "seed": 3,
+      "status": "incomplete",
+      "transitions_including_replay": 284469,
+      "tree_nodes": 17507,
+      "win_visits": 0,
+      "fight_id": "synthetic-insatiable-hp8"
+    }
+  ]
+}

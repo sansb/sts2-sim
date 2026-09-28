@@ -1,0 +1,458 @@
+{
+ "POTION.AMBERGRIS": {
+  "class": "Ambergris",
+  "tooltip_eng": "Heal for [green]{HealPercent}%[/green] of your Max HP. If used in combat, take an extra turn.",
+  "vars": {
+   "HealPercent": 50
+  }
+ },
+ "POTION.ASHWATER": {
+  "class": "Ashwater",
+  "tooltip_eng": "[gold]Exhaust[/gold] any number of cards in your [gold]Hand[/gold].",
+  "vars": {}
+ },
+ "POTION.ATTACK_POTION": {
+  "class": "AttackPotion",
+  "tooltip_eng": "Choose [blue]1[/blue] of [blue]3[/blue] random Attack cards to add into your [gold]Hand[/gold]. It's free to play this turn.",
+  "vars": {}
+ },
+ "POTION.BEETLE_JUICE": {
+  "class": "BeetleJuice",
+  "tooltip_eng": "Enemy's attacks deal [blue]{DamageDecrease}%[/blue] less damage {Repeat:plural:next turn|for the next [blue]{}[/blue] turns}.",
+  "vars": {
+   "DamageDecrease": 30,
+   "Repeat": 4
+  }
+ },
+ "POTION.BLESSING_OF_THE_FORGE": {
+  "class": "BlessingOfTheForge",
+  "tooltip_eng": "[gold]Upgrade[/gold] all cards in your [gold]Hand[/gold] for the rest of combat.",
+  "vars": {}
+ },
+ "POTION.BLOCK_POTION": {
+  "class": "BlockPotion",
+  "tooltip_eng": "Gain [blue]{Block}[/blue] [gold]Block[/gold].",
+  "var_props": {
+   "Block": [
+    4
+   ]
+  },
+  "vars": {
+   "Block": 12
+  }
+ },
+ "POTION.BLOOD_POTION": {
+  "class": "BloodPotion",
+  "tooltip_eng": "Heal for [green]{HealPercent}%[/green] of your Max HP.",
+  "vars": {
+   "HealPercent": 20
+  }
+ },
+ "POTION.BONE_BREW": {
+  "class": "BoneBrew",
+  "tooltip_eng": "[gold]Summon[/gold] [blue]{Summon}[/blue].",
+  "vars": {
+   "Summon": 15
+  }
+ },
+ "POTION.BOTTLED_POTENTIAL": {
+  "class": "BottledPotential",
+  "tooltip_eng": "Shuffle ALL your cards into your [gold]Draw Pile[/gold]. Draw [blue]{Cards}[/blue] {Cards:plural:card|cards}.",
+  "vars": {
+   "Cards": 5
+  }
+ },
+ "POTION.CLARITY": {
+  "class": "Clarity",
+  "tooltip_eng": "Draw [blue]{Cards}[/blue] {Cards:plural:card|cards}. At the start of your next {ClarityPower:plural:turn|[blue]{}[/blue] turns}, draw [blue]1[/blue] additional card.",
+  "vars": {
+   "Cards": 1,
+   "ClarityPower": 3
+  }
+ },
+ "POTION.COLORLESS_POTION": {
+  "class": "ColorlessPotion",
+  "tooltip_eng": "Choose [blue]1[/blue] of [blue]3[/blue] random Colorless cards to add into your [gold]Hand[/gold]. It's free to play this turn.",
+  "vars": {}
+ },
+ "POTION.COSMIC_CONCOCTION": {
+  "class": "CosmicConcoction",
+  "tooltip_eng": "Add [blue]{Cards}[/blue] [gold]Upgraded[/gold] Colorless {Cards:plural:card|cards} into your [gold]Hand[/gold].",
+  "vars": {
+   "Cards": 3
+  }
+ },
+ "POTION.CUNNING_POTION": {
+  "class": "CunningPotion",
+  "tooltip_eng": "Add [blue]{Cards}[/blue] [gold]Upgraded {Cards:plural:Shiv|Shivs}[/gold] into your [gold]Hand[/gold].",
+  "vars": {
+   "Cards": 3
+  }
+ },
+ "POTION.CURE_ALL": {
+  "class": "CureAll",
+  "tooltip_eng": "Gain {Energy:energyIcons()}. Draw [blue]{Cards}[/blue] {Cards:plural:card|cards}.",
+  "vars": {
+   "Cards": 2,
+   "Energy": 1
+  }
+ },
+ "POTION.DEPRECATED_POTION": {
+  "class": "DeprecatedPotion",
+  "tooltip_eng": "This potion has been removed from the game.",
+  "vars": {}
+ },
+ "POTION.DEXTERITY_POTION": {
+  "class": "DexterityPotion",
+  "tooltip_eng": "Gain [blue]{DexterityPower}[/blue] [gold]Dexterity[/gold].",
+  "vars": {
+   "DexterityPower": 2
+  }
+ },
+ "POTION.DISTILLED_CHAOS": {
+  "class": "DistilledChaos",
+  "tooltip_eng": "Play the top [blue]{Repeat}[/blue] cards of your [gold]Draw Pile[/gold].",
+  "vars": {
+   "Repeat": 3
+  }
+ },
+ "POTION.DROPLET_OF_PRECOGNITION": {
+  "class": "DropletOfPrecognition",
+  "tooltip_eng": "Choose a card in your [gold]Draw Pile[/gold] and add it into your [gold]Hand[/gold].",
+  "vars": {}
+ },
+ "POTION.DUPLICATOR": {
+  "class": "Duplicator",
+  "tooltip_eng": "This turn, your next card is played an extra time.",
+  "vars": {}
+ },
+ "POTION.ENERGY_POTION": {
+  "class": "EnergyPotion",
+  "tooltip_eng": "Gain {Energy:energyIcons()}.",
+  "vars": {
+   "Energy": 2
+  }
+ },
+ "POTION.ENTROPIC_BREW": {
+  "class": "EntropicBrew",
+  "tooltip_eng": "Fill all your empty potion slots with random potions.",
+  "vars": {}
+ },
+ "POTION.ESSENCE_OF_DARKNESS": {
+  "class": "EssenceOfDarkness",
+  "tooltip_eng": "[gold]Channel[/gold] a [gold]Dark[/gold] for each of your [gold]Orb Slots[/gold].",
+  "vars": {}
+ },
+ "POTION.EXPLOSIVE_AMPOULE": {
+  "class": "ExplosiveAmpoule",
+  "tooltip_eng": "Deal [blue]{Damage}[/blue] damage to ALL enemies.",
+  "var_props": {
+   "Damage": [
+    4
+   ]
+  },
+  "vars": {
+   "Damage": 10
+  }
+ },
+ "POTION.FAIRY_IN_A_BOTTLE": {
+  "class": "FairyInABottle",
+  "tooltip_eng": "When your HP would be reduced to [blue]0[/blue], instead this potion is discarded and you heal to [blue]30%[/blue] of your Max HP.",
+  "vars": {}
+ },
+ "POTION.FIRE_POTION": {
+  "class": "FirePotion",
+  "tooltip_eng": "Deal [blue]{Damage}[/blue] damage.",
+  "var_props": {
+   "Damage": [
+    4
+   ]
+  },
+  "vars": {
+   "Damage": 20
+  }
+ },
+ "POTION.FLEX_POTION": {
+  "class": "FlexPotion",
+  "tooltip_eng": "Gain [blue]{StrengthPower}[/blue] [gold]Strength[/gold]. At the end of your turn, lose [blue]{StrengthPower}[/blue] [gold]Strength[/gold].",
+  "vars": {
+   "StrengthPower": 5
+  }
+ },
+ "POTION.FOCUS_POTION": {
+  "class": "FocusPotion",
+  "tooltip_eng": "Gain [blue]{FocusPower}[/blue] [gold]Focus[/gold].",
+  "vars": {
+   "FocusPower": 2
+  }
+ },
+ "POTION.FORTIFIER": {
+  "class": "Fortifier",
+  "tooltip_eng": "Triple your [gold]Block[/gold].",
+  "vars": {}
+ },
+ "POTION.FOUL_POTION": {
+  "class": "FoulPotion",
+  "tooltip_eng": "Deal [blue]{Damage}[/blue] damage to ALL players and enemies.\nCan be thrown at the [gold]Merchant[/gold] for [blue]{Gold}[/blue] [gold]Gold[/gold] instead.",
+  "var_props": {
+   "Damage": [
+    4
+   ]
+  },
+  "vars": {
+   "Damage": 12,
+   "Gold": 100
+  }
+ },
+ "POTION.FRUIT_JUICE": {
+  "class": "FruitJuice",
+  "tooltip_eng": "Gain [blue]{MaxHp}[/blue] Max HP.",
+  "vars": {
+   "MaxHp": 5
+  }
+ },
+ "POTION.FYSH_OIL": {
+  "class": "FyshOil",
+  "tooltip_eng": "Gain [blue]{StrengthPower}[/blue] [gold]Strength[/gold] and [blue]{DexterityPower}[/blue] [gold]Dexterity[/gold].",
+  "vars": {
+   "DexterityPower": 1,
+   "StrengthPower": 1
+  }
+ },
+ "POTION.GAMBLERS_BREW": {
+  "class": "GamblersBrew",
+  "tooltip_eng": "Discard any number of cards, then draw that many.",
+  "vars": {}
+ },
+ "POTION.GHOST_IN_A_JAR": {
+  "class": "GhostInAJar",
+  "tooltip_eng": "Gain [blue]1[/blue] [gold]Intangible[/gold].",
+  "vars": {
+   "IntangiblePower": 1
+  }
+ },
+ "POTION.GIGANTIFICATION_POTION": {
+  "class": "GigantificationPotion",
+  "tooltip_eng": "The next Attack you play deals triple damage.",
+  "vars": {
+   "GigantificationPower": 1
+  }
+ },
+ "POTION.GLOWWATER_POTION": {
+  "class": "GlowwaterPotion",
+  "tooltip_eng": "[gold]Exhaust[/gold] your [gold]Hand[/gold]. Draw [blue]{Cards}[/blue] cards.",
+  "vars": {
+   "Cards": 10
+  }
+ },
+ "POTION.HEART_OF_IRON": {
+  "class": "HeartOfIron",
+  "tooltip_eng": "Gain [blue]{PlatingPower}[/blue] [gold]Plating[/gold].",
+  "vars": {
+   "PlatingPower": 7
+  }
+ },
+ "POTION.KINGS_COURAGE": {
+  "class": "KingsCourage",
+  "tooltip_eng": "[gold]Forge[/gold] [blue]{Forge}[/blue].",
+  "vars": {
+   "Forge": 15
+  }
+ },
+ "POTION.LIQUID_BRONZE": {
+  "class": "LiquidBronze",
+  "tooltip_eng": "Gain [blue]{ThornsPower}[/blue] [gold]Thorns[/gold].",
+  "vars": {
+   "ThornsPower": 3
+  }
+ },
+ "POTION.LIQUID_MEMORIES": {
+  "class": "LiquidMemories",
+  "tooltip_eng": "Put a card from your [gold]Discard Pile[/gold] into your [gold]Hand[/gold]. It's free to play this turn.",
+  "vars": {}
+ },
+ "POTION.LUCKY_TONIC": {
+  "class": "LuckyTonic",
+  "tooltip_eng": "Gain [blue]{BufferPower}[/blue] [gold]Buffer[/gold].",
+  "vars": {
+   "BufferPower": 1
+  }
+ },
+ "POTION.MAZALETHS_GIFT": {
+  "class": "MazalethsGift",
+  "tooltip_eng": "Gain [blue]{RitualPower}[/blue] [gold]Ritual[/gold].",
+  "vars": {
+   "RitualPower": 1
+  }
+ },
+ "POTION.OROBIC_ACID": {
+  "class": "OrobicAcid",
+  "tooltip_eng": "Add a random Attack, Skill, and Power into your [gold]Hand[/gold]. They're free to play this turn.",
+  "vars": {}
+ },
+ "POTION.POISON_POTION": {
+  "class": "PoisonPotion",
+  "tooltip_eng": "Apply [blue]{PoisonPower}[/blue] [gold]Poison[/gold].",
+  "vars": {
+   "PoisonPower": 6
+  }
+ },
+ "POTION.POTION_OF_BINDING": {
+  "class": "PotionOfBinding",
+  "tooltip_eng": "Apply [blue]{WeakPower:diff()}[/blue] [gold]Weak[/gold] and [blue]{VulnerablePower:diff()}[/blue] [gold]Vulnerable[/gold] to ALL enemies.",
+  "vars": {
+   "VulnerablePower": 1,
+   "WeakPower": 1
+  }
+ },
+ "POTION.POTION_OF_CAPACITY": {
+  "class": "PotionOfCapacity",
+  "tooltip_eng": "Gain [blue]{Repeat}[/blue] [gold]Orb {Repeat:plural:Slot|Slots}[/gold].",
+  "vars": {
+   "Repeat": 2
+  }
+ },
+ "POTION.POTION_OF_DOOM": {
+  "class": "PotionOfDoom",
+  "tooltip_eng": "Apply [blue]{DoomPower}[/blue] [gold]Doom[/gold].",
+  "vars": {
+   "DoomPower": 33
+  }
+ },
+ "POTION.POTION_SHAPED_ROCK": {
+  "class": "PotionShapedRock",
+  "tooltip_eng": "Deal [blue]{Damage}[/blue] damage.",
+  "var_props": {
+   "Damage": [
+    4
+   ]
+  },
+  "vars": {
+   "Damage": 15
+  }
+ },
+ "POTION.POT_OF_GHOULS": {
+  "class": "PotOfGhouls",
+  "tooltip_eng": "Add [blue]{Cards}[/blue] [gold]{Cards:plural:Soul|Souls}[/gold] into your [gold]Hand[/gold].",
+  "vars": {
+   "Cards": 2
+  }
+ },
+ "POTION.POWDERED_DEMISE": {
+  "class": "PowderedDemise",
+  "tooltip_eng": "Enemy loses [blue]{Demise}[/blue] HP at the end of each of its turns.",
+  "vars": {
+   "Demise": 9
+  }
+ },
+ "POTION.POWER_POTION": {
+  "class": "PowerPotion",
+  "tooltip_eng": "Choose [blue]1[/blue] of [blue]3[/blue] random Power cards to add into your [gold]Hand[/gold]. It's free to play this turn.",
+  "vars": {}
+ },
+ "POTION.RADIANT_TINCTURE": {
+  "class": "RadiantTincture",
+  "tooltip_eng": "Gain {Energy:energyIcons()}. Gain an additional {energyPrefix:energyIcons(1)} at the start of your next [blue]{RadiancePower}[/blue] {RadiancePower:plural:turn|turns}.",
+  "vars": {
+   "Energy": 1,
+   "RadiancePower": 3
+  }
+ },
+ "POTION.REGEN_POTION": {
+  "class": "RegenPotion",
+  "tooltip_eng": "Gain [green]{RegenPower}[/green] [gold]Regen[/gold].",
+  "vars": {
+   "RegenPower": 5
+  }
+ },
+ "POTION.SHACKLING_POTION": {
+  "class": "ShacklingPotion",
+  "tooltip_eng": "ALL enemies lose [blue]{StrengthPower}[/blue] [gold]Strength[/gold] this turn.",
+  "vars": {
+   "StrengthPower": 7
+  }
+ },
+ "POTION.SHIP_IN_A_BOTTLE": {
+  "class": "ShipInABottle",
+  "tooltip_eng": "Gain [blue]{Block:diff()}[/blue] [gold]Block[/gold]. Next turn, gain [blue]{Block:diff()}[/blue] [gold]Block[/gold].",
+  "var_props": {
+   "Block": [
+    4
+   ]
+  },
+  "vars": {
+   "Block": 10
+  }
+ },
+ "POTION.SKILL_POTION": {
+  "class": "SkillPotion",
+  "tooltip_eng": "Choose [blue]1[/blue] of [blue]3[/blue] random Skill cards to add into your [gold]Hand[/gold]. It's free to play this turn.",
+  "vars": {}
+ },
+ "POTION.SNECKO_OIL": {
+  "class": "SneckoOil",
+  "tooltip_eng": "Draw [blue]{Cards}[/blue] cards. Randomize the cost of cards in your [gold]Hand[/gold] this turn.",
+  "vars": {
+   "Cards": 7
+  }
+ },
+ "POTION.SOLDIERS_STEW": {
+  "class": "SoldiersStew",
+  "tooltip_eng": "All cards containing [gold]Strike[/gold] gain [blue]1[/blue] [gold]Replay[/gold] this combat.",
+  "vars": {}
+ },
+ "POTION.SPEED_POTION": {
+  "class": "SpeedPotion",
+  "tooltip_eng": "Gain [blue]{DexterityPower}[/blue] [gold]Dexterity[/gold]. At the end of your turn, lose [blue]{DexterityPower}[/blue] [gold]Dexterity[/gold].",
+  "vars": {
+   "DexterityPower": 5
+  }
+ },
+ "POTION.STABLE_SERUM": {
+  "class": "StableSerum",
+  "tooltip_eng": "[gold]Retain[/gold] your [gold]Hand[/gold] for [blue]{Repeat}[/blue] {Repeat:plural:turn|turns}.",
+  "vars": {
+   "Repeat": 2
+  }
+ },
+ "POTION.STAR_POTION": {
+  "class": "StarPotion",
+  "tooltip_eng": "Gain {Stars:starIcons()}.",
+  "vars": {
+   "Stars": 3
+  }
+ },
+ "POTION.STRENGTH_POTION": {
+  "class": "StrengthPotion",
+  "tooltip_eng": "Gain [blue]{StrengthPower}[/blue] [gold]Strength[/gold].",
+  "vars": {
+   "StrengthPower": 2
+  }
+ },
+ "POTION.SWIFT_POTION": {
+  "class": "SwiftPotion",
+  "tooltip_eng": "Draw [blue]{Cards}[/blue] {Cards:plural:card|cards}.",
+  "vars": {
+   "Cards": 3
+  }
+ },
+ "POTION.TOUCH_OF_INSANITY": {
+  "class": "TouchOfInsanity",
+  "tooltip_eng": "Choose a card in your [gold]Hand[/gold]. It is free to play this combat.",
+  "vars": {}
+ },
+ "POTION.VULNERABLE_POTION": {
+  "class": "VulnerablePotion",
+  "tooltip_eng": "Apply [blue]{VulnerablePower}[/blue] [gold]Vulnerable[/gold].",
+  "vars": {
+   "VulnerablePower": 3
+  }
+ },
+ "POTION.WEAK_POTION": {
+  "class": "WeakPotion",
+  "tooltip_eng": "Apply [blue]{WeakPower}[/blue] [gold]Weak[/gold].",
+  "vars": {
+   "WeakPower": 3
+  }
+ }
+}

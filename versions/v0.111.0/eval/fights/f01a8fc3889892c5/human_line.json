@@ -1,0 +1,93 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "aaa729fe8f923fb551654fc3488b16f02c8f53782fea88104eb527da64f25747",
+ "turns": 5,
+ "actions": [
+  {
+   "kind": "potion",
+   "slot": 2
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 1,
+   "target": 2
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "potion",
+   "slot": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 14
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 3
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 15
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 0
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 16
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 1
+  }
+ ],
+ "step_digests": [
+  "4e8950545ae8047537d4433049d3faeaaf389cfaf1875a6a9aeffc8167a081d7",
+  "265296fdfa3958ce63bd2f390404f0a7f97f109843e2c2e158404238285d3760",
+  "4dc8a28da05cd741e923087428c947277121ddc18d7c74a6462dd4dfcc541fb3",
+  "95c7bb02cef1f0caea5b4d8aed37d1193ddb559640e40e74d69035ce5f2360da",
+  "9280d83f9fb7bfe4ffa4b66e475dcac5af82b1a26332c03ba4c3129f2f459342",
+  "a3ca80ca23db721342269b4c2ff5b367393d95966fa3e39f25ff17d3b4b8df5e",
+  "709fc60542f38be2e0244b99801874dbf429192e4956981748210599fe7a298c",
+  "5c31b472d428e4e332a61af1a2dff8406308209b197eabc92e5e5695eeae87a7",
+  "e254bd25788d303d98ace3b1428ada81479dc78d73a4f43d02ca6f0a67222f97",
+  "9f0c9f5d2a4d9022f30d2613a79cde736a0f90a0d06fde96350e793806f76060",
+  "34d3eb63c7e69a26edf5e2897b8552670b137273cf9467c5dca5814e67199610",
+  "2aec55787e51ce8b42f462f02332e5ca95c5e96a34328c759fb70d31739ef26f",
+  "920037b29cea6f826debcd1b6770ce57b21ae3858094051adecaf968d13d6e28",
+  "52028afd7eebe58b435f8f396f6590a6f51887165de91e35ae2a93406b3ced66",
+  "d924fd2388aab146ad092e666c69fe4a04f075b50acff2605055f1937b9f590b"
+ ],
+ "terminal": {
+  "hp": 40,
+  "turn": 5,
+  "over": true,
+  "won": true
+ }
+}

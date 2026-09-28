@@ -1,0 +1,32 @@
+[
+  {
+    "report": "pilot-v1-results.json",
+    "witnesses_replayed": 48,
+    "wins": 48,
+    "refused_or_failed": 0
+  },
+  {
+    "report": "mining-v1-results.json",
+    "witnesses_replayed": 167,
+    "wins": 165,
+    "refused_or_failed": 8
+  },
+  {
+    "report": "challenge-v1-results.json",
+    "witnesses_replayed": 12,
+    "wins": 4,
+    "refused_or_failed": 0
+  },
+  {
+    "report": "pilot-v1-equal-playouts.json",
+    "witnesses_replayed": 48,
+    "wins": 46,
+    "refused_or_failed": 0
+  },
+  {
+    "report": "stress-v1-results.json",
+    "witnesses_replayed": 18,
+    "wins": 5,
+    "refused_or_failed": 0
+  }
+]

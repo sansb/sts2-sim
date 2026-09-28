@@ -1,0 +1,29 @@
+{
+  "schema": "sts-solver-pipeline-revisions/v1",
+  "authority": "The declared compatibility of every change to the SHARED review pipeline -- search, the estimator, the parser envelope, and producer correctness (#1267, solver/SIM_VERSIONING.md). Cross-build by construction: the pipeline is not frozen per game build, so a correctness defect it publishes is published under every build. `current` is stamped into every review document as `metadata.simulator.pipeline_revision`. Adding a revision is a reviewed act: the compatibility class must be argued in the PR body, not inferred by a reader afterwards.",
+  "classes": {
+    "equivalent": "output is provably unchanged -- a refactor, a rename, a test-only change. Documents stay true.",
+    "quality_only": "the answer may get better or the search may look harder, but no earlier document stated something false. Documents stay true; regeneration is an improvement, not a repair.",
+    "correctness_invalidating": "an earlier document may state something false -- an unsound prune, an incomplete legal-action expansion, a bad memo key, a wrong terminal comparison, a producer that mislabelled a claim. Every revision below this one is revoked across every build."
+  },
+  "revoked_note": "Revocation is per revision and terminal, for auditability (SIM_VERSIONING.md lifecycle). A corrected successor is a new revision; entries are never edited in place.",
+  "current": 2,
+  "revisions": [
+    {
+      "revision": 1,
+      "declared": "2026-08-18",
+      "issue": 1267,
+      "compatibility": "correctness_invalidating",
+      "summary": "Simulator identity enters the review document.",
+      "detail": "Every document produced before this revision records no simulator identity at all: its only producer fields were the schema version, the worker's generator configuration, and the run's own game build under the misleading name `metadata.solver_build`. Such a document cannot be shown to have been produced by any particular simulator, so it cannot be shown to be true -- and the #1258 defect means some of them are reviews of older runs under current combat semantics, which is the specific false claim this whole line of work exists to stop. They are revoked as a population rather than triaged. #1268 purges them."
+    },
+    {
+      "revision": 2,
+      "declared": "2026-09-17",
+      "issue": 2558,
+      "compatibility": "quality_only",
+      "summary": "Snapshot-backed Rust UCT/random search and Rust-replayed review witnesses.",
+      "detail": "Captured start snapshots independently supply roots, and chronological replay captures select the latest recorded attempt after retries. Bounded Rust search publishes achieved combat-HP witnesses with explicit potion usage and pending in-game verification. Existing refusals and achieved lines remain true; this expands coverage and changes search quality without claiming prior results were false."
+    }
+  ]
+}

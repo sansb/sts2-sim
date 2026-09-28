@@ -1,0 +1,96 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "a7ac19476edf678f55f5431b56ae272ae82f879438c53a4fc7959a9a381f79ca",
+ "turns": 4,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 2,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 0,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "play",
+   "uid": 8
+  },
+  {
+   "kind": "play",
+   "uid": 6
+  },
+  {
+   "kind": "play",
+   "uid": 5,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 14,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 2
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 0,
+   "target": 3
+  },
+  {
+   "kind": "play",
+   "uid": 16,
+   "target": 4
+  }
+ ],
+ "step_digests": [
+  "c268944b2fc4096ad43db547c748312e740bc172ac41add7637e3f8c6dd0b959",
+  "2a7063e7c53db3e1ed50a1db59684087d3f5dadd87c5f89f95ecbf6ecb5dc44d",
+  "d0eb14a8211a4aa5e50f777059f86417a9915d40a6e4e13f12dcd2553fd53c01",
+  "9b2327a60c13e7caa6908bd4c2e0d66351f9602be05bc69583ad9d3d43e19745",
+  "698b30824e33be7a55bf451ce13b48891302797a1dbe686088b3f7288d8eee19",
+  "117c0b9ccf8f6ddd8b18531c179b8086bef4f78b1dade70c5db3c1311eaf4b14",
+  "84c5907c97ba29411d507e2c62cbf343ce8ad4d2e968b552e4ab2944764177f9",
+  "dfff22d895c72614905f4465fe8d1a0757f4032a1a3c3b405d974ea419d6814c",
+  "5f8255ba6a4ae4ed204c931e6531b5bcf4420f3da66c3e35ad9e38cfef652255",
+  "4889127cfbcd387b07a417dab24a0b2bccfa2b41da5b7fff8a8542c5608951ad",
+  "aa34994f67fca6b98fd951849adc240aa8041981365c91c3dad7c1a146c17370",
+  "dfa04549a2859e900cd812de0427a19f042420fbe31f4afab81043221a902679",
+  "36bce53f6bc4adea5a56eb1e20c82c57ecc9cbbb41f2f76f0f4d70a49dd82cad",
+  "8a9336fa2fe540eba092e4d21d3d8c168a1a4d9ba24829209706ff12c31da659",
+  "80964202110f8dc51ef252639ab4c6805f9f4230a93058cc886b718d736903d4"
+ ],
+ "terminal": {
+  "hp": 72,
+  "turn": 4,
+  "over": true,
+  "won": true
+ }
+}

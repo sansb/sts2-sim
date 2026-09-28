@@ -1,0 +1,52 @@
+[
+  {
+    "kind": "select",
+    "answer": {
+      "kind": "option_index",
+      "index": 2
+    }
+  },
+  {
+    "kind": "play",
+    "uid": 1
+  },
+  {
+    "kind": "play",
+    "uid": 5,
+    "target": 0
+  },
+  {
+    "kind": "play",
+    "uid": 6
+  },
+  {
+    "kind": "play",
+    "uid": 40
+  },
+  {
+    "kind": "play",
+    "uid": 4,
+    "target": 0
+  },
+  {
+    "kind": "potion",
+    "slot": 0
+  },
+  {
+    "kind": "select",
+    "answer": {
+      "kind": "option_index",
+      "index": 0
+    }
+  },
+  {
+    "kind": "end"
+  },
+  {
+    "kind": "select",
+    "answer": {
+      "kind": "option_index",
+      "index": 0
+    }
+  }
+]

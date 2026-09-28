@@ -1,0 +1,1190 @@
+{
+  "artifact_hashes": {
+    "bench_source_sha256": "bba6509643e490beff6ac58c55a13fca0a6d04eedc51cb9b82921fb1246b37cc",
+    "fixture_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+    "perf_floor_tool_sha256": "4e82a1f5e3bcd6e2353d5e5c91aefb7e4a485de6707d88bd67bcffc1fdbbd8ce"
+  },
+  "binary_hashes": {
+    "allocation_counting_sha256": "664779b376af00924dc64ef7918b56a47b9887659428b1f85553c83b468c9018",
+    "release_sha256": "f676ad261fa3e085a948e70cc1d9a4570975388971a4c3ee99460eb171a6f61a"
+  },
+  "build_commands": {
+    "allocation_counting": [
+      "cargo",
+      "build",
+      "--release",
+      "--locked",
+      "--manifest-path",
+      "/private/tmp/wt-roll/versions/v0.111.0/rust/Cargo.toml",
+      "--features",
+      "allocation-counting"
+    ],
+    "release": [
+      "cargo",
+      "build",
+      "--release",
+      "--locked",
+      "--manifest-path",
+      "/private/tmp/wt-roll/versions/v0.111.0/rust/Cargo.toml"
+    ]
+  },
+  "cargo_test_allocation_pin_ceiling": 12,
+  "caveats": [
+    "Measured on the shared developer/runner Mac. CI measurements hold the host-wide exclusive workload lock; manual invocations must provide their own quiet-host discipline.",
+    "Load averages are recorded honestly at both ends of the run; a baseline taken under heavy load understates the machine and therefore sets a conservative floor.",
+    "The allocation and RSS pass uses the allocation-counting build, which is slower than the timed build by design; its throughput number is not comparable to the timed passes.",
+    "The workload is a seeded uniform-random policy over one canonical fixture, not a search and not a real eval fight (#1283)."
+  ],
+  "environment": {
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30) (Homebrew)",
+    "cpu": "Apple M5 Max",
+    "hostname": "MacBook-Pro.local",
+    "logical_cpus": 18,
+    "machine": "arm64",
+    "memory_bytes": "68719476736",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.6",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14) (Homebrew)"
+  },
+  "git": {
+    "dirty": false,
+    "dirty_paths": [],
+    "head_sha": "2b1c45b03c98a808aabc9898a5a10798134ce646"
+  },
+  "instrumented": {
+    "ironclad_toadpoles_uniform_v1": {
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/wt-roll/versions/v0.111.0/rust/target/release/sts-sim",
+        "bench",
+        "--workload",
+        "ironclad_toadpoles_uniform_v1"
+      ],
+      "identity": {
+        "checksum": "5d4f992689b53874",
+        "config": {
+          "actions": 64,
+          "seed": 6004515678751904326,
+          "trajectories": 240000,
+          "warmup": 2000
+        },
+        "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+        "transitions": 4078800
+      },
+      "peak_rss_bytes": 3375104,
+      "run": {
+        "allocation": {
+          "allocated_bytes": 3496939834,
+          "allocated_bytes_per_transition": 857.3452569383152,
+          "allocations": 70461492,
+          "allocations_per_transition": 17.275054427772876,
+          "instrumented": true
+        },
+        "config": {
+          "actions": 64,
+          "seed": 6004515678751904326,
+          "trajectories": 240000,
+          "warmup": 2000
+        },
+        "crate_version": "0.1.0",
+        "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+        "schema": "sts-sim-bench/v1",
+        "timing": {
+          "complete_playouts_per_second": 86637.55847337584,
+          "nanos_per_transition": 679.1608232813572,
+          "transitions_per_second": 1472405.3062550225,
+          "wall_nanos": 2770161166,
+          "wall_seconds": 2.770161166
+        },
+        "work": {
+          "checksum": "5d4f992689b53874",
+          "legal_action_enumerations": 4078800,
+          "legal_actions_seen": 14332026,
+          "mean_branching_factor": 3.513784936746102,
+          "stops": {
+            "budget": 0,
+            "no_legal_actions": 0,
+            "refused": 0,
+            "terminal": 240000
+          },
+          "transitions": 4078800
+        },
+        "workload": "ironclad_toadpoles_uniform_v1"
+      }
+    }
+  },
+  "load_average_end": [
+    2.82421875,
+    4.298828125,
+    5.412109375
+  ],
+  "load_average_start": [
+    3.0322265625,
+    4.6767578125,
+    5.6259765625
+  ],
+  "overrides": {},
+  "recorded_utc": "2026-08-26T22:52:07.515511+00:00",
+  "repeat": 25,
+  "schema": "sts-sim-perf-floor-evidence/v1",
+  "timed": {
+    "ironclad_toadpoles_uniform_v1": {
+      "best_transitions_per_second": 1617080.735529355,
+      "command": [
+        "/private/tmp/wt-roll/versions/v0.111.0/rust/target/release/sts-sim",
+        "bench",
+        "--workload",
+        "ironclad_toadpoles_uniform_v1"
+      ],
+      "identity": {
+        "checksum": "5d4f992689b53874",
+        "config": {
+          "actions": 64,
+          "seed": 6004515678751904326,
+          "trajectories": 240000,
+          "warmup": 2000
+        },
+        "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+        "transitions": 4078800
+      },
+      "median_transitions_per_second": 1588755.2369731092,
+      "relative_spread": 0.06346501542718892,
+      "reports": [
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 92881.02573123614,
+            "nanos_per_transition": 633.5075983132294,
+            "transitions_per_second": 1578513.0323023582,
+            "wall_nanos": 2583950792,
+            "wall_seconds": 2.583950792
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 94029.51588540949,
+            "nanos_per_transition": 625.7698445621261,
+            "transitions_per_second": 1598031.6224725344,
+            "wall_nanos": 2552390042,
+            "wall_seconds": 2.552390042
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93298.7976845179,
+            "nanos_per_transition": 630.6708875159361,
+            "transitions_per_second": 1585613.0666483818,
+            "wall_nanos": 2572380416,
+            "wall_seconds": 2.572380416
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 92396.80785614085,
+            "nanos_per_transition": 636.8275799254683,
+            "transitions_per_second": 1570283.7495151137,
+            "wall_nanos": 2597492333,
+            "wall_seconds": 2.597492333
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 92559.44806125437,
+            "nanos_per_transition": 635.708582671374,
+            "transitions_per_second": 1573047.8198010179,
+            "wall_nanos": 2592928167,
+            "wall_seconds": 2.592928167
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 94382.09120646339,
+            "nanos_per_transition": 623.4322082475238,
+            "transitions_per_second": 1604023.6400538452,
+            "wall_nanos": 2542855291,
+            "wall_seconds": 2.542855291
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93483.68561183343,
+            "nanos_per_transition": 629.4235743355889,
+            "transitions_per_second": 1588755.2369731092,
+            "wall_nanos": 2567292875,
+            "wall_seconds": 2.567292875
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93781.48794051069,
+            "nanos_per_transition": 627.4248450524664,
+            "transitions_per_second": 1593816.3875489791,
+            "wall_nanos": 2559140458,
+            "wall_seconds": 2.559140458
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93791.4046918857,
+            "nanos_per_transition": 627.3585061782877,
+            "transitions_per_second": 1593984.9227385975,
+            "wall_nanos": 2558869875,
+            "wall_seconds": 2.558869875
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 94820.22154344937,
+            "nanos_per_transition": 620.5515509463568,
+            "transitions_per_second": 1611469.665130922,
+            "wall_nanos": 2531105666,
+            "wall_seconds": 2.531105666
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 92934.8176366618,
+            "nanos_per_transition": 633.1409157105031,
+            "transitions_per_second": 1579427.2257350674,
+            "wall_nanos": 2582455167,
+            "wall_seconds": 2.582455167
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93746.27852907986,
+            "nanos_per_transition": 627.6604945081887,
+            "transitions_per_second": 1593218.0036017124,
+            "wall_nanos": 2560101625,
+            "wall_seconds": 2.560101625
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 91437.14764085576,
+            "nanos_per_transition": 643.5112758654507,
+            "transitions_per_second": 1553974.3241563437,
+            "wall_nanos": 2624753792,
+            "wall_seconds": 2.624753792
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93645.12631092261,
+            "nanos_per_transition": 628.3384716092969,
+            "transitions_per_second": 1591498.9216541299,
+            "wall_nanos": 2562866958,
+            "wall_seconds": 2.562866958
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 89111.66117693289,
+            "nanos_per_transition": 660.3045523193096,
+            "transitions_per_second": 1514452.6817019745,
+            "wall_nanos": 2693250208,
+            "wall_seconds": 2.693250208
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93362.3577764377,
+            "nanos_per_transition": 630.2415335392762,
+            "transitions_per_second": 1586693.2704105587,
+            "wall_nanos": 2570629167,
+            "wall_seconds": 2.570629167
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 94504.15671867185,
+            "nanos_per_transition": 622.6269571932921,
+            "transitions_per_second": 1606098.143433828,
+            "wall_nanos": 2539570833,
+            "wall_seconds": 2.539570833
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 94441.26888082587,
+            "nanos_per_transition": 623.0415605079926,
+            "transitions_per_second": 1605029.3646296358,
+            "wall_nanos": 2541261917,
+            "wall_seconds": 2.541261917
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 92427.70612918929,
+            "nanos_per_transition": 636.6146905952731,
+            "transitions_per_second": 1570808.865665572,
+            "wall_nanos": 2596624000,
+            "wall_seconds": 2.596624
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 95150.38161396616,
+            "nanos_per_transition": 618.3983137197215,
+            "transitions_per_second": 1617080.735529355,
+            "wall_nanos": 2522323042,
+            "wall_seconds": 2.522323042
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93399.04062731478,
+            "nanos_per_transition": 629.9940036285182,
+            "transitions_per_second": 1587316.6954612148,
+            "wall_nanos": 2569619542,
+            "wall_seconds": 2.569619542
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 92320.91315956938,
+            "nanos_per_transition": 637.3510998332843,
+            "transitions_per_second": 1568993.9191468814,
+            "wall_nanos": 2599627666,
+            "wall_seconds": 2.599627666
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 94614.02283302473,
+            "nanos_per_transition": 621.9039607237423,
+            "transitions_per_second": 1607965.3180472553,
+            "wall_nanos": 2536621875,
+            "wall_seconds": 2.536621875
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 91190.14103079274,
+            "nanos_per_transition": 645.2543539766598,
+            "transitions_per_second": 1549776.4468183226,
+            "wall_nanos": 2631863459,
+            "wall_seconds": 2.631863459
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        },
+        {
+          "allocation": {
+            "allocated_bytes": null,
+            "allocated_bytes_per_transition": null,
+            "allocations": null,
+            "allocations_per_transition": null,
+            "instrumented": false
+          },
+          "config": {
+            "actions": 64,
+            "seed": 6004515678751904326,
+            "trajectories": 240000,
+            "warmup": 2000
+          },
+          "crate_version": "0.1.0",
+          "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+          "schema": "sts-sim-bench/v1",
+          "timing": {
+            "complete_playouts_per_second": 93773.93495439691,
+            "nanos_per_transition": 627.47538074924,
+            "transitions_per_second": 1593688.0245499755,
+            "wall_nanos": 2559346583,
+            "wall_seconds": 2.559346583
+          },
+          "work": {
+            "checksum": "5d4f992689b53874",
+            "legal_action_enumerations": 4078800,
+            "legal_actions_seen": 14332026,
+            "mean_branching_factor": 3.513784936746102,
+            "stops": {
+              "budget": 0,
+              "no_legal_actions": 0,
+              "refused": 0,
+              "terminal": 240000
+            },
+            "transitions": 4078800
+          },
+          "workload": "ironclad_toadpoles_uniform_v1"
+        }
+      ],
+      "throughputs": [
+        1578513.0323023582,
+        1598031.6224725344,
+        1585613.0666483818,
+        1570283.7495151137,
+        1573047.8198010179,
+        1604023.6400538452,
+        1588755.2369731092,
+        1593816.3875489791,
+        1593984.9227385975,
+        1611469.665130922,
+        1579427.2257350674,
+        1593218.0036017124,
+        1553974.3241563437,
+        1591498.9216541299,
+        1514452.6817019745,
+        1586693.2704105587,
+        1606098.143433828,
+        1605029.3646296358,
+        1570808.865665572,
+        1617080.735529355,
+        1587316.6954612148,
+        1568993.9191468814,
+        1607965.3180472553,
+        1549776.4468183226,
+        1593688.0245499755
+      ],
+      "wall_seconds": [
+        2.583950792,
+        2.552390042,
+        2.572380416,
+        2.597492333,
+        2.592928167,
+        2.542855291,
+        2.567292875,
+        2.559140458,
+        2.558869875,
+        2.531105666,
+        2.582455167,
+        2.560101625,
+        2.624753792,
+        2.562866958,
+        2.693250208,
+        2.570629167,
+        2.539570833,
+        2.541261917,
+        2.596624,
+        2.522323042,
+        2.569619542,
+        2.599627666,
+        2.536621875,
+        2.631863459,
+        2.559346583
+      ],
+      "worst_transitions_per_second": 1514452.6817019745
+    }
+  },
+  "workloads": [
+    "ironclad_toadpoles_uniform_v1"
+  ]
+}

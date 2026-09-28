@@ -1,0 +1,98 @@
+{
+ "ENCHANTMENT.ADROIT": {
+  "class": "Adroit",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.CLONE": {
+  "class": "Clone",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.CORRUPTED": {
+  "class": "Corrupted",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.DEPRECATED_ENCHANTMENT": {
+  "class": "DeprecatedEnchantment",
+  "kind": "deprecated"
+ },
+ "ENCHANTMENT.GLAM": {
+  "class": "Glam",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.GOOPY": {
+  "class": "Goopy",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.IMBUED": {
+  "class": "Imbued",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.INKY": {
+  "class": "Inky",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.INSTINCT": {
+  "class": "Instinct",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.MOCK_FREE_ENCHANTMENT": {
+  "class": "MockFreeEnchantment",
+  "kind": "mock"
+ },
+ "ENCHANTMENT.MOMENTUM": {
+  "class": "Momentum",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.NIMBLE": {
+  "class": "Nimble",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.PERFECT_FIT": {
+  "class": "PerfectFit",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.ROYALLY_APPROVED": {
+  "class": "RoyallyApproved",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SHARP": {
+  "class": "Sharp",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SLITHER": {
+  "class": "Slither",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SLUMBERING_ESSENCE": {
+  "class": "SlumberingEssence",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SOULS_POWER": {
+  "class": "SoulsPower",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SOWN": {
+  "class": "Sown",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SPIRAL": {
+  "class": "Spiral",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.STEADY": {
+  "class": "Steady",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.SWIFT": {
+  "class": "Swift",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.TEZCATARAS_EMBER": {
+  "class": "TezcatarasEmber",
+  "kind": "enchantment"
+ },
+ "ENCHANTMENT.VIGOROUS": {
+  "class": "Vigorous",
+  "kind": "enchantment"
+ }
+}

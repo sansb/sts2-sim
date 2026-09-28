@@ -1,0 +1,54 @@
+{
+  "workload": "Identical recorded 44-action Insatiable line; pre-resolved actions, state transitions only, no per-step serialization or wire/legal lookup. Different repeat counts to amortize timer noise. Shared-host observation.",
+  "runs": [
+    {
+      "python": {
+        "repeats": 25,
+        "transitions": 1100,
+        "seconds": 0.5695250419666991,
+        "transitions_per_second": 1931.4339474897374,
+        "final_digest": "bc2b25f442e1e951ad07c0d2082aa813046b428f2805ac0d3bc5142df9d7245d"
+      },
+      "rust": {
+        "final_digest": "bc2b25f442e1e951ad07c0d2082aa813046b428f2805ac0d3bc5142df9d7245d",
+        "repeats": 10000,
+        "seconds": 4.327945,
+        "transitions": 440000,
+        "transitions_per_second": 101664.87790394749
+      }
+    },
+    {
+      "python": {
+        "repeats": 25,
+        "transitions": 1100,
+        "seconds": 0.5823636659188196,
+        "transitions_per_second": 1888.8541033281736,
+        "final_digest": "bc2b25f442e1e951ad07c0d2082aa813046b428f2805ac0d3bc5142df9d7245d"
+      },
+      "rust": {
+        "final_digest": "bc2b25f442e1e951ad07c0d2082aa813046b428f2805ac0d3bc5142df9d7245d",
+        "repeats": 10000,
+        "seconds": 4.857514209,
+        "transitions": 440000,
+        "transitions_per_second": 90581.30991871691
+      }
+    },
+    {
+      "python": {
+        "repeats": 25,
+        "transitions": 1100,
+        "seconds": 0.5785534580936655,
+        "transitions_per_second": 1901.2936222427943,
+        "final_digest": "bc2b25f442e1e951ad07c0d2082aa813046b428f2805ac0d3bc5142df9d7245d"
+      },
+      "rust": {
+        "final_digest": "bc2b25f442e1e951ad07c0d2082aa813046b428f2805ac0d3bc5142df9d7245d",
+        "repeats": 10000,
+        "seconds": 4.267734875,
+        "transitions": 440000,
+        "transitions_per_second": 103099.18795037613
+      }
+    }
+  ],
+  "median_speedup": 53.47142425272646
+}

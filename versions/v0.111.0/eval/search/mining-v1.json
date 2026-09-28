@@ -1,0 +1,1589 @@
+{
+  "schema": "sts-search-suite-v1",
+  "selection": "Hard-case mining across every current Rust/Python lockstep line. Development data only; no algorithm ranking claims from this selection.",
+  "game_build": "v0.111.0",
+  "seeds": [
+    1
+  ],
+  "seconds_per_search": 0.3,
+  "methods": [
+    "random"
+  ],
+  "fights": [
+    {
+      "id": "f016d6f285290648",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+      "human_won": true,
+      "human_hp": 31,
+      "human_turns": 9
+    },
+    {
+      "id": "f04442cd475cdc72",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.MAWLER_NORMAL",
+      "human_won": true,
+      "human_hp": 24,
+      "human_turns": 5
+    },
+    {
+      "id": "f0700ba3c740e1c4",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 45,
+      "human_turns": 3
+    },
+    {
+      "id": "f07c7f87a4920441",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 49,
+      "human_turns": 5
+    },
+    {
+      "id": "f0a49a654d4953b1",
+      "character": "SILENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 4
+    },
+    {
+      "id": "f0ab2c243932074c",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 56,
+      "human_turns": 3
+    },
+    {
+      "id": "f0b21c6cce1ba3d9",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 42,
+      "human_turns": 5
+    },
+    {
+      "id": "f0d7d781f0657414",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 70,
+      "human_turns": 1
+    },
+    {
+      "id": "f0fee4ff67cc1924",
+      "character": "NECROBINDER",
+      "ascension": 7,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 3
+    },
+    {
+      "id": "f10836882a845f6d",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 51,
+      "human_turns": 5
+    },
+    {
+      "id": "f1095b454ff1d57f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 5
+    },
+    {
+      "id": "f1176885bf21304f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 76,
+      "human_turns": 3
+    },
+    {
+      "id": "f13095b597f04198",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 52,
+      "human_turns": 4
+    },
+    {
+      "id": "f1317c02cce807ff",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 61,
+      "human_turns": 4
+    },
+    {
+      "id": "f133662e088cb023",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+      "human_won": true,
+      "human_hp": 20,
+      "human_turns": 5
+    },
+    {
+      "id": "f143c7e6993ed27c",
+      "character": "DEFECT",
+      "ascension": 9,
+      "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 9
+    },
+    {
+      "id": "f151a654a6389b80",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 9
+    },
+    {
+      "id": "f173a0681e565065",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+      "human_won": true,
+      "human_hp": 35,
+      "human_turns": 1
+    },
+    {
+      "id": "f1a7d54ee1d71c94",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": true,
+      "human_hp": 60,
+      "human_turns": 4
+    },
+    {
+      "id": "f1afe1098edc4a55",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 54,
+      "human_turns": 4
+    },
+    {
+      "id": "f1c50ac7cd7717ea",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 5
+    },
+    {
+      "id": "f2364468ecd01dc1",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.GREMLIN_MERC_NORMAL",
+      "human_won": true,
+      "human_hp": 9,
+      "human_turns": 4
+    },
+    {
+      "id": "f2803bae0621bfbe",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
+      "human_won": true,
+      "human_hp": 38,
+      "human_turns": 6
+    },
+    {
+      "id": "f298c0fbd4feb78b",
+      "character": "DEFECT",
+      "ascension": 0,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 69,
+      "human_turns": 4
+    },
+    {
+      "id": "f299b055eab9e556",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 51,
+      "human_turns": 3
+    },
+    {
+      "id": "f2c620d384dd64fe",
+      "character": "REGENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 58,
+      "human_turns": 3
+    },
+    {
+      "id": "f2ceeec0aef18b4d",
+      "character": "SILENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 4
+    },
+    {
+      "id": "f2e0e80f0e50a7a6",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 4
+    },
+    {
+      "id": "f2e31594936b256f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 5
+    },
+    {
+      "id": "f33ee00589e2c622",
+      "character": "DEFECT",
+      "ascension": 0,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 4
+    },
+    {
+      "id": "f34e6cceb9fbcce4",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 3
+    },
+    {
+      "id": "f3685fc9fb44b1e2",
+      "character": "SILENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 45,
+      "human_turns": 3
+    },
+    {
+      "id": "f3939bb49c5afa08",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+      "human_won": true,
+      "human_hp": 23,
+      "human_turns": 4
+    },
+    {
+      "id": "f3b3cfa132103498",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+      "human_won": true,
+      "human_hp": 100,
+      "human_turns": 2
+    },
+    {
+      "id": "f3bff179c66db473",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 42,
+      "human_turns": 4
+    },
+    {
+      "id": "f3d12c137220bca2",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 61,
+      "human_turns": 6
+    },
+    {
+      "id": "f3e100e4a7bbba55",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 54,
+      "human_turns": 2
+    },
+    {
+      "id": "f3f883c314e0e78c",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.EXOSKELETONS_NORMAL",
+      "human_won": true,
+      "human_hp": 24,
+      "human_turns": 4
+    },
+    {
+      "id": "f4309c22b0db2e56",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 4
+    },
+    {
+      "id": "f43bcc6c6a950a01",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 2
+    },
+    {
+      "id": "f449e3b9c0463301",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 5
+    },
+    {
+      "id": "f46cea139d24f54b",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+      "human_won": true,
+      "human_hp": 2,
+      "human_turns": 7
+    },
+    {
+      "id": "f4a6e0c0d183473a",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 38,
+      "human_turns": 4
+    },
+    {
+      "id": "f4bd90e01ae40a14",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 4
+    },
+    {
+      "id": "f4cd212c53cca245",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+      "human_won": true,
+      "human_hp": 14,
+      "human_turns": 4
+    },
+    {
+      "id": "f4da53bdf3186079",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+      "human_won": true,
+      "human_hp": 39,
+      "human_turns": 5
+    },
+    {
+      "id": "f4e3f6fbdf7fcad9",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+      "human_won": true,
+      "human_hp": 60,
+      "human_turns": 2
+    },
+    {
+      "id": "f4f408cd23234242",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.VANTOM_BOSS",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 6
+    },
+    {
+      "id": "f5063ecc14c3698a",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+      "human_won": true,
+      "human_hp": 58,
+      "human_turns": 4
+    },
+    {
+      "id": "f53d052e7f184299",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+      "human_won": true,
+      "human_hp": 11,
+      "human_turns": 3
+    },
+    {
+      "id": "f5746e1a2defd64f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+      "human_won": true,
+      "human_hp": 49,
+      "human_turns": 2
+    },
+    {
+      "id": "f589e1382c3b74a2",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 67,
+      "human_turns": 3
+    },
+    {
+      "id": "f5911f2b1bf85dd2",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+      "human_won": true,
+      "human_hp": 28,
+      "human_turns": 4
+    },
+    {
+      "id": "f59b3e8247172e27",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 4
+    },
+    {
+      "id": "f59d4024c12671bc",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+      "human_won": true,
+      "human_hp": 52,
+      "human_turns": 2
+    },
+    {
+      "id": "f59f10efed9fb15f",
+      "character": "REGENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+      "human_won": true,
+      "human_hp": 30,
+      "human_turns": 2
+    },
+    {
+      "id": "f5a81bb587978d5d",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 59,
+      "human_turns": 3
+    },
+    {
+      "id": "f5ae32312519f77b",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 53,
+      "human_turns": 2
+    },
+    {
+      "id": "f5cc73785bea2ba6",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 7,
+      "human_turns": 2
+    },
+    {
+      "id": "f5d4749cdf09c588",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SEAPUNK_NORMAL",
+      "human_won": true,
+      "human_hp": 62,
+      "human_turns": 3
+    },
+    {
+      "id": "f5f41b9eb7a39649",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.VANTOM_BOSS",
+      "human_won": true,
+      "human_hp": 21,
+      "human_turns": 7
+    },
+    {
+      "id": "f61dd962caa37d7a",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+      "human_won": true,
+      "human_hp": 28,
+      "human_turns": 6
+    },
+    {
+      "id": "f61e80601e9bf9c8",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 58,
+      "human_turns": 4
+    },
+    {
+      "id": "f6245269e95a2720",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+      "human_won": true,
+      "human_hp": 33,
+      "human_turns": 4
+    },
+    {
+      "id": "f6328f7712df703f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+      "human_won": true,
+      "human_hp": 47,
+      "human_turns": 5
+    },
+    {
+      "id": "f645225dbeeab3f6",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.OVERGROWTH_CRAWLERS",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 7
+    },
+    {
+      "id": "f6a246da43e5f154",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 3
+    },
+    {
+      "id": "f6a748ddd1f590f1",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 39,
+      "human_turns": 3
+    },
+    {
+      "id": "f6aa728538ff8bbe",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 38,
+      "human_turns": 5
+    },
+    {
+      "id": "f6f40033427cb0af",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 64,
+      "human_turns": 4
+    },
+    {
+      "id": "f708e430e3939926",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 3
+    },
+    {
+      "id": "f70ac762ffbd4e51",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+      "human_won": true,
+      "human_hp": 53,
+      "human_turns": 3
+    },
+    {
+      "id": "f7205a4699811a48",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+      "human_won": true,
+      "human_hp": 26,
+      "human_turns": 4
+    },
+    {
+      "id": "f72cfd1106315880",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 6
+    },
+    {
+      "id": "f73bbcb5d8a1783c",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.GREMLIN_MERC_NORMAL",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 6
+    },
+    {
+      "id": "f75b01c8a9bd3e7c",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 56,
+      "human_turns": 4
+    },
+    {
+      "id": "f75ba52dc713643b",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+      "human_won": true,
+      "human_hp": 52,
+      "human_turns": 3
+    },
+    {
+      "id": "f7840b029cf2035b",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 45,
+      "human_turns": 4
+    },
+    {
+      "id": "f7a73b5b897fbea4",
+      "character": "REGENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 3
+    },
+    {
+      "id": "f7bf955336b548c8",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+      "human_won": true,
+      "human_hp": 44,
+      "human_turns": 4
+    },
+    {
+      "id": "f7cb498f99ed52f1",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+      "human_won": true,
+      "human_hp": 33,
+      "human_turns": 6
+    },
+    {
+      "id": "f7dc084f423c5f66",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": true,
+      "human_hp": 18,
+      "human_turns": 5
+    },
+    {
+      "id": "f7e4f4e9b8f3895b",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 36,
+      "human_turns": 4
+    },
+    {
+      "id": "f7e769f1ac6f2dc8",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+      "human_won": true,
+      "human_hp": 12,
+      "human_turns": 5
+    },
+    {
+      "id": "f81c047fa72bc841",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.OVICOPTER_NORMAL",
+      "human_won": true,
+      "human_hp": 27,
+      "human_turns": 6
+    },
+    {
+      "id": "f824a96f1ab5a6d3",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.INKLETS_NORMAL",
+      "human_won": true,
+      "human_hp": 60,
+      "human_turns": 6
+    },
+    {
+      "id": "f82ef650a68c1282",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL",
+      "human_won": true,
+      "human_hp": 35,
+      "human_turns": 6
+    },
+    {
+      "id": "f82f9ad7591c813f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.MYTES_NORMAL",
+      "human_won": true,
+      "human_hp": 5,
+      "human_turns": 5
+    },
+    {
+      "id": "f840bb6096c156b8",
+      "character": "REGENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
+      "human_won": true,
+      "human_hp": 22,
+      "human_turns": 4
+    },
+    {
+      "id": "f85cca05c00ee950",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.TUNNELER_WEAK",
+      "human_won": true,
+      "human_hp": 69,
+      "human_turns": 4
+    },
+    {
+      "id": "f894ddbe5d917d64",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+      "human_won": true,
+      "human_hp": 51,
+      "human_turns": 5
+    },
+    {
+      "id": "f8a684cde5290bb3",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 53,
+      "human_turns": 5
+    },
+    {
+      "id": "f8a8f3fd5a218f04",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 2
+    },
+    {
+      "id": "f8d88d60038f014d",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 52,
+      "human_turns": 7
+    },
+    {
+      "id": "f8e2eeb5277320fd",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+      "human_won": true,
+      "human_hp": 9,
+      "human_turns": 6
+    },
+    {
+      "id": "f8fd3a5d633adfcd",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 41,
+      "human_turns": 5
+    },
+    {
+      "id": "f902342e12ebcb8b",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
+      "human_won": true,
+      "human_hp": 62,
+      "human_turns": 3
+    },
+    {
+      "id": "f913d2b82edbbcfc",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 46,
+      "human_turns": 2
+    },
+    {
+      "id": "f93299eaa00670d9",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 43,
+      "human_turns": 5
+    },
+    {
+      "id": "f95fd64d5923fde8",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+      "human_won": true,
+      "human_hp": 53,
+      "human_turns": 5
+    },
+    {
+      "id": "f986479dbd3fe375",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 57,
+      "human_turns": 3
+    },
+    {
+      "id": "f993702ddf1c54af",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+      "human_won": true,
+      "human_hp": 45,
+      "human_turns": 2
+    },
+    {
+      "id": "f9bcbea37866b6b7",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 49,
+      "human_turns": 3
+    },
+    {
+      "id": "f9d82bd0155f731b",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 4
+    },
+    {
+      "id": "fa08167bd25afcc8",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+      "human_won": true,
+      "human_hp": 30,
+      "human_turns": 5
+    },
+    {
+      "id": "fa0b70e59b641901",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+      "human_won": true,
+      "human_hp": 2,
+      "human_turns": 8
+    },
+    {
+      "id": "fa17ff633ee4a367",
+      "character": "DEFECT",
+      "ascension": 0,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 73,
+      "human_turns": 4
+    },
+    {
+      "id": "fa39cb54aecd9056",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 75,
+      "human_turns": 4
+    },
+    {
+      "id": "fa5f7dbb71be49ea",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.INKLETS_NORMAL",
+      "human_won": true,
+      "human_hp": 50,
+      "human_turns": 2
+    },
+    {
+      "id": "fa77b318aa7cc7ed",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+      "human_won": true,
+      "human_hp": 47,
+      "human_turns": 4
+    },
+    {
+      "id": "fa7c6be4e8c21a27",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 7
+    },
+    {
+      "id": "fa7e23d69ad8d4fb",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+      "human_won": true,
+      "human_hp": 75,
+      "human_turns": 4
+    },
+    {
+      "id": "fab3197748431ab3",
+      "character": "SILENT",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 5
+    },
+    {
+      "id": "fadf873d376af162",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.MAWLER_NORMAL",
+      "human_won": true,
+      "human_hp": 4,
+      "human_turns": 4
+    },
+    {
+      "id": "fb064ff8b20d0bed",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+      "human_won": true,
+      "human_hp": 20,
+      "human_turns": 5
+    },
+    {
+      "id": "fb20e1afec56d413",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 3
+    },
+    {
+      "id": "fb59cd27f3bf3099",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.NIBBITS_WEAK",
+      "human_won": true,
+      "human_hp": 56,
+      "human_turns": 5
+    },
+    {
+      "id": "fb800cc969ed65e6",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": true,
+      "human_hp": 39,
+      "human_turns": 4
+    },
+    {
+      "id": "fb951ee2445d9011",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+      "human_won": true,
+      "human_hp": 54,
+      "human_turns": 5
+    },
+    {
+      "id": "fb972d4450fbbb82",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 4
+    },
+    {
+      "id": "fb9bfca9596e145e",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 45,
+      "human_turns": 3
+    },
+    {
+      "id": "fbc68089cd90541f",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
+      "human_won": true,
+      "human_hp": 43,
+      "human_turns": 3
+    },
+    {
+      "id": "fbeadefc892d8c24",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+      "human_won": true,
+      "human_hp": 20,
+      "human_turns": 5
+    },
+    {
+      "id": "fc10e6ea37836f8a",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+      "human_won": true,
+      "human_hp": 42,
+      "human_turns": 4
+    },
+    {
+      "id": "fc200673a1a062db",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 47,
+      "human_turns": 5
+    },
+    {
+      "id": "fc301c8e8563cd17",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
+      "human_won": true,
+      "human_hp": 74,
+      "human_turns": 3
+    },
+    {
+      "id": "fc4cf049784d8f31",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+      "human_won": true,
+      "human_hp": 11,
+      "human_turns": 7
+    },
+    {
+      "id": "fc5016e501a65240",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 53,
+      "human_turns": 4
+    },
+    {
+      "id": "fc53621e544a3773",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 1
+    },
+    {
+      "id": "fc56f6e7f04ab583",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 60,
+      "human_turns": 4
+    },
+    {
+      "id": "fc58d06efb0da06b",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.TUNNELER_WEAK",
+      "human_won": true,
+      "human_hp": 61,
+      "human_turns": 5
+    },
+    {
+      "id": "fc5e053094d551c0",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FLYCONID_NORMAL",
+      "human_won": true,
+      "human_hp": 56,
+      "human_turns": 4
+    },
+    {
+      "id": "fc6d732b77eea769",
+      "character": "DEFECT",
+      "ascension": 0,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 66,
+      "human_turns": 5
+    },
+    {
+      "id": "fc6e65acd68eafdd",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 59,
+      "human_turns": 5
+    },
+    {
+      "id": "fc7a08726e5a2b80",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 4
+    },
+    {
+      "id": "fca2bfe571594c01",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
+      "human_won": true,
+      "human_hp": 78,
+      "human_turns": 2
+    },
+    {
+      "id": "fcb6c00aec4c6f6a",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 60,
+      "human_turns": 4
+    },
+    {
+      "id": "fcdd5327c9b1a6ae",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
+      "human_won": true,
+      "human_hp": 18,
+      "human_turns": 4
+    },
+    {
+      "id": "fcdfaef0733d19d0",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
+      "human_won": true,
+      "human_hp": 1,
+      "human_turns": 5
+    },
+    {
+      "id": "fced3a8882a7c8a0",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 66,
+      "human_turns": 4
+    },
+    {
+      "id": "fd0576ab4397cc19",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.INKLETS_NORMAL",
+      "human_won": true,
+      "human_hp": 26,
+      "human_turns": 1
+    },
+    {
+      "id": "fd0dc30bf4ae9a5b",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 3
+    },
+    {
+      "id": "fd17953d67c45a6c",
+      "character": "DEFECT",
+      "ascension": 0,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 43,
+      "human_turns": 2
+    },
+    {
+      "id": "fd25eb17234dee82",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 5
+    },
+    {
+      "id": "fd28ba225531e1d0",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 66,
+      "human_turns": 4
+    },
+    {
+      "id": "fd4056cbdf0fe65e",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.SEAPUNK_NORMAL",
+      "human_won": true,
+      "human_hp": 45,
+      "human_turns": 3
+    },
+    {
+      "id": "fd5000b82891ed14",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+      "human_won": true,
+      "human_hp": 57,
+      "human_turns": 5
+    },
+    {
+      "id": "fd732b0202297ee2",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 63,
+      "human_turns": 3
+    },
+    {
+      "id": "fd7f1a5e95d3f3c9",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+      "human_won": true,
+      "human_hp": 31,
+      "human_turns": 5
+    },
+    {
+      "id": "fd98d7de707b9fd7",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+      "human_won": true,
+      "human_hp": 37,
+      "human_turns": 8
+    },
+    {
+      "id": "fdaa952783354a3f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+      "human_won": true,
+      "human_hp": 77,
+      "human_turns": 2
+    },
+    {
+      "id": "fe2757b6ddaff3a6",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 4
+    },
+    {
+      "id": "fe42ad19e5a65c21",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_NORMAL",
+      "human_won": true,
+      "human_hp": 49,
+      "human_turns": 6
+    },
+    {
+      "id": "fe607939a3f40088",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 4
+    },
+    {
+      "id": "fe6b3cf7c707372e",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+      "human_won": true,
+      "human_hp": 44,
+      "human_turns": 5
+    },
+    {
+      "id": "fe81aba04b56a9f1",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": true,
+      "human_hp": 53,
+      "human_turns": 3
+    },
+    {
+      "id": "fe9c1aea8f52cf0e",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+      "human_won": true,
+      "human_hp": 74,
+      "human_turns": 4
+    },
+    {
+      "id": "fe9df11c57fba7a6",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.MAWLER_NORMAL",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 6
+    },
+    {
+      "id": "fea2a7ad8ee352e9",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 29,
+      "human_turns": 3
+    },
+    {
+      "id": "feb791cf921faedb",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+      "human_won": true,
+      "human_hp": 58,
+      "human_turns": 3
+    },
+    {
+      "id": "fef984c8ed7866ed",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 52,
+      "human_turns": 5
+    },
+    {
+      "id": "ff03c40be24cee6d",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+      "human_won": true,
+      "human_hp": 47,
+      "human_turns": 6
+    },
+    {
+      "id": "ff048525e2583950",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 1
+    },
+    {
+      "id": "ff1984ae8e4635ae",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
+      "human_won": true,
+      "human_hp": 79,
+      "human_turns": 4
+    },
+    {
+      "id": "ff58b542499979bf",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+      "human_won": true,
+      "human_hp": 61,
+      "human_turns": 5
+    },
+    {
+      "id": "ff77661abd36b42f",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_NORMAL",
+      "human_won": true,
+      "human_hp": 29,
+      "human_turns": 5
+    },
+    {
+      "id": "ff81575db3bb7368",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+      "human_won": true,
+      "human_hp": 49,
+      "human_turns": 4
+    },
+    {
+      "id": "ff843934ea650c59",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+      "human_won": true,
+      "human_hp": 41,
+      "human_turns": 3
+    },
+    {
+      "id": "ff8f1da571145864",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 4
+    },
+    {
+      "id": "ffbdc0e14683fd73",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 55,
+      "human_turns": 6
+    },
+    {
+      "id": "ffc19a45c017c3bf",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
+      "human_won": true,
+      "human_hp": 43,
+      "human_turns": 4
+    },
+    {
+      "id": "ffce353532054c7c",
+      "character": "NECROBINDER",
+      "ascension": 7,
+      "encounter": "ENCOUNTER.INKLETS_NORMAL",
+      "human_won": true,
+      "human_hp": 40,
+      "human_turns": 2
+    },
+    {
+      "id": "ffd79793184171e2",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+      "human_won": true,
+      "human_hp": 48,
+      "human_turns": 3
+    },
+    {
+      "id": "ffeaf6aff36cec69",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.SLIMES_WEAK",
+      "human_won": true,
+      "human_hp": 60,
+      "human_turns": 6
+    },
+    {
+      "id": "fffeb9ec87f046c0",
+      "character": "NECROBINDER",
+      "ascension": 8,
+      "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+      "human_won": true,
+      "human_hp": 49,
+      "human_turns": 3
+    }
+  ]
+}

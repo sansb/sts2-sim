@@ -1,0 +1,1425 @@
+{
+ "schema": "sts-encounter-coverage-census-v1",
+ "build": "v0.111.0",
+ "generated_by": "versions/v0.111.0/rust/tools/encounter_coverage_census.py",
+ "encounter_ids": 88,
+ "rust_registry": "versions/v0.111.0/rust/src/content_tables.rs",
+ "corpus_measured": true,
+ "corpus_totals": {
+  "fights": 1206,
+  "with_encounter": 1188,
+  "no_encounter": 17,
+  "unpaired": 1,
+  "saves": 4075
+ },
+ "summary": {
+  "shapes": {
+   "procedural": 30,
+   "tabular": 58
+  },
+  "rust": {
+   "built": 88
+  },
+  "pools": {
+   "content/encounters/boss.py": 12,
+   "content/encounters/elite.py": 12,
+   "content/encounters/event.py": 7,
+   "content/encounters/normal.py": 44,
+   "content/encounters/weak.py": 13
+  },
+  "with_corpus_demand": 84,
+  "zero_corpus_demand": 4,
+  "corpus_fights_covered": 1188,
+  "fixtures_covered": 537
+ },
+ "rows": [
+  {
+   "registered_key": "ENCOUNTER.KNIGHTS_ELITE",
+   "rust_variant": "KnightsElite",
+   "observed_wire_ids": [
+    "ENCOUNTER.KNIGHTS_ELITE"
+   ],
+   "corpus_fights": 16,
+   "fixtures": 6,
+   "module": "content/encounters/elite.py",
+   "builder": "_knights",
+   "source": "L165-L180",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "raw_niche_draw"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TERROR_EEL",
+   "rust_variant": "TerrorEel",
+   "observed_wire_ids": [
+    "ENCOUNTER.TERROR_EEL_ELITE"
+   ],
+   "corpus_fights": 22,
+   "fixtures": 8,
+   "module": "content/encounters/elite.py",
+   "builder": "_eel",
+   "source": "L73-L74",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SKULKING_COLONY",
+   "rust_variant": "SkulkingColony",
+   "observed_wire_ids": [
+    "ENCOUNTER.SKULKING_COLONY_ELITE"
+   ],
+   "corpus_fights": 25,
+   "fixtures": 8,
+   "module": "content/encounters/elite.py",
+   "builder": "_colony",
+   "source": "L77-L78",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BYGONE_EFFIGY",
+   "rust_variant": "BygoneEffigy",
+   "observed_wire_ids": [
+    "ENCOUNTER.BYGONE_EFFIGY_ELITE"
+   ],
+   "corpus_fights": 32,
+   "fixtures": 13,
+   "module": "content/encounters/elite.py",
+   "builder": "_effigy",
+   "source": "L81-L82",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BYRDONIS",
+   "rust_variant": "Byrdonis",
+   "observed_wire_ids": [
+    "ENCOUNTER.BYRDONIS_ELITE"
+   ],
+   "corpus_fights": 34,
+   "fixtures": 14,
+   "module": "content/encounters/elite.py",
+   "builder": "_byrdonis",
+   "source": "L85-L89",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.ENTOMANCER",
+   "rust_variant": "Entomancer",
+   "observed_wire_ids": [
+    "ENCOUNTER.ENTOMANCER_ELITE"
+   ],
+   "corpus_fights": 34,
+   "fixtures": 13,
+   "module": "content/encounters/elite.py",
+   "builder": "_entomancer",
+   "source": "L92-L93",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.INFESTED_PRISMS",
+   "rust_variant": "InfestedPrisms",
+   "observed_wire_ids": [
+    "ENCOUNTER.INFESTED_PRISMS_ELITE"
+   ],
+   "corpus_fights": 31,
+   "fixtures": 16,
+   "module": "content/encounters/elite.py",
+   "builder": "_prisms",
+   "source": "L96-L98",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.PHANTASMAL_GARDENERS",
+   "rust_variant": "PhantasmalGardeners",
+   "observed_wire_ids": [
+    "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE"
+   ],
+   "corpus_fights": 24,
+   "fixtures": 9,
+   "module": "content/encounters/elite.py",
+   "builder": "_gardeners",
+   "source": "L101-L111",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.PHROG_PARASITE",
+   "rust_variant": "PhrogParasite",
+   "observed_wire_ids": [
+    "ENCOUNTER.PHROG_PARASITE_ELITE"
+   ],
+   "corpus_fights": 36,
+   "fixtures": 18,
+   "module": "content/encounters/elite.py",
+   "builder": "_phrog",
+   "source": "L114-L116",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.DECIMILLIPEDE",
+   "rust_variant": "Decimillipede",
+   "observed_wire_ids": [
+    "ENCOUNTER.DECIMILLIPEDE_ELITE"
+   ],
+   "corpus_fights": 32,
+   "fixtures": 11,
+   "module": "content/encounters/elite.py",
+   "builder": "_decimillipede",
+   "source": "L119-L141",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "ctx:tier",
+    "encounter_rng",
+    "loop_while"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SOUL_NEXUS",
+   "rust_variant": "SoulNexus",
+   "observed_wire_ids": [
+    "ENCOUNTER.SOUL_NEXUS_ELITE"
+   ],
+   "corpus_fights": 15,
+   "fixtures": 5,
+   "module": "content/encounters/elite.py",
+   "builder": "_soul_nexus",
+   "source": "L144-L151",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "rust_variant": "MechaKnightElite",
+   "observed_wire_ids": [
+    "ENCOUNTER.MECHA_KNIGHT_ELITE"
+   ],
+   "corpus_fights": 13,
+   "fixtures": 8,
+   "module": "content/encounters/elite.py",
+   "builder": "_mecha_knight",
+   "source": "L202-L203",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+   "rust_variant": "CorpseSlugsWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.CORPSE_SLUGS_WEAK"
+   ],
+   "corpus_fights": 28,
+   "fixtures": 10,
+   "module": "content/encounters/weak.py",
+   "builder": "_corpse_slugs_weak",
+   "source": "L62-L63",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SEAPUNK_WEAK",
+   "rust_variant": "SeapunkWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.SEAPUNK_WEAK"
+   ],
+   "corpus_fights": 31,
+   "fixtures": 8,
+   "module": "content/encounters/weak.py",
+   "builder": "_seapunk",
+   "source": "L151-L153",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+   "rust_variant": "SludgeSpinnerWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.SLUDGE_SPINNER_WEAK"
+   ],
+   "corpus_fights": 28,
+   "fixtures": 11,
+   "module": "content/encounters/weak.py",
+   "builder": "_sludge",
+   "source": "L156-L161",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.EXOSKELETONS_WEAK",
+   "rust_variant": "ExoskeletonsWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.EXOSKELETONS_WEAK"
+   ],
+   "corpus_fights": 24,
+   "fixtures": 9,
+   "module": "content/encounters/weak.py",
+   "builder": "_exoskeletons",
+   "source": "L164-L180",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TOADPOLES_WEAK",
+   "rust_variant": "ToadpolesWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.TOADPOLES_WEAK"
+   ],
+   "corpus_fights": 33,
+   "fixtures": 9,
+   "module": "content/encounters/weak.py",
+   "builder": "_toadpoles",
+   "source": "L183-L194",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TUNNELER_WEAK",
+   "rust_variant": "TunnelerWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.TUNNELER_WEAK"
+   ],
+   "corpus_fights": 24,
+   "fixtures": 9,
+   "module": "content/encounters/weak.py",
+   "builder": "_tunneler",
+   "source": "L197-L200",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.NIBBITS_WEAK",
+   "rust_variant": "NibbitsWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.NIBBITS_WEAK"
+   ],
+   "corpus_fights": 30,
+   "fixtures": 12,
+   "module": "content/encounters/weak.py",
+   "builder": "_nibbit",
+   "source": "L203-L208",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.DEVOTED_SCULPTOR_WEAK",
+   "rust_variant": "DevotedSculptorWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.DEVOTED_SCULPTOR_WEAK"
+   ],
+   "corpus_fights": 23,
+   "fixtures": 7,
+   "module": "content/encounters/weak.py",
+   "builder": "_devoted_sculptor",
+   "source": "L211-L212",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+   "rust_variant": "FuzzyWurmCrawlerWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK"
+   ],
+   "corpus_fights": 34,
+   "fixtures": 14,
+   "module": "content/encounters/weak.py",
+   "builder": "_fuzzy_wurm_crawler",
+   "source": "L258-L262",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+   "rust_variant": "ShrinkerBeetleWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.SHRINKER_BEETLE_WEAK"
+   ],
+   "corpus_fights": 45,
+   "fixtures": 15,
+   "module": "content/encounters/weak.py",
+   "builder": "_shrinker_beetle",
+   "source": "L226-L228",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SLIMES_WEAK",
+   "rust_variant": "SlimesWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.SLIMES_WEAK"
+   ],
+   "corpus_fights": 37,
+   "fixtures": 15,
+   "module": "content/encounters/weak.py",
+   "builder": "_slimes_weak",
+   "source": "L295-L312",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BOWLBUGS_WEAK",
+   "rust_variant": "BowlbugsWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.BOWLBUGS_WEAK"
+   ],
+   "corpus_fights": 33,
+   "fixtures": 13,
+   "module": "content/encounters/weak.py",
+   "builder": "_bowlbugs",
+   "source": "L231-L243",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TURRET_OPERATOR_WEAK",
+   "rust_variant": "TurretOperatorWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.TURRET_OPERATOR_WEAK"
+   ],
+   "corpus_fights": 14,
+   "fixtures": 8,
+   "module": "content/encounters/weak.py",
+   "builder": "_turret_operator",
+   "source": "L246-L255",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
+   "rust_variant": "CorpseSlugsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.CORPSE_SLUGS_NORMAL"
+   ],
+   "corpus_fights": 5,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_corpse_slugs_normal",
+   "source": "L71-L72",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.MAWLER_NORMAL",
+   "rust_variant": "MawlerNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.MAWLER_NORMAL"
+   ],
+   "corpus_fights": 10,
+   "fixtures": 7,
+   "module": "content/encounters/normal.py",
+   "builder": "_mawler",
+   "source": "L527-L529",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+   "rust_variant": "FossilStalkerNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.FOSSIL_STALKER_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 2,
+   "module": "content/encounters/normal.py",
+   "builder": "_fossil_stalker",
+   "source": "L626-L631",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.EXOSKELETONS_NORMAL",
+   "rust_variant": "ExoskeletonsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.EXOSKELETONS_NORMAL"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_exoskeletons_normal",
+   "source": "L634-L653",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.INKLETS_NORMAL",
+   "rust_variant": "InkletsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.INKLETS_NORMAL"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_inklets_normal",
+   "source": "L656-L675",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
+   "rust_variant": "SnappingJaxfruitNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL"
+   ],
+   "corpus_fights": 7,
+   "fixtures": 6,
+   "module": "content/encounters/normal.py",
+   "builder": "_snapping_jaxfruit",
+   "source": "L678-L691",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FLYCONID_NORMAL",
+   "rust_variant": "FlyconidNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.FLYCONID_NORMAL"
+   ],
+   "corpus_fights": 5,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_flyconid_normal",
+   "source": "L694-L717",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SLIMES_NORMAL",
+   "rust_variant": "SlimesNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SLIMES_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_slimes_normal",
+   "source": "L822-L835",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.LIVING_FOG_NORMAL",
+   "rust_variant": "LivingFogNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.LIVING_FOG_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_living_fog",
+   "source": "L277-L280",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+   "rust_variant": "TwoTailedRatsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.TWO_TAILED_RATS_NORMAL"
+   ],
+   "corpus_fights": 7,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_two_tailed_rats",
+   "source": "L283-L294",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CULTISTS_NORMAL",
+   "rust_variant": "CultistsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.CULTISTS_NORMAL"
+   ],
+   "corpus_fights": 13,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_cultists",
+   "source": "L297-L307",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.NIBBITS_NORMAL",
+   "rust_variant": "NibbitsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.NIBBITS_NORMAL"
+   ],
+   "corpus_fights": 5,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_nibbits_normal",
+   "source": "L310-L325",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SEAPUNK_NORMAL",
+   "rust_variant": "SeapunkNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SEAPUNK_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 1,
+   "module": "content/encounters/normal.py",
+   "builder": "_seapunk_normal",
+   "source": "L367-L381",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FROG_KNIGHT_NORMAL",
+   "rust_variant": "FrogKnightNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.FROG_KNIGHT_NORMAL"
+   ],
+   "corpus_fights": 5,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_frog_knight",
+   "source": "L352-L355",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.AXEBOTS_NORMAL",
+   "rust_variant": "AxebotsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.AXEBOTS_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 2,
+   "module": "content/encounters/normal.py",
+   "builder": "_axebots",
+   "source": "L358-L364",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.GLOBE_HEAD_NORMAL",
+   "rust_variant": "GlobeHeadNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.GLOBE_HEAD_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 0,
+   "module": "content/encounters/normal.py",
+   "builder": "_globe_head",
+   "source": "L328-L331",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+   "rust_variant": "HunterKillerNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.HUNTER_KILLER_NORMAL"
+   ],
+   "corpus_fights": 8,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_hunter_killer",
+   "source": "L334-L342",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+   "rust_variant": "TheLostAndForgottenNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL"
+   ],
+   "corpus_fights": 3,
+   "fixtures": 2,
+   "module": "content/encounters/normal.py",
+   "builder": "_the_lost_and_forgotten",
+   "source": "L101-L108",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.GREMLIN_MERC_NORMAL",
+   "rust_variant": "GremlinMercNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.GREMLIN_MERC_NORMAL"
+   ],
+   "corpus_fights": 10,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_gremlin_merc",
+   "source": "L345-L349",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+   "rust_variant": "ThievingHopperWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.THIEVING_HOPPER_WEAK"
+   ],
+   "corpus_fights": 32,
+   "fixtures": 13,
+   "module": "content/encounters/normal.py",
+   "builder": "_thieving_hopper",
+   "source": "L384-L387",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.LOUSE_PROGENITOR_NORMAL",
+   "rust_variant": "LouseProgenitorNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.LOUSE_PROGENITOR_NORMAL"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 7,
+   "module": "content/encounters/normal.py",
+   "builder": "_louse_progenitor",
+   "source": "L250-L255",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FABRICATOR_NORMAL",
+   "rust_variant": "FabricatorNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.FABRICATOR_NORMAL"
+   ],
+   "corpus_fights": 6,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_fabricator",
+   "source": "L258-L264",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.OVICOPTER_NORMAL",
+   "rust_variant": "OvicopterNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.OVICOPTER_NORMAL"
+   ],
+   "corpus_fights": 14,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_ovicopter",
+   "source": "L267-L274",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL",
+   "rust_variant": "PunchConstructNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL"
+   ],
+   "corpus_fights": 6,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_punch_construct",
+   "source": "L416-L419",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SEWER_CLAM_NORMAL",
+   "rust_variant": "SewerClamNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SEWER_CLAM_NORMAL"
+   ],
+   "corpus_fights": 6,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_sewer_clam",
+   "source": "L443-L444",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
+   "rust_variant": "SlumberingBeetleNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SLUMBERING_BEETLE_NORMAL"
+   ],
+   "corpus_fights": 13,
+   "fixtures": 9,
+   "module": "content/encounters/normal.py",
+   "builder": "_slumbering_beetle",
+   "source": "L734-L751",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BOWLBUGS_NORMAL",
+   "rust_variant": "BowlbugsNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.BOWLBUGS_NORMAL"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_bowlbugs_normal",
+   "source": "L754-L776",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+   "rust_variant": "RubyRaidersNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.RUBY_RAIDERS_NORMAL"
+   ],
+   "corpus_fights": 11,
+   "fixtures": 7,
+   "module": "content/encounters/normal.py",
+   "builder": "_ruby_raiders",
+   "source": "L556-L569",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
+   "rust_variant": "SlitheringStranglerNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SLITHERING_STRANGLER_NORMAL"
+   ],
+   "corpus_fights": 7,
+   "fixtures": 7,
+   "module": "content/encounters/normal.py",
+   "builder": "_slithering_strangler",
+   "source": "L572-L612",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.OWL_MAGISTRATE_NORMAL",
+   "rust_variant": "OwlMagistrateNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.OWL_MAGISTRATE_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 3,
+   "module": "content/encounters/normal.py",
+   "builder": "_owl_magistrate",
+   "source": "L469-L470",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+   "rust_variant": "HauntedShipNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.HAUNTED_SHIP_NORMAL"
+   ],
+   "corpus_fights": 7,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_haunted_ship",
+   "source": "L490-L491",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.MYTES_NORMAL",
+   "rust_variant": "MytesNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.MYTES_NORMAL"
+   ],
+   "corpus_fights": 14,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_mytes",
+   "source": "L513-L519",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SPINY_TOAD_NORMAL",
+   "rust_variant": "SpinyToadNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SPINY_TOAD_NORMAL"
+   ],
+   "corpus_fights": 5,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_spiny_toad",
+   "source": "L802-L804",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.OVERGROWTH_CRAWLERS",
+   "rust_variant": "OvergrowthCrawlers",
+   "observed_wire_ids": [
+    "ENCOUNTER.OVERGROWTH_CRAWLERS"
+   ],
+   "corpus_fights": 8,
+   "fixtures": 5,
+   "module": "content/encounters/normal.py",
+   "builder": "_overgrowth_crawlers",
+   "source": "L807-L819",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CHOMPERS_NORMAL",
+   "rust_variant": "ChompersNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.CHOMPERS_NORMAL"
+   ],
+   "corpus_fights": 11,
+   "fixtures": 8,
+   "module": "content/encounters/normal.py",
+   "builder": "_chompers",
+   "source": "L849-L865",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TUNNELER_NORMAL",
+   "rust_variant": "TunnelerNormal",
+   "observed_wire_ids": [],
+   "corpus_fights": 0,
+   "fixtures": 0,
+   "module": "content/encounters/normal.py",
+   "builder": "_tunneler_normal",
+   "source": "L868-L884",
+   "shape": "procedural",
+   "shape_signals": [
+    "helper:AscensionTier"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SLIMED_BERSERKER_NORMAL",
+   "rust_variant": "SlimedBerserkerNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SLIMED_BERSERKER_NORMAL"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_slimed_berserker",
+   "source": "L902-L903",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
+   "rust_variant": "VineShamblerNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.VINE_SHAMBLER_NORMAL"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 9,
+   "module": "content/encounters/normal.py",
+   "builder": "_vine_shambler",
+   "source": "L918-L919",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
+   "rust_variant": "CubexConstructNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL"
+   ],
+   "corpus_fights": 10,
+   "fixtures": 7,
+   "module": "content/encounters/normal.py",
+   "builder": "_cubex_construct",
+   "source": "L940-L944",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL",
+   "rust_variant": "ConstructMenagerieNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 2,
+   "module": "content/encounters/normal.py",
+   "builder": "_construct_menagerie",
+   "source": "L947-L962",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.THE_OBSCURA_NORMAL",
+   "rust_variant": "TheObscuraNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.THE_OBSCURA_NORMAL"
+   ],
+   "corpus_fights": 13,
+   "fixtures": 4,
+   "module": "content/encounters/normal.py",
+   "builder": "_the_obscura",
+   "source": "L972-L978",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FOGMOG_NORMAL",
+   "rust_variant": "FogmogNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.FOGMOG_NORMAL"
+   ],
+   "corpus_fights": 2,
+   "fixtures": 2,
+   "module": "content/encounters/normal.py",
+   "builder": "_fogmog",
+   "source": "L1034-L1038",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SCROLLS_OF_BITING_WEAK",
+   "rust_variant": "ScrollsOfBitingWeak",
+   "observed_wire_ids": [
+    "ENCOUNTER.SCROLLS_OF_BITING_WEAK"
+   ],
+   "corpus_fights": 21,
+   "fixtures": 7,
+   "module": "content/encounters/normal.py",
+   "builder": "_scrolls_of_biting",
+   "source": "L1013-L1031",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SCROLLS_OF_BITING_NORMAL",
+   "rust_variant": "ScrollsOfBitingNormal",
+   "observed_wire_ids": [
+    "ENCOUNTER.SCROLLS_OF_BITING_NORMAL"
+   ],
+   "corpus_fights": 4,
+   "fixtures": 1,
+   "module": "content/encounters/normal.py",
+   "builder": "_scrolls_of_biting",
+   "source": "L1013-L1031",
+   "shape": "procedural",
+   "shape_signals": [
+    "branching",
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.AEONGLASS_BOSS",
+   "rust_variant": "AeonglassBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.AEONGLASS_BOSS"
+   ],
+   "corpus_fights": 12,
+   "fixtures": 5,
+   "module": "content/encounters/boss.py",
+   "builder": "_aeonglass",
+   "source": "L32-L35",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.SOUL_FYSH_BOSS",
+   "rust_variant": "SoulFyshBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.SOUL_FYSH_BOSS"
+   ],
+   "corpus_fights": 8,
+   "fixtures": 5,
+   "module": "content/encounters/boss.py",
+   "builder": "_soul_fysh",
+   "source": "L50-L51",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+   "rust_variant": "KnowledgeDemonBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.KNOWLEDGE_DEMON_BOSS"
+   ],
+   "corpus_fights": 12,
+   "fixtures": 8,
+   "module": "content/encounters/boss.py",
+   "builder": "_knowledge_demon",
+   "source": "L82-L83",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+   "rust_variant": "WaterfallGiantBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.WATERFALL_GIANT_BOSS"
+   ],
+   "corpus_fights": 11,
+   "fixtures": 6,
+   "module": "content/encounters/boss.py",
+   "builder": "_waterfall_giant",
+   "source": "L240-L243",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "rust_variant": "LagavulinMatriarchBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS"
+   ],
+   "corpus_fights": 7,
+   "fixtures": 2,
+   "module": "content/encounters/boss.py",
+   "builder": "_lagavulin_matriarch",
+   "source": "L103-L107",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+   "rust_variant": "CeremonialBeastBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.CEREMONIAL_BEAST_BOSS"
+   ],
+   "corpus_fights": 10,
+   "fixtures": 7,
+   "module": "content/encounters/boss.py",
+   "builder": "_ceremonial_beast",
+   "source": "L124-L125",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.QUEEN_BOSS",
+   "rust_variant": "QueenBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.QUEEN_BOSS"
+   ],
+   "corpus_fights": 9,
+   "fixtures": 5,
+   "module": "content/encounters/boss.py",
+   "builder": "_queen",
+   "source": "L153-L163",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.THE_KIN_BOSS",
+   "rust_variant": "TheKinBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.THE_KIN_BOSS"
+   ],
+   "corpus_fights": 12,
+   "fixtures": 8,
+   "module": "content/encounters/boss.py",
+   "builder": "_the_kin",
+   "source": "L187-L202",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.VANTOM_BOSS",
+   "rust_variant": "VantomBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.VANTOM_BOSS"
+   ],
+   "corpus_fights": 17,
+   "fixtures": 10,
+   "module": "content/encounters/boss.py",
+   "builder": "_vantom",
+   "source": "L217-L218",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.THE_INSATIABLE_BOSS",
+   "rust_variant": "TheInsatiableBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.THE_INSATIABLE_BOSS"
+   ],
+   "corpus_fights": 12,
+   "fixtures": 7,
+   "module": "content/encounters/boss.py",
+   "builder": "_the_insatiable",
+   "source": "L259-L260",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.TEST_SUBJECT_BOSS",
+   "rust_variant": "TestSubjectBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.TEST_SUBJECT_BOSS"
+   ],
+   "corpus_fights": 3,
+   "fixtures": 2,
+   "module": "content/encounters/boss.py",
+   "builder": "_test_subject",
+   "source": "L283-L286",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.KAISER_CRAB_BOSS",
+   "rust_variant": "KaiserCrabBoss",
+   "observed_wire_ids": [
+    "ENCOUNTER.KAISER_CRAB_BOSS"
+   ],
+   "corpus_fights": 17,
+   "fixtures": 8,
+   "module": "content/encounters/boss.py",
+   "builder": "_kaiser_crab",
+   "source": "L310-L318",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER",
+   "rust_variant": "FakeMerchantEventEncounter",
+   "observed_wire_ids": [
+    "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER"
+   ],
+   "corpus_fights": 1,
+   "fixtures": 0,
+   "module": "content/encounters/event.py",
+   "builder": "_fake_merchant",
+   "source": "L25-L39",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "raw_niche_draw"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER",
+   "rust_variant": "MysteriousKnightEventEncounter",
+   "observed_wire_ids": [
+    "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER"
+   ],
+   "corpus_fights": 2,
+   "fixtures": 0,
+   "module": "content/encounters/event.py",
+   "builder": "_mysterious_knight",
+   "source": "L76-L95",
+   "shape": "procedural",
+   "shape_signals": [
+    "ctx:tier",
+    "raw_niche_draw"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER",
+   "rust_variant": "PunchOffEventEncounter",
+   "observed_wire_ids": [],
+   "corpus_fights": 0,
+   "fixtures": 0,
+   "module": "content/encounters/event.py",
+   "builder": "_punch_off",
+   "source": "L98-L117",
+   "shape": "procedural",
+   "shape_signals": [
+    "encounter_rng"
+   ],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER",
+   "rust_variant": "BattlewornDummyEventV1Encounter",
+   "observed_wire_ids": [],
+   "corpus_fights": 0,
+   "fixtures": 0,
+   "module": "content/encounters/event.py",
+   "builder": "_battleworn_dummy_v1",
+   "source": "L48-L49",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER",
+   "rust_variant": "BattlewornDummyEventV2Encounter",
+   "observed_wire_ids": [
+    "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER"
+   ],
+   "corpus_fights": 2,
+   "fixtures": 0,
+   "module": "content/encounters/event.py",
+   "builder": "_battleworn_dummy_v2",
+   "source": "L52-L53",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER",
+   "rust_variant": "BattlewornDummyEventV3Encounter",
+   "observed_wire_ids": [],
+   "corpus_fights": 0,
+   "fixtures": 0,
+   "module": "content/encounters/event.py",
+   "builder": "_battleworn_dummy_v3",
+   "source": "L56-L57",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  },
+  {
+   "registered_key": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER",
+   "rust_variant": "DenseVegetationEventEncounter",
+   "observed_wire_ids": [
+    "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER"
+   ],
+   "corpus_fights": 1,
+   "fixtures": 1,
+   "module": "content/encounters/event.py",
+   "builder": "_dense_vegetation",
+   "source": "L60-L73",
+   "shape": "tabular",
+   "shape_signals": [],
+   "rust": "built"
+  }
+ ]
+}

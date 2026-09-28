@@ -1,0 +1,2089 @@
+{
+ "boss_x_character": {
+  "covered": 34,
+  "total": 60
+ },
+ "build": "v0.111.0",
+ "cards_played": {
+  "all": {
+   "covered": 337,
+   "total": 547
+  },
+  "by_pool": {
+   "colorless": {
+    "covered": 46,
+    "total": 93
+   },
+   "defect": {
+    "covered": 66,
+    "total": 91
+   },
+   "ironclad": {
+    "covered": 78,
+    "total": 90
+   },
+   "necrobinder": {
+    "covered": 36,
+    "total": 91
+   },
+   "regent": {
+    "covered": 51,
+    "total": 91
+   },
+   "silent": {
+    "covered": 60,
+    "total": 91
+   }
+  },
+  "by_rarity": {
+   "ancient": {
+    "covered": 7,
+    "total": 19
+   },
+   "basic": {
+    "covered": 19,
+    "total": 19
+   },
+   "common": {
+    "covered": 78,
+    "total": 100
+   },
+   "event": {
+    "covered": 9,
+    "total": 19
+   },
+   "rare": {
+    "covered": 73,
+    "total": 160
+   },
+   "uncommon": {
+    "covered": 151,
+    "total": 230
+   }
+  }
+ },
+ "certified": 535,
+ "corpus": {
+  "cells": {
+   "ENCOUNTER.AEONGLASS_BOSS": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 5
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.AXEBOTS_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER": {
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.BOWLBUGS_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 0
+    },
+    "IRONCLAD": {
+     "captured": 2,
+     "certified": 2
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.BOWLBUGS_WEAK": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 17,
+     "certified": 15
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 4,
+     "certified": 4
+    }
+   },
+   "ENCOUNTER.BYGONE_EFFIGY": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 16,
+     "certified": 15
+    },
+    "NECROBINDER": {
+     "captured": 2,
+     "certified": 2
+    },
+    "REGENT": {
+     "captured": 3,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 4,
+     "certified": 4
+    }
+   },
+   "ENCOUNTER.BYRDONIS": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 16,
+     "certified": 16
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 5,
+     "certified": 5
+    },
+    "SILENT": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.CEREMONIAL_BEAST_BOSS": {
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 4
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.CHOMPERS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 5
+    },
+    "NECROBINDER": {
+     "captured": 2,
+     "certified": 2
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.CORPSE_SLUGS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.CORPSE_SLUGS_WEAK": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 12,
+     "certified": 12
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 5
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.CULTISTS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 8,
+     "certified": 8
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.DECIMILLIPEDE": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 14,
+     "certified": 13
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 4,
+     "certified": 4
+    }
+   },
+   "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER": {
+    "SILENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.DEVOTED_SCULPTOR_WEAK": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 12,
+     "certified": 12
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.ENTOMANCER": {
+    "DEFECT": {
+     "captured": 4,
+     "certified": 4
+    },
+    "IRONCLAD": {
+     "captured": 16,
+     "certified": 14
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.EXOSKELETONS_NORMAL": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.EXOSKELETONS_WEAK": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 8,
+     "certified": 8
+    },
+    "REGENT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.FABRICATOR_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.FLYCONID_NORMAL": {
+    "IRONCLAD": {
+     "captured": 4,
+     "certified": 4
+    }
+   },
+   "ENCOUNTER.FOGMOG_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.FOSSIL_STALKER_NORMAL": {
+    "IRONCLAD": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.FROG_KNIGHT_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 17,
+     "certified": 16
+    },
+    "NECROBINDER": {
+     "captured": 2,
+     "certified": 2
+    },
+    "REGENT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 6,
+     "certified": 6
+    }
+   },
+   "ENCOUNTER.GLOBE_HEAD_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.GREMLIN_MERC_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 4
+    }
+   },
+   "ENCOUNTER.HAUNTED_SHIP_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.HUNTER_KILLER_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.INFESTED_PRISMS": {
+    "DEFECT": {
+     "captured": 5,
+     "certified": 4
+    },
+    "IRONCLAD": {
+     "captured": 14,
+     "certified": 11
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.INKLETS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 5
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.KAISER_CRAB_BOSS": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 9,
+     "certified": 7
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.KNIGHTS_ELITE": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 10,
+     "certified": 8
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.KNOWLEDGE_DEMON_BOSS": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 5
+    }
+   },
+   "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.LIVING_FOG_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.LOUSE_PROGENITOR_NORMAL": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.MAWLER_NORMAL": {
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 5
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.MECHA_KNIGHT_ELITE": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 6
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.MYTES_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 8,
+     "certified": 8
+    }
+   },
+   "ENCOUNTER.NIBBITS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.NIBBITS_WEAK": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 17,
+     "certified": 17
+    },
+    "REGENT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 4,
+     "certified": 4
+    }
+   },
+   "ENCOUNTER.OVERGROWTH_CRAWLERS": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 4
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.OVICOPTER_NORMAL": {
+    "IRONCLAD": {
+     "captured": 8,
+     "certified": 8
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.OWL_MAGISTRATE_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.PHANTASMAL_GARDENERS": {
+    "DEFECT": {
+     "captured": 5,
+     "certified": 5
+    },
+    "IRONCLAD": {
+     "captured": 8,
+     "certified": 8
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.PHROG_PARASITE": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 18,
+     "certified": 18
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 6,
+     "certified": 5
+    }
+   },
+   "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.QUEEN_BOSS": {
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 4
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 0
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.RUBY_RAIDERS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 7,
+     "certified": 7
+    },
+    "NECROBINDER": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SCROLLS_OF_BITING_NORMAL": {
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.SCROLLS_OF_BITING_WEAK": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 9,
+     "certified": 8
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SEAPUNK_NORMAL": {
+    "IRONCLAD": {
+     "captured": 2,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SEAPUNK_WEAK": {
+    "DEFECT": {
+     "captured": 4,
+     "certified": 4
+    },
+    "IRONCLAD": {
+     "captured": 13,
+     "certified": 13
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.SEWER_CLAM_NORMAL": {
+    "IRONCLAD": {
+     "captured": 4,
+     "certified": 4
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SHRINKER_BEETLE_WEAK": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 24,
+     "certified": 24
+    },
+    "NECROBINDER": {
+     "captured": 3,
+     "certified": 3
+    },
+    "REGENT": {
+     "captured": 5,
+     "certified": 5
+    },
+    "SILENT": {
+     "captured": 8,
+     "certified": 8
+    }
+   },
+   "ENCOUNTER.SKULKING_COLONY": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 12,
+     "certified": 12
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SLIMED_BERSERKER_NORMAL": {
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 4
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 0
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SLIMES_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SLIMES_WEAK": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 20,
+     "certified": 20
+    },
+    "NECROBINDER": {
+     "captured": 3,
+     "certified": 3
+    },
+    "REGENT": {
+     "captured": 4,
+     "certified": 4
+    },
+    "SILENT": {
+     "captured": 5,
+     "certified": 5
+    }
+   },
+   "ENCOUNTER.SLITHERING_STRANGLER_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SLUDGE_SPINNER_WEAK": {
+    "DEFECT": {
+     "captured": 4,
+     "certified": 4
+    },
+    "IRONCLAD": {
+     "captured": 12,
+     "certified": 12
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SLUMBERING_BEETLE_NORMAL": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 5
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL": {
+    "IRONCLAD": {
+     "captured": 4,
+     "certified": 4
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.SOUL_FYSH_BOSS": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.SOUL_NEXUS": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 7,
+     "certified": 7
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.SPINY_TOAD_NORMAL": {
+    "IRONCLAD": {
+     "captured": 4,
+     "certified": 4
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.TERROR_EEL": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 10,
+     "certified": 10
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.TEST_SUBJECT_BOSS": {
+    "IRONCLAD": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.THE_INSATIABLE_BOSS": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 6
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 0
+    }
+   },
+   "ENCOUNTER.THE_KIN_BOSS": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 6
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.THE_OBSCURA_NORMAL": {
+    "IRONCLAD": {
+     "captured": 6,
+     "certified": 6
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 0
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.THIEVING_HOPPER_WEAK": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 14,
+     "certified": 12
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 0
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.TOADPOLES_WEAK": {
+    "DEFECT": {
+     "captured": 4,
+     "certified": 4
+    },
+    "IRONCLAD": {
+     "captured": 15,
+     "certified": 15
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.TUNNELER_WEAK": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "IRONCLAD": {
+     "captured": 13,
+     "certified": 13
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.TURRET_OPERATOR_WEAK": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 7,
+     "certified": 6
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.TWO_TAILED_RATS_NORMAL": {
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    }
+   },
+   "ENCOUNTER.VANTOM_BOSS": {
+    "DEFECT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 9,
+     "certified": 9
+    },
+    "NECROBINDER": {
+     "captured": 1,
+     "certified": 1
+    },
+    "REGENT": {
+     "captured": 2,
+     "certified": 2
+    },
+    "SILENT": {
+     "captured": 1,
+     "certified": 1
+    }
+   },
+   "ENCOUNTER.VINE_SHAMBLER_NORMAL": {
+    "DEFECT": {
+     "captured": 1,
+     "certified": 1
+    },
+    "IRONCLAD": {
+     "captured": 3,
+     "certified": 3
+    },
+    "REGENT": {
+     "captured": 3,
+     "certified": 3
+    },
+    "SILENT": {
+     "captured": 2,
+     "certified": 2
+    }
+   },
+   "ENCOUNTER.WATERFALL_GIANT_BOSS": {
+    "DEFECT": {
+     "captured": 3,
+     "certified": 2
+    },
+    "IRONCLAD": {
+     "captured": 5,
+     "certified": 5
+    }
+   }
+  },
+  "measured_fights": 1206
+ },
+ "elite_x_character": {
+  "covered": 47,
+  "total": 60
+ },
+ "encounters": {
+  "all": {
+   "covered": 79,
+   "total": 88
+  },
+  "by_tier": {
+   "boss": {
+    "covered": 12,
+    "total": 12
+   },
+   "elite": {
+    "covered": 12,
+    "total": 12
+   },
+   "event": {
+    "covered": 0,
+    "total": 7
+   },
+   "normal": {
+    "covered": 42,
+    "total": 44
+   },
+   "weak": {
+    "covered": 13,
+    "total": 13
+   }
+  }
+ },
+ "fixtures": 539,
+ "generated_by": "versions/v0.111.0/eval/eval_coverage.py",
+ "grid": {
+  "boss": [
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 6,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.AEONGLASS_BOSS",
+    "title": "Aeonglass"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "IRONCLAD": {
+      "captured": 5,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+    "title": "Ceremonial Beast"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 9,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.KAISER_CRAB_BOSS",
+    "title": "Kaiser Crab"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 6,
+      "certified_fixtures": 6,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "SILENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     }
+    },
+    "key": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+    "title": "Knowledge Demon"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "SILENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     }
+    },
+    "key": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+    "title": "Lagavulin Matriarch"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "IRONCLAD": {
+      "captured": 5,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     }
+    },
+    "key": "ENCOUNTER.QUEEN_BOSS",
+    "title": "Queen"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 3,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.SOUL_FYSH_BOSS",
+    "title": "Soul Fysh"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "IRONCLAD": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     }
+    },
+    "key": "ENCOUNTER.TEST_SUBJECT_BOSS",
+    "title": "Test Subject"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 6,
+      "certified_fixtures": 5,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "SILENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     }
+    },
+    "key": "ENCOUNTER.THE_INSATIABLE_BOSS",
+    "title": "The Insatiable"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 6,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.THE_KIN_BOSS",
+    "title": "The Kin"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 9,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.VANTOM_BOSS",
+    "title": "Vantom"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 3,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 5,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "SILENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     }
+    },
+    "key": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+    "title": "Waterfall Giant"
+   }
+  ],
+  "elite": [
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 16,
+      "certified_fixtures": 6,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 3,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 4,
+      "certified_fixtures": 3,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.BYGONE_EFFIGY",
+    "title": "Bygone Effigy"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 3,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 16,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 5,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 3,
+      "certified_fixtures": 3,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.BYRDONIS",
+    "title": "Byrdonis"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 14,
+      "certified_fixtures": 5,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 4,
+      "certified_fixtures": 3,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.DECIMILLIPEDE",
+    "title": "The Decimillipede"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 4,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 16,
+      "certified_fixtures": 6,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.ENTOMANCER",
+    "title": "Entomancer"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 5,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 14,
+      "certified_fixtures": 8,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.INFESTED_PRISMS",
+    "title": "Infested Prism"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 10,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "SILENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     }
+    },
+    "key": "ENCOUNTER.KNIGHTS_ELITE",
+    "title": "Knight Gang"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 6,
+      "certified_fixtures": 5,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+    "title": "Mecha Knight"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 5,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 8,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.PHANTASMAL_GARDENERS",
+    "title": "Phantasmal Gardeners"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 3,
+      "certified_fixtures": 3,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 18,
+      "certified_fixtures": 7,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "REGENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 6,
+      "certified_fixtures": 5,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.PHROG_PARASITE",
+    "title": "Phrog Parasite"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 12,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "SILENT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.SKULKING_COLONY",
+    "title": "Skulking Colony"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 1,
+      "certified_fixtures": 1,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 7,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "SILENT": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     }
+    },
+    "key": "ENCOUNTER.SOUL_NEXUS",
+    "title": "Soul Nexus"
+   },
+   {
+    "cells": {
+     "DEFECT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     },
+     "IRONCLAD": {
+      "captured": 10,
+      "certified_fixtures": 4,
+      "state": "certified"
+     },
+     "NECROBINDER": {
+      "captured": 0,
+      "certified_fixtures": 0,
+      "state": "not_captured"
+     },
+     "REGENT": {
+      "captured": 1,
+      "certified_fixtures": 0,
+      "state": "captured"
+     },
+     "SILENT": {
+      "captured": 2,
+      "certified_fixtures": 2,
+      "state": "certified"
+     }
+    },
+    "key": "ENCOUNTER.TERROR_EEL",
+    "title": "Terror Eel"
+   }
+  ]
+ },
+ "potions_used": {
+  "covered": 51,
+  "total": 66
+ },
+ "relics_held": {
+  "all": {
+   "covered": 209,
+   "total": 297
+  },
+  "by_pool": {
+   "defect": {
+    "covered": 3,
+    "total": 8
+   },
+   "event": {
+    "covered": 96,
+    "total": 142
+   },
+   "ironclad": {
+    "covered": 7,
+    "total": 8
+   },
+   "necrobinder": {
+    "covered": 1,
+    "total": 8
+   },
+   "regent": {
+    "covered": 4,
+    "total": 8
+   },
+   "shared": {
+    "covered": 97,
+    "total": 115
+   },
+   "silent": {
+    "covered": 1,
+    "total": 8
+   }
+  }
+ },
+ "schema": "sts-eval-coverage-v1",
+ "universe_sha256": "34d47a0aeb8e876a80b9c9cf44eb300baa8fa8f665bbb6cc47c8af2d6ff97808"
+}

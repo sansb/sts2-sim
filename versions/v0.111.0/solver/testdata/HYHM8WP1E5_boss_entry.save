@@ -1,0 +1,104 @@
+{
+ "_provenance": "distilled from current_run.save, read live 2026-07-13 23:53 PDT during the LAGAVULIN_MATRIARCH boss fight; only the fields mcr_validate consumes are kept, all values verbatim from the game's file",
+ "seed_note": "boss node = flat node 16, 17 visited coords",
+ "start_time": 1784011671,
+ "visited_map_coords": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   0,
+   2
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   0,
+   7
+  ],
+  [
+   0,
+   8
+  ],
+  [
+   0,
+   9
+  ],
+  [
+   0,
+   10
+  ],
+  [
+   0,
+   11
+  ],
+  [
+   0,
+   12
+  ],
+  [
+   0,
+   13
+  ],
+  [
+   0,
+   14
+  ],
+  [
+   0,
+   15
+  ],
+  [
+   0,
+   16
+  ]
+ ],
+ "rng": {
+  "seed": "HYHM8WP1E5",
+  "counters": {
+   "up_front": 418,
+   "shuffle": 113,
+   "unknown_map_point": 5,
+   "combat_card_generation": 0,
+   "combat_potion_generation": 0,
+   "combat_card_selection": 0,
+   "combat_energy_costs": 0,
+   "combat_targets": 0,
+   "monster_ai": 1,
+   "niche": 10,
+   "combat_orbs": 0,
+   "treasure_room_relics": 1
+  }
+ },
+ "players": [
+  {
+   "rng": {
+    "seed": 1423973938,
+    "counters": {
+     "rewards": 112,
+     "shops": 56,
+     "transformations": 0
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,75 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "e50f6203d1e67a3b2edb1040c4d29af85f68cfe60b851212f260f5c9eadc1c1a",
+ "turns": 3,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 1,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 0,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 0
+  },
+  {
+   "kind": "potion",
+   "slot": 0
+  },
+  {
+   "kind": "play",
+   "uid": 10,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "345277d18da392d027358c1ab1b8d19597da7c7e0d2814672edf797626256776",
+  "d12eff21e5e7ad29225fbf0c19cef7948d0961e685a9295416729d14114d1227",
+  "962775d560a270d0221d805918968d6009a4b27bb8c548bf9cce9f231d0a9539",
+  "a2ae5cd23c6ee05152306eb0d66d49d9424335c7d3422a19b65a771baa75281f",
+  "150edd685d9bed1af7b2e13958700882eaac4cfb97b9f5a63766098d5929f82e",
+  "15d04cd766ca624c5aeb3fbfbcb0d8bbb90c08956b8990884df87c5d1249b151",
+  "0f704ce327764e4c30ddf2ce1cd22a81b0c121ebda24a934bdba5ec8c60e87b8",
+  "39329a7248784373d0a664c2409138115662874e2666cbb8fee67d613a2f696d",
+  "4ee4db46bc382873e894542d9d62a0f06a5da6de3808ff7f2f6b395e0fd747da",
+  "4bf59527a17db83ac72e1103d683e0f9755d7360231cd7ab5c46f951dc200434",
+  "e82f897087ccd2be6d7fd08969e7a283066eb957261681ebb1c77c8989cff770"
+ ],
+ "terminal": {
+  "hp": 59,
+  "turn": 3,
+  "over": true,
+  "won": true
+ }
+}

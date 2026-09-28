@@ -1,0 +1,19 @@
+{
+  "game_build": "v0.111.0",
+  "seed": "Y3NULJSNND7N",
+  "floors": [
+    42,
+    43,
+    46
+  ],
+  "source_urls": [
+    "https://relaythespire.com/seanb/Y3NULJSNND7N/0/floor/42",
+    "https://relaythespire.com/seanb/Y3NULJSNND7N/0/floor/43",
+    "https://relaythespire.com/seanb/Y3NULJSNND7N/0/floor/46"
+  ],
+  "native_dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+  "floor42_recorded_actions": 30,
+  "floor42_native_completed_checkpoints": 26,
+  "native_full_checksum": "not certified; compare player resources, living monsters, ordered card identities/upgrades, and nine RNG streams",
+  "solver_lines": "achieved witnesses, not optimality proofs; in-game verification pending"
+}

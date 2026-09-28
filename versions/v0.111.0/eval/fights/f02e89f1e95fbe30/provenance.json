@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MCM06RJZDFVB",
+ "node": 7,
+ "encounter": "ENCOUNTER.SEWER_CLAM_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "3875e01f2eb35f05b887a99610fd2347bb7768b5e77d2d909578f7441b6bc625",
+ "save_sha256": "0e38f702f0eeef4a98ea199a8e675c963db7493097aa3dfeb34d351f83e67605",
+ "entry_digest": "fb887aa4ee2471b0a3ea0fd17d458ea58c71c1810f833222b5502b08c88dbce3",
+ "checksummed": true
+}

@@ -1,0 +1,78 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "c8d5ffc617c7b55b93e1bb0d646a54cfe7ced81c810332a2e3644491cfaf2553",
+ "turns": 4,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 16
+  },
+  {
+   "kind": "play",
+   "uid": 18,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 5,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 3
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "end"
+  }
+ ],
+ "step_digests": [
+  "db43ef29fdc1af977600434f611bcd5fb60009a705d391d5daa4978c357c2b5a",
+  "42261796a5f91c5aefc8c3e5914d68d88ad20092243a81c0b9bb6d88d7db3eb1",
+  "9d88e2857b432913c2f0658752e8a13fdaace8ef698eae492f43088f6b1068c6",
+  "6f11372b1a6d36aaa2d5f34f62fe0d2a86f994c757a00c8390a84384303d25fb",
+  "c283699115243a295d5510f22bd3707493265a97a4bc4758618aeb61e1e6ecef",
+  "7c76887c6c434abdfc43a1551d8616e484f68808170dc6eb06af6e1b9a73be07",
+  "ec3a43801cb4c0d64efddbb5ee76ad6fd4a004fe76062654740f9100675614da",
+  "97c0c590909f981cd3d2aeed77c9b0c0198d64c937e4e522ecc00bd6cdb4f1f7",
+  "13784be068b3d03881b15cf79e4b73fe6ed5a1da723fcdfb231a0515085844e9",
+  "ce345a41f11bfe8c118c912c9b766abcc0d37449a2af955838bd79ee0de20405",
+  "49a50eb274aec7a044c0500e85f6807a71ab3698881bdff5ac48e3b274582467",
+  "7336e04ea32440baa04b5be4d76831697e5aed2fc1b93029e7b15d5b85449b7f",
+  "5520b32ab438285bb245d3fb9232429c76d7ee7c8d16b33bf2bffaef84cdcecc"
+ ],
+ "terminal": {
+  "hp": 0,
+  "turn": 4,
+  "over": true,
+  "won": false
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "schema": "capture-run-pair-v1",
+ "note": "One corpus fight (#2972): capture_run.json is the decoded embedded run of a v0.111.0 .mcr capture (mcr_parser.decode(...)['run'], key order as the decoder wrote it), and save.json is the FIRST .save at the same (seed, start_time, global node), as eval_suite.discover_fights pairs them. Both are unmodified.",
+ "dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+ "mcr": "2026-08-23/180410.545_mcr_b2f0cdb2.mcr",
+ "save": "2026-08-23/180334.295_save_ff77138f.save",
+ "encounter_id": "ENCOUNTER.SCROLLS_OF_BITING_WEAK",
+ "node_type": "monster"
+}

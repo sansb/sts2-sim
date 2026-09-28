@@ -1,0 +1,1838 @@
+{
+  "rust_replayed": true,
+  "python_lockstep": true,
+  "trace": [
+    {
+      "step": 0,
+      "turn": 1,
+      "action": {
+        "kind": "play",
+        "uid": 2
+      },
+      "label": "LOOP",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 332,
+      "digest": "51abbb1e918a08c2ddc877d07df598b9430d1620da462f3fe6b4584f5104ecd5"
+    },
+    {
+      "step": 1,
+      "turn": 1,
+      "action": {
+        "kind": "play",
+        "uid": 0
+      },
+      "label": "BOOT_SEQUENCE",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 332,
+      "digest": "2df33e273c2c9b7ddfd18dbdaef2dbd6107f5261efe431a66281a23937e249d4"
+    },
+    {
+      "step": 2,
+      "turn": 1,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 326,
+      "digest": "24e9e3d087ab8315228a43e04165201b0b10f82238b7db712712ba5334f131cd"
+    },
+    {
+      "step": 3,
+      "turn": 2,
+      "action": {
+        "kind": "play",
+        "uid": 5
+      },
+      "label": "SCAVENGE",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 326,
+      "digest": "e5f81a3bdf2866d6bfe12fab30da4ebc886bc46fb3c276b8cf19355b36a85901"
+    },
+    {
+      "step": 4,
+      "turn": 2,
+      "action": {
+        "answer": {
+          "index": 4,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      "label": "Select option 4",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 326,
+      "digest": "d75914d3e5ef34b0f9d351b5b4f9eb552e5ca81272d9ca4347f06bd661dd7671"
+    },
+    {
+      "step": 5,
+      "turn": 2,
+      "action": {
+        "kind": "play",
+        "uid": 35
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 326,
+      "digest": "a0e38c39fc99b3fabf8773438a5eda3dc40c7507a53acc4144befed07175c554"
+    },
+    {
+      "step": 6,
+      "turn": 2,
+      "action": {
+        "kind": "potion",
+        "slot": 0
+      },
+      "label": "potion",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 326,
+      "digest": "e9f2d7787e1ae69e42a881c33fe0ff5907082318a853a94e857d39de7cf23f03"
+    },
+    {
+      "step": 7,
+      "turn": 2,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      "label": "CLAW",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 323,
+      "digest": "e4ea03dd1225489a25d903366c1c42c5cea5563c56cb00b17c96e12d27e5a8e5"
+    },
+    {
+      "step": 8,
+      "turn": 2,
+      "action": {
+        "kind": "play",
+        "uid": 34
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 66,
+      "hp_after": 66,
+      "enemy_hp_after": 323,
+      "digest": "b3f4a5234a97379a4ce0d632cd9ab01a5cbb0414a3f22bc490136e9bf7437b53"
+    },
+    {
+      "step": 9,
+      "turn": 2,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 66,
+      "hp_after": 62,
+      "enemy_hp_after": 317,
+      "digest": "9b59b6c71475f844afcc51e68f218fb4337419c11126f3375f3eb3a54b65565b"
+    },
+    {
+      "step": 10,
+      "turn": 3,
+      "action": {
+        "kind": "play",
+        "uid": 13
+      },
+      "label": "DUALCAST",
+      "hp_before": 62,
+      "hp_after": 62,
+      "enemy_hp_after": 301,
+      "digest": "dad57f7dded060bbcf062e654e94379412cd31f60632b3a58debf63d8ac1971a"
+    },
+    {
+      "step": 11,
+      "turn": 3,
+      "action": {
+        "kind": "play",
+        "uid": 10
+      },
+      "label": "DEFEND_DEFECT",
+      "hp_before": 62,
+      "hp_after": 62,
+      "enemy_hp_after": 301,
+      "digest": "5b9df7c81cc1362e552c9313edcd80a5c88678f6dac72f06493c66ab076002e7"
+    },
+    {
+      "step": 12,
+      "turn": 3,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      "label": "GO_FOR_THE_EYES",
+      "hp_before": 62,
+      "hp_after": 62,
+      "enemy_hp_after": 298,
+      "digest": "dd8f2b3969730df2f720e1d075906a14493ba3f518c23fadff3e08251408797a"
+    },
+    {
+      "step": 13,
+      "turn": 3,
+      "action": {
+        "kind": "play",
+        "uid": 14
+      },
+      "label": "DEFEND_DEFECT",
+      "hp_before": 62,
+      "hp_after": 62,
+      "enemy_hp_after": 298,
+      "digest": "2f86049e304224ec265372329ce002f0baf26733725d9e52209ab825341c15f8"
+    },
+    {
+      "step": 14,
+      "turn": 3,
+      "action": {
+        "kind": "play",
+        "uid": 11
+      },
+      "label": "ITERATION",
+      "hp_before": 62,
+      "hp_after": 62,
+      "enemy_hp_after": 298,
+      "digest": "7ecd21aaddfe1228a0d22b37005c39035e8bac085129410f299a6d52087aae6b"
+    },
+    {
+      "step": 15,
+      "turn": 3,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 62,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "d8a32897f0e013f7b2f9b2a24879f52c0851f6c6c4501ca08466218cb89b2421"
+    },
+    {
+      "step": 16,
+      "turn": 4,
+      "action": {
+        "kind": "play",
+        "uid": 21
+      },
+      "label": "CHILL",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "8d68e34dafbeccaafa6eb8f06b997a9f33aeceb813ecb42d0b749f475e9b123a"
+    },
+    {
+      "step": 17,
+      "turn": 4,
+      "action": {
+        "kind": "play",
+        "uid": 22
+      },
+      "label": "FERAL+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "9a45dfcad26967662fa6a28e93cbca70100943cd59424e1eec97f05b874a1df5"
+    },
+    {
+      "step": 18,
+      "turn": 4,
+      "action": {
+        "kind": "play",
+        "uid": 16
+      },
+      "label": "COOLHEADED",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "24364706196946b89025e7ac45eaba8724c67722c67031b5d0fac223758092fe"
+    },
+    {
+      "step": 19,
+      "turn": 4,
+      "action": {
+        "kind": "play",
+        "uid": 23
+      },
+      "label": "LIGHTNING_ROD",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "00c33d75fdd5d480de5f581d60d04bafa87818b25cc150daa6685ed94e1da19c"
+    },
+    {
+      "step": 20,
+      "turn": 4,
+      "action": {
+        "kind": "play",
+        "uid": 20
+      },
+      "label": "JACK_OF_ALL_TRADES+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "d38d0828a7c8962fbc5fc58b00d3b219458b7985361bca308541e444b6d5e36f"
+    },
+    {
+      "step": 21,
+      "turn": 4,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "a180327fac98be82d609a1316d9e6603dc07621d1162434b5808dfe8cc83bd71"
+    },
+    {
+      "step": 22,
+      "turn": 5,
+      "action": {
+        "kind": "play",
+        "uid": 28
+      },
+      "label": "HOLOGRAM",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "e057a6542a394ec2dc02771943a4e806ae4b89a6662ae9f1f9394af41aad1dce"
+    },
+    {
+      "step": 23,
+      "turn": 5,
+      "action": {
+        "answer": {
+          "index": 2,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      "label": "Select option 2",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "2ad221ef519b706a0b1c6ee99bb19d518654d06ad053460aa40ccf991cf6394a"
+    },
+    {
+      "step": 24,
+      "turn": 5,
+      "action": {
+        "kind": "play",
+        "uid": 30
+      },
+      "label": "COOLANT+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 298,
+      "digest": "48086d00967b3d755b4978829af912d0562261495b2e2b6ecc9322bc6d180165"
+    },
+    {
+      "step": 25,
+      "turn": 5,
+      "action": {
+        "kind": "play",
+        "uid": 29
+      },
+      "label": "SHATTER",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 275,
+      "digest": "e2c59f833f30f538de93f8926bbc960092796062883f3a59c433ee2f37fba847"
+    },
+    {
+      "step": 26,
+      "turn": 5,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      "label": "FTL",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 270,
+      "digest": "0523291b998b06aa7ba33548b68fced45690062cd2986db7aa0a6ace95e44854"
+    },
+    {
+      "step": 27,
+      "turn": 5,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      "label": "FTL+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 264,
+      "digest": "11cb54597173931ddd6c0bc9d22aa412f131bc5a10237e5410eaf66a79e7a4aa"
+    },
+    {
+      "step": 28,
+      "turn": 5,
+      "action": {
+        "kind": "play",
+        "uid": 24
+      },
+      "label": "BOOST_AWAY",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 264,
+      "digest": "27d8b62a779166e1e3479ff573b0d1caa06bb03b46ec2bbf0b2c0e5bce16ffe1"
+    },
+    {
+      "step": 29,
+      "turn": 5,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 261,
+      "digest": "7df3c391cc4329df1d9efaed36544e6bbb01156f424af7ecfb8acb0537d1237d"
+    },
+    {
+      "step": 30,
+      "turn": 6,
+      "action": {
+        "kind": "play",
+        "uid": 32
+      },
+      "label": "FIGHT_THROUGH",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 261,
+      "digest": "e255ebe92c0101db5ad6312f82854d5949b7ecb7003a5983324f23d4f784bfb9"
+    },
+    {
+      "step": 31,
+      "turn": 6,
+      "action": {
+        "kind": "play",
+        "uid": 14
+      },
+      "label": "DEFEND_DEFECT+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 261,
+      "digest": "206f6e748a39b579e8c2e550d54b15a73167912d0dc80762b81afc6f127b2eb2"
+    },
+    {
+      "step": 32,
+      "turn": 6,
+      "action": {
+        "kind": "play",
+        "uid": 33
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 261,
+      "digest": "fe74fef5e807bb6cb4ebf69e6f5a3cd91672dad808769d262fb4ca6dcd4996f8"
+    },
+    {
+      "step": 33,
+      "turn": 6,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      "label": "GO_FOR_THE_EYES+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 257,
+      "digest": "3bd8d73412d3f54b0efd1e6d245386d3ca9c03a1f4b88621ae1b2345c2c36779"
+    },
+    {
+      "step": 34,
+      "turn": 6,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      "label": "GO_FOR_THE_EYES+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 253,
+      "digest": "f8b4d3c8cae223c31244d41d459848ebaeec0ecc88f71cfb0085f2d4789b5e8f"
+    },
+    {
+      "step": 35,
+      "turn": 6,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 247,
+      "digest": "88cd266a2628f00cf0cb1fe0c9b72b6b000a5a3c8d29b0175ae19d42e9c45dec"
+    },
+    {
+      "step": 36,
+      "turn": 7,
+      "action": {
+        "kind": "play",
+        "uid": 26
+      },
+      "label": "SHADOW_SHIELD",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 247,
+      "digest": "01eaa9703daa878d5fc5cbe8f4ef363e0355d2061fb241ebea44cfb8926e1423"
+    },
+    {
+      "step": 37,
+      "turn": 7,
+      "action": {
+        "kind": "play",
+        "uid": 23
+      },
+      "label": "LIGHTNING_ROD+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 247,
+      "digest": "e3b33aad6e94bd9a1884ab447af561de6ac35ea7d10efb370fb819147153b5a5"
+    },
+    {
+      "step": 38,
+      "turn": 7,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      "label": "FTL+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 241,
+      "digest": "a00b93ebbf2bd709e8e3c74b9d69cb121dea71964b178db5a64dbe932b0f732f"
+    },
+    {
+      "step": 39,
+      "turn": 7,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      "label": "FTL+",
+      "hp_before": 49,
+      "hp_after": 49,
+      "enemy_hp_after": 235,
+      "digest": "72990a5912dd9eefd2dab27076e954952f0533d43658f5e4da535ff556becfba"
+    },
+    {
+      "step": 40,
+      "turn": 7,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 49,
+      "hp_after": 45,
+      "enemy_hp_after": 229,
+      "digest": "5377d7c7b300486def3ac3f177a3da4460342a27085954abbcab937432cf1361"
+    },
+    {
+      "step": 41,
+      "turn": 8,
+      "action": {
+        "kind": "play",
+        "uid": 24
+      },
+      "label": "BOOST_AWAY+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 229,
+      "digest": "250307e514d582885b8470d19dd2525e58e55f790b0e915a7fb0eb325a855c3a"
+    },
+    {
+      "step": 42,
+      "turn": 8,
+      "action": {
+        "kind": "play",
+        "uid": 4
+      },
+      "label": "CHARGE_BATTERY",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 229,
+      "digest": "41473e7351a4b04fa881ac87ccefe7e1df5853a390a67b37cc84dc371eb4d38c"
+    },
+    {
+      "step": 43,
+      "turn": 8,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      "label": "CLAW+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 223,
+      "digest": "14e30466bd485a085cc252199d376a384c2df2538b3e1dff5e803f66bfda424c"
+    },
+    {
+      "step": 44,
+      "turn": 8,
+      "action": {
+        "kind": "play",
+        "uid": 39
+      },
+      "label": "NOSTALGIA",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 223,
+      "digest": "732ebf46d76cf5eb7067bc45975896094a15d519b8e67c467396fff70c2fb8a9"
+    },
+    {
+      "step": 45,
+      "turn": 8,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      "label": "CLAW+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 214,
+      "digest": "41e4513fedf4bcbaf42924828616a8f3f61bf6840b9039d97696f74f02644bd8"
+    },
+    {
+      "step": 46,
+      "turn": 8,
+      "action": {
+        "kind": "play",
+        "uid": 36
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 214,
+      "digest": "6d6d077de35fa3a5d305715f538bc801d69ea516c86f794af85f77d3571f09f6"
+    },
+    {
+      "step": 47,
+      "turn": 8,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 200,
+      "digest": "67a74218365ee6a96e49ebd1459ced1f17cba1bc80fbec729a993cc8100269c6"
+    },
+    {
+      "step": 48,
+      "turn": 9,
+      "action": {
+        "kind": "play",
+        "uid": 38
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 200,
+      "digest": "a06d74e6d605f8264e6109f931fa8a298a57d12a162ef532992c030190861d94"
+    },
+    {
+      "step": 49,
+      "turn": 9,
+      "action": {
+        "kind": "play",
+        "uid": 35
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 200,
+      "digest": "42d0fed31ce51fdcbd40e6ef1afd7b9f5b0dd85f9c6a43b26d3137a47788bd3b"
+    },
+    {
+      "step": 50,
+      "turn": 9,
+      "action": {
+        "kind": "play",
+        "uid": 10
+      },
+      "label": "DEFEND_DEFECT+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 200,
+      "digest": "c3ee153fb9d75696be0b8a79a0cad8356e99e326f209ca1269bf96ce8651f810"
+    },
+    {
+      "step": 51,
+      "turn": 9,
+      "action": {
+        "kind": "play",
+        "uid": 13
+      },
+      "label": "DUALCAST+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 152,
+      "digest": "4161c8ada78e441f13c7426e6df99d597bc625e93d03ab956a861f15a0f40e1b"
+    },
+    {
+      "step": 52,
+      "turn": 9,
+      "action": {
+        "kind": "play",
+        "uid": 1
+      },
+      "label": "TURBO",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 152,
+      "digest": "28cb9c2cb0f39699ae41c24a8fdceaa696438bce983ceae1c482822b8bd208e9"
+    },
+    {
+      "step": 53,
+      "turn": 9,
+      "action": {
+        "kind": "play",
+        "uid": 18
+      },
+      "label": "GLACIER",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 144,
+      "digest": "5324943e307db4a90fc74d4a6dc3b989f5e03c58b86b52e135d3fd30492b59ed"
+    },
+    {
+      "step": 54,
+      "turn": 9,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 138,
+      "digest": "64170b63a99127fe84a2da13e859345fa87ae4ad6826be06f8bbe800b36f4ee1"
+    },
+    {
+      "step": 55,
+      "turn": 10,
+      "action": {
+        "kind": "play",
+        "uid": 34
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 138,
+      "digest": "0da0c00b7c41dde62baadb866d36e169f1231dab2abbeaa8d9983b3bddd9a88e"
+    },
+    {
+      "step": 56,
+      "turn": 10,
+      "action": {
+        "kind": "play",
+        "uid": 32
+      },
+      "label": "FIGHT_THROUGH+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 138,
+      "digest": "c31799f64e81ebe54b36227881aa90eaaa3056e874844daddb5419a2f5c8b6e3"
+    },
+    {
+      "step": 57,
+      "turn": 10,
+      "action": {
+        "kind": "play",
+        "uid": 3
+      },
+      "label": "BOOST_AWAY",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 138,
+      "digest": "8e6ee3f28bbb1a587ebd3a3059cacdc9431c11f0949e8177042e431166a6151e"
+    },
+    {
+      "step": 58,
+      "turn": 10,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      "label": "GO_FOR_THE_EYES+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 134,
+      "digest": "0f676c6cc76520a4873240f003e5f7f4a7a4de0303683c36388da01146a81683"
+    },
+    {
+      "step": 59,
+      "turn": 10,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      "label": "GO_FOR_THE_EYES+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 130,
+      "digest": "0ba678181312f296b548199fa2054da67db0b81ef48839e653cab5026c678bb5"
+    },
+    {
+      "step": 60,
+      "turn": 10,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 124,
+      "digest": "6125cc18d6464c699574151f4644bf6fa4868080aeed1b85d40ecbeedbc00f1a"
+    },
+    {
+      "step": 61,
+      "turn": 11,
+      "action": {
+        "kind": "play",
+        "uid": 32
+      },
+      "label": "FIGHT_THROUGH+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 124,
+      "digest": "d11b6e96615300376b1340c63e0a9c27974d8b3e8da8e24ccc46def809c03627"
+    },
+    {
+      "step": 62,
+      "turn": 11,
+      "action": {
+        "kind": "play",
+        "uid": 23
+      },
+      "label": "LIGHTNING_ROD+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 124,
+      "digest": "b33018a15dd8006f2bd8beb63fcbe27f0fe77c0f42c2063b6703c8e3f4adfd87"
+    },
+    {
+      "step": 63,
+      "turn": 11,
+      "action": {
+        "kind": "play",
+        "uid": 13
+      },
+      "label": "DUALCAST+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 108,
+      "digest": "81cf8068f8b55595805410afd9d99f756d3fc468e636c26ac49652fa3312a900"
+    },
+    {
+      "step": 64,
+      "turn": 11,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 108,
+      "digest": "4287b1b9ecfc242ab35a4e03d5b9303a98cba2744114d3c7b63ba9bc5d8b2695"
+    },
+    {
+      "step": 65,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      "label": "FTL+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "da7975dc87e03da1d51664b3548081ce544e41227e2452db08c3b8a4ff7672c3"
+    },
+    {
+      "step": 66,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "uid": 8
+      },
+      "label": "GLASSWORK",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "3767f14e81e79fe0faf818aa6561ffd0dc7c9f7dee441c815c25de1ae7090143"
+    },
+    {
+      "step": 67,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "uid": 1
+      },
+      "label": "TURBO+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "267d349ab1cd37d6d3b1f5044de92496946bd5f236d94046127b3258ebdc9e7f"
+    },
+    {
+      "step": 68,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "uid": 37
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "204dec2ec8c99527839e2cd96bc03a1cfe72264038cf2f573656bbf99e562f3e"
+    },
+    {
+      "step": 69,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "uid": 32
+      },
+      "label": "FIGHT_THROUGH+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "59317f0200430cf73a993266730ca504abecb61e2d840d20dd7427e829b0bec8"
+    },
+    {
+      "step": 70,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "uid": 5
+      },
+      "label": "SCAVENGE+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "a2b2070037b730f797ad036ae3cf7ceb3eefab95f9f92cf3824bb700583e9f89"
+    },
+    {
+      "step": 71,
+      "turn": 12,
+      "action": {
+        "answer": {
+          "index": 0,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      "label": "Select option 0",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "3228d1d5e8433db5e9fb24ce8458c083656c0d4078505ab285ce37de86a31350"
+    },
+    {
+      "step": 72,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "uid": 38
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 102,
+      "digest": "f30236f37809239c1d174a5ffa1b1d9957b4d497e8114a27e6df1c1ee2c8ff0e"
+    },
+    {
+      "step": 73,
+      "turn": 12,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      "label": "FTL+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 96,
+      "digest": "236eda5c9238e01bbe666eb11515d21d78f3194146e0a9bef20836404772f610"
+    },
+    {
+      "step": 74,
+      "turn": 12,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 86,
+      "digest": "e840996ff5be2581702ee674c9ace4c1237e5d12acb0055fba18b13e2490390f"
+    },
+    {
+      "step": 75,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "uid": 16
+      },
+      "label": "COOLHEADED+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 78,
+      "digest": "0ec88e734a8ae07a2d02dfbcc25b57af949a4c1c52058b7051951dc5a02117ea"
+    },
+    {
+      "step": 76,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "uid": 25
+      },
+      "label": "EQUILIBRIUM",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 78,
+      "digest": "520d216da743e6ebc456720a03a10330b1e80bf74037e5af88255cfe24fbd3aa"
+    },
+    {
+      "step": 77,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "uid": 4
+      },
+      "label": "CHARGE_BATTERY+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 78,
+      "digest": "9f5499d374788bff774e8f575669298add1121b70e4adc2ed683be27aaa181f4"
+    },
+    {
+      "step": 78,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "uid": 9
+      },
+      "label": "ZAP",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 72,
+      "digest": "77862cf2f0aa458e3e53bba540f308296dcdde695b0239013bd117b965cbf7ec"
+    },
+    {
+      "step": 79,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      "label": "CLAW+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 60,
+      "digest": "88f49b315f1e19edeeb7c3c919bbe5177ce495437819eac2b779bbf13c1fa1f4"
+    },
+    {
+      "step": 80,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "uid": 24
+      },
+      "label": "BOOST_AWAY+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 60,
+      "digest": "8d64656f6b46c6aca29f75055f877a24d74a3ccf17f9cd4a3e027f9662b29137"
+    },
+    {
+      "step": 81,
+      "turn": 13,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      "label": "CLAW+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 45,
+      "digest": "18393de22c209a685d5b7be2ce3df1ce7210abf36f4471a3070e2b84b4ee8a42"
+    },
+    {
+      "step": 82,
+      "turn": 13,
+      "action": {
+        "kind": "end"
+      },
+      "label": "end",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 36,
+      "digest": "cd12c72b00e1d8b0273e945e8aa9e9e760f7fcb1e771ba1acafc5303a1f00ff8"
+    },
+    {
+      "step": 83,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "uid": 1
+      },
+      "label": "TURBO+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 36,
+      "digest": "74c8966973e1ad5ffdaf202aec9db89c2bba75250c9fe526b61dcad7fd2d5553"
+    },
+    {
+      "step": 84,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "uid": 16
+      },
+      "label": "COOLHEADED+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 28,
+      "digest": "b9aa9a9522e958947970f6b3dec0aa312a5c65a5a0a79ab0296ec5b4310e4776"
+    },
+    {
+      "step": 85,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "uid": 33
+      },
+      "label": "FRANTIC_ESCAPE",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 28,
+      "digest": "97dd3db0379e4bb33f812d42dfaa1c48b8c488929fec5b0bfe31b657333a50ce"
+    },
+    {
+      "step": 86,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "uid": 26
+      },
+      "label": "SHADOW_SHIELD+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 28,
+      "digest": "a03a801cc60053ebf761cb2a28f43400a5e1b06859b2d8e0e8901598c4d16683"
+    },
+    {
+      "step": 87,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "uid": 4
+      },
+      "label": "CHARGE_BATTERY+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 28,
+      "digest": "305d1b50384364b6d0f9cb4765b500cc1e26f13c81b9805b75a97c2e411c8364"
+    },
+    {
+      "step": 88,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "uid": 1
+      },
+      "label": "TURBO+",
+      "hp_before": 45,
+      "hp_after": 45,
+      "enemy_hp_after": 28,
+      "digest": "a72b773aea287a23277bce754dbb27303450bf8ff6f611799d510e159b9adfa4"
+    },
+    {
+      "step": 89,
+      "turn": 14,
+      "action": {
+        "kind": "play",
+        "target": 0,
+        "uid": 19
+      },
+      "label": "ICE_LANCE+",
+      "hp_before": 45,
+      "hp_after": 43,
+      "enemy_hp_after": 0,
+      "digest": "1e468b65e98f58b02908f4391d9872e4f27ab8373edb1a56c4cd0bfe7310485b"
+    }
+  ],
+  "final_digest": "1e468b65e98f58b02908f4391d9872e4f27ab8373edb1a56c4cd0bfe7310485b",
+  "final_state": {
+    "game_build": "v0.111.0",
+    "monsters": [
+      {
+        "hp": -8,
+        "kind": "THE_INSATIABLE",
+        "loop_pos": 1,
+        "max_hp": 341,
+        "owner_powered_damage_results_this_turn": 1,
+        "strength": 9
+      }
+    ],
+    "piles": {
+      "discard": [
+        {
+          "id": "VOID",
+          "uid": 55,
+          "upgrade": 0
+        },
+        {
+          "id": "COOLHEADED",
+          "uid": 16,
+          "upgrade": 1
+        },
+        {
+          "id": "FRANTIC_ESCAPE",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [
+              [
+                2,
+                1,
+                0,
+                false
+              ],
+              [
+                2,
+                1,
+                0,
+                false
+              ]
+            ],
+            0,
+            false,
+            []
+          ],
+          "uid": 33,
+          "upgrade": 0
+        },
+        {
+          "id": "SHADOW_SHIELD",
+          "uid": 26,
+          "upgrade": 1
+        },
+        {
+          "id": "CHARGE_BATTERY",
+          "uid": 4,
+          "upgrade": 1
+        },
+        {
+          "id": "VOID",
+          "uid": 56,
+          "upgrade": 0
+        },
+        {
+          "id": "TURBO",
+          "uid": 1,
+          "upgrade": 1
+        }
+      ],
+      "draw": [
+        {
+          "id": "EQUILIBRIUM",
+          "uid": 25,
+          "upgrade": 1
+        },
+        {
+          "id": "DEFEND_DEFECT",
+          "uid": 14,
+          "upgrade": 1
+        },
+        {
+          "id": "DUALCAST",
+          "uid": 13,
+          "upgrade": 1
+        },
+        {
+          "id": "SCAVENGE",
+          "uid": 5,
+          "upgrade": 1
+        },
+        {
+          "id": "WOUND",
+          "uid": 50,
+          "upgrade": 0
+        },
+        {
+          "id": "DEFEND_DEFECT",
+          "uid": 10,
+          "upgrade": 1
+        },
+        {
+          "id": "WOUND",
+          "uid": 47,
+          "upgrade": 0
+        },
+        {
+          "id": "FRANTIC_ESCAPE",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [
+              [
+                2,
+                1,
+                0,
+                false
+              ],
+              [
+                2,
+                1,
+                0,
+                false
+              ]
+            ],
+            0,
+            false,
+            []
+          ],
+          "uid": 38,
+          "upgrade": 0
+        },
+        {
+          "id": "WOUND",
+          "uid": 52,
+          "upgrade": 0
+        },
+        {
+          "id": "FRANTIC_ESCAPE",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [
+              [
+                2,
+                1,
+                0,
+                false
+              ],
+              [
+                2,
+                1,
+                0,
+                false
+              ]
+            ],
+            0,
+            false,
+            []
+          ],
+          "uid": 34,
+          "upgrade": 0
+        },
+        {
+          "id": "GO_FOR_THE_EYES",
+          "uid": 15,
+          "upgrade": 1
+        },
+        {
+          "enchantment": [
+            "NIMBLE",
+            2
+          ],
+          "id": "GLACIER",
+          "uid": 17,
+          "upgrade": 1
+        },
+        {
+          "id": "ROLLING_BOULDER",
+          "uid": 40,
+          "upgrade": 0
+        },
+        {
+          "id": "BOOST_AWAY",
+          "uid": 3,
+          "upgrade": 1
+        },
+        {
+          "id": "FTL",
+          "uid": 27,
+          "upgrade": 1
+        },
+        {
+          "id": "FRANTIC_ESCAPE",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [
+              [
+                2,
+                1,
+                0,
+                false
+              ],
+              [
+                2,
+                1,
+                0,
+                false
+              ]
+            ],
+            0,
+            false,
+            []
+          ],
+          "uid": 35,
+          "upgrade": 0
+        },
+        {
+          "id": "WOUND",
+          "uid": 53,
+          "upgrade": 0
+        },
+        {
+          "id": "LIGHTNING_ROD",
+          "uid": 23,
+          "upgrade": 1
+        },
+        {
+          "id": "WOUND",
+          "uid": 46,
+          "upgrade": 0
+        },
+        {
+          "id": "DAZED",
+          "uid": 48,
+          "upgrade": 0
+        },
+        {
+          "id": "DAZED",
+          "uid": 54,
+          "upgrade": 0
+        },
+        {
+          "id": "FIGHT_THROUGH",
+          "uid": 32,
+          "upgrade": 1
+        },
+        {
+          "id": "FRANTIC_ESCAPE",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [
+              [
+                2,
+                1,
+                0,
+                false
+              ]
+            ],
+            0,
+            false,
+            []
+          ],
+          "uid": 36,
+          "upgrade": 0
+        },
+        {
+          "id": "VOID",
+          "uid": 51,
+          "upgrade": 0
+        },
+        {
+          "id": "CLAW",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [],
+            14,
+            false,
+            []
+          ],
+          "uid": 7,
+          "upgrade": 1
+        },
+        {
+          "id": "WOUND",
+          "uid": 49,
+          "upgrade": 0
+        },
+        {
+          "id": "FRANTIC_ESCAPE",
+          "physical_state": [
+            "PHYSICAL_CARD_STATE",
+            [
+              [
+                2,
+                1,
+                0,
+                false
+              ]
+            ],
+            0,
+            false,
+            []
+          ],
+          "uid": 37,
+          "upgrade": 0
+        }
+      ],
+      "exhaust": [
+        {
+          "id": "BOOT_SEQUENCE",
+          "uid": 0,
+          "upgrade": 1
+        },
+        {
+          "id": "BALL_LIGHTNING",
+          "uid": 6,
+          "upgrade": 1
+        },
+        {
+          "id": "CLUMSY",
+          "uid": 12,
+          "upgrade": 0
+        },
+        {
+          "id": "CHILL",
+          "uid": 21,
+          "upgrade": 1
+        },
+        {
+          "id": "JACK_OF_ALL_TRADES",
+          "uid": 20,
+          "upgrade": 1
+        },
+        {
+          "id": "HOLOGRAM",
+          "uid": 28,
+          "upgrade": 1
+        },
+        {
+          "id": "SHATTER",
+          "uid": 29,
+          "upgrade": 1
+        },
+        {
+          "id": "ASCENDERS_BANE",
+          "uid": 31,
+          "upgrade": 0
+        },
+        {
+          "id": "DAZED",
+          "uid": 41,
+          "upgrade": 0
+        },
+        {
+          "id": "DAZED",
+          "uid": 44,
+          "upgrade": 0
+        },
+        {
+          "id": "VOID",
+          "uid": 45,
+          "upgrade": 0
+        },
+        {
+          "id": "GLACIER",
+          "uid": 18,
+          "upgrade": 1
+        }
+      ],
+      "hand": [
+        {
+          "id": "WOUND",
+          "uid": 42,
+          "upgrade": 0
+        },
+        {
+          "id": "WOUND",
+          "uid": 43,
+          "upgrade": 0
+        },
+        {
+          "id": "BOOST_AWAY",
+          "uid": 24,
+          "upgrade": 1
+        },
+        {
+          "id": "ZAP",
+          "uid": 9,
+          "upgrade": 1
+        },
+        {
+          "id": "GLASSWORK",
+          "uid": 8,
+          "upgrade": 1
+        }
+      ],
+      "play": [
+        {
+          "enchantment": [
+            "CORRUPTED",
+            1
+          ],
+          "id": "ICE_LANCE",
+          "uid": 19,
+          "upgrade": 1
+        }
+      ]
+    },
+    "player": {
+      "after_card_drawn_power_order": [
+        "iteration"
+      ],
+      "after_player_turn_start_power_order": [
+        "loop"
+      ],
+      "after_side_turn_start_power_order": [
+        "feral",
+        "coolant"
+      ],
+      "attack_plays_finished_this_turn": 1,
+      "attack_skill_plays_started_this_turn": 6,
+      "block": 36,
+      "card_block_gains": 2,
+      "card_plays_finished_combat": 73,
+      "cards_drawn_combat": 104,
+      "coolant": 3,
+      "cracked_core": true,
+      "energy": 1,
+      "energy_next_turn": 1,
+      "energy_spent_this_turn": 9,
+      "exact_piles": true,
+      "feral": 1,
+      "fully_unlocked_potion_pool": true,
+      "gold": 142,
+      "horn_cleat": true,
+      "hp": 43,
+      "inky_attack_damage": 0,
+      "innate_min_draw": 1,
+      "iteration": 2,
+      "loop": 1,
+      "manual_card_plays_finished_this_turn": 7,
+      "max_hp": 78,
+      "next_after_side_turn_end_power_uid": 1,
+      "next_card_uid": 57,
+      "next_generated_hook_uid": 24,
+      "non_hand_draws_this_turn": 4,
+      "nostalgia": 1,
+      "orb_base_slots": 3,
+      "orb_slots": 3,
+      "orbs": [
+        [
+          "LIGHTNING",
+          null
+        ],
+        [
+          "FROST",
+          null
+        ],
+        [
+          "DARK",
+          6
+        ]
+      ],
+      "over": true,
+      "owner_attack_plays_started_this_turn": 1,
+      "owner_card_plays_finished_this_turn": 7,
+      "owner_cards_exhausted_combat": 12,
+      "owner_generated_cards_combat": 18,
+      "pendulum": 0,
+      "player_phase": 3,
+      "player_unblocked_damage_results_combat": 4,
+      "player_unblocked_damage_this_turn": true,
+      "plays_this_turn": 7,
+      "popper": true,
+      "potion_slots": [
+        null,
+        null
+      ],
+      "razor_tooth": true,
+      "regalite_block_amount": 4,
+      "relics_entering": [
+        "RELIC.CRACKED_CORE",
+        "RELIC.LEAFY_POULTICE",
+        "RELIC.RAZOR_TOOTH",
+        "RELIC.BAG_OF_MARBLES",
+        "RELIC.AMETHYST_AUBERGINE",
+        "RELIC.ANCHOR",
+        "RELIC.FESTIVE_POPPER",
+        "RELIC.ASTROLABE",
+        "RELIC.PEAR",
+        "RELIC.PENDULUM",
+        "RELIC.HORN_CLEAT"
+      ],
+      "relics_entering_dispatch_ordered": true,
+      "result_location_power_order": [
+        "feral",
+        "nostalgia"
+      ],
+      "reward_card_pool": "Defect",
+      "reward_card_rarity_odds": "BossEncounter",
+      "round_number": 14,
+      "skill_plays_finished_this_turn": 5,
+      "splash_unlock_epochs": [
+        "ACT2_B_EPOCH",
+        "ACT3_B_EPOCH",
+        "COLORLESS1_EPOCH",
+        "COLORLESS2_EPOCH",
+        "COLORLESS3_EPOCH",
+        "COLORLESS4_EPOCH",
+        "COLORLESS5_EPOCH",
+        "CUSTOM_AND_SEEDS_EPOCH",
+        "DAILY_RUN_EPOCH",
+        "DARV_EPOCH",
+        "DEFECT1_EPOCH",
+        "DEFECT2_EPOCH",
+        "DEFECT3_EPOCH",
+        "DEFECT4_EPOCH",
+        "DEFECT5_EPOCH",
+        "DEFECT6_EPOCH",
+        "DEFECT7_EPOCH",
+        "EVENT1_EPOCH",
+        "EVENT2_EPOCH",
+        "EVENT3_EPOCH",
+        "IRONCLAD2_EPOCH",
+        "IRONCLAD3_EPOCH",
+        "IRONCLAD4_EPOCH",
+        "IRONCLAD5_EPOCH",
+        "IRONCLAD6_EPOCH",
+        "IRONCLAD7_EPOCH",
+        "NECROBINDER1_EPOCH",
+        "NECROBINDER2_EPOCH",
+        "NECROBINDER3_EPOCH",
+        "NECROBINDER4_EPOCH",
+        "NECROBINDER5_EPOCH",
+        "NECROBINDER6_EPOCH",
+        "NECROBINDER7_EPOCH",
+        "NEOW_EPOCH",
+        "OROBAS_EPOCH",
+        "POTION1_EPOCH",
+        "POTION2_EPOCH",
+        "REGENT1_EPOCH",
+        "REGENT2_EPOCH",
+        "REGENT3_EPOCH",
+        "REGENT4_EPOCH",
+        "REGENT5_EPOCH",
+        "REGENT6_EPOCH",
+        "REGENT7_EPOCH",
+        "RELIC1_EPOCH",
+        "RELIC2_EPOCH",
+        "RELIC3_EPOCH",
+        "RELIC4_EPOCH",
+        "RELIC5_EPOCH",
+        "SILENT1_EPOCH",
+        "SILENT2_EPOCH",
+        "SILENT3_EPOCH",
+        "SILENT4_EPOCH",
+        "SILENT5_EPOCH",
+        "SILENT6_EPOCH",
+        "SILENT7_EPOCH",
+        "UNDERDOCKS_EPOCH"
+      ],
+      "status_draws_this_turn": 2,
+      "turn": 14
+    },
+    "rng": {
+      "ai": {
+        "counter": 15,
+        "words": [
+          17831353001781701915,
+          3986524226986912318,
+          10949948409626013950,
+          12135104666268815199
+        ]
+      },
+      "combat_orbs": {
+        "counter": 0,
+        "words": [
+          10333539271576498312,
+          3464835931453476964,
+          15323603412009156632,
+          12002271951819152652
+        ]
+      },
+      "energy_costs": {
+        "counter": 0,
+        "words": [
+          9204872982282024185,
+          250201893917102127,
+          12067345629270619503,
+          5897110069489580392
+        ]
+      },
+      "generation": {
+        "counter": 1049,
+        "words": [
+          6484426840637005705,
+          7774226673610933581,
+          17107522905981562918,
+          10448792876032274799
+        ]
+      },
+      "niche": {
+        "counter": 40,
+        "words": [
+          10569269106013367503,
+          3401829644987382164,
+          16634505724096591512,
+          15158959519396798103
+        ]
+      },
+      "potion_generation": {
+        "counter": 0,
+        "words": [
+          5102301862492046504,
+          1615902931870500643,
+          15530934801055061250,
+          6324607985196964396
+        ]
+      },
+      "rng": {
+        "counter": 774,
+        "words": [
+          3413849545576527100,
+          12593325913863956238,
+          3998098990676236766,
+          7159583597681333183
+        ]
+      },
+      "sel": {
+        "counter": 21,
+        "words": [
+          17272559759423519411,
+          5600209592447894023,
+          13130672336221470638,
+          4455023891541459736
+        ]
+      },
+      "targets": {
+        "counter": 146,
+        "words": [
+          16172605300815399425,
+          11171017629031620608,
+          3505724929012683123,
+          11996367101926096355
+        ]
+      }
+    },
+    "schema": "sts-sim-canonical-v2"
+  }
+}

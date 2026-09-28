@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "0XPN2X98ZW1V",
+ "node": 32,
+ "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "28419d0c419cb4ec90cab7d258253c87f7e9baf14594677ed87c1971fff3b881",
+ "save_sha256": "663c2187aaf7449be061a2a4a9f7d7c4810e2f75cba4cfd25b3b51ca7f76c7df",
+ "entry_digest": "54ab8149846ef89161160a56536e12ce8d8f9eb539b372e40fb4e4e125246f44",
+ "checksummed": true
+}

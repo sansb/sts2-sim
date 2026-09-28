@@ -1,0 +1,982 @@
+{
+ "game_build": "v0.111.0",
+ "opening_window_hooks": [
+  "AfterRoomEntered",
+  "BeforeCombatStart",
+  "BeforeCombatStartLate",
+  "BeforeHandDraw",
+  "ModifyHandDraw"
+ ],
+ "relics": [
+  {
+   "relic": "RELIC.AKABEKO",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.ANCHOR",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.BAG_OF_MARBLES",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BAG_OF_PREPARATION",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.BEATING_REMNANT",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BELLOWS",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BELT_BUCKLE",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.BIG_HAT",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BIG_MUSHROOM",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.BLESSED_ANTLER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.BONE_TEA",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BOOMING_CONCH",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.BOUND_PHYLACTERY",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.BREAD",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BRILLIANT_SCARF",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BRIMSTONE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.BRONZE_SCALES",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.BYRDPIP",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.CANDELABRA",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.CHANDELIER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.CHOICES_PARADOX",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.CRACKED_CORE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.CROSSBOW",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.DATA_DISK",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.DELICATE_FROND",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.DEMON_TONGUE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.DIAMOND_DIADEM",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.DIVINE_DESTINY",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.DIVINE_RIGHT",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.EMBER_TEA",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.EMOTION_CHIP",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.ETERNAL_FEATHER",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.FAKE_ANCHOR",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.FAKE_HAPPY_FLOWER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.FAKE_ORICHALCUM",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.FAKE_SNECKO_EYE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.FENCING_MANUAL",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.FESTIVE_POPPER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.FUNERARY_MASK",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.FUR_COAT",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.GAMBLING_CHIP",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.GHOST_SEED",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.GIRYA",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.GORGET",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.HAPPY_FLOWER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.INFUSED_CORE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.JEWELED_MASK",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.KUNAI",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.KUSARIGAMA",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.LANTERN",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.LETTER_OPENER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.MEAL_TICKET",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.MEAT_ON_THE_BONE",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.MERCURY_HOURGLASS",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.MINI_REGENT",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.MR_STRUGGLES",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.MUSIC_BOX",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.NINJA_SCROLL",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.ODDLY_SMOOTH_STONE",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.ORANGE_DOUGH",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.ORICHALCUM",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.ORNAMENTAL_FAN",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.PAELS_BLOOD",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.PAELS_EYE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.PAELS_FLESH",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart",
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.PAELS_LEGION",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.PAELS_TEARS",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.PANTOGRAPH",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.PENDULUM",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw",
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.PETRIFIED_TOAD",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStartLate"
+   ]
+  },
+  {
+   "relic": "RELIC.PHILOSOPHERS_STONE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.PHYLACTERY_UNBOUND",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.PLANISPHERE",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.POCKETWATCH",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart",
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.POLLINOUS_CORE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw",
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.POWER_CELL",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.RADIANT_PEARL",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.RAINBOW_RING",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.RED_MASK",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.RING_OF_THE_DRAKE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.RING_OF_THE_SNAKE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.RIPPLE_BASIN",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.ROYAL_POISON",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.RUNIC_CAPACITOR",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.SAI",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.SEAL_OF_GOLD",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.SHURIKEN",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.SLING_OF_COURAGE",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.SNECKO_EYE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart",
+    "ModifyHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.STONE_CALENDAR",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.STONE_CRACKER",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.SWORD_OF_JADE",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.SYMBIOTIC_VIRUS",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.TEA_OF_DISCOURTESY",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.TOASTY_MITTENS",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.TOOLBOX",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeHandDraw"
+   ]
+  },
+  {
+   "relic": "RELIC.TWISTED_FUNNEL",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.UNSETTLING_LAMP",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.VAJRA",
+   "rust_body_site": false,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "AfterRoomEntered"
+   ]
+  },
+  {
+   "relic": "RELIC.VAMBRACE",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [],
+   "window_hooks": [
+    "BeforeCombatStart"
+   ]
+  },
+  {
+   "relic": "RELIC.VELVET_CHOKER",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "BeforeSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.VERY_HOT_COCOA",
+   "rust_body_site": false,
+   "template": true,
+   "turn_one_hooks": [
+    "AfterSideTurnStart"
+   ],
+   "window_hooks": []
+  },
+  {
+   "relic": "RELIC.VEXING_PUZZLEBOX",
+   "rust_body_site": true,
+   "template": false,
+   "turn_one_hooks": [
+    "AfterPlayerTurnStart"
+   ],
+   "window_hooks": []
+  }
+ ],
+ "schema": "sts-sim-opening-relic-hooks-v1",
+ "template_relics": [
+  "RELIC.BLOOD_SOAKED_ROSE",
+  "RELIC.CAPTAINS_WHEEL",
+  "RELIC.DATA_DISK",
+  "RELIC.DIAMOND_DIADEM",
+  "RELIC.DIVINE_DESTINY",
+  "RELIC.DIVINE_RIGHT",
+  "RELIC.ECTOPLASM",
+  "RELIC.FAKE_ANCHOR",
+  "RELIC.FAKE_BLOOD_VIAL",
+  "RELIC.LUNAR_PASTRY",
+  "RELIC.MERCURY_HOURGLASS",
+  "RELIC.PAELS_BLOOD",
+  "RELIC.PRISMATIC_GEM",
+  "RELIC.SAI",
+  "RELIC.SOZU",
+  "RELIC.SPARKLING_ROUGE",
+  "RELIC.SWORD_OF_JADE",
+  "RELIC.VERY_HOT_COCOA"
+ ],
+ "turn_one_hooks": [
+  "BeforeSideTurnStart",
+  "AfterSideTurnStart",
+  "AfterPlayerTurnStart"
+ ]
+}

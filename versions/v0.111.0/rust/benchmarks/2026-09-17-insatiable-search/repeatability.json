@@ -1,0 +1,615 @@
+[
+  {
+    "mode": "random",
+    "playouts": 1000,
+    "repeated_seed_exact_result": true,
+    "best": {
+      "actions": [
+        {
+          "kind": "play",
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "uid": 2
+        },
+        {
+          "kind": "play",
+          "uid": 3
+        },
+        {
+          "kind": "potion",
+          "slot": 0
+        },
+        {
+          "kind": "play",
+          "uid": 4
+        },
+        {
+          "kind": "play",
+          "uid": 0
+        },
+        {
+          "kind": "play",
+          "uid": 5
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 7
+        },
+        {
+          "kind": "play",
+          "uid": 10
+        },
+        {
+          "kind": "play",
+          "uid": 9
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 6
+        },
+        {
+          "kind": "play",
+          "uid": 36
+        },
+        {
+          "kind": "play",
+          "uid": 37
+        },
+        {
+          "kind": "play",
+          "uid": 8
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 14
+        },
+        {
+          "kind": "play",
+          "uid": 11
+        },
+        {
+          "kind": "play",
+          "uid": 16
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 15
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 20
+        },
+        {
+          "kind": "play",
+          "uid": 42
+        },
+        {
+          "kind": "play",
+          "uid": 24
+        },
+        {
+          "kind": "play",
+          "uid": 21
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 28
+        },
+        {
+          "answer": {
+            "index": 13,
+            "kind": "option_index"
+          },
+          "kind": "select"
+        },
+        {
+          "kind": "play",
+          "uid": 26
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 15
+        },
+        {
+          "kind": "play",
+          "uid": 32
+        },
+        {
+          "kind": "play",
+          "uid": 36
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 26
+        },
+        {
+          "kind": "play",
+          "uid": 13
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 30
+        },
+        {
+          "kind": "play",
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 39
+        },
+        {
+          "kind": "play",
+          "uid": 9
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 29
+        },
+        {
+          "kind": "play",
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "uid": 38
+        },
+        {
+          "kind": "play",
+          "uid": 14
+        },
+        {
+          "kind": "play",
+          "uid": 24
+        },
+        {
+          "kind": "play",
+          "uid": 18
+        },
+        {
+          "kind": "play",
+          "uid": 16
+        },
+        {
+          "kind": "end"
+        }
+      ],
+      "combat_hp": 44,
+      "enemy_hp": 0,
+      "final_digest": "387003f0b6209400cc2468f4203e27c3a828f12a7edbcb65ad6e8fff2eb0897c",
+      "turn": 10,
+      "won": true
+    },
+    "transitions": 50304
+  },
+  {
+    "mode": "uct",
+    "playouts": 1000,
+    "repeated_seed_exact_result": true,
+    "best": {
+      "actions": [
+        {
+          "kind": "play",
+          "uid": 0
+        },
+        {
+          "kind": "potion",
+          "slot": 0
+        },
+        {
+          "kind": "play",
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 5
+        },
+        {
+          "answer": {
+            "index": 2,
+            "kind": "option_index"
+          },
+          "kind": "select"
+        },
+        {
+          "kind": "play",
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "uid": 2
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 9
+        },
+        {
+          "kind": "play",
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 6
+        },
+        {
+          "kind": "play",
+          "uid": 37
+        },
+        {
+          "kind": "play",
+          "uid": 36
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 7
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 16
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 15
+        },
+        {
+          "kind": "play",
+          "uid": 11
+        },
+        {
+          "kind": "play",
+          "uid": 14
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 35
+        },
+        {
+          "kind": "play",
+          "uid": 22
+        },
+        {
+          "kind": "play",
+          "uid": 21
+        },
+        {
+          "kind": "play",
+          "uid": 20
+        },
+        {
+          "kind": "play",
+          "uid": 24
+        },
+        {
+          "kind": "play",
+          "uid": 23
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 26
+        },
+        {
+          "kind": "play",
+          "uid": 28
+        },
+        {
+          "answer": {
+            "index": 1,
+            "kind": "option_index"
+          },
+          "kind": "select"
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 7
+        },
+        {
+          "kind": "play",
+          "uid": 25
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "play",
+          "uid": 5
+        },
+        {
+          "answer": {
+            "index": 4,
+            "kind": "option_index"
+          },
+          "kind": "select"
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 15
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 10
+        },
+        {
+          "kind": "play",
+          "uid": 17
+        },
+        {
+          "kind": "play",
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "uid": 38
+        },
+        {
+          "kind": "play",
+          "uid": 41
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 35
+        },
+        {
+          "kind": "play",
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 24
+        },
+        {
+          "kind": "play",
+          "uid": 40
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 18
+        },
+        {
+          "kind": "play",
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "uid": 9
+        },
+        {
+          "kind": "play",
+          "uid": 37
+        },
+        {
+          "kind": "play",
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 36
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 26
+        },
+        {
+          "kind": "play",
+          "uid": 39
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "uid": 17
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "uid": 14
+        },
+        {
+          "kind": "play",
+          "uid": 24
+        },
+        {
+          "kind": "play",
+          "uid": 23
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 7
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 7
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 13
+        },
+        {
+          "kind": "play",
+          "uid": 8
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 15
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 15
+        },
+        {
+          "kind": "play",
+          "uid": 9
+        },
+        {
+          "kind": "play",
+          "uid": 1
+        },
+        {
+          "kind": "play",
+          "uid": 36
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 10
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "play",
+          "uid": 16
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 27
+        },
+        {
+          "kind": "play",
+          "uid": 3
+        },
+        {
+          "kind": "play",
+          "uid": 13
+        },
+        {
+          "kind": "play",
+          "uid": 24
+        },
+        {
+          "kind": "end"
+        },
+        {
+          "kind": "play",
+          "uid": 39
+        },
+        {
+          "kind": "play",
+          "target": 0,
+          "uid": 7
+        },
+        {
+          "kind": "play",
+          "uid": 29
+        }
+      ],
+      "combat_hp": 35,
+      "enemy_hp": 0,
+      "final_digest": "abd3eca8a4878c8c9a79fb32df988339164bc312b9918e3daf55d0b2e1f0501c",
+      "turn": 15,
+      "won": true
+    },
+    "transitions": 43935
+  }
+]

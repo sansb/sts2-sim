@@ -1,0 +1,172 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 100,
+   "kind": "TOADPOLE",
+   "loop_pos": 2,
+   "max_hp": 100
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 6,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "PREPARED",
+    "uid": 0,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "SWIFT",
+     2
+    ],
+    "id": "DEFEND_IRONCLAD",
+    "local_keywords": [
+     "Sly"
+    ],
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "local_keywords": [
+     "Sly"
+    ],
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 3,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "after_card_played_power_order": [
+   [
+    "master_planner",
+    0
+   ]
+  ],
+  "cards_drawn_combat": 5,
+  "exact_piles": true,
+  "gold": 99,
+  "hp": 68,
+  "inky_attack_damage": 0,
+  "master_planner": 1,
+  "max_hp": 80,
+  "next_after_side_turn_end_power_uid": 1,
+  "next_card_uid": 20,
+  "player_phase": 3,
+  "ps_strikes": 5,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD"
+  ],
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "RegularEncounter"
+ },
+ "rng": {
+  "ai": {
+   "counter": 0,
+   "words": [
+    1511027600742093213,
+    16251170903561519497,
+    12348828721540227439,
+    15862077661637937000
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    16452943454101452638,
+    5525124908612069843,
+    10373153506651793454,
+    1658981437511799834
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    8094771566706114574,
+    10753743034168667217,
+    9632650723074124962,
+    559159816671775524
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    12227643034331527504,
+    15435788670216592397,
+    10853771780815554458,
+    2728473906158725665
+   ]
+  },
+  "niche": {
+   "counter": 2,
+   "words": [
+    4858694066161000806,
+    1694859406351784433,
+    15951007701312378353,
+    1312339868190625827
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    10393160305098529657,
+    7718541581003256493,
+    15123970454127270348,
+    10495919820082714198
+   ]
+  },
+  "rng": {
+   "counter": 9,
+   "words": [
+    14118584688975139523,
+    5690387697838979155,
+    7833465613803712846,
+    11750194295494494842
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    7557399763150217568,
+    14092847658624760256,
+    1697317569859099328,
+    6227991489106853527
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    8434190451361578055,
+    17923574036259276623,
+    4644508695626405717,
+    9632872944875350050
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

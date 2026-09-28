@@ -1,0 +1,662 @@
+{
+  "_source": {
+    "game_version": "v0.109.1",
+    "game_commit": "c8c577f6",
+    "sts2_dll_sha256": "2cb39e2eee651743829abcc0df4dd9cd7e65f46287c7ca264481115c9602382f",
+    "power_type_fallback_rva": "0x22fe14",
+    "rend_predicate_rva": "0x2958a1",
+    "rend_multiplier_rva": "0x4000c2",
+    "note": "One row per represented enemy-owned or player-applied-to-enemy PowerModel family. Type/stack values are PowerType/PowerStackType enum values. Instance cardinality is one unless noted."
+  },
+  "counted_projection": [
+    {
+      "power": "StrengthPower",
+      "representation": "Monster.strength",
+      "presence": "amount != 0",
+      "current_type": "2 iff amount < 0; otherwise fixed Type 1",
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x25488f",
+      "stack_type": 1,
+      "stack_type_rva": "0x254892",
+      "allow_negative": true,
+      "allow_negative_rva": "0x254895"
+    },
+    {
+      "power": "WeakPower",
+      "representation": "Monster.weak",
+      "presence": "amount > 0; removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x256ddd",
+      "stack_type": 1,
+      "stack_type_rva": "0x256de0"
+    },
+    {
+      "power": "VulnerablePower",
+      "representation": "Monster.vuln",
+      "presence": "amount > 0; removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x256c72",
+      "stack_type": 1,
+      "stack_type_rva": "0x256c75"
+    },
+    {
+      "power": "HangPower",
+      "representation": "Monster.hang",
+      "presence": "amount > 0; removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x24f2cf",
+      "stack_type": 1,
+      "stack_type_rva": "0x24f2d2"
+    },
+    {
+      "power": "PoisonPower",
+      "representation": "Monster.poison",
+      "presence": "amount > 0; removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x251e27",
+      "stack_type": 1,
+      "stack_type_rva": "0x251e2a"
+    },
+    {
+      "power": "PlowPower",
+      "representation": "Monster.plow_threshold on CEREMONIAL_BEAST",
+      "presence": "amount > 0; removed on the first positive unblocked hit that leaves owner HP at or below Amount",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x251d89",
+      "stack_type": 1,
+      "stack_type_rva": "0x251d8c"
+    },
+    {
+      "power": "DoomPower",
+      "representation": "Monster.doom",
+      "presence": "amount > 0; removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x24da2f",
+      "stack_type": 1,
+      "stack_type_rva": "0x24da32"
+    },
+    {
+      "power": "OblivionPower",
+      "representation": "Monster.oblivion",
+      "presence": "amount > 0; removed at owner side end",
+      "current_type": 2,
+      "cardinality": "InstanceType 2 is per applier; the admitted solo model has exactly one player applier and therefore one instance",
+      "temporary": false,
+      "type_rva": "0x2511bb",
+      "stack_type": 1,
+      "stack_type_rva": "0x2511be",
+      "instance_type": 2,
+      "instance_type_rva": "0x2511c1"
+    },
+    {
+      "power": "DemisePower",
+      "representation": "Monster.demise plus demise_after_intangible listener-order bit",
+      "presence": "amount > 0; persists across owner turns and is removed on death or creature replacement",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton; stacking preserves its listener position",
+      "temporary": false,
+      "type_rva": "0x24d788",
+      "stack_type": 1,
+      "stack_type_rva": "0x24d78b"
+    },
+    {
+      "power": "StranglePower",
+      "representation": "Monster.strangle",
+      "presence": "amount > 0; removed at enemy owner side end, death, or creature replacement",
+      "current_type": 2,
+      "cardinality": "InstanceType 2 is per applier; the admitted solo model has exactly one player applier and therefore one instance",
+      "temporary": false,
+      "type_rva": "0x25470b",
+      "stack_type": 1,
+      "stack_type_rva": "0x25470e",
+      "instance_type": 2,
+      "instance_type_rva": "0x254711"
+    },
+    {
+      "power": "ShrinkPower",
+      "representation": "Monster.shrink",
+      "presence": "finite modeled amount > 0; decremented and removed at zero",
+      "current_type": 2,
+      "cardinality": "one finite Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x253613",
+      "stack_type": "1 when finite; 2 when infinite",
+      "stack_type_rva": "0x253616",
+      "allow_negative": true,
+      "allow_negative_rva": "0x253623"
+    },
+    {
+      "power": "ConquerorPower",
+      "representation": "Monster.conqueror",
+      "presence": "amount > 0; decremented and removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x24ca5e",
+      "stack_type": 1,
+      "stack_type_rva": "0x24ca61"
+    },
+    {
+      "power": "DebilitatePower",
+      "representation": "Monster.debilitate",
+      "presence": "amount > 0; decremented and removed at zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton; Amount is duration only",
+      "temporary": false,
+      "type_rva": "0x24d641",
+      "stack_type": 1,
+      "stack_type_rva": "0x24d644"
+    },
+    {
+      "power": "SicEmPower",
+      "representation": "Monster.sic_em",
+      "presence": "amount > 0; whole instance removed at owner side end, death, or creature replacement",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton; Amount is the summon/growth value for every qualifying Osty DamageResult",
+      "temporary": false,
+      "type_rva": "0x2538fc",
+      "stack_type": 1,
+      "stack_type_rva": "0x2538ff"
+    },
+    {
+      "power": "KnockdownPower",
+      "representation": "Monster.knockdown tuple of (amount, applier identity)",
+      "presence": "one tuple row per live application; every row removes at owner side end",
+      "current_type": 2,
+      "cardinality": "InstanceType 1 creates a distinct listener for every application",
+      "temporary": false,
+      "type_rva": "0xa44cd",
+      "stack_type": 1,
+      "stack_type_rva": "0xa44d0",
+      "instance_type": 1,
+      "instance_type_rva": "0xa44d3"
+    },
+    {
+      "power": "ShriekPower",
+      "representation": "Monster.shriek on TERROR_EEL",
+      "presence": "bool is the actual remaining Amount-75 instance",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x253597",
+      "stack_type": 1,
+      "stack_type_rva": "0x25359a",
+      "allow_negative": true,
+      "allow_negative_rva": "0x25359d"
+    },
+    {
+      "power": "SlowPower",
+      "representation": "BYGONE_EFFIGY kind plus Monster.slow private cards-played counter",
+      "presence": "always present on the live Effigy with Power.Amount 1, including private counter zero",
+      "current_type": 2,
+      "cardinality": "one Amount-stacking singleton",
+      "temporary": false,
+      "type_rva": "0x253d1b",
+      "stack_type": 1,
+      "stack_type_rva": "0x253d1e"
+    },
+    {
+      "power": "ImbalancedPower",
+      "representation": "BOWLBUG_ROCK kind",
+      "presence": "immutable innate instance",
+      "current_type": 2,
+      "cardinality": "one unique singleton",
+      "temporary": false,
+      "type_rva": "0x24fbf3",
+      "stack_type": 2,
+      "stack_type_rva": "0x24fbf6"
+    }
+  ],
+  "excluded_temporary": [
+    {
+      "power": "TemporaryStrengthPower",
+      "concrete_represented_types": [
+        "ManglePower",
+        "DarkShacklesPower",
+        "EnfeeblingTouchPower",
+        "CrushUnderPower",
+        "DyingStarPower",
+        "PiercingWailPower"
+      ],
+      "representation": "Monster.temp_strength aggregates the wrappers; Monster.strength includes their one internal StrengthPower",
+      "presence": "signed wrapper amount is nonzero",
+      "current_type": "2 for the represented negative wrappers",
+      "cardinality": "concrete wrapper types can coexist, but every wrapper implements ITemporaryPower and is excluded; the internal StrengthPower singleton follows the counted Strength row",
+      "temporary": true,
+      "type_rva": "0x2559a7",
+      "stack_type": 1,
+      "stack_type_rva": "0x2559b4"
+    }
+  ],
+  "excluded_non_debuff": [
+    {
+      "power": "AdaptablePower",
+      "representation": "Monster.adaptable plus adaptable_reviving and test_subject_respawns on TEST_SUBJECT",
+      "presence": "one innate instance through the first two retained-death windows; removed during the second RESPAWN suffix",
+      "current_type": 1,
+      "type_rva": "0xa2c6d",
+      "stack_type": 2,
+      "stack_type_rva": "0xa2c70"
+    },
+    {
+      "power": "ArtifactPower",
+      "representation": "Monster.artifact",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x24b9f7",
+      "stack_type": 1,
+      "stack_type_rva": "0x24b9fa"
+    },
+    {
+      "power": "BackAttackLeftPower",
+      "representation": "CRUSHER kind",
+      "presence": "one immutable innate instance while the creature is live",
+      "current_type": 1,
+      "type_rva": "0x9fa83",
+      "stack_type": 2,
+      "stack_type_rva": "0x9fa86"
+    },
+    {
+      "power": "BackAttackRightPower",
+      "representation": "ROCKET kind",
+      "presence": "one immutable innate instance while the creature is live",
+      "current_type": 1,
+      "type_rva": "0x9fa91",
+      "stack_type": 2,
+      "stack_type_rva": "0x9fa94"
+    },
+    {
+      "power": "BurrowedPower",
+      "representation": "Monster.burrowed",
+      "presence": "bool",
+      "current_type": 1,
+      "type_rva": "0x24c17d",
+      "stack_type": 2,
+      "stack_type_rva": "0x24c180"
+    },
+    {
+      "power": "CurlUpPower",
+      "representation": "Monster.curl_up plus Monster.curl_up_card_uid and Monster.louse_curled",
+      "presence": "amount > 0; one innate LouseProgenitor instance, removed after its exact physical-card AfterCardPlayed callback",
+      "current_type": 1,
+      "type_rva": "0x24d264",
+      "stack_type": 1,
+      "stack_type_rva": "0x24d267"
+    },
+    {
+      "power": "CrabRagePower",
+      "representation": "Monster.crab_rage on CRUSHER or ROCKET",
+      "presence": "one innate instance until owner death or a sibling actual death grants Strength 6 and Block 99, then removes it",
+      "current_type": 1,
+      "type_rva": "0xa0dcb",
+      "stack_type": 2,
+      "stack_type_rva": "0xa0dce"
+    },
+    {
+      "power": "EscapeArtistPower",
+      "representation": "Monster.escape_artist on THIEVING_HOPPER",
+      "presence": "Amount 5 at encounter entry; decrements at enemy side end while above 1 and remains at 1 until owner death or escape",
+      "current_type": 1,
+      "type_rva": "0xa5945",
+      "stack_type": 1,
+      "stack_type_rva": "0xa5948"
+    },
+    {
+      "power": "EnragePower",
+      "representation": "Monster.enrage on first-form TEST_SUBJECT",
+      "presence": "one innate Amount-3 instance until the first actual death",
+      "current_type": 1,
+      "type_rva": "0xa57d1",
+      "stack_type": 1,
+      "stack_type_rva": "0xa57d4"
+    },
+    {
+      "power": "FlutterPower",
+      "representation": "Monster.flutter on THIEVING_HOPPER",
+      "presence": "Amount 5 after FLUTTER_MOVE; decrements on positive unblocked powered-attack results and removes at zero before STUNNED_MOVE -> NAB_MOVE",
+      "current_type": 1,
+      "type_rva": "0xa5e26",
+      "stack_type": 1,
+      "stack_type_rva": "0xa5e29",
+      "should_scale_in_multiplayer_rva": "0xa5e2c"
+    },
+    {
+      "power": "GalvanicPower",
+      "representation": "GLOBE_HEAD kind",
+      "presence": "immutable innate instance",
+      "current_type": 1,
+      "type_rva": "0x24ece7",
+      "stack_type": 1,
+      "stack_type_rva": "0x24ecea"
+    },
+    {
+      "power": "HardenedShellPower",
+      "representation": "SKULKING_COLONY kind plus Monster.shell_window private counter",
+      "presence": "immutable innate instance",
+      "current_type": 1,
+      "type_rva": "0x24f315",
+      "stack_type": 1,
+      "stack_type_rva": "0x24f318"
+    },
+    {
+      "power": "HardToKillPower",
+      "representation": "Monster.hard_to_kill",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x24f44a",
+      "stack_type": 1,
+      "stack_type_rva": "0x24f44d"
+    },
+    {
+      "power": "HighVoltagePower",
+      "representation": "Monster.high_voltage on ZAPBOT",
+      "presence": "one Amount-2 instance applied in Zapbot.AfterAddedToRoom; removed on ordinary death",
+      "current_type": 1,
+      "type_rva": "0xa70bb",
+      "stack_type": 1,
+      "stack_type_rva": "0xa70be"
+    },
+    {
+      "power": "HeistPower",
+      "representation": "FAT_GREMLIN kind plus Monster.heist_gold",
+      "presence": "immutable transferred instance while the Fat Gremlin is live; amount may be zero",
+      "current_type": 1,
+      "type_rva": "0x24f543",
+      "stack_type": 1,
+      "stack_type_rva": "0x24f546"
+    },
+    {
+      "power": "IllusionPower",
+      "representation": "Monster.illusion derived from PARAFRIGHT/EYE_WITH_TEETH kind",
+      "presence": "immutable innate instance, including the revival window",
+      "current_type": 1,
+      "type_rva": "0x24fa6e",
+      "stack_type": 2,
+      "stack_type_rva": "0x24fa71"
+    },
+    {
+      "power": "InfestedPower",
+      "representation": "PHROG_PARASITE kind",
+      "presence": "immutable innate instance",
+      "current_type": 1,
+      "type_rva": "0x24ff75",
+      "stack_type": 2,
+      "stack_type_rva": "0x24ff78"
+    },
+    {
+      "power": "IntangiblePower",
+      "representation": "Monster.intangible",
+      "presence": "amount > 0; decremented and removed at zero",
+      "current_type": 1,
+      "type_rva": "0x25009f",
+      "stack_type": 1,
+      "stack_type_rva": "0x2500a2"
+    },
+    {
+      "power": "MinionPower",
+      "representation": "Monster.secondary on Fabricator bots, Torch Head Amalgam, and Kin Followers; GAS_BOMB and IllusionPower-applied illusion kinds remain immutable derived secondary owners",
+      "presence": "one immutable instance applied after each Fabricator bot Add walk, TorchHeadAmalgam.AfterAddedToRoom (v0.110.1 MoveNext 0x36f794), or KinFollower.AfterAddedToRoom (v0.110.1 MoveNext 0x35d2c4); retained through owner death",
+      "current_type": 1,
+      "type_rva": "0xa813f",
+      "stack_type": 2,
+      "stack_type_rva": "0xa8142",
+      "owner_is_secondary_enemy_rva": "0xa8148",
+      "retain_after_owner_death_rva": "0xa814b",
+      "owner_death_fatal_veto_rva": "0xa814e"
+    },
+    {
+      "power": "NemesisPower",
+      "representation": "Monster.nemesis plus nemesis_apply_intangible on third-form TEST_SUBJECT",
+      "presence": "one Amount-1 instance applied during the second RESPAWN suffix and removed on terminal death",
+      "current_type": 1,
+      "type_rva": "0xa83d7",
+      "stack_type": 2,
+      "stack_type_rva": "0xa83da"
+    },
+    {
+      "power": "PaperCutsPower",
+      "representation": "SCROLL_OF_BITING kind",
+      "presence": "immutable innate instance",
+      "current_type": 1,
+      "type_rva": "0x25185b",
+      "stack_type": 1,
+      "stack_type_rva": "0x25185e"
+    },
+    {
+      "power": "PainfulStabsPower",
+      "representation": "Monster.painful_stabs on second-form TEST_SUBJECT",
+      "presence": "one Amount-1 instance applied after first Revive, retained through the second death, then removed during the second RESPAWN suffix",
+      "current_type": 1,
+      "type_rva": "0xa8c53",
+      "stack_type": 1,
+      "stack_type_rva": "0xa8c56"
+    },
+    {
+      "power": "PersonalHivePower",
+      "representation": "Monster.hive",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x2518e7",
+      "stack_type": 1,
+      "stack_type_rva": "0x2518ea"
+    },
+    {
+      "power": "PlatingPower",
+      "representation": "Monster.mplating",
+      "presence": "amount > 0; decremented and removed at zero",
+      "current_type": 1,
+      "type_rva": "0x251be9",
+      "stack_type": 1,
+      "stack_type_rva": "0x251bec"
+    },
+    {
+      "power": "RampartPower",
+      "representation": "Monster.rampart on LIVING_SHIELD",
+      "presence": "one Amount-25 instance applied by LivingShield.AfterAddedToRoom (v0.110.1 MoveNext 0x35fda0); removed on ordinary death",
+      "current_type": 1,
+      "type_rva": "0xa9a43",
+      "stack_type": 1,
+      "stack_type_rva": "0xa9a46",
+      "should_scale_in_multiplayer_rva": "0xa9a49"
+    },
+    {
+      "power": "RavenousPower",
+      "representation": "Monster.ravenous on CORPSE_SLUG",
+      "presence": "one innate Amount-5 instance while the owner is live; sibling deaths grant Strength without changing the instance",
+      "current_type": 1,
+      "type_rva": "0xa639f",
+      "stack_type": 1,
+      "stack_type_rva": "0xa63a2"
+    },
+    {
+      "power": "DexterityPower",
+      "representation": "Monster.dexterity; nonnegative on THE_FORGOTTEN",
+      "presence": "amount != 0; The Forgotten gains 2 after each completed MIASMA",
+      "current_type": 1,
+      "type_rva": "0xa4eaf",
+      "stack_type": 1,
+      "stack_type_rva": "0xa4eb2",
+      "allow_negative": true,
+      "allow_negative_rva": "0xa4eb5"
+    },
+    {
+      "power": "PossessStrengthPower",
+      "representation": "THE_LOST kind plus Monster.possess_strength_ledger",
+      "presence": "innate Amount-1 instance while The Lost is live; ledger preserves insertion-ordered exact-player signed debits",
+      "current_type": 1,
+      "type_rva": "0xa9737",
+      "stack_type": 2,
+      "stack_type_rva": "0xa973a"
+    },
+    {
+      "power": "PossessSpeedPower",
+      "representation": "THE_FORGOTTEN kind plus Monster.possess_speed_ledger",
+      "presence": "innate Amount-1 instance while The Forgotten is live; ledger preserves insertion-ordered exact-player signed debits",
+      "current_type": 1,
+      "type_rva": "0xa95f3",
+      "stack_type": 2,
+      "stack_type_rva": "0xa95f6"
+    },
+    {
+      "power": "ReattachPower",
+      "representation": "DECIMILLIPEDE_SEGMENT revive_stage while dead",
+      "presence": "only on an untargetable dead segment; removed before the next player action",
+      "current_type": 1,
+      "type_rva": "0x2525b5",
+      "stack_type": 2,
+      "stack_type_rva": "0x2525b8"
+    },
+    {
+      "power": "RitualPower",
+      "representation": "Monster.ritual plus ritual_fresh",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x252d0a",
+      "stack_type": 1,
+      "stack_type_rva": "0x252d0d"
+    },
+    {
+      "power": "SandpitPower",
+      "representation": "Monster.sandpit on THE_INSATIABLE",
+      "presence": "one player-targeting instance after Liquify while amount > 0; decrements at enemy late-side-start and is removed on owner death",
+      "current_type": 1,
+      "type_rva": "0xaa6c3",
+      "stack_type": 1,
+      "stack_type_rva": "0xaa6c6",
+      "instance_type": 1,
+      "instance_type_rva": "0xaa6c9"
+    },
+    {
+      "power": "SkittishPower",
+      "representation": "Monster.skittish plus skittish_used private latch",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x253a3f",
+      "stack_type": 1,
+      "stack_type_rva": "0x253a42"
+    },
+    {
+      "power": "SlipperyPower",
+      "representation": "Monster.slippery on VANTOM and INKLET",
+      "presence": "amount > 0; decremented after each positive final UnblockedDamage result and removed at zero or owner death",
+      "current_type": 1,
+      "type_rva": "0xab320",
+      "stack_type": 1,
+      "stack_type_rva": "0xab323"
+    },
+    {
+      "power": "SlumberPower",
+      "representation": "Monster.slumber plus SNORE/WAKE override",
+      "presence": "amount > 0; removed at wake",
+      "current_type": 1,
+      "type_rva": "0x253e38",
+      "stack_type": 1,
+      "stack_type_rva": "0x253e3b"
+    },
+    {
+      "power": "SoarPower",
+      "representation": "Monster.soar",
+      "presence": "bool",
+      "current_type": 1,
+      "type_rva": "0x25416f",
+      "stack_type": 2,
+      "stack_type_rva": "0x254172"
+    },
+    {
+      "power": "StockPower",
+      "representation": "Monster.stock on AXEBOT",
+      "presence": "the innate instance persists through amount zero on the final replacement",
+      "current_type": 1,
+      "type_rva": "0x254563",
+      "stack_type": 1,
+      "stack_type_rva": "0x254566"
+    },
+    {
+      "power": "SuckPower",
+      "representation": "FOSSIL_STALKER kind plus Monster.suck",
+      "presence": "one innate Amount-3 instance while the Fossil Stalker is live; removed on death",
+      "current_type": 1,
+      "type_rva": "0x25498b",
+      "stack_type": 1,
+      "stack_type_rva": "0x25498e"
+    },
+    {
+      "power": "SurprisePower",
+      "representation": "GREMLIN_MERC kind",
+      "presence": "immutable innate instance while the Merc is live",
+      "current_type": 1,
+      "type_rva": "0x254a83",
+      "stack_type": 2,
+      "stack_type_rva": "0x254a86"
+    },
+    {
+      "power": "SwipePower",
+      "representation": "Monster.swipe_card plus State.hopper_master_deck and State.hopper_loot_history",
+      "presence": "one instance after a successful Hopper theft; returns its exact DeckVersion row on owner death and is discarded with the owner on escape",
+      "current_type": 1,
+      "type_rva": "0xac528",
+      "stack_type": 2,
+      "stack_type_rva": "0xac52b",
+      "instance_type": 1,
+      "instance_type_rva": "0xac52e"
+    },
+    {
+      "power": "TerritorialPower",
+      "representation": "Monster.territorial",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x255d37",
+      "stack_type": 1,
+      "stack_type_rva": "0x255d3a"
+    },
+    {
+      "power": "ThieveryPower",
+      "representation": "GREMLIN_MERC kind plus Monster.stolen_gold private DynamicVar",
+      "presence": "one immutable innate solo instance while the Merc is live; captured gold may be zero",
+      "current_type": 1,
+      "type_rva": "0x255f23",
+      "stack_type": 1,
+      "stack_type_rva": "0x255f26"
+    },
+    {
+      "power": "ThornsPower",
+      "representation": "Monster.thorns",
+      "presence": "amount > 0; removed at zero",
+      "current_type": 1,
+      "type_rva": "0x255f87",
+      "stack_type": 1,
+      "stack_type_rva": "0x255f8a"
+    },
+    {
+      "power": "VigorPower",
+      "representation": "Monster.vigor",
+      "presence": "amount > 0; removed after the next attack command",
+      "current_type": 1,
+      "type_rva": "0x256680",
+      "stack_type": 1,
+      "stack_type_rva": "0x256683"
+    },
+    {
+      "power": "VitalSparkPower",
+      "representation": "Monster.vital",
+      "presence": "amount > 0",
+      "current_type": 1,
+      "type_rva": "0x2567f7",
+      "stack_type": 1,
+      "stack_type_rva": "0x2567fa"
+    }
+  ]
+}

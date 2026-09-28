@@ -1,0 +1,35 @@
+{
+  "schema": "sts-search-suite-v1",
+  "selection": "Development challenge set selected by no-win outcomes in the 0.3-second random screen. Not held out.",
+  "game_build": "v0.111.0",
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "seconds_per_search": 5,
+  "methods": [
+    "random",
+    "uct"
+  ],
+  "fights": [
+    {
+      "id": "fc53621e544a3773",
+      "character": "DEFECT",
+      "ascension": 1,
+      "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 1
+    },
+    {
+      "id": "ff048525e2583950",
+      "character": "IRONCLAD",
+      "ascension": 10,
+      "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+      "human_won": false,
+      "human_hp": 0,
+      "human_turns": 1
+    }
+  ]
+}

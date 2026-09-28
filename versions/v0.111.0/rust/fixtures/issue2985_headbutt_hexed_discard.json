@@ -1,0 +1,2315 @@
+{
+ "continuations": [
+  {
+   "fields": {
+    "action": {
+     "kind": "play",
+     "selection_uid": null,
+     "target": 2,
+     "uid": 44
+    },
+    "answers": [],
+    "predecessor": {
+     "game_build": "v0.111.0",
+     "monsters": [
+      {
+       "hp": 15,
+       "kind": "FLAIL_KNIGHT",
+       "max_hp": 108,
+       "move_log": [
+        "FLAIL_MOVE",
+        "WAR_CHANT",
+        "FLAIL_MOVE"
+       ],
+       "next_move": "FLAIL_MOVE",
+       "strength": 3
+      },
+      {
+       "hp": 5,
+       "kind": "SPECTRAL_KNIGHT",
+       "max_hp": 97,
+       "move_log": [
+        "SOUL_SLASH_MOVE",
+        "SOUL_FLAME_MOVE",
+        "SOUL_SLASH_MOVE"
+       ],
+       "next_move": "SOUL_SLASH_MOVE",
+       "slot": 1,
+       "uid": 1
+      },
+      {
+       "hp": 39,
+       "kind": "MAGI_KNIGHT",
+       "loop_pos": 4,
+       "max_hp": 89,
+       "slot": 2,
+       "uid": 2
+      }
+     ],
+     "piles": {
+      "discard": [
+       {
+        "enchantment": [
+         "STEADY",
+         1
+        ],
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STOKE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 3,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STOKE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 42,
+        "upgrade": 0
+       }
+      ],
+      "draw": [
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DEMON_FORM",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 36,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BATTLE_TRANCE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 0,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BRAND",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 32,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STRIKE_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 15,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STRIKE_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 22,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "SPITE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 38,
+        "upgrade": 0
+       }
+      ],
+      "exhaust": [
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "NOT_YET",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 1,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "ASHEN_STRIKE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 2,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DAZED",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 31,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DEFEND_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 5,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BLOOD_WALL",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 6,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STRIKE_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 7,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "UNMOVABLE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 33,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "INFERNAL_BLADE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 35,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DISCOVERY",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 9,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DAZED",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 29,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "INJURY",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 10,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STAMPEDE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 11,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BARRICADE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 13,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DEFEND_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 14,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "IMPERVIOUS",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 17,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "ASCENDERS_BANE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 16,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BLOOD_WALL",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 21,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "TREMBLE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 23,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DEFEND_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 24,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BARRICADE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 25,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BLOOD_WALL",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 26,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "BASH",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 27,
+        "upgrade": 0
+       },
+       {
+        "enchantment": [
+         "STEADY",
+         1
+        ],
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "FORGOTTEN_RITUAL",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 28,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "STRIKE_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 18,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DAZED",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 30,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "HOWL_FROM_BEYOND",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 20,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DRUM_OF_BATTLE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 8,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "CINDER",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 34,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "DEFEND_IRONCLAD",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 4,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "PERFECTED_STRIKE",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 41,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "FEEL_NO_PAIN",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 43,
+        "upgrade": 0
+       }
+      ],
+      "hand": [
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "HEADBUTT",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 44,
+        "upgrade": 0
+       },
+       {
+        "extra": [
+         [
+          "CARD_AFFLICTION",
+          "HEXED",
+          2
+         ]
+        ],
+        "id": "ONE_TWO_PUNCH",
+        "physical_state": [
+         "PHYSICAL_CARD_STATE",
+         [],
+         0,
+         false,
+         []
+        ],
+        "uid": 45,
+        "upgrade": 0
+       }
+      ]
+     },
+     "player": {
+      "after_energy_reset_order": [],
+      "after_player_turn_start_power_order": [
+       "inferno"
+      ],
+      "after_side_turn_end_power_order": [
+       [
+        "juggling",
+        1
+       ]
+      ],
+      "attack_skill_plays_started_this_turn": 2,
+      "blessed_antler": true,
+      "card_plays_finished_combat": 18,
+      "cards_drawn_combat": 40,
+      "dampen_cards": [
+       [
+        18,
+        1
+       ],
+       [
+        20,
+        1
+       ],
+       [
+        26,
+        1
+       ],
+       [
+        28,
+        1
+       ],
+       [
+        3,
+        1
+       ],
+       [
+        34,
+        1
+       ],
+       [
+        32,
+        1
+       ],
+       [
+        36,
+        1
+       ],
+       [
+        1,
+        1
+       ],
+       [
+        33,
+        1
+       ],
+       [
+        35,
+        1
+       ]
+      ],
+      "dampen_casters": [
+       2
+      ],
+      "dexterity": 1,
+      "energy": 2,
+      "energy_spent_this_turn": 4,
+      "entropy_card_pool": "ironclad",
+      "ethereal_plays_finished_combat": 12,
+      "exact_piles": true,
+      "flower": 2,
+      "fully_unlocked_potion_pool": true,
+      "gold": 459,
+      "hex_power": 2,
+      "hp": 27,
+      "inferno": 6,
+      "inferno_self": 1,
+      "inky_attack_damage": 0,
+      "intimidating_helmet": true,
+      "juggling": 1,
+      "lost_wisp": true,
+      "manual_card_plays_finished_this_turn": 4,
+      "max_hp": 80,
+      "next_after_side_turn_end_power_uid": 2,
+      "next_card_uid": 46,
+      "next_generated_hook_uid": 17,
+      "nunchaku": 9,
+      "owner_card_exhausted_this_turn": true,
+      "owner_card_plays_finished_this_turn": 4,
+      "owner_cards_exhausted_combat": 31,
+      "owner_generated_cards_combat": 17,
+      "pen_nib": 4,
+      "plating": 6,
+      "player_phase": 3,
+      "player_unblocked_damage_results_combat": 10,
+      "player_unblocked_damage_this_turn": true,
+      "plays_this_turn": 4,
+      "potion_slots": [
+       null,
+       null
+      ],
+      "ps_strikes": 6,
+      "red_skull": true,
+      "regalite_block_amount": 4,
+      "relics_entering": [
+       "RELIC.BURNING_BLOOD",
+       "RELIC.HEFTY_TABLET",
+       "RELIC.JUZU_BRACELET",
+       "RELIC.RED_SKULL",
+       "RELIC.NUNCHAKU",
+       "RELIC.PAELS_BLOOD",
+       "RELIC.WHETSTONE",
+       "RELIC.LOST_WISP",
+       "RELIC.SPARKLING_ROUGE",
+       "RELIC.TUNING_FORK",
+       "RELIC.AMETHYST_AUBERGINE",
+       "RELIC.BLESSED_ANTLER",
+       "RELIC.INTIMIDATING_HELMET",
+       "RELIC.PEN_NIB",
+       "RELIC.ETERNAL_FEATHER",
+       "RELIC.HAPPY_FLOWER"
+      ],
+      "relics_entering_dispatch_ordered": true,
+      "reward_card_pool": "Ironclad",
+      "reward_card_rarity_odds": "EliteEncounter",
+      "round_number": 5,
+      "skill_plays_finished_this_turn": 2,
+      "splash_unlock_epochs": [
+       "ACT2_B_EPOCH",
+       "ACT3_B_EPOCH",
+       "COLORLESS1_EPOCH",
+       "COLORLESS2_EPOCH",
+       "COLORLESS3_EPOCH",
+       "COLORLESS4_EPOCH",
+       "COLORLESS5_EPOCH",
+       "CUSTOM_AND_SEEDS_EPOCH",
+       "DAILY_RUN_EPOCH",
+       "DARV_EPOCH",
+       "DEFECT1_EPOCH",
+       "DEFECT2_EPOCH",
+       "DEFECT3_EPOCH",
+       "DEFECT4_EPOCH",
+       "DEFECT5_EPOCH",
+       "DEFECT6_EPOCH",
+       "DEFECT7_EPOCH",
+       "EVENT1_EPOCH",
+       "EVENT2_EPOCH",
+       "EVENT3_EPOCH",
+       "IRONCLAD2_EPOCH",
+       "IRONCLAD3_EPOCH",
+       "IRONCLAD4_EPOCH",
+       "IRONCLAD5_EPOCH",
+       "IRONCLAD6_EPOCH",
+       "IRONCLAD7_EPOCH",
+       "NECROBINDER1_EPOCH",
+       "NECROBINDER2_EPOCH",
+       "NECROBINDER3_EPOCH",
+       "NECROBINDER4_EPOCH",
+       "NECROBINDER5_EPOCH",
+       "NECROBINDER6_EPOCH",
+       "NECROBINDER7_EPOCH",
+       "NEOW_EPOCH",
+       "OROBAS_EPOCH",
+       "POTION1_EPOCH",
+       "POTION2_EPOCH",
+       "REGENT1_EPOCH",
+       "REGENT2_EPOCH",
+       "REGENT3_EPOCH",
+       "REGENT4_EPOCH",
+       "REGENT5_EPOCH",
+       "REGENT6_EPOCH",
+       "REGENT7_EPOCH",
+       "RELIC1_EPOCH",
+       "RELIC2_EPOCH",
+       "RELIC3_EPOCH",
+       "RELIC4_EPOCH",
+       "RELIC5_EPOCH",
+       "SILENT1_EPOCH",
+       "SILENT2_EPOCH",
+       "SILENT3_EPOCH",
+       "SILENT4_EPOCH",
+       "SILENT5_EPOCH",
+       "SILENT6_EPOCH",
+       "SILENT7_EPOCH",
+       "UNDERDOCKS_EPOCH"
+      ],
+      "strength": 4,
+      "template_relics": [
+       "RELIC.PAELS_BLOOD",
+       "RELIC.SPARKLING_ROUGE"
+      ],
+      "tuning_fork_owned": true,
+      "tuning_fork_skills": 4,
+      "turn": 5,
+      "unmovable": 1
+     },
+     "rng": {
+      "ai": {
+       "counter": 20,
+       "words": [
+        3224964031456592518,
+        2877094468924776785,
+        3684208628738274102,
+        9808233587634255829
+       ]
+      },
+      "combat_orbs": {
+       "counter": 0,
+       "words": [
+        10468645538064266233,
+        806890947725995750,
+        12080477797582578211,
+        8568522086245293174
+       ]
+      },
+      "energy_costs": {
+       "counter": 0,
+       "words": [
+        14787054253568628104,
+        15324903032927876581,
+        8578303886862269372,
+        13879758907335135592
+       ]
+      },
+      "generation": {
+       "counter": 800,
+       "words": [
+        4425229338290580355,
+        18175297212145926775,
+        16850300418515090589,
+        567450558802105829
+       ]
+      },
+      "niche": {
+       "counter": 42,
+       "words": [
+        3665243813367520746,
+        12179202228849624373,
+        15286368363257924864,
+        11868758744258103596
+       ]
+      },
+      "potion_generation": {
+       "counter": 0,
+       "words": [
+        3383441292974703525,
+        15450383366948251210,
+        9191776631539420179,
+        17774680762569243082
+       ]
+      },
+      "rng": {
+       "counter": 799,
+       "words": [
+        2189300536433723587,
+        13570404168418568346,
+        3745093934366295305,
+        8350228741740828162
+       ]
+      },
+      "sel": {
+       "counter": 4,
+       "words": [
+        17004313194255850292,
+        32789805628520947,
+        14889353468317293441,
+        12383599466847929581
+       ]
+      },
+      "targets": {
+       "counter": 47,
+       "words": [
+        3627249429809044123,
+        10662261601781402586,
+        7366477607886798515,
+        4678804303920606870
+       ]
+      }
+     },
+     "schema": "sts-sim-canonical-v2"
+    },
+    "tag": "action_replay"
+   },
+   "type": "ActionReplayFrame"
+  },
+  {
+   "fields": {
+    "choice": 2,
+    "expos": null,
+    "force_exhaust": false,
+    "glam": 0,
+    "instanced_power_uid_at_before": 2,
+    "is_power_auto": false,
+    "latch": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     [],
+     0,
+     [],
+     0,
+     0
+    ],
+    "pen_double": false,
+    "play_index": 0,
+    "plays": 1,
+    "remaining_steps": [],
+    "result_location": [
+     "discard",
+     "bottom"
+    ],
+    "source": "manual",
+    "spent": 1,
+    "stage": "body",
+    "star_spent": 0,
+    "tag": "card_play",
+    "target_identity": [
+     2,
+     2
+    ],
+    "uid": 44,
+    "x_value": 0
+   },
+   "type": "CardPlayFrame"
+  }
+ ],
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 15,
+   "kind": "FLAIL_KNIGHT",
+   "max_hp": 108,
+   "move_log": [
+    "FLAIL_MOVE",
+    "WAR_CHANT",
+    "FLAIL_MOVE"
+   ],
+   "next_move": "FLAIL_MOVE",
+   "strength": 3
+  },
+  {
+   "hp": 5,
+   "kind": "SPECTRAL_KNIGHT",
+   "max_hp": 97,
+   "move_log": [
+    "SOUL_SLASH_MOVE",
+    "SOUL_FLAME_MOVE",
+    "SOUL_SLASH_MOVE"
+   ],
+   "next_move": "SOUL_SLASH_MOVE",
+   "slot": 1,
+   "uid": 1
+  },
+  {
+   "hp": 26,
+   "kind": "MAGI_KNIGHT",
+   "loop_pos": 4,
+   "max_hp": 89,
+   "owner_powered_damage_results_this_turn": 1,
+   "slot": 2,
+   "uid": 2
+  }
+ ],
+ "piles": {
+  "discard": [
+   {
+    "enchantment": [
+     "STEADY",
+     1
+    ],
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STOKE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STOKE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 42,
+    "upgrade": 0
+   }
+  ],
+  "draw": [
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DEMON_FORM",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 36,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BATTLE_TRANCE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BRAND",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 32,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "SPITE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 38,
+    "upgrade": 0
+   }
+  ],
+  "exhaust": [
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "NOT_YET",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "ASHEN_STRIKE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DAZED",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 31,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DEFEND_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BLOOD_WALL",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "UNMOVABLE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 33,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "INFERNAL_BLADE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 35,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DISCOVERY",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DAZED",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 29,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "INJURY",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STAMPEDE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BARRICADE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DEFEND_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "IMPERVIOUS",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "ASCENDERS_BANE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BLOOD_WALL",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "TREMBLE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DEFEND_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BARRICADE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BLOOD_WALL",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 26,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "BASH",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "STEADY",
+     1
+    ],
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "FORGOTTEN_RITUAL",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 28,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DAZED",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 30,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "HOWL_FROM_BEYOND",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DRUM_OF_BATTLE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "CINDER",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 34,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "DEFEND_IRONCLAD",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "PERFECTED_STRIKE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 41,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "FEEL_NO_PAIN",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 43,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "ONE_TWO_PUNCH",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 45,
+    "upgrade": 0
+   }
+  ],
+  "play": [
+   {
+    "extra": [
+     [
+      "CARD_AFFLICTION",
+      "HEXED",
+      2
+     ]
+    ],
+    "id": "HEADBUTT",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 44,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "active_cards": [
+   44
+  ],
+  "active_play": [
+   0
+  ],
+  "after_energy_reset_order": [],
+  "after_player_turn_start_power_order": [
+   "inferno"
+  ],
+  "after_side_turn_end_power_order": [
+   [
+    "juggling",
+    1
+   ]
+  ],
+  "attack_skill_plays_started_this_turn": 3,
+  "blessed_antler": true,
+  "card_plays_finished_combat": 18,
+  "cards_drawn_combat": 40,
+  "dampen_cards": [
+   [
+    18,
+    1
+   ],
+   [
+    20,
+    1
+   ],
+   [
+    26,
+    1
+   ],
+   [
+    28,
+    1
+   ],
+   [
+    3,
+    1
+   ],
+   [
+    34,
+    1
+   ],
+   [
+    32,
+    1
+   ],
+   [
+    36,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    33,
+    1
+   ],
+   [
+    35,
+    1
+   ]
+  ],
+  "dampen_casters": [
+   2
+  ],
+  "dexterity": 1,
+  "energy": 1,
+  "energy_spent_this_turn": 5,
+  "entropy_card_pool": "ironclad",
+  "ethereal_plays_finished_combat": 12,
+  "exact_piles": true,
+  "flower": 2,
+  "fully_unlocked_potion_pool": true,
+  "gold": 459,
+  "hex_power": 2,
+  "hp": 27,
+  "inferno": 6,
+  "inferno_self": 1,
+  "inky_attack_damage": 0,
+  "intimidating_helmet": true,
+  "juggling": 1,
+  "juggling_attacks": 1,
+  "lost_wisp": true,
+  "manual_card_plays_finished_this_turn": 4,
+  "max_hp": 80,
+  "next_after_side_turn_end_power_uid": 2,
+  "next_card_uid": 46,
+  "next_generated_hook_uid": 17,
+  "nunchaku": 9,
+  "owner_attack_plays_started_this_turn": 1,
+  "owner_card_exhausted_this_turn": true,
+  "owner_card_plays_finished_this_turn": 4,
+  "owner_cards_exhausted_combat": 31,
+  "owner_generated_cards_combat": 17,
+  "pen_nib": 5,
+  "pending": [
+   "frame_select",
+   44,
+   [
+    "select",
+    "discard",
+    1,
+    1,
+    null,
+    [
+     "move",
+     "draw",
+     "top"
+    ]
+   ]
+  ],
+  "plating": 6,
+  "player_phase": 3,
+  "player_unblocked_damage_results_combat": 10,
+  "player_unblocked_damage_this_turn": true,
+  "plays_this_turn": 5,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "ps_strikes": 6,
+  "red_skull": true,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD",
+   "RELIC.HEFTY_TABLET",
+   "RELIC.JUZU_BRACELET",
+   "RELIC.RED_SKULL",
+   "RELIC.NUNCHAKU",
+   "RELIC.PAELS_BLOOD",
+   "RELIC.WHETSTONE",
+   "RELIC.LOST_WISP",
+   "RELIC.SPARKLING_ROUGE",
+   "RELIC.TUNING_FORK",
+   "RELIC.AMETHYST_AUBERGINE",
+   "RELIC.BLESSED_ANTLER",
+   "RELIC.INTIMIDATING_HELMET",
+   "RELIC.PEN_NIB",
+   "RELIC.ETERNAL_FEATHER",
+   "RELIC.HAPPY_FLOWER"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "EliteEncounter",
+  "round_number": 5,
+  "skill_plays_finished_this_turn": 2,
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "strength": 4,
+  "template_relics": [
+   "RELIC.PAELS_BLOOD",
+   "RELIC.SPARKLING_ROUGE"
+  ],
+  "tuning_fork_owned": true,
+  "tuning_fork_skills": 4,
+  "turn": 5,
+  "unmovable": 1
+ },
+ "rng": {
+  "ai": {
+   "counter": 20,
+   "words": [
+    3224964031456592518,
+    2877094468924776785,
+    3684208628738274102,
+    9808233587634255829
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    10468645538064266233,
+    806890947725995750,
+    12080477797582578211,
+    8568522086245293174
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    14787054253568628104,
+    15324903032927876581,
+    8578303886862269372,
+    13879758907335135592
+   ]
+  },
+  "generation": {
+   "counter": 800,
+   "words": [
+    4425229338290580355,
+    18175297212145926775,
+    16850300418515090589,
+    567450558802105829
+   ]
+  },
+  "niche": {
+   "counter": 42,
+   "words": [
+    3665243813367520746,
+    12179202228849624373,
+    15286368363257924864,
+    11868758744258103596
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    3383441292974703525,
+    15450383366948251210,
+    9191776631539420179,
+    17774680762569243082
+   ]
+  },
+  "rng": {
+   "counter": 799,
+   "words": [
+    2189300536433723587,
+    13570404168418568346,
+    3745093934366295305,
+    8350228741740828162
+   ]
+  },
+  "sel": {
+   "counter": 4,
+   "words": [
+    17004313194255850292,
+    32789805628520947,
+    14889353468317293441,
+    12383599466847929581
+   ]
+  },
+  "targets": {
+   "counter": 47,
+   "words": [
+    3627249429809044123,
+    10662261601781402586,
+    7366477607886798515,
+    4678804303920606870
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

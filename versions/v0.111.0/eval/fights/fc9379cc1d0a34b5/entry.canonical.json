@@ -1,0 +1,481 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 60,
+   "kind": "PUNCH_CONSTRUCT",
+   "max_hp": 60
+  },
+  {
+   "hp": 70,
+   "kind": "CUBEX_CONSTRUCT",
+   "max_hp": 70,
+   "slot": 1,
+   "uid": 1
+  },
+  {
+   "hp": 70,
+   "kind": "CUBEX_CONSTRUCT",
+   "max_hp": 70,
+   "slot": 2,
+   "uid": 2
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "BEAM_CELL",
+    "uid": 6,
+    "upgrade": 1
+   },
+   {
+    "id": "FIGHT_THROUGH",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "SYNCHRONIZE",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "GO_FOR_THE_EYES",
+    "uid": 9,
+    "upgrade": 1
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "DUALCAST",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "GUNK_UP",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "UPROAR",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "REBOOT",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "SIGNAL_BOOST",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "TURBO",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 17,
+    "upgrade": 1
+   },
+   {
+    "id": "ECHO_FORM",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "CLAW",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 19,
+    "upgrade": 1
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "NULL",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "NULL",
+    "uid": 22,
+    "upgrade": 1
+   },
+   {
+    "id": "LIGHTNING_ROD",
+    "uid": 23,
+    "upgrade": 1
+   },
+   {
+    "id": "HOTFIX",
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "CLUMSY",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 26,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "id": "ZAP",
+    "uid": 28,
+    "upgrade": 1
+   },
+   {
+    "id": "FIGHT_THROUGH",
+    "uid": 29,
+    "upgrade": 0
+   },
+   {
+    "id": "COMPACT",
+    "uid": 30,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 31,
+    "upgrade": 0
+   },
+   {
+    "id": "CLAW",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 32,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SWIFT",
+     2
+    ],
+    "id": "SUBROUTINE",
+    "uid": 33,
+    "upgrade": 0
+   },
+   {
+    "id": "LOOP",
+    "uid": 34,
+    "upgrade": 0
+   },
+   {
+    "id": "CLAW",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 35,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "GENETIC_ALGORITHM_STATE",
+      54,
+      13
+     ]
+    ],
+    "id": "GENETIC_ALGORITHM",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 36,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 37,
+    "upgrade": 1
+   }
+  ],
+  "hand": [
+   {
+    "id": "BOOT_SEQUENCE",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "SYNTHESIS",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "HOTFIX",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "WHITE_NOISE",
+    "uid": 4,
+    "upgrade": 1
+   },
+   {
+    "id": "COOLHEADED",
+    "uid": 5,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "ascension": 9,
+  "block": 7,
+  "candelabra": true,
+  "cards_drawn_combat": 6,
+  "cracked_core": true,
+  "energy": 4,
+  "exact_piles": true,
+  "flower": 0,
+  "focus": 1,
+  "fully_unlocked_potion_pool": true,
+  "genetic_algorithm_deck_growth": [
+   [
+    13,
+    54
+   ]
+  ],
+  "gold": 40,
+  "hp": 16,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 1,
+  "max_hp": 83,
+  "next_card_uid": 38,
+  "orb_base_slots": 3,
+  "orb_slots": 3,
+  "orbs": [
+   [
+    "LIGHTNING",
+    null
+   ]
+  ],
+  "player_phase": 3,
+  "potion_slots": [
+   "ATTACK_POTION",
+   "FLEX_POTION",
+   "SPEED_POTION",
+   null
+  ],
+  "potions": [
+   "ATTACK_POTION",
+   "FLEX_POTION",
+   "SPEED_POTION"
+  ],
+  "ps_strikes": 3,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.CRACKED_CORE",
+   "RELIC.SILVER_CRUCIBLE",
+   "RELIC.SWORD_OF_JADE",
+   "RELIC.PEAR",
+   "RELIC.POTION_BELT",
+   "RELIC.BRONZE_SCALES",
+   "RELIC.PAELS_BLOOD",
+   "RELIC.CANDELABRA",
+   "RELIC.RED_MASK",
+   "RELIC.VENERABLE_TEA_SET",
+   "RELIC.SPARKLING_ROUGE",
+   "RELIC.HAPPY_FLOWER",
+   "RELIC.SAI",
+   "RELIC.REGAL_PILLOW",
+   "RELIC.FRAGRANT_MUSHROOM",
+   "RELIC.WHETSTONE",
+   "RELIC.DATA_DISK"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Defect",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "strength": 3,
+  "template_relics": [
+   "RELIC.SWORD_OF_JADE",
+   "RELIC.PAELS_BLOOD",
+   "RELIC.SPARKLING_ROUGE",
+   "RELIC.SAI",
+   "RELIC.DATA_DISK"
+  ],
+  "thorns": 3,
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 21,
+   "words": [
+    3790031252874967736,
+    17095671178453296735,
+    8429334882249217394,
+    5717890828521277927
+   ]
+  },
+  "combat_orbs": {
+   "counter": 1,
+   "words": [
+    15109929859802777061,
+    15519351456033051504,
+    5512441625451339481,
+    6015481157537354226
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    12803973150319103244,
+    2567479427989821238,
+    7510523081221496539,
+    15078852714879792579
+   ]
+  },
+  "generation": {
+   "counter": 492,
+   "words": [
+    1636898869707977274,
+    17594888335399700892,
+    3423755052892458650,
+    3005616309778470448
+   ]
+  },
+  "niche": {
+   "counter": 74,
+   "words": [
+    11862762299743895290,
+    7149021745069827718,
+    14789816293843571329,
+    13761861486427052799
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    8883083616230356928,
+    9639103396225601935,
+    17310282560775611086,
+    11604243636194264703
+   ]
+  },
+  "rng": {
+   "counter": 871,
+   "words": [
+    13571222260395129820,
+    12790453114643830597,
+    16920621960043325527,
+    13144074186337274503
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    17469182179902655355,
+    7489842803615598590,
+    17807993069974130972,
+    6465603761429850510
+   ]
+  },
+  "targets": {
+   "counter": 130,
+   "words": [
+    11813021216910665922,
+    4066391302347535989,
+    6063345630130205696,
+    5464254446142214236
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

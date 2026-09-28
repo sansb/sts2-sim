@@ -1,0 +1,321 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 48,
+   "kind": "BOWLBUG_ROCK",
+   "max_hp": 48
+  },
+  {
+   "hp": 38,
+   "kind": "BOWLBUG_NECTAR",
+   "max_hp": 38,
+   "slot": 1,
+   "uid": 1
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "DODGE_AND_ROLL",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "TOOLS_OF_THE_TRADE",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "INFINITE_BLADES",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "PREPARED",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "BACKFLIP",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "ESCAPE_PLAN",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "BACKFLIP",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "ESCAPE_PLAN",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "LEG_SWEEP",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "BACKFLIP",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 23,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "SPEEDSTER",
+    "uid": 0,
+    "upgrade": 1
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "NEUTRALIZE",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_SILENT",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_SILENT",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "PHANTOM_BLADES",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "SURVIVOR",
+    "uid": 7,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "bag_draws": 2,
+  "blood_vial": true,
+  "cards_drawn_combat": 8,
+  "fully_unlocked_potion_pool": true,
+  "gold": 112,
+  "hp": 74,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 1,
+  "max_hp": 80,
+  "next_card_uid": 24,
+  "player_phase": 3,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "ps_strikes": 4,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.RING_OF_THE_SNAKE",
+   "RELIC.NEW_LEAF",
+   "RELIC.PEAR",
+   "RELIC.BLOOD_VIAL",
+   "RELIC.VENERABLE_TEA_SET",
+   "RELIC.PAELS_BLOOD"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Silent",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "template_relics": [
+   "RELIC.PAELS_BLOOD"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 27,
+   "words": [
+    7179752319691426048,
+    965111323838026807,
+    13539274043983168446,
+    16550324190042717145
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    10918522048754576359,
+    11808897803930743269,
+    15029969261295660433,
+    6592270026538101833
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    11727477098189092730,
+    8820476770158594983,
+    5132153383112512166,
+    12379293148656016153
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    3984994964574901073,
+    8680183770846980013,
+    17949768963802547744,
+    1205192980818975765
+   ]
+  },
+  "niche": {
+   "counter": 21,
+   "words": [
+    4598190449417045471,
+    10478649981315525802,
+    13739956739066202697,
+    8127688625637684622
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    6573741818929311468,
+    10956430330853264981,
+    3642064956496704575,
+    6645335165584152290
+   ]
+  },
+  "rng": {
+   "counter": 501,
+   "words": [
+    8908817510940485411,
+    10525787572668870542,
+    6598909170372913720,
+    1145514244593790371
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    6653414081620575011,
+    7140137709207088990,
+    7320239575396881570,
+    13029712678682836493
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    13105376502025412456,
+    14491807483426649250,
+    5278732870434356673,
+    17906787532917589872
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

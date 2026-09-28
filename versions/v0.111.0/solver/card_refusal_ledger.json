@@ -1,0 +1,42 @@
+{
+ "explicit_refusals": {
+  "CARD.BANSHEES_CRY": "I5: BansheesCry/<OnPlay>d__5::MoveNext 0x3d4388; per-card cost hooks 0x2845c0/0x28462c -> #336",
+  "CARD.BOLAS": "I5: Bolas/<BeforeHandDraw>d__6::MoveNext 0x3d7064 -> #268/#228",
+  "CARD.CLEANSE": "I5: Cleanse/<OnPlay>d__5::MoveNext 0x3dbaf8 draw-pile exhaust select -> #382",
+  "CARD.FERAL": "I5: FeralPower result-location hooks 0x24e43c/0x24e4ab return the first zero-cost Attack to Hand and update a per-turn counter -> #414",
+  "CARD.FURNACE": "I5 ledger: FurnacePower::<AfterSideTurnStart>d__6::MoveNext 0x3817b4 forges cards each owner turn -> #257",
+  "CARD.KINGLY_PUNCH": "I5 ledger: KinglyPunch::AfterCardDrawn 0x28fbb8 mutates this instance's Damage and ExtraDamage -> #336",
+  "CARD.MAKE_IT_SO": "I5: MakeItSo::<AfterCardPlayedLate>d__4::MoveNext 0x3f4414 returns this exact instance to Hand every third owner Skill play -> #415",
+  "CARD.MASTER_PLANNER": "I5: MasterPlannerPower::AfterCardPlayed 0x250938 adds Sly to the exact played Skill instance -> #416",
+  "CARD.MELANCHOLY": "I5: Melancholy/<OnPlay>d__7::MoveNext 0x3f5198; AfterDeath cost mutation 0x291260 -> #336",
+  "CARD.MIDNIGHT": "I5: Midnight::AfterCardEnteredCombat/AfterCardExhausted 0x291664/0x2916af mutate this exact instance cost from Exhaust history -> #417",
+  "CARD.PANIC_BUTTON": "I5: PanicButton/<OnPlay>d__8::MoveNext 0x3fa6a8; NoBlockPower 0x388454 -> #381",
+  "CARD.SWORD_SAGE": "I5: SwordSagePower mutates SovereignBlade BaseReplayCount on power/card lifecycle hooks 0x254f10/0x254fb4 -> #257",
+  "CARD.THRUMMING_HATCHET": "I5: ThrummingHatchet/<BeforeHandDraw>d__4::MoveNext 0x40c94c -> #268/#228",
+  "CARD.WELL_LAID_PLANS": "I5: WellLaidPlansPower::ShouldFlush 0x256ee1 retains its owner's hand through flush -> #407"
+ },
+ "template_admission_exclusions": {
+  "CARD.BEACON_OF_HOPE": "Hand-modeled exact current-build MultiplayerOnly Self unique power: owner-side AfterBlockGained grants half the final Block Decimal to each other living represented Player, with exact listener acquisition order and whole-remote-hook refusal (#1169/#439).",
+  "CARD.BLAZE": "Hand-modeled exact current-build MultiplayerOnly AnyAlly permanent StrengthPower application: the raw translated enemy operand is quarantined while the selected-player projection is explicit (#1098/#439).",
+  "CARD.CONCOCT": "Hand-modeled exact current-build MultiplayerOnly AnyAlly ConcoctPower application: the raw translated enemy operand is quarantined while exact selected-player ownership, powered unblocked-damage Poison, and enemy-side expiry are explicit (#1207/#439).",
+  "CARD.COORDINATE": "Hand-modeled exact current-build MultiplayerOnly AnyAlly CoordinatePower application: the raw translated enemy operand is quarantined while the selected-player temporary Strength projection and owner-side expiry are explicit (#397/#439).",
+  "CARD.FADE": "Hand-modeled exact current-build MultiplayerOnly AnyAlly FadePower application: the raw translated enemy operand is quarantined while the selected-player temporary Dexterity projection and owner-side expiry are explicit (#397/#439).",
+  "CARD.INTERCEPT": "Hand-modeled exact current-build MultiplayerOnly AnyAlly body: the raw translated enemy operand is quarantined while owner Block plus selected-player CoveredPower and keyed InterceptPower state are explicit (#405/#439)."
+ },
+ "template_exclusions": {},
+ "translator_refusal_exclusions": {
+  "CARD.ALCHEMIZE": "Hand-modeled exact current-build potion generation/procurement: the #678 pool, CombatPotionGeneration draws, keyed belt slots, and Sozu/Belt Buckle hooks are explicit (#679).",
+  "CARD.CHAOS": "Hand-modeled exact current-build live Repeat loop: each iteration draws from CombatOrbGeneration's ordered five-orb pool and awaits a resumable native Channel command (#732).",
+  "CARD.CONSUMING_SHADOW": "Hand-modeled exact current-build body and power: 2/3 serial Dark Channel commands precede one additive power; an initial nonempty gate owns a live-Amount, resumable EvokeLast loop at owner side end (#733).",
+  "CARD.FAN_OF_KNIVES": "Hand-modeled exact bounded loop: unique FanOfKnivesPower application precedes 4/5 serial L0 Shiv.CreateInHand calls (W172).",
+  "CARD.FIGHT_THROUGH": "Hand-modeled exact bounded loop: powered Block 13/17 precedes exactly two L0 Wounds at Discard/Bottom (W172).",
+  "CARD.GENETIC_ALGORITHM": "Hand-modeled exact current-build mutable Block: the active physical combat copy and its explicit non-null master-deck DeckVersion independently accumulate 3/4 after each awaited Block command (#722).",
+  "CARD.GLIMMER": "Hand-modeled exact current-build Draw/selection continuation: one awaited Draw(3/4) precedes a live FromHand exact-instance move to Draw/Top, including nested drawn-card listener suspension (#724).",
+  "CARD.LARGESSE": "Hand-modeled exact current-build MultiplayerOnly AnyAlly generation: the selected Player supplies the fully-unlocked 62-card Colorless pool while the local Regent source owner supplies CombatCardGeneration and receives the fresh result (#1203/#439).",
+  "CARD.MISERY": "Hand-modeled exact snapshot/copy body: frozen acquisition-ordered Type-2 powers are cloned onto post-hit enemies with per-command hooks (#670).",
+  "CARD.SHIV": "Hand-modeled exact Shiv pipeline (#348): translator cannot prove get_HasFanOfKnives, so its raw refusal is deliberately excluded.",
+  "CARD.SPLASH": "Hand-modeled exact current-build character-pool generation: recorded UnlockState epochs project the #667 ordered Attack census, canonical gameplay leaves _mockGeneratedCard null, and one blocking choice routes the selected free card through generated entry (#676).",
+  "CARD.THE_SCYTHE": "Hand-modeled exact mutable damage: the active physical instance and its explicit non-null master-deck DeckVersion grow after each awaited attack body (#673).",
+  "CARD.UP_MY_SLEEVE": "Hand-modeled exact bounded loop: 3/4 serial L0 Shivs precede the exact source CardModel's ordered -1 ThisCombat energy-cost row (W172)."
+ }
+}

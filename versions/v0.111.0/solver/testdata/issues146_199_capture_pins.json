@@ -1,0 +1,70 @@
+{
+  "issues": [146, 199],
+  "installed_build": "v0.111.0/41cef1ea",
+  "installed_archive_dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+  "captures": [
+    {
+      "mechanic": "corpse_slugs_ravenous",
+      "build": "v0.111.0",
+      "seed": "ECN6B749UETJ",
+      "total_floor": 13,
+      "niche_counter_entering": 19,
+      "save": "2026-08-15/153733.549_save_3437b6f3.save",
+      "save_sha256": "83f36edc8c9495ab057fd1eb2209971ec69362896a53b782e3a12a16ca32b35f",
+      "mcr": "2026-08-15/153733.551_mcr_e330cf33.mcr",
+      "mcr_sha256": "f13c6b3ac73e8c09ed3082303eddbd6bacb713a2937053de59e37cb73052213f",
+      "roster": ["CORPSE_SLUG", "CORPSE_SLUG", "CORPSE_SLUG"],
+      "starting_hp": [27, 28, 29],
+      "starting_loop_positions": [0, 1, 2],
+      "after_first_death_survivor_strength": [5, 5],
+      "survivor_actions_before_turn_2": ["RAVENOUS_STUN_MOVE", "RAVENOUS_STUN_MOVE"],
+      "monster_ai_counter": 6
+    },
+    {
+      "mechanic": "corpse_slugs_repeated_ravenous",
+      "build": "v0.109.1",
+      "seed": "U9TLBFVKCE6D",
+      "niche_counter_entering": 5,
+      "save": "2026-07-27/055811.616_save_456e28da.save",
+      "save_sha256": "dd7f47c2eda5ca3c0a3d0853e40b9085318d538cd98ae2146fe8c19718bdee0c",
+      "mcr": "2026-07-27/055811.618_mcr_d95bc185.mcr",
+      "mcr_sha256": "ed7537c77e488ccd3b0517ef0612c8317e3a7c222a898329243a172469fb5291",
+      "starting_hp": [27, 28, 29],
+      "strength_after_sibling_deaths": [5, 10]
+    },
+    {
+      "mechanic": "knights_current_build",
+      "build": "v0.111.0",
+      "seed": "1KJJGR1GFZR6",
+      "total_floor": 12,
+      "niche_counter_entering": 29,
+      "monster_ai_counter_entering": 2,
+      "save": "2026-08-15/173308.966_save_689e5d1e.save",
+      "save_sha256": "a365d8058ad5fe6d187a4f6729438c7eba1595e82d794b7389f0d93a00796c62",
+      "mcr": "2026-08-15/173308.974_mcr_45c4269e.mcr",
+      "mcr_sha256": "b913dd73abce7e60c993454bec773ba51523d0d01d77ce72590808d1de164975",
+      "roster": ["FLAIL_KNIGHT", "SPECTRAL_KNIGHT", "MAGI_KNIGHT"],
+      "starting_hp": [108, 97, 89],
+      "turn_1_moves": ["RAM_MOVE", "HEX_MOVE", "POWER_SHIELD_MOVE"],
+      "monster_ai_counter_turn_starts": [2, 3, 4, 5, 6],
+      "power_shield_block": 9,
+      "hex_amount": 2,
+      "hex_removed_with_spectral_death": true
+    },
+    {
+      "mechanic": "knights_random_ai_interleave",
+      "build": "v0.110.1",
+      "seed": "HXAMU6F790VB",
+      "niche_counter_entering": 27,
+      "monster_ai_counter_entering": 11,
+      "save": "2026-08-05/203732.240_save_bb66cb19.save",
+      "save_sha256": "7d2e7004dadbb9de2e74f79dcf46dcb955063eb5c595edc16e01d62bdbd06777",
+      "mcr": "2026-08-05/203732.241_mcr_57a4e6dc.mcr",
+      "mcr_sha256": "2f76921eba07a77d96aea2c0f5f058c6eca82f9a708419ad102abbbc2d4f01a5",
+      "monster_ai_counter_turn_starts": [11, 12, 14, 15],
+      "turn_1_prepare_draw_slots": [0],
+      "turn_2_prepare_draw_slots": [0, 1],
+      "all_knights_alive_at_turn_3_start": true
+    }
+  ]
+}

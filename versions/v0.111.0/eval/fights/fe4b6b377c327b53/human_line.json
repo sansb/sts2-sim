@@ -1,0 +1,20 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "adc733cc9a3198204ffa70ff340728c7541a214437f5bc3b5658b329ce82abd3",
+ "turns": 1,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 2
+  }
+ ],
+ "step_digests": [
+  "fc879637c3012e02816fe7263bcbd35e0c185126051070d7ac28bd0d5dfd9e86"
+ ],
+ "terminal": {
+  "hp": 45,
+  "turn": 1,
+  "over": true,
+  "won": true
+ }
+}

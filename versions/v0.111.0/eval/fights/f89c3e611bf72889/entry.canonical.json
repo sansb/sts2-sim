@@ -1,0 +1,347 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 168,
+   "kind": "INFESTED_PRISM",
+   "max_hp": 171,
+   "vital": 3
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "DEFRAGMENT",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "SHADOW_SHIELD",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "REFRACT",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "CHARGE_BATTERY",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "ZAP",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "FOCUSED_STRIKE",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "FTL",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "TEMPEST",
+    "uid": 15,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "SLITHER",
+     1
+    ],
+    "id": "SUNDER",
+    "uid": 16,
+    "upgrade": 1
+   },
+   {
+    "id": "JACKPOT",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "DUALCAST",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "PERFECT_FIT",
+     1
+    ],
+    "id": "VOLTAIC",
+    "uid": 19,
+    "upgrade": 1
+   },
+   {
+    "id": "SUPERCRITICAL",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "DARKNESS",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "NULL",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "CHAOS",
+    "uid": 23,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 24,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "LOOP",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "COOLHEADED",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_DEFECT",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "SIGNAL_BOOST",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "ascension": 9,
+  "cards_drawn_combat": 5,
+  "cracked_core": true,
+  "dexterity": 1,
+  "flower": 1,
+  "fully_unlocked_potion_pool": true,
+  "gold": 124,
+  "hp": 17,
+  "inky_attack_damage": 0,
+  "lightning_channeled": 1,
+  "max_hp": 82,
+  "miniature_cannon": true,
+  "next_card_uid": 25,
+  "orb_base_slots": 3,
+  "orb_slots": 3,
+  "orbs": [
+   [
+    "LIGHTNING",
+    null
+   ]
+  ],
+  "paels_eye": true,
+  "player_phase": 3,
+  "potion_slots": [
+   "VULNERABLE_POTION",
+   "POWER_POTION"
+  ],
+  "potions": [
+   "VULNERABLE_POTION",
+   "POWER_POTION"
+  ],
+  "ps_strikes": 2,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.CRACKED_CORE",
+   "RELIC.SILVER_CRUCIBLE",
+   "RELIC.STRAWBERRY",
+   "RELIC.LASTING_CANDY",
+   "RELIC.PAELS_EYE",
+   "RELIC.MERCURY_HOURGLASS",
+   "RELIC.MINIATURE_CANNON",
+   "RELIC.ODDLY_SMOOTH_STONE",
+   "RELIC.HAPPY_FLOWER"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Defect",
+  "reward_card_rarity_odds": "EliteEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "template_relics": [
+   "RELIC.MERCURY_HOURGLASS"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 13,
+   "words": [
+    3051563103181196870,
+    12477894476089425487,
+    11546330620372813393,
+    821996806795224447
+   ]
+  },
+  "combat_orbs": {
+   "counter": 14,
+   "words": [
+    7291749146406430869,
+    3201748395083008949,
+    10555756257208609988,
+    5670936109348225168
+   ]
+  },
+  "energy_costs": {
+   "counter": 8,
+   "words": [
+    12649125544103377056,
+    8535870345842131497,
+    6946376129955023066,
+    9074946321168622534
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    9903940341923874368,
+    9309959706988089193,
+    5048806967728805241,
+    9634554489473831234
+   ]
+  },
+  "niche": {
+   "counter": 24,
+   "words": [
+    17443139075556393410,
+    7447739331114984404,
+    1534625775128236632,
+    17718584829995340362
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    2906730821603736966,
+    1972695634470189161,
+    17363985426012291262,
+    2791586440759648364
+   ]
+  },
+  "rng": {
+   "counter": 250,
+   "words": [
+    12290679641716422448,
+    18023140230522486456,
+    14007827541255111847,
+    2133463264278503650
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    2486380059638477129,
+    13498203224070420760,
+    3233552339478700340,
+    7983596679458381274
+   ]
+  },
+  "targets": {
+   "counter": 70,
+   "words": [
+    11755230922242133325,
+    3574629236201609712,
+    16918141868583602878,
+    15583535033592082828
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

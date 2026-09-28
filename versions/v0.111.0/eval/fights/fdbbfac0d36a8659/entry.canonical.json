@@ -1,0 +1,349 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 12,
+   "kind": "TWIG_SLIME_S",
+   "max_hp": 12
+  },
+  {
+   "hp": 29,
+   "kind": "TWIG_SLIME_M",
+   "max_hp": 29,
+   "move_log": [
+    "STICKY_SHOT_MOVE"
+   ],
+   "next_move": "STICKY_SHOT_MOVE",
+   "slot": 1,
+   "uid": 1
+  },
+  {
+   "hp": 16,
+   "kind": "LEAF_SLIME_S",
+   "max_hp": 16,
+   "move_log": [
+    "TACKLE_MOVE"
+   ],
+   "next_move": "TACKLE_MOVE",
+   "slot": 2,
+   "uid": 2
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "TORIC_TOUGHNESS",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "FALLING_STAR",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "GLOW",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "HEAVENLY_DRILL",
+    "uid": 10,
+    "upgrade": 1
+   },
+   {
+    "id": "SHINING_STRIKE",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_REGENT",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "VENERATE",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "RADIATE",
+    "uid": 16,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "INJURY",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "RADIATE",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_REGENT",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "cards_drawn_combat": 5,
+  "entropy_card_pool": "regent",
+  "fully_unlocked_potion_pool": true,
+  "hp": 44,
+  "inky_attack_damage": 0,
+  "max_hp": 75,
+  "next_card_uid": 17,
+  "player_phase": 3,
+  "potion_slots": [
+   "GIGANTIFICATION_POTION",
+   null
+  ],
+  "potions": [
+   "GIGANTIFICATION_POTION"
+  ],
+  "ps_strikes": 4,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.DIVINE_RIGHT",
+   "RELIC.HEFTY_TABLET"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Regent",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "spectrum_shift_generation_pool": [
+   "ANOINTED",
+   "AUTOMATION",
+   "BEAT_DOWN",
+   "BOLAS",
+   "CALAMITY",
+   "CATASTROPHE",
+   "DARK_SHACKLES",
+   "DISCOVERY",
+   "DRAMATIC_ENTRANCE",
+   "ENTROPY",
+   "EQUILIBRIUM",
+   "ETERNAL_ARMOR",
+   "FASTEN",
+   "FINESSE",
+   "FISTICUFFS",
+   "FLASH_OF_STEEL",
+   "GOLD_AXE",
+   "IMPATIENCE",
+   "JACK_OF_ALL_TRADES",
+   "JACKPOT",
+   "MASTER_OF_STRATEGY",
+   "MAYHEM",
+   "MIND_BLAST",
+   "NOSTALGIA",
+   "OMNISLICE",
+   "PANACHE",
+   "PANIC_BUTTON",
+   "PREP_TIME",
+   "PRODUCTION",
+   "PROLONG",
+   "PROWESS",
+   "PURITY",
+   "REND",
+   "RESTLESSNESS",
+   "ROLLING_BOULDER",
+   "SALVO",
+   "SCRAWL",
+   "SECRET_TECHNIQUE",
+   "SECRET_WEAPON",
+   "SEEKER_STRIKE",
+   "SHOCKWAVE",
+   "SPLASH",
+   "STRATAGEM",
+   "THE_BOMB",
+   "THE_GAMBIT",
+   "THINKING_AHEAD",
+   "THRUMMING_HATCHET",
+   "ULTIMATE_DEFEND",
+   "ULTIMATE_STRIKE",
+   "VOLLEY"
+  ],
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "stars": 3,
+  "stars_gained_this_turn": 3,
+  "template_relics": [
+   "RELIC.DIVINE_RIGHT"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 1,
+   "words": [
+    10125830924695982886,
+    9690534704873627282,
+    3447871367747553092,
+    10062444626179201546
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    4158926859677152989,
+    11528556290966455835,
+    1547708293268918660,
+    15041183679954157864
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    4924949084762014369,
+    2580507432859550694,
+    16182428523770107568,
+    16873791754592599978
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    12670356558990364027,
+    1779935006526980417,
+    8527121947672856064,
+    16261660594417515311
+   ]
+  },
+  "niche": {
+   "counter": 5,
+   "words": [
+    2801064611509604366,
+    7255686034165662329,
+    3766017373070072820,
+    4567486692810186068
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    7793387154902730246,
+    13967082764730624646,
+    8815626587588675052,
+    14310422332007339420
+   ]
+  },
+  "rng": {
+   "counter": 58,
+   "words": [
+    5861670577179624089,
+    12128041466343347935,
+    14634964598226534958,
+    1176256650540401158
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    13977073436769240311,
+    11183216754388517741,
+    16422394141084572768,
+    289675853735160992
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    2246625479055030518,
+    220718819718311410,
+    6288486335408352859,
+    879865430472047700
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

@@ -1,0 +1,443 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 108,
+   "kind": "FLAIL_KNIGHT",
+   "max_hp": 108,
+   "move_log": [
+    "RAM_MOVE"
+   ],
+   "next_move": "RAM_MOVE"
+  },
+  {
+   "hp": 97,
+   "kind": "SPECTRAL_KNIGHT",
+   "max_hp": 97,
+   "move_log": [
+    "HEX_MOVE"
+   ],
+   "next_move": "HEX_MOVE",
+   "slot": 1,
+   "uid": 1
+  },
+  {
+   "hp": 89,
+   "kind": "MAGI_KNIGHT",
+   "max_hp": 89,
+   "slot": 2,
+   "uid": 2
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFILE",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "LETHALITY",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "PULL_AGGRO",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "DECAY",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "BURY",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "CLASH",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "DISCOVERY",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "UNLEASH",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "DANSE_MACABRE",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "ALCHEMIZE",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "GRAVE_WARDEN",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFILE",
+    "uid": 17,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "DEFY",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "NEGATIVE_PULSE",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "JACKPOT",
+    "uid": 20,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "NEGATIVE_PULSE",
+    "uid": 21,
+    "upgrade": 1
+   },
+   {
+    "id": "DELAY",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SHARP",
+     2
+    ],
+    "id": "FEAR",
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "BODYGUARD",
+    "uid": 25,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 26,
+    "upgrade": 1
+   },
+   {
+    "id": "VEILPIERCER",
+    "uid": 27,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "UNDEATH",
+    "uid": 28,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 29,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 30,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 31,
+    "upgrade": 0
+   },
+   {
+    "id": "WISP",
+    "uid": 32,
+    "upgrade": 0
+   },
+   {
+    "id": "PUTREFY",
+    "uid": 33,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "NIMBLE",
+     2
+    ],
+    "id": "DEFY",
+    "uid": 34,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "FOLLY",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "FETCH",
+    "uid": 1,
+    "upgrade": 1
+   },
+   {
+    "id": "REAP",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SOULS_POWER",
+     1
+    ],
+    "id": "ABUNDANCE",
+    "uid": 3,
+    "upgrade": 1
+   },
+   {
+    "id": "DEMESNE",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "ally": [
+   "OSTY",
+   7,
+   7
+  ],
+  "ascension": 9,
+  "cards_drawn_combat": 5,
+  "fully_unlocked_potion_pool": true,
+  "gold": 162,
+  "hp": 23,
+  "inky_attack_damage": 0,
+  "innate_min_draw": 1,
+  "lightning_channeled": 0,
+  "lizard_tail_used": 1,
+  "lost_wisp": true,
+  "max_hp": 63,
+  "next_card_uid": 35,
+  "next_creature_uid": 4,
+  "phylactery_unbound": true,
+  "player_phase": 3,
+  "potion_slots": [
+   "CURE_ALL",
+   null
+  ],
+  "potions": [
+   "CURE_ALL"
+  ],
+  "ps_strikes": 2,
+  "rainbow_ring": true,
+  "razor_tooth": true,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.PHYLACTERY_UNBOUND",
+   "RELIC.DOWSING_ROD",
+   "RELIC.FRESNEL_LENS",
+   "RELIC.RAINBOW_RING",
+   "RELIC.WAR_PAINT",
+   "RELIC.TOUCH_OF_OROBAS",
+   "RELIC.LOST_WISP",
+   "RELIC.PEAR",
+   "RELIC.LIZARD_TAIL",
+   "RELIC.PRESERVED_FOG",
+   "RELIC.RAZOR_TOOTH"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Necrobinder",
+  "reward_card_rarity_odds": "EliteEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 11,
+   "words": [
+    8803416081348028420,
+    9725383188565838517,
+    8836672621912120537,
+    5509856268621816698
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    13419515372248766359,
+    4947101863367337768,
+    5479124784649532243,
+    6001665135347807621
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    15630592754900395182,
+    9953689215280020677,
+    5819836938315476664,
+    6514508726314031575
+   ]
+  },
+  "generation": {
+   "counter": 645,
+   "words": [
+    17926461402010201068,
+    13066760837845844310,
+    8511501398204112245,
+    15548864665231906748
+   ]
+  },
+  "niche": {
+   "counter": 39,
+   "words": [
+    8689041147617413572,
+    2177228642170755236,
+    14345760501435099271,
+    3641522941253960933
+   ]
+  },
+  "potion_generation": {
+   "counter": 14,
+   "words": [
+    16445111507812178770,
+    865741955865246248,
+    7014235232338068817,
+    10034063458215908410
+   ]
+  },
+  "rng": {
+   "counter": 672,
+   "words": [
+    9023619870876263893,
+    11020587764753613075,
+    16930262083167499649,
+    7169472033152852036
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    3930876220218627710,
+    823402353806394893,
+    15814526992492130673,
+    8964509078302892305
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    1055111286289190653,
+    17212008773032296180,
+    17806937594366306665,
+    13872471340052720849
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

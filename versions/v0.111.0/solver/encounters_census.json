@@ -1,0 +1,2624 @@
+{
+ "encounters": {
+  "ENCOUNTER.AEONGLASS_BOSS": {
+   "class": "AeonglassBoss",
+   "kind": "combat",
+   "monsters": [
+    "Aeonglass"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.AXEBOTS_NORMAL": {
+   "class": "AxebotsNormal",
+   "kind": "combat",
+   "monsters": [
+    "Axebot"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_ENCOUNTER": {
+   "class": "BattlewornDummyEventEncounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER": {
+   "class": "BattlewornDummyEventV1Encounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER": {
+   "class": "BattlewornDummyEventV2Encounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER": {
+   "class": "BattlewornDummyEventV3Encounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.BOWLBUGS_NORMAL": {
+   "class": "BowlbugsNormal",
+   "kind": "combat",
+   "monsters": [
+    "BowlbugRock",
+    "BowlbugEgg",
+    "BowlbugSilk",
+    "BowlbugNectar"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.BOWLBUGS_WEAK": {
+   "class": "BowlbugsWeak",
+   "kind": "combat",
+   "monsters": [
+    "BowlbugEgg",
+    "BowlbugNectar",
+    "BowlbugRock"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.BYGONE_EFFIGY_ELITE": {
+   "class": "BygoneEffigyElite",
+   "kind": "combat",
+   "monsters": [
+    "BygoneEffigy"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.BYRDONIS_ELITE": {
+   "class": "ByrdonisElite",
+   "kind": "combat",
+   "monsters": [
+    "Byrdonis"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.CEREMONIAL_BEAST_BOSS": {
+   "class": "CeremonialBeastBoss",
+   "kind": "combat",
+   "monsters": [
+    "CeremonialBeast"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.CHOMPERS_NORMAL": {
+   "class": "ChompersNormal",
+   "kind": "combat",
+   "monsters": [
+    "Chomper"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL": {
+   "class": "ConstructMenagerieNormal",
+   "kind": "combat",
+   "monsters": [
+    "PunchConstruct",
+    "CubexConstruct"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.CORPSE_SLUGS_NORMAL": {
+   "class": "CorpseSlugsNormal",
+   "kind": "combat",
+   "monsters": [
+    "CorpseSlug"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.CORPSE_SLUGS_WEAK": {
+   "class": "CorpseSlugsWeak",
+   "kind": "combat",
+   "monsters": [
+    "CorpseSlug"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL": {
+   "class": "CubexConstructNormal",
+   "kind": "combat",
+   "monsters": [
+    "CubexConstruct"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.CULTISTS_NORMAL": {
+   "class": "CultistsNormal",
+   "kind": "combat",
+   "monsters": [
+    "CalcifiedCultist",
+    "DampCultist"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.DECIMILLIPEDE_ELITE": {
+   "class": "DecimillipedeElite",
+   "kind": "combat",
+   "monsters": [
+    "DecimillipedeSegmentFront",
+    "DecimillipedeSegmentMiddle",
+    "DecimillipedeSegmentBack"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER": {
+   "class": "DenseVegetationEventEncounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.DEPRECATED_ENCOUNTER": {
+   "class": "DeprecatedEncounter",
+   "kind": "deprecated",
+   "pool": null
+  },
+  "ENCOUNTER.DEVOTED_SCULPTOR_WEAK": {
+   "class": "DevotedSculptorWeak",
+   "kind": "combat",
+   "monsters": [
+    "DevotedSculptor"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.ENTOMANCER_ELITE": {
+   "class": "EntomancerElite",
+   "kind": "combat",
+   "monsters": [
+    "Entomancer"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.EXOSKELETONS_NORMAL": {
+   "class": "ExoskeletonsNormal",
+   "kind": "combat",
+   "monsters": [
+    "Exoskeleton"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.EXOSKELETONS_WEAK": {
+   "class": "ExoskeletonsWeak",
+   "kind": "combat",
+   "monsters": [
+    "Exoskeleton"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.FABRICATOR_NORMAL": {
+   "class": "FabricatorNormal",
+   "kind": "combat",
+   "monsters": [
+    "Fabricator"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER": {
+   "class": "FakeMerchantEventEncounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.FLYCONID_NORMAL": {
+   "class": "FlyconidNormal",
+   "kind": "combat",
+   "monsters": [
+    "Flyconid",
+    "LeafSlimeM",
+    "TwigSlimeM"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.FOGMOG_NORMAL": {
+   "class": "FogmogNormal",
+   "kind": "combat",
+   "monsters": [
+    "Fogmog",
+    "EyeWithTeeth"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.FOSSIL_STALKER_NORMAL": {
+   "class": "FossilStalkerNormal",
+   "kind": "combat",
+   "monsters": [
+    "FossilStalker"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.FROG_KNIGHT_NORMAL": {
+   "class": "FrogKnightNormal",
+   "kind": "combat",
+   "monsters": [
+    "FrogKnight"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK": {
+   "class": "FuzzyWurmCrawlerWeak",
+   "kind": "combat",
+   "monsters": [
+    "FuzzyWurmCrawler"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.GLOBE_HEAD_NORMAL": {
+   "class": "GlobeHeadNormal",
+   "kind": "combat",
+   "monsters": [
+    "GlobeHead"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.GREMLIN_MERC_NORMAL": {
+   "class": "GremlinMercNormal",
+   "kind": "combat",
+   "monsters": [
+    "GremlinMerc",
+    "FatGremlin",
+    "SneakyGremlin"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.HAUNTED_SHIP_NORMAL": {
+   "class": "HauntedShipNormal",
+   "kind": "combat",
+   "monsters": [
+    "HauntedShip"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.HUNTER_KILLER_NORMAL": {
+   "class": "HunterKillerNormal",
+   "kind": "combat",
+   "monsters": [
+    "HunterKiller"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.INFESTED_PRISMS_ELITE": {
+   "class": "InfestedPrismsElite",
+   "kind": "combat",
+   "monsters": [
+    "InfestedPrism"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.INKLETS_NORMAL": {
+   "class": "InkletsNormal",
+   "kind": "combat",
+   "monsters": [
+    "Inklet"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.KAISER_CRAB_BOSS": {
+   "class": "KaiserCrabBoss",
+   "kind": "combat",
+   "monsters": [
+    "Crusher",
+    "Rocket"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.KNIGHTS_ELITE": {
+   "class": "KnightsElite",
+   "kind": "combat",
+   "monsters": [
+    "FlailKnight",
+    "SpectralKnight",
+    "MagiKnight"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.KNOWLEDGE_DEMON_BOSS": {
+   "class": "KnowledgeDemonBoss",
+   "kind": "combat",
+   "monsters": [
+    "KnowledgeDemon"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS": {
+   "class": "LagavulinMatriarchBoss",
+   "kind": "combat",
+   "monsters": [
+    "LagavulinMatriarch"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.LIVING_FOG_NORMAL": {
+   "class": "LivingFogNormal",
+   "kind": "combat",
+   "monsters": [
+    "LivingFog",
+    "GasBomb"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.LOUSE_PROGENITOR_NORMAL": {
+   "class": "LouseProgenitorNormal",
+   "kind": "combat",
+   "monsters": [
+    "LouseProgenitor"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.MAWLER_NORMAL": {
+   "class": "MawlerNormal",
+   "kind": "combat",
+   "monsters": [
+    "Mawler"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.MECHA_KNIGHT_ELITE": {
+   "class": "MechaKnightElite",
+   "kind": "combat",
+   "monsters": [
+    "MechaKnight"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.MOCK_ARTIFACT_ENCOUNTER": {
+   "class": "MockArtifactEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_ATTACK_AND_SUMMON_ENCOUNTER": {
+   "class": "MockAttackAndSummonEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_BOSS_ENCOUNTER": {
+   "class": "MockBossEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_ELITE_ENCOUNTER": {
+   "class": "MockEliteEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_MONSTER_ENCOUNTER": {
+   "class": "MockMonsterEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_NO_REWARDS_ENCOUNTER": {
+   "class": "MockNoRewardsEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_PLATING_ENCOUNTER": {
+   "class": "MockPlatingEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MOCK_TWO_MONSTER_ENCOUNTER": {
+   "class": "MockTwoMonsterEncounter",
+   "kind": "mock",
+   "pool": null
+  },
+  "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER": {
+   "class": "MysteriousKnightEventEncounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.MYTES_NORMAL": {
+   "class": "MytesNormal",
+   "kind": "combat",
+   "monsters": [
+    "Myte"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.NIBBITS_NORMAL": {
+   "class": "NibbitsNormal",
+   "kind": "combat",
+   "monsters": [
+    "Nibbit"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.NIBBITS_WEAK": {
+   "class": "NibbitsWeak",
+   "kind": "combat",
+   "monsters": [
+    "Nibbit"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.OVERGROWTH_CRAWLERS": {
+   "class": "OvergrowthCrawlers",
+   "kind": "combat",
+   "monsters": [
+    "ShrinkerBeetle",
+    "FuzzyWurmCrawler"
+   ],
+   "pool": null
+  },
+  "ENCOUNTER.OVICOPTER_NORMAL": {
+   "class": "OvicopterNormal",
+   "kind": "combat",
+   "monsters": [
+    "Ovicopter",
+    "ToughEgg"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.OWL_MAGISTRATE_NORMAL": {
+   "class": "OwlMagistrateNormal",
+   "kind": "combat",
+   "monsters": [
+    "OwlMagistrate"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE": {
+   "class": "PhantasmalGardenersElite",
+   "kind": "combat",
+   "monsters": [
+    "PhantasmalGardener"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.PHROG_PARASITE_ELITE": {
+   "class": "PhrogParasiteElite",
+   "kind": "combat",
+   "monsters": [
+    "PhrogParasite",
+    "Wriggler"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.PUNCH_CONSTRUCT_NORMAL": {
+   "class": "PunchConstructNormal",
+   "kind": "combat",
+   "monsters": [
+    "PunchConstruct"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER": {
+   "class": "PunchOffEventEncounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.QUEEN_BOSS": {
+   "class": "QueenBoss",
+   "kind": "combat",
+   "monsters": [
+    "Queen",
+    "TorchHeadAmalgam"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.RUBY_RAIDERS_NORMAL": {
+   "class": "RubyRaidersNormal",
+   "kind": "combat",
+   "monsters": [
+    "AxeRubyRaider",
+    "AssassinRubyRaider",
+    "BruteRubyRaider",
+    "CrossbowRubyRaider",
+    "TrackerRubyRaider"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SCROLLS_OF_BITING_NORMAL": {
+   "class": "ScrollsOfBitingNormal",
+   "kind": "combat",
+   "monsters": [
+    "ScrollOfBiting"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SCROLLS_OF_BITING_WEAK": {
+   "class": "ScrollsOfBitingWeak",
+   "kind": "combat",
+   "monsters": [
+    "ScrollOfBiting"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.SEAPUNK_NORMAL": {
+   "class": "SeapunkNormal",
+   "kind": "combat",
+   "monsters": [
+    "Seapunk",
+    "CalcifiedCultist"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SEAPUNK_WEAK": {
+   "class": "SeapunkWeak",
+   "kind": "combat",
+   "monsters": [
+    "Seapunk"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.SEWER_CLAM_NORMAL": {
+   "class": "SewerClamNormal",
+   "kind": "combat",
+   "monsters": [
+    "SewerClam"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SHRINKER_BEETLE_WEAK": {
+   "class": "ShrinkerBeetleWeak",
+   "kind": "combat",
+   "monsters": [
+    "ShrinkerBeetle"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.SKULKING_COLONY_ELITE": {
+   "class": "SkulkingColonyElite",
+   "kind": "combat",
+   "monsters": [
+    "SkulkingColony"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.SLIMED_BERSERKER_NORMAL": {
+   "class": "SlimedBerserkerNormal",
+   "kind": "combat",
+   "monsters": [
+    "SlimedBerserker"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SLIMES_NORMAL": {
+   "class": "SlimesNormal",
+   "kind": "combat",
+   "monsters": [
+    "LeafSlimeS",
+    "TwigSlimeS",
+    "TwigSlimeM",
+    "LeafSlimeM"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SLIMES_WEAK": {
+   "class": "SlimesWeak",
+   "kind": "combat",
+   "monsters": [
+    "LeafSlimeS",
+    "TwigSlimeS",
+    "LeafSlimeM",
+    "TwigSlimeM"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.SLITHERING_STRANGLER_NORMAL": {
+   "class": "SlitheringStranglerNormal",
+   "kind": "combat",
+   "monsters": [
+    "SnappingJaxfruit",
+    "SlitheringStrangler",
+    "LeafSlimeS",
+    "TwigSlimeS",
+    "LeafSlimeM",
+    "TwigSlimeM"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SLUDGE_SPINNER_WEAK": {
+   "class": "SludgeSpinnerWeak",
+   "kind": "combat",
+   "monsters": [
+    "SludgeSpinner"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.SLUMBERING_BEETLE_NORMAL": {
+   "class": "SlumberingBeetleNormal",
+   "kind": "combat",
+   "monsters": [
+    "BowlbugRock",
+    "SlumberingBeetle",
+    "BowlbugSilk"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL": {
+   "class": "SnappingJaxfruitNormal",
+   "kind": "combat",
+   "monsters": [
+    "SnappingJaxfruit",
+    "Flyconid"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.SOUL_FYSH_BOSS": {
+   "class": "SoulFyshBoss",
+   "kind": "combat",
+   "monsters": [
+    "SoulFysh"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.SOUL_NEXUS_ELITE": {
+   "class": "SoulNexusElite",
+   "kind": "combat",
+   "monsters": [
+    "SoulNexus"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.SPINY_TOAD_NORMAL": {
+   "class": "SpinyToadNormal",
+   "kind": "combat",
+   "monsters": [
+    "SpinyToad"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.TERROR_EEL_ELITE": {
+   "class": "TerrorEelElite",
+   "kind": "combat",
+   "monsters": [
+    "TerrorEel"
+   ],
+   "pool": "elite"
+  },
+  "ENCOUNTER.TEST_SUBJECT_BOSS": {
+   "class": "TestSubjectBoss",
+   "kind": "combat",
+   "monsters": [
+    "TestSubject"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.THE_ARCHITECT_EVENT_ENCOUNTER": {
+   "class": "TheArchitectEventEncounter",
+   "kind": "event",
+   "pool": null
+  },
+  "ENCOUNTER.THE_INSATIABLE_BOSS": {
+   "class": "TheInsatiableBoss",
+   "kind": "combat",
+   "monsters": [
+    "TheInsatiable"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.THE_KIN_BOSS": {
+   "class": "TheKinBoss",
+   "kind": "combat",
+   "monsters": [
+    "KinFollower",
+    "KinPriest"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL": {
+   "class": "TheLostAndForgottenNormal",
+   "kind": "combat",
+   "monsters": [
+    "TheLost",
+    "TheForgotten"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.THE_OBSCURA_NORMAL": {
+   "class": "TheObscuraNormal",
+   "kind": "combat",
+   "monsters": [
+    "TheObscura",
+    "Parafright"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.THIEVING_HOPPER_WEAK": {
+   "class": "ThievingHopperWeak",
+   "kind": "combat",
+   "monsters": [
+    "ThievingHopper"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.TOADPOLES_WEAK": {
+   "class": "ToadpolesWeak",
+   "kind": "combat",
+   "monsters": [
+    "Toadpole"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.TUNNELER_NORMAL": {
+   "class": "TunnelerNormal",
+   "kind": "combat",
+   "monsters": [
+    "Tunneler",
+    "Chomper"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.TUNNELER_WEAK": {
+   "class": "TunnelerWeak",
+   "kind": "combat",
+   "monsters": [
+    "Tunneler"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.TURRET_OPERATOR_WEAK": {
+   "class": "TurretOperatorWeak",
+   "kind": "combat",
+   "monsters": [
+    "LivingShield",
+    "TurretOperator"
+   ],
+   "pool": "weak"
+  },
+  "ENCOUNTER.TWO_TAILED_RATS_NORMAL": {
+   "class": "TwoTailedRatsNormal",
+   "kind": "combat",
+   "monsters": [
+    "TwoTailedRat"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.VANTOM_BOSS": {
+   "class": "VantomBoss",
+   "kind": "combat",
+   "monsters": [
+    "Vantom"
+   ],
+   "pool": "boss"
+  },
+  "ENCOUNTER.VINE_SHAMBLER_NORMAL": {
+   "class": "VineShamblerNormal",
+   "kind": "combat",
+   "monsters": [
+    "VineShambler"
+   ],
+   "pool": "normal"
+  },
+  "ENCOUNTER.WATERFALL_GIANT_BOSS": {
+   "class": "WaterfallGiantBoss",
+   "kind": "combat",
+   "monsters": [
+    "WaterfallGiant"
+   ],
+   "pool": "boss"
+  }
+ },
+ "monsters": {
+  "Aeonglass": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Wither>"
+   ],
+   "class": "Aeonglass",
+   "hp_min_consts": [
+    8,
+    535,
+    512
+   ],
+   "move_states": 3,
+   "power_card_effects": [
+    "WitheringPresencePower: CardPileCmd::AddToCombatAndPreview<Wither>",
+    "WitheringPresencePower: ModelDb::Card<Wither>"
+   ],
+   "powers_applied": [
+    "ArtifactPower",
+    "StrengthPower",
+    "WitheringPresencePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "AssassinRubyRaider": {
+   "card_effects": [],
+   "class": "AssassinRubyRaider",
+   "hp_max_consts": [
+    8,
+    24,
+    23
+   ],
+   "hp_min_consts": [
+    8,
+    19,
+    18
+   ],
+   "move_states": 1,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "AxeRubyRaider": {
+   "card_effects": [],
+   "class": "AxeRubyRaider",
+   "hp_max_consts": [
+    8,
+    23,
+    22
+   ],
+   "hp_min_consts": [
+    8,
+    21,
+    20
+   ],
+   "move_states": 3,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Axebot": {
+   "card_effects": [],
+   "class": "Axebot",
+   "hp_max_consts": [
+    8,
+    86,
+    78
+   ],
+   "hp_min_consts": [
+    8,
+    76,
+    70
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "FrailPower",
+    "StockPower",
+    "StrengthPower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "BowlbugEgg": {
+   "card_effects": [],
+   "class": "BowlbugEgg",
+   "hp_max_consts": [
+    8,
+    24,
+    22
+   ],
+   "hp_min_consts": [
+    8,
+    23,
+    21
+   ],
+   "move_states": 1,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "BowlbugNectar": {
+   "card_effects": [],
+   "class": "BowlbugNectar",
+   "hp_max_consts": [
+    8,
+    39,
+    38
+   ],
+   "hp_min_consts": [
+    8,
+    36,
+    35
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "BowlbugRock": {
+   "card_effects": [],
+   "class": "BowlbugRock",
+   "hp_max_consts": [
+    8,
+    49,
+    48
+   ],
+   "hp_min_consts": [
+    8,
+    46,
+    45
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "ImbalancedPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "BowlbugSilk": {
+   "card_effects": [],
+   "class": "BowlbugSilk",
+   "hp_max_consts": [
+    8,
+    44,
+    43
+   ],
+   "hp_min_consts": [
+    8,
+    41,
+    40
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "BruteRubyRaider": {
+   "card_effects": [],
+   "class": "BruteRubyRaider",
+   "hp_max_consts": [
+    8,
+    34,
+    33
+   ],
+   "hp_min_consts": [
+    8,
+    31,
+    30
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "BygoneEffigy": {
+   "card_effects": [],
+   "class": "BygoneEffigy",
+   "hp_min_consts": [
+    8,
+    132,
+    127
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "SlowPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Byrdonis": {
+   "card_effects": [],
+   "class": "Byrdonis",
+   "hp_max_consts": [
+    8,
+    90,
+    84
+   ],
+   "hp_min_consts": [
+    8,
+    90,
+    81
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "TerritorialPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "CalcifiedCultist": {
+   "card_effects": [],
+   "class": "CalcifiedCultist",
+   "hp_max_consts": [
+    8,
+    42,
+    41
+   ],
+   "hp_min_consts": [
+    8,
+    39,
+    38
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "RitualPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "CeremonialBeast": {
+   "card_effects": [],
+   "class": "CeremonialBeast",
+   "hp_min_consts": [
+    8,
+    262,
+    252
+   ],
+   "move_states": 6,
+   "power_card_effects": [
+    "RingingPower: CardCmd::Afflict<Ringing>",
+    "RingingPower: CardCmd::ClearAffliction"
+   ],
+   "powers_applied": [
+    "PlowPower",
+    "RingingPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Chomper": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Dazed>"
+   ],
+   "class": "Chomper",
+   "hp_max_consts": [
+    8,
+    67,
+    64
+   ],
+   "hp_min_consts": [
+    8,
+    63,
+    60
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "ArtifactPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "CorpseSlug": {
+   "card_effects": [],
+   "class": "CorpseSlug",
+   "hp_max_consts": [
+    8,
+    29,
+    27
+   ],
+   "hp_min_consts": [
+    8,
+    27,
+    25
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "FrailPower",
+    "RavenousPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "CrossbowRubyRaider": {
+   "card_effects": [],
+   "class": "CrossbowRubyRaider",
+   "hp_max_consts": [
+    8,
+    22,
+    21
+   ],
+   "hp_min_consts": [
+    8,
+    19,
+    18
+   ],
+   "move_states": 2,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Crusher": {
+   "card_effects": [],
+   "class": "Crusher",
+   "hp_min_consts": [
+    8,
+    219,
+    209
+   ],
+   "move_states": 5,
+   "powers_applied": [
+    "BackAttackLeftPower",
+    "CrabRagePower",
+    "FrailPower",
+    "StrengthPower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": [
+    "AttackCommand::WithHitVfxSpawnedAtBase"
+   ]
+  },
+  "CubexConstruct": {
+   "card_effects": [],
+   "class": "CubexConstruct",
+   "hp_min_consts": [
+    8,
+    70,
+    65
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "ArtifactPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "DampCultist": {
+   "card_effects": [],
+   "class": "DampCultist",
+   "hp_max_consts": [
+    8,
+    54,
+    53
+   ],
+   "hp_min_consts": [
+    8,
+    52,
+    51
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "RitualPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "DecimillipedeSegmentBack": {
+   "card_effects": [],
+   "class": "DecimillipedeSegmentBack",
+   "move_states": 0,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "DecimillipedeSegmentFront": {
+   "card_effects": [],
+   "class": "DecimillipedeSegmentFront",
+   "move_states": 0,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "DecimillipedeSegmentMiddle": {
+   "card_effects": [],
+   "class": "DecimillipedeSegmentMiddle",
+   "move_states": 0,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "DevotedSculptor": {
+   "card_effects": [],
+   "class": "DevotedSculptor",
+   "hp_min_consts": [
+    8,
+    172,
+    162
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "RitualPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Entomancer": {
+   "card_effects": [],
+   "class": "Entomancer",
+   "hp_min_consts": [
+    8,
+    155,
+    145
+   ],
+   "move_states": 3,
+   "power_card_effects": [
+    "PersonalHivePower: CardCmd::PreviewCardPileAdd",
+    "PersonalHivePower: CardPileCmd::AddGeneratedCardToCombat",
+    "PersonalHivePower: ICombatState::CreateCard<Dazed>"
+   ],
+   "powers_applied": [
+    "PersonalHivePower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Exoskeleton": {
+   "card_effects": [],
+   "class": "Exoskeleton",
+   "hp_max_consts": [
+    8,
+    29,
+    28
+   ],
+   "hp_min_consts": [
+    8,
+    25,
+    24
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "HardToKillPower",
+    "StrengthPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "EyeWithTeeth": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Dazed>"
+   ],
+   "class": "EyeWithTeeth",
+   "hp_min_consts": [
+    6
+   ],
+   "move_states": 1,
+   "powers_applied": [
+    "IllusionPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Fabricator": {
+   "card_effects": [],
+   "class": "Fabricator",
+   "hp_min_consts": [
+    8,
+    155,
+    150
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "MinionPower"
+   ],
+   "random_branches": 1,
+   "summons": [
+    "Fabricator::<SpawnBot>b__25_0",
+    "Fabricator::SpawnAggroBot",
+    "Fabricator::SpawnBot",
+    "Fabricator::SpawnDefensiveBot"
+   ]
+  },
+  "FatGremlin": {
+   "card_effects": [],
+   "class": "FatGremlin",
+   "hp_max_consts": [
+    8,
+    18,
+    17
+   ],
+   "hp_min_consts": [
+    8,
+    14,
+    13
+   ],
+   "move_states": 2,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": [
+    "FatGremlin::SpawnedMove"
+   ]
+  },
+  "FlailKnight": {
+   "card_effects": [],
+   "class": "FlailKnight",
+   "hp_min_consts": [
+    8,
+    108,
+    101
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "Flyconid": {
+   "card_effects": [],
+   "class": "Flyconid",
+   "hp_max_consts": [
+    8,
+    53,
+    49
+   ],
+   "hp_min_consts": [
+    8,
+    51,
+    47
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "FrailPower",
+    "VulnerablePower"
+   ],
+   "random_branches": 2,
+   "summons": []
+  },
+  "Fogmog": {
+   "card_effects": [],
+   "class": "Fogmog",
+   "hp_min_consts": [
+    8,
+    78,
+    74
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "FossilStalker": {
+   "card_effects": [],
+   "class": "FossilStalker",
+   "hp_max_consts": [
+    8,
+    56,
+    53
+   ],
+   "hp_min_consts": [
+    8,
+    54,
+    51
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "FrailPower",
+    "SuckPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "FrogKnight": {
+   "card_effects": [],
+   "class": "FrogKnight",
+   "hp_min_consts": [
+    8,
+    199,
+    191
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "FrailPower",
+    "PlatingPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "FuzzyWurmCrawler": {
+   "card_effects": [],
+   "class": "FuzzyWurmCrawler",
+   "hp_max_consts": [
+    8,
+    59,
+    57
+   ],
+   "hp_min_consts": [
+    8,
+    58,
+    55
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "GasBomb": {
+   "card_effects": [],
+   "class": "GasBomb",
+   "hp_min_consts": [
+    8,
+    8,
+    7
+   ],
+   "move_states": 1,
+   "powers_applied": [
+    "MinionPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "GlobeHead": {
+   "card_effects": [],
+   "class": "GlobeHead",
+   "hp_min_consts": [
+    8,
+    158,
+    148
+   ],
+   "move_states": 3,
+   "power_card_effects": [
+    "GalvanicPower: CardCmd::Afflict<Galvanized>",
+    "GalvanicPower: ModelDb::Affliction<Galvanized>"
+   ],
+   "powers_applied": [
+    "FrailPower",
+    "GalvanicPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "GremlinMerc": {
+   "card_effects": [],
+   "class": "GremlinMerc",
+   "hp_max_consts": [
+    8,
+    53,
+    49
+   ],
+   "hp_min_consts": [
+    8,
+    51,
+    47
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower",
+    "SurprisePower",
+    "ThieveryPower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "HauntedShip": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Dazed>"
+   ],
+   "class": "HauntedShip",
+   "hp_min_consts": [
+    8,
+    67,
+    63
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "HunterKiller": {
+   "card_effects": [],
+   "class": "HunterKiller",
+   "hp_min_consts": [
+    8,
+    126,
+    121
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "TenderPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "InfestedPrism": {
+   "card_effects": [],
+   "class": "InfestedPrism",
+   "hp_min_consts": [
+    8,
+    171,
+    161
+   ],
+   "move_states": 4,
+   "power_card_effects": [
+    "VitalSparkPower: CardCmd::Afflict<Tainted>",
+    "VitalSparkPower: CardCmd::ClearAffliction",
+    "VitalSparkPower: ModelDb::Affliction<Tainted>"
+   ],
+   "powers_applied": [
+    "VitalSparkPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Inklet": {
+   "card_effects": [],
+   "class": "Inklet",
+   "hp_max_consts": [
+    8,
+    18,
+    17
+   ],
+   "hp_min_consts": [
+    8,
+    12,
+    11
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "SlipperyPower"
+   ],
+   "random_branches": 2,
+   "summons": []
+  },
+  "KinFollower": {
+   "card_effects": [],
+   "class": "KinFollower",
+   "hp_max_consts": [
+    8,
+    63,
+    59
+   ],
+   "hp_min_consts": [
+    8,
+    62,
+    58
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "MinionPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "KinPriest": {
+   "card_effects": [],
+   "class": "KinPriest",
+   "hp_min_consts": [
+    8,
+    199,
+    190
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "FrailPower",
+    "StrengthPower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "KnowledgeDemon": {
+   "card_effects": [
+    "ModelDb::Card<Disintegration>",
+    "ModelDb::Card<MindRot>",
+    "ModelDb::Card<Sloth>",
+    "ModelDb::Card<WasteAway>"
+   ],
+   "class": "KnowledgeDemon",
+   "hp_min_consts": [
+    8,
+    399,
+    379
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "LagavulinMatriarch": {
+   "card_effects": [],
+   "class": "LagavulinMatriarch",
+   "hp_min_consts": [
+    8,
+    233,
+    222
+   ],
+   "move_states": 5,
+   "powers_applied": [
+    "AsleepPower",
+    "DexterityPower",
+    "PlatingPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "LeafSlimeM": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Slimed>"
+   ],
+   "class": "LeafSlimeM",
+   "hp_max_consts": [
+    8,
+    36,
+    35
+   ],
+   "hp_min_consts": [
+    8,
+    33,
+    32
+   ],
+   "move_states": 2,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "LeafSlimeS": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Slimed>"
+   ],
+   "class": "LeafSlimeS",
+   "hp_max_consts": [
+    8,
+    16,
+    15
+   ],
+   "hp_min_consts": [
+    8,
+    12,
+    11
+   ],
+   "move_states": 2,
+   "powers_applied": [],
+   "random_branches": 1,
+   "summons": []
+  },
+  "LivingFog": {
+   "card_effects": [],
+   "class": "LivingFog",
+   "hp_min_consts": [
+    8,
+    82,
+    80
+   ],
+   "move_states": 3,
+   "power_card_effects": [
+    "SmoggyPower: CardCmd::Afflict<Smog>",
+    "SmoggyPower: CardCmd::ClearAffliction"
+   ],
+   "powers_applied": [
+    "SmoggyPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "LivingShield": {
+   "card_effects": [],
+   "class": "LivingShield",
+   "hp_min_consts": [
+    8,
+    65,
+    55
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "RampartPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "LouseProgenitor": {
+   "card_effects": [],
+   "class": "LouseProgenitor",
+   "hp_max_consts": [
+    8,
+    141,
+    136
+   ],
+   "hp_min_consts": [
+    8,
+    138,
+    134
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "CurlUpPower",
+    "FrailPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "MagiKnight": {
+   "card_effects": [],
+   "class": "MagiKnight",
+   "hp_min_consts": [
+    8,
+    89,
+    82
+   ],
+   "move_states": 5,
+   "power_card_effects": [
+    "DampenPower: CardCmd::Downgrade",
+    "DampenPower: CardCmd::Upgrade"
+   ],
+   "powers_applied": [
+    "DampenPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Mawler": {
+   "card_effects": [],
+   "class": "Mawler",
+   "hp_min_consts": [
+    8,
+    76,
+    72
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "VulnerablePower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "MechaKnight": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Burn>"
+   ],
+   "class": "MechaKnight",
+   "hp_min_consts": [
+    8,
+    320,
+    300
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "ArtifactPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Myte": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Toxic>"
+   ],
+   "class": "Myte",
+   "hp_max_consts": [
+    8,
+    69,
+    67
+   ],
+   "hp_min_consts": [
+    8,
+    64,
+    61
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Nibbit": {
+   "card_effects": [],
+   "class": "Nibbit",
+   "hp_max_consts": [
+    8,
+    48,
+    46
+   ],
+   "hp_min_consts": [
+    8,
+    44,
+    42
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Ovicopter": {
+   "card_effects": [],
+   "class": "Ovicopter",
+   "hp_max_consts": [
+    8,
+    132,
+    130
+   ],
+   "hp_min_consts": [
+    8,
+    126,
+    124
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "MinionPower",
+    "StrengthPower",
+    "VulnerablePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "OwlMagistrate": {
+   "card_effects": [],
+   "class": "OwlMagistrate",
+   "hp_min_consts": [
+    8,
+    247,
+    231
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "SoarPower",
+    "VulnerablePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Parafright": {
+   "card_effects": [],
+   "class": "Parafright",
+   "hp_min_consts": [
+    21
+   ],
+   "move_states": 1,
+   "powers_applied": [
+    "IllusionPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "PhantasmalGardener": {
+   "card_effects": [],
+   "class": "PhantasmalGardener",
+   "hp_max_consts": [
+    8,
+    32,
+    31
+   ],
+   "hp_min_consts": [
+    8,
+    27,
+    26
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "SkittishPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "PhrogParasite": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Infection>"
+   ],
+   "class": "PhrogParasite",
+   "hp_max_consts": [
+    8,
+    68,
+    64
+   ],
+   "hp_min_consts": [
+    8,
+    66,
+    61
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "InfestedPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "PunchConstruct": {
+   "card_effects": [],
+   "class": "PunchConstruct",
+   "hp_min_consts": [
+    8,
+    60,
+    55
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "ArtifactPower",
+    "FrailPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Queen": {
+   "card_effects": [],
+   "class": "Queen",
+   "hp_min_consts": [
+    8,
+    419,
+    400
+   ],
+   "move_states": 6,
+   "power_card_effects": [
+    "ChainsOfBindingPower: CardCmd::AfflictAndPreview<Bound>",
+    "ChainsOfBindingPower: CardCmd::ClearAffliction",
+    "ChainsOfBindingPower: ModelDb::Affliction<Bound>"
+   ],
+   "powers_applied": [
+    "ChainsOfBindingPower",
+    "FrailPower",
+    "StrengthPower",
+    "VulnerablePower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Rocket": {
+   "card_effects": [],
+   "class": "Rocket",
+   "hp_min_consts": [
+    8,
+    209,
+    199
+   ],
+   "move_states": 5,
+   "powers_applied": [
+    "BackAttackRightPower",
+    "CrabRagePower",
+    "StrengthPower",
+    "SurroundedPower"
+   ],
+   "random_branches": 0,
+   "summons": [
+    "AttackCommand::WithHitVfxSpawnedAtBase"
+   ]
+  },
+  "ScrollOfBiting": {
+   "card_effects": [],
+   "class": "ScrollOfBiting",
+   "hp_max_consts": [
+    8,
+    39,
+    37
+   ],
+   "hp_min_consts": [
+    8,
+    33,
+    30
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "PaperCutsPower",
+    "StrengthPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "Seapunk": {
+   "card_effects": [],
+   "class": "Seapunk",
+   "hp_max_consts": [
+    8,
+    49,
+    46
+   ],
+   "hp_min_consts": [
+    8,
+    47,
+    44
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SewerClam": {
+   "card_effects": [],
+   "class": "SewerClam",
+   "hp_min_consts": [
+    8,
+    58,
+    56
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "PlatingPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "ShrinkerBeetle": {
+   "card_effects": [],
+   "class": "ShrinkerBeetle",
+   "hp_max_consts": [
+    8,
+    42,
+    40
+   ],
+   "hp_min_consts": [
+    8,
+    40,
+    38
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "ShrinkPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SkulkingColony": {
+   "card_effects": [],
+   "class": "SkulkingColony",
+   "hp_min_consts": [
+    8,
+    80,
+    75
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "HardenedShellPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SlimedBerserker": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Slimed>"
+   ],
+   "class": "SlimedBerserker",
+   "hp_min_consts": [
+    8,
+    281,
+    261
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "StrengthPower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SlitheringStrangler": {
+   "card_effects": [],
+   "class": "SlitheringStrangler",
+   "hp_max_consts": [
+    8,
+    56,
+    55
+   ],
+   "hp_min_consts": [
+    8,
+    54,
+    53
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "ConstrictPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "SludgeSpinner": {
+   "card_effects": [],
+   "class": "SludgeSpinner",
+   "hp_max_consts": [
+    8,
+    42,
+    39
+   ],
+   "hp_min_consts": [
+    8,
+    41,
+    37
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower",
+    "WeakPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "SlumberingBeetle": {
+   "card_effects": [],
+   "class": "SlumberingBeetle",
+   "hp_min_consts": [
+    8,
+    89,
+    86
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "PlatingPower",
+    "SlumberPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SnappingJaxfruit": {
+   "card_effects": [],
+   "class": "SnappingJaxfruit",
+   "hp_max_consts": [
+    8,
+    36,
+    33
+   ],
+   "hp_min_consts": [
+    8,
+    34,
+    31
+   ],
+   "move_states": 1,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SneakyGremlin": {
+   "card_effects": [],
+   "class": "SneakyGremlin",
+   "hp_max_consts": [
+    8,
+    15,
+    14
+   ],
+   "hp_min_consts": [
+    8,
+    11,
+    10
+   ],
+   "move_states": 2,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": [
+    "SneakyGremlin::SpawnedMove"
+   ]
+  },
+  "SoulFysh": {
+   "card_effects": [
+    "CardCmd::PreviewCardPileAdd",
+    "CardPileCmd::AddGeneratedCardToCombat",
+    "ICombatState::CreateCard<Beckon>"
+   ],
+   "class": "SoulFysh",
+   "hp_min_consts": [
+    8,
+    221,
+    211
+   ],
+   "move_states": 5,
+   "powers_applied": [
+    "IntangiblePower",
+    "VulnerablePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "SoulNexus": {
+   "card_effects": [],
+   "class": "SoulNexus",
+   "hp_min_consts": [
+    8,
+    254,
+    234
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "VulnerablePower",
+    "WeakPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "SpectralKnight": {
+   "card_effects": [],
+   "class": "SpectralKnight",
+   "hp_min_consts": [
+    8,
+    97,
+    93
+   ],
+   "move_states": 3,
+   "power_card_effects": [
+    "HexPower: CardCmd::Afflict<Hexed>",
+    "HexPower: CardCmd::ClearAffliction"
+   ],
+   "powers_applied": [
+    "HexPower"
+   ],
+   "random_branches": 1,
+   "summons": []
+  },
+  "SpinyToad": {
+   "card_effects": [],
+   "class": "SpinyToad",
+   "hp_max_consts": [
+    8,
+    124,
+    119
+   ],
+   "hp_min_consts": [
+    8,
+    121,
+    116
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "ThornsPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TerrorEel": {
+   "card_effects": [],
+   "class": "TerrorEel",
+   "hp_min_consts": [
+    8,
+    150,
+    140
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "ShriekPower",
+    "VigorPower",
+    "VulnerablePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TestSubject": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Burn>"
+   ],
+   "class": "TestSubject",
+   "hp_min_consts": [],
+   "move_states": 7,
+   "power_card_effects": [
+    "PainfulStabsPower: CardPileCmd::AddToCombatAndPreview<Wound>"
+   ],
+   "powers_applied": [
+    "AdaptablePower",
+    "EnragePower",
+    "NemesisPower",
+    "PainfulStabsPower",
+    "StrengthPower",
+    "VulnerablePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TheForgotten": {
+   "card_effects": [],
+   "class": "TheForgotten",
+   "hp_min_consts": [
+    8,
+    111,
+    106
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "DexterityPower",
+    "PossessSpeedPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TheInsatiable": {
+   "card_effects": [
+    "CardCmd::PreviewCardPileAdd",
+    "CardPileCmd::AddGeneratedCardToCombat",
+    "ICombatState::CreateCard<FranticEscape>"
+   ],
+   "class": "TheInsatiable",
+   "hp_min_consts": [
+    8,
+    341,
+    321
+   ],
+   "move_states": 5,
+   "powers_applied": [
+    "SandpitPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TheLost": {
+   "card_effects": [],
+   "class": "TheLost",
+   "hp_min_consts": [
+    8,
+    99,
+    93
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "PossessStrengthPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TheObscura": {
+   "card_effects": [],
+   "class": "TheObscura",
+   "hp_min_consts": [
+    8,
+    129,
+    123
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 1,
+   "summons": [
+    "TheObscura::get_HasSummoned",
+    "TheObscura::set_HasSummoned"
+   ]
+  },
+  "ThievingHopper": {
+   "card_effects": [
+    "CardPileCmd::RemoveFromCombat"
+   ],
+   "class": "ThievingHopper",
+   "hp_min_consts": [
+    8,
+    84,
+    79
+   ],
+   "move_states": 5,
+   "power_card_effects": [
+    "SwipePower: CardPileCmd::RemoveFromDeck"
+   ],
+   "powers_applied": [
+    "EscapeArtistPower",
+    "FlutterPower",
+    "SwipePower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Toadpole": {
+   "card_effects": [],
+   "class": "Toadpole",
+   "hp_max_consts": [
+    8,
+    26,
+    25
+   ],
+   "hp_min_consts": [
+    8,
+    22,
+    21
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "ThornsPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TorchHeadAmalgam": {
+   "card_effects": [],
+   "class": "TorchHeadAmalgam",
+   "hp_min_consts": [
+    8,
+    211,
+    199
+   ],
+   "move_states": 5,
+   "powers_applied": [
+    "MinionPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "ToughEgg": {
+   "card_effects": [],
+   "class": "ToughEgg",
+   "hp_max_consts": [
+    8,
+    19,
+    18
+   ],
+   "hp_min_consts": [
+    8,
+    15,
+    14
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "HatchPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TrackerRubyRaider": {
+   "card_effects": [],
+   "class": "TrackerRubyRaider",
+   "hp_max_consts": [
+    8,
+    26,
+    25
+   ],
+   "hp_min_consts": [
+    8,
+    22,
+    21
+   ],
+   "move_states": 2,
+   "powers_applied": [
+    "FrailPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Tunneler": {
+   "card_effects": [],
+   "class": "Tunneler",
+   "hp_min_consts": [
+    8,
+    92,
+    87
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "BurrowedPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TurretOperator": {
+   "card_effects": [],
+   "class": "TurretOperator",
+   "hp_min_consts": [
+    8,
+    51,
+    41
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TwigSlimeM": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Slimed>"
+   ],
+   "class": "TwigSlimeM",
+   "hp_max_consts": [
+    8,
+    29,
+    28
+   ],
+   "hp_min_consts": [
+    8,
+    27,
+    26
+   ],
+   "move_states": 2,
+   "powers_applied": [],
+   "random_branches": 1,
+   "summons": []
+  },
+  "TwigSlimeS": {
+   "card_effects": [],
+   "class": "TwigSlimeS",
+   "hp_max_consts": [
+    8,
+    12,
+    11
+   ],
+   "hp_min_consts": [
+    8,
+    8,
+    7
+   ],
+   "move_states": 1,
+   "powers_applied": [],
+   "random_branches": 0,
+   "summons": []
+  },
+  "TwoTailedRat": {
+   "card_effects": [],
+   "class": "TwoTailedRat",
+   "hp_max_consts": [
+    8,
+    22,
+    21
+   ],
+   "hp_min_consts": [
+    8,
+    18,
+    17
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "FrailPower"
+   ],
+   "random_branches": 1,
+   "summons": [
+    "TwoTailedRat::<CanSummon>b__42_0",
+    "TwoTailedRat::CanSummon",
+    "TwoTailedRat::get_TurnsUntilSummonable",
+    "TwoTailedRat::set_TurnsUntilSummonable"
+   ]
+  },
+  "Vantom": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Wound>"
+   ],
+   "class": "Vantom",
+   "hp_min_consts": [
+    8,
+    183,
+    173
+   ],
+   "move_states": 4,
+   "powers_applied": [
+    "SlipperyPower",
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "VineShambler": {
+   "card_effects": [],
+   "class": "VineShambler",
+   "hp_min_consts": [
+    8,
+    64,
+    61
+   ],
+   "move_states": 3,
+   "power_card_effects": [
+    "TangledPower: CardCmd::Afflict<Entangled>",
+    "TangledPower: CardCmd::ClearAffliction"
+   ],
+   "powers_applied": [
+    "TangledPower"
+   ],
+   "random_branches": 0,
+   "summons": [
+    "AttackCommand::SpawningHitVfxOnEachCreature",
+    "AttackCommand::WithHitVfxSpawnedAtBase"
+   ]
+  },
+  "WaterfallGiant": {
+   "card_effects": [],
+   "class": "WaterfallGiant",
+   "hp_min_consts": [
+    8,
+    250,
+    240
+   ],
+   "move_states": 8,
+   "powers_applied": [
+    "SteamEruptionPower",
+    "WeakPower"
+   ],
+   "random_branches": 0,
+   "summons": []
+  },
+  "Wriggler": {
+   "card_effects": [
+    "CardPileCmd::AddToCombatAndPreview<Infection>"
+   ],
+   "class": "Wriggler",
+   "hp_max_consts": [
+    8,
+    22,
+    21
+   ],
+   "hp_min_consts": [
+    8,
+    18,
+    17
+   ],
+   "move_states": 3,
+   "powers_applied": [
+    "StrengthPower"
+   ],
+   "random_branches": 0,
+   "summons": [
+    "Wriggler::SpawnedMove"
+   ]
+  }
+ }
+}

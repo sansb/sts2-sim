@@ -1,0 +1,9 @@
+{
+ "surface": "rust-entry",
+ "class": "event_combat_listener_not_modeled",
+ "kind": null,
+ "detail": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER is started by an event after the save, and RELIC.TINY_MAILBOX listens to TryModifyRestSiteHealRewards on that path, which the entry does not model",
+ "missing": [],
+ "schema": "sts-eval-refusal-v1",
+ "stage": "entry_refused"
+}

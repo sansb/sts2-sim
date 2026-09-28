@@ -1,0 +1,241 @@
+{
+  "actions": [
+    {
+      "answer": {
+        "index": 6,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "potion",
+      "slot": 0
+    },
+    {
+      "answer": {
+        "index": 0,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 4
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 41
+    },
+    {
+      "kind": "play",
+      "uid": 1
+    },
+    {
+      "kind": "play",
+      "uid": 2
+    },
+    {
+      "kind": "play",
+      "uid": 40
+    },
+    {
+      "kind": "play",
+      "uid": 3
+    },
+    {
+      "kind": "potion",
+      "slot": 1
+    },
+    {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 5
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 11
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 10
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 4
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 7
+    },
+    {
+      "kind": "play",
+      "uid": 12
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 7,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 14
+    },
+    {
+      "kind": "play",
+      "uid": 17
+    },
+    {
+      "kind": "play",
+      "uid": 16
+    },
+    {
+      "kind": "play",
+      "uid": 13
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 3,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 19
+    },
+    {
+      "kind": "play",
+      "uid": 18
+    },
+    {
+      "kind": "play",
+      "uid": 22
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 24
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 0,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "selection": 29,
+      "uid": 27
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 30
+    },
+    {
+      "kind": "play",
+      "uid": 26
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 31
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 25
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 6,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 37
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 38
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 23
+    },
+    {
+      "kind": "end"
+    },
+    {
+      "answer": {
+        "index": 0,
+        "kind": "option_index"
+      },
+      "kind": "select"
+    },
+    {
+      "kind": "play",
+      "uid": 22
+    },
+    {
+      "kind": "play",
+      "uid": 2
+    },
+    {
+      "kind": "play",
+      "target": 0,
+      "uid": 11
+    },
+    {
+      "kind": "play",
+      "uid": 26
+    }
+  ],
+  "hp": 21,
+  "turn": 7,
+  "won": true,
+  "digest": "9833dd112780b38cfd75732c6fdd26c224a34f783d03b277acc2c79238371103"
+}

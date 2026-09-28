@@ -1,0 +1,93 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "c535b8ada75137f08f2bdd460dcbdbc75050e98eb2cd0d2d2b2ce0d63b1eb96c",
+ "turns": 3,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "play",
+   "uid": 1
+  },
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 7
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 0
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 31
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 2
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 2
+  },
+  {
+   "kind": "play",
+   "uid": 11
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 14
+  },
+  {
+   "kind": "play",
+   "uid": 16
+  },
+  {
+   "kind": "play",
+   "uid": 17
+  },
+  {
+   "kind": "play",
+   "uid": 34
+  }
+ ],
+ "step_digests": [
+  "34cd7c520ec90b106eda35ab9f67172057dbe397ec236e4eae699026440f8048",
+  "52855af46c8953e57468176269416c7c7b84605dfd9cb3541a2540f7bf9e2bf0",
+  "fcc65535f7a2bec6ccd63979629a3ae74d7f80bf33e4c23b5d791c86f8791cc9",
+  "13673043c877fc61bede71826a5346519b3a0578ad779085f66ae05a78f1cc9b",
+  "d8ff140986f4d4489b4003b039037851d7f6a06e4d1b93795ef4c5dd1aa1cb46",
+  "54935094eb8f31c1e968ed437152e950b624450ebaa8d1880f2e3f4e874ae984",
+  "8a2e095bde88119ab90018e8512acf4bb55435c54a8b2cedb5c3edb42f6dd917",
+  "c5dc3cfe4cb034ac77dbe5588a86c789a5344c1e38d1ad3a0d040dad8140a622",
+  "a6055c3ffced88b65a39e49ba3ef949e9bc338cb4577bfeb583498b00bf3c867",
+  "54628627055f98ea6629de69ed0a3cd86d4b76c555bcabb73ec7a8484ac24442",
+  "00eec47494aed2975bd7f4dcfb3c752b14c669e4c2ad34d2c8bf5b54749ace91",
+  "3cda7a63cdd3a84d63f05f439a178142e21b71c149650b9c4a84c5606e5991e5",
+  "c81a0bf6439be4cb08693051f0b93ab551fe211b036e6aa215b3354ca98157a9",
+  "d46e27452fbdce216d040f9d3cbb97be38d282438a6546fcf6ed4aa5b716f47a",
+  "14af240412e32ec119f29b947f3fda5c3362353b3a8f81eb5b0b00c19c69f722"
+ ],
+ "terminal": {
+  "hp": 80,
+  "turn": 3,
+  "over": true,
+  "won": true
+ }
+}

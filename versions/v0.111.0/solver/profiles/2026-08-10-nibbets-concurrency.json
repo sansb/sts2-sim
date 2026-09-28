@@ -1,0 +1,2131 @@
+{
+  "levels": [
+    {
+      "concurrency": 1,
+      "mean": {
+        "cpu_parallelism": 0.986785814549647,
+        "nodes_per_second": 2812.499862643999,
+        "reviews_per_second": 0.01980116862072466,
+        "wall_seconds": 50.74779687495902
+      },
+      "quality_adjusted_mean": {
+        "actual_exact_reviews_per_second": 0.01980116862072466,
+        "benchmark_deadline_worlds": 14.0,
+        "benchmark_exact_worlds": 6.0,
+        "exact_world_equivalent_reviews_per_second": 0.005940350586217398,
+        "unique_headline_outputs": 1.0
+      },
+      "trials": [
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 139031,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 0.985871714318604,
+          "nodes_per_second": 2611.8530864844274,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.01878612026443331,
+            "actual_seed_exact_reviews": 1,
+            "benchmark_deadline_worlds": 14,
+            "benchmark_exact_worlds": 6,
+            "exact_world_equivalent_reviews_per_second": 0.005635836079329992,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 1,
+          "reviews_per_second": 0.01878612026443331,
+          "states": 139031,
+          "sum_child_cpu_seconds": 52.478729,
+          "trial": 1,
+          "wall_seconds": 53.230788791086525
+        },
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 139031,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 0.9866423749845008,
+          "nodes_per_second": 2616.4517201424146,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.018819196583081576,
+            "actual_seed_exact_reviews": 1,
+            "benchmark_deadline_worlds": 14,
+            "benchmark_exact_worlds": 6,
+            "exact_world_equivalent_reviews_per_second": 0.005645758974924473,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 1,
+          "reviews_per_second": 0.018819196583081576,
+          "states": 139031,
+          "sum_child_cpu_seconds": 52.427444,
+          "trial": 2,
+          "wall_seconds": 53.1372312088497
+        },
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 147223,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 0.987843354345836,
+          "nodes_per_second": 3209.194781305156,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.021798189014659096,
+            "actual_seed_exact_reviews": 1,
+            "benchmark_deadline_worlds": 14,
+            "benchmark_exact_worlds": 6,
+            "exact_world_equivalent_reviews_per_second": 0.006539456704397728,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 1,
+          "reviews_per_second": 0.021798189014659096,
+          "states": 147223,
+          "sum_child_cpu_seconds": 45.317679999999996,
+          "trial": 3,
+          "wall_seconds": 45.87537062494084
+        }
+      ]
+    },
+    {
+      "concurrency": 2,
+      "mean": {
+        "cpu_parallelism": 1.9796401355512652,
+        "nodes_per_second": 6495.927257424835,
+        "reviews_per_second": 0.043321629720622847,
+        "wall_seconds": 46.16738244441027
+      },
+      "quality_adjusted_mean": {
+        "actual_exact_reviews_per_second": 0.043321629720622847,
+        "benchmark_deadline_worlds": 28.0,
+        "benchmark_exact_worlds": 12.0,
+        "exact_world_equivalent_reviews_per_second": 0.012996488916186854,
+        "unique_headline_outputs": 1.0
+      },
+      "trials": [
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 151319,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 151319,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 1.983530803662102,
+          "nodes_per_second": 6562.764416262839,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.043370392457410104,
+            "actual_seed_exact_reviews": 2,
+            "benchmark_deadline_worlds": 28,
+            "benchmark_exact_worlds": 12,
+            "exact_world_equivalent_reviews_per_second": 0.01301111773722303,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 2,
+          "reviews_per_second": 0.043370392457410104,
+          "states": 302638,
+          "sum_child_cpu_seconds": 91.46934999999999,
+          "trial": 1,
+          "wall_seconds": 46.11440862482414
+        },
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 151319,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 151319,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 1.978823391877173,
+          "nodes_per_second": 6513.653723452551,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.04304584172147947,
+            "actual_seed_exact_reviews": 2,
+            "benchmark_deadline_worlds": 28,
+            "benchmark_exact_worlds": 12,
+            "exact_world_equivalent_reviews_per_second": 0.01291375251644384,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 2,
+          "reviews_per_second": 0.04304584172147947,
+          "states": 302638,
+          "sum_child_cpu_seconds": 91.940281,
+          "trial": 2,
+          "wall_seconds": 46.462095292285085
+        },
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 147223,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 14,
+                "benchmark_exact_worlds": 6,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 14,
+                    "exact_worlds": 6,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 147223,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 1.9765662111145206,
+          "nodes_per_second": 6411.363632559115,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.04354865498297898,
+            "actual_seed_exact_reviews": 2,
+            "benchmark_deadline_worlds": 28,
+            "benchmark_exact_worlds": 12,
+            "exact_world_equivalent_reviews_per_second": 0.013064596494893695,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 2,
+          "reviews_per_second": 0.04354865498297898,
+          "states": 294446,
+          "sum_child_cpu_seconds": 90.775075,
+          "trial": 3,
+          "wall_seconds": 45.9256434161216
+        }
+      ]
+    },
+    {
+      "concurrency": 4,
+      "mean": {
+        "cpu_parallelism": 3.900597316083676,
+        "nodes_per_second": 9785.816065311597,
+        "reviews_per_second": 0.07531121257639242,
+        "wall_seconds": 53.14596268037955
+      },
+      "quality_adjusted_mean": {
+        "actual_exact_reviews_per_second": 0.07531121257639242,
+        "benchmark_deadline_worlds": 62.666666666666664,
+        "benchmark_exact_worlds": 17.333333333333332,
+        "exact_world_equivalent_reviews_per_second": 0.01635865161537071,
+        "unique_headline_outputs": 1.0
+      },
+      "trials": [
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 15,
+                "benchmark_exact_worlds": 5,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 15,
+                    "exact_worlds": 5,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 132710,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 15,
+                "benchmark_exact_worlds": 5,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 15,
+                    "exact_worlds": 5,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 132710,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 15,
+                "benchmark_exact_worlds": 5,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 15,
+                    "exact_worlds": 5,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 132710,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 15,
+                "benchmark_exact_worlds": 5,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 15,
+                    "exact_worlds": 5,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 132710,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 3.9253937499876375,
+          "nodes_per_second": 10322.787100394362,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.07778454600553358,
+            "actual_seed_exact_reviews": 4,
+            "benchmark_deadline_worlds": 60,
+            "benchmark_exact_worlds": 20,
+            "exact_world_equivalent_reviews_per_second": 0.019446136501383396,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 4,
+          "reviews_per_second": 0.07778454600553358,
+          "states": 530840,
+          "sum_child_cpu_seconds": 201.859827,
+          "trial": 1,
+          "wall_seconds": 51.424096500035375
+        },
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 121327,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 3.8901229622648104,
+          "nodes_per_second": 9551.680587383069,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.0749321852608285,
+            "actual_seed_exact_reviews": 4,
+            "benchmark_deadline_worlds": 64,
+            "benchmark_exact_worlds": 16,
+            "exact_world_equivalent_reviews_per_second": 0.0149864370521657,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 4,
+          "reviews_per_second": 0.0749321852608285,
+          "states": 509884,
+          "sum_child_cpu_seconds": 207.66099100000002,
+          "trial": 2,
+          "wall_seconds": 53.381600791122764
+        },
+        {
+          "children": [
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            },
+            {
+              "quality": {
+                "actual_seed_deadline_hit": false,
+                "actual_seed_exact": true,
+                "benchmark_deadline_worlds": 16,
+                "benchmark_exact_worlds": 4,
+                "benchmark_worlds": 20,
+                "headline": {
+                  "actual": {
+                    "entry_hp": 45,
+                    "final_hp": 35,
+                    "hp_lost": 10,
+                    "potions_used": {
+                      "count": 0,
+                      "names": []
+                    },
+                    "turns": 4,
+                    "won": true
+                  },
+                  "benchmark": {
+                    "deadline_worlds": 16,
+                    "exact_worlds": 4,
+                    "hp_lost": {
+                      "count": 20,
+                      "mean": {
+                        "denominator": 20,
+                        "numerator": -681
+                      },
+                      "median": {
+                        "denominator": 1,
+                        "numerator": -35
+                      },
+                      "p10": -35,
+                      "p90": -32
+                    },
+                    "loss_risk": {
+                      "kind": "upper_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 0
+                      }
+                    },
+                    "losses": 0,
+                    "win_rate": {
+                      "kind": "lower_bound",
+                      "value": {
+                        "denominator": 1,
+                        "numerator": 1
+                      }
+                    },
+                    "wins": 20,
+                    "world_count": 20
+                  },
+                  "best_actual_seed": {
+                    "bound": "exact",
+                    "deadline_hit": false,
+                    "exact": true,
+                    "final_hp": 77,
+                    "hp_lost": -32,
+                    "potions_used": 1,
+                    "turns": 4,
+                    "won": true
+                  },
+                  "derived": {
+                    "luck_percentile": {
+                      "available": true,
+                      "exact": false,
+                      "kind": "achieved",
+                      "percentile": {
+                        "denominator": 2,
+                        "numerator": 25
+                      },
+                      "tied_worlds": 5,
+                      "world_count": 20,
+                      "worse_worlds": 0
+                    },
+                    "skill_gap": {
+                      "available": true,
+                      "display": "42",
+                      "exact": true,
+                      "hp_lost": 42,
+                      "kind": "exact"
+                    }
+                  }
+                },
+                "status": "ok"
+              },
+              "states": 129519,
+              "status": "ok"
+            }
+          ],
+          "cpu_parallelism": 3.8862752359985806,
+          "nodes_per_second": 9482.98050815736,
+          "quality": {
+            "actual_exact_reviews_per_second": 0.07321690646281519,
+            "actual_seed_exact_reviews": 4,
+            "benchmark_deadline_worlds": 64,
+            "benchmark_exact_worlds": 16,
+            "exact_world_equivalent_reviews_per_second": 0.014643381292563038,
+            "unique_headline_outputs": 1
+          },
+          "reviews": 4,
+          "reviews_per_second": 0.07321690646281519,
+          "states": 518076,
+          "sum_child_cpu_seconds": 212.31572999999997,
+          "trial": 3,
+          "wall_seconds": 54.63219074998051
+        }
+      ]
+    }
+  ],
+  "profiler_revision": "issue-1112-v3-quality-and-exact",
+  "tool": "profile_review_concurrency.py",
+  "trials_per_level": 3
+}

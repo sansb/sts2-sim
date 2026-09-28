@@ -1,0 +1,109 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "4a136db2f838449d79c0b8fcd962315faff644c52b6036755c3094325cd6dcae",
+ "turns": 5,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "play",
+   "uid": 1,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 2,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 12,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 19,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 17
+  },
+  {
+   "kind": "play",
+   "uid": 18
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 23
+  },
+  {
+   "kind": "play",
+   "uid": 24
+  },
+  {
+   "kind": "play",
+   "uid": 27,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 20,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "5bfb9dfbcf722186d790b4431946beec913fb61b2166687bf18d91066402b978",
+  "0ab8de3f5503e1005ecbe7d68c600a282960ffaf3d1e8907ed8908dfb2b0224c",
+  "a9e1cb651016d90a605248f2f5156abf24efc87a161a42758f0aed7181dcc139",
+  "b755584cba21339e6b774bed154b84b0aedeac5c2803e69da0a70db7f127a563",
+  "4db92ce1f09fedbb91560361777839b7b7fc19dd669bde59a5456c93a398e745",
+  "7131e61f21f641531cc425031ca9639e6372f30fe6f4179d6f282434a93a215a",
+  "35b526315a206ee0377fa06b1eb6199a541596c7bb509c9e7fbe8d8f7d3f15b8",
+  "0079f2bf07f0c696db80c530f0e4e3556e2d8a185cdb008f3dc3cc85b11a7c1c",
+  "e15262175023f740fb8d70b7467e9586c4a3e258f9ca1d4c8bb61ee85531dd73",
+  "56145dc545b175f8945c3817336dd8cd5a75031c6dd7a3fbead8f543be4e33ba",
+  "16322da881af7c57d1aa2412437d8339e6ae5fe527ea273e4076ec531b6d6955",
+  "46a3258e6966d693c9d7ba23df1a6754923c2ba15fb6c44dc94869ff17a0cd51",
+  "672a60d0d30e5aa934d6c666b1daeeab4ebf33e12a29e024d150c0d7faee18c0",
+  "12804d837639025d26b3782d40b61cf8476b8ed3f17ade089ef8e55e17e026a9",
+  "821837dc6479f4bef2a97e77e08680ca053a0ddd6fa21bda12acb92fb79a771a",
+  "b6709512abb8eecf0416e05724dff8e89fe3e8ca30674ff6b703e6f80e546583",
+  "23d2a1aa499c8580624a459663b2193daac1c9176c67f2d3e2937b25fe2f8e2c",
+  "e2758383be154f20e6a0394d2e630a6ac718e4e4f99fa3211be537af151f2c1c"
+ ],
+ "terminal": {
+  "hp": 76,
+  "turn": 5,
+  "over": true,
+  "won": true
+ }
+}

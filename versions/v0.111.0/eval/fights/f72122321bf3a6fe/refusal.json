@@ -1,0 +1,9 @@
+{
+ "surface": "capture-pairing",
+ "class": "unpaired",
+ "kind": null,
+ "detail": "unpaired for map node type None",
+ "missing": [],
+ "schema": "sts-eval-refusal-v1",
+ "stage": "unpaired"
+}

@@ -1,0 +1,496 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "escape_artist": 5,
+   "hp": 75,
+   "kind": "THIEVING_HOPPER",
+   "max_hp": 84
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "DUALCAST",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "GUNK_UP",
+    "uid": 11,
+    "upgrade": 1
+   },
+   {
+    "id": "CLAW",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "SHADOW_SHIELD",
+    "uid": 14,
+    "upgrade": 1
+   },
+   {
+    "id": "COMPACT",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "ZAP",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "SHATTER",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "GOOPY",
+     1
+    ],
+    "id": "DEFEND_DEFECT",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "LEAP",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "GOOPY",
+     1
+    ],
+    "id": "DEFEND_DEFECT",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_DEFECT",
+    "uid": 2,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "LOOP",
+    "uid": 13,
+    "upgrade": 1
+   },
+   {
+    "enchantment": [
+     "GOOPY",
+     1
+    ],
+    "id": "DEFEND_DEFECT",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "EQUILIBRIUM",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "GOOPY",
+     1
+    ],
+    "id": "DEFEND_DEFECT",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "GLASSWORK",
+    "uid": 16,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "cards_drawn_combat": 5,
+  "cracked_core": true,
+  "exact_piles": true,
+  "focus": 1,
+  "fully_unlocked_potion_pool": true,
+  "gold": 289,
+  "hopper_master_deck": [
+   [
+    0,
+    [
+     "STRIKE_DEFECT",
+     0
+    ]
+   ],
+   [
+    1,
+    [
+     "STRIKE_DEFECT",
+     0
+    ]
+   ],
+   [
+    2,
+    [
+     "STRIKE_DEFECT",
+     0
+    ]
+   ],
+   [
+    3,
+    [
+     "STRIKE_DEFECT",
+     0
+    ]
+   ],
+   [
+    4,
+    [
+     "DEFEND_DEFECT",
+     0,
+     [
+      "GOOPY",
+      1
+     ]
+    ]
+   ],
+   [
+    5,
+    [
+     "DEFEND_DEFECT",
+     0,
+     [
+      "GOOPY",
+      1
+     ]
+    ]
+   ],
+   [
+    6,
+    [
+     "DEFEND_DEFECT",
+     0,
+     [
+      "GOOPY",
+      1
+     ]
+    ]
+   ],
+   [
+    7,
+    [
+     "DEFEND_DEFECT",
+     0,
+     [
+      "GOOPY",
+      1
+     ]
+    ]
+   ],
+   [
+    8,
+    [
+     "ZAP",
+     0
+    ]
+   ],
+   [
+    9,
+    [
+     "DUALCAST",
+     0
+    ]
+   ],
+   [
+    10,
+    [
+     "ASCENDERS_BANE",
+     0
+    ]
+   ],
+   [
+    11,
+    [
+     "GUNK_UP",
+     1
+    ]
+   ],
+   [
+    12,
+    [
+     "CLAW",
+     1,
+     null,
+     [],
+     [],
+     null,
+     null,
+     [
+      "PHYSICAL_CARD_STATE",
+      [],
+      0,
+      false,
+      []
+     ]
+    ]
+   ],
+   [
+    13,
+    [
+     "LOOP",
+     1
+    ]
+   ],
+   [
+    14,
+    [
+     "SHADOW_SHIELD",
+     1
+    ]
+   ],
+   [
+    15,
+    [
+     "LEAP",
+     0
+    ]
+   ],
+   [
+    16,
+    [
+     "GLASSWORK",
+     0
+    ]
+   ],
+   [
+    17,
+    [
+     "EQUILIBRIUM",
+     0
+    ]
+   ],
+   [
+    18,
+    [
+     "COMPACT",
+     0
+    ]
+   ],
+   [
+    19,
+    [
+     "SHATTER",
+     0
+    ]
+   ]
+  ],
+  "hp": 66,
+  "inky_attack_damage": 0,
+  "max_hp": 75,
+  "next_card_uid": 20,
+  "orb_base_slots": 3,
+  "orb_slots": 3,
+  "orbs": [
+   [
+    "LIGHTNING",
+    null
+   ]
+  ],
+  "player_phase": 3,
+  "popper": true,
+  "potion_slots": [
+   null,
+   null
+  ],
+  "ps_strikes": 4,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.CRACKED_CORE",
+   "RELIC.SILVER_CRUCIBLE",
+   "RELIC.FESTIVE_POPPER",
+   "RELIC.DATA_DISK",
+   "RELIC.PAELS_CLAW"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Defect",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "template_relics": [
+   "RELIC.DATA_DISK"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 2,
+   "words": [
+    10428118659955039471,
+    16593318525013043129,
+    13567593091836022896,
+    2625824783705870897
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    3935404256217929195,
+    2589701588677145618,
+    4597989198031592475,
+    18030091292885619924
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    6760434613911137032,
+    701207649321101892,
+    14229857984057623309,
+    14220887427044660804
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    9886021233283255977,
+    14515119280942189851,
+    3616170513855903605,
+    10841848124940617729
+   ]
+  },
+  "niche": {
+   "counter": 16,
+   "words": [
+    12144584806421193025,
+    3231186784661171218,
+    11715182692985492528,
+    4938507408451684952
+   ]
+  },
+  "potion_generation": {
+   "counter": 4,
+   "words": [
+    15407036044940501868,
+    9225174652717915966,
+    16315200454456723858,
+    563688281361777319
+   ]
+  },
+  "rng": {
+   "counter": 240,
+   "words": [
+    11665683209976843511,
+    12298372605292556420,
+    1863272879250249016,
+    3240694305196006498
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    10632308307308064300,
+    10317788469212335120,
+    1499213455358092294,
+    8320417780725112289
+   ]
+  },
+  "targets": {
+   "counter": 66,
+   "words": [
+    17680603911481493023,
+    7594168860760626753,
+    13607451525931791327,
+    1944619321987240613
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

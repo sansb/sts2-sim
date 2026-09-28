@@ -1,0 +1,256 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "e84b0e8477ff00407a316da22788912b4c22be700759d98b4c28bdc7fcd994c1",
+ "turns": 5,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 5
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 3,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 5
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 13
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 0
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 11
+  },
+  {
+   "kind": "play",
+   "uid": 14
+  },
+  {
+   "kind": "play",
+   "uid": 17,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "play",
+   "uid": 19
+  },
+  {
+   "kind": "play",
+   "uid": 26,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 3
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 22
+  },
+  {
+   "kind": "play",
+   "uid": 25,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 23
+  },
+  {
+   "kind": "play",
+   "uid": 27,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 7
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 13
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 4
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 17,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 18
+  },
+  {
+   "kind": "play",
+   "uid": 19
+  },
+  {
+   "kind": "play",
+   "uid": 11
+  },
+  {
+   "kind": "play",
+   "uid": 20
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 3
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 28,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 5
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 17,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 20
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 1
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 9
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 29,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  }
+ ],
+ "step_digests": [
+  "f604d53109465b0c7eb3b29a68d058b437375ee1dccd8e0cf73e322929968868",
+  "f1e5a038df5b381fcb7829db3d4f1f8089fb237e09e81ab6ff0c437c7b1b8d1c",
+  "95b6327b73d5489c2ae64dec1f0b69333ac7ede836983a656240e82b9ea60239",
+  "ed5b902c574f629b406ddfb5788442d5d5e5cd8019b20389df5b522697c01ed8",
+  "6b66fbed9e12e846946cbe2e42e0d4c726e14a939caa14335065693deaf7ac19",
+  "2662d3e4736fd954224624cfb11a140b26b1c9d8e1cec8c7b48617026dd36daf",
+  "eda95ae3bdd20c4c82a5745537f2a3f37215376ae0a576ee2411b9479b7c46f4",
+  "342174c8c394045f34a9f52a420e581d017b0f513774ef9398b9404f80295ea8",
+  "db07a50dcbe0f8a0b38d208c5f424ce6d4179c44fcf49ea8639ca89c4e836bf2",
+  "e03a0214e0646d0abff506424fb4f1eca6cd1f0f4981e411fb9596045fac00cd",
+  "0c0396ceb1b3f2929d3ad69bf7828cff801741fd553270c70fb25d3806f76095",
+  "acfbbbafff9f0bd68fbbe9926488addf7154a880a25942418748b4d730af25cc",
+  "641cefc8805d1ca5959de0032440fc3f89d573d7054f5bb857ce1e0b844004b3",
+  "386af5b46a320458524059194d522b5a79703b0d4e31afc74d69c1182b7dd8a1",
+  "fa0af688069008566df7c7e4e593b6629e96469f5ce1dd3645ae79aae8d19f2f",
+  "9ba8b86b69b52a5a55eee6bc5075a0b7456f08d09b63f634c0b0b6a4117be547",
+  "fdfe88ffa806b8eff29f12c3ae7e1c6d8d6b60d92952c665dbabec9821501d9a",
+  "16e6473c31811bb60054f93ac89a6267d33e73937b6f0bf3c3d7b565a0aa7a12",
+  "e6776a7795063910195d00d20577dd5ea8b985317b091846baf4fcb044b112b9",
+  "97c190fc36e9cb302339b0881171acca6772b9b4e832466a864b768eb626cf7a",
+  "f2b60f3fdd38d0763e4ae1de07a189be371714a472f9d66d5c5d4bc21a52cd5f",
+  "3a46542a4066814120490c4005f1aa6af9797da697607c8222133eddbe1f96bd",
+  "6b01ac5b569722921a833c1e9162450cb0cce7dab12deb6f86c2ee5b74c506c7",
+  "9946ef3255d9d98fe80702d2af1c85592d0808ecf317dea6f16a71340fba4795",
+  "cee584f25d6a14c390a9cb6d83000514013f6e6fbe6915935fd0be28747a4fc9",
+  "de79b5c4d6d9c05151f9c5abf1fd69918fcd232d499f677b2b0bd40bb3e0c857",
+  "fd6f682bb42146313a40cac73e21064f6c0b7385bc4a81c1250414fd8118e88d",
+  "9ea4e018772741547eae5ddf7c2f2e2bdb44f981d06dfb84b4f043b1baf71344",
+  "4621d80d547108b85ee8168ebc70f0d67979e63e0d827c80232c79aa9da7679e",
+  "c97871e690571054f86f4521ade5eddd37f69b5e1b22a6820c1fa4f87258a8a0",
+  "3e08e3b2053261294bc79f168b37fe02b64ecaa89240fe96cf5952beaf8debfb",
+  "e5e33cbe83807f63b77f9ec3baf05cb657f4dc07a3667d1481ddf079b31ce4d0",
+  "c33559168db848968e68c1e2eb96b7b9221c90b7474f6672805eb626767f0c6f",
+  "b2063c92ea99439d5f16e672ab24ba12ba5a9be4eaa0ab7ba6101d6a62d635d3",
+  "4a9311d9f9bad2cc0c9cacbbfeca6a4ba8b880b70369c9392fa9c3b752302573",
+  "142d24ac7778482223e755260e46231a6278d06d4e21e475cde88073bde69dd2",
+  "a306f1626def2b3d4bd0fd2358a393fb319fc5cf949b59b1c1191cd56fdeee9a",
+  "56993db5f512ed8c1cabc8f0d02163052385f2c320df69a04879d436da865e00",
+  "baf8f86988b8f99e581daa4130975155c247e9d66accd0c9a5a20164a16a5a1d",
+  "8a31ab9ad5273b068ef07256fbd2b95ca48cb924acb6f2074b36fc7625984c69",
+  "698cf443472790124331ff9c06ec5d48bc51b94f44236deebfbadfa23b49366d",
+  "e783ef9e3838e89163747467485f10a47650ce1771d1c359960d3be1b6148e6c"
+ ],
+ "terminal": {
+  "hp": 0,
+  "turn": 5,
+  "over": true,
+  "won": false
+ }
+}

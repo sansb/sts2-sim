@@ -1,0 +1,269 @@
+{
+  "actual": {
+    "entry_hp": 61,
+    "final_hp": 57,
+    "hp_lost": 4,
+    "potions_used": {
+      "count": 1,
+      "names": [
+        "POTION.SPEED_POTION"
+      ]
+    },
+    "turns": 7,
+    "won": true
+  },
+  "benchmark": {
+    "deadline_worlds": 10,
+    "distribution_kind": "achieved_lower_bound_biased",
+    "exact": false,
+    "exact_worlds": 0,
+    "hp_lost": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 129
+      },
+      "median": {
+        "denominator": 2,
+        "numerator": 45
+      },
+      "p10": 15,
+      "p90": 36
+    },
+    "loss_risk": {
+      "kind": "upper_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "losses": 0,
+    "outcomes": [
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 36,
+        "hp_lost": 25,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 0
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 17,
+        "hp_lost": 44,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 1
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 46,
+        "hp_lost": 15,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 2
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 41,
+        "hp_lost": 20,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 3
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 45,
+        "hp_lost": 16,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 4
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 32,
+        "hp_lost": 29,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 5
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 25,
+        "hp_lost": 36,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 6
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 44,
+        "hp_lost": 17,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 7,
+        "won": true,
+        "world": 7
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 25,
+        "hp_lost": 36,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 6,
+        "won": true,
+        "world": 8
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 41,
+        "hp_lost": 20,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 9
+      }
+    ],
+    "potions_used": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 3
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "p10": 0,
+      "p90": 1
+    },
+    "turns": {
+      "count": 10,
+      "mean": {
+        "denominator": 10,
+        "numerator": 59
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 6
+      },
+      "p10": 5,
+      "p90": 6
+    },
+    "win_rate": {
+      "kind": "lower_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "winning_worlds": 10,
+    "wins": 10,
+    "world_count": 10
+  },
+  "best_actual_seed": {
+    "bound": "achieved_lower_bound",
+    "deadline_hit": true,
+    "exact": false,
+    "final_hp": 57,
+    "hp_lost": 4,
+    "potions_used": 1,
+    "states": 1,
+    "turns": 7,
+    "won": true
+  },
+  "derived": {
+    "luck_percentile": {
+      "available": true,
+      "exact": false,
+      "kind": "achieved",
+      "percentile": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "tied_worlds": 0,
+      "world_count": 10,
+      "worse_worlds": 10
+    },
+    "skill_gap": {
+      "available": true,
+      "display": "at least 0",
+      "exact": false,
+      "hp_lost": 0,
+      "kind": "lower_bound"
+    }
+  },
+  "fight": {
+    "encounter_id": "ENCOUNTER.TERROR_EEL_ELITE",
+    "fight_index": 2,
+    "node_type": "elite",
+    "run_file": "8DVXPWUWRY.run",
+    "run_seed": "8DVXPWUWRY"
+  },
+  "metadata": {
+    "benchmark_name": "best play per sampled shuffle",
+    "counter_overrides": {
+      "combat_card_selection": 0,
+      "shuffle": 48
+    },
+    "deadlines_seconds": {
+      "benchmark_world": 2.0,
+      "best_actual_seed": 5.0
+    },
+    "elapsed_seconds": {
+      "benchmark": 41.49401295790449,
+      "best_actual_seed": 5.115617875009775,
+      "total": 46.620518582873046
+    },
+    "entry_caveats": [
+      "fight 0 (ENCOUNTER.SEAPUNK_WEAK): deck held cards that can leave/alter the cycle unrecorded (IMPERVIOUS, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 1 (ENCOUNTER.SLUDGE_SPINNER_WEAK): deck held cards that can leave/alter the cycle unrecorded (CINDER, IMPERVIOUS, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 1: deck held CombatCardSelection consumers (CINDER) \u2014 plays unrecorded",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+    ],
+    "fully_unlocked_card_pool": false,
+    "horizon": 12,
+    "k": 10,
+    "sampling_seed": "phase1a-fixtures-2026-08-08",
+    "solver_build": "v0.108.0",
+    "trust_tier": "certified"
+  },
+  "schema_version": 1,
+  "status": "ok"
+}

@@ -1,0 +1,393 @@
+{
+  "schema": "sts-sim-canonical-v2",
+  "player": {
+    "next_card_uid": 33,
+    "gold": 142,
+    "reward_card_pool": "Defect",
+    "reward_card_rarity_odds": "BossEncounter",
+    "hp": 16,
+    "max_hp": 78,
+    "block": 10,
+    "cards_drawn_combat": 5,
+    "pendulum": 2,
+    "player_phase": 3,
+    "popper": true,
+    "razor_tooth": true,
+    "regalite_block_amount": 4,
+    "inky_attack_damage": 0,
+    "horn_cleat": true,
+    "splash_unlock_epochs": [
+      "ACT2_B_EPOCH",
+      "ACT3_B_EPOCH",
+      "COLORLESS1_EPOCH",
+      "COLORLESS2_EPOCH",
+      "COLORLESS3_EPOCH",
+      "COLORLESS4_EPOCH",
+      "COLORLESS5_EPOCH",
+      "CUSTOM_AND_SEEDS_EPOCH",
+      "DAILY_RUN_EPOCH",
+      "DARV_EPOCH",
+      "DEFECT1_EPOCH",
+      "DEFECT2_EPOCH",
+      "DEFECT3_EPOCH",
+      "DEFECT4_EPOCH",
+      "DEFECT5_EPOCH",
+      "DEFECT6_EPOCH",
+      "DEFECT7_EPOCH",
+      "EVENT1_EPOCH",
+      "EVENT2_EPOCH",
+      "EVENT3_EPOCH",
+      "IRONCLAD2_EPOCH",
+      "IRONCLAD3_EPOCH",
+      "IRONCLAD4_EPOCH",
+      "IRONCLAD5_EPOCH",
+      "IRONCLAD6_EPOCH",
+      "IRONCLAD7_EPOCH",
+      "NECROBINDER1_EPOCH",
+      "NECROBINDER2_EPOCH",
+      "NECROBINDER3_EPOCH",
+      "NECROBINDER4_EPOCH",
+      "NECROBINDER5_EPOCH",
+      "NECROBINDER6_EPOCH",
+      "NECROBINDER7_EPOCH",
+      "NEOW_EPOCH",
+      "OROBAS_EPOCH",
+      "POTION1_EPOCH",
+      "POTION2_EPOCH",
+      "REGENT1_EPOCH",
+      "REGENT2_EPOCH",
+      "REGENT3_EPOCH",
+      "REGENT4_EPOCH",
+      "REGENT5_EPOCH",
+      "REGENT6_EPOCH",
+      "REGENT7_EPOCH",
+      "RELIC1_EPOCH",
+      "RELIC2_EPOCH",
+      "RELIC3_EPOCH",
+      "RELIC4_EPOCH",
+      "RELIC5_EPOCH",
+      "SILENT1_EPOCH",
+      "SILENT2_EPOCH",
+      "SILENT3_EPOCH",
+      "SILENT4_EPOCH",
+      "SILENT5_EPOCH",
+      "SILENT6_EPOCH",
+      "SILENT7_EPOCH",
+      "UNDERDOCKS_EPOCH"
+    ],
+    "innate_min_draw": 1,
+    "orb_slots": 3,
+    "orbs": [
+      [
+        "LIGHTNING",
+        null
+      ]
+    ],
+    "potions": [
+      "CLARITY"
+    ],
+    "potion_slots": [
+      "CLARITY",
+      null
+    ],
+    "fully_unlocked_potion_pool": true,
+    "orb_base_slots": 3,
+    "cracked_core": true,
+    "relics_entering": [
+      "RELIC.CRACKED_CORE",
+      "RELIC.LEAFY_POULTICE",
+      "RELIC.RAZOR_TOOTH",
+      "RELIC.BAG_OF_MARBLES",
+      "RELIC.AMETHYST_AUBERGINE",
+      "RELIC.ANCHOR",
+      "RELIC.FESTIVE_POPPER",
+      "RELIC.ASTROLABE",
+      "RELIC.PEAR",
+      "RELIC.PENDULUM",
+      "RELIC.HORN_CLEAT"
+    ],
+    "relics_entering_dispatch_ordered": true
+  },
+  "game_build": "v0.111.0",
+  "monsters": [
+    {
+      "kind": "THE_INSATIABLE",
+      "hp": 332,
+      "max_hp": 341,
+      "vuln": 1,
+      "misery_debuff_order": [
+        "vuln"
+      ]
+    }
+  ],
+  "piles": {
+    "draw": [
+      {
+        "id": "SCAVENGE",
+        "upgrade": 0,
+        "uid": 5
+      },
+      {
+        "id": "BALL_LIGHTNING",
+        "upgrade": 1,
+        "uid": 6
+      },
+      {
+        "id": "CLAW",
+        "upgrade": 0,
+        "uid": 7,
+        "physical_state": [
+          "PHYSICAL_CARD_STATE",
+          [],
+          0,
+          false,
+          []
+        ]
+      },
+      {
+        "id": "GLASSWORK",
+        "upgrade": 0,
+        "uid": 8
+      },
+      {
+        "id": "ZAP",
+        "upgrade": 0,
+        "uid": 9
+      },
+      {
+        "id": "DEFEND_DEFECT",
+        "upgrade": 0,
+        "uid": 10
+      },
+      {
+        "id": "ITERATION",
+        "upgrade": 0,
+        "uid": 11
+      },
+      {
+        "id": "CLUMSY",
+        "upgrade": 0,
+        "uid": 12
+      },
+      {
+        "id": "DUALCAST",
+        "upgrade": 0,
+        "uid": 13
+      },
+      {
+        "id": "DEFEND_DEFECT",
+        "upgrade": 0,
+        "uid": 14
+      },
+      {
+        "id": "GO_FOR_THE_EYES",
+        "upgrade": 0,
+        "uid": 15
+      },
+      {
+        "id": "COOLHEADED",
+        "upgrade": 0,
+        "uid": 16
+      },
+      {
+        "id": "GLACIER",
+        "upgrade": 1,
+        "uid": 17,
+        "enchantment": [
+          "NIMBLE",
+          2
+        ]
+      },
+      {
+        "id": "GLACIER",
+        "upgrade": 0,
+        "uid": 18
+      },
+      {
+        "id": "ICE_LANCE",
+        "upgrade": 1,
+        "uid": 19,
+        "enchantment": [
+          "CORRUPTED",
+          1
+        ]
+      },
+      {
+        "id": "JACK_OF_ALL_TRADES",
+        "upgrade": 1,
+        "uid": 20
+      },
+      {
+        "id": "CHILL",
+        "upgrade": 0,
+        "uid": 21
+      },
+      {
+        "id": "FERAL",
+        "upgrade": 1,
+        "uid": 22
+      },
+      {
+        "id": "LIGHTNING_ROD",
+        "upgrade": 0,
+        "uid": 23
+      },
+      {
+        "id": "BOOST_AWAY",
+        "upgrade": 0,
+        "uid": 24
+      },
+      {
+        "id": "EQUILIBRIUM",
+        "upgrade": 0,
+        "uid": 25
+      },
+      {
+        "id": "SHADOW_SHIELD",
+        "upgrade": 0,
+        "uid": 26
+      },
+      {
+        "id": "FTL",
+        "upgrade": 0,
+        "uid": 27
+      },
+      {
+        "id": "HOLOGRAM",
+        "upgrade": 0,
+        "uid": 28
+      },
+      {
+        "id": "SHATTER",
+        "upgrade": 0,
+        "uid": 29
+      },
+      {
+        "id": "COOLANT",
+        "upgrade": 1,
+        "uid": 30
+      },
+      {
+        "id": "ASCENDERS_BANE",
+        "upgrade": 0,
+        "uid": 31
+      },
+      {
+        "id": "FIGHT_THROUGH",
+        "upgrade": 0,
+        "uid": 32
+      }
+    ],
+    "hand": [
+      {
+        "id": "BOOT_SEQUENCE",
+        "upgrade": 0,
+        "uid": 0
+      },
+      {
+        "id": "TURBO",
+        "upgrade": 0,
+        "uid": 1
+      },
+      {
+        "id": "LOOP",
+        "upgrade": 0,
+        "uid": 2
+      },
+      {
+        "id": "BOOST_AWAY",
+        "upgrade": 0,
+        "uid": 3
+      },
+      {
+        "id": "CHARGE_BATTERY",
+        "upgrade": 0,
+        "uid": 4
+      }
+    ],
+    "discard": []
+  },
+  "rng": {
+    "rng": {
+      "words": [
+        1022535755651995720,
+        15079496373451545320,
+        2479311108566261177,
+        6397851108974986827
+      ],
+      "counter": 681
+    },
+    "niche": {
+      "words": [
+        10569269106013367503,
+        3401829644987382164,
+        16634505724096591512,
+        15158959519396798103
+      ],
+      "counter": 40
+    },
+    "ai": {
+      "words": [
+        17831353001781701915,
+        3986524226986912318,
+        10949948409626013950,
+        12135104666268815199
+      ],
+      "counter": 15
+    },
+    "sel": {
+      "words": [
+        17272559759423519411,
+        5600209592447894023,
+        13130672336221470638,
+        4455023891541459736
+      ],
+      "counter": 21
+    },
+    "generation": {
+      "words": [
+        10752256969480117092,
+        12221868648223170728,
+        14639544471389964986,
+        7127090765585429653
+      ],
+      "counter": 1001
+    },
+    "targets": {
+      "words": [
+        4877077218237027931,
+        17325701523086102647,
+        3498173926395786894,
+        12130563268838934295
+      ],
+      "counter": 116
+    },
+    "energy_costs": {
+      "words": [
+        9204872982282024185,
+        250201893917102127,
+        12067345629270619503,
+        5897110069489580392
+      ],
+      "counter": 0
+    },
+    "combat_orbs": {
+      "words": [
+        10333539271576498312,
+        3464835931453476964,
+        15323603412009156632,
+        12002271951819152652
+      ],
+      "counter": 0
+    },
+    "potion_generation": {
+      "words": [
+        5102301862492046504,
+        1615902931870500643,
+        15530934801055061250,
+        6324607985196964396
+      ],
+      "counter": 0
+    }
+  }
+}

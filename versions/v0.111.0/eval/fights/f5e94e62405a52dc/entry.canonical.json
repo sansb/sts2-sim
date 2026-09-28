@@ -1,0 +1,355 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 172,
+   "kind": "DEVOTED_SCULPTOR",
+   "max_hp": 172
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "EQUILIBRIUM",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "RELAX",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "BREAKTHROUGH",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "BURNING_PACT",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "BRAND",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "ANGER",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "BASH",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "TAUNT",
+    "uid": 14,
+    "upgrade": 1
+   },
+   {
+    "id": "SPORE_MIND",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "TWIN_STRIKE",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "EXTERMINATE",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "ANGER",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "BATTLE_TRANCE",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SHARP",
+     2
+    ],
+    "id": "WHIRLWIND",
+    "uid": 22,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "id": "RAMPAGE",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "DECAY",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "SOWN",
+     1
+    ],
+    "id": "DEMON_FORM",
+    "uid": 26,
+    "upgrade": 1
+   }
+  ],
+  "hand": [
+   {
+    "id": "INFERNAL_BLADE",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "PYRE",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "RELAX",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "FLAME_BARRIER",
+    "uid": 4,
+    "upgrade": 1
+   }
+  ]
+ },
+ "player": {
+  "block": 30,
+  "blur": 1,
+  "cards_drawn_combat": 5,
+  "chemical_x": true,
+  "entropy_card_pool": "ironclad",
+  "fully_unlocked_potion_pool": true,
+  "gold": 164,
+  "hp": 75,
+  "inky_attack_damage": 0,
+  "lost_wisp": true,
+  "max_hp": 90,
+  "next_card_uid": 27,
+  "player_phase": 3,
+  "pollinous_core": 1,
+  "potion_slots": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "ps_strikes": 3,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD",
+   "RELIC.GOLDEN_PEARL",
+   "RELIC.MINIATURE_TENT",
+   "RELIC.JUZU_BRACELET",
+   "RELIC.POTION_BELT",
+   "RELIC.ANCHOR",
+   "RELIC.PAELS_HORN",
+   "RELIC.CHEMICAL_X",
+   "RELIC.LOST_WISP",
+   "RELIC.PEAR",
+   "RELIC.BOOK_OF_FIVE_RINGS",
+   "RELIC.POLLINOUS_CORE",
+   "RELIC.TUNING_FORK",
+   "RELIC.DIAMOND_DIADEM"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "template_relics": [
+   "RELIC.DIAMOND_DIADEM"
+  ],
+  "tuning_fork_owned": true,
+  "tuning_fork_skills": 1,
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 4,
+   "words": [
+    1702590830163035900,
+    8371797643525697036,
+    5301389196760044601,
+    15592689760719765397
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    7449045814610369759,
+    6075623650948593379,
+    2325249762489144238,
+    14282812991481180158
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    12428487118803090281,
+    8614311550635904382,
+    3371767877313544861,
+    8893889847387057230
+   ]
+  },
+  "generation": {
+   "counter": 65,
+   "words": [
+    6923990598230387321,
+    6099445580929135771,
+    12626650595074561457,
+    6321511330963657859
+   ]
+  },
+  "niche": {
+   "counter": 16,
+   "words": [
+    17581948437625279258,
+    11050007097747711819,
+    12987428209593503818,
+    7286387641210669465
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    17512820176004736317,
+    15879436202525981570,
+    7172511284473952447,
+    2618177303894028466
+   ]
+  },
+  "rng": {
+   "counter": 327,
+   "words": [
+    17987279091589444030,
+    15481308901141776649,
+    14856713837443674811,
+    2714698649878084948
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    5532829121739646471,
+    1690046333047784593,
+    14810787759679105791,
+    17718756016082221552
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    13737097477353975631,
+    1532264742382835414,
+    12057994352799981459,
+    7779852255056708355
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

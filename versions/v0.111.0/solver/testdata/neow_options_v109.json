@@ -1,0 +1,739 @@
+{
+ "source": "versions/v0.111.0/solver/harness/probe_neow.py -- real sts2.dll Neow::GenerateInitialOptions",
+ "game_build": "v0.109.1",
+ "character": "Ironclad",
+ "ascension": 10,
+ "number_of_runs": 551,
+ "unlocked_epochs": [
+  "ACT2_B_EPOCH",
+  "ACT3_B_EPOCH",
+  "COLORLESS1_EPOCH",
+  "COLORLESS2_EPOCH",
+  "COLORLESS3_EPOCH",
+  "COLORLESS4_EPOCH",
+  "COLORLESS5_EPOCH",
+  "CUSTOM_AND_SEEDS_EPOCH",
+  "DAILY_RUN_EPOCH",
+  "DARV_EPOCH",
+  "DEFECT1_EPOCH",
+  "DEFECT2_EPOCH",
+  "EVENT1_EPOCH",
+  "EVENT2_EPOCH",
+  "EVENT3_EPOCH",
+  "IRONCLAD2_EPOCH",
+  "IRONCLAD3_EPOCH",
+  "IRONCLAD4_EPOCH",
+  "IRONCLAD5_EPOCH",
+  "IRONCLAD6_EPOCH",
+  "IRONCLAD7_EPOCH",
+  "NECROBINDER1_EPOCH",
+  "NECROBINDER2_EPOCH",
+  "NECROBINDER3_EPOCH",
+  "NECROBINDER4_EPOCH",
+  "NECROBINDER5_EPOCH",
+  "NECROBINDER6_EPOCH",
+  "NECROBINDER7_EPOCH",
+  "NEOW_EPOCH",
+  "OROBAS_EPOCH",
+  "POTION1_EPOCH",
+  "POTION2_EPOCH",
+  "REGENT1_EPOCH",
+  "REGENT2_EPOCH",
+  "REGENT3_EPOCH",
+  "REGENT4_EPOCH",
+  "REGENT5_EPOCH",
+  "REGENT6_EPOCH",
+  "REGENT7_EPOCH",
+  "RELIC1_EPOCH",
+  "RELIC2_EPOCH",
+  "RELIC3_EPOCH",
+  "RELIC4_EPOCH",
+  "RELIC5_EPOCH",
+  "SILENT1_EPOCH",
+  "SILENT2_EPOCH",
+  "SILENT3_EPOCH",
+  "SILENT4_EPOCH",
+  "SILENT5_EPOCH",
+  "SILENT6_EPOCH",
+  "SILENT7_EPOCH",
+  "UNDERDOCKS_EPOCH"
+ ],
+ "records": [
+  {
+   "seed": "AAAAAAAAAA",
+   "run_seed": 442739381506823475,
+   "event_seed": 2287135752996959136,
+   "options": [
+    "RELIC.FISHING_ROD",
+    "RELIC.ARCANE_SCROLL",
+    "RELIC.LEAFY_POULTICE"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "BBBBBBBBBB",
+   "run_seed": 14357652102541681735,
+   "event_seed": 16202048474031817396,
+   "options": [
+    "RELIC.WINGED_BOOTS",
+    "RELIC.SMALL_CAPSULE",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "CCCCCCCCCC",
+   "run_seed": 4829549854749514823,
+   "event_seed": 6673946226239650484,
+   "options": [
+    "RELIC.WINGED_BOOTS",
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.NEOWS_SACRIFICE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "DDDDDDDDDD",
+   "run_seed": 5009200042195790567,
+   "event_seed": 6853596413685926228,
+   "options": [
+    "RELIC.BOOMING_CONCH",
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.CURSED_PEARL"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "EEEEEEEEEE",
+   "run_seed": 5245818330723271460,
+   "event_seed": 7090214702213407121,
+   "options": [
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.FISHING_ROD",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "FFFFFFFFFF",
+   "run_seed": 6597121528970964160,
+   "event_seed": 8441517900461099821,
+   "options": [
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.SMALL_CAPSULE",
+    "RELIC.LEAFY_POULTICE"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "GGGGGGGGGG",
+   "run_seed": 1063459610290373406,
+   "event_seed": 2907855981780509067,
+   "options": [
+    "RELIC.FISHING_ROD",
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "HHHHHHHHHH",
+   "run_seed": 17785007445806543966,
+   "event_seed": 1182659743587128011,
+   "options": [
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.LOST_COFFER",
+    "RELIC.NEOWS_BONES"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "IIIIIIIIII",
+   "run_seed": 18337192183070106084,
+   "event_seed": 1734844480850690129,
+   "options": [
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.GOLDEN_PEARL",
+    "RELIC.SILKEN_TRESS"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "JJJJJJJJJJ",
+   "run_seed": 11068174698612990482,
+   "event_seed": 12912571070103126143,
+   "options": [
+    "RELIC.BOOMING_CONCH",
+    "RELIC.SCROLL_BOXES",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "KKKKKKKKKK",
+   "run_seed": 431293280271660180,
+   "event_seed": 2275689651761795841,
+   "options": [
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.WINGED_BOOTS",
+    "RELIC.LARGE_CAPSULE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "LPTMBBTY7FQY",
+   "run_seed": 12419417089451278011,
+   "event_seed": 14263813460941413672,
+   "options": [
+    "RELIC.NEW_LEAF",
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.LARGE_CAPSULE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0000",
+   "run_seed": 401359595957149410,
+   "event_seed": 2245755967447285071,
+   "options": [
+    "RELIC.GOLDEN_PEARL",
+    "RELIC.ARCANE_SCROLL",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0001",
+   "run_seed": 17816615131937718388,
+   "event_seed": 1214267429718302433,
+   "options": [
+    "RELIC.BOOMING_CONCH",
+    "RELIC.NEW_LEAF",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0002",
+   "run_seed": 13581333801216463063,
+   "event_seed": 15425730172706598724,
+   "options": [
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.NUTRITIOUS_OYSTER",
+    "RELIC.LARGE_CAPSULE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0003",
+   "run_seed": 309645265439994886,
+   "event_seed": 2154041636930130547,
+   "options": [
+    "RELIC.NEW_LEAF",
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0004",
+   "run_seed": 4755073581392639720,
+   "event_seed": 6599469952882775381,
+   "options": [
+    "RELIC.NEW_LEAF",
+    "RELIC.LOST_COFFER",
+    "RELIC.CURSED_PEARL"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0005",
+   "run_seed": 4553319320300154552,
+   "event_seed": 6397715691790290213,
+   "options": [
+    "RELIC.WINGED_BOOTS",
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.LEAFY_POULTICE"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0006",
+   "run_seed": 12652209473783832909,
+   "event_seed": 14496605845273968570,
+   "options": [
+    "RELIC.LOST_COFFER",
+    "RELIC.NEW_LEAF",
+    "RELIC.LARGE_CAPSULE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0007",
+   "run_seed": 10166482831354964734,
+   "event_seed": 12010879202845100395,
+   "options": [
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.ARCANE_SCROLL",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0008",
+   "run_seed": 10182144108187286181,
+   "event_seed": 12026540479677421842,
+   "options": [
+    "RELIC.LAVA_ROCK",
+    "RELIC.LOST_COFFER",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0009",
+   "run_seed": 15853897328637211328,
+   "event_seed": 17698293700127346989,
+   "options": [
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.BOOMING_CONCH",
+    "RELIC.HEFTY_TABLET"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0010",
+   "run_seed": 6076601863933279830,
+   "event_seed": 7920998235423415491,
+   "options": [
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0011",
+   "run_seed": 12793419296489052208,
+   "event_seed": 14637815667979187869,
+   "options": [
+    "RELIC.NEOWS_TORMENT",
+    "RELIC.BOOMING_CONCH",
+    "RELIC.NEOWS_SACRIFICE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0012",
+   "run_seed": 737376374732217202,
+   "event_seed": 2581772746222352863,
+   "options": [
+    "RELIC.NEOWS_TORMENT",
+    "RELIC.SMALL_CAPSULE",
+    "RELIC.SILKEN_TRESS"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0013",
+   "run_seed": 677250184986785231,
+   "event_seed": 2521646556476920892,
+   "options": [
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.FISHING_ROD",
+    "RELIC.LEAFY_POULTICE"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0014",
+   "run_seed": 1280305772990673169,
+   "event_seed": 3124702144480808830,
+   "options": [
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.GOLDEN_PEARL",
+    "RELIC.NEOWS_BONES"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0015",
+   "run_seed": 5409869515806522631,
+   "event_seed": 7254265887296658292,
+   "options": [
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0016",
+   "run_seed": 12622195334619740736,
+   "event_seed": 14466591706109876397,
+   "options": [
+    "RELIC.FISHING_ROD",
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.SILKEN_TRESS"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0017",
+   "run_seed": 10227145835340431968,
+   "event_seed": 12071542206830567629,
+   "options": [
+    "RELIC.STONE_HUMIDIFIER",
+    "RELIC.LOST_COFFER",
+    "RELIC.SILVER_CRUCIBLE"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0018",
+   "run_seed": 2486948770339018304,
+   "event_seed": 4331345141829153965,
+   "options": [
+    "RELIC.ARCANE_SCROLL",
+    "RELIC.POMANDER",
+    "RELIC.LARGE_CAPSULE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0019",
+   "run_seed": 8303287291200253411,
+   "event_seed": 10147683662690389072,
+   "options": [
+    "RELIC.SCROLL_BOXES",
+    "RELIC.WINGED_BOOTS",
+    "RELIC.SILVER_CRUCIBLE"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0020",
+   "run_seed": 11800172959911871634,
+   "event_seed": 13644569331402007295,
+   "options": [
+    "RELIC.NEW_LEAF",
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0021",
+   "run_seed": 13330995527355822039,
+   "event_seed": 15175391898845957700,
+   "options": [
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.STONE_HUMIDIFIER",
+    "RELIC.SILVER_CRUCIBLE"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0022",
+   "run_seed": 2653866131495621367,
+   "event_seed": 4498262502985757028,
+   "options": [
+    "RELIC.FISHING_ROD",
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.NEOWS_BONES"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0023",
+   "run_seed": 1376968534991930922,
+   "event_seed": 3221364906482066583,
+   "options": [
+    "RELIC.NEOWS_TORMENT",
+    "RELIC.FISHING_ROD",
+    "RELIC.CURSED_PEARL"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0024",
+   "run_seed": 6707126453489325125,
+   "event_seed": 8551522824979460786,
+   "options": [
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.WINGED_BOOTS",
+    "RELIC.LARGE_CAPSULE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0025",
+   "run_seed": 6889603979108245556,
+   "event_seed": 8734000350598381217,
+   "options": [
+    "RELIC.NEW_LEAF",
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0026",
+   "run_seed": 13622902622163577857,
+   "event_seed": 15467298993653713518,
+   "options": [
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.WINGED_BOOTS",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0027",
+   "run_seed": 14979789982685598148,
+   "event_seed": 16824186354175733809,
+   "options": [
+    "RELIC.BOOMING_CONCH",
+    "RELIC.SCROLL_BOXES",
+    "RELIC.HEFTY_TABLET"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0028",
+   "run_seed": 17004144023484904812,
+   "event_seed": 401796321265488857,
+   "options": [
+    "RELIC.ARCANE_SCROLL",
+    "RELIC.LOST_COFFER",
+    "RELIC.DOWSING_ROD"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0029",
+   "run_seed": 210135553526733902,
+   "event_seed": 2054531925016869563,
+   "options": [
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.CURSED_PEARL"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0030",
+   "run_seed": 8002987223527827926,
+   "event_seed": 9847383595017963587,
+   "options": [
+    "RELIC.FISHING_ROD",
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.HEFTY_TABLET"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0031",
+   "run_seed": 5469700444140662074,
+   "event_seed": 7314096815630797735,
+   "options": [
+    "RELIC.NEOWS_TORMENT",
+    "RELIC.FISHING_ROD",
+    "RELIC.SILKEN_TRESS"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0032",
+   "run_seed": 15078352712313439447,
+   "event_seed": 16922749083803575108,
+   "options": [
+    "RELIC.PRECISE_SCISSORS",
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.SILKEN_TRESS"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0033",
+   "run_seed": 16169001243002659669,
+   "event_seed": 18013397614492795330,
+   "options": [
+    "RELIC.LEAD_PAPERWEIGHT",
+    "RELIC.LOST_COFFER",
+    "RELIC.LEAFY_POULTICE"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0034",
+   "run_seed": 17624720341604648613,
+   "event_seed": 1022372639385232658,
+   "options": [
+    "RELIC.STONE_HUMIDIFIER",
+    "RELIC.NEOWS_TORMENT",
+    "RELIC.CURSED_PEARL"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0035",
+   "run_seed": 15031978009097937371,
+   "event_seed": 16876374380588073032,
+   "options": [
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.BOOMING_CONCH",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0036",
+   "run_seed": 17310854695779992881,
+   "event_seed": 708506993560576926,
+   "options": [
+    "RELIC.NEOWS_TORMENT",
+    "RELIC.PHIAL_HOLSTER",
+    "RELIC.SILKEN_TRESS"
+   ],
+   "draws": 19,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0037",
+   "run_seed": 18226392879690912195,
+   "event_seed": 1624045177471496240,
+   "options": [
+    "RELIC.NEOWS_TALISMAN",
+    "RELIC.STONE_HUMIDIFIER",
+    "RELIC.PRECARIOUS_SHEARS"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0038",
+   "run_seed": 13698865254715314042,
+   "event_seed": 15543261626205449703,
+   "options": [
+    "RELIC.POMANDER",
+    "RELIC.FISHING_ROD",
+    "RELIC.CURSED_PEARL"
+   ],
+   "draws": 18,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  },
+  {
+   "seed": "SEED0039",
+   "run_seed": 13896792051898920634,
+   "event_seed": 15741188423389056295,
+   "options": [
+    "RELIC.NUTRITIOUS_OYSTER",
+    "RELIC.KALEIDOSCOPE",
+    "RELIC.NEOWS_SACRIFICE"
+   ],
+   "draws": 17,
+   "scroll_boxes_allowed": true,
+   "kaleidoscope_allowed": true
+  }
+ ]
+}

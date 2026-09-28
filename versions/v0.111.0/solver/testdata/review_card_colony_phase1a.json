@@ -1,0 +1,274 @@
+{
+  "actual": {
+    "entry_hp": 67,
+    "final_hp": 34,
+    "hp_lost": 33,
+    "potions_used": {
+      "count": 0,
+      "names": []
+    },
+    "turns": 4,
+    "won": true
+  },
+  "benchmark": {
+    "deadline_worlds": 10,
+    "distribution_kind": "achieved_lower_bound_biased",
+    "exact": false,
+    "exact_worlds": 0,
+    "hp_lost": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 169
+      },
+      "median": {
+        "denominator": 2,
+        "numerator": 65
+      },
+      "p10": 23,
+      "p90": 38
+    },
+    "loss_risk": {
+      "kind": "upper_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "losses": 0,
+    "outcomes": [
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 34,
+        "hp_lost": 33,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 0
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 35,
+        "hp_lost": 32,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 4,
+        "won": true,
+        "world": 1
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 40,
+        "hp_lost": 27,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 4,
+        "won": true,
+        "world": 2
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 44,
+        "hp_lost": 23,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 3
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 10,
+        "hp_lost": 57,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 4
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 36,
+        "hp_lost": 31,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 5
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 29,
+        "hp_lost": 38,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 6
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 34,
+        "hp_lost": 33,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 7
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 30,
+        "hp_lost": 37,
+        "potions_used": 0,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 8
+      },
+      {
+        "bound": "achieved_lower_bound",
+        "deadline_hit": true,
+        "exact": false,
+        "final_hp": 40,
+        "hp_lost": 27,
+        "potions_used": 1,
+        "states": 1,
+        "turns": 5,
+        "won": true,
+        "world": 9
+      }
+    ],
+    "potions_used": {
+      "count": 10,
+      "mean": {
+        "denominator": 10,
+        "numerator": 9
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "p10": 0,
+      "p90": 1
+    },
+    "turns": {
+      "count": 10,
+      "mean": {
+        "denominator": 5,
+        "numerator": 24
+      },
+      "median": {
+        "denominator": 1,
+        "numerator": 5
+      },
+      "p10": 4,
+      "p90": 5
+    },
+    "win_rate": {
+      "kind": "lower_bound",
+      "value": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "winning_worlds": 10,
+    "wins": 10,
+    "world_count": 10
+  },
+  "best_actual_seed": {
+    "bound": "achieved_lower_bound",
+    "deadline_hit": true,
+    "exact": false,
+    "final_hp": 48,
+    "hp_lost": 19,
+    "potions_used": 1,
+    "states": 1,
+    "turns": 5,
+    "won": true
+  },
+  "derived": {
+    "luck_percentile": {
+      "available": true,
+      "exact": false,
+      "kind": "achieved",
+      "percentile": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "tied_worlds": 0,
+      "world_count": 10,
+      "worse_worlds": 10
+    },
+    "skill_gap": {
+      "available": true,
+      "display": "at least 14",
+      "exact": false,
+      "hp_lost": 14,
+      "kind": "lower_bound"
+    }
+  },
+  "fight": {
+    "encounter_id": "ENCOUNTER.SKULKING_COLONY_ELITE",
+    "fight_index": 5,
+    "node_type": "elite",
+    "run_file": "8DVXPWUWRY.run",
+    "run_seed": "8DVXPWUWRY"
+  },
+  "metadata": {
+    "benchmark_name": "best play per sampled shuffle",
+    "counter_overrides": {
+      "combat_card_selection": 2,
+      "shuffle": 144
+    },
+    "deadlines_seconds": {
+      "benchmark_world": 2.0,
+      "best_actual_seed": 5.0
+    },
+    "elapsed_seconds": {
+      "benchmark": 30.49489654204808,
+      "best_actual_seed": 5.0579570000991225,
+      "total": 35.56434208294377
+    },
+    "entry_caveats": [
+      "fight 0 (ENCOUNTER.SEAPUNK_WEAK): deck held cards that can leave/alter the cycle unrecorded (IMPERVIOUS, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 1 (ENCOUNTER.SLUDGE_SPINNER_WEAK): deck held cards that can leave/alter the cycle unrecorded (CINDER, IMPERVIOUS, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 2 (ENCOUNTER.TERROR_EEL_ELITE): deck held cards that can leave/alter the cycle unrecorded (CINDER, IMPERVIOUS, POMMEL_STRIKE, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 3 (ENCOUNTER.TOADPOLES_WEAK): deck held cards that can leave/alter the cycle unrecorded (CINDER, IMPERVIOUS, POMMEL_STRIKE, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 4 (ENCOUNTER.PHANTASMAL_GARDENERS_ELITE): deck held cards that can leave/alter the cycle unrecorded (CINDER, IMPERVIOUS, POMMEL_STRIKE, TREMBLE, UNMOVABLE) \u2014 the counter is a baseline, not exact",
+      "fight 4 (ENCOUNTER.PHANTASMAL_GARDENERS_ELITE): modeled draw/cycle relics RELIC.GREMLIN_HORN had unrecorded exact trigger/play timing \u2014 their effects can shift reshuffle boundaries; the predicted Shuffle counter is a hypothesis; enumerate with --counter",
+      "fight 1: deck held CombatCardSelection consumers (CINDER) \u2014 plays unrecorded",
+      "fight 2: deck held CombatCardSelection consumers (CINDER) \u2014 plays unrecorded",
+      "fight 3: deck held CombatCardSelection consumers (CINDER) \u2014 plays unrecorded",
+      "fight 4: deck held CombatCardSelection consumers (CINDER) \u2014 plays unrecorded",
+      "prior fights may have consumed CombatCardGeneration; the .run payload does not expose the stream counter or all affliction consumers, so only fight 0 is inferred exactly"
+    ],
+    "fully_unlocked_card_pool": false,
+    "horizon": 12,
+    "k": 10,
+    "sampling_seed": "phase1a-fixtures-2026-08-08",
+    "solver_build": "v0.108.0",
+    "trust_tier": "certified"
+  },
+  "schema_version": 1,
+  "status": "ok"
+}

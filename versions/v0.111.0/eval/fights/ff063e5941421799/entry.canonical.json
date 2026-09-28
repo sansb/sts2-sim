@@ -1,0 +1,352 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 341,
+   "kind": "THE_INSATIABLE",
+   "max_hp": 341
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "HEADBUTT",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "THUNDERCLAP",
+    "uid": 8,
+    "upgrade": 1
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "SHRUG_IT_OFF",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "MOLTEN_FIST",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "BASH",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "CRUELTY",
+    "uid": 16,
+    "upgrade": 1
+   },
+   {
+    "id": "TREMBLE",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "TAUNT",
+    "uid": 18,
+    "upgrade": 1
+   },
+   {
+    "id": "CLUMSY",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "BURNING_PACT",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "BATTLE_TRANCE",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "FEED",
+    "uid": 23,
+    "upgrade": 1
+   },
+   {
+    "id": "UPPERCUT",
+    "uid": 24,
+    "upgrade": 1
+   },
+   {
+    "id": "BULLY",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 26,
+    "upgrade": 0
+   },
+   {
+    "id": "RAGE",
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 28,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "BULLY",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "OFFERING",
+    "uid": 2,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 5,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "cards_drawn_combat": 6,
+  "chosen_cheese": true,
+  "energy": 4,
+  "entropy_card_pool": "ironclad",
+  "fully_unlocked_potion_pool": true,
+  "gold": 5,
+  "gremlin_horn": true,
+  "horn_cleat": true,
+  "hp": 104,
+  "inky_attack_damage": 0,
+  "kusarigama": 0,
+  "lantern": true,
+  "max_hp": 134,
+  "next_card_uid": 29,
+  "pendulum": 0,
+  "plating": 4,
+  "player_phase": 3,
+  "potion_slots": [
+   "SWIFT_POTION",
+   null
+  ],
+  "potions": [
+   "SWIFT_POTION"
+  ],
+  "ps_strikes": 5,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BLACK_BLOOD",
+   "RELIC.ARCANE_SCROLL",
+   "RELIC.PENDULUM",
+   "RELIC.REGAL_PILLOW",
+   "RELIC.HORN_CLEAT",
+   "RELIC.GREMLIN_HORN",
+   "RELIC.TOUCH_OF_OROBAS",
+   "RELIC.CHOSEN_CHEESE",
+   "RELIC.KUSARIGAMA",
+   "RELIC.GORGET",
+   "RELIC.LASTING_CANDY",
+   "RELIC.BOOK_OF_FIVE_RINGS",
+   "RELIC.LANTERN"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "BossEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 12,
+   "words": [
+    14880837480021353844,
+    4477133455766704892,
+    5231734899558843579,
+    17178008302162651626
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    12625328113908593716,
+    636387740685976482,
+    14122220613760831068,
+    18176149360937906255
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    5976395950366026803,
+    5082580798487794635,
+    10414371423539294016,
+    13951982077227488864
+   ]
+  },
+  "generation": {
+   "counter": 32,
+   "words": [
+    11139935456578993766,
+    14299927291997241143,
+    5344053160786768931,
+    6942685669694342010
+   ]
+  },
+  "niche": {
+   "counter": 33,
+   "words": [
+    5517986889952303484,
+    10316309331565205636,
+    6850833776996641094,
+    962972657981385274
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    10807647040534137930,
+    1182508903076729671,
+    17533441820733254373,
+    4677618762879909211
+   ]
+  },
+  "rng": {
+   "counter": 488,
+   "words": [
+    878495821854312259,
+    8049416059992700719,
+    6041736934845201184,
+    12964129739855829955
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    15046181264541233870,
+    17698719440681778231,
+    8213646433879037935,
+    9728946546946987034
+   ]
+  },
+  "targets": {
+   "counter": 8,
+   "words": [
+    2465131905120641776,
+    11259337334633569053,
+    5818393084261025831,
+    9769720955996899891
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

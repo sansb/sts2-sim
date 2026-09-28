@@ -1,0 +1,207 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "2c178c3926355ffb65456c0170e516b84ec7cb6fb17544344e99296d879ab47a",
+ "turns": 7,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 4
+  },
+  {
+   "kind": "play",
+   "uid": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 7,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 16
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 1
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 46
+  },
+  {
+   "kind": "play",
+   "uid": 14
+  },
+  {
+   "kind": "play",
+   "uid": 17
+  },
+  {
+   "kind": "play",
+   "uid": 18,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 11
+  },
+  {
+   "kind": "play",
+   "uid": 12
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 20,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 25
+  },
+  {
+   "kind": "potion",
+   "slot": 1
+  },
+  {
+   "kind": "play",
+   "uid": 21
+  },
+  {
+   "kind": "play",
+   "uid": 23
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 30
+  },
+  {
+   "kind": "play",
+   "uid": 32,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 29
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 0
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 31,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 37,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 38
+  },
+  {
+   "kind": "play",
+   "uid": 36
+  },
+  {
+   "kind": "play",
+   "uid": 34
+  },
+  {
+   "kind": "select",
+   "answer": {
+    "kind": "option_index",
+    "index": 2
+   }
+  },
+  {
+   "kind": "play",
+   "uid": 51,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 1
+  }
+ ],
+ "step_digests": [
+  "8e370af6305be9a7b030dee00063d8fb3768b38475d4e907832e581eca975615",
+  "c9f4fca8ca02addcf1bae1a22eed17d7561c60d1ac17bca575019fd3e14c7763",
+  "66b8c2102c2ac3ca04fb683331cfd2c43615ce4525819b86c5b4a3b56cd95e71",
+  "07f22b83468b018586e6a67b32f8932ad29cad216a81c0f3ca5f5059177ce2ca",
+  "a799bd51160978ad16b213677f0cceb8bdba2786e7504ab241c5c3bb30346f54",
+  "2c94bf9b728577b3c949a3c1ab5275c1da3fab30f24a33c7284b0bf32ed83b30",
+  "eb6bc3570d34804423233b720cd6045515ecfaaaeb0e7c4e9dc0f63ccd66f3d1",
+  "8a1e00cdd15390f311e88532dc75a47edd753e81e694b87ad88e5e25bfe0a2c4",
+  "14b6bf809de7259976b9bb40f0a105bebfeb27bebd472938378595daca5ec798",
+  "795ddaba1365d920d74f3c0e58a1f0425981966bd6c0ca00b7aef842f7d2ea73",
+  "c991fbac250b49f44b4f5979bd5000a72b45b7e8ceb755591f8de7f97a7a671b",
+  "2255a7893c8a2762b787962a0ffade8570a929889dcd7415e5e75f46fa92565a",
+  "08ec9b8deab3313229887bb469c1fdc0d3e304c4af7ec4d8b07ed6b103e2a95d",
+  "caa5c969fddc2a3cbd129a19bf32c0eca53f62815c86f4d55828ebd3eb6dd456",
+  "22700011115289e4d74ddc189f5327f2d5d1ec78be08bab7d0acfaf3ba507d6e",
+  "694c4fa0e8894ab49e01f721025e266409687ff1d4b5d8f1de5692f506ed783d",
+  "32bf4e43443753650d5fb47f73dea36c7db86718b58422c65e1cc8173f27d739",
+  "00a92f2e5c910f5b769b1696bb1792b72655e6769602416f2c68c3e5fc700cc8",
+  "cc7f3155a6ff129474474e6220d76f0b5a286aafdfde95e8040774df806b1a5d",
+  "b61200367a4d6997b52371c526920e0b84cb545c268675c2a4ac6a932f6cfe57",
+  "461ca6ef3e1d97d6524a71111d61cf24a36bb69dd44249ba653aa46b6af83e4d",
+  "3e4c9efbfedd90804f3fd03b40538e1904fb17cf5d033587ba100e426d977cf5",
+  "152f9abbad881a30c58da29de8a1cd9571f163ac4cd0c025aa27b18a2b970499",
+  "6b47fab793e3c5e632b79bb6770d48428aef6a82e50a2f88f5bf30a4a1d4eb1d",
+  "ec5d0a299823735b8d10e46675ded9dd899248a083148af1f05137a00f5854eb",
+  "6e1e025405875d900f977c696d192e3b7413b3562c5405abe6d86d19b9b9c2d7",
+  "026abb39741b6f192e5de8977791542b72bbb0dbb71ef0ccd3caa4e3ee5e3aea",
+  "f9ff099f7975f0fb1fec558320a06e1325cc6c6caad055186cc3954bbf34f44e",
+  "197396a8d30ad025ff9a3be31401e2ab9c7f45c8ab828201f2c90fe008d82e54",
+  "05187ef08e39ade7e857ee046e2dad8ab25169e524cb03a16d764d2d241ed177",
+  "3fbc9bdd1b5280cf6efffdedeb2b0e0f66ae1cdf09637e352858f9369c841892",
+  "3859dd2fcb4c27f48fee74bfa6160e872ca0d96e081595f424dd4e25440562b7",
+  "f1276fd138d50d6a3f863157f9c5a8c7b994543d1d6d765a536b15c78d398edf",
+  "68c19e782a572ac26f26e0293ed5c32687a9d31a150974461b0887d930d2fdee",
+  "79cc52a2223174e9b7db6fecd4f496ee054cff76e31f3e0bd24370951ec00689",
+  "5b80ff3dcd24b41a23a1ead0183b574122d47931885ad1c70bbb234504b0f475"
+ ],
+ "terminal": {
+  "hp": 16,
+  "turn": 7,
+  "over": true,
+  "won": true
+ }
+}

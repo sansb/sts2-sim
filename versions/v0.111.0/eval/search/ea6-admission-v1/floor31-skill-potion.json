@@ -1,0 +1,632 @@
+{
+  "entry": {
+    "schema": "sts-sim-canonical-v2",
+    "player": {
+      "next_card_uid": 31,
+      "gold": 18,
+      "reward_card_pool": "Necrobinder",
+      "reward_card_rarity_odds": "RegularEncounter",
+      "lizard_tail_used": 0,
+      "hp": 41,
+      "max_hp": 69,
+      "cards_drawn_combat": 5,
+      "player_phase": 3,
+      "rainbow_ring": true,
+      "lost_wisp": true,
+      "regalite_block_amount": 4,
+      "inky_attack_damage": 0,
+      "splash_unlock_epochs": [
+        "ACT2_B_EPOCH",
+        "ACT3_B_EPOCH",
+        "COLORLESS1_EPOCH",
+        "COLORLESS2_EPOCH",
+        "COLORLESS3_EPOCH",
+        "COLORLESS4_EPOCH",
+        "COLORLESS5_EPOCH",
+        "CUSTOM_AND_SEEDS_EPOCH",
+        "DAILY_RUN_EPOCH",
+        "DARV_EPOCH",
+        "DEFECT1_EPOCH",
+        "DEFECT2_EPOCH",
+        "DEFECT3_EPOCH",
+        "DEFECT4_EPOCH",
+        "DEFECT5_EPOCH",
+        "DEFECT6_EPOCH",
+        "DEFECT7_EPOCH",
+        "EVENT1_EPOCH",
+        "EVENT2_EPOCH",
+        "EVENT3_EPOCH",
+        "IRONCLAD2_EPOCH",
+        "IRONCLAD3_EPOCH",
+        "IRONCLAD4_EPOCH",
+        "IRONCLAD5_EPOCH",
+        "IRONCLAD6_EPOCH",
+        "IRONCLAD7_EPOCH",
+        "NECROBINDER1_EPOCH",
+        "NECROBINDER2_EPOCH",
+        "NECROBINDER3_EPOCH",
+        "NECROBINDER4_EPOCH",
+        "NECROBINDER5_EPOCH",
+        "NECROBINDER6_EPOCH",
+        "NECROBINDER7_EPOCH",
+        "NEOW_EPOCH",
+        "OROBAS_EPOCH",
+        "POTION1_EPOCH",
+        "POTION2_EPOCH",
+        "REGENT1_EPOCH",
+        "REGENT2_EPOCH",
+        "REGENT3_EPOCH",
+        "REGENT4_EPOCH",
+        "REGENT5_EPOCH",
+        "REGENT6_EPOCH",
+        "REGENT7_EPOCH",
+        "RELIC1_EPOCH",
+        "RELIC2_EPOCH",
+        "RELIC3_EPOCH",
+        "RELIC4_EPOCH",
+        "RELIC5_EPOCH",
+        "SILENT1_EPOCH",
+        "SILENT2_EPOCH",
+        "SILENT3_EPOCH",
+        "SILENT4_EPOCH",
+        "SILENT5_EPOCH",
+        "SILENT6_EPOCH",
+        "SILENT7_EPOCH",
+        "UNDERDOCKS_EPOCH"
+      ],
+      "ps_strikes": 4,
+      "ally": [
+        "OSTY",
+        7,
+        7
+      ],
+      "phylactery_unbound": true,
+      "potions": [
+        "SKILL_POTION",
+        "FAIRY_IN_A_BOTTLE"
+      ],
+      "potion_slots": [
+        "SKILL_POTION",
+        "FAIRY_IN_A_BOTTLE"
+      ],
+      "fully_unlocked_potion_pool": true,
+      "relics_entering": [
+        "RELIC.PHYLACTERY_UNBOUND",
+        "RELIC.DOWSING_ROD",
+        "RELIC.FRESNEL_LENS",
+        "RELIC.RAINBOW_RING",
+        "RELIC.WAR_PAINT",
+        "RELIC.TOUCH_OF_OROBAS",
+        "RELIC.LOST_WISP",
+        "RELIC.PEAR",
+        "RELIC.LIZARD_TAIL"
+      ],
+      "relics_entering_dispatch_ordered": true
+    },
+    "game_build": "v0.111.0",
+    "monsters": [
+      {
+        "kind": "BOWLBUG_ROCK",
+        "hp": 46,
+        "max_hp": 46
+      },
+      {
+        "kind": "BOWLBUG_EGG",
+        "hp": 24,
+        "max_hp": 24,
+        "slot": 1,
+        "uid": 1
+      },
+      {
+        "kind": "BOWLBUG_NECTAR",
+        "hp": 36,
+        "max_hp": 36,
+        "slot": 2,
+        "uid": 2
+      }
+    ],
+    "piles": {
+      "draw": [
+        {
+          "id": "GRAVE_WARDEN",
+          "upgrade": 0,
+          "uid": 5,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 6
+        },
+        {
+          "id": "BURY",
+          "upgrade": 0,
+          "uid": 7
+        },
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 0,
+          "uid": 8
+        },
+        {
+          "id": "FEAR",
+          "upgrade": 0,
+          "uid": 9,
+          "enchantment": [
+            "SHARP",
+            2
+          ]
+        },
+        {
+          "id": "ASCENDERS_BANE",
+          "upgrade": 0,
+          "uid": 10
+        },
+        {
+          "id": "WISP",
+          "upgrade": 0,
+          "uid": 11
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 12
+        },
+        {
+          "id": "ALCHEMIZE",
+          "upgrade": 0,
+          "uid": 13
+        },
+        {
+          "id": "CLASH",
+          "upgrade": 0,
+          "uid": 14
+        },
+        {
+          "id": "REAP",
+          "upgrade": 0,
+          "uid": 15
+        },
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 0,
+          "uid": 16
+        },
+        {
+          "id": "DELAY",
+          "upgrade": 0,
+          "uid": 17
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 18
+        },
+        {
+          "id": "FETCH",
+          "upgrade": 1,
+          "uid": 19
+        },
+        {
+          "id": "STRIKE_NECROBINDER",
+          "upgrade": 0,
+          "uid": 20
+        },
+        {
+          "id": "LETHALITY",
+          "upgrade": 0,
+          "uid": 21
+        },
+        {
+          "id": "DISCOVERY",
+          "upgrade": 0,
+          "uid": 22
+        },
+        {
+          "id": "NEGATIVE_PULSE",
+          "upgrade": 1,
+          "uid": 23,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "JACKPOT",
+          "upgrade": 1,
+          "uid": 24
+        },
+        {
+          "id": "ABUNDANCE",
+          "upgrade": 1,
+          "uid": 25
+        },
+        {
+          "id": "PULL_AGGRO",
+          "upgrade": 0,
+          "uid": 26,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "DEFY",
+          "upgrade": 0,
+          "uid": 27,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "NEGATIVE_PULSE",
+          "upgrade": 0,
+          "uid": 28,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        },
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 0,
+          "uid": 29
+        },
+        {
+          "id": "DEFEND_NECROBINDER",
+          "upgrade": 1,
+          "uid": 30
+        }
+      ],
+      "hand": [
+        {
+          "id": "DANSE_MACABRE",
+          "upgrade": 0,
+          "uid": 0
+        },
+        {
+          "id": "UNLEASH",
+          "upgrade": 0,
+          "uid": 1
+        },
+        {
+          "id": "DEMESNE",
+          "upgrade": 0,
+          "uid": 2
+        },
+        {
+          "id": "BODYGUARD",
+          "upgrade": 1,
+          "uid": 3
+        },
+        {
+          "id": "DEFY",
+          "upgrade": 0,
+          "uid": 4,
+          "enchantment": [
+            "NIMBLE",
+            2
+          ]
+        }
+      ],
+      "discard": []
+    },
+    "rng": {
+      "rng": {
+        "words": [
+          14382771299353327236,
+          583540420676794747,
+          15971988727031439855,
+          2011382878760883129
+        ],
+        "counter": 454
+      },
+      "niche": {
+        "words": [
+          12893793162149575100,
+          9006391897609711760,
+          18228755469188132343,
+          10738955587855235868
+        ],
+        "counter": 27
+      },
+      "ai": {
+        "words": [
+          1073399121007297570,
+          7751915092300140430,
+          6173816979035000029,
+          15184027322386285860
+        ],
+        "counter": 7
+      },
+      "sel": {
+        "words": [
+          3930876220218627710,
+          823402353806394893,
+          15814526992492130673,
+          8964509078302892305
+        ],
+        "counter": 0
+      },
+      "generation": {
+        "words": [
+          15339136245764476132,
+          12795838260508984079,
+          11480995340887938824,
+          1623302825249430058
+        ],
+        "counter": 258
+      },
+      "targets": {
+        "words": [
+          1055111286289190653,
+          17212008773032296180,
+          17806937594366306665,
+          13872471340052720849
+        ],
+        "counter": 0
+      },
+      "energy_costs": {
+        "words": [
+          15630592754900395182,
+          9953689215280020677,
+          5819836938315476664,
+          6514508726314031575
+        ],
+        "counter": 0
+      },
+      "combat_orbs": {
+        "words": [
+          13419515372248766359,
+          4947101863367337768,
+          5479124784649532243,
+          6001665135347807621
+        ],
+        "counter": 0
+      },
+      "potion_generation": {
+        "words": [
+          14004996617025980336,
+          10255669375398671112,
+          16025922621267005039,
+          1258063204552418061
+        ],
+        "counter": 6
+      }
+    }
+  },
+  "choice_index": 1,
+  "native": {
+    "player": {
+      "hp": 41,
+      "max_hp": 69,
+      "block": 0,
+      "energy": 3,
+      "turn": 1
+    },
+    "piles": {
+      "hand": [
+        [
+          "DANSE_MACABRE",
+          0
+        ],
+        [
+          "UNLEASH",
+          0
+        ],
+        [
+          "DEMESNE",
+          0
+        ],
+        [
+          "BODYGUARD",
+          1
+        ],
+        [
+          "DEFY",
+          0
+        ],
+        [
+          "PULL_AGGRO",
+          0
+        ]
+      ],
+      "draw": [
+        [
+          "GRAVE_WARDEN",
+          0
+        ],
+        [
+          "STRIKE_NECROBINDER",
+          0
+        ],
+        [
+          "BURY",
+          0
+        ],
+        [
+          "DEFEND_NECROBINDER",
+          0
+        ],
+        [
+          "FEAR",
+          0
+        ],
+        [
+          "ASCENDERS_BANE",
+          0
+        ],
+        [
+          "WISP",
+          0
+        ],
+        [
+          "STRIKE_NECROBINDER",
+          0
+        ],
+        [
+          "ALCHEMIZE",
+          0
+        ],
+        [
+          "CLASH",
+          0
+        ],
+        [
+          "REAP",
+          0
+        ],
+        [
+          "DEFEND_NECROBINDER",
+          0
+        ],
+        [
+          "DELAY",
+          0
+        ],
+        [
+          "STRIKE_NECROBINDER",
+          0
+        ],
+        [
+          "FETCH",
+          1
+        ],
+        [
+          "STRIKE_NECROBINDER",
+          0
+        ],
+        [
+          "LETHALITY",
+          0
+        ],
+        [
+          "DISCOVERY",
+          0
+        ],
+        [
+          "NEGATIVE_PULSE",
+          1
+        ],
+        [
+          "JACKPOT",
+          1
+        ],
+        [
+          "ABUNDANCE",
+          1
+        ],
+        [
+          "PULL_AGGRO",
+          0
+        ],
+        [
+          "DEFY",
+          0
+        ],
+        [
+          "NEGATIVE_PULSE",
+          0
+        ],
+        [
+          "DEFEND_NECROBINDER",
+          0
+        ],
+        [
+          "DEFEND_NECROBINDER",
+          1
+        ]
+      ],
+      "discard": [],
+      "exhaust": [],
+      "play": []
+    },
+    "rng": {
+      "rng": {
+        "words": [
+          14382771299353327236,
+          583540420676794747,
+          15971988727031439855,
+          2011382878760883129
+        ],
+        "counter": 454
+      },
+      "niche": {
+        "words": [
+          12893793162149575100,
+          9006391897609711760,
+          18228755469188132343,
+          10738955587855235868
+        ],
+        "counter": 27
+      },
+      "ai": {
+        "words": [
+          1073399121007297570,
+          7751915092300140430,
+          6173816979035000029,
+          15184027322386285860
+        ],
+        "counter": 7
+      },
+      "sel": {
+        "words": [
+          3930876220218627710,
+          823402353806394893,
+          15814526992492130673,
+          8964509078302892305
+        ],
+        "counter": 0
+      },
+      "generation": {
+        "words": [
+          3711497799820419392,
+          3293391555234260894,
+          12892774366718480805,
+          7205029402876526736
+        ],
+        "counter": 286
+      },
+      "potion_generation": {
+        "words": [
+          14004996617025980336,
+          10255669375398671112,
+          16025922621267005039,
+          1258063204552418061
+        ],
+        "counter": 6
+      },
+      "targets": {
+        "words": [
+          1055111286289190653,
+          17212008773032296180,
+          17806937594366306665,
+          13872471340052720849
+        ],
+        "counter": 0
+      },
+      "combat_orbs": {
+        "words": [
+          13419515372248766359,
+          4947101863367337768,
+          5479124784649532243,
+          6001665135347807621
+        ],
+        "counter": 0
+      },
+      "energy_costs": {
+        "words": [
+          15630592754900395182,
+          9953689215280020677,
+          5819836938315476664,
+          6514508726314031575
+        ],
+        "counter": 0
+      }
+    }
+  }
+}

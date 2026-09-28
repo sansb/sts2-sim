@@ -1,0 +1,590 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "escape_artist": 5,
+   "hp": 75,
+   "kind": "THIEVING_HOPPER",
+   "max_hp": 84
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "CALL_OF_THE_VOID",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "SIC_EM",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "GLAM",
+     1
+    ],
+    "id": "DEFY",
+    "uid": 10,
+    "upgrade": 1
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "CURSE_OF_THE_BELL",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "FLATTEN",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "REAP",
+    "uid": 11,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 2,
+    "upgrade": 1
+   },
+   {
+    "id": "NEUROSURGE",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "DEATHBRINGER",
+    "uid": 13,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "RIGHT_HAND_HAND",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFY",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "FETCH",
+    "uid": 14,
+    "upgrade": 1
+   },
+   {
+    "id": "BORROWED_TIME",
+    "uid": 16,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "BODYGUARD",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "NEGATIVE_PULSE",
+    "uid": 12,
+    "upgrade": 1
+   },
+   {
+    "id": "UNLEASH",
+    "uid": 8,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "ally": [
+   "OSTY",
+   1,
+   1
+  ],
+  "ascension": 9,
+  "bound_phylactery": true,
+  "call_of_the_void_generation_pool": [
+   "AFTERLIFE",
+   "BANSHEES_CRY",
+   "BLIGHT_STRIKE",
+   "BONE_SHARDS",
+   "BORROWED_TIME",
+   "BURY",
+   "CALCIFY",
+   "CALL_OF_THE_VOID",
+   "CAPTURE_SPIRIT",
+   "CLEANSE",
+   "COUNTDOWN",
+   "DANSE_MACABRE",
+   "DEATH_MARCH",
+   "DEATHBRINGER",
+   "DEATHS_DOOR",
+   "DEBILITATE",
+   "DEFILE",
+   "DEFY",
+   "DELAY",
+   "DEMESNE",
+   "DEVOUR_LIFE",
+   "DIRGE",
+   "DRAIN_POWER",
+   "DREDGE",
+   "END_OF_DAYS",
+   "ENFEEBLING_TOUCH",
+   "ERADICATE",
+   "FEAR",
+   "FETCH",
+   "FLATTEN",
+   "FRIENDSHIP",
+   "GRAVE_WARDEN",
+   "GRAVEBLAST",
+   "HANG",
+   "HAUNT",
+   "HIGH_FIVE",
+   "INVOKE",
+   "LETHALITY",
+   "MELANCHOLY",
+   "MISERY",
+   "NECRO_MASTERY",
+   "NEGATIVE_PULSE",
+   "NEUROSURGE",
+   "NO_ESCAPE",
+   "OBLIVION",
+   "PAGESTORM",
+   "PARSE",
+   "POKE",
+   "PULL_AGGRO",
+   "PULL_FROM_BELOW",
+   "PUTREFY",
+   "RATTLE",
+   "REANIMATE",
+   "REAP",
+   "REAPER_FORM",
+   "REAVE",
+   "RIGHT_HAND_HAND",
+   "SACRIFICE",
+   "SCOURGE",
+   "SCULPTING_STRIKE",
+   "SEANCE",
+   "SENTRY_MODE",
+   "SEVERANCE",
+   "SHARED_FATE",
+   "SHROUD",
+   "SIC_EM",
+   "SLEIGHT_OF_FLESH",
+   "SNAP",
+   "SOUL_STORM",
+   "SOW",
+   "SPIRIT_OF_ASH",
+   "SPUR",
+   "SQUEEZE",
+   "THE_SCYTHE",
+   "TIMES_UP",
+   "UNDEATH",
+   "VEILPIERCER",
+   "WISP"
+  ],
+  "cards_drawn_combat": 5,
+  "exact_piles": true,
+  "fully_unlocked_potion_pool": true,
+  "gold": 159,
+  "hopper_master_deck": [
+   [
+    0,
+    [
+     "STRIKE_NECROBINDER",
+     0
+    ]
+   ],
+   [
+    1,
+    [
+     "STRIKE_NECROBINDER",
+     0
+    ]
+   ],
+   [
+    2,
+    [
+     "STRIKE_NECROBINDER",
+     1
+    ]
+   ],
+   [
+    3,
+    [
+     "DEFEND_NECROBINDER",
+     0
+    ]
+   ],
+   [
+    4,
+    [
+     "DEFEND_NECROBINDER",
+     0
+    ]
+   ],
+   [
+    5,
+    [
+     "DEFEND_NECROBINDER",
+     0
+    ]
+   ],
+   [
+    6,
+    [
+     "DEFEND_NECROBINDER",
+     0
+    ]
+   ],
+   [
+    7,
+    [
+     "BODYGUARD",
+     0
+    ]
+   ],
+   [
+    8,
+    [
+     "UNLEASH",
+     0
+    ]
+   ],
+   [
+    9,
+    [
+     "ASCENDERS_BANE",
+     0
+    ]
+   ],
+   [
+    10,
+    [
+     "DEFY",
+     1,
+     [
+      "GLAM",
+      1
+     ]
+    ]
+   ],
+   [
+    11,
+    [
+     "REAP",
+     1
+    ]
+   ],
+   [
+    12,
+    [
+     "NEGATIVE_PULSE",
+     0
+    ]
+   ],
+   [
+    13,
+    [
+     "DEATHBRINGER",
+     1
+    ]
+   ],
+   [
+    14,
+    [
+     "FETCH",
+     0
+    ]
+   ],
+   [
+    15,
+    [
+     "SIC_EM",
+     0
+    ]
+   ],
+   [
+    16,
+    [
+     "BORROWED_TIME",
+     0
+    ]
+   ],
+   [
+    17,
+    [
+     "DEFY",
+     0
+    ]
+   ],
+   [
+    18,
+    [
+     "RIGHT_HAND_HAND",
+     0
+    ]
+   ],
+   [
+    19,
+    [
+     "NEUROSURGE",
+     0
+    ]
+   ],
+   [
+    20,
+    [
+     "FLATTEN",
+     0,
+     null,
+     [],
+     [],
+     null,
+     null,
+     [
+      "PHYSICAL_CARD_STATE",
+      [],
+      0,
+      false,
+      []
+     ]
+    ]
+   ],
+   [
+    21,
+    [
+     "CALL_OF_THE_VOID",
+     0
+    ]
+   ],
+   [
+    22,
+    [
+     "CURSE_OF_THE_BELL",
+     0
+    ]
+   ]
+  ],
+  "hp": 58,
+  "inky_attack_damage": 0,
+  "max_hp": 66,
+  "next_card_uid": 23,
+  "next_creature_uid": 2,
+  "player_phase": 3,
+  "popper": true,
+  "potion_slots": [
+   "FIRE_POTION",
+   null
+  ],
+  "potions": [
+   "FIRE_POTION"
+  ],
+  "ps_strikes": 3,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BOUND_PHYLACTERY",
+   "RELIC.SILKEN_TRESS",
+   "RELIC.PRAYER_WHEEL",
+   "RELIC.FESTIVE_POPPER",
+   "RELIC.CALLING_BELL",
+   "RELIC.TUNGSTEN_ROD",
+   "RELIC.STONE_CRACKER",
+   "RELIC.WHETSTONE"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Necrobinder",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "tungsten_rod": true,
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 7,
+   "words": [
+    14484083546898673630,
+    743850030450126073,
+    15077113807254678004,
+    15225727789051316499
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    10703146565740937350,
+    7821185432054741707,
+    7846572357944381983,
+    986307269693641132
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    14147310306402653265,
+    15894486599397492552,
+    2068296186854249023,
+    8996637425643349394
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    94002974428123138,
+    16298401732593159436,
+    10598336477483012444,
+    9538370430156358854
+   ]
+  },
+  "niche": {
+   "counter": 31,
+   "words": [
+    16366908672633739072,
+    9890912903005239301,
+    5792130580509395855,
+    6639047526218110490
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    12526296316589126756,
+    5969116360367921568,
+    16640469795867144755,
+    12430507181054617208
+   ]
+  },
+  "rng": {
+   "counter": 328,
+   "words": [
+    16041290281944146363,
+    13545304794169937403,
+    17689223043573999468,
+    16240463110070323499
+   ]
+  },
+  "sel": {
+   "counter": 16,
+   "words": [
+    9808796547292272099,
+    7116840483902092070,
+    15830864148896271925,
+    16943863061671145758
+   ]
+  },
+  "targets": {
+   "counter": 0,
+   "words": [
+    14904381352138255440,
+    7413015081927966312,
+    15537063288328393435,
+    12570128300308578131
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

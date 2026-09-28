@@ -1,0 +1,96 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "755088b4861b0623b80ef3401edfe412555eb869d58f4c05704a420c59effa05",
+ "turns": 4,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 0
+  },
+  {
+   "kind": "play",
+   "uid": 2,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 0
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 12
+  },
+  {
+   "kind": "play",
+   "uid": 11,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 9,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 15,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 4,
+   "target": 1
+  },
+  {
+   "kind": "play",
+   "uid": 14,
+   "target": 1
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "play",
+   "uid": 12
+  },
+  {
+   "kind": "play",
+   "uid": 10,
+   "target": 1
+  }
+ ],
+ "step_digests": [
+  "c800c5485353edf6e3f5f6c8aa6f6671e7c68cffc7a5f34b4892364cb1a69b8c",
+  "88d49a4cb706c9fe1c5824f145a2585fd767250a711bc787a912988c7299312e",
+  "f721139a959017a2d7891b97436f98eee6e6781e23a969142d14e649a0e08d98",
+  "ce599d25588c3183d63831b3d17a2829d48fda2b9362c14607de1e106a9eb2fd",
+  "f0d7fac3d5f5749913b9b4e08fe58774810ef31bfb75f416d014248b343bdf92",
+  "db233617792c66b9294324a0069916770441746982204d9463dea9480725cc5e",
+  "b0f224ad3f21712c477644be2ccdeb30700c33b1114be3e396ec1436e672444d",
+  "ae221ee3a1f69e350b9079c6e067f816f128a638a04358c079fa6cafc9a9f5de",
+  "1fbd62d0c72417a8dbc02b00d62509c8187d492975a1b7f0a390d8a25b382a2e",
+  "8261099f33fc7de2f3cfcb05f24133e56abd70f76d89316f7bf5d9ede8af439f",
+  "72ec6ab4931a20c1fd38e28e0e04ac666c810262d460c8afbbfba560a1739e83",
+  "106718f4d55929147620283227242185cf363c4ca99da0d24bcab0ca42313550",
+  "faf4420762363b33a03a152e08b44665f53e889fe7b5ba0b47d389f5a3e544b0",
+  "7841d5aabe98b9f742d9a1de60811affd6c49323af3a0a42886d569960e8ffc9",
+  "edd17873aece98b92c0de2fe9c8f51294d7f27fd19254784689fc3f9ed0c63c6"
+ ],
+ "terminal": {
+  "hp": 16,
+  "turn": 4,
+  "over": true,
+  "won": true
+ }
+}

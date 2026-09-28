@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "AW56G6M5C6C7",
+ "node": 16,
+ "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "a90a30b434f598262a1a5dfd7ce07c946fa926222c7d2b8a38a70780d3015392",
+ "save_sha256": "469423365be8d20d3346f2f3634951a7fbed225799bea99324e87337aedf75c1",
+ "entry_digest": "7c41aef400731c0863db6731c57545483c10b66577239ffded224840c1adbcf8",
+ "checksummed": true
+}

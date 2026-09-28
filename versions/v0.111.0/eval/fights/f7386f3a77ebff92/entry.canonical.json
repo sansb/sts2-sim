@@ -1,0 +1,347 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 171,
+   "kind": "INFESTED_PRISM",
+   "max_hp": 171,
+   "vital": 3
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "UPPERCUT",
+    "uid": 5,
+    "upgrade": 1
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "UPPERCUT",
+    "uid": 7,
+    "upgrade": 1
+   },
+   {
+    "id": "SQUASH",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "FORGOTTEN_RITUAL",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "ARMAMENTS",
+    "uid": 11,
+    "upgrade": 1
+   },
+   {
+    "id": "FORGOTTEN_RITUAL",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "IMPERVIOUS",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "STAMPEDE",
+    "uid": 18,
+    "upgrade": 1
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "BLUDGEON",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "BLOOD_WALL",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "THRASH",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "id": "BULLY",
+    "uid": 24,
+    "upgrade": 1
+   },
+   {
+    "id": "STRIKE_IRONCLAD",
+    "uid": 25,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "id": "POMMEL_STRIKE",
+    "uid": 0,
+    "upgrade": 1
+   },
+   {
+    "id": "BASH",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "HOWL_FROM_BEYOND",
+    "uid": 2,
+    "upgrade": 1
+   },
+   {
+    "id": "TAUNT",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "HEADBUTT",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "block": 10,
+  "cards_drawn_combat": 5,
+  "energy": 4,
+  "entropy_card_pool": "ironclad",
+  "fully_unlocked_potion_pool": true,
+  "gold": 170,
+  "hp": 77,
+  "inky_attack_damage": 0,
+  "lantern": true,
+  "max_hp": 78,
+  "next_card_uid": 26,
+  "paper_phrog": true,
+  "parry_shield": true,
+  "player_phase": 3,
+  "potion_slots": [
+   "FLEX_POTION",
+   "LUCKY_TONIC",
+   "POTION_SHAPED_ROCK",
+   null
+  ],
+  "potions": [
+   "FLEX_POTION",
+   "LUCKY_TONIC",
+   "POTION_SHAPED_ROCK"
+  ],
+  "ps_strikes": 4,
+  "red_skull": true,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD",
+   "RELIC.LEAFY_POULTICE",
+   "RELIC.WHITE_BEAST_STATUE",
+   "RELIC.PARRYING_SHIELD",
+   "RELIC.PLANISPHERE",
+   "RELIC.TOY_BOX",
+   "RELIC.RED_SKULL",
+   "RELIC.PAPER_PHROG",
+   "RELIC.POTION_BELT",
+   "RELIC.LANTERN",
+   "RELIC.ANCHOR",
+   "RELIC.WHETSTONE",
+   "RELIC.PETRIFIED_TOAD"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "EliteEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 19,
+   "words": [
+    7571174930353638782,
+    15347065064171020537,
+    1114596535649220385,
+    15591725228290805835
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    7846663100309110046,
+    15104180786142724939,
+    668249006272362030,
+    12078483381034109144
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    7328048166327753001,
+    18003954477957533074,
+    18120220616389576568,
+    17025360109200309849
+   ]
+  },
+  "generation": {
+   "counter": 1,
+   "words": [
+    12820583183263692057,
+    17369176929086526211,
+    5259103630856049930,
+    3145064850630075338
+   ]
+  },
+  "niche": {
+   "counter": 38,
+   "words": [
+    4690979048134923625,
+    13836900977808623525,
+    1459413119451889628,
+    17383012976109272707
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    8137971950326091042,
+    6313639359540296335,
+    8924234772397491335,
+    28877247029888401
+   ]
+  },
+  "rng": {
+   "counter": 436,
+   "words": [
+    12583924079148229347,
+    4399126245775230601,
+    18069994502359666724,
+    10675178126732037878
+   ]
+  },
+  "sel": {
+   "counter": 8,
+   "words": [
+    11099076298486004446,
+    2009338152341384431,
+    16383884100963179720,
+    12634388401789087599
+   ]
+  },
+  "targets": {
+   "counter": 41,
+   "words": [
+    1253238314564627841,
+    24026002685463742,
+    17724998740133404454,
+    3391831363088172882
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

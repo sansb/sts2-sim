@@ -1,0 +1,14 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MT2A8Y7JG6V5",
+ "node": 16,
+ "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "8b6aeeb4612412e5319cce4d580aac5123a96168ac1a78c37bf8ce1a3acd6977",
+ "save_sha256": "f23be316e686e3a7b5deac858e1dd2fbdf010da0511205ca653ab312ad2e4a00",
+ "entry_digest": "334a0649b32699cc5ca2a8a98b4cde91fec451f690e69181cf6123bc9eb7ae62",
+ "checksummed": true
+}

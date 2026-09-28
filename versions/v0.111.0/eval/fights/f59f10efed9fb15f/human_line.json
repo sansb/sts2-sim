@@ -1,0 +1,46 @@
+{
+ "schema": "sts-eval-human-line-v1",
+ "entry_digest": "6b90d6fb3375d46b1898e2de6c39fa7bce2cec3a118fd875b6c495c7393e7850",
+ "turns": 2,
+ "actions": [
+  {
+   "kind": "play",
+   "uid": 2
+  },
+  {
+   "kind": "play",
+   "uid": 3,
+   "target": 0
+  },
+  {
+   "kind": "play",
+   "uid": 4
+  },
+  {
+   "kind": "end"
+  },
+  {
+   "kind": "potion",
+   "slot": 0
+  },
+  {
+   "kind": "play",
+   "uid": 8,
+   "target": 0
+  }
+ ],
+ "step_digests": [
+  "e0169fb4de4523a3be9b8cb2a62f7879de974ee01bf35cc0d0178fa0fd5e65ff",
+  "51a979671f1156a3b33f29921fbf310423c72f7431cdc72e6d16b15a73044908",
+  "a17ee8be51d21ecc5d3ddb5ab1dc0198e6cedd6a0427f6adefae648c17268b3a",
+  "69ea952a3d9ddbc642a5d31e0c60f5fb03d0e8e19ade44eb1f9bfe570cf6c973",
+  "838e02cd6aaa55e8a345137ba23726c2fc63015068876aa62f55eac2a95c6b64",
+  "ea18bcb159eaafdcb534377ede210a09846034672d7d25a475c751f967f318f1"
+ ],
+ "terminal": {
+  "hp": 30,
+  "turn": 2,
+  "over": true,
+  "won": true
+ }
+}

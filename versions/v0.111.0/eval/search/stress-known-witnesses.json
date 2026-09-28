@@ -1,0 +1,606 @@
+[
+  {
+    "fight_id": "synthetic-insatiable-hp33",
+    "entry_digest": "2de37befc4f12547bbde6ddf28e9b8830e81e89ebb6b556343bc647202b1d386",
+    "source": "uct-2 winning line from original 66 HP root",
+    "actions_completed": 55,
+    "won": true,
+    "final_hp": 22,
+    "final_digest": "ea096ec448923e2a7334ed77bf5ecb56c084f53aad29fe4bd08f8d2a2bb3a193",
+    "actions": [
+      {
+        "kind": "play",
+        "uid": 2
+      },
+      {
+        "kind": "play",
+        "uid": 1
+      },
+      {
+        "kind": "play",
+        "uid": 3
+      },
+      {
+        "kind": "play",
+        "uid": 0
+      },
+      {
+        "kind": "potion",
+        "slot": 0
+      },
+      {
+        "kind": "play",
+        "uid": 5
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      {
+        "kind": "play",
+        "uid": 9
+      },
+      {
+        "kind": "play",
+        "uid": 37
+      },
+      {
+        "kind": "play",
+        "uid": 10
+      },
+      {
+        "kind": "play",
+        "uid": 36
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 6
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 16
+      },
+      {
+        "kind": "play",
+        "uid": 17
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 20
+      },
+      {
+        "kind": "play",
+        "uid": 42
+      },
+      {
+        "kind": "play",
+        "uid": 21
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 28
+      },
+      {
+        "answer": {
+          "index": 13,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      {
+        "kind": "play",
+        "uid": 24
+      },
+      {
+        "kind": "play",
+        "uid": 35
+      },
+      {
+        "kind": "play",
+        "uid": 23
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 30
+      },
+      {
+        "kind": "play",
+        "uid": 25
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 29
+      },
+      {
+        "kind": "play",
+        "uid": 23
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      {
+        "kind": "play",
+        "uid": 5
+      },
+      {
+        "answer": {
+          "index": 0,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 19
+      },
+      {
+        "kind": "play",
+        "uid": 35
+      },
+      {
+        "kind": "play",
+        "uid": 39
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 16
+      },
+      {
+        "kind": "play",
+        "uid": 36
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      {
+        "kind": "play",
+        "uid": 9
+      },
+      {
+        "kind": "play",
+        "uid": 24
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 18
+      },
+      {
+        "kind": "play",
+        "uid": 10
+      },
+      {
+        "kind": "play",
+        "uid": 1
+      },
+      {
+        "kind": "play",
+        "uid": 3
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 6
+      }
+    ],
+    "enemy_hp": 0
+  },
+  {
+    "fight_id": "synthetic-insatiable-hp16",
+    "entry_digest": "e42e65032eea373b3d6e050ca498236da0ba2d35f40e35b946d3bf2d4cfbbbb7",
+    "source": "uct-2 winning line from original 66 HP root",
+    "actions_completed": 55,
+    "won": true,
+    "final_hp": 5,
+    "final_digest": "9260805eaa49c31624b22158c39b119c848fadbd7246187bbe52a93a57463e81",
+    "actions": [
+      {
+        "kind": "play",
+        "uid": 2
+      },
+      {
+        "kind": "play",
+        "uid": 1
+      },
+      {
+        "kind": "play",
+        "uid": 3
+      },
+      {
+        "kind": "play",
+        "uid": 0
+      },
+      {
+        "kind": "potion",
+        "slot": 0
+      },
+      {
+        "kind": "play",
+        "uid": 5
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      {
+        "kind": "play",
+        "uid": 9
+      },
+      {
+        "kind": "play",
+        "uid": 37
+      },
+      {
+        "kind": "play",
+        "uid": 10
+      },
+      {
+        "kind": "play",
+        "uid": 36
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 6
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 16
+      },
+      {
+        "kind": "play",
+        "uid": 17
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 20
+      },
+      {
+        "kind": "play",
+        "uid": 42
+      },
+      {
+        "kind": "play",
+        "uid": 21
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 28
+      },
+      {
+        "answer": {
+          "index": 13,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      {
+        "kind": "play",
+        "uid": 24
+      },
+      {
+        "kind": "play",
+        "uid": 35
+      },
+      {
+        "kind": "play",
+        "uid": 23
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 30
+      },
+      {
+        "kind": "play",
+        "uid": 25
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 29
+      },
+      {
+        "kind": "play",
+        "uid": 23
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      {
+        "kind": "play",
+        "uid": 5
+      },
+      {
+        "answer": {
+          "index": 0,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 19
+      },
+      {
+        "kind": "play",
+        "uid": 35
+      },
+      {
+        "kind": "play",
+        "uid": 39
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 16
+      },
+      {
+        "kind": "play",
+        "uid": 36
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      {
+        "kind": "play",
+        "uid": 9
+      },
+      {
+        "kind": "play",
+        "uid": 24
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 18
+      },
+      {
+        "kind": "play",
+        "uid": 10
+      },
+      {
+        "kind": "play",
+        "uid": 1
+      },
+      {
+        "kind": "play",
+        "uid": 3
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 6
+      }
+    ],
+    "enemy_hp": 0
+  },
+  {
+    "fight_id": "synthetic-insatiable-hp8",
+    "entry_digest": "f4f3e884a1552d50c51cc5094e5c84e363e18f7f94d932d90d71a78c7d8c8f5e",
+    "source": "uct-2 winning line from original 66 HP root",
+    "actions_completed": 29,
+    "won": false,
+    "final_hp": 0,
+    "final_digest": "16ddfb8d5a34c2fada9ecbaadc3076e84034a0f7c46464afa5f8c9e68fadfc90",
+    "actions": [
+      {
+        "kind": "play",
+        "uid": 2
+      },
+      {
+        "kind": "play",
+        "uid": 1
+      },
+      {
+        "kind": "play",
+        "uid": 3
+      },
+      {
+        "kind": "play",
+        "uid": 0
+      },
+      {
+        "kind": "potion",
+        "slot": 0
+      },
+      {
+        "kind": "play",
+        "uid": 5
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 7
+      },
+      {
+        "kind": "play",
+        "uid": 9
+      },
+      {
+        "kind": "play",
+        "uid": 37
+      },
+      {
+        "kind": "play",
+        "uid": 10
+      },
+      {
+        "kind": "play",
+        "uid": 36
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 6
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 16
+      },
+      {
+        "kind": "play",
+        "uid": 17
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 15
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 20
+      },
+      {
+        "kind": "play",
+        "uid": 42
+      },
+      {
+        "kind": "play",
+        "uid": 21
+      },
+      {
+        "kind": "end"
+      },
+      {
+        "kind": "play",
+        "uid": 28
+      },
+      {
+        "answer": {
+          "index": 13,
+          "kind": "option_index"
+        },
+        "kind": "select"
+      },
+      {
+        "kind": "play",
+        "uid": 24
+      },
+      {
+        "kind": "play",
+        "uid": 35
+      },
+      {
+        "kind": "play",
+        "uid": 23
+      },
+      {
+        "kind": "play",
+        "target": 0,
+        "uid": 27
+      },
+      {
+        "kind": "end"
+      }
+    ],
+    "enemy_hp": 264
+  }
+]
