@@ -59,7 +59,7 @@ pub struct Slot<K> {
 /// lookup is `O(log n)` and equality of two slot sets is a plain vector
 /// comparison (no set semantics, no hashing, no iteration-order leak into a
 /// digest).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Slots<K>(Arc<Vec<Slot<K>>>);
 
 impl<K> Default for Slots<K> {

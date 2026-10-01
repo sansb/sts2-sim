@@ -253,10 +253,22 @@ impl CanonicalStateV2 {
 
     /// The exact wire bytes: sorted keys, compact separators, UTF-8.
     ///
-    /// Routed through [`serde_json::Value`] so key order comes from
-    /// `serde_json::Map`'s `BTreeMap` rather than from struct declaration
-    /// order — the digest cannot drift when a field is added or moved.
+    /// Key order comes from sorting, never from struct declaration order, so
+    /// the digest cannot drift when a field is added or moved. The bytes are
+    /// those of routing through [`serde_json::Value`] (`serde_json::Map` is a
+    /// `BTreeMap`); [`sorted_json`] writes them without building that tree,
+    /// and falls back to it for a shape it does not write (#3420).
     pub fn canonical_json(&self) -> String {
+        let Ok(bytes) = sorted_json::to_vec(self) else {
+            return self.canonical_json_via_value();
+        };
+        let json = String::from_utf8(bytes).expect("serde_json writes UTF-8");
+        debug_assert_eq!(json, self.canonical_json_via_value());
+        json
+    }
+
+    /// The reference route: build the [`Value`] tree, then write it.
+    fn canonical_json_via_value(&self) -> String {
         let value = serde_json::to_value(self).expect("canonical state serializes");
         serde_json::to_string(&value).expect("canonical value serializes")
     }
@@ -269,6 +281,516 @@ impl CanonicalStateV2 {
 
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+/// A JSON writer that sorts every object's keys, producing the bytes of
+/// `serde_json::to_string(&serde_json::to_value(value)?)` without building
+/// (and then dropping) the intermediate [`Value`] tree (#3420).
+///
+/// Equivalence, by construction:
+///
+/// * Objects (structs, maps, and every variant wrapper) sort their keys
+///   bytewise, which is `serde_json::Map`'s `BTreeMap<String, _>` order, and a
+///   repeated key keeps its last value, as `Map::insert` does.
+/// * Integers, booleans, strings, units and `None` are written by serde_json's
+///   own serializer, the same formatter the `Value` route ends in. Floats,
+///   `char`, bytes and 128-bit integers take the `Value` route per leaf.
+/// * serde_json's private `Number` token (this crate enables
+///   `arbitrary_precision`) is written raw, as `Value::Number` is.
+///
+/// Any other shape (a non-string map key, another private serde_json token)
+/// is an error, and [`CanonicalStateV2::canonical_json`] falls back to the
+/// `Value` route for the whole document.
+///
+/// Entries are written in arrival order, key included. An object whose keys
+/// arrived strictly ascending (every `BTreeMap` and `serde_json::Map`) is
+/// already canonical; any other is reordered on close through one scratch
+/// buffer and one entry stack shared by the whole document, which is sound
+/// because a nested object always closes before its parent's next entry.
+mod sorted_json {
+    use serde::ser::{self, Serialize};
+    use serde_json::{Error, Value};
+
+    const NUMBER_TOKEN: &str = "$serde_json::private::Number";
+    const PRIVATE_PREFIX: &str = "$serde_json::private::";
+
+    pub(super) fn to_vec<T: Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, Error> {
+        let mut ctx = Ctx {
+            out: Vec::with_capacity(8192),
+            scratch: Vec::new(),
+            entries: Vec::new(),
+        };
+        value.serialize(Sorted { ctx: &mut ctx })?;
+        Ok(ctx.out)
+    }
+
+    struct Ctx {
+        out: Vec<u8>,
+        scratch: Vec<u8>,
+        /// Open objects' entries, innermost last.
+        entries: Vec<Entry>,
+    }
+
+    /// One written `"key":value`, as a byte range of `Ctx::out`.
+    struct Entry {
+        key: Key,
+        start: usize,
+        end: usize,
+    }
+
+    enum Key {
+        Static(&'static str),
+        Owned(String),
+    }
+
+    impl Key {
+        fn as_str(&self) -> &str {
+            match self {
+                Key::Static(key) => key,
+                Key::Owned(key) => key,
+            }
+        }
+    }
+
+    fn direct<T: Serialize + ?Sized>(out: &mut Vec<u8>, value: &T) -> Result<(), Error> {
+        serde_json::to_writer(out, value)
+    }
+
+    fn via_value<T: Serialize + ?Sized>(out: &mut Vec<u8>, value: &T) -> Result<(), Error> {
+        serde_json::to_writer(out, &serde_json::to_value(value)?)
+    }
+
+    fn unsupported(what: &str) -> Error {
+        ser::Error::custom(format!("sorted_json: unsupported {what}"))
+    }
+
+    struct Sorted<'a> {
+        ctx: &'a mut Ctx,
+    }
+
+    impl Sorted<'_> {
+        /// `{"variant":` — the single-key object serde_json wraps a
+        /// non-unit variant in; the caller closes it.
+        fn open_variant(&mut self, variant: &'static str) -> Result<(), Error> {
+            self.ctx.out.push(b'{');
+            direct(&mut self.ctx.out, variant)?;
+            self.ctx.out.push(b':');
+            Ok(())
+        }
+    }
+
+    impl<'a> ser::Serializer for Sorted<'a> {
+        type Ok = ();
+        type Error = Error;
+        type SerializeSeq = Seq<'a>;
+        type SerializeTuple = Seq<'a>;
+        type SerializeTupleStruct = Seq<'a>;
+        type SerializeTupleVariant = Seq<'a>;
+        type SerializeMap = Object<'a>;
+        type SerializeStruct = Object<'a>;
+        type SerializeStructVariant = Object<'a>;
+
+        fn serialize_bool(self, v: bool) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_i8(self, v: i8) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_i16(self, v: i16) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_i32(self, v: i32) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_i64(self, v: i64) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_i128(self, v: i128) -> Result<(), Error> {
+            via_value(&mut self.ctx.out, &v)
+        }
+        fn serialize_u8(self, v: u8) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_u16(self, v: u16) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_u32(self, v: u32) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_u64(self, v: u64) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &v)
+        }
+        fn serialize_u128(self, v: u128) -> Result<(), Error> {
+            via_value(&mut self.ctx.out, &v)
+        }
+        fn serialize_f32(self, v: f32) -> Result<(), Error> {
+            via_value(&mut self.ctx.out, &v)
+        }
+        fn serialize_f64(self, v: f64) -> Result<(), Error> {
+            via_value(&mut self.ctx.out, &v)
+        }
+        fn serialize_char(self, v: char) -> Result<(), Error> {
+            via_value(&mut self.ctx.out, &v)
+        }
+        fn serialize_str(self, v: &str) -> Result<(), Error> {
+            direct(&mut self.ctx.out, v)
+        }
+        fn serialize_bytes(self, v: &[u8]) -> Result<(), Error> {
+            via_value(&mut self.ctx.out, v)
+        }
+        fn serialize_none(self) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &())
+        }
+        fn serialize_some<T: Serialize + ?Sized>(self, value: &T) -> Result<(), Error> {
+            value.serialize(self)
+        }
+        fn serialize_unit(self) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &())
+        }
+        fn serialize_unit_struct(self, _name: &'static str) -> Result<(), Error> {
+            direct(&mut self.ctx.out, &())
+        }
+        fn serialize_unit_variant(
+            self,
+            _name: &'static str,
+            _index: u32,
+            variant: &'static str,
+        ) -> Result<(), Error> {
+            direct(&mut self.ctx.out, variant)
+        }
+        fn serialize_newtype_struct<T: Serialize + ?Sized>(
+            self,
+            name: &'static str,
+            value: &T,
+        ) -> Result<(), Error> {
+            if name.starts_with(PRIVATE_PREFIX) {
+                return Err(unsupported(name));
+            }
+            value.serialize(self)
+        }
+        fn serialize_newtype_variant<T: Serialize + ?Sized>(
+            mut self,
+            _name: &'static str,
+            _index: u32,
+            variant: &'static str,
+            value: &T,
+        ) -> Result<(), Error> {
+            self.open_variant(variant)?;
+            value.serialize(Sorted {
+                ctx: &mut *self.ctx,
+            })?;
+            self.ctx.out.push(b'}');
+            Ok(())
+        }
+        fn serialize_seq(self, _len: Option<usize>) -> Result<Seq<'a>, Error> {
+            Ok(Seq::open(self.ctx, false))
+        }
+        fn serialize_tuple(self, _len: usize) -> Result<Seq<'a>, Error> {
+            Ok(Seq::open(self.ctx, false))
+        }
+        fn serialize_tuple_struct(
+            self,
+            _name: &'static str,
+            _len: usize,
+        ) -> Result<Seq<'a>, Error> {
+            Ok(Seq::open(self.ctx, false))
+        }
+        fn serialize_tuple_variant(
+            mut self,
+            _name: &'static str,
+            _index: u32,
+            variant: &'static str,
+            _len: usize,
+        ) -> Result<Seq<'a>, Error> {
+            self.open_variant(variant)?;
+            Ok(Seq::open(self.ctx, true))
+        }
+        fn serialize_map(self, _len: Option<usize>) -> Result<Object<'a>, Error> {
+            Ok(Object::open(self.ctx, Mode::Object))
+        }
+        fn serialize_struct(self, name: &'static str, _len: usize) -> Result<Object<'a>, Error> {
+            if name == NUMBER_TOKEN {
+                return Ok(Object::open(self.ctx, Mode::Number));
+            }
+            if name.starts_with(PRIVATE_PREFIX) {
+                return Err(unsupported(name));
+            }
+            Ok(Object::open(self.ctx, Mode::Object))
+        }
+        fn serialize_struct_variant(
+            mut self,
+            _name: &'static str,
+            _index: u32,
+            variant: &'static str,
+            _len: usize,
+        ) -> Result<Object<'a>, Error> {
+            self.open_variant(variant)?;
+            Ok(Object::open(self.ctx, Mode::VariantObject))
+        }
+    }
+
+    struct Seq<'a> {
+        ctx: &'a mut Ctx,
+        first: bool,
+        variant: bool,
+    }
+
+    impl<'a> Seq<'a> {
+        fn open(ctx: &'a mut Ctx, variant: bool) -> Self {
+            ctx.out.push(b'[');
+            Self {
+                ctx,
+                first: true,
+                variant,
+            }
+        }
+
+        fn element<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), Error> {
+            if !self.first {
+                self.ctx.out.push(b',');
+            }
+            self.first = false;
+            value.serialize(Sorted {
+                ctx: &mut *self.ctx,
+            })
+        }
+
+        fn close(self) -> Result<(), Error> {
+            self.ctx.out.push(b']');
+            if self.variant {
+                self.ctx.out.push(b'}');
+            }
+            Ok(())
+        }
+    }
+
+    impl ser::SerializeSeq for Seq<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_element<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), Error> {
+            self.element(value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.close()
+        }
+    }
+
+    impl ser::SerializeTuple for Seq<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_element<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), Error> {
+            self.element(value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.close()
+        }
+    }
+
+    impl ser::SerializeTupleStruct for Seq<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_field<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), Error> {
+            self.element(value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.close()
+        }
+    }
+
+    impl ser::SerializeTupleVariant for Seq<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_field<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), Error> {
+            self.element(value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.close()
+        }
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Mode {
+        Object,
+        /// A struct variant: close the `{"variant":` wrapper too.
+        VariantObject,
+        /// serde_json's `Number`: one field holding the digits, written raw.
+        Number,
+    }
+
+    struct Object<'a> {
+        ctx: &'a mut Ctx,
+        /// Offset of this object's `{` in `Ctx::out`.
+        base: usize,
+        /// This object's first entry in `Ctx::entries`.
+        first_entry: usize,
+        /// Every key so far arrived strictly after its predecessor.
+        ascending: bool,
+        mode: Mode,
+        pending_key: Option<String>,
+        number_fields: usize,
+    }
+
+    impl<'a> Object<'a> {
+        fn open(ctx: &'a mut Ctx, mode: Mode) -> Self {
+            let base = ctx.out.len();
+            if mode != Mode::Number {
+                ctx.out.push(b'{');
+            }
+            let first_entry = ctx.entries.len();
+            Self {
+                ctx,
+                base,
+                first_entry,
+                ascending: true,
+                mode,
+                pending_key: None,
+                number_fields: 0,
+            }
+        }
+
+        fn entry<T: Serialize + ?Sized>(&mut self, key: Key, value: &T) -> Result<(), Error> {
+            let previous = self.ctx.entries[self.first_entry..].last();
+            if let Some(previous) = previous {
+                if previous.key.as_str() >= key.as_str() {
+                    self.ascending = false;
+                }
+                self.ctx.out.push(b',');
+            }
+            let start = self.ctx.out.len();
+            direct(&mut self.ctx.out, key.as_str())?;
+            self.ctx.out.push(b':');
+            value.serialize(Sorted {
+                ctx: &mut *self.ctx,
+            })?;
+            let end = self.ctx.out.len();
+            self.ctx.entries.push(Entry { key, start, end });
+            Ok(())
+        }
+
+        fn field<T: Serialize + ?Sized>(
+            &mut self,
+            key: &'static str,
+            value: &T,
+        ) -> Result<(), Error> {
+            if self.mode == Mode::Number {
+                if key != NUMBER_TOKEN || self.number_fields != 0 {
+                    return Err(unsupported("Number shape"));
+                }
+                let Value::String(digits) = serde_json::to_value(value)? else {
+                    return Err(unsupported("Number digits"));
+                };
+                self.ctx.out.extend_from_slice(digits.as_bytes());
+                self.number_fields += 1;
+                return Ok(());
+            }
+            self.entry(Key::Static(key), value)
+        }
+
+        fn finish(self) -> Result<(), Error> {
+            let Object {
+                ctx,
+                base,
+                first_entry,
+                ascending,
+                mode,
+                number_fields,
+                ..
+            } = self;
+            if mode == Mode::Number {
+                return if number_fields == 1 {
+                    Ok(())
+                } else {
+                    Err(unsupported("Number shape"))
+                };
+            }
+            if !ascending {
+                let Ctx {
+                    out,
+                    scratch,
+                    entries,
+                } = ctx;
+                let body = base + 1;
+                scratch.clear();
+                scratch.extend_from_slice(&out[body..]);
+                out.truncate(body);
+                let entries = &mut entries[first_entry..];
+                // Stable, so equal keys stay in arrival order and the last wins.
+                entries.sort_by(|left, right| left.key.as_str().cmp(right.key.as_str()));
+                let mut first = true;
+                for (index, entry) in entries.iter().enumerate() {
+                    if entries
+                        .get(index + 1)
+                        .is_some_and(|next| next.key.as_str() == entry.key.as_str())
+                    {
+                        continue;
+                    }
+                    if !first {
+                        out.push(b',');
+                    }
+                    first = false;
+                    out.extend_from_slice(&scratch[entry.start - body..entry.end - body]);
+                }
+            }
+            ctx.entries.truncate(first_entry);
+            ctx.out.push(b'}');
+            if mode == Mode::VariantObject {
+                ctx.out.push(b'}');
+            }
+            Ok(())
+        }
+    }
+
+    impl ser::SerializeMap for Object<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_key<T: Serialize + ?Sized>(&mut self, key: &T) -> Result<(), Error> {
+            let Value::String(key) = serde_json::to_value(key)? else {
+                return Err(unsupported("non-string map key"));
+            };
+            self.pending_key = Some(key);
+            Ok(())
+        }
+        fn serialize_value<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), Error> {
+            let key = self
+                .pending_key
+                .take()
+                .ok_or_else(|| unsupported("map value without a key"))?;
+            self.entry(Key::Owned(key), value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.finish()
+        }
+    }
+
+    impl ser::SerializeStruct for Object<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_field<T: Serialize + ?Sized>(
+            &mut self,
+            key: &'static str,
+            value: &T,
+        ) -> Result<(), Error> {
+            self.field(key, value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.finish()
+        }
+    }
+
+    impl ser::SerializeStructVariant for Object<'_> {
+        type Ok = ();
+        type Error = Error;
+        fn serialize_field<T: Serialize + ?Sized>(
+            &mut self,
+            key: &'static str,
+            value: &T,
+        ) -> Result<(), Error> {
+            self.field(key, value)
+        }
+        fn end(self) -> Result<(), Error> {
+            self.finish()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -287,6 +809,142 @@ mod tests {
 
     fn fixture() -> CanonicalStateV2 {
         serde_json::from_str(FIXTURE).expect("fixture parses as canonical v2")
+    }
+
+    /// `sorted_json` against the `Value` route it replaces (#3420), over
+    /// every shape it writes: arrival order sorted and unsorted, duplicate
+    /// keys, each variant kind, the leaves it hands to serde_json, and keys
+    /// whose byte order differs from their escaped form.
+    #[test]
+    fn sorted_json_writes_the_value_route_bytes_for_every_shape() {
+        use serde::ser::{SerializeMap, Serializer};
+        use std::collections::HashMap;
+
+        fn value_route<T: Serialize + ?Sized>(value: &T) -> Vec<u8> {
+            serde_json::to_vec(&serde_json::to_value(value).unwrap()).unwrap()
+        }
+        fn check<T: Serialize + ?Sized>(label: &str, value: &T) {
+            let sorted = sorted_json::to_vec(value).expect(label);
+            assert_eq!(
+                String::from_utf8(sorted).unwrap(),
+                String::from_utf8(value_route(value)).unwrap(),
+                "{label}"
+            );
+        }
+
+        #[derive(Serialize)]
+        struct Unit;
+        #[derive(Serialize)]
+        struct Newtype(i32);
+        #[derive(Serialize)]
+        struct Pair(u8, &'static str);
+        #[derive(Serialize)]
+        enum Shape {
+            Unit,
+            Newtype(Vec<i8>),
+            Tuple(i32, Option<bool>),
+            Struct { zeta: u16, alpha: Option<u16> },
+        }
+        #[derive(Serialize)]
+        struct Leaves {
+            zulu: f64,
+            yankee: f32,
+            xray: i128,
+            whiskey: u128,
+            victor: char,
+            uniform: Unit,
+            tango: Newtype,
+            sierra: Pair,
+            romeo: (i64, u64),
+            quebec: Option<String>,
+            papa: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            oscar: Option<u8>,
+            november: Vec<Shape>,
+            mike: Vec<Value>,
+        }
+        /// A map that repeats a key: `Map::insert` keeps the last value.
+        struct Repeats;
+        impl Serialize for Repeats {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                let mut map = serializer.serialize_map(None)?;
+                map.serialize_entry("b", &1)?;
+                map.serialize_entry("a", &2)?;
+                map.serialize_entry("b", &3)?;
+                map.serialize_entry("a", &4)?;
+                map.serialize_entry("c", &5)?;
+                map.end()
+            }
+        }
+
+        let leaves = Leaves {
+            zulu: -0.1,
+            yankee: 1.1,
+            xray: i128::MIN,
+            whiskey: u128::MAX,
+            victor: '"',
+            uniform: Unit,
+            tango: Newtype(-7),
+            sierra: Pair(255, "tab\there"),
+            romeo: (i64::MIN, u64::MAX),
+            quebec: Some("é\u{1F600}\\".to_owned()),
+            papa: None,
+            oscar: None,
+            november: vec![
+                Shape::Unit,
+                Shape::Newtype(vec![-1, 0, 1]),
+                Shape::Tuple(3, None),
+                Shape::Struct {
+                    zeta: 2,
+                    alpha: Some(1),
+                },
+            ],
+            mike: vec![
+                serde_json::json!({"z": [1, -2, 3.5, 1e300, 18446744073709551615u64], "a": {"y": null, "b": true}}),
+                serde_json::json!([]),
+                serde_json::json!({}),
+            ],
+        };
+        check("leaves and variants", &leaves);
+        check("nested Value", &leaves.mike);
+        check("repeated keys", &Repeats);
+
+        // Unsorted arrival, and keys whose raw byte order is not the order of
+        // their escaped JSON (`"` escapes to `\"`, above `A`; `é` sorts after
+        // every ASCII key).
+        let mut keys = HashMap::new();
+        for (index, key) in ["zebra", "\"quote", "A", "é", "a\u{0}", "a", "", "\\", "Z"]
+            .into_iter()
+            .enumerate()
+        {
+            keys.insert(key.to_owned(), vec![index; index % 3]);
+        }
+        check("unsorted string keys", &keys);
+        let sorted: BTreeMap<String, Vec<usize>> = keys.clone().into_iter().collect();
+        check("sorted string keys", &sorted);
+        check(
+            "map in a variant in a map",
+            &BTreeMap::from([(
+                "k",
+                Shape::Struct {
+                    zeta: 9,
+                    alpha: None,
+                },
+            )]),
+        );
+        check(
+            "empty containers",
+            &(Vec::<u8>::new(), BTreeMap::<String, u8>::new()),
+        );
+
+        // A shape it does not write is an error, so `canonical_json` falls
+        // back to the `Value` route rather than guessing.
+        let numeric_keys = BTreeMap::from([(10_u32, "ten"), (2, "two")]);
+        assert!(sorted_json::to_vec(&numeric_keys).is_err());
+        assert_eq!(
+            serde_json::to_string(&serde_json::to_value(&numeric_keys).unwrap()).unwrap(),
+            r#"{"10":"ten","2":"two"}"#
+        );
     }
 
     #[test]

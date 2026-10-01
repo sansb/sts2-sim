@@ -1377,9 +1377,11 @@ pub(crate) fn free_power(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// order between the two, so either application refuses while the other is
 /// live ([`borrowed_time`] is the other half). The third early listener that
 /// reads a Power card, `SpikedGauntlets::TryModifyEnergyCostInCombat` RVA
-/// `0x9bd30` (`+1` on the owner's Power cards, IL_0022-IL_0039), has no term
-/// in this crate's cost fold at all, so a Curious application refuses
-/// outright beside the relic rather than folding against a missing term.
+/// `0x9bd30` (`+1` on the owner's Power cards, IL_0022-IL_0039), is a relic:
+/// `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720` lists a
+/// creature's powers (IL_0092) before its player's relics (IL_00c9), so the
+/// relic always follows Curious and the pair folds in that fixed order
+/// (#3437, `engine::play::spiked_gauntlets_surcharged_energy_cost`).
 pub(crate) fn mad_science_curious(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if !crate::catalog::is_mad_science_variant_program(ctx.spec, "Curious")
         || ctx.target.is_some()
@@ -1388,21 +1390,12 @@ pub(crate) fn mad_science_curious(ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
     {
         return Err(EngineRefusal::MalformedArgs("mad_science_curious"));
     }
-    if !crate::engine::damage::damage_combat_is_ending(ctx.state) {
-        if ctx.state.powers.value(PowerId::BorrowedTime) > 0 {
-            return Err(EngineRefusal::MalformedArgs(
-                "Curious beside Borrowed Time energy-cost listener order",
-            ));
-        }
-        if ctx
-            .catalog
-            .hooks()
-            .owns(crate::ids::RelicId::RelicSpikedGauntlets)
-        {
-            return Err(EngineRefusal::MalformedArgs(
-                "Curious beside Spiked Gauntlets energy-cost listener",
-            ));
-        }
+    if !crate::engine::damage::damage_combat_is_ending(ctx.state)
+        && ctx.state.powers.value(PowerId::BorrowedTime) > 0
+    {
+        return Err(EngineRefusal::MalformedArgs(
+            "Curious beside Borrowed Time energy-cost listener order",
+        ));
     }
     apply_exact_player_power(
         ctx,
@@ -1649,6 +1642,11 @@ pub(crate) fn juggernaut(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Python: `_run_steps_inner` (frozen, deleted #2827) — the same target-identity re-validation
 /// as `debilitate`; its Knockdown arm calls
 /// `_apply_knockdown_debuff` only for that same still-living creature.
+///
+/// `Knockdown/<OnPlay>d__5` RVA `0x3a8adc` awaits `PowerCmd.Apply<KnockdownPower>`
+/// after its attack (IL_010d). `<Apply>d__1`1` (`0x3ef988`) returns at
+/// `IsEnding` (IL_0025-002a); `apply_card_knockdown` still reads `history.over`,
+/// so this body tests the shared IsEnding projection (#3515).
 pub(crate) fn knockdown(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (expected_attack, expected_power) = match ctx.spec.identity.upgrade {
         0 => (10, 2),
@@ -1695,7 +1693,7 @@ pub(crate) fn knockdown(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
             "Knockdown distinct-instance state",
         ));
     }
-    if ctx.state.history.over || monster.hp <= 0 {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) || monster.hp <= 0 {
         return Ok(());
     }
     if post_attack_stock_target_identity_is_unrepresentable(ctx.state) {
@@ -2479,6 +2477,8 @@ fn exact_sentry_mode_leaf(catalog: &Catalog) -> Result<CardIdentity, EngineRefus
     Ok(identity)
 }
 
+/// v0.111.0 `SentryMode/<OnPlay>` RVA `0x3b9bf4` awaits `PowerCmd.Apply<SentryModePower>` at IL_00d1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 fn apply_sentry_mode_foundation(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let exact_row =
         crate::content_tables::card_row(ctx.spec.identity.id, ctx.spec.identity.upgrade)
@@ -2557,7 +2557,7 @@ fn apply_sentry_mode_foundation(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
     }
 
     fn apply(state: &mut HotState, events: &mut Vec<Event>) -> Result<(), EngineRefusal> {
-        if state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(state) {
             return Ok(());
         }
         let old = state.powers.value(PowerId::SentryMode);
@@ -2920,6 +2920,10 @@ pub(crate) fn stratagem(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Stock-bearing Axebot replaces the target with a fresh Creature; the Apply
 /// still addresses the dead original and grants nothing
 /// ([`stock_replaced_target_is_current`], #3326).
+///
+/// The `+1` is `PowerCmd.Apply<StrengthPower>` at IL_01b9, and `<Apply>d__1`1`
+/// (`0x3ef988`) returns at `IsEnding` (IL_0025-002a): the gate is the shared
+/// IsEnding projection, not `history.over` (#3515).
 pub(crate) fn strength_enemy(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if !matches!(
         (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args),
@@ -2941,7 +2945,7 @@ pub(crate) fn strength_enemy(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
     let Some(monster) = ctx.state.monsters.get(target) else {
         return Err(EngineRefusal::TargetMismatch { required: true });
     };
-    if ctx.state.history.over || monster.hp <= 0 {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) || monster.hp <= 0 {
         return Ok(());
     }
     let updated =
@@ -3283,6 +3287,9 @@ pub(crate) fn thorns(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Python: `_run_steps_inner` (frozen, deleted #2827) — validates the stored and applied amounts
 /// (malformed values refuse), then an over-gated additive stack.
 ///
+///
+/// v0.111.0 `Tracking/<OnPlay>` RVA `0x3c42c0` awaits `PowerCmd.Apply<TrackingPower>` at IL_00c3.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn tracking(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let allowed = [(CardId::Tracking, 0, 50), (CardId::Tracking, 1, 50)];
     let amount = match ctx.args {
@@ -3293,7 +3300,7 @@ pub(crate) fn tracking(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         }
         _ => return Err(EngineRefusal::MalformedArgs("tracking")),
     };
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let amount: i32 = amount
@@ -4357,6 +4364,10 @@ mod tests {
         builder.intern_monster(MonsterKind::Toadpole).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.next_card_uid = 100;
         state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
@@ -4886,9 +4897,8 @@ mod tests {
                 .fanouts
                 .set_after_block_gained_order(&[PowerId::Juggernaut])
         );
-        state
-            .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 1));
+        // The fixture's live enemy drops to 1 HP so the earlier peer kills it.
+        state.monsters_mut()[0].hp = 1;
 
         crate::engine::cards::inject_generated_bottom(
             &mut state,
@@ -7085,8 +7095,8 @@ mod tests {
     /// #3427 witness: Mad Science's Curious rider applies CuriousPower
     /// `CuriousReduction` (1 at both levels) and stacks it (Counter); it
     /// writes nothing while combat is ending; it refuses by name beside a
-    /// live Borrowed Time or an owned Spiked Gauntlets, and for any spec that
-    /// is not the generated Curious row.
+    /// live Borrowed Time and for any spec that is not the generated Curious
+    /// row; beside an owned Spiked Gauntlets it applies (#3437).
     #[test]
     fn mad_science_curious_applies_and_stacks_curious_power_or_refuses_by_name() {
         for upgrade in [0, 1] {
@@ -7152,11 +7162,11 @@ mod tests {
             );
             assert_eq!(borrowed, before);
 
-            // Spiked Gauntlets' Power-card surcharge has no fold term.
+            // #3437: Spiked Gauntlets is a relic, so it always folds after
+            // Curious; the application proceeds beside it.
             let (catalog, spec, args, atom) =
                 curious_mad_science(upgrade, &[crate::ids::RelicId::RelicSpikedGauntlets]);
             let mut gauntlets = curious_fixture(atom, 99);
-            let before = gauntlets.clone();
             let (result, _) = apply_power_row(
                 &mut gauntlets,
                 &catalog,
@@ -7165,13 +7175,8 @@ mod tests {
                 &args,
                 None,
             );
-            assert_eq!(
-                result,
-                Err(EngineRefusal::MalformedArgs(
-                    "Curious beside Spiked Gauntlets energy-cost listener"
-                ))
-            );
-            assert_eq!(gauntlets, before);
+            assert_eq!(result, Ok(()));
+            assert_eq!(gauntlets.powers.value(PowerId::Curious), 1);
         }
 
         // Any other program refuses: an Expertise Mad Science, a Synthesis.
@@ -7283,5 +7288,47 @@ mod tests {
         );
         assert_eq!(result, Ok(()));
         assert_eq!(ending, before);
+    }
+
+    /// #3515: Knockdown, Fight Me's enemy `+1`, Tracking and Sentry Mode each
+    /// await one `PowerCmd.Apply`, which returns at `IsEnding`
+    /// (`<Apply>d__1`1` 0x3ef988 IL_0025). Their writers used to read
+    /// `history.over`; while the combat is ending before the over latch each
+    /// body is a no-op, and the Adaptable-vetoed control writes.
+    #[test]
+    fn template_power_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        let rows: [(StepKind, CardId, &[CompiledArg], bool); 3] = [
+            (
+                StepKind::Knockdown,
+                CardId::Knockdown,
+                &[CompiledArg::I(2)],
+                true,
+            ),
+            (
+                StepKind::StrengthEnemy,
+                CardId::FightMe,
+                &[CompiledArg::I(1)],
+                true,
+            ),
+            (
+                StepKind::Tracking,
+                CardId::Tracking,
+                &[CompiledArg::I(50)],
+                false,
+            ),
+        ];
+        for (kind, id, args, targeted) in rows {
+            crate::engine::damage::assert_ending_window_gate(
+                &template,
+                &format!("{id:?}"),
+                |s, t| run_card(kind, id, 0, s, targeted.then_some(t), args, &mut Vec::new()),
+            );
+        }
+        let (template, catalog) = sentry_mode_fixture(0);
+        crate::engine::damage::assert_ending_window_gate(&template, "Sentry Mode", |s, _| {
+            apply_sentry_fixture(s, &catalog, 0, &mut Vec::new())
+        });
     }
 }

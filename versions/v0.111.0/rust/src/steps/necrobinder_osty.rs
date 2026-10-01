@@ -58,6 +58,11 @@ pub const IMPLEMENTED: &[StepKind] = &[
 ///
 /// The dedicated pet command preserves dealer provenance; it does not route
 /// through the owner's ordinary player-card attack entry point.
+///
+/// Fetch's draw is `CardPileCmd.Draw` (`Fetch/<OnPlay>d__9` `0x39de84` IL_0120).
+/// `<DrawInternal>d__21` (`0x3e3a70`) returns at `IsOverOrEnding` at entry
+/// (IL_0029-003b), so the Draw tests the shared IsOverOrEnding projection, not
+/// `history.over` (#3515).
 pub(crate) fn osty_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let exact = matches!(
         (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args),
@@ -296,7 +301,9 @@ pub(crate) fn osty_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
             let cards =
                 usize::try_from(*cards).map_err(|_| EngineRefusal::MalformedArgs("fetch cards"))?;
             player_pet_attack_from_card(ctx.state, source, &[target], *base, 1, ctx.events)?;
-            if !ctx.state.history.over && !ctx.state.fanouts.fetch_finished(ctx.source_uid) {
+            if !crate::engine::damage::damage_combat_is_ending(ctx.state)
+                && !ctx.state.fanouts.fetch_finished(ctx.source_uid)
+            {
                 crate::engine::play::draw_cardplay_no_result(ctx, cards)?;
             }
             Ok(())
@@ -876,6 +883,10 @@ mod tests {
     #[test]
     fn sacrifice_freezes_max_hp_kills_then_gains_powered_block() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.fanouts.set_osty(Some((4, 7))).unwrap();
         execute(&mut state, CardId::Sacrifice, 0, None).unwrap();
@@ -883,6 +894,11 @@ mod tests {
         assert_eq!(state.block, 21);
 
         let mut missing = HotState::at_defaults();
+
+        missing.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         missing.hp = 50;
         let before = missing.clone();
         assert!(
@@ -922,5 +938,30 @@ mod tests {
         unleash.fanouts.set_osty(Some((4, 7))).unwrap();
         execute(&mut unleash, CardId::Unleash, 0, Some(0)).unwrap();
         assert_eq!(unleash.monsters[0].hp, 40, "6 + live current HP 4");
+    }
+
+    /// #3515: Fetch's draw is `CardPileCmd.Draw` (`0x39de84` IL_0120), whose
+    /// `<DrawInternal>d__21` (0x3e3a70 IL_002e) returns at `IsOverOrEnding`.
+    /// While the combat is ending before the over latch Osty's attack and the
+    /// draw are both no-ops; the Adaptable-vetoed control attacks and draws.
+    #[test]
+    fn fetch_draws_nothing_while_combat_is_ending_before_the_over_latch() {
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.fanouts.set_osty(Some((5, 5))).unwrap();
+        for uid in 20..22 {
+            template
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .push(HotCard {
+                    uid,
+                    atom: 0,
+                    flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                });
+        }
+        crate::engine::damage::assert_ending_window_gate(&template, "Fetch", |s, t| {
+            execute(s, CardId::Fetch, 0, Some(t)).map(|_| ())
+        });
     }
 }

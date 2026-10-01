@@ -96,6 +96,23 @@ pub(crate) fn gain_energy(
     Ok(())
 }
 
+/// `PowerCmd.Apply<T>` returns at entry on `CombatManager.IsEnding`:
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (v0.111.0 RVA `0x3ef988`) IL_0020-0034,
+/// before `CanReceivePowers` (IL_0039) and any stacking; the multi-target
+/// overload `<Apply>d__0`1` (`0x3ef7dc`) forwards each target to it
+/// (IL_007a). The four ally power writers below are that command:
+/// Coordinate `Apply<CoordinatePower>` (`0x394c98` IL_0062), Fade
+/// `Apply<FadePower>` (`0x39ce30` IL_0060), Blaze `Apply<StrengthPower>`
+/// (`0x38d0dc` IL_0060), Guiding Star `Apply<DrawCardsNextTurnPower>`
+/// (`0x3a2c70` IL_0246, after its `AttackCommand` IL_01ba), Plot
+/// `Apply<DrawCardsNextTurnPower>` (`0x3b2b40` IL_009d), and One For All
+/// `Apply<OneForAllPower>` (`0x3b036c` IL_0112). The gate is the shared IsEnding projection, not
+/// `history.over`: with every primary dead and no veto (a live secondary such
+/// as a Gas Bomb) the combat is ending before the over latch (#3502).
+fn power_apply_returns_on_ending(state: &HotState) -> bool {
+    crate::engine::damage::damage_combat_is_ending(state)
+}
+
 pub(crate) fn gain_temp_strength(
     state: &mut HotState,
     key: u32,
@@ -119,7 +136,7 @@ fn gain_temporary_ally_stat(
     events: &mut Vec<Event>,
     stat: TemporaryAllyStat,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over || amount == 0 {
+    if amount == 0 || power_apply_returns_on_ending(state) {
         return Ok(());
     }
     if amount < 0 {
@@ -215,7 +232,7 @@ pub(crate) fn gain_permanent_strength(
     amount: i32,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over || amount == 0 {
+    if amount == 0 || power_apply_returns_on_ending(state) {
         return Ok(());
     }
     if amount < 0 {
@@ -315,7 +332,7 @@ pub(crate) fn add_draw_next_turn(
     key: u32,
     amount: i32,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over || amount == 0 {
+    if amount == 0 || power_apply_returns_on_ending(state) {
         return Ok(());
     }
     if amount < 0 {
@@ -362,7 +379,7 @@ pub(crate) fn add_one_for_all(
     amount: i32,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over || amount == 0 {
+    if amount == 0 || power_apply_returns_on_ending(state) {
         return Ok(());
     }
     if amount < 0 {
@@ -397,8 +414,16 @@ pub(crate) fn add_one_for_all(
     Ok(())
 }
 
+/// Intercept's `Apply<CoveredPower>` on the chosen Player.
+///
+/// v0.111.0 (`sts2.dll` `9cb4f1ad…`) `Intercept/<OnPlay>d__7::MoveNext` RVA
+/// `0x3a77d0` awaits `CreatureCmd.GainBlock` (IL_0056) and then
+/// `PowerCmd.Apply<CoveredPower>` (IL_00d4). That `<Apply>d__1`1` (`0x3ef988`)
+/// returns at `CombatManager.IsEnding` (IL_0025-002a) before the power
+/// exists, so the gate is [`power_apply_returns_on_ending`], not
+/// `history.over` (#3515).
 pub(crate) fn set_intercept_covered(state: &mut HotState, key: u32) -> Result<(), EngineRefusal> {
-    if state.history.over {
+    if power_apply_returns_on_ending(state) {
         return Ok(());
     }
     if key >= 2 {
@@ -456,8 +481,15 @@ pub(crate) fn draw_for_player(
     }
 }
 
+/// One remote Player's `CardPileCmd.Draw`.
+///
+/// v0.111.0 `CardPileCmd/<DrawInternal>d__21::MoveNext` RVA `0x3e3a70` leaves
+/// on `CombatManager.IsOverOrEnding` at entry (IL_0029-003b) and re-tests it
+/// before every card (IL_01a6-01b0). The gate is the shared IsOverOrEnding
+/// projection [`crate::engine::damage::damage_combat_is_ending`], not
+/// `history.over` (#3515).
 fn remote_draw(state: &mut HotState, amount: usize) -> Result<(), EngineRefusal> {
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     let ally = state.fanouts.multiplayer_ally_mut();
@@ -465,8 +497,10 @@ fn remote_draw(state: &mut HotState, amount: usize) -> Result<(), EngineRefusal>
     let mut hand = ally.hand.as_ref().clone();
     let mut discard = ally.discard.as_ref().clone();
     let mut shuffle_rng = ally.shuffle_rng;
+    // The per-card re-test (IL_01a6-01b0) cannot change inside this loop: a
+    // remote draw runs no represented listener, so the entry test decides it.
     for _ in 0..amount {
-        if state.history.over || hand.len() >= 10 {
+        if hand.len() >= 10 {
             break;
         }
         if draw.is_empty() {
@@ -499,8 +533,15 @@ fn remote_draw(state: &mut HotState, amount: usize) -> Result<(), EngineRefusal>
 
 /// Move Tutor's choice-free remote Draw singleton to that same Player's Hand,
 /// or to Discard when the native ten-card Hand cap is already full.
+///
+/// `Tutor/<OnPlay>d__3::MoveNext` RVA `0x3c4ddc` awaits
+/// `CardSelectCmd.FromCombatPile` (IL_0068), whose `<FromCombatPile>d__20`
+/// (`0x3e5e84`) returns no card at `IsEnding` (IL_0036-003d), and then
+/// `CardPileCmd.Add` (IL_00dc), whose `<Add>d__10` (`0x3e1ba4`) skips a
+/// combat-pile move at `IsEnding` (IL_0041-008a). Both gates are the shared
+/// IsEnding projection, not `history.over` (#3515).
 pub(crate) fn tutor_remote_fetch(state: &mut HotState, key: u32) -> Result<(), EngineRefusal> {
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     if key != 1
@@ -545,6 +586,12 @@ pub(crate) fn blade_symphony(
 /// can only preserve or move these payload cards among Draw, Hand, and
 /// Discard, so this three-pile walk is the complete reachable native five-pile
 /// query rather than an approximation. Each pile retains physical order.
+///
+/// `HammerTimePower/<AfterForge>d__6::MoveNext` RVA `0x33bbd8` awaits one
+/// `ForgeCmd.Forge` per other Player (IL_009e). `ForgeCmd/<Forge>d__2`
+/// (`0x3ed3bc`) returns at `CombatManager.IsOverOrEnding` (IL_0020-0032)
+/// before it reads or creates any Sovereign Blade, so the gate is the shared
+/// IsOverOrEnding projection, not `history.over` (#3515).
 pub(crate) fn forge_remote_player_exact(
     state: &mut HotState,
     catalog: &Catalog,
@@ -560,7 +607,7 @@ pub(crate) fn forge_remote_player_exact(
             "Hammer Time remote Forge recipient",
         ));
     }
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     let blade_identity = CardIdentity {
@@ -628,6 +675,15 @@ pub(crate) fn forge_remote_player_exact(
     Ok(())
 }
 
+/// Blade Symphony: two Shivs for each living teammate, in creation order.
+///
+/// `BladeSymphony/<OnPlay>d__7::MoveNext` RVA `0x38ce0c` awaits one
+/// `Shiv.CreateInHand` per living teammate (IL_0134). Its
+/// `Shiv/<CreateInHand>d__12` (`0x3bb20c`) returns at
+/// `CombatManager.IsOverOrEnding` (IL_002c-003e) before it creates anything.
+/// The local key's injector carries that gate itself; the remote key has
+/// only this one, so it is the shared IsOverOrEnding projection, not
+/// `history.over` (#3515).
 fn blade_symphony_inner(
     state: &mut HotState,
     catalog: &Catalog,
@@ -635,7 +691,7 @@ fn blade_symphony_inner(
 ) -> Result<(), EngineRefusal> {
     let recipients = living_keys(state).collect::<Vec<_>>();
     for key in recipients {
-        if state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(state) {
             break;
         }
         if key == 0 {
@@ -724,7 +780,10 @@ pub(crate) fn glimpse_beyond(
         // plural command with a leading combat-ending gate. Once that gate
         // stops the walk, later recipients are never begun; within an already
         // begun plural command every remaining Soul still records history and
-        // reaches the (terminal no-op) generated hook.
+        // reaches the (terminal no-op) generated hook. That leading gate is
+        // `CombatManager.IsInProgress`, not IsEnding
+        // (`CardPileCmd/<AddGeneratedCardsToCombat>d__6` `0x3e2f0c`
+        // IL_0039-004b), so `history.over` is its projection here (#3515).
         let recipients = living_keys(state).collect::<Vec<_>>();
         for key in recipients {
             if state.history.over {
@@ -766,12 +825,17 @@ pub(crate) fn glimpse_beyond(
 /// (IL_0121-0139); only a miss reaches `PowerCmd.Apply` (IL_019c-01bb). So
 /// one object per target whose Amount is the sum of that target's plays is
 /// native, and this per-key sum is exact.
+///
+/// Both commands return at `CombatManager.IsEnding` before they write:
+/// `PowerCmd/<ModifyAmount>d__6` (`0x3f032c` IL_003a-003f) and
+/// `<Apply>d__1`1` (`0x3ef988` IL_0025-002a). So the gate is
+/// [`power_apply_returns_on_ending`], not `history.over` (#3515).
 pub(crate) fn apply_imitation_learning(
     state: &mut HotState,
     key: u32,
     amount: i32,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over {
+    if power_apply_returns_on_ending(state) {
         return Ok(());
     }
     let current = state
@@ -1038,6 +1102,58 @@ mod tests {
         assert_eq!(ending, before);
     }
 
+    /// #3502: the ally power writers are `PowerCmd.Apply<T>`, which returns
+    /// on `IsEnding` (`<Apply>d__1`1` `0x3ef988` IL_0020-0034). With the only
+    /// primary dead and a live secondary (Gas Bomb) before the over latch,
+    /// temporary Strength and Dexterity, permanent Strength, DrawNextTurn and
+    /// One For All change nothing on either player key; an Adaptable veto
+    /// keeps the same roster live and each applies.
+    #[test]
+    fn ally_power_applications_skip_while_combat_is_ending_before_the_over_latch() {
+        type Apply = fn(&mut HotState, u32, &mut Vec<Event>) -> Result<(), EngineRefusal>;
+        let writers: [(&str, Apply); 5] = [
+            ("temporary Strength", |s, k, e| {
+                gain_temp_strength(s, k, 2, e)
+            }),
+            ("temporary Dexterity", |s, k, e| {
+                gain_temp_dexterity(s, k, 2, e)
+            }),
+            ("permanent Strength", |s, k, e| {
+                gain_permanent_strength(s, k, 2, e)
+            }),
+            ("DrawNextTurn", |s, k, _| add_draw_next_turn(s, k, 2)),
+            ("One For All", |s, k, e| add_one_for_all(s, k, 2, e)),
+        ];
+        for vetoed in [false, true] {
+            let mut state = live_party();
+            state.monsters_mut()[0].hp = 0;
+            if vetoed {
+                state.monsters_mut()[0].powers.set(
+                    PowerId::Adaptable,
+                    crate::powers::SlotWire::Int,
+                    1,
+                );
+            }
+            let mut bomb = HotMonster::new(MonsterKind::GasBomb, 10);
+            bomb.uid = 1;
+            bomb.slot = 1;
+            state.monsters_mut().push(bomb);
+            assert!(!state.history.over);
+            assert_eq!(
+                crate::engine::damage::damage_combat_is_ending(&state),
+                !vetoed
+            );
+            for (name, apply) in writers {
+                for key in [0, 1] {
+                    let mut applied = state.clone();
+                    let mut events = Vec::new();
+                    apply(&mut applied, key, &mut events).unwrap();
+                    assert_eq!(applied == state, !vetoed, "{name} key {key}");
+                }
+            }
+        }
+    }
+
     /// #3218: every `gain_powered_block` caller is a plain
     /// `CreatureCmd::GainBlock` (`<GainBlock>d__18` 0x3eaec0), which returns
     /// at IsOverOrEnding (IL_0032) before any Block write. With the only
@@ -1210,6 +1326,10 @@ mod tests {
     fn remote_temporary_stat_overflow_preserves_shared_fanout_cow_and_events() {
         for stat in [TemporaryAllyStat::Strength, TemporaryAllyStat::Dexterity] {
             let mut state = party();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             match stat {
                 TemporaryAllyStat::Strength => {
                     state.fanouts.multiplayer_ally_mut().temp_strength = i32::MAX;
@@ -1326,6 +1446,10 @@ mod tests {
     #[test]
     fn permanent_strength_routes_locally_or_remotely_and_overflow_is_atomic() {
         let mut state = party();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let mut events = Vec::new();
         gain_permanent_strength(&mut state, 0, 5, &mut events).unwrap();
         gain_permanent_strength(&mut state, 1, 7, &mut events).unwrap();
@@ -1379,6 +1503,10 @@ mod tests {
         };
         payload.set_base_replay_count(None).unwrap();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 11;
@@ -1433,9 +1561,58 @@ mod tests {
         assert_eq!(lethal.fanouts.multiplayer_ally().temp_strength, 5);
     }
 
+    /// #3515: the remote-Player commands gate on their native command's
+    /// IsEnding / IsOverOrEnding, not `history.over`. With the only primary
+    /// dead and a live Gas Bomb, before the over latch, each is a complete
+    /// no-op; an Adaptable veto keeps the same roster live and each writes:
+    /// - Intercept's `Apply<CoveredPower>` (`<Apply>d__1`1` 0x3ef988 IL_0025);
+    /// - the remote `CardPileCmd.Draw` (`<DrawInternal>d__21` 0x3e3a70 IL_002e);
+    /// - Tutor's remote fetch (`<FromCombatPile>d__20` 0x3e5e84 IL_0036,
+    ///   `<Add>d__10` 0x3e1ba4 IL_0053);
+    /// - Hammer Time's remote Forge (`<Forge>d__2` 0x3ed3bc IL_0025);
+    /// - Blade Symphony's remote Shivs (`<CreateInHand>d__12` 0x3bb20c IL_0031);
+    /// - Imitation Learning (`<ModifyAmount>d__6` 0x3f032c IL_003a).
+    #[test]
+    fn remote_player_commands_skip_while_combat_is_ending_before_the_over_latch() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern(identity(CardId::BladeSymphony, 0)).unwrap();
+        builder.intern(identity(CardId::SovereignBlade, 0)).unwrap();
+        let catalog = builder.build();
+        type Command = fn(&mut HotState, &Catalog) -> Result<(), EngineRefusal>;
+        let commands: [(&str, Command); 6] = [
+            ("Intercept", |s, _| set_intercept_covered(s, 1)),
+            ("remote Draw", |s, c| {
+                draw_for_player(s, c, 1, 1, &mut Vec::new())
+            }),
+            ("Tutor remote fetch", |s, _| tutor_remote_fetch(s, 1)),
+            ("Hammer Time remote Forge", |s, c| {
+                forge_remote_player_exact(s, c, 5, &mut Vec::new())
+            }),
+            ("Blade Symphony", |s, c| {
+                blade_symphony(s, c, &mut Vec::new())
+            }),
+            ("Imitation Learning", |s, _| {
+                apply_imitation_learning(s, 1, 2)
+            }),
+        ];
+        for vetoed in [false, true] {
+            let mut state = party();
+            state.fanouts.multiplayer_ally_mut().alive = true;
+            state.fanouts.multiplayer_ally_mut().draw = Arc::new(vec![
+                MultiplayerAllyCard::immutable(identity(CardId::StrikeIronclad, 0)).unwrap(),
+            ]);
+            crate::engine::damage::push_ending_window_roster(&mut state, vetoed);
+            for (name, command) in commands {
+                let mut applied = state.clone();
+                command(&mut applied, &catalog).unwrap();
+                assert_eq!(applied == state, !vetoed, "{name}");
+            }
+        }
+    }
+
     #[test]
     fn remote_draw_owns_its_shuffle_stream_and_exact_hand_order() {
-        let mut state = party();
+        let mut state = live_party();
         let strike = identity(CardId::StrikeIronclad, 0);
         let defend = identity(CardId::DefendIronclad, 0);
         let live = RngStreamState {
@@ -1484,7 +1661,7 @@ mod tests {
         let mut builder = CatalogBuilder::new();
         builder.intern(blade).unwrap();
         let catalog = builder.build();
-        let mut state = party();
+        let mut state = live_party();
         state.next_card_uid = 20;
         state.fanouts.multiplayer_ally_mut().hand = Arc::new(vec![
             MultiplayerAllyCard::immutable(
@@ -1574,7 +1751,7 @@ mod tests {
         let mut builder = CatalogBuilder::new();
         builder.intern(blade).unwrap();
         let catalog = builder.build();
-        let mut state = party();
+        let mut state = live_party();
         state.next_card_uid = 20;
         state.next_generated_hook_uid = i32::MAX - 2;
         let before = state.clone();
@@ -1828,7 +2005,7 @@ mod tests {
         builder.intern(imitation).unwrap();
         builder.intern(inflame).unwrap();
         let catalog = builder.build();
-        let mut state = party();
+        let mut state = live_party();
         state.next_card_uid = 3;
         for (uid, identity) in [(1, imitation), (2, inflame)] {
             state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
@@ -1880,7 +2057,7 @@ mod tests {
         builder.intern(imitation).unwrap();
         builder.intern(inflame).unwrap();
         let catalog = builder.build();
-        let mut state = party();
+        let mut state = live_party();
         state.energy = 9;
         state.next_card_uid = 4;
         for (uid, identity) in [(1, imitation), (2, imitation), (3, inflame)] {

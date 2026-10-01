@@ -4,7 +4,7 @@
 //! `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
 //! Each body below cites its current-build `OnUse`/`MoveNext` RVA.
 
-use crate::catalog::{CardIdentity, Catalog};
+use crate::catalog::{CardIdentity, Catalog, RewardPool};
 use crate::decimal::DotNetDecimal;
 use crate::frame::{Frame, PotionFinishStage};
 use crate::hot::{
@@ -114,12 +114,18 @@ fn orobic_generation_pools(state: &HotState, catalog: &Catalog) -> Option<[Vec<C
 }
 
 fn orobic_rng_draws(state: &HotState, catalog: &Catalog) -> Result<usize, EngineRefusal> {
-    let pools = orobic_generation_pools(state, catalog)
+    // Lengths only (#3420): the cached counts of `orobic_generation_pools`.
+    let facts = catalog.generation_pools();
+    let lengths =
+        TYPED_GENERATION_POTIONS.map(|potion| facts.pool_len(potion, state.reward_card_pool));
+    let lengths = lengths
+        .into_iter()
+        .collect::<Option<Vec<_>>>()
         .ok_or(EngineRefusal::MalformedArgs("Orobic generation owner"))?;
-    if pools.iter().any(Vec::is_empty) {
+    if lengths.contains(&0) {
         return Err(EngineRefusal::MalformedArgs("Orobic empty generation pool"));
     }
-    Ok(pools.iter().map(|pool| pool.len().saturating_sub(1)).sum())
+    Ok(lengths.iter().map(|len| len.saturating_sub(1)).sum())
 }
 
 pub(crate) fn preflight_manual_potion_rng(
@@ -127,8 +133,14 @@ pub(crate) fn preflight_manual_potion_rng(
     catalog: &Catalog,
     potion: PotionId,
 ) -> Result<(), EngineRefusal> {
-    let (stream, draws) = if let Some(pool) = fight_generation_choice_pool(state, catalog, potion) {
-        (RngStream::Generation, pool.len().saturating_sub(1))
+    // The cached length of `fight_generation_choice_pool`, which this reads
+    // nothing else from; rebuilding the pool per enumeration dominated
+    // generation-potion fights (#3420).
+    let pool_len = catalog
+        .generation_pools()
+        .pool_len(potion, state.reward_card_pool);
+    let (stream, draws) = if let Some(len) = pool_len {
+        (RngStream::Generation, len.saturating_sub(1))
     } else if potion == PotionId::OrobicAcid {
         (RngStream::Generation, orobic_rng_draws(state, catalog)?)
     } else if potion == PotionId::EntropicBrew {
@@ -425,27 +437,107 @@ pub(crate) fn preflight_distilled_batch_suffix(
     Ok(())
 }
 
+/// Catalog-only facts behind [`generation_choice_provenance_is_exact`] and
+/// [`cosmic_concoction_provenance_is_exact`] (#3420).
+///
+/// A generation pool is a function of the potion, the reward owner and the
+/// catalog's recorded unlock profile alone ([`generation_choice_pool`]), so
+/// whether its members are all catalog atoms is fixed per catalog and owner.
+/// Every [`RewardPool`] owner is covered, so the facts answer for whatever
+/// `reward_card_pool` a state carries. Held Entropic Brew asked for all of
+/// them, rebuilding each pool, on every legal-action enumeration.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct GenerationPoolFacts {
+    /// Indexed by `RewardPool as usize`, then Attack, Skill, Power Potion:
+    /// the owner's pool has at least three members, each an L0 atom.
+    typed: [[bool; 3]; RewardPool::COUNT],
+    /// The same, for Colorless Potion's owner-independent pool.
+    colorless: bool,
+    /// Member counts, indexed as `typed`: the RNG preflights reserve
+    /// `len - 1` shuffle draws and read nothing else about a pool.
+    typed_len: [[usize; 3]; RewardPool::COUNT],
+    colorless_len: usize,
+    /// Every Colorless pool member's post-Upgrade identity
+    /// ([`cosmic_concoction_identity`]) is an atom.
+    cosmic_concoction: bool,
+}
+
+const TYPED_GENERATION_POTIONS: [PotionId; 3] = [
+    PotionId::AttackPotion,
+    PotionId::SkillPotion,
+    PotionId::PowerPotion,
+];
+
+impl GenerationPoolFacts {
+    pub(crate) fn of(catalog: &Catalog) -> Self {
+        let epochs = catalog.splash_unlock_epochs();
+        let exact = |pool: Vec<CardId>| {
+            pool.len() >= 3
+                && pool.iter().all(|id| {
+                    let identity = CardIdentity {
+                        id: *id,
+                        upgrade: 0,
+                        enchantment: None,
+                    };
+                    catalog.atom(&identity).is_some()
+                })
+        };
+        let colorless_pool = generation_choice_pool(PotionId::ColorlessPotion, None, epochs)
+            .expect("Colorless Potion's pool has no owner");
+        let typed_pools = RewardPool::ALL.map(|owner| {
+            TYPED_GENERATION_POTIONS.map(|potion| {
+                generation_choice_pool(potion, Some(owner), epochs)
+                    .expect("a typed generation potion with an owner has a pool")
+            })
+        });
+        Self {
+            typed_len: typed_pools
+                .each_ref()
+                .map(|pools| pools.each_ref().map(Vec::len)),
+            colorless_len: colorless_pool.len(),
+            typed: typed_pools.map(|pools| pools.map(exact)),
+            cosmic_concoction: colorless_pool
+                .iter()
+                .all(|id| catalog.atom(&cosmic_concoction_identity(*id)).is_some()),
+            colorless: exact(colorless_pool),
+        }
+    }
+
+    /// `generation_choice_pool(potion, owner, <this catalog's profile>)`'s
+    /// length: `None` exactly where that pool is `None`.
+    pub(crate) fn pool_len(&self, potion: PotionId, owner: Option<RewardPool>) -> Option<usize> {
+        if potion == PotionId::ColorlessPotion {
+            return Some(self.colorless_len);
+        }
+        let kind = TYPED_GENERATION_POTIONS.iter().position(|p| *p == potion)?;
+        owner.map(|owner| self.typed_len[owner as usize][kind])
+    }
+
+    /// Whether `potion`'s pool for `owner` exists and is exact; `false` for a
+    /// potion with no generation pool, as [`generation_choice_pool`] is `None`.
+    fn pool_is_exact(&self, potion: PotionId, owner: Option<RewardPool>) -> bool {
+        if potion == PotionId::ColorlessPotion {
+            return self.colorless;
+        }
+        let Some(kind) = TYPED_GENERATION_POTIONS.iter().position(|p| *p == potion) else {
+            return false;
+        };
+        owner.is_some_and(|owner| self.typed[owner as usize][kind])
+    }
+}
+
 pub(crate) fn generation_choice_provenance_is_exact(
     state: &HotState,
     catalog: &Catalog,
     potion: PotionId,
 ) -> bool {
-    let Some(pool) = fight_generation_choice_pool(state, catalog, potion) else {
-        return false;
-    };
-    super::cards::unlock_profile_is_recorded(state, catalog)
+    catalog
+        .generation_pools()
+        .pool_is_exact(potion, state.reward_card_pool)
+        && super::cards::unlock_profile_is_recorded(state, catalog)
         && state.reward_card_pool.is_some()
-        && pool.len() >= 3
         && state.multiplayer_ally_key == 0
         && !state.rng.is_vacant(RngStream::Generation)
-        && pool.iter().all(|id| {
-            let identity = CardIdentity {
-                id: *id,
-                upgrade: 0,
-                enchantment: None,
-            };
-            catalog.atom(&identity).is_some()
-        })
 }
 
 /// Cosmic Concoction's generation provenance (#3229).
@@ -457,12 +549,7 @@ pub(crate) fn generation_choice_provenance_is_exact(
 /// be a catalog atom.
 pub(crate) fn cosmic_concoction_provenance_is_exact(state: &HotState, catalog: &Catalog) -> bool {
     generation_choice_provenance_is_exact(state, catalog, PotionId::ColorlessPotion)
-        && fight_generation_choice_pool(state, catalog, PotionId::ColorlessPotion).is_some_and(
-            |pool| {
-                pool.iter()
-                    .all(|id| catalog.atom(&cosmic_concoction_identity(*id)).is_some())
-            },
-        )
+        && catalog.generation_pools().cosmic_concoction
 }
 
 /// The identity `CardCmd::Upgrade` (`0x12f660`) leaves on a live, pile-less
@@ -1033,8 +1120,8 @@ pub(crate) fn generation_potion_profile<'c>(
 ///   in-combat generators. Both gate on [`generation_potion_profile`], which
 ///   refuses by name when neither proof decides the owner's pool;
 /// * `DelicateFrond/<BeforeCombatStart>d__2::MoveNext` `0x3229bc` IL_0044,
-///   which runs before any combat state exists and whose owner the opening
-///   refuses (`OPENING_WINDOW_RELIC_BODIES`);
+///   the combat-start generator ([`delicate_frond_before_combat_start`],
+///   #3533), which gates on [`generation_potion_profile`] like the two above;
 /// * rewards, shops and relic pickups, all outside combat:
 ///   `PotionReward::Populate` `0x5d290` IL_0038,
 ///   `CrystalSpherePotion::ToReward` `0x114a40` IL_000d,
@@ -1205,6 +1292,81 @@ pub(crate) fn entropic_brew(
         .ok_or(EngineRefusal::CounterOverflow("Entropic RNG counter"))?;
     loop {
         let generated = random_entropic_potion(state, profile)?;
+        let procured = procure_potion(state, generated, events)?;
+        if !procured || !state.fanouts.potion_slots().iter().any(Option::is_none) {
+            return Ok(());
+        }
+    }
+}
+
+/// Delicate Frond's `BeforeCombatStart` belt fill (#3533).
+///
+/// # What the DLL does (v0.111.0, sha256 `9cb4f1ad…`)
+///
+/// `DelicateFrond::BeforeCombatStart` (RVA `0x92734`) is the relic's only
+/// combat override. Its body, `<BeforeCombatStart>d__2::MoveNext`
+/// (`0x3229bc`), is `RelicModel::Flash` (`IL_001e`) and then a **`while`**
+/// loop: `IL_0023` branches straight to the guard at `IL_00be`-`IL_00c9`,
+/// `Owner.HasOpenPotionSlots` (`0x1167fd`, `_potionSlots.Any(p => p == null)`),
+/// and enters the body only when a slot is open. So a full belt draws
+/// nothing. (The v0.109 body was a do-while that drew once on a full belt;
+/// this is the current build's shape.)
+///
+/// Each pass calls `PotionFactory::CreateRandomPotionOutOfCombat(Owner,
+/// Owner.RunState.Rng.CombatPotionGeneration, null)` (`IL_0028`-`IL_0044`)
+/// and awaits `PotionCmd::TryToProcure(potion, Owner, -1)` (`IL_0057`). A
+/// failed procurement leaves the loop (`IL_00b7`-`IL_00bc`, reachable only
+/// through Sozu's veto once the guard has passed); a success returns to the
+/// guard.
+///
+/// The factory is [`random_potion_from_factory`] with `in_combat` false:
+/// `CreateRandomPotionOutOfCombat` (`0x112ea4`) is count 1 of
+/// `CreateRandomPotionsOutOfCombat` (`0x112eb4`), which passes the unfiltered
+/// `GetPotionOptions` (`0x112fba`) to `CreateRandomPotions` (`0x112f2c`), one
+/// `NextFloat(1)` and one `NextItem` per potion. That is Entropic Brew's
+/// factory call, so every open slot costs two draws and slots may repeat a
+/// potion. `TryToProcure` is [`procure_potion`].
+///
+/// # What it refuses
+///
+/// The pool is the owner's, so it needs the proof every generator needs
+/// ([`generation_potion_profile`]), a solo owner and a live stream; without
+/// them it refuses by name rather than draw from an undecided pool. A full
+/// belt reads no pool and so owes no proof.
+pub(crate) fn delicate_frond_before_combat_start(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let open = state
+        .fanouts
+        .potion_slots()
+        .iter()
+        .filter(|slot| slot.is_none())
+        .count();
+    if open == 0 {
+        return Ok(());
+    }
+    let Some(profile) = generation_potion_profile(state, catalog)
+        .filter(|_| state.multiplayer_ally_key == 0)
+        .filter(|_| !state.rng.is_vacant(RngStream::PotionGeneration))
+    else {
+        return Err(EngineRefusal::MalformedArgs(
+            "Delicate Frond generation provenance",
+        ));
+    };
+    let draws = u64::try_from(open)
+        .ok()
+        .and_then(|open| open.checked_mul(2))
+        .ok_or(EngineRefusal::CounterOverflow("Delicate Frond RNG"))?;
+    state
+        .rng
+        .get(RngStream::PotionGeneration)
+        .counter
+        .checked_add(draws)
+        .ok_or(EngineRefusal::CounterOverflow("Delicate Frond RNG counter"))?;
+    loop {
+        let generated = random_potion_from_factory(state, Some(profile), false)?;
         let procured = procure_potion(state, generated, events)?;
         if !procured || !state.fanouts.potion_slots().iter().any(Option::is_none) {
             return Ok(());
@@ -2305,7 +2467,10 @@ fn begin_distilled_chaos(
     catalog: &Catalog,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over || state.hp <= 0 {
+    // `DistilledChaos/<OnUse>d__8` (`0x34cec0`) awaits
+    // `CardPileCmd.AutoPlayFromDrawPile` (IL_004c-006e), which returns at
+    // IsOverOrEnding before it gathers (#3515).
+    if super::play::auto_play_entry_stops(state) {
         return finish(state, catalog, PotionId::DistilledChaos, events);
     }
     super::cards::normalize_card_identities(state)?;
@@ -3425,11 +3590,13 @@ fn has_ordered_extension(potion: PotionId) -> bool {
     matches!(potion, PotionId::Ashwater | PotionId::GamblersBrew)
 }
 
-/// `R + Σ_k P(n, k)`, refused by name past the `u32` wire ordinal.
+/// `R + Σ_k P(n, k)`, refused by name past the `u32` wire ordinal. The bound
+/// is compared in `u64`: `u32::MAX as usize + 1` overflows where `usize` is
+/// 32 bits (wasm32, #3469), and the comparison is value-identical on 64-bit.
 fn accepted_count(representatives: usize, candidates: usize) -> Result<usize, EngineRefusal> {
     representatives
         .checked_add(ordered_pick_count(candidates)?)
-        .filter(|total| *total <= u32::MAX as usize + 1)
+        .filter(|total| *total as u64 <= u64::from(u32::MAX) + 1)
         .ok_or(EngineRefusal::CounterOverflow("potion ordered options"))
 }
 
@@ -4684,6 +4851,10 @@ mod rehearsal_tests {
         builder.set_relics(&[RelicId::RelicReptileTrinket]).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 80;
         state.max_hp = 80;
         state
@@ -5576,5 +5747,325 @@ mod issue3343_owner_potion_pool_tests {
             ))
         );
         assert_eq!(state, seeded(0), "a refusal leaves the state untouched");
+    }
+}
+
+#[cfg(test)]
+mod delicate_frond_tests {
+    //! `delicate_frond_before_combat_start` (#3533).
+    use super::*;
+    use crate::catalog::{CatalogBuilder, RewardPool};
+    use crate::content_tables::UNLOCK_EPOCH_UNIVERSE_V1101;
+    use PotionId::*;
+
+    fn revealed() -> Catalog {
+        let mut builder = CatalogBuilder::new();
+        builder.set_wire_unlock_epochs(UNLOCK_EPOCH_UNIVERSE_V1101.to_vec());
+        builder.build()
+    }
+
+    fn belt(state: &mut HotState, slots: Vec<Option<PotionId>>, sozu: bool) {
+        assert!(
+            state
+                .fanouts
+                .set_potion_belt(slots, sozu, false, false, false, false)
+        );
+    }
+
+    fn state_on(owner: RewardPool, rng: crate::rng::Xoshiro256StarStar) -> HotState {
+        let mut state = HotState::at_defaults();
+        state.reward_card_pool = Some(owner);
+        state.rng.set(
+            RngStream::PotionGeneration,
+            RngStreamState {
+                words: rng.words,
+                counter: rng.counter,
+            },
+        );
+        state
+    }
+
+    /// The native witness: run `LMWKPC7VYF5P` (Defect, A10, v0.111.0) took
+    /// Delicate Frond on floor 34 and its `.run` records what each later
+    /// fight procured (`potion_choices`, less the post-fight reward potions,
+    /// which the belt's used/discarded accounting separates). Nothing else in
+    /// the run reads `CombatPotionGeneration`, so the stream enters floor 35
+    /// at counter 0 and the ten fights are one continuous draw sequence.
+    ///
+    /// Floor 40 is the `while`-guard witness: the belt was full, the game
+    /// procured nothing, and the next fight's potions are the very next
+    /// draws. A do-while would have spent two draws there and shifted every
+    /// later row.
+    #[test]
+    fn a_recorded_run_s_ten_fights_are_reproduced_draw_for_draw() {
+        const HELD: PotionId = FirePotion;
+        let fights: [(usize, &[PotionId]); 10] = [
+            (0, &[BottledPotential, AttackPotion]),
+            (0, &[EnergyPotion, TouchOfInsanity]),
+            (1, &[LiquidBronze]),
+            (0, &[AttackPotion, PowerPotion]),
+            (0, &[FocusPotion, SpeedPotion]),
+            (2, &[]),
+            (0, &[WeakPotion, EnergyPotion]),
+            (1, &[HeartOfIron, FyshOil, Clarity]),
+            (0, &[FirePotion, SwiftPotion, StrengthPotion, Clarity]),
+            (0, &[LiquidMemories, AttackPotion, SkillPotion, FlexPotion]),
+        ];
+        let catalog = revealed();
+        let mut state = state_on(
+            RewardPool::Defect,
+            crate::rng::optional_combat_stream_at_zero("LMWKPC7VYF5P", "combat_potion_generation"),
+        );
+        let mut draws = 0;
+        for (floor, (held, procured)) in fights.into_iter().enumerate() {
+            let mut slots = vec![Some(HELD); held];
+            slots.resize(held + procured.len(), None);
+            belt(&mut state, slots, false);
+            delicate_frond_before_combat_start(&mut state, &catalog, &mut Vec::new()).unwrap();
+            let filled: Vec<PotionId> = state.fanouts.potion_slots()[held..]
+                .iter()
+                .map(|slot| slot.expect("every open slot filled"))
+                .collect();
+            assert_eq!(filled, procured, "fight {floor}");
+            draws += 2 * procured.len() as u64;
+            assert_eq!(
+                state.rng.get(RngStream::PotionGeneration).counter,
+                draws,
+                "fight {floor}: two draws per procured potion, none on a full belt"
+            );
+        }
+    }
+
+    /// First-empty-slot placement around held potions, and the held potions
+    /// untouched.
+    #[test]
+    fn only_the_open_slots_fill_in_slot_order() {
+        let catalog = revealed();
+        let rng = crate::rng::Xoshiro256StarStar::from_seed(7);
+        let mut empty = state_on(RewardPool::Ironclad, rng);
+        belt(&mut empty, vec![None, None], false);
+        delicate_frond_before_combat_start(&mut empty, &catalog, &mut Vec::new()).unwrap();
+        let drawn: Vec<PotionId> = empty
+            .fanouts
+            .potion_slots()
+            .iter()
+            .map(|slot| slot.unwrap())
+            .collect();
+
+        let mut gapped = state_on(RewardPool::Ironclad, rng);
+        belt(&mut gapped, vec![None, Some(FirePotion), None], false);
+        delicate_frond_before_combat_start(&mut gapped, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(
+            gapped.fanouts.potion_slots(),
+            [Some(drawn[0]), Some(FirePotion), Some(drawn[1])]
+        );
+        assert_eq!(gapped.rng.get(RngStream::PotionGeneration).counter, 4);
+    }
+
+    /// A full belt never enters the loop, so it reads no pool and owes no
+    /// provenance: it is a no-op even where an open belt would refuse.
+    #[test]
+    fn a_full_belt_is_inert_and_needs_no_provenance() {
+        let bare = CatalogBuilder::new().build();
+        let mut state = state_on(
+            RewardPool::Defect,
+            crate::rng::Xoshiro256StarStar::from_seed(7),
+        );
+        belt(&mut state, vec![Some(FirePotion)], false);
+        let before = state.clone();
+        delicate_frond_before_combat_start(&mut state, &bare, &mut Vec::new()).unwrap();
+        assert_eq!(state, before);
+    }
+
+    /// Sozu passes the guard (the slot is open), so one potion is generated
+    /// and its procurement vetoed: two draws, no potion, loop left
+    /// (`IL_00b7`-`IL_00bc`).
+    #[test]
+    fn sozu_spends_one_generation_and_procures_nothing() {
+        let catalog = revealed();
+        let mut state = state_on(
+            RewardPool::Ironclad,
+            crate::rng::Xoshiro256StarStar::from_seed(7),
+        );
+        belt(&mut state, vec![None, None], true);
+        delicate_frond_before_combat_start(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(state.fanouts.potion_slots(), [None, None]);
+        assert_eq!(state.rng.get(RngStream::PotionGeneration).counter, 2);
+    }
+
+    /// An open belt without a pool proof, with an ally, or without a live
+    /// stream refuses by name and leaves the state untouched.
+    #[test]
+    fn an_open_belt_without_generation_provenance_refuses() {
+        let refusal = Err(EngineRefusal::MalformedArgs(
+            "Delicate Frond generation provenance",
+        ));
+        let open = |state: &mut HotState| belt(state, vec![None], false);
+        let rng = || crate::rng::Xoshiro256StarStar::from_seed(7);
+
+        let mut unproven = state_on(RewardPool::Defect, rng());
+        open(&mut unproven);
+        let before = unproven.clone();
+        assert_eq!(
+            delicate_frond_before_combat_start(
+                &mut unproven,
+                &CatalogBuilder::new().build(),
+                &mut Vec::new()
+            ),
+            refusal
+        );
+        assert_eq!(unproven, before);
+
+        let mut allied = state_on(RewardPool::Defect, rng());
+        open(&mut allied);
+        allied.multiplayer_ally_key = 1;
+        assert_eq!(
+            delicate_frond_before_combat_start(&mut allied, &revealed(), &mut Vec::new()),
+            refusal
+        );
+
+        let mut streamless = HotState::at_defaults();
+        streamless.reward_card_pool = Some(RewardPool::Defect);
+        open(&mut streamless);
+        assert_eq!(
+            delicate_frond_before_combat_start(&mut streamless, &revealed(), &mut Vec::new()),
+            refusal
+        );
+    }
+}
+
+#[cfg(test)]
+mod generation_pool_facts_tests {
+    use super::*;
+    use crate::catalog::CatalogBuilder;
+
+    const POTIONS: [PotionId; 5] = [
+        PotionId::AttackPotion,
+        PotionId::SkillPotion,
+        PotionId::PowerPotion,
+        PotionId::ColorlessPotion,
+        PotionId::FirePotion,
+    ];
+
+    fn l0(id: CardId) -> CardIdentity {
+        CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: None,
+        }
+    }
+
+    /// The per-call scan `GenerationPoolFacts` replaced (#3420).
+    fn direct(catalog: &Catalog, potion: PotionId, owner: Option<RewardPool>) -> bool {
+        generation_choice_pool(potion, owner, catalog.splash_unlock_epochs()).is_some_and(|pool| {
+            pool.len() >= 3 && pool.iter().all(|id| catalog.atom(&l0(*id)).is_some())
+        })
+    }
+
+    fn direct_cosmic(catalog: &Catalog) -> bool {
+        generation_choice_pool(
+            PotionId::ColorlessPotion,
+            None,
+            catalog.splash_unlock_epochs(),
+        )
+        .is_some_and(|pool| {
+            pool.iter()
+                .all(|id| catalog.atom(&cosmic_concoction_identity(*id)).is_some())
+        })
+    }
+
+    fn catalog_of(
+        identities: impl IntoIterator<Item = CardIdentity>,
+        epochs: Option<Vec<&'static str>>,
+    ) -> Catalog {
+        let mut builder = CatalogBuilder::new();
+        if let Some(epochs) = epochs {
+            builder.set_splash_unlock_epochs(epochs);
+        }
+        for identity in identities {
+            builder.intern(identity).unwrap();
+        }
+        builder.build()
+    }
+
+    #[test]
+    fn generation_pool_facts_match_the_direct_scan_for_every_owner() {
+        let colorless = generation_choice_pool(PotionId::ColorlessPotion, None, None).unwrap();
+        let ironclad_attacks =
+            generation_choice_pool(PotionId::AttackPotion, Some(RewardPool::Ironclad), None)
+                .unwrap();
+        let partial = crate::content_tables::UNLOCK_EPOCH_UNIVERSE_V1101
+            .iter()
+            .copied()
+            .filter(|epoch| *epoch != "DEFECT4_EPOCH")
+            .collect::<Vec<_>>();
+        let empty = catalog_of([], None);
+        let attacks = catalog_of(ironclad_attacks.iter().map(|id| l0(*id)), None);
+        let colorless_l0 = catalog_of(colorless.iter().map(|id| l0(*id)), None);
+        let cosmic = catalog_of(
+            colorless
+                .iter()
+                .flat_map(|id| [l0(*id), cosmic_concoction_identity(*id)]),
+            None,
+        );
+        let profiled = catalog_of(ironclad_attacks.iter().map(|id| l0(*id)), Some(partial));
+        assert!(profiled.splash_unlock_epochs().is_some());
+        for catalog in [&empty, &attacks, &colorless_l0, &cosmic, &profiled] {
+            let facts = catalog.generation_pools();
+            for owner in std::iter::once(None).chain(RewardPool::ALL.map(Some)) {
+                for potion in POTIONS {
+                    assert_eq!(
+                        facts.pool_is_exact(potion, owner),
+                        direct(catalog, potion, owner),
+                        "{potion:?} for {owner:?}"
+                    );
+                    assert_eq!(
+                        facts.pool_len(potion, owner),
+                        generation_choice_pool(potion, owner, catalog.splash_unlock_epochs())
+                            .map(|pool| pool.len()),
+                        "{potion:?} length for {owner:?}"
+                    );
+                }
+            }
+            assert_eq!(facts.cosmic_concoction, direct_cosmic(catalog));
+        }
+
+        // Each arm is reached with a true answer, not only false ones.
+        let ironclad = Some(RewardPool::Ironclad);
+        let attack_facts = attacks.generation_pools();
+        assert!(attack_facts.pool_is_exact(PotionId::AttackPotion, ironclad));
+        assert!(!attack_facts.pool_is_exact(PotionId::AttackPotion, Some(RewardPool::Silent)));
+        assert!(!attack_facts.pool_is_exact(PotionId::AttackPotion, None));
+        assert!(!attack_facts.pool_is_exact(PotionId::FirePotion, ironclad));
+        assert!(
+            colorless_l0
+                .generation_pools()
+                .pool_is_exact(PotionId::ColorlessPotion, None)
+        );
+        assert!(!colorless_l0.generation_pools().cosmic_concoction);
+        assert!(cosmic.generation_pools().cosmic_concoction);
+        assert!(
+            !empty
+                .generation_pools()
+                .pool_is_exact(PotionId::ColorlessPotion, None)
+        );
+    }
+
+    #[test]
+    fn derived_generation_pool_facts_do_not_affect_catalog_equality() {
+        let colorless = generation_choice_pool(PotionId::ColorlessPotion, None, None).unwrap();
+        let computed = catalog_of(colorless.iter().map(|id| l0(*id)), None);
+        let fresh = computed.clone();
+        assert!(
+            computed
+                .generation_pools()
+                .pool_is_exact(PotionId::ColorlessPotion, None)
+        );
+        assert_eq!(computed, fresh);
+        assert_eq!(format!("{computed:?}"), format!("{fresh:?}"));
+        assert_eq!(
+            computed.clone().generation_pools(),
+            computed.generation_pools()
+        );
     }
 }

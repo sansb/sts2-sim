@@ -50,6 +50,11 @@ pub struct ExactSolveRequestV1 {
     pub deadline_ms: Option<u64>,
     #[serde(default = "default_memo")]
     pub memo: bool,
+    /// Optional memo byte budget (#3470). Past it the solve stops memoizing
+    /// and continues, so the answer is unchanged and only speed is lost. See
+    /// `ExactDfsConfig::memo_budget_bytes`. Omitted means unlimited.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo_budget_bytes: Option<u64>,
     /// A fully replayable achieved incumbent.  It is not a blind alpha value:
     /// Rust replays it before accepting it as a deadline fallback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -229,6 +234,14 @@ pub struct ExactSolveTelemetryV1 {
     pub allocations: u64,
     pub allocated_bytes: u64,
     pub alpha_final_hp: i32,
+    /// The memo's accounted bytes at stop (#3470). The browser client reports
+    /// it, and budgets are tuned from it.
+    #[serde(default)]
+    pub memo_bytes: u64,
+    /// The memo budget stopped at least one insert. It is never a statement
+    /// about exactness; `status` is.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub memo_budget_reached: bool,
 }
 
 /// Decode and run one request.  All invalid input becomes a response, never a
@@ -262,6 +275,7 @@ pub fn solve_value(value: Value) -> ExactSolveResponseV1 {
             max_turns: request.max_turns,
             deadline: request.deadline_ms.map(Duration::from_millis),
             memo: request.memo,
+            memo_budget_bytes: request.memo_budget_bytes,
         },
         &ExactCancellation::default(),
         seed.as_ref(),
@@ -347,6 +361,8 @@ impl From<ExactDfsResult> for ExactSolveResponseV1 {
                 allocations: result.telemetry.allocations,
                 allocated_bytes: result.telemetry.allocated_bytes,
                 alpha_final_hp: result.telemetry.alpha_final_hp,
+                memo_bytes: result.telemetry.memo_bytes,
+                memo_budget_reached: result.telemetry.memo_budget_reached,
             },
         }
     }
@@ -369,6 +385,8 @@ fn protocol_refusal(code: ExactSolveRefusalCodeV1, detail: impl ToString) -> Exa
             allocations: 0,
             allocated_bytes: 0,
             alpha_final_hp: 0,
+            memo_bytes: 0,
+            memo_budget_reached: false,
         },
     }
 }
@@ -387,6 +405,8 @@ fn response_for_refusal(refusal: ExactDfsRefusal) -> ExactSolveResponseV1 {
             allocations: 0,
             allocated_bytes: 0,
             alpha_final_hp: 0,
+            memo_bytes: 0,
+            memo_budget_reached: false,
         },
     }
 }
@@ -521,6 +541,48 @@ mod tests {
             "max_turns": 4,
             "memo": true,
         })
+    }
+
+    #[test]
+    fn memo_budget_is_an_optional_request_field_with_additive_telemetry() {
+        // #3470: omitted means unlimited, and the unbudgeted wire stays as
+        // it was apart from the additive `memo_bytes`. A one-turn horizon
+        // keeps it cheap: this pins the wire, not the search.
+        let request = || {
+            let mut request = request();
+            request["max_turns"] = json!(1);
+            request
+        };
+        let plain = solve_value(request());
+        assert_eq!(plain.status, ExactDfsStatus::Exact);
+        assert!(plain.telemetry.memo_bytes > 0);
+        assert!(!plain.telemetry.memo_budget_reached);
+        let wire = serde_json::to_value(&plain).unwrap();
+        assert!(wire["telemetry"].get("memo_budget_reached").is_none());
+
+        // One byte short of the uncapped size: only the last inserts are
+        // skipped, which keeps this fast while still exercising the cap.
+        let budget = plain.telemetry.memo_bytes - 1;
+        let mut budgeted = request();
+        budgeted["memo_budget_bytes"] = json!(budget);
+        let capped = solve_value(budgeted);
+        assert_eq!(capped.status, ExactDfsStatus::Exact);
+        assert_eq!(capped.solution, plain.solution);
+        assert!(capped.telemetry.memo_budget_reached);
+        assert!(capped.telemetry.memo_bytes <= budget);
+        let wire = serde_json::to_value(&capped).unwrap();
+        assert_eq!(wire["telemetry"]["memo_budget_reached"], json!(true));
+
+        // A response written before these fields existed still decodes.
+        let mut old = serde_json::to_value(&plain).unwrap();
+        let telemetry = old["telemetry"].as_object_mut().unwrap();
+        telemetry.remove("memo_bytes");
+        let decoded: ExactSolveResponseV1 = serde_json::from_value(old).unwrap();
+        assert_eq!(decoded.telemetry.memo_bytes, 0);
+
+        let mut negative = request();
+        negative["memo_budget_bytes"] = json!(-1);
+        assert_eq!(solve_value(negative).status, ExactDfsStatus::Refused);
     }
 
     #[test]

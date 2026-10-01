@@ -7,7 +7,7 @@
 //! inside, the live slot preserves history when Osty dies.
 
 /// The one live Osty payload projected from canonical `(OSTY, hp, max_hp)`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Osty {
     hp: i32,
     max_hp: i32,
@@ -24,7 +24,7 @@ impl Osty {
 }
 
 /// The complete solo-pet state that can live behind an existing COW handle.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub(crate) struct SoloPetState {
     osty: Option<Osty>,
     attacks_this_turn: i32,

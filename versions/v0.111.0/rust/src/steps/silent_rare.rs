@@ -167,6 +167,9 @@ pub(crate) fn bullet_time_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
 /// IL `0x00b6..0x0129`, four times at L0 and five times at L1.
 /// Python: `_run_steps_inner` (frozen, deleted #2827) authenticates the same complete program
 /// and stores the unique marker before the following Shiv-generator step.
+///
+/// v0.111.0 `FanOfKnives/<OnPlay>` RVA `0x39d294` awaits `PowerCmd.Apply<FanOfKnivesPower>` at IL_004f.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn fan_of_knives_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if !fan_of_knives_program_is_exact(ctx.spec.row)
         || !matches!(ctx.catalog.steps(ctx.spec), [power, generate]
@@ -208,7 +211,7 @@ pub(crate) fn fan_of_knives_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
         return Err(EngineRefusal::MalformedArgs("fan_of_knives_exact source"));
     }
     match ctx.state.powers.get(PowerId::FanOfKnives) {
-        None if !ctx.state.history.over => {
+        None if !crate::engine::damage::damage_combat_is_ending(ctx.state) => {
             ctx.state.powers.set(PowerId::FanOfKnives, SlotWire::Int, 1);
             crate::engine::damage::note_power(
                 ctx.events,
@@ -372,6 +375,12 @@ pub(crate) fn knife_trap_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusa
 /// complete no-op; each application independently observes target liveness.
 /// Artifact and Unsettling Lamp are outside the admitted relic/power surface,
 /// so the printed amount reaches both supported scalar powers unchanged.
+///
+/// `Malaise/<OnPlay>d__9` RVA `0x3ab428` awaits `PowerCmd.Apply<StrengthPower>`
+/// (IL_0109) and then `Apply<WeakPower>` (IL_0190) on the target. Each
+/// `<Apply>d__1`1` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a); the
+/// Strength writer still reads `history.over`, so the entry gate is the shared
+/// IsEnding projection (#3515).
 pub(crate) fn malaise_x(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(bonus)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("malaise_x"));
@@ -389,7 +398,7 @@ pub(crate) fn malaise_x(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let target = ctx
         .target
         .ok_or(EngineRefusal::TargetMismatch { required: true })?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let Some(monster) = ctx.state.monsters.get(target) else {
@@ -615,9 +624,7 @@ pub(crate) fn outbreak_is_reachable(
     state: &crate::hot::HotState,
     catalog: &crate::catalog::Catalog,
 ) -> bool {
-    catalog
-        .reachable_specs()
-        .any(|spec| matches!(spec.identity.id, CardId::Outbreak))
+    catalog.outbreak_reachable()
         || crate::boundary::PILE_FIELDS.iter().any(|(pile, _)| {
             state.piles.get(*pile).as_slice().iter().any(|card| {
                 catalog
@@ -657,9 +664,12 @@ pub(crate) fn shadow_step_discard_exact(ctx: &mut StepCtx<'_>) -> Result<(), Eng
 /// seam after authenticating the represented listener order. Burst re-enters
 /// this complete two-step body, so its second frozen Hand is naturally empty
 /// and its second wrapper stack is still applied.
+///
+/// v0.111.0 `ShadowStep/<OnPlay>` RVA `0x3ba870` awaits `PowerCmd.Apply<ShadowStepPower>` at IL_00b8.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn shadow_step_power_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     validate_shadow_step(ctx, StepKind::ShadowStepPowerExact)?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     crate::engine::damage::modify_shadow_step_power_amount(
@@ -847,6 +857,13 @@ pub(crate) fn finish_storm_of_steel_after_sly_batch(
 /// `Populate` RVA `0x5ca84` after combat. `PowerCmd.Apply` RVA `0x3ef988`
 /// returns at its ending gate before mutation, so final lethal carries the
 /// reward but no marker. Python `_run_steps_inner` (frozen, deleted #2827) has the same order.
+///
+/// After a killing hit `TheHunt/<OnPlay>d__9` RVA `0x3c2c10` adds the card
+/// reward with no combat gate (`CombatRoom::AddExtraReward`, IL_01d2) and then
+/// awaits `PowerCmd.Apply<TheHuntPower>` (IL_01fa), which returns at `IsEnding`
+/// (`<Apply>d__1`1` `0x3ef988` IL_0025-002a). The marker follows a kill, and the
+/// engine latches `history.over` at a killing blow that leaves no living
+/// primary, so `history.over` is that gate here (#3515).
 pub(crate) fn the_hunt_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     #[derive(Clone, Copy)]
     struct Plan {
@@ -1917,6 +1934,11 @@ mod tests {
                 .unwrap();
             let catalog = builder.build();
             let mut state = HotState::at_defaults();
+            // The Shiv below hits this live enemy; it also keeps the combat
+            // live, so the Fan power applies (#3515).
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 20));
             state.hp = 50;
             state.energy = 20;
             state.next_card_uid = 3;
@@ -1981,9 +2003,6 @@ mod tests {
             );
 
             let generated_uid = state.piles.get(PileId::Hand).as_slice()[0].uid;
-            state
-                .monsters_mut()
-                .push(HotMonster::new(MonsterKind::Toadpole, 20));
             play_card(&mut state, &catalog, generated_uid, None, None, &mut events).unwrap();
             assert_eq!(state.monsters[0].hp, 16, "generated Shiv reads live Fan");
         }
@@ -2824,6 +2843,10 @@ mod tests {
     #[test]
     fn bullet_time_burst_replays_the_live_hand_and_public_cleanup_remains_exact() {
         let (mut state, catalog) = bullet_state();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let source = state.piles.get_mut(PileId::Play).make_mut().remove(0);
         state
             .piles
@@ -2930,6 +2953,10 @@ mod tests {
     #[test]
     fn bullet_time_public_later_burst_row_overflow_rolls_back_the_whole_action() {
         let (mut state, catalog) = bullet_state();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let source = state.piles.get_mut(PileId::Play).make_mut().remove(0);
         state
             .piles
@@ -3837,5 +3864,84 @@ mod tests {
         assert_eq!(state.monsters[0].powers.value(PowerId::Strength), -2);
         assert_eq!(state.monsters[0].powers.value(PowerId::Weak), 2);
         assert_eq!(state.monsters[0].hp, 44);
+    }
+
+    /// #3515: Fan of Knives, Malaise and Shadow Step each await
+    /// `PowerCmd.Apply` (`<Apply>d__1`1` 0x3ef988 IL_0025, `IsEnding`) and used
+    /// to gate on `history.over`. While the combat is ending before the over
+    /// latch each is a no-op; the Adaptable-vetoed control writes its power
+    /// (Malaise's Strength and Weak land on the live Gas Bomb).
+    #[test]
+    fn silent_rare_power_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let mut builder = CatalogBuilder::new();
+        let fan = builder.intern(identity(CardId::FanOfKnives, 0)).unwrap();
+        builder.intern(identity(CardId::Shiv, 0)).unwrap();
+        let malaise = builder.intern(identity(CardId::Malaise, 0)).unwrap();
+        let shadow = builder.intern(identity(CardId::ShadowStep, 0)).unwrap();
+        let catalog = builder.build();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.energy = 9;
+        template.piles.get_mut(PileId::Hand).make_mut().extend([
+            HotCard {
+                uid: 1,
+                atom: fan,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            },
+            HotCard {
+                uid: 2,
+                atom: malaise,
+                flags: 0,
+            },
+            HotCard {
+                uid: 3,
+                atom: shadow,
+                flags: 0,
+            },
+        ]);
+        type Body = fn(&mut StepCtx<'_>) -> Result<(), EngineRefusal>;
+        type Row<'a> = (
+            &'a str,
+            crate::catalog::CardAtom,
+            u32,
+            Body,
+            &'a [CompiledArg],
+            bool,
+        );
+        let rows: [Row<'_>; 3] = [
+            (
+                "Fan of Knives",
+                fan,
+                1,
+                fan_of_knives_exact,
+                &[CompiledArg::I(1)],
+                false,
+            ),
+            ("Malaise", malaise, 2, malaise_x, &[CompiledArg::I(0)], true),
+            (
+                "Shadow Step",
+                shadow,
+                3,
+                shadow_step_power_exact,
+                &[CompiledArg::I(1)],
+                false,
+            ),
+        ];
+        for (label, atom, uid, body, args, targeted) in rows {
+            let spec = *catalog.spec(atom).unwrap();
+            crate::engine::damage::assert_ending_window_gate(&template, label, |s, t| {
+                body(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: uid,
+                    target: targeted.then_some(t),
+                    selection: None,
+                    x_value: i64::from(targeted) * 2,
+                    args,
+                    events: &mut Vec::new(),
+                })
+            });
+        }
     }
 }

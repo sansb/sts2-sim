@@ -525,10 +525,21 @@ const DRUM_OF_BATTLE_DRAWS: usize = 2;
 /// already carries that card as its action's pick (the only one
 /// `legal_actions` offers); an auto-play or replay reaches here with `None`,
 /// and takes the sole Hand card itself.
+///
+/// Ending gates (#3515), each the shared IsOverOrEnding projection:
+/// `CardSelectCmd.FromHand` (`BurningPact/<OnPlay>d__5` RVA `0x390434`
+/// IL_004c) returns no card at `IsOverOrEnding` (`<FromHand>d__28` `0x3e7568`
+/// IL_0036-003d), so nothing is exhausted, and the `CardPileCmd.Draw` after
+/// the Exhaust (IL_01bc) returns at `IsOverOrEnding` too (`<DrawInternal>d__21`
+/// `0x3e3a70` IL_0029-003b). An ending combat therefore makes the whole body a
+/// no-op.
 pub(crate) fn exhaust_draw(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let draws = one_int(ctx, "exhaust_draw")?;
     let draws =
         usize::try_from(draws).map_err(|_| EngineRefusal::CounterOverflow("exhaust_draw draws"))?;
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
+    }
     let selection = match (ctx.selection, ctx.state.piles.get(PileId::Hand).as_slice()) {
         (None, [sole]) => Some(sole.uid),
         (selection, _) => selection,
@@ -599,6 +610,8 @@ pub(crate) fn exhaust_draw(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if owner_live || result == crate::engine::draw::CardExhaustedResult::Suspended {
         return Ok(());
     }
+    // An Exhaust listener that kills latches `history.over`, which is the
+    // Draw's IsOverOrEnding gate here; the entry gate covers every ending entry.
     if !ctx.state.history.over {
         crate::engine::play::draw_cardplay_no_result(ctx, draws)?;
     }
@@ -654,6 +667,12 @@ pub(crate) fn exhaust_nonattacks_block(ctx: &mut StepCtx<'_>) -> Result<(), Engi
     )
 }
 
+/// `SecondWind/<OnPlay>d__7` RVA `0x3b9174`
+/// awaits `CardCmd.Exhaust` per frozen card (IL_00dc); `<Exhaust>d__6` (`0x3e06c8`)
+/// returns at `IsOverOrEnding` (IL_0025-002a) before its `CardPileCmd.Add`, so
+/// an exhaust listener that ends the combat stops the walk before the next card
+/// leaves Hand: the shared IsOverOrEnding projection, not `history.over`
+/// (#3515).
 fn continue_second_wind(
     state: &mut crate::hot::HotState,
     catalog: &Catalog,
@@ -673,8 +692,8 @@ fn continue_second_wind(
         .spec(source.atom)
         .ok_or(EngineRefusal::UnknownAtom(source.atom))?;
     for (cursor, uid) in remaining.iter().copied().enumerate() {
-        // `if s.over: break` — the next Exhaust command is gated.
-        if state.history.over {
+        // The next Exhaust command is gated (IsOverOrEnding).
+        if crate::engine::damage::damage_combat_is_ending(state) {
             break;
         }
         let hand = state.piles.get_mut(PileId::Hand).make_mut();
@@ -827,6 +846,10 @@ fn apply_infernal_blade(
 /// The amount stacks permanently, while the private self-damage counter gains
 /// one per application. Owner-side HP-loss sites read the public amount and
 /// the turn-start tail reads the private counter.
+///
+/// `Inferno/<OnPlay>d__3` RVA `0x3a72b8` awaits `PowerCmd.Apply<InfernoPower>`
+/// (IL_00d1) and increments the private counter only on the non-null result
+/// (IL_0131-0134). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn inferno(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount: i32 = one_int(ctx, "inferno")?
         .try_into()
@@ -834,7 +857,7 @@ pub(crate) fn inferno(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if amount < 0 {
         return Err(EngineRefusal::MalformedArgs("inferno"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let inferno = ctx
@@ -876,6 +899,9 @@ pub(crate) fn inferno(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// The first application seeds the private attack count from owner play-start
 /// history; stacking changes only the public amount. `play` advances that
 /// private count before each attack body and mints clones exactly at three.
+///
+/// v0.111.0 `Juggling/<OnPlay>` RVA `0x3a84f8` awaits `PowerCmd.Apply<JugglingPower>` at IL_00c1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn juggling_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount: i32 = one_int(ctx, "juggling_exact")?
         .try_into()
@@ -883,7 +909,7 @@ pub(crate) fn juggling_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
     if amount < 0 {
         return Err(EngineRefusal::MalformedArgs("juggling_exact"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let current = ctx.state.powers.value(PowerId::Juggling);
@@ -1012,6 +1038,12 @@ pub(crate) fn stomp_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// work. (This comment described the kind as escalated on player powers until
 /// batch 1b replaced it: slice 2 ported the body and listed the kind in the
 /// same diff, but left the stub's notice above it.)
+///
+/// `Dominate/<OnPlay>d__8` RVA `0x39995c` awaits `Apply<VulnerablePower>`
+/// (IL_00ee) and then `Apply<StrengthPower>` on the owner (IL_018d). `<Apply>d__1`1`
+/// (`0x3ef988`) returns at `IsEnding` (IL_0025-002a), and `apply_owner_strength`
+/// still reads `history.over`, so the Strength tests the shared IsEnding
+/// projection (#3515).
 pub(crate) fn vulnerable_then_strength_current(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "vulnerable_then_strength_current")?;
     let amount: i32 = amount
@@ -1032,7 +1064,7 @@ pub(crate) fn vulnerable_then_strength_current(ctx: &mut StepCtx<'_>) -> Result<
         amount,
         ctx.events,
     )?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     // A **fresh** read after the awaited application, not the amount just
@@ -1082,6 +1114,10 @@ mod tests {
             let step = catalog.steps(&spec)[0];
             let args = catalog.args(step.args);
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.multiplayer_ally_key = 1;
             state
@@ -1635,6 +1671,10 @@ mod tests {
         };
         for hand in [vec![card(1)], vec![card(1), card(2)]] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state
                 .piles
                 .get_mut(PileId::Hand)
@@ -1725,5 +1765,145 @@ mod tests {
 
         assert_eq!(state, before);
         assert!(events.is_empty());
+    }
+
+    fn plain_identity(id: CardId) -> crate::catalog::CardIdentity {
+        crate::catalog::CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: None,
+        }
+    }
+
+    /// #3515: each body gates on its native command, not `history.over`,
+    /// and is a no-op while the combat is ending before the over latch; the
+    /// Adaptable-vetoed control writes:
+    /// - Burning Pact's `CardSelectCmd.FromHand` (`<FromHand>d__28` 0x3e7568
+    ///   IL_0036, `IsOverOrEnding`): nothing is exhausted or drawn;
+    /// - Second Wind's per-card `CardCmd.Exhaust` (`<Exhaust>d__6` 0x3e06c8
+    ///   IL_0025, `IsOverOrEnding`);
+    /// - Inferno's and Juggling's `PowerCmd.Apply`, and Dominate's owner
+    ///   `Apply<StrengthPower>` (`<Apply>d__1`1` 0x3ef988 IL_0025, `IsEnding`).
+    #[test]
+    fn ironclad_uncommon_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        use crate::catalog::CompiledArg;
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::BurningPact,
+            CardId::SecondWind,
+            CardId::Inferno,
+            CardId::Juggling,
+            CardId::Dominate,
+            CardId::DefendIronclad,
+        ] {
+            builder.intern(plain_identity(id)).unwrap();
+        }
+        let catalog = builder.build();
+        let spec = |id| {
+            *catalog
+                .spec(catalog.atom(&plain_identity(id)).unwrap())
+                .unwrap()
+        };
+        let defend = catalog
+            .atom(&plain_identity(CardId::DefendIronclad))
+            .unwrap();
+        let card = |uid| HotCard {
+            uid,
+            atom: defend,
+            flags: 0,
+        };
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(card(1));
+        template
+            .piles
+            .get_mut(PileId::Draw)
+            .make_mut()
+            .extend([card(2), card(3)]);
+        template
+            .piles
+            .get_mut(PileId::Play)
+            .make_mut()
+            .push(HotCard {
+                uid: 7,
+                atom: catalog.atom(&plain_identity(CardId::SecondWind)).unwrap(),
+                flags: 0,
+            });
+        type Body = fn(&mut StepCtx<'_>) -> Result<(), EngineRefusal>;
+        let rows: [(CardId, Body, &[CompiledArg], Option<u32>); 5] = [
+            (
+                CardId::BurningPact,
+                exhaust_draw,
+                &[CompiledArg::I(2)],
+                Some(1),
+            ),
+            (
+                CardId::SecondWind,
+                exhaust_nonattacks_block,
+                &[CompiledArg::I(5)],
+                None,
+            ),
+            (CardId::Inferno, inferno, &[CompiledArg::I(6)], None),
+            (CardId::Juggling, juggling_exact, &[CompiledArg::I(1)], None),
+            (
+                CardId::Dominate,
+                vulnerable_then_strength_current,
+                &[CompiledArg::I(1)],
+                None,
+            ),
+        ];
+        for (id, body, args, selection) in rows {
+            let spec = spec(id);
+            crate::engine::damage::assert_ending_window_gate(
+                &template,
+                &format!("{id:?}"),
+                |s, t| {
+                    body(&mut StepCtx {
+                        state: s,
+                        catalog: &catalog,
+                        spec: &spec,
+                        source_uid: 7,
+                        target: Some(t),
+                        selection,
+                        x_value: 0,
+                        args,
+                        events: &mut Vec::new(),
+                    })
+                },
+            );
+        }
+        // Dominate's owner Strength reads the target's live Vulnerable, so the
+        // target must already carry some for the gated write to exist.
+        let dominate = spec(CardId::Dominate);
+        for vetoed in [false, true] {
+            let mut state = template.clone();
+            let target = crate::engine::damage::push_ending_window_roster(&mut state, vetoed);
+            state.monsters_mut()[target].powers.set(
+                crate::ids::PowerId::Vuln,
+                crate::powers::SlotWire::Int,
+                2,
+            );
+            vulnerable_then_strength_current(&mut StepCtx {
+                state: &mut state,
+                catalog: &catalog,
+                spec: &dominate,
+                source_uid: 7,
+                target: Some(target),
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(1)],
+                events: &mut Vec::new(),
+            })
+            .unwrap();
+            assert_eq!(
+                state.powers.value(crate::ids::PowerId::Strength),
+                if vetoed { 3 } else { 0 },
+                "Dominate vetoed={vetoed}"
+            );
+        }
     }
 }

@@ -1150,6 +1150,9 @@ fn void_form_private_writer_and_reader_call_site_census_is_exact() {
         &[
             "src/boundary.rs:PlayerSlot::EndTurnRequested => Value::from(state.fanouts.void_form_end_turn_requested()),",
             "src/engine/admission.rs:if state.fanouts.void_form_end_turn_requested() && state.pending.is_none() {",
+            // #3387: the top-level publish of a queued hook action refuses
+            // beside a pending Void Form request; it consumes nothing.
+            "src/engine/hook_action.rs:if state.fanouts.void_form_end_turn_requested() {",
             "src/engine/mod.rs:if next.fanouts.void_form_end_turn_requested()",
             "src/engine/mod.rs:if next.fanouts.void_form_end_turn_requested()",
             "src/engine/mod.rs:if state.fanouts.void_form_end_turn_requested() && state.pending.is_none() {",

@@ -223,6 +223,12 @@ pub(crate) fn autoplay_draw_x(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal
 /// consumes the private self counter first and only then gains the public
 /// amount as flat Block; admission refuses every reachable same-hook peer
 /// because canonical state does not retain their first-application order.
+///
+/// `CrimsonMantle/<OnPlay>d__5` RVA `0x395980` awaits
+/// `PowerCmd.Apply<CrimsonMantlePower>` (IL_00e2) and increments the private
+/// counter only on the non-null result (IL_0141-0145). `<Apply>d__1`1`
+/// (`0x3ef988`) returns null at `IsEnding` (IL_0025-002a), so both writes follow
+/// the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn crimson_mantle(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = exact_active_crimson_mantle(ctx.state, ctx.catalog, ctx.source_uid, ctx.spec)?;
     if ctx.args != [CompiledArg::I(i64::from(amount))]
@@ -232,7 +238,7 @@ pub(crate) fn crimson_mantle(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
     {
         return Err(EngineRefusal::MalformedArgs("crimson_mantle"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let mantle = ctx
@@ -358,6 +364,12 @@ fn resolve_monster_identity(
     }
 }
 
+/// `FiendFire/<OnPlay>d__7` RVA `0x39e0dc`
+/// awaits `CardCmd.Exhaust` per frozen card (IL_00a4); `<Exhaust>d__6` (`0x3e06c8`)
+/// returns at `IsOverOrEnding` (IL_0025-002a) before its `CardPileCmd.Add`, so
+/// an exhaust listener that ends the combat stops the walk before the next card
+/// leaves Hand: the shared IsOverOrEnding projection, not `history.over`
+/// (#3515).
 #[allow(clippy::too_many_arguments)]
 fn continue_fiend_fire(
     state: &mut HotState,
@@ -371,7 +383,7 @@ fn continue_fiend_fire(
     events: &mut Vec<crate::engine::Event>,
 ) -> Result<(), EngineRefusal> {
     for (cursor, frozen_uid) in remaining.iter().copied().enumerate() {
-        if state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(state) {
             break;
         }
         let hand = state.piles.get_mut(PileId::Hand).make_mut();
@@ -632,6 +644,10 @@ fn exact_active_primal_force(
     Ok(source)
 }
 
+/// `PrimalForce/<OnPlay>d__3` RVA `0x3b3990` awaits one plural
+/// `CardCmd.Transform` (IL_0124), whose `<Transform>d__13` (`0x3e0ae0`) returns
+/// at `IsEnding` (IL_0032-0037): the entry gate is the shared IsEnding
+/// projection, not `history.over` (#3515).
 fn transform_primal_force_hand(
     state: &mut HotState,
     catalog: &Catalog,
@@ -641,7 +657,7 @@ fn transform_primal_force_hand(
 ) -> Result<(), EngineRefusal> {
     let replacement_identity = primal_force_program(catalog, spec)?;
     exact_active_primal_force(state, catalog, source_uid, spec)?;
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     let replacement_atom = catalog
@@ -1056,6 +1072,12 @@ struct StokeContinuation<'a> {
     original_count: usize,
 }
 
+/// `Stoke/<OnPlay>d__1` RVA `0x3bef44`
+/// awaits `CardCmd.Exhaust` per frozen card (IL_00f6); `<Exhaust>d__6` (`0x3e06c8`)
+/// returns at `IsOverOrEnding` (IL_0025-002a) before its `CardPileCmd.Add`, so
+/// an exhaust listener that ends the combat stops the walk before the next card
+/// leaves Hand: the shared IsOverOrEnding projection, not `history.over`
+/// (#3515).
 fn continue_stoke(
     state: &mut HotState,
     catalog: &Catalog,
@@ -1091,7 +1113,7 @@ fn continue_stoke(
         .collect::<Vec<_>>();
     preflight_card_play_after_physical_moves(state, &repairs)?;
     for (cursor, uid) in remaining.iter().copied().enumerate() {
-        if state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(state) {
             break;
         }
         let hand = state.piles.get_mut(PileId::Hand).make_mut();
@@ -4017,6 +4039,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.piles.get_mut(PileId::Play).make_mut().push(source);
         state.piles.get_mut(PileId::Draw).make_mut().extend([
@@ -4087,6 +4113,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.piles.get_mut(PileId::Play).make_mut().push(source);
         state.piles.get_mut(PileId::Draw).make_mut().extend([
@@ -4916,5 +4946,91 @@ mod tests {
         };
         pacts_end_exact(&mut ctx).unwrap();
         assert_eq!(state.monsters[0].hp, 32);
+    }
+
+    /// #3515: each body gates on its native command, not `history.over`.
+    /// While the combat is ending before the over latch:
+    /// - Crimson Mantle's `Apply<CrimsonMantlePower>` (`<Apply>d__1`1`
+    ///   0x3ef988 IL_0025, `IsEnding`) writes neither amount;
+    /// - Fiend Fire's and Stoke's per-card `CardCmd.Exhaust` (`<Exhaust>d__6`
+    ///   0x3e06c8 IL_0025, `IsOverOrEnding`) exhausts nothing;
+    /// - Primal Force's plural `CardCmd.Transform` (`<Transform>d__13`
+    ///   0x3e0ae0 IL_0032, `IsEnding`) transforms nothing.
+    ///
+    /// The Adaptable-vetoed control writes, exhausts and transforms.
+    #[test]
+    fn ironclad_rare_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let (template, catalog, source) = crimson_fixture(0, PileId::Play);
+        let spec = *catalog.spec(source.atom).unwrap();
+        crate::engine::damage::assert_ending_window_gate(&template, "Crimson Mantle", |s, _| {
+            crimson_mantle(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: source.uid,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(7)],
+                events: &mut Vec::new(),
+            })
+        });
+
+        let (mut template, catalog, source, strike, defend) = fiend_fixture(0);
+        template
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .extend([strike, defend]);
+        let spec = *catalog.spec(source.atom).unwrap();
+        crate::engine::damage::assert_ending_window_gate(&template, "Fiend Fire", |s, t| {
+            fiend_fire_exact(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: source.uid,
+                target: Some(t),
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(7)],
+                events: &mut Vec::new(),
+            })
+        });
+
+        let (mut template, catalog, source, strike, defend, _) = primal_fixture(0);
+        template.piles.get_mut(PileId::Play).make_mut().push(source);
+        template
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .extend([strike, defend]);
+        let spec = *catalog.spec(source.atom).unwrap();
+        crate::engine::damage::assert_ending_window_gate(&template, "Primal Force", |s, _| {
+            primal_force_exact(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: source.uid,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(0)],
+                events: &mut Vec::new(),
+            })
+        });
+
+        // Stoke still samples and generates after its walk; the gated write
+        // is the Exhaust of the frozen Hand.
+        for vetoed in [false, true] {
+            let (mut state, catalog, source) = stoke_fixture(0, 2);
+            state.monsters_mut().clear();
+            crate::engine::damage::push_ending_window_roster(&mut state, vetoed);
+            run_stoke_foundation(&mut state, &catalog, source, &mut Vec::new()).unwrap();
+            assert_eq!(
+                state.piles.get(PileId::Exhaust).len(),
+                if vetoed { 2 } else { 0 },
+                "Stoke vetoed={vetoed}"
+            );
+        }
     }
 }

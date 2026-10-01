@@ -2009,6 +2009,14 @@ pub(crate) fn execute(ctx: &mut StepCtx<'_>) -> Result<SelectDisposition, Engine
     let selector = selector(ctx)?;
     let candidates = candidates(ctx.state, ctx.catalog, selector)?;
     if candidates.len() <= selector.min {
+        // A native `CardSelectCmd` signals the context before this auto-take
+        // (`<FromHand>d__28` RVA `0x3e7568` IL_00b3 before IL_0152-018d;
+        // `<FromCombatPile>d__20` RVA `0x3e5e84` IL_00ae before
+        // IL_0140-017c) unless the combat is ending (IL_0036) or a
+        // `Selector` is set (#3387, `hook_action::AUTO_RESOLVED_CHOICE`).
+        super::hook_action::note_unprompted_select(
+            !ctx.state.history.over && !vakuu_selector_active(),
+        );
         apply(ctx.state, ctx.catalog, selector, &candidates, ctx.events)?;
         Ok(SelectDisposition::Complete)
     } else if vakuu_selector_active() && vakuu_program_is_exact(ctx.spec, selector) {
@@ -4690,6 +4698,10 @@ mod tests {
         // Vicious+, Juggling+, Rupture+. Execute the Vicious leaf below.
         let seeded = crate::rng::Xoshiro256StarStar::from_seed(1);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 2;
@@ -4923,6 +4935,10 @@ mod tests {
         let catalog = builder.build();
         let seeded = crate::rng::Xoshiro256StarStar::from_seed(17);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 2;
@@ -5160,6 +5176,10 @@ mod tests {
         let catalog = builder.build();
         let seeded = crate::rng::Xoshiro256StarStar::from_seed(17);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 2;
@@ -5386,6 +5406,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 2;
@@ -5650,6 +5674,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 4;

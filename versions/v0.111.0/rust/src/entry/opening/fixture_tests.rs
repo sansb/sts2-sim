@@ -3433,6 +3433,150 @@ fn a_petrified_toad_save_without_an_exact_belt_capacity_refuses() {
     assert_eq!(refusal.class(), "potion_belt_row_malformed");
 }
 
+/// The opened document's `CombatPotionGeneration` counter.
+fn potion_generation_counter(opening: &Opening) -> u64 {
+    opening.document.rng["potion_generation"].counter
+}
+
+fn frond_case(potions: Vec<Value>) -> Value {
+    let mut case = full_profile_case();
+    relic(
+        &mut case,
+        serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.DELICATE_FROND"}),
+    );
+    case["save"]["players"][0]["potions"] = Value::Array(potions);
+    case
+}
+
+/// `RELIC.DELICATE_FROND` fills every open slot at `BeforeCombatStart`
+/// (#3533).
+///
+/// `DelicateFrond/<BeforeCombatStart>d__2::MoveNext` (`0x3229bc`) is
+/// `while (Owner.HasOpenPotionSlots)` around one out-of-combat factory potion
+/// and a first-empty-slot `TryToProcure`. The body is
+/// `engine::potions::delicate_frond_before_combat_start`, whose own tests
+/// carry the native witness (a recorded run's ten fights). There is no oracle
+/// digest for these saves, since the Python simulator was deleted before the
+/// port, so this pins what the opening does with the body: which slots fill,
+/// that held potions stay, and that the stream moves two draws per open slot
+/// and nothing else moves with it.
+#[test]
+fn a_delicate_frond_save_fills_every_open_slot_from_the_potion_stream() {
+    let control = open(&full_profile_case()).expect("the control opens");
+    let base = potion_generation_counter(&control);
+
+    let empty = open(&frond_case(vec![])).expect("an empty belt opens");
+    let filled = empty.document.player["potion_slots"]
+        .as_array()
+        .expect("the belt materialises")
+        .clone();
+    assert_eq!(filled.len(), 2);
+    assert!(filled.iter().all(Value::is_string), "{filled:?}");
+    assert_eq!(potion_generation_counter(&empty), base + 4);
+
+    for (name, held_slot, open_slot) in [("slot 0 held", 0, 1), ("slot 1 held", 1, 0)] {
+        let opening = open(&frond_case(vec![potion_row(
+            "POTION.FIRE_POTION",
+            held_slot,
+        )]))
+        .unwrap_or_else(|refusal| panic!("{name}: {refusal}"));
+        let slots = &opening.document.player["potion_slots"];
+        assert_eq!(slots[held_slot as usize], "FIRE_POTION", "{name}");
+        // One open slot takes the stream's first potion, which is the empty
+        // belt's slot 0.
+        assert_eq!(slots[open_slot], filled[0], "{name}");
+        assert_eq!(potion_generation_counter(&opening), base + 2, "{name}");
+    }
+
+    // Everything but the belt and its stream is the control's.
+    let mut rng = empty.document.rng.clone();
+    rng.insert(
+        "potion_generation".to_string(),
+        control.document.rng["potion_generation"].clone(),
+    );
+    assert_eq!(rng, control.document.rng);
+    assert_eq!(empty.document.piles, control.document.piles);
+    assert_eq!(empty.document.monsters, control.document.monsters);
+}
+
+/// A full belt never enters the loop (`IL_0023` branches to the guard at
+/// `IL_00be`), so the fight is the same save without the relic's effect: no
+/// draw, no procurement.
+#[test]
+fn a_delicate_frond_save_with_a_full_belt_draws_nothing() {
+    let potions = vec![
+        potion_row("POTION.FIRE_POTION", 0),
+        potion_row("POTION.BLOCK_POTION", 1),
+    ];
+    let mut control = full_profile_case();
+    control["save"]["players"][0]["potions"] = Value::Array(potions.clone());
+    let control = open(&control).expect("the full-belt control opens");
+    let opening = open(&frond_case(potions)).expect("a full belt opens");
+    assert_eq!(
+        opening.document.player.get("potion_slots"),
+        Some(&serde_json::json!(["FIRE_POTION", "BLOCK_POTION"]))
+    );
+    assert_eq!(opening.document.rng, control.document.rng);
+}
+
+/// Frond runs in the ordinary `BeforeCombatStart` walk and Petrified Toad in
+/// the `…Late` one (`Hook/<BeforeCombatStart>d__18::MoveNext` `0x3d2574`), so
+/// the Frond fills the belt first and the Toad's Shaped Rock finds no slot,
+/// whichever relic was acquired first.
+#[test]
+fn a_delicate_frond_fills_the_belt_before_petrified_toad_procures() {
+    let frond_only = open(&frond_case(vec![])).expect("Frond alone opens");
+    for toad_first in [false, true] {
+        let mut case = frond_case(vec![]);
+        let toad = serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.PETRIFIED_TOAD"});
+        let relics = case["save"]["players"][0]["relics"]
+            .as_array_mut()
+            .expect("the save's relics are an array");
+        if toad_first {
+            relics.insert(0, toad);
+        } else {
+            relics.push(toad);
+        }
+        let opening = open(&case).expect("Frond + Toad opens");
+        assert_eq!(
+            opening.document.player.get("potion_slots"),
+            frond_only.document.player.get("potion_slots"),
+            "toad_first={toad_first}"
+        );
+        assert_eq!(opening.document.rng, frond_only.document.rng);
+    }
+}
+
+/// Like the Toad, a Frond fight without an exact positive belt capacity
+/// refuses: "every open slot" is a count only the recorded capacity gives.
+#[test]
+fn a_delicate_frond_save_without_an_exact_belt_capacity_refuses() {
+    let refusal = open(&with_relic("RELIC.DELICATE_FROND")).expect_err("capacity 0 refuses");
+    assert_eq!(refusal.class(), "potion_belt_not_exact");
+    assert!(
+        refusal.to_string().contains("RELIC.DELICATE_FROND"),
+        "{refusal}"
+    );
+}
+
+/// A Frond save whose owner's pool is not proven never reaches the body: the
+/// boundary already refuses a materialised belt without a pool proof
+/// (`potions::potion_belt_state_is_exact`), Frond or not. [`case`] records no
+/// unlock profile. The body's own provenance refusal is witnessed in
+/// `engine::potions::delicate_frond_tests`.
+#[test]
+fn a_delicate_frond_save_without_a_pool_proof_refuses_like_the_same_save_without_it() {
+    let control = open(&case()).expect_err("an unproven belt refuses at the boundary");
+    let mut with_frond = case();
+    relic(
+        &mut with_frond,
+        serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.DELICATE_FROND"}),
+    );
+    let refusal = open(&with_frond).expect_err("so does the same save with the Frond");
+    assert_eq!(refusal.class(), "boundary_unrepresentable");
+    assert_eq!(refusal.to_string(), control.to_string());
+}
+
 // ---------------------------------------------------------------------------
 // Every potion-belt row is placed exactly or refused by name (#2791)
 // ---------------------------------------------------------------------------
@@ -3914,6 +4058,9 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // of this file. `RELIC.TEA_OF_DISCOURTESY` left in the same change and
     // never counted here: it has no Rust body site, and a spent Tea's
     // `BeforeCombatStart` is inert in IL (`tea_of_discourtesy_spent`).
+    // Still 5 after #3533 retired `RELIC.DELICATE_FROND`: it had no Rust
+    // body site while gated, and its manifest row flipped by hand with the
+    // port (`engine::potions::delicate_frond_before_combat_start`).
     assert_eq!(
         gated_with_a_body.len(),
         5,

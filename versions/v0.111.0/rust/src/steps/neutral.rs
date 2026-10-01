@@ -294,6 +294,9 @@ pub(crate) fn alchemize_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal
 /// The admitted engine is strictly solo, so the listener preserves native
 /// acquisition order and owner-side gating while its teammate enumeration is
 /// exactly empty.
+///
+/// v0.111.0 `BeaconOfHope/<OnPlay>` RVA `0x38b824` awaits `PowerCmd.Apply<BeaconOfHopePower>` at IL_00c1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn beacon_of_hope_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "beacon_of_hope_exact")?;
     if ctx.spec.identity.id != CardId::BeaconOfHope
@@ -302,7 +305,9 @@ pub(crate) fn beacon_of_hope_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRe
     {
         return Err(EngineRefusal::MalformedArgs("beacon_of_hope_exact"));
     }
-    if ctx.state.history.over || ctx.state.powers.value(PowerId::BeaconOfHope) > 0 {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state)
+        || ctx.state.powers.value(PowerId::BeaconOfHope) > 0
+    {
         return Ok(());
     }
     if !ctx
@@ -886,6 +891,9 @@ pub(crate) const MAX_CALAMITY_GENERATED_PER_PLAY: i32 = 256;
 /// owner "attack" Generation pool on every later play. The exact
 /// `_run_steps_inner` writer body; the awaited
 /// `resolve_calamity_generation` reader.
+///
+/// v0.111.0 `Calamity/<OnPlay>` RVA `0x390b94` awaits `PowerCmd.Apply<CalamityPower>` at IL_0040.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn calamity_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if ctx.spec.identity.id != CardId::Calamity
         || !matches!(ctx.spec.identity.upgrade, 0 | 1)
@@ -899,7 +907,7 @@ pub(crate) fn calamity_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
         return Err(EngineRefusal::MalformedArgs("calamity_exact"));
     }
     exact_active_neutral_source(ctx, CardId::Calamity, "calamity_exact source")?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let owner = ctx
@@ -1884,6 +1892,9 @@ pub(crate) fn nostalgia(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Existing NoBlock zeroes the leading powered Block. The newly-applied
 /// duration is ending-gated after that complete block/listener command and
 /// decrements once after each enemy side without a fresh-application skip.
+///
+/// `PanicButton/<OnPlay>d__8` RVA `0x3b1660` awaits `CreatureCmd.GainBlock`
+/// (IL_0041) and then `PowerCmd.Apply<NoBlockPower>` (IL_00cf). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn panic_button_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (block, duration) = two_ints(ctx, "panic_button_exact")?;
     let expected_block = 30 + 10 * i64::from(ctx.spec.identity.upgrade);
@@ -1899,7 +1910,7 @@ pub(crate) fn panic_button_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefu
         .checked_add(2)
         .ok_or(EngineRefusal::CounterOverflow("no block"))?;
     gain_powered_card_block(ctx.state, ctx.catalog, ctx.spec, block, ctx.events)?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     ctx.state
@@ -1917,6 +1928,11 @@ pub(crate) fn panic_button_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefu
 /// The body promotes exact piles, freezes the complete ordered physical Hand,
 /// and parks that snapshot in the existing CardPlay continuation. Resume
 /// enumerates native ordered permutations and applies serial Exhaust commands.
+///
+/// `Purity/<OnPlay>d__5` RVA `0x3b45c0` awaits `CardSelectCmd.FromHand`
+/// (IL_0051), whose `<FromHand>d__28` (`0x3e7568`) returns no card at
+/// `IsOverOrEnding` (IL_0036-003d), before any Exhaust (IL_00dd): the shared
+/// IsOverOrEnding projection, not `history.over` (#3515).
 pub(crate) fn begin_purity_exact(
     ctx: &mut StepCtx<'_>,
 ) -> Result<Option<Vec<HotCard>>, EngineRefusal> {
@@ -1928,7 +1944,7 @@ pub(crate) fn begin_purity_exact(
     {
         return Err(EngineRefusal::MalformedArgs("purity_exact"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(None);
     }
     crate::engine::cards::normalize_card_identities(ctx.state)?;
@@ -2253,8 +2269,10 @@ fn continue_restlessness(
     finish_restlessness(state, amount)
 }
 
+/// `Restlessness/<OnPlay>d__9` RVA `0x3b7454` awaits `PlayerCmd.GainEnergy`
+/// (IL_00e7). `PlayerCmd/<GainEnergy>d__3` (`0x3ee8a0`) returns at `IsEnding` (IL_0035-003c): the shared IsEnding projection, not `history.over` (#3515).
 fn finish_restlessness(state: &mut HotState, amount: u32) -> Result<(), EngineRefusal> {
-    if !state.history.over {
+    if !crate::engine::damage::damage_combat_is_ending(state) {
         let amount: i16 = amount
             .try_into()
             .map_err(|_| EngineRefusal::CounterOverflow("restlessness energy"))?;
@@ -2291,6 +2309,12 @@ pub(crate) fn resume_restlessness_after_draw(
 /// Stable shuffle consumes the Selection stream over the complete payload-
 /// sorted Draw copy. Membership is frozen in shuffle order for projection;
 /// player options are re-enumerated in live Draw order before resume.
+///
+/// `SeekerStrike/<OnPlay>d__5` RVA `0x3b9754` shuffles (`StableShuffle`,
+/// IL_011e) before `CardSelectCmd.FromCombatPile` (IL_0172), whose
+/// `<FromCombatPile>d__20` (`0x3e5e84`) returns no card at `IsEnding`
+/// (IL_0036-003d). So the shuffle still runs and the selection tests the
+/// shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn begin_seeker_strike_exact(
     ctx: &mut StepCtx<'_>,
 ) -> Result<Option<Vec<HotCard>>, EngineRefusal> {
@@ -2336,7 +2360,7 @@ pub(crate) fn begin_seeker_strike_exact(
         },
     );
     let shortlist: Vec<_> = shuffled.into_iter().take(3).collect();
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(None);
     }
     let shortlist_uids: Vec<_> = shortlist.iter().map(|card| card.uid).collect();
@@ -2350,6 +2374,12 @@ pub(crate) fn begin_seeker_strike_exact(
         .filter(|card| shortlist_uids.contains(&card.uid))
         .collect();
     if candidates.len() <= 1 {
+        // `<OnPlay>d__5` RVA `0x3b9754` awaits `FromCombatPile` (IL_0172),
+        // which signals the context before it auto-takes a list this short
+        // (#3387, `hook_action::AUTO_RESOLVED_CHOICE`).
+        crate::engine::hook_action::note_unprompted_select(
+            !crate::engine::selection::vakuu_selector_active(),
+        );
         if let Some(card) = candidates.first() {
             crate::engine::selection::move_seeker_card(ctx.state, card.uid, ctx.events)?;
         }
@@ -2952,6 +2982,9 @@ pub(crate) fn the_ball_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
 /// acquisition position, and publishes Apply, and only then records the
 /// per-instance damage payload. The cold Rust sidecar preserves the same
 /// transient ordering inside the surrounding whole-card transaction.
+///
+/// `TheBomb/<OnPlay>d__5` RVA `0x3c2968` awaits `PowerCmd.Apply<TheBombPower>`
+/// (IL_0050) and sets its damage only on the result (IL_00c3). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn the_bomb_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (turns, damage) = two_ints(ctx, "the_bomb_exact")?;
     let expected_damage = match ctx.spec.identity.upgrade {
@@ -2989,7 +3022,7 @@ pub(crate) fn the_bomb_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
     if hailstorm_tokens != usize::from(ctx.state.powers.value(PowerId::Hailstorm) > 0) {
         return Err(EngineRefusal::MalformedArgs("the_bomb_exact order"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let uid = ctx
@@ -3023,6 +3056,10 @@ pub(crate) fn the_bomb_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
 /// Decimal, and `_apply_toric_toughness_power` owns the delayed keyed
 /// lifecycle. The Rust cold tagged record preserves the full Decimal while
 /// Block/history truncate independently.
+///
+/// `ToricToughness/<OnPlay>d__8` RVA `0x3c403c` awaits `CreatureCmd.GainBlock`
+/// (IL_0041), then `PowerCmd.Apply<ToricToughnessPower>` (IL_00d9) and sets its
+/// Block on the result (IL_0142). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn toric_toughness_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (block, duration) = two_ints(ctx, "toric_toughness_exact")?;
     let expected_block = match (ctx.spec.identity.id, ctx.spec.identity.upgrade) {
@@ -3060,7 +3097,7 @@ pub(crate) fn toric_toughness_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
             ctx.state,
             ctx.events,
         )?;
-        if ctx.state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(ctx.state) {
             return Ok(());
         }
         // #3057: ToricToughnessPower is Instanced (`get_InstanceType` RVA
@@ -3700,6 +3737,10 @@ mod tests {
             let catalog = builder.build();
             let spec = *catalog.spec(source_atom).unwrap();
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.reward_card_pool = Some(RewardPool::Ironclad);
             state.entropy_card_pool = Some(RewardPool::Ironclad);
@@ -3715,6 +3756,19 @@ mod tests {
                 uid: 17,
                 atom: source_atom,
                 flags: 0,
+            });
+            crate::engine::damage::assert_ending_window_gate(&state, "Calamity", |s, _| {
+                calamity_exact(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 17,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &[],
+                    events: &mut Vec::new(),
+                })
             });
             for (amount, hook_live) in [(0, true), (1, false)] {
                 let mut malformed = state.clone();
@@ -4753,6 +4807,9 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut direct = HotState::at_defaults();
+        direct
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
         direct.hp = 80;
         direct.next_card_uid = 21;
         direct.piles.get_mut(PileId::Draw).make_mut().push(source);
@@ -4808,6 +4865,8 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut echo = HotState::at_defaults();
+        echo.monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
         echo.hp = 80;
         echo.energy = 1;
         echo.next_card_uid = 41;
@@ -4826,6 +4885,9 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut power_echo = HotState::at_defaults();
+        power_echo
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
         power_echo.hp = 80;
         power_echo.energy = 1;
         power_echo.next_card_uid = 51;
@@ -4855,6 +4917,10 @@ mod tests {
         };
         for (replay, succeeds) in [(255, true), (256, false)] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 80;
             state.energy = 1;
             state.next_card_uid = 11;
@@ -4877,6 +4943,11 @@ mod tests {
         }
 
         let mut late = HotState::at_defaults();
+
+        late.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         late.hp = 80;
         late.energy = 1;
         late.next_card_uid = 11;
@@ -5028,6 +5099,10 @@ mod tests {
         let upgraded_atom = builder.intern(upgraded).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.piles.get_mut(PileId::Play).make_mut().extend([
@@ -5114,6 +5189,10 @@ mod tests {
         let atom = builder.intern(bomb).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
             uid: 1,
@@ -5165,6 +5244,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.energy = 10;
@@ -5228,6 +5311,11 @@ mod tests {
         let atom = builder.intern(toric).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        // A live enemy: an empty roster is an ending combat, where
+        // `CreatureCmd.GainBlock` returns at entry (#3502).
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
         state.hp = 50;
         state.max_hp = 50;
         state.energy = 10;
@@ -5371,9 +5459,8 @@ mod tests {
                 .fanouts
                 .register_after_block_gained(PowerId::Juggernaut)
         );
-        subunit
-            .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 1));
+        // `toric_state` supplies the only enemy; one HP makes Juggernaut lethal.
+        subunit.monsters_mut()[0].hp = 1;
         subunit.turn = 2;
         crate::engine::turn::begin_player_turn(&mut subunit, &catalog, &mut Vec::new()).unwrap();
         assert!(subunit.history.over);
@@ -5390,9 +5477,8 @@ mod tests {
                 .fanouts
                 .register_after_block_gained(PowerId::Juggernaut)
         );
-        terminal
-            .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 1));
+        // `toric_state` supplies the only enemy; one HP makes Juggernaut lethal.
+        terminal.monsters_mut()[0].hp = 1;
         run_toric(&mut terminal, &catalog, toric, &mut Vec::new()).unwrap();
         assert!(terminal.history.over);
         assert!(terminal.fanouts.toric_toughness().is_none());
@@ -5415,9 +5501,7 @@ mod tests {
                     .fanouts
                     .register_after_block_gained(PowerId::Juggernaut)
             );
-            state
-                .monsters_mut()
-                .push(HotMonster::new(MonsterKind::Toadpole, 1));
+            state.monsters_mut()[0].hp = 1;
             state.turn = 2;
             crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
             assert!(state.history.over);
@@ -5481,6 +5565,11 @@ mod tests {
         };
 
         let mut manual = HotState::at_defaults();
+
+        manual.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         manual.hp = 50;
         manual.max_hp = 50;
         manual.energy = 10;
@@ -5511,6 +5600,11 @@ mod tests {
         );
 
         let mut autoplay = HotState::at_defaults();
+
+        autoplay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         autoplay.hp = 50;
         autoplay.max_hp = 50;
         autoplay.next_card_uid = 18;
@@ -5657,6 +5751,10 @@ mod tests {
         assert!(events.is_empty());
 
         let mut auto = HotState::at_defaults();
+        auto.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         auto.hp = 50;
         auto.max_hp = 50;
         auto.next_card_uid = 18;
@@ -8067,6 +8165,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 2;
         state.reward_card_pool = Some(RewardPool::Defect);
@@ -8672,6 +8774,10 @@ mod tests {
             (0, 1, 2, 96),
         ] {
             let (mut state, catalog, jack, entering) = jack_fixture(0, 47);
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             let source = state.piles.get_mut(PileId::Play).make_mut().remove(0);
             let initial_pile = if mode == 0 {
                 PileId::Hand
@@ -8753,6 +8859,10 @@ mod tests {
         };
 
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state
@@ -8783,6 +8893,10 @@ mod tests {
         assert_eq!(state.energy, 5);
 
         let mut nonempty = HotState::at_defaults();
+        nonempty.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         nonempty.hp = 50;
         nonempty.energy = 3;
         nonempty
@@ -9351,5 +9465,114 @@ mod tests {
         );
         assert_eq!(candidate, before);
         assert_eq!(events, before_events);
+    }
+
+    /// #3515: each body gates on its native command, not `history.over`.
+    /// While the combat is ending before the over latch:
+    /// - Beacon of Hope, Panic Button's NoBlock, The Bomb and Toric
+    ///   Toughness's power are `PowerCmd.Apply` (`<Apply>d__1`1` 0x3ef988
+    ///   IL_0025, `IsEnding`), and Restlessness's Energy is `PlayerCmd.GainEnergy`
+    ///   (`<GainEnergy>d__3` 0x3ee8a0 IL_0035, `IsEnding`): each writes nothing;
+    /// - Purity's `CardSelectCmd.FromHand` (`<FromHand>d__28` 0x3e7568 IL_0036,
+    ///   `IsOverOrEnding`) and Seeker Strike's `FromCombatPile`
+    ///   (`<FromCombatPile>d__20` 0x3e5e84 IL_0036, `IsEnding`) open no
+    ///   selector; Seeker Strike still shuffles first (IL_011e).
+    ///
+    /// The Adaptable-vetoed control writes or opens its selector.
+    #[test]
+    fn neutral_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let beacon = identity(CardId::BeaconOfHope, 0);
+        let panic = identity(CardId::PanicButton, 0);
+        let bomb = identity(CardId::TheBomb, 0);
+        let purity = identity(CardId::Purity, 0);
+        let seeker = identity(CardId::SeekerStrike, 0);
+        let mut builder = CatalogBuilder::new();
+        for card in [beacon, panic, bomb, purity, seeker, DEFEND] {
+            builder.intern(card).unwrap();
+        }
+        let catalog = builder.build();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.max_hp = 50;
+        template.energy = 3;
+        template
+            .piles
+            .get_mut(PileId::Play)
+            .make_mut()
+            .push(card(&catalog, &bomb, 1));
+        let rows: [(StepKind, CardIdentity, &[CompiledArg]); 3] = [
+            (StepKind::BeaconOfHopeExact, beacon, &[CompiledArg::I(1)]),
+            (
+                StepKind::PanicButtonExact,
+                panic,
+                &[CompiledArg::I(30), CompiledArg::I(2)],
+            ),
+            (
+                StepKind::TheBombExact,
+                bomb,
+                &[CompiledArg::I(3), CompiledArg::I(40)],
+            ),
+        ];
+        for (kind, card_identity, args) in rows {
+            crate::engine::damage::assert_ending_window_gate(
+                &template,
+                &format!("{:?}", card_identity.id),
+                |s, _| run_card_step(kind, card_identity, s, &catalog, args, &mut Vec::new()),
+            );
+        }
+        crate::engine::damage::assert_ending_window_gate(&template, "Restlessness", |s, _| {
+            finish_restlessness(s, 2)
+        });
+        let (toric_template, toric_catalog, toric) = toric_state(0);
+        crate::engine::damage::assert_ending_window_gate(&toric_template, "Toric", |s, _| {
+            run_toric(s, &toric_catalog, toric, &mut Vec::new())
+        });
+
+        let purity_spec = *catalog.spec(catalog.atom(&purity).unwrap()).unwrap();
+        let seeker_spec = *catalog.spec(catalog.atom(&seeker).unwrap()).unwrap();
+        for vetoed in [false, true] {
+            let mut state = template.clone();
+            state
+                .piles
+                .get_mut(PileId::Hand)
+                .make_mut()
+                .push(card(&catalog, &DEFEND, 5));
+            state
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .extend([card(&catalog, &DEFEND, 6), card(&catalog, &DEFEND, 7)]);
+            let target = crate::engine::damage::push_ending_window_roster(&mut state, vetoed);
+            let purity_selector = begin_purity_exact(&mut StepCtx {
+                state: &mut state,
+                catalog: &catalog,
+                spec: &purity_spec,
+                source_uid: 1,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(3)],
+                events: &mut Vec::new(),
+            })
+            .unwrap();
+            assert_eq!(purity_selector.is_some(), vetoed, "Purity vetoed={vetoed}");
+            let seeker_selector = begin_seeker_strike_exact(&mut StepCtx {
+                state: &mut state,
+                catalog: &catalog,
+                spec: &seeker_spec,
+                source_uid: 1,
+                target: Some(target),
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(9), CompiledArg::I(3)],
+                events: &mut Vec::new(),
+            })
+            .unwrap();
+            assert_eq!(
+                seeker_selector.is_some(),
+                vetoed,
+                "Seeker Strike vetoed={vetoed}"
+            );
+        }
     }
 }

@@ -158,13 +158,14 @@ pub struct Opening {
 ///
 /// The list that one-liner prints has **46** entries at the `main` this was
 /// last re-derived against (re-derived again 2026-09-22: still 46), and
-/// **thirty-eight** of them are deliberately not here (eleven when this
+/// **thirty-nine** of them are deliberately not here (eleven when this
 /// sentence was first written; Vajra, Bound Phylactery, Byrdpip, Pael's Legion,
 /// Ring of the Snake, Girya, Petrified Toad, Letter Opener, Pael's Flesh,
 /// Eternal Feather, Ghost Seed, Kusarigama, Phylactery Unbound, Pollinous
 /// Core, Vambrace, Stone Cracker, Sling of Courage, Toolbox, Meat on the Bone,
 /// Pocketwatch, Unsettling Lamp, Blessed Antler, Jeweled Mask, Funerary Mask,
-/// Radiant Pearl, Big Mushroom and Tea of Discourtesy left the table since) —
+/// Radiant Pearl, Big Mushroom, Tea of Discourtesy and Delicate Frond left the
+/// table since) —
 /// exactly
 /// `OPENING_WINDOW_GATE_EXCLUSIONS`, which a test pins against the oracle's own
 /// manifest (`fixtures/opening_relic_hooks_v1.json`) so neither the count in
@@ -327,6 +328,31 @@ pub struct Opening {
 ///   (`start_combat`). The oracle requires an exact positive belt
 ///   capacity for it (`start_combat`), and so does [`build_pre_hook`]
 ///   ([`OpeningRefusal::PotionBeltNotExact`]).
+///
+/// # `DELICATE_FROND` (#3533)
+///
+/// Left the table on 2026-09-30. IL read on the installed v0.111.0 `sts2.dll`
+/// (sha256 `9cb4f1ad…fbf12b4`, hash-verified that day). Its one combat
+/// override is `BeforeCombatStart` (RVA `0x92734`);
+/// `<BeforeCombatStart>d__2::MoveNext` (`0x3229bc`) is `Flash` and then
+/// `while (Owner.HasOpenPotionSlots)` (`IL_00be`-`IL_00c9`) around
+/// `PotionFactory::CreateRandomPotionOutOfCombat` on `CombatPotionGeneration`
+/// (`IL_0044`) and `PotionCmd::TryToProcure(…, -1)` (`IL_0057`), leaving on a
+/// failed procurement (`IL_00bc`). The body is
+/// `engine::potions::delicate_frond_before_combat_start`, called in the
+/// ordinary pass of [`crate::engine::fire_before_combat_start`], so it
+/// completes before Petrified Toad's `…Late` procurement.
+///
+/// Like the Toad it fills the first empty slot, so [`build_pre_hook`] requires
+/// the same exact positive belt capacity
+/// ([`OpeningRefusal::PotionBeltNotExact`]). The engine body refuses a fight
+/// whose pool or stream is not proven. `BELT_BUCKLE`, whose latch a
+/// procurement clears, stays in the table, which is what makes the Frond's
+/// position among the other ordinary listeners immaterial.
+///
+/// No frozen-oracle digest exists for it (the Python simulator was deleted
+/// before this port), so its witnesses are the fixture tests' direct state
+/// assertions and the corpus captures' native opening checkpoints.
 ///
 /// # `LETTER_OPENER` and `PAELS_FLESH` (#2827)
 ///
@@ -562,9 +588,8 @@ pub struct Opening {
 /// that gate is ported here by name ([`refuse_unordered_blessed_antler_peers`]).
 /// `PENDULUM`, whose `BeforeHandDraw` counter advance the oracle leaves out of
 /// the group, runs first on both sides and touches no pile, RNG or uid.
-const OPENING_WINDOW_RELIC_BODIES: [&str; 8] = [
+const OPENING_WINDOW_RELIC_BODIES: [&str; 7] = [
     "RELIC.BELT_BUCKLE",
-    "RELIC.DELICATE_FROND",
     "RELIC.FAKE_SNECKO_EYE",
     "RELIC.FUR_COAT",
     "RELIC.NINJA_SCROLL",
@@ -573,7 +598,7 @@ const OPENING_WINDOW_RELIC_BODIES: [&str; 8] = [
     "RELIC.SNECKO_EYE",
 ];
 
-/// The thirty-eight window-hook relics deliberately **not** in
+/// The thirty-nine window-hook relics deliberately **not** in
 /// [`OPENING_WINDOW_RELIC_BODIES`], each justified in that table's doc comment.
 ///
 /// Spelled as data rather than prose so the pin
@@ -640,8 +665,11 @@ const OPENING_WINDOW_RELIC_BODIES: [&str; 8] = [
 /// `JEWELED_MASK`, `FUNERARY_MASK`, `RADIANT_PEARL`, `BIG_MUSHROOM` and
 /// `TEA_OF_DISCOURTESY` followed on 2026-09-26 (#3162); see the section above
 /// [`OPENING_WINDOW_RELIC_BODIES`].
+/// `DELICATE_FROND` followed on 2026-09-30 (#3533): its `BeforeCombatStart`
+/// belt fill is `engine::potions::delicate_frond_before_combat_start`, in the
+/// ordinary pass of [`crate::engine::fire_before_combat_start`].
 #[cfg(test)]
-const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 38] = [
+const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 39] = [
     "RELIC.ANCHOR",
     "RELIC.BAG_OF_PREPARATION",
     "RELIC.BIG_MUSHROOM",
@@ -650,6 +678,7 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 38] = [
     "RELIC.BOUND_PHYLACTERY",
     "RELIC.BRONZE_SCALES",
     "RELIC.BYRDPIP",
+    "RELIC.DELICATE_FROND",
     "RELIC.EMBER_TEA",
     "RELIC.ETERNAL_FEATHER",
     "RELIC.FUNERARY_MASK",
@@ -1811,10 +1840,12 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
     // `entry_potion_relics` (frozen Python `start_combat`, deleted #2827): Petrified Toad's
     // fixed procurement observes trailing empty slots, so the oracle demands
     // the exact positive belt capacity even when the belt is empty.
-    // `DELICATE_FROND` shares the oracle's gate but is still refused by the
-    // body table below, so only the Toad half is reachable here.
-    if relics.contains("RELIC.PETRIFIED_TOAD") {
-        petrified_toad_belt_is_exact(entry)?;
+    // `DELICATE_FROND` shares the oracle's gate (#3533): its loop fills every
+    // empty slot, which is the same capacity question.
+    for relic in ["RELIC.DELICATE_FROND", "RELIC.PETRIFIED_TOAD"] {
+        if relics.contains(relic) {
+            procuring_relic_belt_is_exact(entry, relic)?;
+        }
     }
 
     // --- the generator / owner analysis (Part C1, C3) ---------------------
@@ -2352,17 +2383,20 @@ fn girya_lifts(entry: &EntryDocument, relics: &BTreeSet<&str>) -> Result<i32, Op
 }
 
 /// The oracle's `_potion_slots_from_entry(entry)` with `require_capacity`
-/// (frozen Python, deleted #2827), for Petrified Toad.
+/// (frozen Python, deleted #2827), for Petrified Toad and Delicate Frond.
 ///
 /// `TryToProcure` fills the first empty slot, so the procurement depends on
 /// the belt's trailing empties, which only the recorded capacity says. The
-/// oracle refuses a Toad fight without an exact positive
+/// oracle refuses a Toad or Frond fight without an exact positive
 /// `max_potion_slot_count`. A malformed slot row refuses first, by its own
 /// name, through [`potion_slots`] — the same predicate every fight's belt
 /// goes through, rather than a second copy of it (#2791). (A colliding pair
 /// is refused one stage later by the boundary's dense-mirror check, as that
 /// function's doc comment says.)
-fn petrified_toad_belt_is_exact(entry: &EntryDocument) -> Result<(), OpeningRefusal> {
+fn procuring_relic_belt_is_exact(
+    entry: &EntryDocument,
+    relic: &'static str,
+) -> Result<(), OpeningRefusal> {
     potion_slots(entry)?;
     let capacity_positive = entry
         .belt
@@ -2372,7 +2406,7 @@ fn petrified_toad_belt_is_exact(entry: &EntryDocument) -> Result<(), OpeningRefu
         return Ok(());
     }
     Err(OpeningRefusal::PotionBeltNotExact {
-        relic: "RELIC.PETRIFIED_TOAD",
+        relic,
         capacity: entry.belt.max_potion_slot_count,
     })
 }

@@ -53,6 +53,9 @@ pub const IMPLEMENTED: &[StepKind] = &[StepKind::BlockNextBody];
 /// operand rules accidentally. Applying the delayed power is a separately
 /// awaited command and is therefore suppressed when the immediate powered
 /// block's Juggernaut suffix ends combat.
+///
+/// The delayed Block is `PowerCmd.Apply<BlockNextTurnPower>`: Prolong
+/// `0x3b3c94` IL_003e, Glitterstream `0x3a1bcc` IL_018f. `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn block_next_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let delayed = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::DodgeAndRoll, 0, [CompiledArg::Word(StepWord::DodgeRoll), CompiledArg::I(4)]) => {
@@ -90,7 +93,7 @@ pub(crate) fn block_next_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal
         (CardId::Prolong, 0 | 1, [CompiledArg::Word(StepWord::Prolong)]) => ctx.state.block,
         _ => return Err(EngineRefusal::MalformedArgs("block_next_body")),
     };
-    if !ctx.state.history.over {
+    if !crate::engine::damage::damage_combat_is_ending(ctx.state) {
         apply_block_next_turn(ctx.state, delayed, ctx.events)?;
     }
     Ok(())
@@ -174,6 +177,10 @@ mod tests {
             (CardId::Prolong, 1, 9, 9),
         ] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             if id == CardId::Prolong {
                 state.block = 9;
             }
@@ -194,6 +201,10 @@ mod tests {
     #[test]
     fn glitterstream_previews_before_the_immediate_gain_mutates_history() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Unmovable, SlotWire::Int, 1);
 
         run(CardId::Glitterstream, 0, &mut state).unwrap();
@@ -261,5 +272,18 @@ mod tests {
         );
         assert_eq!(state, before);
         assert!(events.is_empty());
+    }
+
+    /// #3515: the delayed Block is `PowerCmd.Apply<BlockNextTurnPower>`
+    /// (Prolong `0x3b3c94` IL_003e), which returns at `IsEnding`
+    /// (`<Apply>d__1`1` `0x3ef988` IL_0025). While the combat is ending before
+    /// the over latch Prolong adds nothing; the Adaptable-vetoed control does.
+    #[test]
+    fn prolong_skips_its_delayed_block_while_combat_is_ending_before_the_over_latch() {
+        let mut template = HotState::at_defaults();
+        template.block = 9;
+        crate::engine::damage::assert_ending_window_gate(&template, "Prolong", |s, _| {
+            run(CardId::Prolong, 0, s).map(|_| ())
+        });
     }
 }

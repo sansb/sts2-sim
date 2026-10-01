@@ -804,11 +804,14 @@ pub(crate) fn up_my_sleeve_cost_exact(ctx: &mut StepCtx<'_>) -> Result<(), Engin
 /// The player-side registry authenticates the boolean wire shape, Power cards
 /// leave every physical pile after resolving, and the owner turn-end path
 /// suppresses the complete hand flush while this marker is present.
+///
+/// v0.111.0 `WellLaidPlans/<OnPlay>` RVA `0x3c6fc8` awaits `PowerCmd.Apply<WellLaidPlansPower>` at IL_00c1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn well_laid_plans(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if !ctx.args.is_empty() {
         return Err(EngineRefusal::MalformedArgs("well_laid_plans"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     if ctx.state.powers.value(PowerId::WellLaidPlans) == 0 {
@@ -958,6 +961,10 @@ mod tests {
 
             for key in [0_usize, 1] {
                 let mut state = HotState::at_defaults();
+                state.monsters_mut().push(crate::hot::HotMonster::new(
+                    crate::ids::MonsterKind::Toadpole,
+                    100,
+                ));
                 state.hp = 50;
                 state.multiplayer_ally_key = 1;
                 assert!(
@@ -1004,6 +1011,10 @@ mod tests {
         let spec = *catalog.spec(atom).unwrap();
         let args = catalog.args(catalog.steps(&spec)[0].args);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.multiplayer_ally_key = 1;
         assert!(
@@ -1500,5 +1511,37 @@ mod tests {
         assert_eq!(state.piles.get(PileId::Draw).as_slice()[0].uid, 3);
         assert!(state.card_states.get(2).transient_retain);
         assert!(!state.card_states.get(3).transient_retain);
+    }
+
+    /// #3515: Well-Laid Plans awaits `PowerCmd.Apply<WellLaidPlansPower>`
+    /// (`0x3c6fc8` IL_00c1), which returns at `IsEnding` (`<Apply>d__1`1`
+    /// 0x3ef988 IL_0025). While the combat is ending before the over latch
+    /// it writes nothing; the Adaptable-vetoed control sets the marker.
+    #[test]
+    fn well_laid_plans_skips_while_combat_is_ending_before_the_over_latch() {
+        let identity = CardIdentity {
+            id: CardId::WellLaidPlans,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = crate::catalog::CatalogBuilder::new();
+        let atom = builder.intern(identity).unwrap();
+        let catalog = builder.build();
+        let spec = *catalog.spec(atom).unwrap();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        crate::engine::damage::assert_ending_window_gate(&template, "Well-Laid Plans", |s, _| {
+            well_laid_plans(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: 1,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[],
+                events: &mut Vec::new(),
+            })
+        });
     }
 }

@@ -755,6 +755,10 @@ mod tests {
             (0, 1, 2, 76),
         ] {
             let (mut state, catalog, identity, entering) = distraction_fixture(0, 47);
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             let source = state.piles.get_mut(PileId::Play).make_mut().remove(0);
             let initial_pile = if mode == 0 {
                 PileId::Hand

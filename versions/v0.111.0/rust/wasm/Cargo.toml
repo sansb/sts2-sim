@@ -1,0 +1,30 @@
+[package]
+name = "sts-sim-wasm"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "The browser engine (#3470): sts-sim behind a handle-based C ABI for wasm32"
+
+# Its own workspace root, so the parent crate's cargo commands never build it.
+[workspace]
+
+[lib]
+# cdylib is the shipped module; rlib lets `cargo test` exercise the same API
+# natively.
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[dependencies]
+sts-sim = { path = ".." }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+
+[profile.release]
+# The shipped module: size and speed both matter, and `wasm-opt -Oz` runs
+# after this (tools/wasm_build.py). #3412 measured this pairing at 3.55 MB raw
+# / 1.00 MB brotli and 1.03x native exact-solve time.
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"

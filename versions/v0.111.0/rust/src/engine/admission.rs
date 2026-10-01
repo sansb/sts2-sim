@@ -1382,14 +1382,61 @@ const MOVE_KINDS_WRITING_MONSTER_STRENGTH: [MoveKind; 17] = [
 
 fn hellraiser_can_be_live(state: &HotState, catalog: &Catalog) -> bool {
     state.powers.value(PowerId::Hellraiser) > 0
-        || catalog.reachable_specs().any(|spec| {
-            crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
-                == Some(spec.row)
-                && catalog
-                    .steps(spec)
-                    .iter()
-                    .any(|step| step.kind == StepKind::Hellraiser)
-        })
+        || catalog.stampede_closure().hellraiser_source_reachable
+}
+
+/// Catalog-only facts behind [`stampede_power_model_identity_closure_is_exact`]
+/// and [`hellraiser_can_be_live`].
+///
+/// Each is a pure function of the catalog's reachable specs, their rows,
+/// steps and args, so [`crate::catalog::CatalogBuilder::build`] computes them
+/// once rather than every continuation rehearsal rescanning the catalog
+/// (#3420).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct StampedeClosureFacts {
+    /// An admitted, registry-exact Stampede L0/L1 is execution-reachable.
+    stampede_source_reachable: bool,
+    /// A registry-exact reachable spec carries a Hellraiser step.
+    hellraiser_source_reachable: bool,
+    /// See [`attack_descendants_preserve_stampede_identity`].
+    attack_descendants_preserve_stampede_identity: bool,
+}
+
+impl StampedeClosureFacts {
+    pub(crate) fn of(catalog: &Catalog) -> Self {
+        // Identity first: the conjuncts are pure, and admitting a row is by
+        // far the most expensive, so a non-Stampede row must not pay it.
+        let stampede_source_reachable = catalog.reachable_specs().any(|spec| {
+            matches!(
+                (spec.identity.id, spec.identity.upgrade),
+                (CardId::Stampede, 0 | 1)
+            ) && spec_carries_registry_row(spec)
+                && card_row_is_admitted(catalog, spec)
+        });
+        let hellraiser_source_reachable = catalog.reachable_specs().any(|spec| {
+            catalog
+                .steps(spec)
+                .iter()
+                .any(|step| step.kind == StepKind::Hellraiser)
+                && spec_carries_registry_row(spec)
+        });
+        Self {
+            stampede_source_reachable,
+            hellraiser_source_reachable,
+            attack_descendants_preserve_stampede_identity:
+                attack_descendants_preserve_stampede_identity(catalog),
+        }
+    }
+}
+
+/// Whether `spec` carries the generated registry row for its identity.
+///
+/// `CardRow` is `Eq`, so a row that is the registry's own static (the
+/// catalog's usual case) is equal without the deep comparison; only a row
+/// that is not pays for it (#3420).
+fn spec_carries_registry_row(spec: &CardSpec) -> bool {
+    crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
+        .is_some_and(|row| std::ptr::eq(row, spec.row) || row == spec.row)
 }
 
 /// History Course's CreateDupe and Juggling/Adaptive Strike clones preserve
@@ -1573,80 +1620,24 @@ fn swift_enchantment_draw_is_reachable(catalog: &Catalog) -> bool {
     })
 }
 
-/// A relic command whose synchronous `CardPileCmd.Draw` can still be issued
-/// in this fight. Each draws through `draw::draw_cards` with
-/// `DrawSource::Command`, which has no persisted owner, so a nested
-/// selecting Hellraiser Strike or a Stratagem reshuffle selection would
-/// refuse late. They stay admission walls, each under its own name (#3110).
-///
-/// Centennial Puzzle is no longer one of them (#3114): its three one-card
-/// Draws run on the resumable Draw frame whenever Hellraiser or Stratagem is
-/// live, and a park is owned by the action's ActionReplay receipt
-/// (`engine::puzzle`), whichever damage caller fired it. Joss Paper's
-/// threshold Draw joined it in #3201 (`JossPaper/<DrawIfThresholdMet>d__27`
-/// RVA `0x327888` IL_0058-0094, from both its `AfterCardExhausted` and
-/// `AfterSideTurnEnd` bodies).
-///
-/// Gremlin Horn cannot join them on that carrier (#3383). The receipt carrier
-/// assumes nothing runs between the park and the answer. Gremlin Horn's Draw
-/// breaks that assumption, because of how its hook awaits it.
-/// `GremlinHorn/<AfterDeath>d__6::MoveNext` RVA `0x326170` (v0.111.0,
-/// SHA-256 `9cb4f1ad…`) awaits `GainEnergy` (IL_0062) and then
-/// `CardPileCmd.Draw(choiceContext, …)` (IL_00d9) as its tail. The
-/// `choiceContext` there is a `HookPlayerChoiceContext`, one per listener,
-/// which `Hook/<AfterDeath>d__28::MoveNext` RVA `0x3cd984` builds at IL_008f.
-/// That hook does not await the listener's task. It awaits
-/// `AssignTaskAndWaitForPauseOrCompletion` (IL_00b6), a `WhenAny` of the task
-/// and the context's paused source (`<…>d__34` RVA `0x3d62fc` IL_005c-0070).
-/// Draw, Hellraiser's AutoPlay and Stratagem's selection all pass that same
-/// context down:
-/// - `CardPileCmd/<DrawInternal>d__21` RVA `0x3e3a70` IL_01c6 and IL_031f;
-/// - `HellraiserPower/<AfterCardDrawnEarly>d__7` RVA `0x33c1a8` IL_011e-012e;
-/// - `StratagemPower/<AfterShuffle>d__4` RVA `0x34688c` IL_0046-0078.
-///
-/// So a selecting Strike, or a Stratagem pick, signals the Horn's hook
-/// context. `HookPlayerChoiceContext/<SignalPlayerChoiceBegun>d__37` RVA
-/// `0x3d64f4` then does three things for the local player (IL_0268-02a4):
-/// 1. It moves the rest of the listener into its own `GenericHookGameAction`
-///    through `RequestEnqueueHookAction`.
-/// 2. It releases the paused source, so the AfterDeath walk goes on to its
-///    later listeners and the Kill finishes.
-/// 3. It shows the choice only once that queued action starts running.
-///
-/// The Draw's choice therefore comes after the rest of the enclosing command.
-/// Owning it would take a model of the hook-action queue, so the walls stay.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum RelicCommandDraw {
-    GremlinHorn,
-}
-
-impl RelicCommandDraw {
-    const ALL: [Self; 1] = [Self::GremlinHorn];
-
-    const fn relic(self) -> RelicId {
-        match self {
-            Self::GremlinHorn => RelicId::RelicGremlinHorn,
-        }
-    }
-
-    const fn hellraiser_wall(self) -> &'static str {
-        match self {
-            Self::GremlinHorn => "Hellraiser Gremlin Horn Draw",
-        }
-    }
-
-    const fn stratagem_wall(self) -> &'static str {
-        match self {
-            Self::GremlinHorn => "Stratagem Gremlin Horn Draw",
-        }
-    }
-
-    /// Whether this relic can issue its Draw in this fight. It has no
-    /// once-per-combat latch.
-    fn can_draw(self, catalog: &Catalog) -> bool {
-        catalog.hooks().owns(self.relic())
-    }
-}
+// Non-card-program relic Draws under a selecting Hellraiser Strike or a
+// Stratagem reshuffle selection (#3110) no longer need admission walls:
+//
+// * Centennial Puzzle (#3114), Joss Paper (#3201) and the Swift enchantment
+//   (#3115) run on the resumable Draw frame, and a park is owned by the
+//   action's ActionReplay receipt (`engine::puzzle`).
+// * Gremlin Horn (#3387) cannot use that carrier, because
+//   `Hook/<AfterDeath>d__28::MoveNext` RVA `0x3cd984` gives the listener its
+//   own `HookPlayerChoiceContext` (IL_008f) and awaits
+//   `AssignTaskAndWaitForPauseOrCompletion` (IL_00b6), so
+//   `HookPlayerChoiceContext/<SignalPlayerChoiceBegun>d__37` RVA `0x3d64f4`
+//   moves the rest of its Draw into a queued `GenericHookGameAction`
+//   (IL_0282-028e) that runs after the enclosing action. That queue is
+//   modeled by `engine::hook_action`; the cases it does not model (a death
+//   during EndTurn, a second queued action, a choice beside it, combat end,
+//   a moved option source) refuse at runtime under their own names.
+//   The walls "Hellraiser Gremlin Horn Draw" and "Stratagem Gremlin Horn
+//   Draw" retired with it.
 
 /// Receipt-owned Draws issued inside a native deferred-choice hook listener
 /// whose later listeners are not proven to commute with the choice (#3386).
@@ -1910,8 +1901,7 @@ fn attack_descendants_preserve_stampede_identity(catalog: &Catalog) -> bool {
         .reachable_specs()
         .filter(|spec| spec.is_attack)
         .all(|spec| {
-            crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
-                == Some(spec.row)
+            spec_carries_registry_row(spec)
                 && catalog.steps(spec).iter().all(|step| {
                     !matches!(step.kind, StepKind::Stampede | StepKind::Hellraiser)
                         && !catalog.args(step.args).iter().any(|arg| {
@@ -1939,22 +1929,13 @@ pub(crate) fn stampede_power_model_identity_closure_is_exact(
     state: &HotState,
     catalog: &Catalog,
 ) -> bool {
-    let stampede_source_reachable = catalog.reachable_specs().any(|spec| {
-        card_row_is_admitted(catalog, spec)
-            && matches!(
-                (spec.identity.id, spec.identity.upgrade),
-                (CardId::Stampede, 0 | 1)
-            )
-            && crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
-                == Some(spec.row)
-    });
+    let facts = catalog.stampede_closure();
     let stampede_can_be_live =
-        state.powers.value(PowerId::Stampede) > 0 || stampede_source_reachable;
+        state.powers.value(PowerId::Stampede) > 0 || facts.stampede_source_reachable;
     if !stampede_can_be_live {
         return true;
     }
-    !hellraiser_can_be_live(state, catalog)
-        || attack_descendants_preserve_stampede_identity(catalog)
+    !hellraiser_can_be_live(state, catalog) || facts.attack_descendants_preserve_stampede_identity
 }
 
 /// Whether an admitted Alchemize source can encounter a vacant belt slot.
@@ -2011,6 +1992,140 @@ fn lightning_channeled_tracking_is_admissible(
     } else {
         !voltaic_present
     }
+}
+
+/// #3390: whether a Jack of All Trades result `id`, once in Hand, can read the
+/// live Generation stream before a LATER physical Jack's play, and so move
+/// that Jack's seeded prefix.
+///
+/// `JackOfAllTrades/<OnPlay>d__6::MoveNext` RVA `0x3a7ecc` draws its whole
+/// result set first (`RunRngSet::get_CombatCardGeneration` IL `0x008f`,
+/// `CardFactory::GetDistinctForCombat` IL `0x0094`) and only then adds each
+/// result to Hand (`CardPileCmd::AddGeneratedCardToCombat` IL `0x00c6`), so
+/// a result can only act after the draw that produced it. Every direct reader
+/// of that getter in the v0.111.0 DLL (sha `9cb4f1ad…`, an all-method-body
+/// call scan) that lies in Jack's Colorless pool
+/// (`content_tables::JACK_OF_ALL_TRADES_POOL_V1091`) is one of:
+///
+/// * `Discovery/<OnPlay>d__4::MoveNext` RVA `0x399254`: getter IL `0x0079`,
+///   `GetDistinctForCombat` IL `0x007e`, at its own play;
+/// * `Calamity/<OnPlay>d__1::MoveNext` RVA `0x390b94` applies
+///   `CalamityPower` (IL `0x0040`), whose
+///   `<AfterCardPlayed>d__7::MoveNext` RVA `0x3368bc` draws (getter IL
+///   `0x00cd`, `GetForCombat` IL `0x00d2`) after every later Attack play;
+/// * `Jackpot/<OnPlay>d__3::MoveNext` RVA `0x3a80d4` IL `0x0154`, which the
+///   older `jack of all trades/Jackpot generation ordering` name refuses;
+/// * `Splash/<OnPlay>d__2::MoveNext` RVA `0x3be150` IL `0x00b9`: a prefix
+///   that holds Splash makes the boundary intern Jack's complete closure
+///   (#3382), and on an incomplete closure a reachable Splash already refuses
+///   through `jack of all trades generation ordering`.
+///
+/// So only Discovery and Calamity are new here. No other pool member reads
+/// the getter: the other 45 rows are absent from the scan's 36 call sites.
+fn jack_prefix_result_reads_generation_before_a_later_jack(id: CardId) -> bool {
+    matches!(id, CardId::Discovery | CardId::Calamity)
+}
+
+/// #3467: whether a relic can still draw the live Generation stream
+/// (`RunRngSet::get_CombatCardGeneration`, `GetRng(3)` RVA `0x4ddb5`) AFTER
+/// this root, and so move a Jack, Distraction or White Noise seeded prefix.
+///
+/// A seeded prefix is not consumed within one play. The boundary reads it
+/// once, from the root document's stream position
+/// (`boundary::intern_generation_preview`), and interns only its results.
+/// The card body draws live when it is played (`JackOfAllTrades/<OnPlay>d__6`
+/// `0x3a7ecc` IL `0x008f-0x0094`, `Distraction/<OnPlay>d__5` `0x399690` IL
+/// `0x008b-0x0090`, `WhiteNoise/<OnPlay>d__3` `0x3c74ac` IL `0x0109-0x010e`),
+/// and that can be any later turn: the card waits in the Draw pile. So the
+/// prefix is held from the root until that play. A relic draw in between
+/// mints a result outside the interned prefix, a mid-fight
+/// `UnknownMintIdentity` refusal the whole-fight admission claim forbids.
+///
+/// The six relic readers of the stream, re-read from the v0.111.0 DLL (sha
+/// `9cb4f1ad…`), and whether each can draw after a root:
+///
+/// * **Crossbow: yes, every turn.** `Crossbow/<AfterSideTurnStart>d__2::
+///   MoveNext` RVA `0x322340` tests only that the owner participates
+///   (IL `0x0020-0x0036`). It has no turn test, and it draws at IL
+///   `0x00c2`/`0x00c7` (getter, `GetDistinctForCombat`) at the start of each
+///   player turn. Every root is followed by a turn-2+ start.
+/// * **Choices Paradox and Vexing Puzzlebox: only from a root parked inside
+///   turn one's `SetupPlayerTurn`.** Both are `AfterPlayerTurnStart` bodies
+///   gated `TurnNumber == 1` (Paradox `0x321b0c` IL `0x0045-0x004b`, draw IL
+///   `0x00ae`/`0x00b3`, grid IL `0x0144`; Puzzlebox `0x333de0` IL
+///   `0x003e-0x0044`, draw IL `0x0098`/`0x009d`). `state.turn` advances before
+///   every non-opening turn start (`turn::run_enemy_phase_inner`, and
+///   `finish_player_turn_after_ordinary_side_end` for Pael's Eye's extra
+///   turn), so the only turn-one `SetupPlayerTurn` is the opening's deal
+///   (`engine::deal_opening_hand`).
+///   A root published at a pause inside it runs the rest of the pass on
+///   resume. That rest holds a body that has not drawn yet: Paradox and
+///   Puzzlebox behind a Toolbox pause (a `BeforeHandDraw` body, so earlier)
+///   or any non-relic pause; Puzzlebox behind a Paradox or Gambling Chip
+///   pause, unless it was dispatched ahead of Paradox
+///   (`relics::vexing_puzzlebox_precedes_choices_paradox`). A Paradox, Chip
+///   or Toasty Mittens pause means Paradox already drew; a Mittens pause
+///   means Puzzlebox did too (the fixed dispatch order,
+///   `relics::AFTER_PLAYER_TURN_START_RELIC_DISPATCH`).
+/// * **Toolbox: only from a non-relic pause ahead of it.** `Toolbox/
+///   <BeforeHandDraw>d__4::MoveNext` RVA `0x332adc` gates `TurnNumber == 1`
+///   (IL `0x0045-0x004b`) and draws (IL `0x00a3`/`0x00a8`) before its own
+///   choice (`FromChooseACardScreen` IL `0x00c1`). A root parked at its choice
+///   or at any later relic choice is past the draw. A turn-one pause before
+///   the `BeforeHandDraw` relic pass can only be a power listener's. None is
+///   witnessed, but a non-relic pause is counted rather than argued away.
+/// * **Orange Dough and Big Hat: never.** Both are `AfterSideTurnStart`
+///   bodies gated `TurnNumber <= 1` (Orange Dough `0x32bd7c`, Big Hat
+///   `0x31f64c`, each IL `0x0048-0x004e`). The turn-one side-start tail always
+///   runs before a turn-one root is published: synchronously after
+///   `SetupPlayerTurn`, or at its first pause
+///   (`turn::run_side_start_at_setup_pause`, #3050). Big Hat also never draws
+///   in an admitted fight: its admitted owner is Ironclad only, whose Ethereal
+///   pool is empty, so it leaves at IL `0x00b6-0x00b8` before the getter at
+///   IL `0x00ea`.
+///
+/// The relic's own draw is always exact: each interns its complete pool and
+/// refuses on its own closure gate. Only a seeded prefix is at risk, so this
+/// counts on the prefix (incomplete-closure) branch of each gate.
+fn relic_generation_draw_follows_root(state: &HotState, catalog: &Catalog) -> bool {
+    use crate::hot::RelicPendingKind;
+    let hooks = catalog.hooks();
+    if hooks.owns(RelicId::RelicCrossbow) {
+        return true;
+    }
+    if state.turn != 1 || state.player_phase >= super::turn::PHASE_AUTO_PRE {
+        return false;
+    }
+    let parked = state
+        .pending
+        .as_deref()
+        .is_some_and(crate::hot::PendingSelection::is_relic_selection)
+        .then(|| {
+            state
+                .fanouts
+                .batch_nine_relic_pending()
+                .map(|pending| pending.kind)
+        })
+        .flatten();
+    let toolbox_ahead = hooks.owns(RelicId::RelicToolbox) && parked.is_none();
+    let paradox_ahead = hooks.owns(RelicId::RelicChoicesParadox)
+        && !matches!(
+            parked,
+            Some(
+                RelicPendingKind::ChoicesParadox
+                    | RelicPendingKind::GamblingChip
+                    | RelicPendingKind::ToastyMittens
+            )
+        );
+    let puzzlebox_ahead = hooks.owns(RelicId::RelicVexingPuzzlebox)
+        && match parked {
+            Some(RelicPendingKind::ToastyMittens) => false,
+            Some(RelicPendingKind::ChoicesParadox) => {
+                !super::relics::vexing_puzzlebox_precedes_choices_paradox(catalog)
+            }
+            _ => true,
+        };
+    toolbox_ahead || paradox_ahead || puzzlebox_ahead
 }
 
 /// Admit an entry, or refuse it with the complete missing set.
@@ -2744,17 +2859,11 @@ pub fn admit(
     }
     if hellraiser_can_be_live(state, catalog)
         && !hellraiser_synchronous_strike_closure_is_exact(catalog)
+        && hellraiser_unconverted_draw_source_is_reachable(state, catalog)
     {
-        if hellraiser_unconverted_draw_source_is_reachable(state, catalog) {
-            missing.insert(MissingCapability::ArgumentShape(
-                "Hellraiser synchronous Strike closure",
-            ));
-        }
-        for relic in RelicCommandDraw::ALL {
-            if relic.can_draw(catalog) {
-                missing.insert(MissingCapability::ArgumentShape(relic.hellraiser_wall()));
-            }
-        }
+        missing.insert(MissingCapability::ArgumentShape(
+            "Hellraiser synchronous Strike closure",
+        ));
     }
     if unceasing_top_same_uid_hellraiser_reentry_is_reachable(state, catalog) {
         missing.insert(MissingCapability::ArgumentShape(
@@ -2813,12 +2922,12 @@ pub fn admit(
             .as_slice()
             .first()
             .and_then(|frame| match frame {
-                crate::frame::Frame::ActionReplay { record } => state.frames.action_replay(*record),
+                crate::frame::Frame::ActionReplay { record } => {
+                    state.frames.action_replay_action(*record)
+                }
                 _ => None,
             })
-            .is_some_and(|record| {
-                matches!(record.action, crate::hot::ActionReplayRootAction::EndTurn)
-            });
+            .is_some_and(|action| matches!(action, crate::hot::ActionReplayRootAction::EndTurn));
     let foregone_end_turn_action_replay_is_exact = end_turn_action_replay_is_exact
         && crate::engine::play::end_turn_replay_predecessor_has_foregone(state);
     let potion_action_replay_is_exact = action_replay_is_exact
@@ -2827,12 +2936,14 @@ pub fn admit(
             .as_slice()
             .first()
             .and_then(|frame| match frame {
-                crate::frame::Frame::ActionReplay { record } => state.frames.action_replay(*record),
+                crate::frame::Frame::ActionReplay { record } => {
+                    state.frames.action_replay_action(*record)
+                }
                 _ => None,
             })
-            .is_some_and(|record| {
+            .is_some_and(|action| {
                 matches!(
-                    record.action,
+                    action,
                     crate::hot::ActionReplayRootAction::UsePotion { target: None, .. }
                 )
             });
@@ -3225,14 +3336,13 @@ pub fn admit(
     }
     // #3427: CuriousPower (`TryModifyEnergyCostInCombat` RVA 0xa102c) is an
     // early Power-card cost listener that does not commute with Borrowed
-    // Time's `+Amount` (RVA 0x9feb6), and Spiked Gauntlets' Power-card `+1`
-    // (RVA 0x9bd30) has no term in the cost fold. The Curious and Borrowed
-    // Time writers refuse to create either pairing; a root that already
-    // carries one refuses here.
-    if state.powers.value(PowerId::Curious) > 0
-        && (state.powers.value(PowerId::BorrowedTime) > 0
-            || catalog.hooks().owns(RelicId::RelicSpikedGauntlets))
-    {
+    // Time's `+Amount` (RVA 0x9feb6), and the two powers' relative listener
+    // order is unrecorded. The Curious and Borrowed Time writers refuse to
+    // create the pairing; a root that already carries it refuses here.
+    // Spiked Gauntlets' `+1` (RVA 0x9bd30) is a relic, which
+    // `<IterateHookListeners>d__69` RVA 0x3f9720 always lists after the
+    // player's powers, so it folds after Curious and is admitted (#3437).
+    if state.powers.value(PowerId::Curious) > 0 && state.powers.value(PowerId::BorrowedTime) > 0 {
         missing.insert(MissingCapability::ArgumentShape(
             "Curious energy-cost listener order",
         ));
@@ -4270,14 +4380,6 @@ pub fn admit(
             if hellraiser_unconverted_card_draw_source_is_reachable(state, catalog) {
                 missing.insert(MissingCapability::ArgumentShape("stratagem selection"));
             }
-            // Non-card-program owners are named apart (#3110) so a census
-            // row says which Draw still lacks a persisted owner. Swift
-            // (#3115) and Centennial Puzzle (#3114) are receipt-owned.
-            for relic in RelicCommandDraw::ALL {
-                if relic.can_draw(catalog) {
-                    missing.insert(MissingCapability::ArgumentShape(relic.stratagem_wall()));
-                }
-            }
         }
     }
     deferred_choice_receipt_park_walls(state, catalog, &mut missing);
@@ -4348,6 +4450,9 @@ pub fn admit(
     let mut metamorphoses = 0usize;
     let mut creative_ai_sources = 0usize;
     let mut spectrum_shift_sources = 0usize;
+    // #3487: physical Hello World, Call of the Void, Calamity and Stoke cards,
+    // the Generation readers `listener_generation_source` cannot see yet.
+    let mut unpreviewed_reader_cards = 0usize;
     let mut armaments_upgrade_reachable = false;
     let mut drain_power_reachable = false;
     let mut apotheosis_reachable = false;
@@ -4409,6 +4514,10 @@ pub fn admit(
                 match spec.identity.id {
                     CardId::CreativeAi => creative_ai_sources += 1,
                     CardId::SpectrumShift => spectrum_shift_sources += 1,
+                    CardId::HelloWorld
+                    | CardId::CallOfTheVoid
+                    | CardId::Calamity
+                    | CardId::Stoke => unpreviewed_reader_cards += 1,
                     CardId::Quasar => quasars += 1,
                     CardId::Largesse => {
                         largesses += 1;
@@ -6673,16 +6782,71 @@ pub fn admit(
     // whole-fight admission claim forbids. Before #3236 only Metamorphosis
     // counted these three.
     //
-    // Deliberately NOT counted here, though they read the same stream: a
-    // not-yet-played Hello World / Call of the Void / Calamity / Stoke card,
-    // a live Spectrum Shift, and the card-choice potions (`AttackPotion`
-    // `0x34bdb4`, `SkillPotion` `0x3502bc`, `PowerPotion` `0x34fb58`,
-    // `ColorlessPotion` `0x34c784`, `OrobicAcid` `0x34f050`, each
-    // `get_CombatCardGeneration` then `GetDistinctForCombat`). Refusing on
-    // them regresses five certified census fights (#3236); the exact fix is
-    // the #3092 builder branch, interning the complete closure beside them,
-    // which is left to a follow-up.
+    // #3487: the other readers of the same stream, re-read from the v0.111.0
+    // DLL (sha `9cb4f1ad…`) with `dump_method.py MoveNext`:
+    //
+    // * a not-yet-played Hello World, Call of the Void or Calamity card
+    //   becomes one of the listeners above when played (`HelloWorld/
+    //   <OnPlay>d__3` `0x3a4bc8` IL `0x00c1` `PowerCmd.Apply<HelloWorldPower>`,
+    //   `Calamity/<OnPlay>d__1` `0x390b94` IL `0x0040`
+    //   `PowerCmd.Apply<CalamityPower>`);
+    // * Stoke draws at its own play (`Stoke/<OnPlay>d__1` `0x3bef44`, getter
+    //   IL `0x01d4`, `GetForCombat` IL `0x01d9`);
+    // * a live Spectrum Shift draws at every hand draw
+    //   (`SpectrumShiftPower/<BeforeHandDraw>d__4` `0x345978` getter IL
+    //   `0x0079`, `GetDistinctForCombat` IL `0x007e`);
+    // * the card-choice potions draw at use (`AttackPotion` `0x34bdb4`,
+    //   `SkillPotion` `0x3502bc`, `PowerPotion` `0x34fb58` getter IL `0x0090`,
+    //   `GetDistinctForCombat` IL `0x0095`; `ColorlessPotion` `0x34c784` IL
+    //   `0x0066`/`0x006b`; `OrobicAcid` `0x34f050` IL `0x0090`/`0x0095`,
+    //   `0x00f2`/`0x00f7`, `0x0154`/`0x0159`).
+    //
+    // Each can move a held Jack, Distraction or White Noise prefix, and a
+    // live or not-yet-played one is unbounded or can land on either side of
+    // the prefix's play. So the boundary closes the three COMPLETE pools
+    // beside any of them (`GenerationPreviewCounts::unpreviewed_readers` and
+    // `generation_potions` in `boundary::intern_generation_preview`), where
+    // each body's own live draw (`0x3a7ecc` IL `0x008f-0x0094`, `0x399690` IL
+    // `0x008b-0x0090`, `0x3c74ac` IL `0x0109-0x010e`) mints a known atom
+    // wherever the stream stands, and the complete-closure arms below apply.
+    // A #3467 measurement build that refused on them instead regressed six
+    // certified census fights (`7UEE3Y1SPJCY` n6/n7/n10 Jack + Skill Potion,
+    // n16 Jack + a catalog-reachable Calamity; `DXLGWV6KZ1BF` n12/n13 White
+    // Noise + a Hello World card). With the complete closures all six stay
+    // certified. A reader beside a closure the boundary did NOT complete
+    // still names each prefix gate (`card_generation_reader`), so a catalog
+    // built any other way stays fail-closed.
+    //
+    // Counted from physical cards and live powers, as the boundary's trigger
+    // is, not from catalog reachability. A reader that is only
+    // catalog-reachable was minted by a generator, and the Generation
+    // generators are order-sensitive sources in these prefix arms already,
+    // with two exceptions that cannot move the prefix: a lone Jack's own
+    // result enters Hand only after that Jack drew (`0x3a7ecc` IL `0x00c6`;
+    // census n16 is this shape, a lone Jack+ whose prefix holds Calamity), and
+    // two Jacks refuse a reader in an earlier prefix by name (`jack of all
+    // trades/Discovery-Calamity generation ordering`, #3390). The
+    // White Noise and Distraction twin of #3390 (a second copy whose earlier
+    // copy's prefix mints a reader, such as a Defect White Noise minting
+    // Hello World) closes the complete pool at the boundary, and each prefix
+    // loop below names it over a prefix-only catalog (#3498).
     let listener_generation_source = hello_world_live || call_of_the_void_live || calamity_live;
+    let card_generation_reader = unpreviewed_reader_cards > 0
+        || spectrum_shift_live
+        || spectrum_shift_sources > 0
+        || [
+            PotionId::AttackPotion,
+            PotionId::SkillPotion,
+            PotionId::PowerPotion,
+            PotionId::ColorlessPotion,
+            PotionId::OrobicAcid,
+        ]
+        .into_iter()
+        .any(potion_reachable);
+    // #3467: a relic draw that can still follow this root moves a prefix the
+    // same way; the IL and the per-relic proof are at
+    // `relic_generation_draw_follows_root`.
+    let relic_generation_source = relic_generation_draw_follows_root(state, catalog);
     let jack_order_sensitive_source = if jack_closure_is_complete {
         (infernal_blades > 0 && !infernal_blade_closure_is_complete)
             || bundles_of_joy > 0
@@ -6692,12 +6856,49 @@ pub fn admit(
             || white_noises > 0
             || metamorphosis_reachable
     } else {
-        other_generation_source || listener_generation_source
+        other_generation_source
+            || listener_generation_source
+            || relic_generation_source
+            || card_generation_reader
     };
     if jacks > 0 && jack_order_sensitive_source {
         missing.insert(MissingCapability::ArgumentShape(
             "jack of all trades generation ordering",
         ));
+    }
+    // #3487: the other seeded previews a relic draw can move. Infernal Blade,
+    // Bundle of Joy and Abundance each draw the live stream at play time
+    // (`InfernalBlade/<OnPlay>d__3` `0x3a7164` getter IL `0x008b`,
+    // `GetDistinctForCombat` IL `0x0090`; `BundleOfJoy/<OnPlay>d__5`
+    // `0x390188` IL `0x0063`/`0x0068`; `Abundance/<OnPlay>d__6` `0x3888ec` IL
+    // `0x0092`/`0x0097`), and the boundary interns only the prefix read at the
+    // root's stream position unless another consumer closes the whole pool.
+    // Every card consumer's own gate already lists them as order-sensitive;
+    // the relic readers had no gate. A Crossbow draw (`0x322340` IL
+    // `0x00c2`/`0x00c7`, every turn-2+ start) or a turn-one relic body still
+    // ahead of a parked root (`relic_generation_draw_follows_root`) moves that
+    // prefix, and the card's live draw then mints outside it: a mid-fight
+    // `UnknownMintIdentity`. Refuse by name. Infernal Blade is exempt when its
+    // whole frozen Attack pool is interned (beside a Jack or a generation
+    // potion), where its own live draw is exact at any position. Bundle of Joy
+    // and Abundance are counted without that exemption, as every other gate
+    // counts them.
+    if relic_generation_source {
+        if infernal_blades > 0 && !infernal_blade_closure_is_complete {
+            missing.insert(MissingCapability::ArgumentShape(
+                "infernal blade generation ordering",
+            ));
+        }
+        if bundles_of_joy > 0 {
+            missing.insert(MissingCapability::ArgumentShape(
+                "bundle of joy generation ordering",
+            ));
+        }
+        if abundances > 0 || abundance_pending {
+            missing.insert(MissingCapability::ArgumentShape(
+                "abundance generation ordering",
+            ));
+        }
     }
 
     // Distraction and White Noise each draw ONE `GetDistinctForCombat` result
@@ -6736,7 +6937,10 @@ pub fn admit(
         || splash_reachable;
     if distractions > 0
         && (other_distraction_generation_source
-            || (!distraction_closure_is_complete && listener_generation_source))
+            || (!distraction_closure_is_complete
+                && (listener_generation_source
+                    || relic_generation_source
+                    || card_generation_reader)))
     {
         missing.insert(MissingCapability::ArgumentShape(
             "distraction generation ordering",
@@ -6779,7 +6983,10 @@ pub fn admit(
             || (distractions > 0 && !distraction_closure_is_complete)
             || metamorphosis_reachable
     } else {
-        other_white_noise_generation_source || listener_generation_source
+        other_white_noise_generation_source
+            || listener_generation_source
+            || relic_generation_source
+            || card_generation_reader
     };
     if white_noises > 0 && white_noise_order_sensitive_source {
         missing.insert(MissingCapability::ArgumentShape(
@@ -7009,11 +7216,16 @@ pub fn admit(
             .unwrap_or_default();
         let mut preview_is_closed = true;
         let mut preview_reaches_jackpot = false;
-        for _ in 0..shuffles {
+        let mut earlier_preview_reaches_reader = false;
+        for shuffle in 0..shuffles {
             let mut pool = jack_pool.clone();
             if rng.shuffle(&mut pool).is_err() {
                 preview_is_closed = false;
                 break;
+            }
+            for id in pool.iter().copied().take(prefix) {
+                earlier_preview_reaches_reader |= shuffle + 1 < shuffles
+                    && jack_prefix_result_reads_generation_before_a_later_jack(id);
             }
             for id in pool.into_iter().take(prefix) {
                 preview_is_closed &= catalog
@@ -7045,6 +7257,16 @@ pub fn admit(
         if jacks > 1 && preview_reaches_jackpot {
             missing.insert(MissingCapability::ArgumentShape(
                 "jack of all trades/Jackpot generation ordering",
+            ));
+        }
+        // #3390: a Discovery or Calamity minted by an earlier Jack can be
+        // played before a later physical Jack, moving that Jack's seeded
+        // prefix (see `jack_prefix_result_reads_generation_before_a_later_jack`).
+        // Only a result of a shuffle BEFORE the last can: the last shuffle's
+        // results enter Hand after every previewed Jack draw has happened.
+        if jacks > 1 && earlier_preview_reaches_reader {
+            missing.insert(MissingCapability::ArgumentShape(
+                "jack of all trades/Discovery-Calamity generation ordering",
             ));
         }
         // A minted Jackpot is playable, and `jackpot_exact` refuses on any
@@ -7099,12 +7321,15 @@ pub fn admit(
             crate::content_tables::CardType::Skill,
         );
         let mut preview_is_closed = true;
-        for _ in 0..shuffles {
+        let mut earlier_preview_reaches_reader = false;
+        for shuffle in 0..shuffles {
             let mut pool = pool.clone();
             if rng.shuffle(&mut pool).is_err() {
                 preview_is_closed = false;
                 break;
             }
+            earlier_preview_reaches_reader |= shuffle + 1 < shuffles
+                && crate::boundary::prefix_result_reads_generation_before_a_later_copy(pool[0]);
             preview_is_closed &= catalog
                 .atom(&CardIdentity {
                     id: pool[0],
@@ -7116,6 +7341,17 @@ pub fn admit(
         if !preview_is_closed {
             missing.insert(MissingCapability::ArgumentShape(
                 "distraction generation closure",
+            ));
+        }
+        // #3498: a Generation reader minted by an earlier copy can be played
+        // before a later copy and move that copy's seeded prefix (IL at
+        // `boundary::prefix_result_reads_generation_before_a_later_copy`).
+        // The boundary interns the complete Skill pool there, where the live
+        // draw is exact at any stream position; a catalog holding only the
+        // prefix refuses by name.
+        if earlier_preview_reaches_reader && !distraction_closure_is_complete {
+            missing.insert(MissingCapability::ArgumentShape(
+                "distraction/earlier-copy generation reader ordering",
             ));
         }
     }
@@ -7136,12 +7372,15 @@ pub fn admit(
             crate::content_tables::CardType::Power,
         );
         let mut preview_is_closed = true;
-        for _ in 0..shuffles {
+        let mut earlier_preview_reaches_reader = false;
+        for shuffle in 0..shuffles {
             let mut shuffled = pool.to_vec();
             if rng.shuffle(&mut shuffled).is_err() {
                 preview_is_closed = false;
                 break;
             }
+            earlier_preview_reaches_reader |= shuffle + 1 < shuffles
+                && crate::boundary::prefix_result_reads_generation_before_a_later_copy(shuffled[0]);
             preview_is_closed &= catalog
                 .atom(&CardIdentity {
                     id: shuffled[0],
@@ -7153,6 +7392,13 @@ pub fn admit(
         if !preview_is_closed {
             missing.insert(MissingCapability::ArgumentShape(
                 "white noise generation closure",
+            ));
+        }
+        // #3498: the Distraction twin above (a Defect White Noise minting
+        // Hello World or Creative AI, say).
+        if earlier_preview_reaches_reader && !white_noise_closure_is_complete {
+            missing.insert(MissingCapability::ArgumentShape(
+                "white noise/earlier-copy generation reader ordering",
             ));
         }
     }
@@ -15162,6 +15408,35 @@ mod tests {
     }
 
     #[test]
+    fn spec_registry_row_check_compares_values_not_addresses() {
+        let (_, _, base) = parts();
+        let stampede = identity(CardId::Stampede, 0);
+        let catalog = catalog_with(&base, stampede);
+        let atom = catalog.atom(&stampede).unwrap();
+        let registry = crate::content_tables::card_row(CardId::Stampede, 0).unwrap();
+        let spec = catalog.spec(atom).unwrap();
+        assert!(std::ptr::eq(spec.row, registry));
+        assert!(spec_carries_registry_row(spec));
+
+        let mut copied = catalog.clone();
+        copied.spec_mut_for_test(atom).unwrap().row = Box::leak(Box::new(*registry));
+        let spec = copied.spec(atom).unwrap();
+        assert!(!std::ptr::eq(spec.row, registry));
+        assert!(
+            spec_carries_registry_row(spec),
+            "an equal row elsewhere must take the deep comparison"
+        );
+
+        let mut drifted = catalog.clone();
+        drifted.spec_mut_for_test(atom).unwrap().row =
+            Box::leak(Box::new(crate::content_tables::CardRow {
+                cost: registry.cost + 1,
+                ..*registry
+            }));
+        assert!(!spec_carries_registry_row(drifted.spec(atom).unwrap()));
+    }
+
+    #[test]
     fn stampede_identity_closure_uses_only_execution_reachable_sources() {
         let (_, state, base) = parts();
         let stampede = catalog_with(&base, identity(CardId::Stampede, 0));
@@ -15337,7 +15612,8 @@ mod tests {
 
     const HELLRAISER_DRAW_WALLS: [&str; 5] = [
         "Hellraiser synchronous Strike closure",
-        // Retired by #3115, #3114 and #3201; listed so a revival fails.
+        // Retired by #3115, #3114, #3387 and #3201; listed so a revival
+        // fails.
         "Hellraiser Swift enchantment Draw",
         "Hellraiser Centennial Puzzle Draw",
         "Hellraiser Gremlin Horn Draw",
@@ -15346,7 +15622,8 @@ mod tests {
 
     const STRATAGEM_DRAW_WALLS: [&str; 5] = [
         "stratagem selection",
-        // Retired by #3115, #3114 and #3201; listed so a revival fails.
+        // Retired by #3115, #3114, #3387 and #3201; listed so a revival
+        // fails.
         "Stratagem Swift enchantment Draw",
         "Stratagem Centennial Puzzle Draw",
         "Stratagem Gremlin Horn Draw",
@@ -15391,11 +15668,10 @@ mod tests {
             identity(CardId::DefendIronclad, 0),
             RelicId::RelicGremlinHorn,
         );
-        // Gremlin Horn has no once-per-combat latch.
-        assert_eq!(
-            walls_of(&document, &spent, &horn, &HELLRAISER_DRAW_WALLS),
-            ["Hellraiser Gremlin Horn Draw"]
-        );
+        // #3387: Gremlin Horn's Draw is owned by the deferred hook-action
+        // queue (`engine::hook_action`); what it cannot model refuses at
+        // runtime.
+        assert!(walls_of(&document, &spent, &horn, &HELLRAISER_DRAW_WALLS).is_empty());
         // #3201: Joss Paper's threshold Draw is receipt-owned.
         let joss = catalog_with_relic(
             &selecting,
@@ -15453,10 +15729,8 @@ mod tests {
             identity(CardId::DefendIronclad, 0),
             RelicId::RelicGremlinHorn,
         );
-        assert_eq!(
-            walls_of(&document, &spent, &horn, &STRATAGEM_DRAW_WALLS),
-            ["Stratagem Gremlin Horn Draw"]
-        );
+        // #3387: owned by the deferred hook-action queue.
+        assert!(walls_of(&document, &spent, &horn, &STRATAGEM_DRAW_WALLS).is_empty());
         // #3201: Joss Paper's threshold Draw is receipt-owned.
         let joss = catalog_with_relic(
             &stratagem,
@@ -21922,6 +22196,319 @@ mod tests {
         );
     }
 
+    /// `jacks` physical L0 Ironclad Jacks of All Trades over Generation seed
+    /// `seed`, and the seeded prefix of each of their shuffles.
+    fn jacks_document(seed: u64, jacks: u64) -> (CanonicalStateV2, Vec<Vec<CardId>>) {
+        let mut document =
+            generator_document(CardId::JackOfAllTrades, RewardPool::Ironclad, false, seed);
+        for uid in 1..jacks {
+            let mut copy = document.piles.get("hand").unwrap()[0].clone();
+            copy.uid = Some(990 + uid);
+            document.piles.get_mut("hand").unwrap().push(copy);
+        }
+        let pool = HotBoundary::catalog_from_canonical(&document)
+            .unwrap()
+            .jack_of_all_trades_pool();
+        let mut rng = Xoshiro256StarStar::from_seed(seed);
+        let prefixes = (0..jacks)
+            .map(|_| {
+                let mut shuffled = pool.clone();
+                rng.shuffle(&mut shuffled).unwrap();
+                shuffled.truncate(1);
+                shuffled
+            })
+            .collect();
+        (document, prefixes)
+    }
+
+    /// #3390: a Discovery or Calamity minted by the first of two physical
+    /// Jacks reads the live Generation stream before the second Jack can be
+    /// played (IL at `jack_prefix_result_reads_generation_before_a_later_jack`),
+    /// so the second Jack's seeded prefix is no longer exact and admission
+    /// refuses by name rather than failing mid-fight on
+    /// `UnknownMintIdentity`. The last Jack's own results, a lone Jack's
+    /// results, and a reader-free pair of prefixes are not ordering
+    /// conflicts.
+    #[test]
+    fn a_generated_generation_reader_before_a_later_jack_refuses_by_name() {
+        let ordering = MissingCapability::ArgumentShape(
+            "jack of all trades/Discovery-Calamity generation ordering",
+        );
+        let names = |document: &CanonicalStateV2| {
+            maybe_refuse(document).is_some_and(|refusal| refusal.contains(ordering))
+        };
+        // Splash closes Jack's complete pool (#3382) and Jackpot has its own
+        // older name, so the witnesses below avoid both.
+        let clean = |prefix: &Vec<CardId>| {
+            !prefix.contains(&CardId::Splash) && !prefix.contains(&CardId::Jackpot)
+        };
+        let find = |jacks: u64, accept: &dyn Fn(&[Vec<CardId>]) -> bool| {
+            (0..8192)
+                .map(|seed| jacks_document(seed, jacks))
+                .find(|(_, prefixes)| prefixes.iter().all(clean) && accept(prefixes))
+                .unwrap_or_else(|| panic!("no seed for a {jacks}-Jack witness"))
+        };
+
+        for reader in [CardId::Discovery, CardId::Calamity] {
+            assert!(jack_prefix_result_reads_generation_before_a_later_jack(
+                reader
+            ));
+            // The first Jack's result is the reader: the second Jack's
+            // prefix can be moved.
+            let (first, _) = find(2, &|prefixes| prefixes[0].contains(&reader));
+            assert!(
+                names(&first),
+                "{reader:?} from the first Jack can shift the second Jack's prefix"
+            );
+            // Only the LAST Jack's result is the reader: every previewed
+            // draw has happened before it reaches Hand.
+            let (last, _) = find(2, &|prefixes| {
+                prefixes[1].contains(&reader)
+                    && !prefixes[0]
+                        .iter()
+                        .copied()
+                        .any(jack_prefix_result_reads_generation_before_a_later_jack)
+            });
+            assert!(
+                !names(&last),
+                "{reader:?} from the last Jack shifts no Jack prefix"
+            );
+            // A lone Jack has no later prefix to shift.
+            let (lone, _) = find(1, &|prefixes| prefixes[0].contains(&reader));
+            assert!(!names(&lone), "{reader:?} beside a lone Jack");
+        }
+
+        // No reader in either prefix: the pair keeps its seeded prefixes and
+        // admits outright.
+        let (reader_free, _) = find(2, &|prefixes| {
+            !prefixes
+                .iter()
+                .flatten()
+                .copied()
+                .any(jack_prefix_result_reads_generation_before_a_later_jack)
+        });
+        assert_admits(&reader_free);
+
+        // The rest of Jack's pool reads no Generation stream.
+        for id in JACK_OF_ALL_TRADES_POOL_V1091 {
+            assert_eq!(
+                jack_prefix_result_reads_generation_before_a_later_jack(id),
+                matches!(id, CardId::Discovery | CardId::Calamity),
+                "{id:?}"
+            );
+        }
+    }
+
+    /// `copies` physical L0 `source` cards owned by `owner` over Generation
+    /// seed `seed`, and the seeded one-card prefix of each copy's shuffle of
+    /// the owner's `card_type` pool.
+    fn prefix_copies_document(
+        source: CardId,
+        owner: RewardPool,
+        card_type: crate::content_tables::CardType,
+        seed: u64,
+        copies: u64,
+    ) -> (CanonicalStateV2, Vec<CardId>) {
+        let mut document = generator_document(source, owner, owner == RewardPool::Regent, seed);
+        for uid in 1..copies {
+            let mut copy = document.piles.get("hand").unwrap()[0].clone();
+            copy.uid = Some(990 + uid);
+            document.piles.get_mut("hand").unwrap().push(copy);
+        }
+        let pool = CatalogBuilder::new()
+            .build()
+            .owner_type_generation_pool(owner, card_type);
+        let mut rng = Xoshiro256StarStar::from_seed(seed);
+        let prefixes = (0..copies)
+            .map(|_| {
+                let mut shuffled = pool.clone();
+                rng.shuffle(&mut shuffled).unwrap();
+                shuffled[0]
+            })
+            .collect();
+        (document, prefixes)
+    }
+
+    /// #3498, the White Noise / Distraction twin of #3390: with two copies, a
+    /// Generation reader minted by the FIRST copy can be played before the
+    /// second copy and move its seeded prefix (IL at
+    /// `boundary::prefix_result_reads_generation_before_a_later_copy`). For
+    /// every owner and every reader its White Noise (Power) or Distraction
+    /// (Skill) pool holds:
+    ///
+    /// * **first copy**: the boundary interns the complete owner-type pool,
+    ///   where the body's live draw (`0x3c74ac` IL `0x0109-0x010e`,
+    ///   `0x399690` IL `0x008b-0x0090`) is exact at any stream position. No
+    ///   ordering gate names itself, and the second copy plays at 64
+    ///   displaced Generation positions. Over a catalog holding only the two
+    ///   prefixes (no closure), the new gate names itself;
+    /// * **last copy only**, **lone copy**: the reader reaches Hand after
+    ///   every previewed draw, so the new gate does not name itself;
+    /// * **no reader**: the pair keeps its seeded prefix and names nothing new.
+    ///
+    /// For most pairs the lone first copy's catalog already held the whole
+    /// pool before #3498 (for example, Creative AI's owner listener pool is
+    /// the whole Defect Power pool, #3230, and a reachable Spectrum Shift is an
+    /// `unpreviewed_readers` source, #3487). The pairs where this change is
+    /// what completes the pool are measured and pinned: a Defect Distraction
+    /// minting White Noise, and an Ironclad Distraction minting Infernal Blade
+    /// (whose own closure is the Attack pool).
+    #[test]
+    fn an_earlier_copy_generation_reader_closes_the_distraction_and_white_noise_pools() {
+        use crate::content_tables::CardType;
+        let reads = crate::boundary::prefix_result_reads_generation_before_a_later_copy;
+        let (_, _, base) = parts();
+        let mut newly_complete = std::collections::BTreeSet::new();
+        for (source, card_type, gate) in [
+            (
+                CardId::WhiteNoise,
+                CardType::Power,
+                "white noise/earlier-copy generation reader ordering",
+            ),
+            (
+                CardId::Distraction,
+                CardType::Skill,
+                "distraction/earlier-copy generation reader ordering",
+            ),
+        ] {
+            let ordering = MissingCapability::ArgumentShape(gate);
+            for owner in RewardPool::ALL {
+                let pool = CatalogBuilder::new()
+                    .build()
+                    .owner_type_generation_pool(owner, card_type);
+                let find = |copies: u64, accept: &dyn Fn(&[CardId]) -> bool| {
+                    (0..8192)
+                        .map(|seed| {
+                            let (document, prefixes) =
+                                prefix_copies_document(source, owner, card_type, seed, copies);
+                            (seed, document, prefixes)
+                        })
+                        .find(|(_, _, prefixes)| accept(prefixes))
+                        .unwrap_or_else(|| {
+                            panic!("no seed for a {copies}-copy {owner:?} {source:?} witness")
+                        })
+                };
+                let complete = |catalog: &Catalog| pool.iter().all(|id| holds_l0(catalog, *id));
+                let names = |document: &CanonicalStateV2| {
+                    let catalog = HotBoundary::catalog_from_canonical(document).unwrap();
+                    names_with(document, &catalog, ordering)
+                };
+
+                for reader in pool.iter().copied().filter(|id| reads(*id)) {
+                    let case = format!("{owner:?} {source:?} minting {reader:?}");
+                    // First copy.
+                    let (seed, first, prefixes) = find(2, &|prefixes| prefixes[0] == reader);
+                    let catalog = HotBoundary::catalog_from_canonical(&first).unwrap();
+                    assert!(complete(&catalog), "{case}: {prefixes:?}");
+                    let state = HotBoundary::from_canonical(&first, &catalog).unwrap();
+                    let refusal = admit(&first, &state, &catalog).err();
+                    let (lone_first, _) = prefix_copies_document(source, owner, card_type, seed, 1);
+                    let lone_refusal = maybe_refuse(&lone_first);
+                    // The new gate never names a boundary catalog. A source
+                    // gate names the pair only where it already named the lone
+                    // first copy (a Regent Distraction beside a Regent Skill
+                    // reader, whose closure the lone copy already carried).
+                    for name in [
+                        gate,
+                        "white noise generation ordering",
+                        "distraction generation ordering",
+                    ] {
+                        let named = |refusal: &Option<AdmissionRefusal>| {
+                            refusal.as_ref().is_some_and(|refusal| {
+                                refusal.contains(MissingCapability::ArgumentShape(name))
+                            })
+                        };
+                        assert!(
+                            !named(&refusal) || (name != gate && named(&lone_refusal)),
+                            "{case}: {name}"
+                        );
+                    }
+                    for step in 0..64u64 {
+                        let mut displaced = state.clone();
+                        let seeded = Xoshiro256StarStar::from_seed(30_000 + step);
+                        displaced.rng.set(
+                            RngStream::Generation,
+                            crate::hot::RngStreamState {
+                                words: seeded.words,
+                                counter: seeded.counter,
+                            },
+                        );
+                        apply_action(
+                            &displaced,
+                            &catalog,
+                            &Action::Play {
+                                uid: 991,
+                                target: None,
+                                selection: SelectionRef::NONE,
+                            },
+                        )
+                        .unwrap_or_else(|refusal| {
+                            panic!("{case}: second copy at stream position {step}: {refusal:?}")
+                        });
+                    }
+                    // Over the seeded prefixes alone (no generated closure),
+                    // the gate names itself.
+                    let prefix_only = |prefixes: &[CardId]| {
+                        prefixes
+                            .iter()
+                            .fold(catalog_with(&base, identity(source, 0)), |catalog, id| {
+                                catalog_with(&catalog, identity(*id, 0))
+                            })
+                    };
+                    let catalog = prefix_only(&prefixes);
+                    assert!(!complete(&catalog), "{case}");
+                    assert!(names_with(&first, &catalog, ordering), "{case}");
+                    // Whether the first reader's own closure already held the
+                    // pool before #3498.
+                    if !complete(&HotBoundary::catalog_from_canonical(&lone_first).unwrap()) {
+                        newly_complete.insert(case.clone());
+                    }
+
+                    // Last copy only, over the boundary's catalog and over
+                    // the prefixes alone.
+                    let (_, last, last_prefixes) =
+                        find(2, &|prefixes| prefixes[1] == reader && !reads(prefixes[0]));
+                    assert!(!names(&last), "{case}: last copy only");
+                    let catalog = prefix_only(&last_prefixes);
+                    assert!(!complete(&catalog), "{case}");
+                    assert!(
+                        !names_with(&last, &catalog, ordering),
+                        "{case}: last copy only, prefixes alone"
+                    );
+                    // Lone copy, likewise.
+                    let (_, lone, lone_prefixes) = find(1, &|prefixes| prefixes[0] == reader);
+                    assert!(!names(&lone), "{case}: lone copy");
+                    assert!(
+                        !names_with(&lone, &prefix_only(&lone_prefixes), ordering),
+                        "{case}: lone copy, prefix alone"
+                    );
+                }
+
+                // No reader: the pair keeps its seeded prefixes.
+                let (_, reader_free, _) = find(2, &|prefixes| !prefixes.iter().copied().any(reads));
+                let catalog = HotBoundary::catalog_from_canonical(&reader_free).unwrap();
+                assert!(!complete(&catalog), "{owner:?} {source:?}: no reader");
+                assert!(
+                    !names_with(&reader_free, &catalog, ordering),
+                    "{owner:?} {source:?}"
+                );
+            }
+        }
+        // #3504: "Defect Distraction minting WhiteNoise" left this pin. The
+        // lone first copy's generated White Noise now closes its whole Power
+        // pool (the closure walk's White Noise arm), which holds Echo Form;
+        // the boundary's Burst/Echo fixed point then charges the physical
+        // Distraction a second body, whose earlier draw (White Noise, a
+        // reader) closes the complete Skill pool through #3498's own branch.
+        assert_eq!(
+            newly_complete,
+            ["Ironclad Distraction minting InfernalBlade",]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        );
+    }
+
     /// #3230: Creative AI's gate refuses only a seeded-preview conflict.
     ///
     /// Creative AI's own draw is closure-complete, so beside another
@@ -22210,9 +22797,11 @@ mod tests {
     /// the live Generation stream at its own hook (IL cited at
     /// `listener_generation_source`), so each shifts a seeded Jack,
     /// Distraction or White Noise prefix. Before #3236 only Metamorphosis
-    /// counted them; now each prefix gate names itself beside each listener,
-    /// and a complete closure (White Noise's Power pool, Distraction's Skill
-    /// pool) still admits beside them.
+    /// counted them; now each prefix gate names itself beside each listener
+    /// over a seeded prefix, and a complete closure (White Noise's Power pool,
+    /// Distraction's Skill pool) still admits beside them. Since #3487 the
+    /// boundary closes all three pools completely beside a live listener, so
+    /// the prefix arm is reached through the lone source's own catalog.
     #[test]
     fn prefix_generation_gates_count_live_listener_readers() {
         use crate::content_tables::CardType;
@@ -22243,26 +22832,31 @@ mod tests {
                 maybe_refuse(&base).is_none_or(|refusal| !refusal.contains(ordering)),
                 "a lone {source:?} admits its prefix"
             );
+            let prefix_catalog = HotBoundary::catalog_from_canonical(&base).unwrap();
             for (name, document) in live_listener_generation_sources(&base) {
-                // A listener whose own closure spans the source's pool (Call
-                // of the Void's owner pool holds every owner Power) makes the
-                // boundary intern it complete, and then the pair is exact.
-                // Every pair still holding only the seeded prefix names the
-                // gate.
+                // #3487: beside a live listener the boundary interns the
+                // source's COMPLETE pool (`unpreviewed_readers`), and then the
+                // pair is exact and admits the ordering.
                 let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
                 let pool = match card_type {
                     Some(card_type) => catalog.owner_type_generation_pool(owner, card_type),
                     None => catalog.jack_of_all_trades_pool(),
                 };
-                let prefix_only = !pool.iter().all(|id| holds_l0(&catalog, *id));
-                if prefix_only {
-                    prefix_listeners.insert(name);
-                }
-                assert_eq!(
-                    names_with(&document, &catalog, ordering),
-                    prefix_only,
-                    "{name} beside a {source:?} (prefix only: {prefix_only})"
+                assert!(
+                    pool.iter().all(|id| holds_l0(&catalog, *id)),
+                    "{name} closes a {source:?}'s complete pool"
                 );
+                assert!(
+                    !names_with(&document, &catalog, ordering),
+                    "{name} beside the boundary's complete {source:?} closure"
+                );
+                // Over the lone source's seeded prefix, the listener still
+                // names the gate: that arm stays fail-closed.
+                assert!(
+                    names_with(&document, &prefix_catalog, ordering),
+                    "{name} beside a {source:?}'s seeded prefix"
+                );
+                prefix_listeners.insert(name);
                 if let Some(card_type) = card_type {
                     let catalog = catalog_with_owner_type_pool(&document, owner, card_type);
                     assert!(
@@ -22277,9 +22871,768 @@ mod tests {
             3,
             "every live listener must reach some prefix gate: {prefix_listeners:?}"
         );
+
+        // #3417: Jack's complete-closure arm. A Jack whose prefix holds
+        // Splash interns its whole pool (#3382), and then Jack's own live
+        // draw (`JackOfAllTrades/<OnPlay>d__6` `0x3a7ecc` IL `0x008f-0x0094`)
+        // is exact wherever a listener leaves the stream, so no live listener
+        // names Jack's gate there.
+        let jack_ordering =
+            MissingCapability::ArgumentShape("jack of all trades generation ordering");
+        let splash_seed = (0..4096)
+            .find(|seed| {
+                let mut rng = Xoshiro256StarStar::from_seed(*seed);
+                let mut pool = JACK_OF_ALL_TRADES_POOL_V1091;
+                rng.shuffle(&mut pool).unwrap();
+                pool[0] == CardId::Splash
+            })
+            .expect("a small seed puts Splash in an L0 Jack's prefix");
+        let complete_jack = generator_document(
+            CardId::JackOfAllTrades,
+            RewardPool::Ironclad,
+            false,
+            splash_seed,
+        );
+        for (name, document) in live_listener_generation_sources(&complete_jack) {
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            assert!(
+                catalog
+                    .jack_of_all_trades_pool()
+                    .into_iter()
+                    .all(|id| holds_l0(&catalog, id)),
+                "{name}: the Splash prefix interns Jack's complete pool"
+            );
+            assert!(
+                !names_with(&document, &catalog, jack_ordering),
+                "{name} beside a complete Jack closure"
+            );
+        }
+    }
+
+    /// `document` owning Crossbow, with its dispatch order vouched for.
+    fn with_crossbow(document: &CanonicalStateV2) -> CanonicalStateV2 {
+        let mut owned = document.clone();
+        owned
+            .player
+            .insert("relics_entering".to_owned(), json!(["RELIC.CROSSBOW"]));
+        owned
+            .player
+            .insert("relics_entering_dispatch_ordered".to_owned(), json!(true));
+        owned.player.insert("crossbow".to_owned(), json!(true));
+        owned
+    }
+
+    /// #3467: Crossbow draws the live Generation stream at every player turn
+    /// start (`Crossbow/<AfterSideTurnStart>d__2::MoveNext` `0x322340`, no
+    /// turn test, getter IL `0x00c2`), so a Jack, Distraction or White Noise
+    /// prefix read at the root no longer describes a play on turn 2 or later.
+    /// Each prefix gate names itself beside it; a complete closure (a Jack
+    /// whose prefix holds Splash, a complete Distraction Skill or White Noise
+    /// Power pool) is exact at any stream position and still admits.
+    #[test]
+    fn prefix_generation_gates_count_a_crossbow() {
+        use crate::content_tables::CardType;
+        for (source, owner, gate, card_type) in [
+            (
+                CardId::WhiteNoise,
+                RewardPool::Defect,
+                "white noise generation ordering",
+                Some(CardType::Power),
+            ),
+            (
+                CardId::Distraction,
+                RewardPool::Silent,
+                "distraction generation ordering",
+                Some(CardType::Skill),
+            ),
+            (
+                CardId::JackOfAllTrades,
+                RewardPool::Ironclad,
+                "jack of all trades generation ordering",
+                None,
+            ),
+        ] {
+            let ordering = MissingCapability::ArgumentShape(gate);
+            let base = first_admitted_generator_document(source, owner, false);
+            let document = with_crossbow(&base);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            assert!(relic_generation_draw_follows_root(&state, &catalog));
+            let pool = match card_type {
+                Some(card_type) => catalog.owner_type_generation_pool(owner, card_type),
+                None => catalog.jack_of_all_trades_pool(),
+            };
+            assert!(
+                !pool.iter().all(|id| holds_l0(&catalog, *id)),
+                "{source:?} beside a Crossbow keeps its seeded prefix"
+            );
+            assert!(
+                names_with(&document, &catalog, ordering),
+                "a Crossbow shifts a {source:?} prefix"
+            );
+            // Crossbow is the only new name: the same fight without it does
+            // not name the gate.
+            assert!(!names_with(
+                &base,
+                &HotBoundary::catalog_from_canonical(&base).unwrap(),
+                ordering
+            ));
+            if card_type.is_some() {
+                // `catalog_with_owner_type_pool`, keeping the Crossbow.
+                let mut builder = CatalogBuilder::new();
+                for spec in catalog.specs() {
+                    builder.intern(spec.identity).unwrap();
+                }
+                for spec in catalog.reachable_specs() {
+                    builder.intern_reachable(spec.identity).unwrap();
+                }
+                for id in pool {
+                    builder.intern_reachable(identity(id, 0)).unwrap();
+                }
+                builder.intern_monster(MonsterKind::Toadpole).unwrap();
+                builder
+                    .set_relics_ordered(&[RelicId::RelicCrossbow], true)
+                    .unwrap();
+                let complete = builder.build();
+                assert!(relic_generation_draw_follows_root(&state, &complete));
+                assert!(
+                    !names_with(&document, &complete, ordering),
+                    "a Crossbow beside a complete {source:?} closure"
+                );
+            }
+        }
+
+        // Jack's complete-closure arm (#3382: a Splash prefix interns the
+        // whole pool): Jack's own live draw is exact after any Crossbow draw.
+        let jack_ordering =
+            MissingCapability::ArgumentShape("jack of all trades generation ordering");
+        let splash_seed = (0..4096)
+            .find(|seed| {
+                let mut rng = Xoshiro256StarStar::from_seed(*seed);
+                let mut pool = JACK_OF_ALL_TRADES_POOL_V1091;
+                rng.shuffle(&mut pool).unwrap();
+                pool[0] == CardId::Splash
+            })
+            .expect("a small seed puts Splash in an L0 Jack's prefix");
+        let complete_jack = with_crossbow(&generator_document(
+            CardId::JackOfAllTrades,
+            RewardPool::Ironclad,
+            false,
+            splash_seed,
+        ));
+        let catalog = HotBoundary::catalog_from_canonical(&complete_jack).unwrap();
+        assert!(
+            catalog
+                .jack_of_all_trades_pool()
+                .into_iter()
+                .all(|id| holds_l0(&catalog, id))
+        );
+        assert!(!names_with(&complete_jack, &catalog, jack_ordering));
+    }
+
+    /// The Jack, Distraction and White Noise prefix sources #3487 closes
+    /// beside a card reader: `(source, owner, gate, owner-type pool)`, with
+    /// `None` for Jack's self-excluding Colorless pool.
+    const PREFIX_GENERATION_SOURCES: [(
+        CardId,
+        RewardPool,
+        &str,
+        Option<crate::content_tables::CardType>,
+    ); 3] = [
+        (
+            CardId::WhiteNoise,
+            RewardPool::Defect,
+            "white noise generation ordering",
+            Some(crate::content_tables::CardType::Power),
+        ),
+        (
+            CardId::Distraction,
+            RewardPool::Silent,
+            "distraction generation ordering",
+            Some(crate::content_tables::CardType::Skill),
+        ),
+        (
+            CardId::JackOfAllTrades,
+            RewardPool::Ironclad,
+            "jack of all trades generation ordering",
+            None,
+        ),
+    ];
+
+    /// #3487's card readers of the Generation stream, each added to
+    /// `document`: a physical Hello World, Call of the Void, Calamity, Stoke
+    /// or Spectrum Shift card (with the physical identity it adds, if any), a
+    /// live Spectrum Shift, and each card-choice potion in the belt.
+    fn card_generation_readers(
+        document: &CanonicalStateV2,
+    ) -> Vec<(&'static str, CanonicalStateV2, Option<CardIdentity>)> {
+        let mut readers = Vec::new();
+        for id in [
+            CardId::HelloWorld,
+            CardId::CallOfTheVoid,
+            CardId::Calamity,
+            CardId::Stoke,
+            CardId::SpectrumShift,
+        ] {
+            readers.push((
+                id.as_str(),
+                with_hand_card(document, id, 991),
+                Some(identity(id, 0)),
+            ));
+        }
+        let mut live = document.clone();
+        live.player
+            .insert(PowerId::SpectrumShift.as_str().to_owned(), json!(1));
+        live.player.insert(
+            "before_hand_draw_power_order".to_owned(),
+            json!([PowerId::SpectrumShift.as_str()]),
+        );
+        readers.push(("live Spectrum Shift", live, None));
+        for potion in [
+            PotionId::AttackPotion,
+            PotionId::SkillPotion,
+            PotionId::PowerPotion,
+            PotionId::ColorlessPotion,
+            PotionId::OrobicAcid,
+        ] {
+            readers.push((potion.as_str(), with_potion(document, potion), None));
+        }
+        readers
+    }
+
+    /// `prefix` (a lone source's seeded-prefix catalog) plus `extra` as a
+    /// reachable atom: the catalog a reader beside that source would have if
+    /// the boundary had NOT closed the source's complete pool.
+    fn prefix_catalog_holding(prefix: &Catalog, extra: Option<CardIdentity>) -> Catalog {
+        prefix_catalog_with_relics(prefix, extra, &[])
+    }
+
+    /// [`prefix_catalog_holding`] owning `relics`, dispatch order vouched for.
+    fn prefix_catalog_with_relics(
+        prefix: &Catalog,
+        extra: Option<CardIdentity>,
+        relics: &[RelicId],
+    ) -> Catalog {
+        let mut builder = CatalogBuilder::new();
+        for spec in prefix.specs() {
+            builder.intern(spec.identity).unwrap();
+        }
+        for spec in prefix.reachable_specs() {
+            builder.intern_reachable(spec.identity).unwrap();
+        }
+        if let Some(extra) = extra {
+            builder.intern_reachable(extra).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        if !relics.is_empty() {
+            builder.set_relics_ordered(relics, true).unwrap();
+        }
+        builder.build()
+    }
+
+    /// #3487 part 1: a not-yet-played Hello World, Call of the Void or
+    /// Calamity card, a physical Stoke, a physical or live Spectrum Shift, or
+    /// a card-choice potion draws the live Generation stream at a play, hook
+    /// or use that can precede a held Jack, Distraction or White Noise play
+    /// (IL at `card_generation_reader` in `admit`). Beside each one the
+    /// boundary interns the source's COMPLETE pool, so the pair admits the
+    /// ordering. Over the lone source's seeded prefix the same reader names
+    /// the gate: a catalog the boundary did not complete stays fail-closed.
+    #[test]
+    fn prefix_generation_gates_close_completely_beside_card_readers() {
+        for (source, owner, gate, card_type) in PREFIX_GENERATION_SOURCES {
+            let ordering = MissingCapability::ArgumentShape(gate);
+            let base = first_admitted_generator_document(source, owner, false);
+            let prefix = HotBoundary::catalog_from_canonical(&base).unwrap();
+            let pool = |catalog: &Catalog| match card_type {
+                Some(card_type) => catalog.owner_type_generation_pool(owner, card_type),
+                None => catalog.jack_of_all_trades_pool(),
+            };
+            assert!(
+                !pool(&prefix).iter().all(|id| holds_l0(&prefix, *id)),
+                "a lone {source:?} interns only its seeded prefix"
+            );
+            assert!(!names_with(&base, &prefix, ordering));
+            for (name, document, extra) in card_generation_readers(&base) {
+                let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+                assert!(
+                    pool(&catalog).iter().all(|id| holds_l0(&catalog, *id)),
+                    "{name} closes a {source:?}'s complete pool"
+                );
+                // Distraction's gate also counts any catalog-reachable Splash
+                // as another consumer, complete closure or not; a Colorless
+                // reader (Spectrum Shift, Colorless Potion) reaches Splash, so
+                // that pair still refuses, by that pre-#3487 conjunct.
+                let splash_conflict = source == CardId::Distraction
+                    && (0..=1)
+                        .any(|upgrade| catalog.is_reachable(identity(CardId::Splash, upgrade)));
+                assert_eq!(
+                    names_with(&document, &catalog, ordering),
+                    splash_conflict,
+                    "{name} beside the boundary's complete {source:?} closure"
+                );
+                assert!(
+                    names_with(&document, &prefix_catalog_holding(&prefix, extra), ordering),
+                    "{name} beside a {source:?}'s seeded prefix"
+                );
+            }
+        }
+    }
+
+    /// #3487 part 1, the exactness half: with the complete pool the boundary
+    /// interns beside a reader, the source's own live draw
+    /// (`JackOfAllTrades/<OnPlay>d__6` `0x3a7ecc` IL `0x008f-0x0094`,
+    /// `Distraction/<OnPlay>d__5` `0x399690` IL `0x008b-0x0090`,
+    /// `WhiteNoise/<OnPlay>d__3` `0x3c74ac` IL `0x0109-0x010e`) mints a known
+    /// atom wherever the reader left the stream. 64 displaced Generation
+    /// positions per source and reader, through the real `apply_action`.
+    #[test]
+    fn displaced_generation_stream_still_mints_known_prefix_source_cards() {
+        for (source, owner, _, _) in PREFIX_GENERATION_SOURCES {
+            let base = first_admitted_generator_document(source, owner, false);
+            let uid = jack_uid(&base);
+            for (name, document, _) in card_generation_readers(&base) {
+                let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+                let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+                for step in 0..64u64 {
+                    let mut displaced = state.clone();
+                    let seeded = Xoshiro256StarStar::from_seed(20_000 + step);
+                    displaced.rng.set(
+                        RngStream::Generation,
+                        crate::hot::RngStreamState {
+                            words: seeded.words,
+                            counter: seeded.counter,
+                        },
+                    );
+                    apply_action(
+                        &displaced,
+                        &catalog,
+                        &Action::Play {
+                            uid,
+                            target: None,
+                            selection: SelectionRef::NONE,
+                        },
+                    )
+                    .unwrap_or_else(|refusal| {
+                        panic!("{source:?} beside {name} at stream position {step}: {refusal:?}")
+                    });
+                }
+            }
+        }
+    }
+
+    /// #3487 part 2: Infernal Blade, Bundle of Joy and Abundance hold a seeded
+    /// prefix too (`0x3a7164` IL `0x008b`/`0x0090`, `0x390188` IL
+    /// `0x0063`/`0x0068`, `0x3888ec` IL `0x0092`/`0x0097`). A Crossbow draw
+    /// (`0x322340` IL `0x00c2`/`0x00c7`, every turn-2+ start) moves it, so each
+    /// names its gate beside a Crossbow, and the same fight without one does
+    /// not. An Infernal Blade whose whole Attack pool is interned (beside a
+    /// Jack) is exact at any position and does not. A pending Abundance
+    /// screen names the Abundance gate too.
+    #[test]
+    fn crossbow_names_the_blade_bundle_and_abundance_prefix_gates() {
+        for (source, gate) in [
+            (CardId::InfernalBlade, "infernal blade generation ordering"),
+            (CardId::BundleOfJoy, "bundle of joy generation ordering"),
+            (CardId::Abundance, "abundance generation ordering"),
+        ] {
+            let ordering = MissingCapability::ArgumentShape(gate);
+            let base = first_admitted_generator_document(source, RewardPool::Ironclad, false);
+            assert!(
+                maybe_refuse(&base).is_none_or(|refusal| !refusal.contains(ordering)),
+                "a lone {source:?} admits its prefix"
+            );
+            let document = with_crossbow(&base);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            assert!(relic_generation_draw_follows_root(&state, &catalog));
+            if source == CardId::InfernalBlade {
+                // Crossbow interns its owner's whole Attack pool (#2970;
+                // `Crossbow/<>c::<AfterSideTurnStart>b__2_0` RVA `0x322332`
+                // is `get_Type == 1`), which holds Infernal Blade's whole
+                // frozen Attack pool on a full profile. The Blade's own live
+                // draw is then exact at any position, so no name.
+                assert!(
+                    crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109
+                        .into_iter()
+                        .all(|id| holds_l0(&catalog, id))
+                );
+                assert!(!names_with(&document, &catalog, ordering));
+                // Over the Blade's seeded prefix alone, the Crossbow names it.
+                let prefix = prefix_catalog_with_relics(
+                    &HotBoundary::catalog_from_canonical(&base).unwrap(),
+                    None,
+                    &[RelicId::RelicCrossbow],
+                );
+                assert!(
+                    names_with(&document, &prefix, ordering),
+                    "a Crossbow shifts an Infernal Blade prefix"
+                );
+            } else {
+                assert!(
+                    names_with(&document, &catalog, ordering),
+                    "a Crossbow shifts a {source:?} prefix"
+                );
+            }
+        }
+
+        // A pending Abundance screen: the source has left Hand, so only
+        // `abundance_pending` can name the gate.
+        let abundance_ordering = MissingCapability::ArgumentShape("abundance generation ordering");
+        let base =
+            first_admitted_generator_document(CardId::Abundance, RewardPool::Ironclad, false);
+        let park = |document: &CanonicalStateV2| {
+            let catalog = HotBoundary::catalog_from_canonical(document).unwrap();
+            let state = HotBoundary::from_canonical(document, &catalog).unwrap();
+            let parked = apply_action(
+                &state,
+                &catalog,
+                &Action::Play {
+                    uid: jack_uid(document),
+                    target: None,
+                    selection: SelectionRef::NONE,
+                },
+            )
+            .unwrap()
+            .state;
+            let pending = HotBoundary::try_to_canonical(&parked, &catalog).unwrap();
+            let catalog = HotBoundary::catalog_from_canonical(&pending).unwrap();
+            let state = HotBoundary::from_canonical(&pending, &catalog).unwrap();
+            assert_eq!(
+                state
+                    .pending
+                    .as_deref()
+                    .and_then(|pending| state.pending_card_play(pending))
+                    .and_then(|(record, _)| record.route().ok())
+                    .map(|(_, kind)| kind),
+                Some(crate::hot::PendingSelectionKind::Abundance)
+            );
+            assert!(
+                ![PileId::Hand, PileId::Draw, PileId::Discard]
+                    .into_iter()
+                    .flat_map(|pile| state.piles.get(pile).as_slice())
+                    .any(|card| catalog
+                        .spec(card.atom)
+                        .is_some_and(|spec| spec.identity.id == CardId::Abundance)),
+                "the pending source is not a physical Abundance"
+            );
+            (pending, catalog, state)
+        };
+        let (pending, catalog, state) = park(&base);
+        assert!(!names_with(&pending, &catalog, abundance_ordering));
+        // A canonical pending screen cannot carry a Crossbow: its ActionReplay
+        // predecessor (the physical Abundance) must itself admit, and beside
+        // a Crossbow it names this gate. So the arm is reached on the parked
+        // hot state against a catalog that owns one.
+        let crossbow = prefix_catalog_with_relics(&catalog, None, &[RelicId::RelicCrossbow]);
+        assert!(
+            admit(&pending, &state, &crossbow)
+                .is_err_and(|refusal| refusal.contains(abundance_ordering)),
+            "a Crossbow shifts a pending Abundance screen's replays"
+        );
+    }
+
+    /// #3467: for every turn-one root the opening can publish (after the whole
+    /// setup, or parked at a relic choice inside it),
+    /// `relic_generation_draw_follows_root` says exactly whether a relic
+    /// still draws the Generation stream before turn one's setup finishes,
+    /// driven through the real turn start. It also pins that none of the five
+    /// turn-one relics draws at a later turn start, so a prefix held past
+    /// turn one meets only Crossbow (`prefix_generation_gates_count_a_crossbow`).
+    ///
+    /// The IL for each relic's draw point and turn gate is at
+    /// `relic_generation_draw_follows_root`.
+    #[test]
+    fn relic_generation_draw_follows_root_matches_the_turn_start() {
+        use super::super::relics::{relic_selection_action_count, resume_relic_selection};
+        use super::super::turn::begin_player_turn;
+        use RelicId::{
+            RelicBigHat as HAT, RelicChoicesParadox as PARADOX, RelicGamblingChip as CHIP,
+            RelicOrangeDough as DOUGH, RelicToastyMittens as MITTENS, RelicToolbox as TOOLBOX,
+            RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        let generation_counter = |state: &HotState| state.rng.get(RngStream::Generation).counter;
+        let build = |relics: &[RelicId]| -> (Catalog, HotState) {
+            let mut builder = CatalogBuilder::new();
+            let strike = builder
+                .intern_reachable(identity(CardId::StrikeIronclad, 0))
+                .unwrap();
+            for id in crate::steps::neutral::colorless_generation_pool(None) {
+                builder.intern_reachable(identity(id, 0)).unwrap();
+            }
+            let paradox_pool = crate::content_tables::GENERATION_RELIC_POOLS
+                .iter()
+                .find_map(|(name, pool)| (*name == "CHOICES_PARADOX").then_some(*pool))
+                .unwrap();
+            for id in paradox_pool {
+                builder.intern_reachable(identity(*id, 0)).unwrap();
+            }
+            for generated in crate::boundary::stoke_generation_closure([true, false]) {
+                builder.intern_reachable(generated).unwrap();
+            }
+            builder.set_relics_ordered(relics, true).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.max_hp = 50;
+            state.turn = 1;
+            state.reward_card_pool = Some(RewardPool::Ironclad);
+            state.entropy_card_pool = Some(RewardPool::Ironclad);
+            state.fully_unlocked_card_pool_epochs = true;
+            state.next_card_uid = 21;
+            state
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .extend((1..=20).map(|uid| crate::hot::HotCard {
+                    uid,
+                    atom: strike,
+                    flags: 0,
+                }));
+            let seeded = Xoshiro256StarStar::from_seed(17);
+            state.rng.set(
+                RngStream::Generation,
+                crate::hot::RngStreamState {
+                    words: seeded.words,
+                    counter: seeded.counter,
+                },
+            );
+            (catalog, state)
+        };
+        let mut drew_after_a_root = std::collections::BTreeSet::new();
+        let mut parked_roots = 0;
+        // Inventory order is the dispatch order, as a vouched fight records
+        // it; the last case moves Puzzlebox ahead of Paradox (#3321).
+        for relics in [
+            &[TOOLBOX][..],
+            &[PARADOX],
+            &[PUZZLEBOX],
+            &[DOUGH],
+            &[HAT],
+            &[TOOLBOX, PARADOX],
+            &[TOOLBOX, PUZZLEBOX],
+            &[PARADOX, PUZZLEBOX],
+            &[PARADOX, CHIP, PUZZLEBOX],
+            &[PUZZLEBOX, MITTENS],
+            &[TOOLBOX, PARADOX, PUZZLEBOX, DOUGH],
+            &[PUZZLEBOX, PARADOX],
+        ] {
+            let (catalog, mut state) = build(relics);
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            let mut roots = Vec::new();
+            loop {
+                roots.push((
+                    relic_generation_draw_follows_root(&state, &catalog),
+                    generation_counter(&state),
+                    state.fanouts.batch_nine_relic_pending().map(|p| p.kind),
+                ));
+                if state.pending.is_none() {
+                    break;
+                }
+                assert!(relic_selection_action_count(&state, &catalog).unwrap() > 0);
+                resume_relic_selection(&mut state, &catalog, 0, &mut events).unwrap();
+            }
+            let finished = generation_counter(&state);
+            for (follows, counter, parked) in &roots {
+                assert_eq!(
+                    *follows,
+                    *counter != finished,
+                    "{relics:?} parked at {parked:?}: predicate {follows}, stream {counter} -> {finished}"
+                );
+                if *follows {
+                    drew_after_a_root.insert(format!("{relics:?}"));
+                }
+                parked_roots += usize::from(parked.is_some());
+            }
+            // A finished turn-one root holds nothing ahead of it.
+            assert!(!roots.last().unwrap().0);
+
+            // No turn-one relic draws at a later turn start (Toasty Mittens'
+            // Hand choice still parks every turn; it reads no Generation).
+            state.turn = 2;
+            let before = generation_counter(&state);
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            while state.pending.is_some() {
+                assert!(relics.contains(&MITTENS), "{relics:?} parks on turn 2");
+                resume_relic_selection(&mut state, &catalog, 0, &mut events).unwrap();
+            }
+            assert_eq!(
+                generation_counter(&state),
+                before,
+                "{relics:?} drew Generation on turn 2"
+            );
+            assert!(!relic_generation_draw_follows_root(&state, &catalog));
+        }
+        // The parked shapes that DO leave a draw ahead of the root: Paradox
+        // and Puzzlebox behind Toolbox, Puzzlebox behind Paradox or Chip.
+        assert_eq!(
+            drew_after_a_root,
+            [
+                "[RelicToolbox, RelicChoicesParadox]",
+                "[RelicToolbox, RelicVexingPuzzlebox]",
+                "[RelicChoicesParadox, RelicVexingPuzzlebox]",
+                "[RelicChoicesParadox, RelicGamblingChip, RelicVexingPuzzlebox]",
+                "[RelicToolbox, RelicChoicesParadox, RelicVexingPuzzlebox, RelicOrangeDough]",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect()
+        );
+        assert!(parked_roots > 0);
     }
 
     /// `document` with one more L0 `id` in hand at `uid`.
+    /// #3504: every state one source action can reach — the action itself,
+    /// then each `Select` answer of any screen it opens.
+    fn states_after_source(
+        state: &crate::hot::HotState,
+        catalog: &Catalog,
+        action: Action,
+    ) -> Vec<crate::hot::HotState> {
+        let Ok(outcome) = apply_action(state, catalog, &action) else {
+            return Vec::new();
+        };
+        let after = outcome.state;
+        if after.pending.is_none() {
+            return vec![after];
+        }
+        crate::engine::legal_actions(&after, catalog)
+            .into_iter()
+            .filter(|action| matches!(action, Action::Select { .. }))
+            .filter_map(|action| apply_action(&after, catalog, &action).ok())
+            .map(|outcome| outcome.state)
+            .filter(|state| state.pending.is_none())
+            .collect()
+    }
+
+    /// #3504: the uid of a White Noise in Hand, if any.
+    fn white_noise_in_hand(state: &crate::hot::HotState, catalog: &Catalog) -> Option<u32> {
+        state
+            .piles
+            .get(PileId::Hand)
+            .as_slice()
+            .iter()
+            .find(|card| {
+                catalog
+                    .spec(card.atom)
+                    .is_some_and(|spec| spec.identity.id == CardId::WhiteNoise)
+            })
+            .map(|card| card.uid)
+    }
+
+    /// #3504: a White Noise that reaches the catalog only as a GENERATED card
+    /// (no physical copy anywhere) is played after an unbounded number of
+    /// other Generation draws. Its body draws one owner Power from the LIVE
+    /// stream (`WhiteNoise/<OnPlay>d__3::MoveNext` `0x3c74ac` IL
+    /// `0x0109`/`0x010e`), so the boundary's closure walk interns the owner's
+    /// complete Power pool for it. For each lone source that can mint one
+    /// for a Defect owner — a Distraction (`0x399690`, Skill filter
+    /// `<OnPlay>b__5_0` `0x399682`), a Discovery (`0x399254`, the whole owner
+    /// pool), a Skill Potion (`0x3502bc`) and an Orobic Acid (`0x34f050`) —
+    /// the root admits, the source mints White Noise through the real
+    /// `apply_action`, and that White Noise then plays at 64 displaced
+    /// Generation positions without an `UnknownMintIdentity`.
+    #[test]
+    fn a_minted_white_noise_plays_at_every_generation_position() {
+        let owner = RewardPool::Defect;
+        let power_pool = CatalogBuilder::new()
+            .build()
+            .owner_type_generation_pool(owner, crate::content_tables::CardType::Power);
+        type Source<'a> = (&'a str, &'a dyn Fn(u64) -> (CanonicalStateV2, Action));
+        let uid_of = |document: &CanonicalStateV2| jack_uid(document);
+        let sources: [Source; 4] = [
+            ("Distraction", &|seed| {
+                let document = generator_document(CardId::Distraction, owner, false, seed);
+                let action = Action::Play {
+                    uid: uid_of(&document),
+                    target: None,
+                    selection: SelectionRef::NONE,
+                };
+                (document, action)
+            }),
+            ("Discovery", &|seed| {
+                let document = generator_document(CardId::Discovery, owner, false, seed);
+                let action = Action::Play {
+                    uid: uid_of(&document),
+                    target: None,
+                    selection: SelectionRef::NONE,
+                };
+                (document, action)
+            }),
+            ("Skill Potion", &|seed| {
+                let base = generator_document(CardId::StrikeDefect, owner, false, seed);
+                (
+                    with_potion(&base, PotionId::SkillPotion),
+                    Action::UsePotion {
+                        slot: 0,
+                        target: None,
+                    },
+                )
+            }),
+            ("Orobic Acid", &|seed| {
+                let base = generator_document(CardId::StrikeDefect, owner, false, seed);
+                (
+                    with_potion(&base, PotionId::OrobicAcid),
+                    Action::UsePotion {
+                        slot: 0,
+                        target: None,
+                    },
+                )
+            }),
+        ];
+        for (name, source) in sources {
+            let (seed, catalog, minted) = (0..2048u64)
+                .find_map(|seed| {
+                    let (document, action) = source(seed);
+                    let catalog = HotBoundary::catalog_from_canonical(&document).ok()?;
+                    let state = HotBoundary::from_canonical(&document, &catalog).ok()?;
+                    assert!(
+                        white_noise_in_hand(&state, &catalog).is_none(),
+                        "{name}: the root holds no White Noise"
+                    );
+                    admit(&document, &state, &catalog).ok()?;
+                    let minted = states_after_source(&state, &catalog, action)
+                        .into_iter()
+                        .find_map(|after| {
+                            white_noise_in_hand(&after, &catalog).map(|uid| (after, uid))
+                        })?;
+                    Some((seed, catalog, minted))
+                })
+                .unwrap_or_else(|| panic!("no admitted {name} root mints a White Noise"));
+            assert!(
+                power_pool.iter().all(|id| holds_l0(&catalog, *id)),
+                "{name} (seed {seed}): the catalog holds the whole owner Power pool"
+            );
+            let (after, uid) = minted;
+            for step in 0..64u64 {
+                let mut displaced = after.clone();
+                let seeded = Xoshiro256StarStar::from_seed(40_000 + step);
+                displaced.rng.set(
+                    RngStream::Generation,
+                    crate::hot::RngStreamState {
+                        words: seeded.words,
+                        counter: seeded.counter,
+                    },
+                );
+                apply_action(
+                    &displaced,
+                    &catalog,
+                    &Action::Play {
+                        uid,
+                        target: None,
+                        selection: SelectionRef::NONE,
+                    },
+                )
+                .unwrap_or_else(|refusal| {
+                    panic!(
+                        "{name} (seed {seed}) White Noise at stream position {step}: {refusal:?}"
+                    )
+                });
+            }
+        }
+    }
+
     fn with_hand_card(document: &CanonicalStateV2, id: CardId, uid: u64) -> CanonicalStateV2 {
         let mut mixed = document.clone();
         let mut card = mixed.piles.get("hand").unwrap()[0].clone();
@@ -31260,7 +32613,8 @@ mod tests {
 
     /// #3427 witness: a positive Int Curious round-trips and admits alone; a
     /// non-positive or Bool one is a power-state refusal; beside a live
-    /// Borrowed Time or an owned Spiked Gauntlets the root refuses by name.
+    /// Borrowed Time the root refuses by name; beside an owned Spiked
+    /// Gauntlets it does not (#3437).
     #[test]
     fn curious_admits_alone_and_refuses_beside_another_power_cost_listener() {
         let (mut document, _, _) = parts();
@@ -31294,12 +32648,24 @@ mod tests {
         gauntlets
             .player
             .insert("spiked_gauntlets".to_owned(), json!(true));
+        // #3437: the relic folds after Curious in a fixed order, so the pair
+        // admits, nor is the relic alone refused. The boundary hydrates the
+        // cost fold's ownership cache from the catalog and refuses to
+        // serialize a state whose cache disagrees with it.
+        let catalog = HotBoundary::catalog_from_canonical(&gauntlets).unwrap();
+        let state = HotBoundary::from_canonical(&gauntlets, &catalog).unwrap();
+        assert!(state.fanouts.spiked_gauntlets_owned());
+        assert_eq!(admit(&gauntlets, &state, &catalog), Ok(()));
+        let mut stale = state.clone();
+        stale.fanouts.set_spiked_gauntlets_owned(false);
+        assert!(HotBoundary::try_to_canonical(&stale, &catalog).is_err());
+        let plain = HotBoundary::catalog_from_canonical(&document).unwrap();
         assert!(
-            refuse(&gauntlets).contains(MissingCapability::ArgumentShape(
-                "Curious energy-cost listener order"
-            ))
+            !HotBoundary::from_canonical(&document, &plain)
+                .unwrap()
+                .fanouts
+                .spiked_gauntlets_owned()
         );
-        // The relic alone is not refused by this gate.
         gauntlets.player.remove("curious");
         assert!(
             maybe_refuse(&gauntlets).is_none_or(|refusal| !refusal.contains(

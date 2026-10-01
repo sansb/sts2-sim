@@ -1,0 +1,4 @@
+#!/bin/sh
+# #3471: `sts-sim` for the census, `entry` answered by wasm and byte-checked
+# against native (see entry_parity_shim.mjs). Needs STS_WASM and STS_NATIVE.
+exec node "$(cd "$(dirname "$0")" && pwd)/entry_parity_shim.mjs" "$@"

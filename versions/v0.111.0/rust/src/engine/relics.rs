@@ -3740,10 +3740,13 @@ fn joss_paper_after_side_turn_end(
         // The same awaited threshold Draw from `<AfterSideTurnEnd>d__26`
         // RVA `0x3276ac` IL_0054-00b2 (#3201). A park is published only
         // where every later ordinary listener commutes with it (#3386).
-        let _listener = super::puzzle::DeferredChoiceListener::enter(
-            joss_paper_side_end_draw_wall(catalog, state),
-        );
-        super::draw::joss_paper_draw(state, catalog, draws as usize, events)?;
+        // Under a named wall, a select that resolves without a prompt refuses
+        // as well (#3485); under `None` it commutes like a parked one.
+        let listener = super::puzzle::DeferredChoiceListener::enter(joss_paper_side_end_draw_wall(
+            catalog, state,
+        ));
+        let result = super::draw::joss_paper_draw(state, catalog, draws as usize, events);
+        listener.settle(result)?;
         let live = state.fanouts.joss_paper_cards_exhausted();
         let written = state.fanouts.set_joss_paper_cards_exhausted(live % 5);
         debug_assert!(written);
@@ -4332,6 +4335,33 @@ pub(crate) fn after_card_played_hand(
     Ok(())
 }
 
+/// Whether Letter Opener's private `SkillsPlayedThisTurn` equals the shared
+/// `history.skill_plays_finished_this_turn` quotient at this skill play
+/// (#3466).
+///
+/// Native keeps two different counts. `LetterOpener/<AfterCardPlayed>d__19::
+/// MoveNext` RVA `0x328e98` increments its own `SkillsPlayedThisTurn` on
+/// every owner Skill (owner IL_0020-0038, `IsInProgress` IL_003d-0049,
+/// `Type == Skill` IL_004e-0061, increment IL_0066-0071) with no side test,
+/// then fires on `% Cards == 0` (IL_0087-008f). Only
+/// `LetterOpener::AfterSideTurnStart` RVA `0x963b8` resets it: on the owner's
+/// side start (IL_000c-001d), after turn one (IL_0025-0036), at
+/// IL_003e-0040. That hook is `StartTurn`'s side-start tail, after
+/// `SetupPlayerTurn`'s hand draw and AfterPlayerTurnStart (see
+/// [`crate::engine::turn`]'s `SetupPlayerTurnWindow`).
+///
+/// The shared quotient is the `HappenedThisTurn` count instead, which rolls at
+/// every `SwitchSides` (`turn::roll_happened_this_turn_counters`). The two
+/// agree whenever this read happens on the player side after the side-start
+/// tail, or on turn one, which neither resets. They part on the enemy side
+/// (Letter Opener still holds the player turn's Skills) and between a later
+/// turn's switch and its side-start tail (Letter Opener has not reset yet).
+/// A Skill play there refuses by name.
+fn letter_opener_count_is_shared(state: &HotState) -> bool {
+    state.player_side_active
+        && (state.turn <= 1 || !super::turn::player_side_start_tail_is_pending())
+}
+
 /// One segment of the in-walk AfterCardPlayed peers: every block whose relic
 /// has `segment` counters dispatched before it (see [`CounterSplit`]), in this
 /// engine's fixed peer order.
@@ -4395,6 +4425,11 @@ fn after_card_played_peer_segment(
         && catalog.hooks().owns(RelicId::RelicLetterOpener)
         && runs(RelicId::RelicLetterOpener)
     {
+        if !letter_opener_count_is_shared(state) {
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                "Letter Opener skill count between a side switch and its reset",
+            ));
+        }
         if state.history.skill_plays_finished_this_turn % 3 == 0 {
             for target in super::damage::alive_targets(state) {
                 if state.monsters[target].hp > 0 {
@@ -6141,6 +6176,10 @@ mod tests {
             .unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 20;
         state.max_hp = 20;
         state.energy = 2;

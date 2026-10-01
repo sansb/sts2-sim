@@ -141,6 +141,10 @@ fn fuel_identity(catalog: &Catalog, level: u8) -> Result<CardIdentity, EngineRef
     Ok(identity)
 }
 
+/// `Compact/<OnPlay>d__7` RVA `0x393740` awaits `CreatureCmd.GainBlock`
+/// (IL_00c6) and then one plural `CardCmd.Transform` (IL_01ca), whose
+/// `<Transform>d__13` (`0x3e0ae0`) returns at `IsEnding` (IL_0032-0037). So the
+/// transform tests the shared IsEnding projection, not `history.over` (#3515).
 fn execute_compact(
     state: &mut crate::hot::HotState,
     catalog: &Catalog,
@@ -152,7 +156,7 @@ fn execute_compact(
 ) -> Result<(), EngineRefusal> {
     exact_active_compact(state, catalog, source_uid, spec)?;
     gain_powered_card_block(state, catalog, spec, block, events)?;
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     normalize_card_identities(state)?;
@@ -346,6 +350,10 @@ pub(crate) fn energy_surge_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefu
 /// independent admission wall makes the modifier branch unreachable until
 /// every local gain site is modeled (the same reduction used by
 /// [`super::shared::energy`]). Combat-over suppresses this exact command.
+///
+/// `DoubleEnergy/<OnPlay>d__5` RVA `0x399ba0` awaits `PlayerCmd.GainEnergy`
+/// (IL_00b9), and `<GainEnergy>d__3` (`0x3ee8a0`) returns at `IsEnding`
+/// (IL_0035-003c): the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn gain_current_energy_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if ctx.spec.identity.id != CardId::DoubleEnergy
         || !matches!(ctx.spec.identity.upgrade, 0 | 1)
@@ -353,7 +361,7 @@ pub(crate) fn gain_current_energy_exact(ctx: &mut StepCtx<'_>) -> Result<(), Eng
     {
         return Err(EngineRefusal::MalformedArgs("gain_current_energy_exact"));
     }
-    if ctx.state.history.over || ctx.state.energy <= 0 {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) || ctx.state.energy <= 0 {
         return Ok(());
     }
     let amount = ctx.state.energy;
@@ -520,12 +528,14 @@ fn require_hibernate_environment(state: &crate::hot::HotState) -> Result<i32, En
     Ok(amount)
 }
 
+/// v0.111.0 `Hibernate/<OnPlay>` RVA `0x3a50e0` awaits `PowerCmd.Apply<HibernatePower>` at IL_0051.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 fn apply_hibernate_stack(
     state: &mut crate::hot::HotState,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     let current = require_hibernate_environment(state)?;
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     let updated = current
@@ -576,12 +586,18 @@ pub(crate) fn preflight_hibernate_turn_start(
 /// callback ended combat. The public quotient excludes every noncommuting
 /// earlier peer; SummonNextTurn remains legal and completes immediately before
 /// this amount-only tick.
+///
+/// `HibernatePower/<AfterPlayerTurnStart>d__6` RVA `0x33c790` awaits
+/// `PowerCmd.Decrement` (IL_0033), which forwards to `ModifyAmount`
+/// (`<Decrement>d__4` `0x3f025c` IL_0029); `<ModifyAmount>d__6` (`0x3f032c`)
+/// returns at `IsEnding` (IL_003a-003f). The shared IsEnding projection, not
+/// `history.over` (#3515).
 pub(crate) fn tick_hibernate_turn_start(
     state: &mut crate::hot::HotState,
     captured: bool,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if !captured || state.history.over {
+    if !captured || crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     let current = require_hibernate_environment(state)?;
@@ -883,6 +899,14 @@ pub(crate) fn random_orb_loop_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
 /// priced from its local rows only (null `CombatState`) and, when selected,
 /// counts as discarded without moving (`discard_scrape_occurrences`, #3136).
 ///
+///
+/// `Scrape/<OnPlay>d__3` RVA `0x3b8988` awaits its attack (IL_0084), then
+/// `CardPileCmd.Draw` (IL_0104), then `CardCmd.Discard` of the drawn non-zero
+/// costs (IL_0193). `<DrawInternal>d__21` (`0x3e3a70` IL_0029-003b) and
+/// `<DiscardAndDraw>d__4` (`0x3e0274` IL_002e-0035) both return at
+/// `IsOverOrEnding`, so once the attack leaves the combat ending the whole tail
+/// is a no-op: the shared IsOverOrEnding projection, not `history.over`
+/// (#3515).
 pub(crate) fn scrape_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(damage), CompiledArg::I(cards)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("scrape_exact"));
@@ -906,9 +930,10 @@ pub(crate) fn scrape_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         1,
         ctx.events,
     )?;
-    if !ctx.state.history.over {
-        normalize_card_identities(ctx.state)?;
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
     }
+    normalize_card_identities(ctx.state)?;
     let cards: usize = (*cards)
         .try_into()
         .map_err(|_| EngineRefusal::MalformedArgs("scrape_exact"))?;
@@ -937,13 +962,16 @@ pub(crate) fn scrape_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     apply_scrape_after_draw(ctx.state, ctx.catalog, &drawn, ctx.events)
 }
 
+/// The Discard is `CardCmd/<DiscardAndDraw>d__4` (`0x3e0274`), which returns at
+/// `IsOverOrEnding` (IL_002e-0035): a draw listener that leaves the combat
+/// ending discards nothing (#3515).
 fn apply_scrape_after_draw(
     state: &mut crate::hot::HotState,
     catalog: &Catalog,
     drawn: &[HotCard],
     events: &mut Vec<crate::engine::Event>,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
 
@@ -2428,6 +2456,10 @@ mod tests {
     #[test]
     fn double_energy_snapshots_and_doubles_the_live_remainder() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.energy = 2;
         run(
             StepKind::GainCurrentEnergyExact,
@@ -3212,6 +3244,10 @@ mod tests {
         ] {
             let (mut state, catalog, identity, entering) =
                 white_noise_fixture(RewardPool::Defect, 0, 47);
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             let source = state.piles.get_mut(PileId::Play).make_mut().remove(0);
             let initial_pile = if mode == 0 {
                 PileId::Hand
@@ -3280,6 +3316,10 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.multiplayer_ally_key = 1;
@@ -3621,6 +3661,10 @@ mod tests {
     #[test]
     fn hibernate_turn_start_decrement_uses_the_native_ending_gate() {
         let mut ordinary = HotState::at_defaults();
+        ordinary.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         ordinary.hp = 50;
         ordinary.powers.set(PowerId::Hibernate, SlotWire::Int, 1);
         let captured = preflight_hibernate_turn_start(&ordinary).unwrap();
@@ -3652,6 +3696,12 @@ mod tests {
         assert!(events.is_empty());
 
         let mut ended_by_prior_listener = HotState::at_defaults();
+        ended_by_prior_listener
+            .monsters_mut()
+            .push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
         ended_by_prior_listener.hp = 50;
         ended_by_prior_listener
             .powers
@@ -3840,5 +3890,116 @@ mod tests {
                 "family manifest drift for {kind:?}"
             );
         }
+    }
+
+    /// #3515: each body gates on its native command, not `history.over`,
+    /// and is a complete no-op while the combat is ending before the over
+    /// latch; the Adaptable-vetoed control writes:
+    /// - Compact's plural `CardCmd.Transform` (`<Transform>d__13` 0x3e0ae0
+    ///   IL_0032, `IsEnding`);
+    /// - Double Energy's `PlayerCmd.GainEnergy` (`<GainEnergy>d__3` 0x3ee8a0
+    ///   IL_0035, `IsEnding`);
+    /// - Hibernate's `Apply<HibernatePower>` (`<Apply>d__1`1` 0x3ef988
+    ///   IL_0025) and its turn-start `PowerCmd.Decrement` (`<ModifyAmount>d__6`
+    ///   0x3f032c IL_003a), both `IsEnding`;
+    /// - Scrape's Draw and Discard (`<DrawInternal>d__21` 0x3e3a70 IL_002e,
+    ///   `<DiscardAndDraw>d__4` 0x3e0274 IL_002e, both `IsOverOrEnding`).
+    #[test]
+    fn defect_uncommon_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        for upgrade in [0, 1] {
+            let (template, catalog, source) = compact_parts(upgrade);
+            let args = [
+                CompiledArg::I(6 + i64::from(upgrade)),
+                CompiledArg::I(i64::from(upgrade)),
+            ];
+            crate::engine::damage::assert_ending_window_gate(&template, "Compact", |s, _| {
+                run_compact(s, &catalog, source, &args, &mut Vec::new())
+            });
+            // The live control's Block alone would change the state, so pin
+            // the gated write: the Statuses became Fuel.
+            let mut control = template.clone();
+            control.monsters_mut().clear();
+            crate::engine::damage::push_ending_window_roster(&mut control, true);
+            run_compact(&mut control, &catalog, source, &args, &mut Vec::new()).unwrap();
+            assert_ne!(
+                control.piles.get(PileId::Hand).as_slice(),
+                template.piles.get(PileId::Hand).as_slice()
+            );
+        }
+
+        let mut template = HotState::at_defaults();
+        template.energy = 2;
+        crate::engine::damage::assert_ending_window_gate(&template, "Double Energy", |s, _| {
+            run(
+                StepKind::GainCurrentEnergyExact,
+                identity(CardId::DoubleEnergy, 0),
+                &[],
+                None,
+                s,
+            )
+        });
+
+        let (template, catalog, source) = hibernate_parts(0, PileId::Play);
+        let spec = *catalog.spec(source.atom).unwrap();
+        crate::engine::damage::assert_ending_window_gate(&template, "Hibernate", |s, _| {
+            call_hibernate(
+                s,
+                &catalog,
+                source,
+                spec,
+                &[CompiledArg::I(1)],
+                None,
+                None,
+                0,
+                &mut Vec::new(),
+            )
+        });
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.powers.set(PowerId::Hibernate, SlotWire::Int, 2);
+        crate::engine::damage::assert_ending_window_gate(&template, "Hibernate tick", |s, _| {
+            tick_hibernate_turn_start(s, true, &mut Vec::new())
+        });
+
+        let scrape = identity(CardId::Scrape, 0);
+        let strike = identity(CardId::StrikeDefect, 0);
+        let mut builder = CatalogBuilder::new();
+        builder.intern(scrape).unwrap();
+        let strike_atom = builder.intern(strike).unwrap();
+        let catalog = builder.build();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template
+            .piles
+            .get_mut(PileId::Draw)
+            .make_mut()
+            .push(HotCard {
+                uid: 0,
+                atom: strike_atom,
+                flags: 0,
+            });
+        crate::engine::damage::assert_ending_window_gate(&template, "Scrape", |s, t| {
+            run_with_catalog(
+                StepKind::ScrapeExact,
+                scrape,
+                &[CompiledArg::I(7), CompiledArg::I(4)],
+                Some(t),
+                s,
+                &catalog,
+            )
+        });
+        // The discard after a draw that left the combat ending: the drawn
+        // Strike stays in Hand.
+        let drawn = HotCard {
+            uid: 0,
+            atom: strike_atom,
+            flags: 0,
+        };
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.piles.get_mut(PileId::Hand).make_mut().push(drawn);
+        crate::engine::damage::assert_ending_window_gate(&template, "Scrape discard", |s, _| {
+            apply_scrape_after_draw(s, &catalog, &[drawn], &mut Vec::new())
+        });
     }
 }

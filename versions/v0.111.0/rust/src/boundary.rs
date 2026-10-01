@@ -2056,6 +2056,7 @@ fn deep_relic_ownership_matches(state: &HotState, catalog: &Catalog) -> bool {
         && state.fanouts.lizard_tail_owned() == owns(RelicId::RelicLizardTail)
         && state.fanouts.ruined_helmet_owned() == owns(RelicId::RelicRuinedHelmet)
         && state.fanouts.undying_sigil_owned() == owns(RelicId::RelicUndyingSigil)
+        && state.fanouts.spiked_gauntlets_owned() == owns(RelicId::RelicSpikedGauntlets)
 }
 
 pub(crate) fn batch_eight_relic_state_is_exact(state: &HotState, catalog: &Catalog) -> bool {
@@ -2145,6 +2146,9 @@ pub(crate) fn batch_nine_relic_state_is_exact(state: &HotState, catalog: &Catalo
         && state.fanouts.gremlin_horn_owned() == owns(RelicId::RelicGremlinHorn)
         && state.fanouts.red_skull_owned() == owns(RelicId::RelicRedSkull)
         && !state.fanouts.red_skull_latch_stale()
+        // A queued deferred hook action lives only inside one public
+        // transaction (#3387, `engine::hook_action`).
+        && !state.fanouts.deferred_hook_action_is_queued()
         && matches!(state.regalite_block_amount, 4 | 6)
 }
 
@@ -11927,9 +11931,28 @@ fn frame_to_canonical(
                         (draw.caller, draw.from_hand_draw),
                         (crate::hot::DrawCaller::TurnStart, true)
                             | (crate::hot::DrawCaller::UnceasingTopTurnStart, false)
-                    ) && state.frames.action_replay(record).is_some_and(|replay| {
-                        matches!(replay.action, crate::hot::ActionReplayRootAction::EndTurn)
-                    }) =>
+                    ) && state
+                        .frames
+                        .action_replay_action(record)
+                        .is_some_and(|replay| {
+                            matches!(replay, crate::hot::ActionReplayRootAction::EndTurn)
+                        }) =>
+                {
+                    Value::Array(Vec::new())
+                }
+                // #3387: a published deferred hook action, Gremlin Horn's Draw
+                // directly on the root of the player action it followed
+                // (`play::gremlin_horn_draw_stack_is_exact`).
+                Frame::ActionReplay { record }
+                    if draw.caller == crate::hot::DrawCaller::GremlinHorn
+                        && !draw.from_hand_draw
+                        && state.frames.action_replay(record).is_some_and(|replay| {
+                            matches!(
+                                replay.action,
+                                crate::hot::ActionReplayRootAction::Play { .. }
+                                    | crate::hot::ActionReplayRootAction::UsePotion { .. }
+                            )
+                        }) =>
                 {
                     Value::Array(Vec::new())
                 }
@@ -13033,19 +13056,12 @@ impl HotBoundary {
         }
         // #3382: a card a potion mints can be played after any number of
         // other draws, so a minted White Noise closes its COMPLETE result
-        // pool, as the physical preview below closes its own beside a
-        // generation potion. The generated-identity walk has no White Noise
-        // arm (a physical source keeps its seeded preview), so before this a
-        // Skill Potion's White Noise minted an uninterned Power (census
-        // 7UEE3Y1SPJCY n10, `mid-combat card identity "SPINNER"+0 was not
-        // pre-interned`, #3236). `WhiteNoise/<OnPlay>d__3::MoveNext` RVA
-        // `0x3c74ac` draws ONE row (`ldc.i4.1` IL_00f8) of its CardModel
-        // owner's recorded-profile Powers (`GetUnlockedCards` IL_00cf, filter
-        // `<OnPlay>b__3_0` IL_00e2) through `get_CombatCardGeneration` /
-        // `GetDistinctForCombat` (IL_0109 / IL_010e) at play time, and adds
-        // it to Hand at L0 (`AddGeneratedCardToCombat` IL_012b, no
-        // `CardCmd::Upgrade`). Distraction, the other one-row live drawer, is
-        // Event rarity, so no potion's card-choice pool can offer it.
+        // pool (census 7UEE3Y1SPJCY n10 had refused mid-fight on an
+        // uninterned Spinner, #3236). Since #3504 the generated-identity walk
+        // itself carries that White Noise arm (IL there), so every other
+        // source of a generated White Noise closes the same pool too.
+        // Distraction, the other one-row live drawer, is Event rarity, so no
+        // potion's card-choice pool can offer it.
         let mut intern_generation_pool = |pool: &[CardId]| -> Result<(), BoundaryRefusal> {
             for &id in pool {
                 intern_generated_identity_closure(
@@ -13058,24 +13074,6 @@ impl HotBoundary {
                     generation_potion_jackpot_pool,
                     generation_potion_owner,
                 )?;
-                let Some(owner) = generation_potion_owner.filter(|_| id == CardId::WhiteNoise)
-                else {
-                    continue;
-                };
-                for result in builder
-                    .owner_type_generation_pool(owner, crate::content_tables::CardType::Power)
-                {
-                    intern_generated_identity_closure(
-                        &mut builder,
-                        CardIdentity {
-                            id: result,
-                            upgrade: 0,
-                            enchantment: None,
-                        },
-                        generation_potion_jackpot_pool,
-                        generation_potion_owner,
-                    )?;
-                }
             }
             Ok(())
         };
@@ -13891,6 +13889,11 @@ impl HotBoundary {
             ]
             .into_iter()
             .any(generation_potion_reachable),
+            unpreviewed_readers: hello_world_reachable
+                || call_of_the_void_reachable
+                || calamity_reachable
+                || stokes.into_iter().any(|reachable| reachable)
+                || spectrum_shift_reachable,
         };
         // A bounded finite generator can itself reveal a future Burst/Echo
         // writer earlier on the same Generation stream. Rehearse to a fixed
@@ -14458,6 +14461,9 @@ impl HotBoundary {
         state
             .fanouts
             .set_undying_sigil_owned(catalog.hooks().owns(RelicId::RelicUndyingSigil));
+        state
+            .fanouts
+            .set_spiked_gauntlets_owned(catalog.hooks().owns(RelicId::RelicSpikedGauntlets));
         state
             .fanouts
             .set_self_forming_clay_owned(catalog.hooks().owns(RelicId::RelicSelfFormingClay));
@@ -16342,6 +16348,13 @@ impl HotBoundary {
                                                 // IL_0058-0094), owned the
                                                 // same way.
                                                 | "joss_paper"
+                                                // #3387: Gremlin Horn's Draw
+                                                // (`0x326170` IL_00d9),
+                                                // published by its deferred
+                                                // hook action at the stack
+                                                // base and checked by
+                                                // `play::gremlin_horn_draw_stack_is_exact`.
+                                                | "gremlin_horn"
                                         )
                                     })
                             || document.continuations[..index]
@@ -17499,9 +17512,22 @@ impl HotBoundary {
                             (crate::hot::DrawCaller::TurnStart, true)
                                 | (crate::hot::DrawCaller::UnceasingTopTurnStart, false)
                         ) && caller_locals.is_empty()
-                            && frames.action_replay(record).is_some_and(|replay| {
-                                matches!(replay.action, crate::hot::ActionReplayRootAction::EndTurn)
+                            && frames.action_replay_action(record).is_some_and(|replay| {
+                                matches!(replay, crate::hot::ActionReplayRootAction::EndTurn)
                             })
+                            // #3387: a published deferred hook action, Gremlin
+                            // Horn's Draw on the root of its player action.
+                            || caller == crate::hot::DrawCaller::GremlinHorn
+                                && !from_hand_draw
+                                && caller_locals.is_empty()
+                                && frames.len() == 1
+                                && frames.action_replay(record).is_some_and(|replay| {
+                                    matches!(
+                                        replay.action,
+                                        crate::hot::ActionReplayRootAction::Play { .. }
+                                            | crate::hot::ActionReplayRootAction::UsePotion { .. }
+                                    )
+                                })
                     }
                     Some(Frame::BeforeHandDrawPower { record }) => {
                         caller == crate::hot::DrawCaller::ForegoneBeforeHandDraw
@@ -19722,6 +19748,13 @@ struct GenerationPreviewCounts {
     /// Brew) draws the same live Generation stream at use time, so no
     /// seeded prefix survives it. See [`intern_generation_preview`].
     generation_potions: bool,
+    /// #3487: a physical or live Generation reader that no seeded prefix
+    /// accounts for: a Hello World, Call of the Void or Calamity card or
+    /// power, a physical Stoke, or a reachable Spectrum Shift. Each draws
+    /// the live stream at a play or hook that can precede a held Jack,
+    /// Distraction or White Noise play, so beside one those three close
+    /// their COMPLETE pools. See [`intern_generation_preview`].
+    unpreviewed_readers: bool,
 }
 
 impl GenerationPreviewCounts {
@@ -20019,6 +20052,45 @@ fn intern_generated_identity_closure_inner(
                     owner,
                     expanded,
                 )?;
+            }
+        }
+        // #3504: a White Noise that reaches the catalog as a GENERATED card
+        // (a Defect Distraction's result, a Skill Potion's or Orobic Acid's
+        // offer, an Entropy transform, a Discovery offer, ...) is played
+        // after an unbounded number of other Generation draws, so its own
+        // draw is at no fixed stream position. `WhiteNoise/<OnPlay>d__3::
+        // MoveNext` RVA `0x3c74ac` draws ONE row (`ldc.i4.1` IL_00f8) of
+        // `Owner.Character.CardPool` (IL_009f-IL_00af) under the owner's
+        // `UnlockState` (`GetUnlockedCards` IL_00cf), filtered by
+        // `<OnPlay>b__3_0` RVA `0x3c749e` (`get_Type; ldc.i4.3; ceq`: Power),
+        // from the LIVE `get_CombatCardGeneration` / `GetDistinctForCombat`
+        // (IL_0109 / IL_010e), and adds it to Hand at L0
+        // (`AddGeneratedCardToCombat` IL_012b, no `CardCmd::Upgrade`). The
+        // upgrade only changes the cost (`WhiteNoise::OnUpgrade` RVA
+        // `0xf0383`: `EnergyCost.UpgradeBy(-1)`), so every level closes the
+        // same pool. With every L0 row of the owner's recorded-profile Power
+        // pool interned (the pool `steps::defect_uncommon::white_noise_exact`
+        // draws), the mint is a known atom at every stream position, the
+        // #3497 complete-closure argument. A PHYSICAL White Noise never
+        // enters this walk: `intern_generation_preview` previews its seeded
+        // prefix (or closes this same pool) on its own arm.
+        CardId::WhiteNoise => {
+            if let Some(owner) = owner {
+                for id in builder
+                    .owner_type_generation_pool(owner, crate::content_tables::CardType::Power)
+                {
+                    intern_generated_identity_closure_inner(
+                        builder,
+                        CardIdentity {
+                            id,
+                            upgrade: 0,
+                            enchantment: None,
+                        },
+                        jackpot_pool,
+                        Some(owner),
+                        expanded,
+                    )?;
+                }
             }
         }
         CardId::HelloWorld => {
@@ -20343,6 +20415,17 @@ pub(crate) fn independent_generation_closure_reaches(
     let jackpot_pool = jackpot_pool.as_slice();
     for &identity in physical {
         if matches!(identity.id, CardId::Alchemize) {
+            continue;
+        }
+        // #3504: a White Noise ROOT here is a document card, whose draw the
+        // catalog previews as a seeded prefix (bound below by
+        // `bounded_source`), so it is not expanded through the walk's White
+        // Noise arm, which is for generated copies. This keeps the probe's
+        // answer for such a root exactly what it was before that arm.
+        if matches!(identity.id, CardId::WhiteNoise) {
+            if expected.intern_reachable(identity).is_err() {
+                return false;
+            }
             continue;
         }
         if intern_generated_identity_closure(&mut expected, identity, jackpot_pool, owner).is_err()
@@ -20728,6 +20811,105 @@ pub(crate) fn vexing_puzzlebox_owner_closure_is_exact(
     })
 }
 
+/// #3498: whether a Distraction or White Noise result `id`, once in Hand, can
+/// read the live Generation stream before a LATER copy's play, and so move
+/// that copy's seeded prefix (the White Noise / Distraction twin of #3390).
+///
+/// Each body draws first and only then hands its one result to Hand:
+/// `WhiteNoise/<OnPlay>d__3::MoveNext` RVA `0x3c74ac` reads
+/// `RunRngSet::get_CombatCardGeneration` at IL `0x0109` and draws through
+/// `CardFactory::GetDistinctForCombat` at IL `0x010e`, then
+/// `SetToFreeThisTurn` IL `0x011d` and `CardPileCmd::AddGeneratedCardToCombat`
+/// IL `0x012b`; `Distraction/<OnPlay>d__5::MoveNext` RVA `0x399690` draws at IL
+/// `0x008b`/`0x0090`, then IL `0x009f` and IL `0x00ad`. So a result can act
+/// only after the draw that produced it: the LAST previewed copy's result
+/// moves no previewed draw, and a lone copy is never affected.
+///
+/// The set is every card whose play reads that stream, from an all-method-body
+/// call scan of the v0.111.0 DLL (sha `9cb4f1ad…`) for
+/// `get_CombatCardGeneration` (and `ConsumeCombatCardGenerationOverride`, whose
+/// only caller is `GetDistinctForCombat` RVA `0x112878` IL `0x0019`):
+///
+/// * a direct draw in the card's own `<OnPlay>` body: Abundance `0x3888ec` IL
+///   `0x0092`, Bundle of Joy `0x390188` IL `0x0063`, Discovery `0x399254` IL
+///   `0x0079`, Distraction `0x399690` IL `0x008b`, Infernal Blade `0x3a7164`
+///   IL `0x008b`, Jack of All Trades `0x3a7ecc` IL `0x008f`, Jackpot
+///   `0x3a80d4` IL `0x0154`, Largesse `0x3a90e4` IL `0x010d`, Manifest
+///   Authority `0x3ab860` IL `0x00d8`, Metamorphosis `0x3ac1e8` IL `0x009a`,
+///   Quasar `0x3b4e48` IL `0x0063`, Splash `0x3be150` IL `0x00b9`, Stoke
+///   `0x3bef44` IL `0x01d4`, White Noise `0x3c74ac` IL `0x0109`, and Mad
+///   Science's Chaos rider (`<ExecuteRider>d__57` `0x3aa9c4` IL `0x0376`);
+/// * a card whose play applies a power that draws at a later hook (a scan of
+///   every generic `Apply<T>` instantiation over those powers finds exactly
+///   one applier each): Calamity (`0x390b94` IL `0x0040`, `CalamityPower`
+///   `<AfterCardPlayed>d__7` `0x3368bc` IL `0x00cd`), Call of the Void
+///   (`0x390ee8` IL `0x00cc`, `CallOfTheVoidPower` `<BeforeHandDraw>d__6`
+///   `0x336b08` IL `0x00c6`), Creative AI (`0x395684` IL `0x00d1`,
+///   `CreativeAiPower` `<BeforeHandDraw>d__4` `0x338180` IL `0x00af`), Hello
+///   World (`0x3a4bc8` IL `0x00c1`, `HelloWorldPower` `<BeforeHandDraw>d__4`
+///   `0x33bfd0` IL `0x00d5`) and Spectrum Shift (`0x3bd9ac` IL `0x00cc`,
+///   `SpectrumShiftPower` `<BeforeHandDraw>d__4` `0x345978` IL `0x0079`).
+///
+/// The scan's other readers are relics, potions, a monster move
+/// (`ThievingHopper`) and `AfflictionModel::PickRandomTargets`: none is a
+/// card a prefix can mint. Mad Science is Event rarity, so no pool the two
+/// bodies draw holds it; it is listed so the set stays the scan's.
+pub(crate) fn prefix_result_reads_generation_before_a_later_copy(id: CardId) -> bool {
+    matches!(
+        id,
+        CardId::Abundance
+            | CardId::BundleOfJoy
+            | CardId::Discovery
+            | CardId::Distraction
+            | CardId::InfernalBlade
+            | CardId::JackOfAllTrades
+            | CardId::Jackpot
+            | CardId::Largesse
+            | CardId::ManifestAuthority
+            | CardId::Metamorphosis
+            | CardId::Quasar
+            | CardId::Splash
+            | CardId::Stoke
+            | CardId::WhiteNoise
+            | CardId::MadScience
+            | CardId::Calamity
+            | CardId::CallOfTheVoid
+            | CardId::CreativeAi
+            | CardId::HelloWorld
+            | CardId::SpectrumShift
+    )
+}
+
+/// #3498: the seeded one-card L0 prefix of each of `shuffles` sequential
+/// Distraction or White Noise draws over `pool`, read from `rng`, and the
+/// stream after them. `None` when a result of any draw BEFORE the last reads
+/// the Generation stream ([`prefix_result_reads_generation_before_a_later_copy`]):
+/// a later copy's prefix is then not fixed by the root, and the caller interns
+/// the complete pool instead.
+fn one_card_prefixes_without_an_earlier_reader(
+    rng: Xoshiro256StarStar,
+    pool: &[CardId],
+    shuffles: usize,
+) -> Result<Option<(Vec<CardId>, Xoshiro256StarStar)>, BoundaryRefusal> {
+    let mut rng = rng;
+    let mut results = Vec::with_capacity(shuffles);
+    for _ in 0..shuffles {
+        let mut shuffled = pool.to_vec();
+        rng.shuffle(&mut shuffled)
+            .map_err(|detail| unrepresentable(Entity::Document, "generation", detail))?;
+        results.push(shuffled[0]);
+    }
+    let earlier = &results[..results.len().saturating_sub(1)];
+    if earlier
+        .iter()
+        .copied()
+        .any(prefix_result_reads_generation_before_a_later_copy)
+    {
+        return Ok(None);
+    }
+    Ok(Some((results, rng)))
+}
+
 /// Intern exactly the deterministic leaves the admitted generation cards can
 /// reach from this entry's live Generation stream.
 ///
@@ -20783,7 +20965,11 @@ fn intern_generation_preview(
         quasars,
         largesses,
         generation_potions,
+        unpreviewed_readers,
     } = counts;
+    // #3487: a reader beside which Distraction, White Noise and Jack close
+    // their complete pools rather than hold a seeded prefix.
+    let prefix_is_unsafe = generation_potions || unpreviewed_readers;
     let owner = document
         .player
         .get("reward_card_pool")
@@ -20965,42 +21151,69 @@ fn intern_generation_preview(
     // then White Noise mints Coolant on turn 3, outside the one-row
     // preview). The complete closure is independent of stream position, so
     // it is exact under every interleaving and takes nothing from `rng`.
+    //
+    // #3487: so does every `unpreviewed_readers` source (`prefix_is_unsafe`).
+    // Each draws the same live stream, re-read with `dump_method.py
+    // MoveNext`: a not-yet-played Hello World or Calamity card applies its
+    // listener when played (`HelloWorld/<OnPlay>d__3` `0x3a4bc8` IL_00c1
+    // `PowerCmd.Apply<HelloWorldPower>`, `Calamity/<OnPlay>d__1` `0x390b94`
+    // IL_0040 `PowerCmd.Apply<CalamityPower>`), whose hooks draw at every hand
+    // draw or later Attack (`HelloWorldPower/<BeforeHandDraw>d__4` `0x33bfd0`
+    // IL_00d5/IL_00da, `CalamityPower/<AfterCardPlayed>d__7` `0x3368bc`
+    // IL_00cd/IL_00d2, `CallOfTheVoidPower/<BeforeHandDraw>d__6` `0x336b08`
+    // IL_00c6/IL_00dc); Stoke draws at its play (`Stoke/<OnPlay>d__1`
+    // `0x3bef44` IL_01d4/IL_01d9); a live Spectrum Shift at every hand draw
+    // (`SpectrumShiftPower/<BeforeHandDraw>d__4` `0x345978` IL_0079/IL_007e).
+    // None is bounded by the prefix's own play, so no seeded prefix is exact
+    // beside one, and the refusal alternative regressed six certified census
+    // fights (`engine::admission`, `card_generation_reader`).
+    //
+    // #3498: an EARLIER copy's own result can be such a reader too (the twin
+    // of #3390): a Defect White Noise can mint Hello World or Creative AI,
+    // which reads the stream before a later White Noise is played and moves
+    // that copy's prefix. `one_card_prefixes_without_an_earlier_reader`
+    // previews the draws on a copy of `rng` and, when a result of any draw
+    // before the last is a reader (IL at
+    // `prefix_result_reads_generation_before_a_later_copy`), the complete pool
+    // closes instead, exact at any stream position as above and taking
+    // nothing from `rng`. The last draw's result enters Hand after every
+    // previewed draw, so a reader there keeps the prefix.
     if distraction_shuffles > 0
-        && generation_potions
-        && profile_is_recorded
-        && let Some(owner) = owner
-    {
-        let mut expanded = std::collections::BTreeSet::new();
-        for id in builder.owner_type_generation_pool(owner, crate::content_tables::CardType::Skill)
-        {
-            intern_generated_identity_closure_inner(
-                builder,
-                CardIdentity {
-                    id,
-                    upgrade: 0,
-                    enchantment: None,
-                },
-                jackpot_pool,
-                Some(owner),
-                &mut expanded,
-            )?;
-        }
-    } else if distraction_shuffles > 0
         && profile_is_recorded
         && let Some(owner) = owner
     {
         let pool =
             builder.owner_type_generation_pool(owner, crate::content_tables::CardType::Skill);
-        for _ in 0..distraction_shuffles {
-            let mut shuffled = pool.clone();
-            rng.shuffle(&mut shuffled)
-                .map_err(|detail| unrepresentable(Entity::Document, "generation", detail))?;
-            let identity = CardIdentity {
-                id: shuffled[0],
-                upgrade: 0,
-                enchantment: None,
-            };
-            intern_generated_identity_closure(builder, identity, jackpot_pool, Some(owner))?;
+        let prefixes = if prefix_is_unsafe {
+            None
+        } else {
+            one_card_prefixes_without_an_earlier_reader(rng, &pool, distraction_shuffles)?
+        };
+        if let Some((results, advanced)) = prefixes {
+            rng = advanced;
+            for id in results {
+                let identity = CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                };
+                intern_generated_identity_closure(builder, identity, jackpot_pool, Some(owner))?;
+            }
+        } else {
+            let mut expanded = std::collections::BTreeSet::new();
+            for id in pool {
+                intern_generated_identity_closure_inner(
+                    builder,
+                    CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    },
+                    jackpot_pool,
+                    Some(owner),
+                    &mut expanded,
+                )?;
+            }
         }
     }
     // White Noise likewise reads its CardModel owner rather than Entropy's
@@ -21014,48 +21227,50 @@ fn intern_generation_preview(
     // (`builder.owner_type_generation_pool`); the frozen `abundance_pool` row
     // is that projection at the fully-unlocked profile.
     //
-    // Beside a reachable generation potion the whole owner-Power pool closes
-    // instead (the Distraction comment above has the IL).
+    // Beside a reachable generation potion or an `unpreviewed_readers` source
+    // the whole owner-Power pool closes instead (the Distraction comment above
+    // has the IL), and so does it when an earlier copy's result is a
+    // Generation reader (#3498, the Distraction comment above).
     if white_noise_shuffles > 0
-        && generation_potions
-        && profile_is_recorded
-        && let Some(owner) = owner
-    {
-        let mut expanded = std::collections::BTreeSet::new();
-        for id in builder.owner_type_generation_pool(owner, crate::content_tables::CardType::Power)
-        {
-            intern_generated_identity_closure_inner(
-                builder,
-                CardIdentity {
-                    id,
-                    upgrade: 0,
-                    enchantment: None,
-                },
-                jackpot_pool,
-                Some(owner),
-                &mut expanded,
-            )?;
-        }
-    } else if white_noise_shuffles > 0
         && profile_is_recorded
         && let Some(owner) = owner
     {
         let pool =
             builder.owner_type_generation_pool(owner, crate::content_tables::CardType::Power);
-        for _ in 0..white_noise_shuffles {
-            let mut shuffled = pool.clone();
-            rng.shuffle(&mut shuffled)
-                .map_err(|detail| unrepresentable(Entity::Document, "generation", detail))?;
-            intern_generated_identity_closure(
-                builder,
-                CardIdentity {
-                    id: shuffled[0],
-                    upgrade: 0,
-                    enchantment: None,
-                },
-                jackpot_pool,
-                Some(owner),
-            )?;
+        let prefixes = if prefix_is_unsafe {
+            None
+        } else {
+            one_card_prefixes_without_an_earlier_reader(rng, &pool, white_noise_shuffles)?
+        };
+        if let Some((results, advanced)) = prefixes {
+            rng = advanced;
+            for id in results {
+                intern_generated_identity_closure(
+                    builder,
+                    CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    },
+                    jackpot_pool,
+                    Some(owner),
+                )?;
+            }
+        } else {
+            let mut expanded = std::collections::BTreeSet::new();
+            for id in pool {
+                intern_generated_identity_closure_inner(
+                    builder,
+                    CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    },
+                    jackpot_pool,
+                    Some(owner),
+                    &mut expanded,
+                )?;
+            }
         }
     }
     // Jack reads `ModelDb::CardPool<ColorlessCardPool>`, a type-keyed
@@ -21105,14 +21320,17 @@ fn intern_generation_preview(
         || spectrum_shift_reachable
         || quasars.into_iter().any(|count| count > 0)
         || largesses.into_iter().any(|count| count > 0);
-    // A reachable generation potion moves Jack's prefix too (the Distraction
-    // comment above has the IL), but Jack deliberately keeps its seeded prefix
-    // beside one: its complete self-excluding Colorless closure reaches rows
-    // whose own admission gates refuse (`terminal star/orb AfterEnergyReset
-    // order` on a root without a native reset order; the Calamity, Discovery,
-    // Entropy, Stoke and Jackpot provenance gates without owner provenance).
-    // A potion drunk before Jack still fails loudly at apply time
-    // (`mid-combat card identity .. was not pre-interned`), never silently.
+    // A reachable generation potion or an `unpreviewed_readers` source moves
+    // Jack's prefix too (the Distraction comment above has the IL), so beside
+    // one Jack closes its complete pool as well (#3487). #3260 had kept the
+    // prefix beside a potion because the complete closure then reached rows
+    // whose own admission gates refused (`terminal star/orb AfterEnergyReset
+    // order`, the Calamity, Discovery, Entropy, Stoke and Jackpot provenance
+    // gates) and cost census `7UEE3Y1SPJCY` n7. Re-measured on the
+    // 2026-09-29 corpus (1206 fights), the complete closure moves no census
+    // row, and it is what keeps n6/n7/n10 (Jack + Skill Potion) certified
+    // under admission's `card_generation_reader` count.
+    let jack_shares_generation = jack_shares_generation || prefix_is_unsafe;
     //
     // #3382: the seeded prefix can also hold a Generation consumer of its
     // own. A DLL-wide scan of v0.111.0 for callers of
@@ -34062,6 +34280,84 @@ mod tests {
         );
     }
 
+    /// Magic Bomb stays unmodeled and refuses by name wherever a root could
+    /// carry it (#3399).
+    ///
+    /// # Native (v0.111.0, SHA-256 `9cb4f1ad…`)
+    ///
+    /// * `MagicBombPower/<AfterSideTurnEnd>d__6::MoveNext` RVA `0x33e25c`:
+    ///   when `participants` holds the owner (IL_002c-003d) and the applier is
+    ///   absent or alive (IL_0044-0057), it deals `Amount` unpowered damage
+    ///   (`ValueProp` 4) to the owner, with the owner as dealer (IL_00c4-00e2).
+    ///   It then removes itself (IL_013d). A dead applier ends the listener
+    ///   with no damage (IL_0059).
+    /// * `MagicBombPower/<AfterDeath>d__7::MoveNext` RVA `0x33e17c`: the
+    ///   applier's death removes it unless removal was prevented
+    ///   (IL_001d-003b).
+    ///
+    /// Nothing in v0.111.0 applies it:
+    ///
+    /// * no `MethodSpec` instantiates a generic over `MagicBombPower`, so
+    ///   there is no `PowerCmd.Apply<MagicBombPower>`;
+    /// * its only reference outside its own type is the model registry's
+    ///   `ldtoken` (`AbstractModelSubtypes::.cctor` RVA `0x84d4c` IL_466b);
+    /// * Magi Knight's MAGIC_BOMB move is a plain attack:
+    ///   `MagiKnight/<MagicBombMove>d__28::MoveNext` RVA `0x3630f8`
+    ///   IL_0102-0141 runs `Attack(BombDamage)…Execute` and applies no power;
+    /// * the only enumerators of `ModelDb.AllPowers` are the debug
+    ///   `ApplyPowerConsoleCmd` and `ModelDb::Preload`.
+    ///
+    /// So the damage cannot reach Centennial Puzzle's Draw inside the
+    /// deferred AfterSideTurnEnd walk (#3386) in real play. The engine gives
+    /// it no `PowerId`, which means a root carrying it refuses at the boundary
+    /// under its own name. That covers the player, a monster, and the
+    /// AfterSideTurnEnd listener order.
+    #[test]
+    fn magic_bomb_refuses_by_name_on_every_carrier() {
+        let mut player = minimal();
+        player.player.insert("magic_bomb".to_owned(), json!(7));
+        assert_eq!(
+            refuse(&player),
+            BoundaryRefusal::UnsupportedField {
+                entity: Entity::Player,
+                field: "magic_bomb".to_owned(),
+            }
+        );
+
+        let mut monster = minimal();
+        monster.monsters.push(BTreeMap::from([
+            ("kind".to_owned(), json!("MAGI_KNIGHT")),
+            ("hp".to_owned(), json!(80)),
+            ("magic_bomb".to_owned(), json!(7)),
+        ]));
+        assert_eq!(
+            refuse(&monster),
+            BoundaryRefusal::UnsupportedField {
+                entity: Entity::Monster(0),
+                field: "magic_bomb".to_owned(),
+            }
+        );
+
+        let mut listener = constrict_document();
+        listener.player.insert(
+            "after_side_turn_end_power_order".to_owned(),
+            json!([["magic_bomb", 0], ["constrict", 0]]),
+        );
+        assert_eq!(
+            refuse(&listener),
+            BoundaryRefusal::UnrepresentableValue {
+                entity: Entity::Player,
+                field: "after_side_turn_end_power_order".to_owned(),
+                detail: "token is outside the native census".to_owned(),
+            }
+        );
+        assert_eq!(PowerId::from_str("magic_bomb"), None);
+        assert_eq!(
+            crate::hot::AfterSideTurnEndPowerToken::from_str("magic_bomb"),
+            None
+        );
+    }
+
     #[test]
     fn an_unmapped_frame_refuses_rather_than_landing_empty() {
         let mut document = minimal();
@@ -36469,6 +36765,155 @@ mod generation_relic_option_tests {
                 "pending",
                 "generated relic option carries physical flags",
             ))
+        );
+    }
+}
+
+#[cfg(test)]
+mod earlier_copy_reader_tests {
+    use super::*;
+    use crate::catalog::{CardIdentity, CatalogBuilder};
+    use crate::content_tables::CardType;
+
+    /// #3498: which rows of every owner's fully-unlocked Power (White Noise)
+    /// and Skill (Distraction) pool are Generation readers
+    /// ([`prefix_result_reads_generation_before_a_later_copy`]), and that the
+    /// direct set is enough: no other row's generated closure reaches a
+    /// reader, so a non-reader result cannot mint one before a later copy.
+    ///
+    /// Hello World is Event rarity (`CardRow` `HelloWorld` `rarity: Event`),
+    /// which `GetDistinctForCombat`'s `FilterForCombat` drops, so a Defect
+    /// White Noise cannot mint it; its Defect reader is Creative AI.
+    #[test]
+    fn one_type_pool_readers_are_direct_and_pinned() {
+        let expected: [(RewardPool, CardType, &[CardId]); 10] = [
+            (RewardPool::Defect, CardType::Power, &[CardId::CreativeAi]),
+            (RewardPool::Defect, CardType::Skill, &[CardId::WhiteNoise]),
+            (RewardPool::Ironclad, CardType::Power, &[]),
+            (
+                RewardPool::Ironclad,
+                CardType::Skill,
+                &[CardId::InfernalBlade, CardId::Stoke],
+            ),
+            (
+                RewardPool::Necrobinder,
+                CardType::Power,
+                &[CardId::CallOfTheVoid],
+            ),
+            (RewardPool::Necrobinder, CardType::Skill, &[]),
+            (
+                RewardPool::Regent,
+                CardType::Power,
+                &[CardId::SpectrumShift],
+            ),
+            (
+                RewardPool::Regent,
+                CardType::Skill,
+                &[
+                    CardId::BundleOfJoy,
+                    CardId::ManifestAuthority,
+                    CardId::Quasar,
+                ],
+            ),
+            (RewardPool::Silent, CardType::Power, &[]),
+            (RewardPool::Silent, CardType::Skill, &[]),
+        ];
+        assert_eq!(expected.len(), RewardPool::ALL.len() * 2);
+        for (owner, card_type, readers) in expected {
+            let pool = crate::steps::neutral::owner_type_generation_pool(owner, None, card_type);
+            assert!(!pool.contains(&CardId::HelloWorld));
+            let found: Vec<CardId> = pool
+                .iter()
+                .copied()
+                .filter(|id| prefix_result_reads_generation_before_a_later_copy(*id))
+                .collect();
+            assert_eq!(found, readers, "{owner:?} {card_type:?}");
+            let jackpot_pool = jackpot_pool_for_owner(Some(owner), true);
+            for id in pool {
+                if prefix_result_reads_generation_before_a_later_copy(id) {
+                    continue;
+                }
+                let mut builder = CatalogBuilder::new();
+                let identity = CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                };
+                intern_generated_identity_closure(
+                    &mut builder,
+                    identity,
+                    &jackpot_pool,
+                    Some(owner),
+                )
+                .unwrap_or_else(|refusal| panic!("{owner:?} {id:?}: {refusal:?}"));
+                let catalog = builder.build();
+                let minted: Vec<CardId> = catalog
+                    .reachable_specs()
+                    .map(|spec| spec.identity.id)
+                    .filter(|leaf| prefix_result_reads_generation_before_a_later_copy(*leaf))
+                    .collect();
+                assert!(
+                    minted.is_empty(),
+                    "{owner:?} {card_type:?}: {id:?} can mint the reader(s) {minted:?}"
+                );
+            }
+        }
+    }
+
+    /// #3498: the preview keeps the seeded prefixes unless a result of a draw
+    /// BEFORE the last is a reader; a reader in the last draw, a lone draw,
+    /// or no reader at all keeps them, and the returned stream is advanced
+    /// past every draw.
+    #[test]
+    fn one_card_prefixes_refuse_only_an_earlier_reader() {
+        let pool = crate::steps::neutral::owner_type_generation_pool(
+            RewardPool::Defect,
+            None,
+            CardType::Power,
+        );
+        let preview = |seed: u64, shuffles: usize| {
+            let rng = Xoshiro256StarStar::from_seed(seed);
+            let mut expected = rng;
+            let mut results = Vec::new();
+            for _ in 0..shuffles {
+                let mut shuffled = pool.clone();
+                expected.shuffle(&mut shuffled).unwrap();
+                results.push(shuffled[0]);
+            }
+            (
+                results,
+                expected,
+                one_card_prefixes_without_an_earlier_reader(rng, &pool, shuffles).unwrap(),
+            )
+        };
+        let reads = |id: &CardId| prefix_result_reads_generation_before_a_later_copy(*id);
+        let mut seen = [false; 4];
+        for seed in 0..4096 {
+            for shuffles in [1, 2] {
+                let (results, advanced, kept) = preview(seed, shuffles);
+                let earlier = results[..shuffles - 1].iter().any(reads);
+                match kept {
+                    Some((kept, rng)) => {
+                        assert!(!earlier, "seed {seed}: {results:?}");
+                        assert_eq!(kept, results);
+                        assert_eq!(rng, advanced);
+                    }
+                    None => assert!(earlier, "seed {seed}: {results:?}"),
+                }
+                let last = results.last().is_some_and(reads);
+                let branch = match (shuffles, earlier, last) {
+                    (2, true, _) => 0,
+                    (2, false, true) => 1,
+                    (1, _, true) => 2,
+                    (_, false, false) => 3,
+                    _ => continue,
+                };
+                seen[branch] = true;
+            }
+        }
+        assert_eq!(
+            seen, [true; 4],
+            "first copy, last copy only, lone copy, no reader"
         );
     }
 }

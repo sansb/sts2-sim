@@ -519,6 +519,11 @@ pub(crate) fn huddle_up_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal
     huddle_up_sequence(ctx.state, ctx.catalog, amount, ctx.events)
 }
 
+/// `HuddleUp/<OnPlay>d__7` RVA `0x3a60bc` draws for each living teammate
+/// through `CardPileCmd.DrawWithoutBlockingOnOtherPlayers` (IL_0097, which
+/// awaits `CardPileCmd.Draw`, `0x13142c` IL_0027). `<DrawInternal>d__21`
+/// (`0x3e3a70`) returns at `IsOverOrEnding` (IL_0029-003b), so each recipient
+/// tests the shared IsOverOrEnding projection, not `history.over` (#3515).
 fn huddle_up_sequence(
     state: &mut HotState,
     catalog: &Catalog,
@@ -527,7 +532,7 @@ fn huddle_up_sequence(
 ) -> Result<(), EngineRefusal> {
     let recipients = crate::engine::allies::living_keys(state).collect::<Vec<_>>();
     for key in recipients {
-        if state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(state) {
             break;
         }
         crate::engine::allies::draw_for_player(state, catalog, key, amount, events)?;
@@ -590,6 +595,11 @@ fn preflight_huddle_up_exact(ctx: &StepCtx<'_>, amount: usize) -> Result<(), Eng
     Ok(())
 }
 
+/// `HuddleUp/<OnPlay>d__7` RVA `0x3a60bc` draws for each living teammate
+/// through `CardPileCmd.DrawWithoutBlockingOnOtherPlayers` (IL_0097, which
+/// awaits `CardPileCmd.Draw`, `0x13142c` IL_0027). `<DrawInternal>d__21`
+/// (`0x3e3a70`) returns at `IsOverOrEnding` (IL_0029-003b). The remote Draw
+/// (`allies::remote_draw`) carries that gate itself (#3515).
 fn huddle_up_remote_suffix(
     state: &mut HotState,
     catalog: &Catalog,
@@ -3284,6 +3294,10 @@ mod tests {
     fn manifest_authority_blocks_first_then_generates_one_fresh_card() {
         let seeded = Xoshiro256StarStar::from_seed(0);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.reward_card_pool = Some(RewardPool::Regent);
         state.entropy_card_pool = Some(RewardPool::Regent);
         state.set_spectrum_shift_generation_pool(true);
@@ -3375,6 +3389,10 @@ mod tests {
         // Without the Regent generation provenance the body refuses before
         // touching any state, exactly like Bundle of Joy.
         let mut bare = HotState::at_defaults();
+        bare.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let mut bare_events = Vec::new();
         let mut bare_ctx = StepCtx {
             state: &mut bare,
@@ -3397,6 +3415,10 @@ mod tests {
     fn upgraded_manifest_authority_raises_its_card_and_overflows_a_full_hand() {
         let seeded = Xoshiro256StarStar::from_seed(0);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.reward_card_pool = Some(RewardPool::Regent);
         state.entropy_card_pool = Some(RewardPool::Regent);
         state.set_spectrum_shift_generation_pool(true);
@@ -4323,6 +4345,10 @@ mod tests {
         assert_eq!(serial.next_card_uid, 102);
 
         let mut autoplay = generation_state(37);
+        autoplay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         autoplay.fully_unlocked_card_pool_epochs = false;
         autoplay.multiplayer_ally_key = 1;
         autoplay.fanouts.set_multiplayer_ally(MultiplayerAllyState {
@@ -5136,5 +5162,50 @@ mod tests {
                 .iter()
                 .any(|card| card.uid == 1)
         );
+    }
+
+    /// #3515: Huddle Up draws for each living teammate through
+    /// `CardPileCmd.Draw` (`0x3a60bc` IL_0097), whose `<DrawInternal>d__21`
+    /// (0x3e3a70 IL_002e) returns at `IsOverOrEnding`. While the combat is
+    /// ending before the over latch neither the recipient walk nor the remote
+    /// suffix draws; the Adaptable-vetoed control draws for both Players.
+    #[test]
+    fn huddle_up_draws_nothing_while_combat_is_ending_before_the_over_latch() {
+        let defend = CardIdentity {
+            id: CardId::DefendRegent,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(defend).unwrap();
+        let catalog = builder.build();
+        let remote_card = MultiplayerAllyCard::immutable(defend).unwrap();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.multiplayer_ally_key = 1;
+        template.fanouts.set_multiplayer_ally(MultiplayerAllyState {
+            key: 1,
+            alive: true,
+            draw: std::sync::Arc::new(vec![remote_card, remote_card]),
+            ..MultiplayerAllyState::default()
+        });
+        template.piles.get_mut(PileId::Draw).make_mut().extend([
+            HotCard {
+                uid: 2,
+                atom,
+                flags: 0,
+            },
+            HotCard {
+                uid: 3,
+                atom,
+                flags: 0,
+            },
+        ]);
+        crate::engine::damage::assert_ending_window_gate(&template, "Huddle Up", |s, _| {
+            huddle_up_sequence(s, &catalog, 1, &mut Vec::new())
+        });
+        crate::engine::damage::assert_ending_window_gate(&template, "Huddle Up remote", |s, _| {
+            huddle_up_remote_suffix(s, &catalog, 1, &mut Vec::new())
+        });
     }
 }

@@ -2076,7 +2076,9 @@ fn finish_player_turn_after_auto_post_with_carriers(
         // Eye's Early listener, and native starts every later Early and
         // ordinary BeforeSideTurnEnd listener (Regret's Hand count, Screaming
         // Flagon's empty-Hand test, Pael's Tears) before the choice (#3386).
-        let _listener = DeferredChoiceListener::enter(Some(PAELS_EYE_JOSS_WALL));
+        // A select that resolves without a prompt defers the same way
+        // (#3485), so the guard refuses it when the listener ends.
+        let listener = DeferredChoiceListener::enter(Some(PAELS_EYE_JOSS_WALL));
         super::cards::normalize_card_identities(state)?;
         let frozen = state.piles.get(PileId::Hand).as_slice().to_vec();
         for card in frozen {
@@ -2099,6 +2101,7 @@ fn finish_player_turn_after_auto_post_with_carriers(
                 return Err(EngineRefusal::ContinuationNotModeled);
             }
         }
+        listener.settle(Ok(()))?;
         crate::coverage::record_relic(RelicId::RelicPaelsEye);
     }
 
@@ -2113,7 +2116,9 @@ fn finish_player_turn_after_auto_post_with_carriers(
     // `_end_player_turn_after_auto_post` fires BeforeSideTurnEnd here (D5).
     fire_hook(catalog, HookEvent::BeforeSideTurnEnd, state, events)?;
     super::relics::after_before_side_turn_end(catalog, state);
-    drop(before_side_turn_end_listener);
+    // A select that resolved without a prompt in any of the three passes
+    // refuses here (#3485, `puzzle::DeferredChoiceListener`).
+    before_side_turn_end_listener.settle(Ok(()))?;
     let regret_hand_count = regret_before_side_turn_end_count(
         regret_hand_before,
         regret_hand_snapshot(state, catalog),
@@ -2182,10 +2187,11 @@ fn finish_player_turn_after_auto_post_with_carriers(
         let object = *object;
         let payload = current_after_side_turn_end_payload(state, object)?;
         if !state.history.over {
-            let _listener = DeferredChoiceListener::enter(Some(AFTER_SIDE_TURN_END_WALL));
-            super::orbs::consuming_shadow_side_end_with_captured_amount(
+            let listener = DeferredChoiceListener::enter(Some(AFTER_SIDE_TURN_END_WALL));
+            let result = super::orbs::consuming_shadow_side_end_with_captured_amount(
                 state, catalog, events, object.uid, payload[0],
-            )?;
+            );
+            listener.settle(result)?;
         }
         run_after_side_turn_end_ordinary_nonlocal(state, catalog, events)?;
         return finish_player_turn_after_ordinary_side_end(
@@ -2476,14 +2482,15 @@ fn dispatch_after_side_turn_end_power(
                 // through the listener's own choice context, so a Centennial
                 // Puzzle Draw parked here would publish before every later
                 // ordinary side-end listener (#3386).
-                let _listener = DeferredChoiceListener::enter(Some(CONSTRICT_PUZZLE_WALL));
-                super::damage::damage_player_from_power_with_catalog(
+                let listener = DeferredChoiceListener::enter(Some(CONSTRICT_PUZZLE_WALL));
+                let result = super::damage::damage_player_from_power_with_catalog(
                     state,
                     catalog,
                     i64::from(payload[0]),
                     true,
                     events,
-                )?;
+                );
+                listener.settle(result)?;
             }
         }
         Token::ConsumingShadow => {
@@ -2846,11 +2853,13 @@ fn run_after_side_turn_end_ordinary_nonlocal(
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     // The ordinary pass of the deferred-choice `Hook.AfterSideTurnEnd`
-    // (#3386, `puzzle::DeferredChoiceListener`).
-    let _listener = DeferredChoiceListener::enter(Some(AFTER_SIDE_TURN_END_WALL));
+    // (#3386, `puzzle::DeferredChoiceListener`). A select that resolved
+    // without a prompt refuses when the pass ends (#3485).
+    let listener = DeferredChoiceListener::enter(Some(AFTER_SIDE_TURN_END_WALL));
     // The relic listeners, in the vouched inventory order or the fixed order
     // with its unproven interleavings refused (#3400).
-    super::relics::after_side_turn_end_relics(catalog, state, events)?;
+    let result = super::relics::after_side_turn_end_relics(catalog, state, events);
+    listener.settle(result)?;
     if !state.history.over && state.multiplayer_ally_key == 1 {
         let ally = state.fanouts.multiplayer_ally_mut();
         ally.temp_strength = 0;
@@ -2872,8 +2881,22 @@ fn drive_after_side_turn_end_power(
 ) -> Result<bool, EngineRefusal> {
     // The same ordinary pass (#3386). A receipt-owned park under a captured
     // power listener would publish before the later listeners native starts
-    // first; Dark Embrace's own frame-owned park runs them (above).
-    let _listener = DeferredChoiceListener::enter(Some(AFTER_SIDE_TURN_END_WALL));
+    // first; Dark Embrace's own frame-owned park runs them (above). A select
+    // that resolved without a prompt, which Rust ran inline (a Dark Embrace
+    // Draw's Stratagem reshuffle no larger than Amount, say), refuses when
+    // the pass returns (#3485).
+    let listener = DeferredChoiceListener::enter(Some(AFTER_SIDE_TURN_END_WALL));
+    let result = drive_after_side_turn_end_power_listeners(state, catalog, events, record_index);
+    listener.settle(result)
+}
+
+/// The body of [`drive_after_side_turn_end_power`], inside its listener guard.
+fn drive_after_side_turn_end_power_listeners(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+    record_index: crate::hot::WordRecordIndex,
+) -> Result<bool, EngineRefusal> {
     loop {
         let record = state
             .frames
@@ -3065,6 +3088,10 @@ fn finish_player_turn_after_ordinary_side_end(
     // *inside* the enemy phase, which is precisely the state the R0.7
     // differential caught this engine projecting wrongly.
     state.player_side_active = false;
+    // `SwitchSides` sets `CurrentSide = Enemy` (RVA `0x136b08` IL_0053-005a),
+    // so every `HappenedThisTurn` row the player's turn stamped stops
+    // matching (#3466).
+    roll_happened_this_turn_counters(state)?;
     // `CombatManager::SwitchSides` clears every monster's `SpawnedThisTurn`
     // here (`MonsterModel::OnSideSwitch` RVA `0x82745` IL_0007-IL_0009); a
     // creature the enemy side start adds below is still flagged when the act
@@ -8011,6 +8038,11 @@ thread_local! {
     static FURNACE_TURN_TRANSACTIONS: std::cell::Cell<usize> = const {
         std::cell::Cell::new(0)
     };
+    /// #3466/#3483 witness probe: the attack-play, skill-play, Osty-attack
+    /// and Status-draw counters as the BeforeSideTurnStart walk begins.
+    static BEFORE_SIDE_TURN_START_COUNTERS: std::cell::Cell<Option<(i16, i16, i32, i16)>> = const {
+        std::cell::Cell::new(None)
+    };
 }
 
 /// Certified AfterEnergyReset execution (#2669) over a frozen unified
@@ -8262,6 +8294,86 @@ fn roll_stars_gained_window(state: &mut HotState) {
     }
 }
 
+/// Roll the `HappenedThisTurn` play, Osty-attack and Status-draw quotients at a
+/// `CombatManager::SwitchSides` (#3466, #3483).
+///
+/// Four counters are counts of native history rows that pass
+/// `CombatHistoryEntry::HappenedThisTurn` (RVA `0x138a48`):
+///
+/// * `history.attack_plays_finished_this_turn`: the owner Attack
+///   `CardPlayFinished` rows Stomp (`<AfterCardEnteredCombat>b__5_0` RVA
+///   `0xecf75` IL_002e) and Finisher
+///   (`<>c__DisplayClass3_0::<get_CanonicalVars>b__1` RVA `0x39e944`
+///   IL_0018) count.
+/// * `history.skill_plays_finished_this_turn`: the owner Skill rows Pinpoint
+///   (`<AfterCardEnteredCombat>b__5_0` RVA `0xe7c41` IL_002e), Lunar Blast
+///   (`b__1` RVA `0x3aa210` IL_0018) and Make It So
+///   (`<AfterCardPlayedLate>b__4_0` RVA `0xe4ca3` IL_0008) count. Letter
+///   Opener shares this quotient for its private `SkillsPlayedThisTurn`; see
+///   [`crate::engine::relics`]'s Letter Opener body for where the two
+///   meanings part and how that refuses.
+/// * the Osty attack counter (`SoloPetState::attacks_this_turn`): the
+///   `CreatureAttackedEntry` rows with `Actor == Osty` that Flatten
+///   (`<get_HasOstyAttackedThisTurn>b__15_0` RVA `0xe039e` IL_001b) and
+///   Rattle (`<>c__DisplayClass7_0::<get_CanonicalVars>b__1` RVA `0x3b5956`
+///   IL_0025) test.
+/// * `history.status_draws_this_turn` (#3483): the owner Status
+///   `CardDrawnEntry` rows Iteration counts.
+///   `IterationPower/<AfterCardDrawn>d__4::MoveNext` RVA `0x33d968` counts
+///   history `CardDrawnEntry` rows through `<AfterCardDrawn>b__4_0` RVA
+///   `0xa4347` (`HappenedThisTurn` IL_0003-000d, `Actor == Owner`
+///   IL_000f-001b, `Card.Type == Status` IL_001d-0029) at IL_0050-0075, and
+///   draws only while that count is at most one (IL_0076-0078).
+///   `CardPileCmd/<DrawInternal>d__21::MoveNext` RVA `0x3e3a70` records the
+///   row (`CombatHistory::CardDrawn` IL_0313) before `Hook::AfterCardDrawn`
+///   (IL_0330), so the drawn Status is already counted and the test is
+///   "this is the first Status drawn this turn", on either side.
+///
+/// `HappenedThisTurn` is false for a row unless its stamped RoundNumber
+/// (IL_0011-001d), CurrentSide (IL_0021-002d) and every player's TurnNumber
+/// (IL_0031-00a0) equal the live ones. Rows are never cleared, so "this turn"
+/// moves exactly when one of those live values moves. `CombatManager::
+/// SwitchSides` (RVA `0x136b08`) is their only writer after construction (see
+/// [`roll_stars_gained_window`]), and every switch moves at least one:
+///
+/// * Player to enemy (IL_0042-005a): `CurrentSide = Enemy`. Every row the
+///   player's turn stamped `Player` stops matching, so native reads zero on
+///   the enemy side until an enemy-side row is stamped. The engine's side end
+///   in `finish_player_turn_after_ordinary_side_end` calls this at the switch,
+///   after the whole player side-end cascade and the `ShouldTakeExtraTurn`
+///   walk, where native calls `SwitchSides`.
+/// * Enemy to player (IL_0061-0068, IL_0079-00c4): `CurrentSide = Player`,
+///   `RoundNumber + 1` (IL_0097) and every player's `IncrementTurnNumber`
+///   (IL_00b6). Enemy-side rows stop matching.
+/// * Player to player for an extra turn (IL_0061-0077, then IL_00b6 over
+///   `PlayersTakingExtraTurn`): the side and round stay, but the TurnNumber
+///   moves, so the player's own rows stop matching too.
+///
+/// The player-side switch lands at the top of `begin_player_turn_walk`, which
+/// is before `CombatManager/<StartTurn>d__100::MoveNext` (RVA `0x3f781c`)
+/// walks BeforeSideTurnStart (IL_0203), AfterTurnStart's block clear and
+/// AfterBlockCleared (IL_04ad), and `SetupPlayerTurn`'s AfterEnergyReset. A
+/// card entering or played in any of those listeners therefore reads the new
+/// turn. Turn one has no preceding switch: rows from the opening are stamped
+/// (1, Player, 1) and count for all of turn one, so the player-side roll
+/// skips it, exactly as [`roll_stars_gained_window`] does.
+fn roll_happened_this_turn_counters(state: &mut HotState) -> Result<(), EngineRefusal> {
+    let history = &mut state.history;
+    history.attack_plays_finished_this_turn = 0;
+    history.skill_plays_finished_this_turn = 0;
+    history.status_draws_this_turn = 0;
+    if state.fanouts.pet().attacks_this_turn() != 0 {
+        state
+            .fanouts
+            .mutate_pet(|pet| {
+                pet.reset_attacks();
+                Ok(())
+            })
+            .map_err(|_| EngineRefusal::CounterOverflow("Osty turn reset"))?;
+    }
+    Ok(())
+}
+
 /// The Decimillipede half of native's player-side `PrepareForNextTurn` roll
 /// (#3251): a segment whose `NextMove` is still `DEAD_MOVE` moves on to
 /// `REATTACH_MOVE` here, whether or not it performed DEAD.
@@ -8394,6 +8506,11 @@ fn begin_player_turn_walk(
     // The Stars-gained window rolls where native's `HappenedThisTurn` stamp
     // advances: at the SwitchSides that landed here, never on turn one.
     roll_stars_gained_window(state);
+    // The play, Osty-attack (#3466) and Status-draw (#3483) counters roll at
+    // the same switch.
+    if state.turn > 1 {
+        roll_happened_this_turn_counters(state)?;
+    }
     // VoidFormPower.BeforeSideTurnStart RVA 0xaad49 synchronously resets the
     // private completed-play counter for its owner. The counter has no peer
     // reader on this hook, so applying it after the represented generic walk
@@ -8428,6 +8545,15 @@ fn begin_player_turn_walk(
     // turn start (#3386, `puzzle::DeferredChoiceListener`).
     let before_side_turn_start_listener =
         DeferredChoiceListener::enter(Some(BEFORE_SIDE_TURN_START_WALL));
+    #[cfg(test)]
+    BEFORE_SIDE_TURN_START_COUNTERS.with(|seen| {
+        seen.set(Some((
+            state.history.attack_plays_finished_this_turn,
+            state.history.skill_plays_finished_this_turn,
+            state.fanouts.pet().attacks_this_turn(),
+            state.history.status_draws_this_turn,
+        )));
+    });
     // AggressionPower is a player-power BeforeSideTurnStart listener. It
     // completes before block clear, resource reset, and the hand draw.
     tick_aggression(state, catalog, events)?;
@@ -8453,7 +8579,9 @@ fn begin_player_turn_walk(
     // Monster-owned Plating's round-one player-side grant (#2809) closes the
     // same walk: monster listeners follow every player power and relic.
     monster_plating_before_player_side_start(state)?;
-    drop(before_side_turn_start_listener);
+    // A select that resolved without a prompt would have run before the
+    // rest of the turn start (#3485).
+    before_side_turn_start_listener.settle(Ok(()))?;
     // Native rolls every enemy's next move here, between the
     // BeforeSideTurnStart walk above and AfterTurnStart's block clear below.
     advance_segment_dead_states(state);
@@ -8644,26 +8772,18 @@ fn begin_player_turn_walk(
     fire_hook(catalog, HookEvent::AfterEnergyReset, state, events)?;
 
     // The remaining `begin_player_turn` counter reset (frozen Python, deleted #2827), in
-    // Python's own order. Stars history is deliberately earlier, above.
+    // Python's own order. Stars history, the #3466 play/Osty-attack counters
+    // and Iteration's #3483 Status-draw count are deliberately earlier, at the
+    // side switch above.
     let history = &mut state.history;
     history.shiv_plays_finished_this_turn = 0;
-    history.attack_plays_finished_this_turn = 0;
-    history.skill_plays_finished_this_turn = 0;
     history.zero_energy_attack_plays_started_this_turn = 0;
     history.non_hand_draws_this_turn = 0;
-    history.status_draws_this_turn = 0;
     history.discarded_cards_this_turn = 0;
     history.owner_card_exhausted_this_turn = false;
     history.owner_card_plays_finished_this_turn = 0;
     history.player_unblocked_damage_this_turn = false;
     history.energy_spent_this_turn = 0;
-    state
-        .fanouts
-        .mutate_pet(|pet| {
-            pet.reset_attacks();
-            Ok(())
-        })
-        .map_err(|_| EngineRefusal::CounterOverflow("Osty turn reset"))?;
     state.fanouts.reset_fetch_finished();
 
     // Native freezes the player-power `BeforeHandDraw` acquisition order
@@ -9144,6 +9264,13 @@ impl Drop for SetupPlayerTurnWindowGuard {
 
 fn setup_player_turn_window() -> SetupPlayerTurnWindow {
     SETUP_PLAYER_TURN_WINDOW.with(std::cell::Cell::get)
+}
+
+/// Whether the current player `StartTurn` frame has yet to run its side-start
+/// tail (`Hook::AfterSideTurnStart`), i.e. execution is still inside the
+/// synchronous `SetupPlayerTurn` walk (#3466, Letter Opener's reset point).
+pub(crate) fn player_side_start_tail_is_pending() -> bool {
+    setup_player_turn_window() == SetupPlayerTurnWindow::Synchronous
 }
 
 /// A `SetupPlayerTurn` listener paused on a choice that native resolves with
@@ -13559,6 +13686,10 @@ mod tests {
         assert!(!catalog.requires_action_replay());
 
         let mut selecting = HotState::at_defaults();
+        selecting.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         selecting.hp = 50;
         selecting.max_hp = 50;
         selecting.turn = 2;
@@ -13951,6 +14082,10 @@ mod tests {
         let catalog = builder.build();
         assert!(catalog.requires_action_replay());
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.turn = 2;
@@ -14434,6 +14569,10 @@ mod tests {
         let atoms = identities.map(|identity| builder.intern(identity).unwrap());
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.turn = 2;
@@ -18450,6 +18589,281 @@ mod tests {
         assert_eq!(later.history.stars_gained_this_turn, 0);
     }
 
+    fn preset_happened_this_turn_counters(state: &mut HotState) {
+        state.history.attack_plays_finished_this_turn = 3;
+        state.history.skill_plays_finished_this_turn = 4;
+        state.fanouts.set_osty(Some((5, 5))).unwrap();
+        state.fanouts.set_osty_attacks_this_turn(2).unwrap();
+        state.history.status_draws_this_turn = 1;
+    }
+
+    fn happened_this_turn_counters(state: &HotState) -> (i16, i16, i32, i16) {
+        (
+            state.history.attack_plays_finished_this_turn,
+            state.history.skill_plays_finished_this_turn,
+            state.fanouts.pet().attacks_this_turn(),
+            state.history.status_draws_this_turn,
+        )
+    }
+
+    /// #3466: the player-side `SwitchSides` rolls the attack-play, skill-play
+    /// and Osty-attack counters before the BeforeSideTurnStart walk, so a
+    /// listener there (and in AfterBlockCleared or AfterEnergyReset) reads
+    /// the new turn. Turn one has no switch: its counters reach the
+    /// BeforeSideTurnStart walk and leave `begin_player_turn` untouched, so no
+    /// later reset remains in the turn start.
+    #[test]
+    fn begin_player_turn_rolls_play_and_osty_counters_before_before_side_turn_start() {
+        let catalog = CatalogBuilder::new().build();
+        let mut first = HotState::at_defaults();
+        first.hp = 50;
+        preset_happened_this_turn_counters(&mut first);
+        let mut later = first.clone();
+        later.turn = 2;
+
+        BEFORE_SIDE_TURN_START_COUNTERS.with(|seen| seen.set(None));
+        begin_player_turn(&mut first, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(
+            BEFORE_SIDE_TURN_START_COUNTERS.with(std::cell::Cell::get),
+            Some((3, 4, 2, 1))
+        );
+        assert_eq!(happened_this_turn_counters(&first), (3, 4, 2, 1));
+
+        BEFORE_SIDE_TURN_START_COUNTERS.with(|seen| seen.set(None));
+        begin_player_turn(&mut later, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(
+            BEFORE_SIDE_TURN_START_COUNTERS.with(std::cell::Cell::get),
+            Some((0, 0, 0, 0))
+        );
+        assert_eq!(happened_this_turn_counters(&later), (0, 0, 0, 0));
+    }
+
+    /// #3466: the enemy-side `SwitchSides` (`CurrentSide = Enemy`, RVA
+    /// `0x136b08` IL_0053-005a) rolls the counters too. Sandpit's enemy-side
+    /// kill leaves the fight on the enemy side, where they read zero. A
+    /// lethal player side end returns before the switch and keeps them.
+    #[test]
+    fn enemy_side_switch_rolls_play_and_osty_counters_and_a_lethal_side_end_keeps_them() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::TheInsatiable).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 100;
+        state.max_hp = 100;
+        state.monsters_mut().push(insatiable_for_turn(1));
+        preset_happened_this_turn_counters(&mut state);
+
+        end_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+
+        assert!(state.history.over);
+        assert!(
+            !state.player_side_active,
+            "the fight ended on the enemy side"
+        );
+        assert_eq!(happened_this_turn_counters(&state), (0, 0, 0, 0));
+
+        let catalog = CatalogBuilder::new().build();
+        let mut lethal = HotState::at_defaults();
+        lethal.hp = 50;
+        lethal
+            .powers
+            .set(PowerId::ConsumingShadow, SlotWire::Int, 2);
+        assert_eq!(
+            lethal
+                .fanouts
+                .register_after_side_turn_end_power(AfterSideTurnEndPowerToken::ConsumingShadow),
+            Ok(0)
+        );
+        lethal.orbs.set_base_slots(1);
+        lethal.orbs.set_slots(1);
+        lethal
+            .orbs
+            .push(HotOrb::from_parts(OrbKind::Dark, Some(7)).unwrap());
+        lethal
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 7));
+        preset_happened_this_turn_counters(&mut lethal);
+
+        end_player_turn(&mut lethal, &catalog, &mut Vec::new()).unwrap();
+
+        assert!(lethal.history.over);
+        assert!(
+            lethal.player_side_active,
+            "lethal suppresses the side switch"
+        );
+        assert_eq!(happened_this_turn_counters(&lethal), (3, 4, 2, 1));
+    }
+
+    /// #3466: Letter Opener's private `SkillsPlayedThisTurn` resets only at
+    /// its `AfterSideTurnStart` (RVA `0x963b8` IL_003e-0040, after turn one),
+    /// while the shared quotient rolls at every `SwitchSides`. A Skill it
+    /// counts on the enemy side, or between a later turn's switch and the
+    /// side-start tail, refuses by name. On the player side after the tail,
+    /// or anywhere on turn one, the two agree and the third Skill fires.
+    #[test]
+    fn letter_opener_refuses_a_skill_count_between_a_side_switch_and_its_reset() {
+        let mut builder = CatalogBuilder::new();
+        let defend = builder
+            .intern(CardIdentity {
+                id: CardId::DefendIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.set_relics(&[RelicId::RelicLetterOpener]).unwrap();
+        let catalog = builder.build();
+        let spec = catalog.spec(defend).unwrap();
+        let mut settled = HotState::at_defaults();
+        settled.hp = 50;
+        settled.turn = 2;
+        settled.history.skill_plays_finished_this_turn = 3;
+        settled
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 20));
+        let refusal = Err(EngineRefusal::PowerOrderNotModeled(
+            "Letter Opener skill count between a side switch and its reset",
+        ));
+        let play = |state: &mut HotState| {
+            super::super::relics::after_card_played_hand(
+                &catalog,
+                state,
+                spec,
+                0,
+                Some(1),
+                &mut Vec::new(),
+            )
+        };
+
+        let mut enemy_side = settled.clone();
+        enemy_side.player_side_active = false;
+        assert_eq!(play(&mut enemy_side), refusal);
+
+        let mut before_tail = settled.clone();
+        let mut turn_one = settled.clone();
+        turn_one.turn = 1;
+        {
+            let _window = SetupPlayerTurnWindowGuard::enter();
+            assert!(player_side_start_tail_is_pending());
+            assert_eq!(play(&mut before_tail), refusal);
+            play(&mut turn_one).unwrap();
+        }
+        assert!(!player_side_start_tail_is_pending());
+        assert_eq!(
+            turn_one.monsters[0].hp, 15,
+            "turn one never resets either count"
+        );
+
+        play(&mut settled).unwrap();
+        assert_eq!(settled.monsters[0].hp, 15, "the third Skill fires");
+    }
+
+    /// #3466: a Pael's Eye extra turn is a player-to-player `SwitchSides`
+    /// that still bumps TurnNumber (RVA `0x136b08` IL_0061-0077, IL_00b6), so
+    /// it rolls the counters before its BeforeSideTurnStart walk as well.
+    #[test]
+    fn paels_eye_extra_turn_rolls_play_and_osty_counters_at_its_switch() {
+        let mut builder = crate::catalog::CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::LivingShield).unwrap();
+        builder.intern_monster(MonsterKind::TurretOperator).unwrap();
+        builder.set_relics(&[RelicId::RelicPaelsEye]).unwrap();
+        let catalog = builder.build();
+        let mut extra = turret_operator_pair(65, 51);
+        extra.history.round_number = 2;
+        extra
+            .fanouts
+            .set_paels_eye_was_owner_part_last_player_turn(true);
+        preset_happened_this_turn_counters(&mut extra);
+
+        BEFORE_SIDE_TURN_START_COUNTERS.with(|seen| seen.set(None));
+        end_player_turn(&mut extra, &catalog, &mut Vec::new()).unwrap();
+
+        assert!(extra.fanouts.players_taking_extra_turn());
+        assert!(extra.player_side_active);
+        assert_eq!(
+            BEFORE_SIDE_TURN_START_COUNTERS.with(std::cell::Cell::get),
+            Some((0, 0, 0, 0))
+        );
+        assert_eq!(happened_this_turn_counters(&extra), (0, 0, 0, 0));
+    }
+
+    /// #3483: Iteration counts `HappenedThisTurn` Status `CardDrawnEntry`
+    /// rows (`<AfterCardDrawn>b__4_0` RVA `0xa4347`) and draws only for the
+    /// first (`<AfterCardDrawn>d__4::MoveNext` RVA `0x33d968` IL_0076-0078).
+    /// A Status the player drew on their turn stops counting at the enemy-side
+    /// `SwitchSides`, so the first Status drawn on the enemy side fires. Before
+    /// the switch the same draw is the turn's second Status and does not.
+    #[test]
+    fn iteration_fires_for_the_first_status_drawn_after_an_enemy_side_switch() {
+        let mut builder = CatalogBuilder::new();
+        for id in [CardId::Dazed, CardId::StrikeIronclad] {
+            builder
+                .intern(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        let catalog = builder.build();
+        let atom = |id| {
+            catalog
+                .atom(&CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap()
+        };
+        let mut player_side = HotState::at_defaults();
+        player_side.hp = 50;
+        player_side.turn = 2;
+        player_side.history.status_draws_this_turn = 1;
+        player_side.piles.get_mut(PileId::Draw).make_mut().extend([
+            HotCard {
+                uid: 1,
+                atom: atom(CardId::Dazed),
+                flags: 0,
+            },
+            HotCard {
+                uid: 2,
+                atom: atom(CardId::StrikeIronclad),
+                flags: 0,
+            },
+        ]);
+        player_side.powers.set(PowerId::Iteration, SlotWire::Int, 1);
+        assert!(
+            player_side
+                .fanouts
+                .set_after_card_drawn_order(&[PowerId::Iteration])
+        );
+        let mut enemy_side = player_side.clone();
+        enemy_side.player_side_active = false;
+        roll_happened_this_turn_counters(&mut enemy_side).unwrap();
+        assert_eq!(enemy_side.history.status_draws_this_turn, 0);
+        let draw_one = |state: &mut HotState| {
+            super::super::draw::draw_cards(
+                state,
+                &catalog,
+                1,
+                super::super::draw::DrawSource::Command,
+                &mut Vec::new(),
+            )
+            .unwrap();
+        };
+
+        draw_one(&mut player_side);
+        assert_eq!(player_side.piles.get(PileId::Hand).len(), 1);
+        assert_eq!(player_side.history.status_draws_this_turn, 2);
+
+        draw_one(&mut enemy_side);
+        assert_eq!(
+            enemy_side.piles.get(PileId::Hand).len(),
+            2,
+            "the enemy side's first Status draws one more"
+        );
+        assert_eq!(enemy_side.history.status_draws_this_turn, 1);
+    }
+
     #[test]
     fn biased_cognition_reduces_signed_focus_before_the_side_start_hook() {
         let catalog = CatalogBuilder::new().build();
@@ -19462,6 +19876,93 @@ mod tests {
                 .any(|card| card.uid == 2)
         );
         assert_eq!(state.fanouts.dark_embrace_ethereal(), 0);
+    }
+
+    /// #3485 witness (`drive_after_side_turn_end_power`): Dark Embrace's
+    /// side-end Draw reshuffles three Defends against Stratagem 5, so
+    /// `FromCombatPile` takes them without a prompt. It still signals Dark
+    /// Embrace's listener context first (`<FromCombatPile>d__20` RVA
+    /// `0x3e5e84` IL_00ae), and native runs the take and the rest of the Draw
+    /// after every later ordinary side-end listener has started. Rust's frame
+    /// park models that order only for a prompt, so the inline take refuses
+    /// by name. With Stratagem absent the same Draw completes.
+    #[test]
+    fn dark_embrace_side_end_auto_take_refuses_by_name() {
+        let mut builder = CatalogBuilder::new();
+        let dazed = builder
+            .intern(CardIdentity {
+                id: CardId::Dazed,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let defend = builder
+            .intern(CardIdentity {
+                id: CardId::DefendIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.powers.set(PowerId::DarkEmbrace, SlotWire::Int, 1);
+        assert_eq!(
+            state
+                .fanouts
+                .register_after_side_turn_end_power(AfterSideTurnEndPowerToken::DarkEmbrace),
+            Ok(0)
+        );
+        assert!(
+            state
+                .fanouts
+                .set_after_card_exhausted_order(&[PowerId::DarkEmbrace])
+        );
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: 1,
+            atom: dazed,
+            flags: 0,
+        });
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .extend((2..5).map(|uid| HotCard {
+                uid,
+                atom: defend,
+                flags: 0,
+            }));
+        let mut monster = HotMonster::new(MonsterKind::Toadpole, 100);
+        monster.max_hp = 100;
+        state.monsters_mut().push(monster);
+        run_ordinary_ethereal_cards(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(state.fanouts.dark_embrace_ethereal(), 1);
+
+        let finish = |state: &mut HotState| {
+            finish_player_turn_after_auto_post_with_carriers(
+                state,
+                &catalog,
+                &mut Vec::new(),
+                false,
+                false,
+                false,
+                0,
+            )
+        };
+        let mut plain = state.clone();
+        finish(&mut plain).unwrap();
+        assert_eq!(plain.fanouts.dark_embrace_ethereal(), 0);
+        assert!(plain.cards_drawn_combat > 0);
+
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 5);
+        assert_eq!(
+            finish(&mut state),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                crate::engine::puzzle::AUTO_RESOLVED_IN_DEFERRED_LISTENER
+            ))
+        );
     }
 
     #[test]
@@ -28346,6 +28847,22 @@ mod tests {
                 .unwrap()
                 .state;
         assert!(resolved.hp < state.hp, "Constrict hit without the Puzzle");
+
+        // #3485: against Stratagem 5 the reshuffle of five Defends is taken
+        // without a prompt. `FromCombatPile` (RVA `0x3e5e84`) still signals
+        // Constrict's listener context first (IL_00ae), so native runs the
+        // take behind every later ordinary side-end listener; the inline
+        // take refuses by name.
+        let mut taken = state.clone();
+        taken.powers.set(PowerId::Stratagem, SlotWire::Int, 5);
+        assert_eq!(
+            crate::engine::apply_action(&taken, &catalog, &crate::engine::Action::EndTurn)
+                .map(|_| ())
+                .unwrap_err(),
+            EngineRefusal::PowerOrderNotModeled(
+                crate::engine::puzzle::AUTO_RESOLVED_IN_DEFERRED_LISTENER
+            )
+        );
     }
 
     fn tender_turn_fixture(

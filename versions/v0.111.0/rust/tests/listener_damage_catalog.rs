@@ -257,7 +257,7 @@ fn simultaneous_last_enemy_deaths_do_not_draw_or_gain_energy_from_horn() {
 }
 
 #[test]
-fn horn_selecting_strike_and_recursive_stratagem_remain_atomic_refusals() {
+fn horn_selecting_strike_and_recursive_stratagem_park_after_the_panache_play() {
     for id in ["SCULPTING_STRIKE", "POMMEL_STRIKE"] {
         let mut doc = nested_root(1);
         doc.player.remove("serpent_form");
@@ -273,26 +273,20 @@ fn horn_selecting_strike_and_recursive_stratagem_remain_atomic_refusals() {
             let remaining = doc.piles.get_mut("draw").unwrap().split_off(1);
             doc.piles.get_mut("discard").unwrap().extend(remaining);
         }
-        let catalog = HotBoundary::catalog_from_canonical(&doc).unwrap();
-        let state = HotBoundary::from_canonical(&doc, &catalog).unwrap();
-        let original = state.clone();
-        let mut events = Vec::new();
-        let result = engine::apply_action_into(
-            &state,
-            &catalog,
-            &Action::Play {
-                uid: 0,
-                target: None,
-                selection: SelectionRef::NONE,
-            },
-            &mut events,
-        );
-        assert!(
-            matches!(result, Err(engine::EngineRefusal::ContinuationNotModeled)),
-            "{id} must not suspend inside synchronous Horn Damage: {result:?}"
-        );
-        assert_eq!(state, original);
-        assert!(events.is_empty());
+        // #3387: the Horn's Draw runs on the resumable frame. The choice
+        // its Hellraiser AutoPlay begins inside the synchronous Panache
+        // damage is queued as a deferred hook action: the Sculpting Strike's
+        // own selection, or Pommel's reshuffle selection above the
+        // AutoPlayed Pommel. The play finishes first, and the choice then
+        // parks on the Play root with the AutoPlayed card still in Play.
+        // `play_and_reload` round-trips and admits the parked state.
+        let wire = play_and_reload(&doc, 0);
+        let catalog = HotBoundary::catalog_from_canonical(&wire).unwrap();
+        let parked = HotBoundary::from_canonical(&wire, &catalog).unwrap();
+        assert!(parked.pending.is_some(), "{id}");
+        assert_eq!(parked.history.card_plays_finished_combat, 1, "{id}");
+        assert_eq!(wire.piles["play"].len(), 1, "{id}");
+        assert_eq!(wire.piles["play"][0].id, id);
     }
 }
 

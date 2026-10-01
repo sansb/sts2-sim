@@ -382,11 +382,20 @@ mod tests {
     fn deaths_door_replays_separate_live_powered_block_commands_after_owned_doom() {
         let args = [CompiledArg::I(6), CompiledArg::I(2)];
         let mut ordinary = HotState::at_defaults();
+        ordinary.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         run_deaths_door(&mut ordinary, CardId::DeathsDoor, 0, &args).unwrap();
         assert_eq!(ordinary.block, 6);
         assert_eq!(ordinary.history.card_block_gains, 1);
 
         let mut replayed = HotState::at_defaults();
+
+        replayed.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         replayed.history.doom_applied_by_player_this_turn = true;
         replayed.powers.set(PowerId::Unmovable, SlotWire::Int, 1);
         // All three `GainBlock` calls pass the one `cardPlay`
@@ -402,6 +411,10 @@ mod tests {
         // Without a CardPlay (native `cardPlay` null) nothing is excluded
         // and the window closes after the first gain: 12, then 6, then 6.
         let mut direct = HotState::at_defaults();
+        direct.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         direct.history.doom_applied_by_player_this_turn = true;
         direct.powers.set(PowerId::Unmovable, SlotWire::Int, 1);
         run_deaths_door(&mut direct, CardId::DeathsDoor, 0, &args).unwrap();
@@ -409,6 +422,11 @@ mod tests {
         assert_eq!(direct.history.card_block_gains, 3);
 
         let mut upgraded = HotState::at_defaults();
+
+        upgraded.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         upgraded.history.doom_applied_by_player_this_turn = true;
         run_deaths_door(
             &mut upgraded,

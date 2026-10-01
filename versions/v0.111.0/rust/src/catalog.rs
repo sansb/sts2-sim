@@ -973,6 +973,35 @@ impl CardSpec {
     }
 }
 
+/// A value derived from the rest of an immutable [`Catalog`], computed on
+/// first use.
+///
+/// It is a function of fields `Catalog`'s `PartialEq` already compares, so
+/// equality and `Debug` ignore whether it has been computed yet, and a clone
+/// carries it along (#3420).
+#[derive(Clone)]
+pub(crate) struct Derived<T>(std::sync::OnceLock<T>);
+
+impl<T> Default for Derived<T> {
+    fn default() -> Self {
+        Self(std::sync::OnceLock::new())
+    }
+}
+
+impl<T> PartialEq for Derived<T> {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl<T> Eq for Derived<T> {}
+
+impl<T> std::fmt::Debug for Derived<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Derived")
+    }
+}
+
 /// Everything constant for the duration of one fight.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Catalog {
@@ -1042,6 +1071,22 @@ pub struct Catalog {
     /// a superset only ever records more provenance than a reader needs, and
     /// the writer gives up rather than refusing where it cannot record any.
     misery_is_reachable: bool,
+    /// The catalog-only halves of admission's Stampede identity closure and
+    /// Hellraiser liveness, derived at [`CatalogBuilder::build`] from the
+    /// reachable specs. Each was a scan of every reachable spec, repeated on
+    /// every continuation rehearsal (#3420).
+    stampede_closure: crate::engine::admission::StampedeClosureFacts,
+    /// Whether an execution-reachable spec is Outbreak at any level: the
+    /// catalog half of `steps::silent_rare::outbreak_is_reachable`, which
+    /// canonical projection asks on every parked replay root (#3420).
+    outbreak_reachable: bool,
+    /// Whether an execution-reachable spec carries an Alchemize, Constellation
+    /// or Huddle Up exact step: the catalog half of the public path's
+    /// terminal-aware root rehearsal, asked on every public action (#3420).
+    terminal_aware_root_step_reachable: bool,
+    /// Generation-potion pool facts, derived on first use; see
+    /// [`crate::engine::potions::GenerationPoolFacts`].
+    generation_pools: Derived<crate::engine::potions::GenerationPoolFacts>,
     /// Whether any interned identity is Normality.
     ///
     /// A catalog is immutable and every live card carries an interned atom,
@@ -1377,6 +1422,31 @@ impl Catalog {
     #[inline(always)]
     pub(crate) fn misery_is_reachable(&self) -> bool {
         self.misery_is_reachable
+    }
+
+    /// See [`crate::engine::potions::GenerationPoolFacts`].
+    pub(crate) fn generation_pools(&self) -> &crate::engine::potions::GenerationPoolFacts {
+        self.generation_pools
+            .0
+            .get_or_init(|| crate::engine::potions::GenerationPoolFacts::of(self))
+    }
+
+    /// See the field of the same name.
+    #[inline(always)]
+    pub(crate) fn outbreak_reachable(&self) -> bool {
+        self.outbreak_reachable
+    }
+
+    /// See the field of the same name.
+    #[inline(always)]
+    pub(crate) fn terminal_aware_root_step_reachable(&self) -> bool {
+        self.terminal_aware_root_step_reachable
+    }
+
+    /// See [`crate::engine::admission::StampedeClosureFacts`].
+    #[inline(always)]
+    pub(crate) fn stampede_closure(&self) -> crate::engine::admission::StampedeClosureFacts {
+        self.stampede_closure
     }
 
     /// Whether this fight's immutable catalog interns Normality.
@@ -3069,6 +3139,11 @@ impl CatalogBuilder {
         // It has no once-per-combat latch, so owning the relic is enough.
         let joss_paper_draw_can_suspend =
             cardplay_draw_hook_can_suspend && self.hooks.owns(crate::ids::RelicId::RelicJossPaper);
+        // Gremlin Horn's AfterDeath Draw begins its choice in a queued hook
+        // action that parks rooted at the player action it followed (#3387,
+        // `engine::hook_action`).
+        let gremlin_horn_draw_can_suspend = cardplay_draw_hook_can_suspend
+            && self.hooks.owns(crate::ids::RelicId::RelicGremlinHorn);
         // History Course's dupe AutoPlay is receipt-owned the same way
         // (#3309) whenever a reachable Attack can suspend under it. An Attack
         // Draw with a blocking hook already requires receipts through the
@@ -3080,7 +3155,8 @@ impl CatalogBuilder {
             || vicious_plain_vulnerable_can_suspend
             || centennial_puzzle_draw_can_suspend
             || swift_draw_can_suspend
-            || joss_paper_draw_can_suspend;
+            || joss_paper_draw_can_suspend
+            || gremlin_horn_draw_can_suspend;
         let by_identity: Vec<(CardIdentity, CardAtom)> = self.index.into_iter().collect();
         debug_assert!(by_identity.windows(2).all(|pair| pair[0].0 < pair[1].0));
         let reachable_identities: Vec<CardIdentity> =
@@ -3100,7 +3176,7 @@ impl CatalogBuilder {
         // Interning order is document order; the read path binary-searches.
         self.by_monster
             .sort_unstable_by_key(|(kind, _)| *kind as u16);
-        Catalog {
+        let mut catalog = Catalog {
             specs: self.specs,
             by_identity,
             steps: self.steps,
@@ -3131,7 +3207,30 @@ impl CatalogBuilder {
             mad_science_variant: self.mad_science_variant,
             reachable_identities,
             potential_identities,
-        }
+            stampede_closure: Default::default(),
+            outbreak_reachable: false,
+            terminal_aware_root_step_reachable: false,
+            generation_pools: Derived::default(),
+        };
+        // Derived from the finished catalog's own reachable specs, steps and
+        // args, none of which change after `build`.
+        catalog.stampede_closure = crate::engine::admission::StampedeClosureFacts::of(&catalog);
+        let outbreak_reachable = catalog
+            .reachable_specs()
+            .any(|spec| matches!(spec.identity.id, CardId::Outbreak));
+        catalog.outbreak_reachable = outbreak_reachable;
+        let terminal_aware_root_step_reachable = catalog.reachable_specs().any(|spec| {
+            catalog.steps(spec).iter().any(|step| {
+                matches!(
+                    step.kind,
+                    StepKind::AlchemizeExact
+                        | StepKind::ConstellationExact
+                        | StepKind::HuddleUpExact
+                )
+            })
+        });
+        catalog.terminal_aware_root_step_reachable = terminal_aware_root_step_reachable;
+        catalog
     }
 }
 
@@ -3144,6 +3243,35 @@ mod tests {
             id,
             upgrade: 0,
             enchantment: None,
+        }
+    }
+
+    /// The build-time reachability facts read the execution-reachable specs
+    /// only (#3420): a merely interned remote or Exhaust-only row sets none.
+    #[test]
+    fn build_time_reachability_facts_follow_reachable_specs_only() {
+        let facts = |catalog: &Catalog| {
+            (
+                catalog.outbreak_reachable(),
+                catalog.terminal_aware_root_step_reachable(),
+            )
+        };
+        assert_eq!(facts(&CatalogBuilder::new().build()), (false, false));
+        for (id, expected) in [
+            (CardId::Outbreak, (true, false)),
+            (CardId::Alchemize, (false, true)),
+            (CardId::Constellation, (false, true)),
+            (CardId::HuddleUp, (false, true)),
+        ] {
+            let mut reachable = CatalogBuilder::new();
+            reachable.intern_reachable(plain(id)).unwrap();
+            assert_eq!(facts(&reachable.build()), expected, "{id:?} reachable");
+
+            let mut interned = CatalogBuilder::new();
+            interned.intern(plain(id)).unwrap();
+            let interned = interned.build();
+            assert!(!interned.is_reachable(plain(id)));
+            assert_eq!(facts(&interned), (false, false), "{id:?} interned only");
         }
     }
 

@@ -149,19 +149,84 @@ thread_local! {
 /// site that models the walk enters this guard with the refusal name, or
 /// with `None` where it proved commutation; the innermost guard wins,
 /// because the choice pauses the innermost listener's own context.
-pub(crate) struct DeferredChoiceListener(Option<&'static str>);
+///
+/// # A choice that resolves without a prompt (#3485)
+///
+/// The deferral does not wait for a prompt. The combat `CardSelectCmd`
+/// entry points signal the context before they read their options and
+/// before they decide to auto-take them: `<FromCombatPile>d__20::MoveNext`
+/// RVA `0x3e5e84` signals at IL_00a2-00ae, reads `pile.Cards` at
+/// IL_010c-013b and auto-takes at IL_0140-017c (an empty list at
+/// IL_0141-0155); `<FromHand>d__28` RVA `0x3e7568` signals at IL_00b3 and
+/// reads at IL_010d-014c; `<FromHandForDiscard>d__29` RVA `0x3e7a64`
+/// forwards to `FromHand` (IL_005e); `<FromHandForUpgrade>d__30` RVA
+/// `0x3e7b6c` signals at IL_00af and reads at IL_0115; `<FromSimpleGrid>d__18`
+/// RVA `0x3e8044` signals at IL_00b7 before its count tests
+/// (IL_011c-0156). Only `IsEnding`/`IsOverOrEnding` or a set `Selector`
+/// skips the signal. So an auto-resolved selection moves the rest of the
+/// listener behind its later peers exactly as a prompted one does, and its
+/// option list is read only then. Rust resolves it inline, so under a named
+/// wall it refuses ([`AUTO_RESOLVED_IN_DEFERRED_LISTENER`], counted by
+/// `hook_action::note_unprompted_select`). Under `None` the later peers
+/// commute with the choice and its continuation, so the inline order is
+/// exact and nothing is counted.
+///
+/// No listener of the six walks calls a `CardSelectCmd` entry point in its
+/// own body. Each reaches one only through a Draw that its command issues
+/// on the same context (only the six walks and `CombatManager`'s own turn
+/// phases construct a `HookPlayerChoiceContext`), and then through
+/// `StratagemPower/<AfterShuffle>d__4` RVA `0x34688c` (`FromCombatPile`,
+/// IL_0046-0078) or through `HellraiserPower/<AfterCardDrawnEarly>d__7` RVA
+/// `0x33c1a8`'s AutoPlay (IL_011e-012e) of Seeker Strike (`FromCombatPile`,
+/// `<OnPlay>d__5` RVA `0x3b9754` IL_013d-0172) or Sculpting Strike
+/// (`FromHand`, `<OnPlay>d__7` RVA `0x3b8cec` IL_00de-0115). Those are the
+/// three Rust arms that call `note_unprompted_select`.
+pub(crate) struct DeferredChoiceListener {
+    outer: Option<&'static str>,
+    wall: Option<&'static str>,
+    signals: super::hook_action::UnsignaledListener,
+}
 
 impl DeferredChoiceListener {
     pub(crate) fn enter(wall: Option<&'static str>) -> Self {
-        Self(DEFERRED_CHOICE_LISTENER.with(|listener| listener.replace(wall)))
+        let outer = DEFERRED_CHOICE_LISTENER.with(|listener| listener.replace(wall));
+        let signals = if wall.is_some() {
+            super::hook_action::UnsignaledListener::enter()
+        } else {
+            super::hook_action::UnsignaledListener::exempt()
+        };
+        Self {
+            outer,
+            wall,
+            signals,
+        }
+    }
+
+    /// Leave the listener, refusing by name if a select inside it resolved
+    /// without a prompt under a named wall (#3485). The refusal replaces any
+    /// other result, including a park unwinding from an inner commuting
+    /// listener: the inline auto-take has already run too early.
+    pub(crate) fn settle<T>(self, result: Result<T, EngineRefusal>) -> Result<T, EngineRefusal> {
+        if self.wall.is_some() && self.signals.unprompted_signals() > 0 {
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                AUTO_RESOLVED_IN_DEFERRED_LISTENER,
+            ));
+        }
+        result
     }
 }
 
 impl Drop for DeferredChoiceListener {
     fn drop(&mut self) {
-        DEFERRED_CHOICE_LISTENER.with(|listener| listener.set(self.0));
+        DEFERRED_CHOICE_LISTENER.with(|listener| listener.set(self.outer));
     }
 }
+
+/// A select inside a deferred-choice listener under a named wall resolved
+/// without a prompt, and so ran before the later listeners that native
+/// starts first (#3485, [`DeferredChoiceListener`]).
+pub(crate) const AUTO_RESOLVED_IN_DEFERRED_LISTENER: &str =
+    "deferred-choice listener choice resolved without a prompt";
 
 /// Backstop names for a park inside each modeled deferred-choice walk whose
 /// later listeners were not proven to commute (#3386).
@@ -263,6 +328,12 @@ fn park(state: &HotState) -> Result<(), EngineRefusal> {
     if let Some(wall) = deferred_choice_wall() {
         return Err(EngineRefusal::PowerOrderNotModeled(wall));
     }
+    // #3387: a queued hook action would have to cross this park's boundary.
+    if state.fanouts.deferred_hook_action_is_queued() {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            super::hook_action::BESIDE_A_CHOICE,
+        ));
+    }
     if !CARRIER_OPEN.with(Cell::get) {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
@@ -329,6 +400,17 @@ impl Drop for TapeGuard {
     fn drop(&mut self) {
         TAPE.with(|tape| *tape.borrow_mut() = self.0.take());
     }
+}
+
+/// Run `body` as if a receipt re-execution were consuming `answers` (#3387
+/// branch witnesses outside this module).
+#[cfg(test)]
+pub(crate) fn with_tape_for_test<T>(
+    answers: Vec<ActionReplayAnswer>,
+    body: impl FnOnce() -> T,
+) -> T {
+    let _tape = TapeGuard::install(answers);
+    body()
 }
 
 /// Whether a re-execution is running. Its intermediate public applications
@@ -2769,6 +2851,155 @@ mod tests {
                 Err(EngineRefusal::ContinuationNotModeled)
             );
         }
+    }
+
+    /// #3485: the guard's unprompted-select scope. Under a named wall a
+    /// signalling note refuses when the listener settles, replacing any other
+    /// result (a park unwinding from an inner commuting listener included); a
+    /// non-signalling note (ending combat, a `Selector`) does not count; an
+    /// inner `None` listener counts nothing and charges nothing outward; and
+    /// leaving restores the outer count.
+    #[test]
+    fn deferred_choice_listener_refuses_a_select_resolved_without_a_prompt() {
+        use crate::engine::hook_action::note_unprompted_select;
+        let refused = Err::<(), _>(EngineRefusal::PowerOrderNotModeled(
+            super::AUTO_RESOLVED_IN_DEFERRED_LISTENER,
+        ));
+        // Outside any listener a note is a no-op.
+        note_unprompted_select(true);
+        for wall in [
+            super::AFTER_SIDE_TURN_END_WALL,
+            super::BEFORE_SIDE_TURN_END_WALL,
+            super::BEFORE_SIDE_TURN_START_WALL,
+            super::AFTER_DEATH_WALL,
+            super::JOSS_SIDE_END_WALL,
+            super::PAELS_EYE_JOSS_WALL,
+            super::CONSTRICT_PUZZLE_WALL,
+        ] {
+            // No note: the listener's own result passes through.
+            let quiet = super::DeferredChoiceListener::enter(Some(wall));
+            note_unprompted_select(false);
+            assert_eq!(quiet.settle(Ok(7)), Ok(7));
+            let quiet = super::DeferredChoiceListener::enter(Some(wall));
+            assert_eq!(
+                quiet.settle::<()>(Err(EngineRefusal::ContinuationNotModeled)),
+                Err(EngineRefusal::ContinuationNotModeled)
+            );
+
+            // A signalling note refuses, whatever the listener returned.
+            let noted = super::DeferredChoiceListener::enter(Some(wall));
+            note_unprompted_select(true);
+            assert_eq!(noted.settle(Ok(())), refused);
+            let noted = super::DeferredChoiceListener::enter(Some(wall));
+            note_unprompted_select(true);
+            assert_eq!(
+                noted.settle(Err(EngineRefusal::MalformedArgs(PARK_SITE))),
+                refused
+            );
+
+            // A commuting inner listener absorbs its own notes; a named
+            // inner listener refuses on its own and leaves the outer count
+            // untouched; the outer still counts its own notes afterwards.
+            let outer = super::DeferredChoiceListener::enter(Some(wall));
+            {
+                let inner = super::DeferredChoiceListener::enter(None);
+                note_unprompted_select(true);
+                assert_eq!(inner.settle(Ok(())), Ok(()));
+            }
+            {
+                let inner = super::DeferredChoiceListener::enter(Some(wall));
+                note_unprompted_select(true);
+                assert_eq!(inner.settle(Ok(())), refused);
+            }
+            assert_eq!(super::deferred_choice_wall(), Some(wall));
+            assert_eq!(outer.settle(Ok(())), Ok(()));
+            let outer = super::DeferredChoiceListener::enter(Some(wall));
+            {
+                let _inner = super::DeferredChoiceListener::enter(None);
+            }
+            note_unprompted_select(true);
+            assert_eq!(outer.settle(Ok(())), refused);
+            assert_eq!(super::deferred_choice_wall(), None);
+        }
+        // A bare `None` listener never refuses.
+        let exempt = super::DeferredChoiceListener::enter(None);
+        note_unprompted_select(true);
+        assert_eq!(exempt.settle(Ok(())), Ok(()));
+    }
+
+    /// #3485 witness (Joss Paper's side-end Draw, `relics.rs`): the same
+    /// reshuffle as the #3386 witnesses, but against Stratagem 5, so
+    /// `FromCombatPile` auto-takes all five Defends. Native still signals
+    /// Joss Paper's listener context first and starts the later Parrying
+    /// Shield before the take, so the inline take refuses by name. With no
+    /// later listener (`None`) the same take completes in place.
+    #[test]
+    fn joss_paper_side_end_auto_take_refuses_before_a_later_listener() {
+        let mut fixture = joss_side_end(&[RelicId::RelicParryingShield], false);
+        fixture
+            .state
+            .powers
+            .set(PowerId::Stratagem, SlotWire::Int, 5);
+        let (state, catalog) = loaded(&fixture);
+        assert_eq!(
+            end_turn_refusal(&state, &catalog),
+            EngineRefusal::PowerOrderNotModeled(super::AUTO_RESOLVED_IN_DEFERRED_LISTENER)
+        );
+
+        let mut alone = joss_side_end(&[], false);
+        alone.state.powers.set(PowerId::Stratagem, SlotWire::Int, 5);
+        assert_eq!(
+            super::super::relics::joss_paper_side_end_draw_wall(&alone.catalog, &alone.state),
+            None
+        );
+        let (state, catalog) = loaded(&alone);
+        let next = apply_action(&state, &catalog, &Action::EndTurn)
+            .unwrap()
+            .state;
+        assert!(next.pending.is_none());
+        assert_eq!(next.fanouts.joss_paper_cards_exhausted(), 0);
+        assert!(next.turn > state.turn);
+    }
+
+    /// #3485 witness (Pael's Eye's Early listener, `turn.rs`): the #3386
+    /// Pael's Eye fixture against Stratagem 5. Joss Paper's Draw inside the
+    /// Exhaust auto-takes the five reshuffled Defends, which native defers
+    /// behind every later BeforeSideTurnEnd listener, so it refuses by name.
+    #[test]
+    fn joss_paper_auto_take_under_paels_eye_refuses() {
+        let identities = [plain(CardId::DefendIronclad)];
+        let mut fixture = fixture_with(
+            &identities,
+            &[RelicId::RelicPaelsEye, RelicId::RelicJossPaper],
+            2,
+        );
+        assert!(fixture.state.fanouts.set_joss_paper_cards_exhausted(4));
+        fixture
+            .state
+            .fanouts
+            .set_paels_eye_was_owner_part_last_player_turn(true);
+        let defend = fixture.atoms[0];
+        fixture
+            .state
+            .powers
+            .set(PowerId::Stratagem, SlotWire::Int, 5);
+        fixture
+            .state
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(card(1, defend));
+        fixture
+            .state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .extend((2..7).map(|uid| card(uid, defend)));
+        let (state, catalog) = loaded(&fixture);
+        assert_eq!(
+            end_turn_refusal(&state, &catalog),
+            EngineRefusal::PowerOrderNotModeled(super::AUTO_RESOLVED_IN_DEFERRED_LISTENER)
+        );
     }
 
     // ---- History Course (#3309) ----

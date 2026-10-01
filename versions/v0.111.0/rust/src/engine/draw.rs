@@ -472,6 +472,11 @@ fn powers_after_card_drawn(
                         },
                     )
                 } else {
+                    // Iteration: the first Status `CardDrawnEntry` this turn
+                    // (`IterationPower/<AfterCardDrawn>d__4::MoveNext` RVA
+                    // `0x33d968` IL_0050-0078). The count is a
+                    // `HappenedThisTurn` quotient rolled at every SwitchSides
+                    // (#3483, `turn::roll_happened_this_turn_counters`).
                     spec.is_status && state.history.status_draws_this_turn == 1
                 };
                 if fires {
@@ -1604,6 +1609,12 @@ fn resume_completed_draw_caller(
         DrawCaller::CentennialPuzzle | DrawCaller::SwiftEnchantment | DrawCaller::JossPaper => {
             Ok(())
         }
+        // Gremlin Horn's Draw is its listener's tail
+        // (`GremlinHorn/<AfterDeath>d__6::MoveNext` RVA `0x326170`: the Draw
+        // awaited at IL_00d9 is followed only by `leave` IL_0131), so its
+        // completion owns nothing, whether it finished inside the listener or
+        // as the body of a deferred hook action (#3387, `engine::hook_action`).
+        DrawCaller::GremlinHorn => Ok(()),
         DrawCaller::AfterCardExhaustedPower
             if matches!(
                 state.frames.top(),
@@ -1776,6 +1787,33 @@ pub(crate) fn joss_paper_draw(
     receipt_owned_command_draw(state, catalog, n, DrawCaller::JossPaper, events)
 }
 
+/// Gremlin Horn's one-card Draw (#3387).
+///
+/// `GremlinHorn/<AfterDeath>d__6::MoveNext` RVA `0x326170` (v0.111.0,
+/// SHA-256 `9cb4f1ad…`) awaits `CardPileCmd.Draw(choiceContext,
+/// DynamicVars.Cards.BaseValue, Owner, false)` at IL_00bc-00d9 as its tail.
+/// As for the Puzzle, only Hellraiser's AutoPlay of a selecting Strike and
+/// Stratagem's `AfterShuffle` selection can make it a player choice; with
+/// both absent the certified synchronous command runs unchanged. Otherwise
+/// the Draw runs on the resumable frame with [`DrawCaller::GremlinHorn`], and
+/// a choice it begins is deferred into the queued hook action
+/// (`engine::hook_action`), because `Hook.AfterDeath` gives the listener its
+/// own `HookPlayerChoiceContext` (`<AfterDeath>d__28` RVA `0x3cd984`
+/// IL_008f-00b6).
+pub(crate) fn gremlin_horn_draw(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if state.powers.value(PowerId::Hellraiser) <= 0 && state.powers.value(PowerId::Stratagem) <= 0 {
+        return draw_cards(state, catalog, 1, DrawSource::Command, events);
+    }
+    if !resumable_command_draw_entry(state, catalog)? {
+        return Ok(());
+    }
+    super::hook_action::deferred_listener_draw(state, catalog, 1, DrawCaller::GremlinHorn, events)
+}
+
 /// A relic's plain `CardPileCmd.Draw` whose awaited suffix is receipt-owned.
 fn receipt_owned_command_draw(
     state: &mut HotState,
@@ -1787,6 +1825,18 @@ fn receipt_owned_command_draw(
     if state.powers.value(PowerId::Hellraiser) <= 0 && state.powers.value(PowerId::Stratagem) <= 0 {
         return draw_cards(state, catalog, n, DrawSource::Command, events);
     }
+    if !resumable_command_draw_entry(state, catalog)? {
+        return Ok(());
+    }
+    super::puzzle::receipt_owned_draw(state, catalog, n, caller, events)
+}
+
+/// `draw_cards`' public entry checks for a relic Draw moved onto the
+/// resumable frame. `Ok(false)`: Fiddle denied the command.
+fn resumable_command_draw_entry(
+    state: &mut HotState,
+    catalog: &Catalog,
+) -> Result<bool, EngineRefusal> {
     // `draw_cards`' public entry checks, unchanged.
     let hopper_reachable = state.card_states.hopper().is_some()
         || state
@@ -1810,9 +1860,9 @@ fn receipt_owned_command_draw(
     // `draw_cards_for_potion` applies to every non-turn-start caller).
     if catalog.hooks().owns(RelicId::RelicFiddle) && state.player_side_active {
         crate::coverage::record_relic(RelicId::RelicFiddle);
-        return Ok(());
+        return Ok(false);
     }
-    super::puzzle::receipt_owned_draw(state, catalog, n, caller, events)
+    Ok(true)
 }
 
 /// [`draw_cards`], reporting the exact drawn identities into `drawn`.
@@ -3763,6 +3813,14 @@ fn stratagem_after_shuffle(
 ) -> Result<(), EngineRefusal> {
     if !state.history.over {
         let amount = state.powers.value(PowerId::Stratagem);
+        // `StratagemPower/<AfterShuffle>d__4` RVA `0x34688c` awaits
+        // `FromCombatPile` (IL_0046-0078) after every shuffle, and that
+        // command signals the listener's context before it reads the pile
+        // (#3387, `hook_action::AUTO_RESOLVED_CHOICE`), even when the pile is
+        // empty or no larger than Amount.
+        super::hook_action::note_unprompted_select(
+            amount > 0 && !super::selection::vakuu_selector_active(),
+        );
         if amount > 0 && !state.piles.get(PileId::Draw).is_empty() {
             let amount: usize = amount
                 .try_into()
@@ -5236,6 +5294,11 @@ mod tests {
         let mut state = HotState::at_defaults();
         state.hp = 70;
         state.energy = 3;
+        // A live enemy: Tactician's GainEnergy is ending-gated (#3495).
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            12,
+        ));
         for uid in 10..=12 {
             state.piles.get_mut(PileId::Draw).make_mut().push(card(
                 &catalog,
@@ -5865,6 +5928,10 @@ mod tests {
         let catalog = builder.build();
         let defend = card(&catalog, CardId::DefendSilent, 7);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 70;
         state.energy = 3;
         state.card_states.set_local_sly(7);
@@ -5918,6 +5985,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 70;
             state.card_states.set_local_sly(7);
             state.piles.get_mut(PileId::Discard).make_mut().push(stack);
@@ -5958,6 +6029,10 @@ mod tests {
         };
         for source_pile in [PileId::Hand, PileId::Draw, PileId::Discard] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 70;
             state.card_states.set_local_sly(7);
             state.piles.get_mut(source_pile).make_mut().push(card);

@@ -208,6 +208,7 @@ const ALLOWED: &[Allowed] = &[
     ("engine/potions.rs", "belt_buckle_after_procured", "apply_signed_player_stat", -2, "", 1, "var -RELIC.BELT_BUCKLE:DexterityPower"),
     ("engine/potions.rs", "bone_brew", "summon_osty", 15, "", 1, "var POTION.BONE_BREW:Summon"),
     ("engine/potions.rs", "consume_first_fairy_after_lethal", "max", 1, "PotionId::FairyInABottle", 1, "FairyInABottle/<OnUse>d__8::MoveNext RVA 0x34d8bc IL_0046 Decimal::One -> IL_004b Math::Max (heal floor)"),
+    ("engine/potions.rs", "delicate_frond_before_combat_start", "checked_mul", 2, "", 1, "structural: Rust-side RNG draw-count arithmetic"),
     ("engine/potions.rs", "enter", "checked_add", 1, "PotionId::DistilledChaos", 1, "structural: Rust-side RNG draw-count arithmetic"),
     ("engine/potions.rs", "entropic_brew", "checked_mul", 2, "", 1, "structural: Rust-side RNG draw-count arithmetic"),
     ("engine/potions.rs", "finish", "draw_cards_for_potion", 1, "RelicId::RelicReptileTrinket", 1, "UnceasingTop/<AfterHandEmptied>d__4::MoveNext RVA 0x333994 IL_005e CardPileCmd::Draw of one card (Unceasing Top declares no vars)"),

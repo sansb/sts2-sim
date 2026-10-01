@@ -38,3 +38,5 @@ pub mod rng;
 pub mod run_counters;
 pub mod solo_v1;
 pub mod steps;
+#[cfg(target_arch = "wasm32")]
+pub mod wasm_clock;

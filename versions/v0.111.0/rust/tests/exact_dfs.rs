@@ -52,6 +52,7 @@ fn config(memo: bool) -> ExactDfsConfig {
         max_turns: 4,
         deadline: None,
         memo,
+        memo_budget_bytes: None,
     }
 }
 
@@ -101,6 +102,32 @@ fn exact_corpus_row_matches_python_objective_uid_line_and_final_digest() {
     );
 }
 
+/// A finished root never reaches search (#3420): admission refuses it, so a
+/// reported line always has at least one action for `certify` to replay, and
+/// the digest it reports is never of an unsearched root.
+#[test]
+fn a_finished_root_is_refused_before_search() {
+    let row = exact_row();
+    let document = document(&row);
+    let catalog = HotBoundary::catalog_from_canonical(&document).expect("corpus catalog");
+    let mut state = HotBoundary::from_canonical(&document, &catalog).expect("corpus hot state");
+    let mut events = Vec::new();
+    for action in &corpus_actions(&row) {
+        state = engine::apply_action_into(&state, &catalog, action, &mut events)
+            .expect("the corpus line replays");
+    }
+    assert!(state.history.over && state.hp > 0);
+    let terminal = HotBoundary::try_to_canonical(&state, &catalog).expect("terminal projects");
+    let result = solve(&terminal, config(true), &ExactCancellation::default());
+    assert_eq!(result.status, ExactDfsStatus::Refused);
+    assert_eq!(result.telemetry.nodes, 0);
+    assert!(
+        format!("{:?}", result.refusal).contains("AlreadyOver"),
+        "{:?}",
+        result.refusal
+    );
+}
+
 #[test]
 fn memo_on_and_off_preserve_the_exact_result_and_canonical_line() {
     let row = exact_row();
@@ -119,6 +146,60 @@ fn memo_on_and_off_preserve_the_exact_result_and_canonical_line() {
         memo_on.telemetry
     );
     assert_eq!(memo_off.telemetry.memo_probes, 0);
+}
+
+#[test]
+fn a_memo_budget_never_changes_the_answer_and_is_respected() {
+    // #3470: the budget only stops memo inserts, so a capped exact solve must
+    // return the uncapped result, byte for byte, while staying under its cap.
+    // The compact root keeps a budget-0 (memo effectively off) solve small,
+    // for the reason `memo_on_and_off_preserve_...` gives.
+    let row = exact_row();
+    let document = compact_winnable_document(&row);
+    let uncapped = solve(&document, config(true), &ExactCancellation::default());
+    assert_eq!(uncapped.status, ExactDfsStatus::Exact);
+    assert!(!uncapped.telemetry.memo_budget_reached);
+    let full = uncapped.telemetry.memo_bytes;
+    assert!(full > 0, "{:?}", uncapped.telemetry);
+
+    let capped = |budget: u64| {
+        solve(
+            &document,
+            ExactDfsConfig {
+                memo_budget_bytes: Some(budget),
+                ..config(true)
+            },
+            &ExactCancellation::default(),
+        )
+    };
+    for budget in [full / 2, 0] {
+        let result = capped(budget);
+        assert_eq!(result.status, ExactDfsStatus::Exact, "budget {budget}");
+        assert_eq!(result.best, uncapped.best, "budget {budget}");
+        assert!(result.telemetry.memo_budget_reached, "budget {budget}");
+        assert!(
+            result.telemetry.memo_bytes <= budget,
+            "budget {budget}: {:?}",
+            result.telemetry
+        );
+        assert!(result.telemetry.memo_entries < uncapped.telemetry.memo_entries);
+        // Skipped inserts are recomputed, never answered from nowhere.
+        assert!(result.telemetry.nodes >= uncapped.telemetry.nodes);
+        if budget == 0 {
+            assert_eq!(result.telemetry.memo_entries, 0);
+        }
+    }
+
+    // Accounting charges every table growth before it happens, so the
+    // uncapped solve's own final size is never exceeded along the way: a
+    // budget equal to it is not reached and memoizes exactly as uncapped.
+    let exact_fit = capped(full);
+    assert!(!exact_fit.telemetry.memo_budget_reached);
+    assert_eq!(
+        exact_fit.telemetry.memo_entries,
+        uncapped.telemetry.memo_entries
+    );
+    assert_eq!(exact_fit.telemetry.nodes, uncapped.telemetry.nodes);
 }
 
 #[test]

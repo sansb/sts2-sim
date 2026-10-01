@@ -18,7 +18,7 @@ pub struct DotNetDecimalBits {
     pub scale: u32,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct DotNetDecimal(Decimal);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

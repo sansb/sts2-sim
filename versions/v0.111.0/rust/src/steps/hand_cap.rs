@@ -200,6 +200,15 @@ fn live_hand_space(ctx: &StepCtx<'_>) -> usize {
 /// Synchronous modes finish here. A returned descriptor is the only part the
 /// shared Unit-E continuation seam still needs to pack; Dredge's whole-pile
 /// auto-answer is applied here before any suspension is considered.
+///
+/// Ending gates (#3515), each the shared IsEnding / IsOverOrEnding projection:
+/// - Anointed (`Anointed/<OnPlay>d__3` `0x389eac`) rolls `TakeRandom` (IL_0088)
+///   and then awaits `CardPileCmd.Add` to Hand (IL_0098); `<Add>d__10`
+///   (`0x3e1ba4`) skips every combat-pile move at `IsEnding` (IL_0041-008a).
+/// - Dredge (`0x39a30c`) and Neow's Fury (`0x3ae88c`, after its attack) await
+///   `CardSelectCmd.FromCombatPile` (IL_0103 / IL_013d), whose
+///   `<FromCombatPile>d__20` (`0x3e5e84`) returns no card at `IsEnding`
+///   (IL_0036-003d), and then the same `CardPileCmd.Add`.
 pub(crate) fn begin_hand_cap_body(
     ctx: &mut StepCtx<'_>,
 ) -> Result<Option<HandCapSelection>, EngineRefusal> {
@@ -238,7 +247,9 @@ pub(crate) fn begin_hand_cap_body(
                 },
             );
             let chosen_indices = &rare_indices[..live_hand_space(ctx).min(rare_indices.len())];
-            if !ctx.state.history.over && !chosen_indices.is_empty() {
+            if !crate::engine::damage::damage_combat_is_ending(ctx.state)
+                && !chosen_indices.is_empty()
+            {
                 let draw = ctx.state.piles.get(PileId::Draw).as_slice();
                 let chosen: Vec<_> = chosen_indices.iter().map(|index| draw[*index]).collect();
                 let remaining: Vec<_> = draw
@@ -294,7 +305,7 @@ pub(crate) fn begin_hand_cap_body(
             Ok(None)
         }
         StepWord::DiscardFixed => {
-            if ctx.state.history.over {
+            if crate::engine::damage::damage_combat_is_ending(ctx.state) {
                 return Ok(None);
             }
             let Some(selection) = pending_selection_for_row(ctx.spec.row, live_hand_space(ctx))
@@ -337,7 +348,7 @@ pub(crate) fn begin_hand_cap_body(
                 1,
                 ctx.events,
             )?;
-            if ctx.state.history.over {
+            if crate::engine::damage::damage_combat_is_ending(ctx.state) {
                 return Ok(None);
             }
             let selection = pending_selection_for_row(ctx.spec.row, live_hand_space(ctx));
@@ -503,6 +514,10 @@ mod tests {
         let common_atom = builder.intern(common).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.rng.set(
             RngStream::Sel,
             RngStreamState {
@@ -627,6 +642,10 @@ mod tests {
         let catalog = builder.build();
 
         let mut auto = HotState::at_defaults();
+        auto.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         auto.piles
             .get_mut(PileId::Discard)
             .make_mut()
@@ -641,6 +660,10 @@ mod tests {
         assert_eq!(events.len(), 2);
 
         let mut selecting = HotState::at_defaults();
+        selecting.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         selecting
             .piles
             .get_mut(PileId::Discard)
@@ -751,5 +774,95 @@ mod tests {
         );
         assert_eq!(state, before);
         assert!(events.is_empty());
+    }
+
+    /// #3515: Anointed's `CardPileCmd.Add` (`<Add>d__10` 0x3e1ba4 IL_0053)
+    /// and the `CardSelectCmd.FromCombatPile` of Dredge and Neow's Fury
+    /// (`<FromCombatPile>d__20` 0x3e5e84 IL_0036) return at `IsEnding`.
+    /// While the combat is ending before the over latch no card moves and no
+    /// selector opens; Anointed still rolls its shuffle (IL_0088 precedes
+    /// the Add). The Adaptable-vetoed control moves or selects.
+    #[test]
+    fn hand_cap_moves_and_selectors_skip_while_combat_is_ending_before_the_over_latch() {
+        let rare = plain(CardId::Scrawl, 0);
+        let mut builder = CatalogBuilder::new();
+        for owner in [
+            plain(CardId::Anointed, 0),
+            plain(CardId::Dredge, 0),
+            plain(CardId::NeowsFury, 0),
+        ] {
+            builder.intern(owner).unwrap();
+        }
+        let rare_atom = builder.intern(rare).unwrap();
+        let catalog = builder.build();
+        for vetoed in [false, true] {
+            let mut anointed = HotState::at_defaults();
+            anointed.rng.set(
+                RngStream::Sel,
+                RngStreamState {
+                    words: Xoshiro256StarStar::from_seed(17).words,
+                    counter: 0,
+                },
+            );
+            anointed
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .extend([card(1, rare_atom), card(4, rare_atom)]);
+            crate::engine::damage::push_ending_window_roster(&mut anointed, vetoed);
+            assert_eq!(
+                begin(
+                    &mut anointed,
+                    &catalog,
+                    plain(CardId::Anointed, 0),
+                    None,
+                    &mut Vec::new()
+                )
+                .unwrap(),
+                None
+            );
+            assert_eq!(
+                anointed.rng.get(RngStream::Sel).counter,
+                1,
+                "vetoed={vetoed}"
+            );
+            assert_eq!(
+                anointed.piles.get(PileId::Hand).len(),
+                2 * usize::from(vetoed)
+            );
+
+            let mut dredge = HotState::at_defaults();
+            dredge
+                .piles
+                .get_mut(PileId::Discard)
+                .make_mut()
+                .push(card(2, rare_atom));
+            crate::engine::damage::push_ending_window_roster(&mut dredge, vetoed);
+            begin(
+                &mut dredge,
+                &catalog,
+                plain(CardId::Dredge, 0),
+                None,
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert_eq!(dredge.piles.get(PileId::Hand).len(), usize::from(vetoed));
+
+            let mut fury = HotState::at_defaults();
+            fury.piles
+                .get_mut(PileId::Discard)
+                .make_mut()
+                .push(card(3, rare_atom));
+            let target = crate::engine::damage::push_ending_window_roster(&mut fury, vetoed);
+            let selection = begin(
+                &mut fury,
+                &catalog,
+                plain(CardId::NeowsFury, 0),
+                Some(target),
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert_eq!(selection.is_some(), vetoed, "Neow's Fury vetoed={vetoed}");
+        }
     }
 }

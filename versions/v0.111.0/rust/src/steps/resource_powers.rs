@@ -41,12 +41,18 @@ pub const IMPLEMENTED: &[StepKind] = &[StepKind::FriendshipExact];
 /// negative owner `StrengthPower` command, then (unless combat is already
 /// ending) stack one `FriendshipPower`. Friendship is a plain additive term
 /// in the next owner turn's `ModifyMaxEnergy` fold.
+///
+/// `Friendship/<OnPlay>d__5` RVA `0x3a026c` awaits `Apply<StrengthPower>`
+/// (IL_00de) and then `Apply<FriendshipPower>` (IL_0167). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn friendship_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (strength, friendship) = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::Friendship, 0, [CompiledArg::I(-2), CompiledArg::I(1)]) => (-2, 1),
         (CardId::Friendship, 1, [CompiledArg::I(-1), CompiledArg::I(1)]) => (-1, 1),
         _ => return Err(EngineRefusal::MalformedArgs("friendship_exact")),
     };
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
+    }
     apply_owner_strength(ctx.state, strength, ctx.events)?;
     if ctx.state.history.over {
         return Ok(());
@@ -111,8 +117,25 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let step = catalog.steps(&spec)[0];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.powers.set(PowerId::Strength, SlotWire::Int, 5);
             state.powers.set(PowerId::Friendship, SlotWire::Int, 2);
+            crate::engine::damage::assert_ending_window_gate(&state, "Friendship", |s, _| {
+                friendship_exact(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 0,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: catalog.args(step.args),
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,

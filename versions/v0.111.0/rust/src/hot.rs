@@ -79,7 +79,7 @@ const AFTER_ENERGY_RESET_POWERS: [AfterEnergyResetPower; 6] = [
 /// potion-owned listener whose amount lives in the potion cold record rather
 /// than `Slots<PowerId>`; retaining it here makes the six-item native list
 /// explicit without inventing a sparse PowerId variant.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum AfterEnergyResetPower {
     Genesis,
     StarNextTurn,
@@ -114,7 +114,7 @@ impl AfterEnergyResetPower {
 
 /// Inline cold storage avoids widening every fanout COW allocation for a
 /// bounded six-member native list.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct AfterEnergyResetOrder {
     powers: [AfterEnergyResetPower; AFTER_ENERGY_RESET_POWERS.len()],
     len: u8,
@@ -295,7 +295,7 @@ const AFTER_PLAYER_TURN_START_LEN_MASK: u8 = 0b1110_0000;
 /// lets the widened order occupy the same four bytes as the former two-member
 /// `[PowerId; 2]`, preserving the reviewed 256-byte fanout allocation.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum ResultLocationPower {
     Corruption,
     Feral,
@@ -306,7 +306,7 @@ enum ResultLocationPower {
 /// Compact closed vocabulary for the four admitted
 /// `AfterPowerAmountChanged` listeners.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum PowerAmountChangedPower {
     Vicious,
     Shroud,
@@ -374,7 +374,7 @@ pub(crate) struct AfterPlayerTurnStartOrder {
 /// so the carrier is a dedicated byte token rather than a partial PowerId
 /// projection plus an out-of-band ordinal.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum AfterSideTurnStartToken {
     BiasedCognition,
     Blur,
@@ -663,7 +663,7 @@ impl ResultLocationPower {
 }
 
 /// One independently-instanced native `TheBombPower`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct TheBombInstance {
     pub(crate) uid: u32,
     pub(crate) turns: i32,
@@ -672,7 +672,7 @@ pub(crate) struct TheBombInstance {
 
 /// The one keyed native `ToricToughnessPower`, including its lossless
 /// retained `DynamicVars.Block` Decimal.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct ToricToughnessInstance {
     pub(crate) duration: i32,
     pub(crate) block: DotNetDecimal,
@@ -680,7 +680,7 @@ pub(crate) struct ToricToughnessInstance {
 
 /// SlothPower's private number of owner CardPlay iterations started in the
 /// current player turn. The public Amount remains in the ordinary power slot.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct SlothInstance {
     pub(crate) cards_played_this_turn: i32,
 }
@@ -698,7 +698,7 @@ pub(crate) struct SlothInstance {
 /// `automation_left` nibble and its amount is the scalar Automation power
 /// minus these rows' amounts, so a one-instance state is byte-identical to
 /// the pre-#3021 representation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct AutomationInstance {
     pub(crate) amount: i32,
     pub(crate) cards_left: i32,
@@ -709,7 +709,7 @@ pub(crate) struct AutomationInstance {
 /// `already_applied` is the power object's private `Data.alreadyApplied`
 /// bit.  It cannot be derived from liveness while the applying card's
 /// `AfterCardPlayed` listener snapshot is parked.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct PanacheInstance {
     pub(crate) uid: u32,
     pub(crate) amount: i32,
@@ -723,7 +723,7 @@ pub(crate) struct PanacheInstance {
 /// instance-local Strength dynamic variable written from the card's `Power`
 /// variable after Apply returns.  `strength_applied` is this instance's
 /// independent turn ledger.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct MonologueInstance {
     pub(crate) uid: u32,
     pub(crate) amount: i32,
@@ -735,7 +735,7 @@ pub(crate) struct MonologueInstance {
 /// The Bomb. Bomb, Panache, and Monologue are truly instanced; Toric and Sloth
 /// are keyed singletons. Keeping the tag explicit permits all five families
 /// to coexist without encoding a false mutual exclusion.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum ColdPowerRecord {
     TheBomb(TheBombInstance),
     ToricToughness(ToricToughnessInstance),
@@ -749,7 +749,7 @@ enum ColdPowerRecord {
 }
 
 /// Typed acquisition token for the ordinary player-power turn-end walk.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum BeforeSideTurnEndToken {
     ChainsOfBinding,
     Hailstorm,
@@ -762,7 +762,7 @@ pub(crate) enum BeforeSideTurnEndToken {
 /// four admitted objects live outside that scalar vocabulary and Panache and
 /// Monologue are native InstanceType-1 families.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum AfterSideTurnEndPowerToken {
     BorrowedTime = 0,
     Burst = 1,
@@ -905,7 +905,7 @@ impl AfterSideTurnEndPowerToken {
 }
 
 /// One exact native object identity in local-player acquisition order.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct AfterSideTurnEndPowerEntry {
     pub token: AfterSideTurnEndPowerToken,
     pub uid: u32,
@@ -916,7 +916,7 @@ pub(crate) struct AfterSideTurnEndPowerEntry {
 /// one row per object; every other token is a keyed singleton whose row and
 /// uid survive restacks.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum AfterCardPlayedPowerToken {
     Withering = 0,
     Rupture = 1,
@@ -1041,14 +1041,14 @@ impl AfterCardPlayedPowerToken {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct AfterCardPlayedPowerEntry {
     pub token: AfterCardPlayedPowerToken,
     pub uid: u32,
 }
 
 /// Private, synchronous native command receipts shared until a branch mutates.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct DamageExecution {
     /// Native Damage command stack. Entries retain identities whose lethal HP
     /// committed but whose cleanup has not begun. These cannot be imported.
@@ -1067,7 +1067,7 @@ struct DamageExecution {
 /// instances, Toric's keyed Decimal record, the unbounded Bomb listener
 /// order, and a separately nested potion belt do not widen HotState or
 /// FanoutState. Search clones share every Arc layer until its cold writer.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct ColdFanoutState {
     /// Native Player.IsActiveForHooks becomes false only after actual death.
     /// HP zero before ShouldDie and combat-ending victory do not imply it.
@@ -1170,7 +1170,7 @@ struct ColdFanoutState {
     batch_nine_relics: Arc<BatchNineRelicState>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct BatchEightRelicState {
     beating_remnant_owned: bool,
     beating_remnant_damage_received: i32,
@@ -1196,7 +1196,7 @@ struct BatchEightRelicState {
     undying_sigil_owned: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct BatchNineRelicState {
     history_course_attack_current_turn: Option<FrozenAutoBatchEntry>,
     history_course_attack_previous_turn: Option<FrozenAutoBatchEntry>,
@@ -1216,10 +1216,19 @@ struct BatchNineRelicState {
     regalite_used_this_turn: bool,
     self_forming_clay_owned: bool,
     gremlin_horn_owned: bool,
+    /// The queued deferred hook action of the running public transaction
+    /// (#3387). Never serialized: the boundary refuses a state carrying it.
+    deferred_hook_action: Option<Arc<DeferredHookAction>>,
     /// Immutable Red Skull ownership, cached so every player-HP writer can
     /// run its `AfterCurrentHpChanged` Strength transition without a
     /// catalog (#3044, `engine::damage::red_skull_after_player_hp_changed`).
     red_skull_owned: bool,
+    /// Immutable Spiked Gauntlets ownership, cached for the catalogless
+    /// energy-cost fold (#3437,
+    /// `engine::play::spiked_gauntlets_surcharged_energy_cost`). It lives in
+    /// this separately shared layer so batch eight's cold record, which the
+    /// turn path copies, does not widen.
+    spiked_gauntlets_owned: bool,
     /// Red Skull's native `StrengthApplied` latch disagrees with the HP
     /// quotient (#3044). Only the opening sets it — a Red Skull that ran
     /// before Planisphere's crossing heal — and the next player HP write
@@ -1270,7 +1279,7 @@ struct BatchNineRelicState {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum RelicPendingKind {
     ChoicesParadox,
     GamblingChip,
@@ -1278,7 +1287,7 @@ pub(crate) enum RelicPendingKind {
     Toolbox,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct RelicPendingRecord {
     pub kind: RelicPendingKind,
     pub entries: Vec<FrozenAutoBatchEntry>,
@@ -1304,7 +1313,9 @@ impl Default for BatchNineRelicState {
             regalite_used_this_turn: false,
             self_forming_clay_owned: false,
             gremlin_horn_owned: false,
+            deferred_hook_action: None,
             red_skull_owned: false,
+            spiked_gauntlets_owned: false,
             red_skull_latch_stale: false,
             pending: None,
             next_creature_uid: 0,
@@ -1333,7 +1344,7 @@ const POTION_BELT_FLAGS_MASK: u8 =
 /// nulls are retained and duplicate potion identities remain distinct by
 /// slot. The pool-proof bit means the current-build fully-unlocked pool was
 /// authenticated at entry rather than inferred from any dense mirror.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct PotionBeltState {
     slots: Vec<Option<PotionId>>,
     flags: u8,
@@ -1363,7 +1374,7 @@ struct PotionBeltState {
 /// inside power objects. They change far less often than play-history, so one
 /// copy-on-write block keeps ordinary search clones pointer-sized while fixed
 /// arrays avoid a second allocation on the first listener application.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct FanoutState {
     after_card_drawn: [PowerId; MAX_AFTER_CARD_DRAWN_POWERS],
     after_card_exhausted: [PowerId; MAX_AFTER_CARD_EXHAUSTED_POWERS],
@@ -1510,7 +1521,7 @@ impl Default for FanoutState {
 /// Ball are the two admitted remote cards with one mutable `i32` dimension.
 /// The lane stores Sovereign Blade's absolute Damage or The Ball's exact
 /// nonnegative damage-growth amount; the identity domain separates them.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MultiplayerAllyCard {
     pub identity: CardIdentity,
     mutable_i32: i32,
@@ -1578,7 +1589,7 @@ impl MultiplayerAllyCard {
 /// teammate choices or turns. Only fields observed or mutated by represented
 /// ally-card programs live here. Empty listener surfaces are validated
 /// and discarded at the canonical boundary rather than guessed at runtime.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MultiplayerAllyState {
     pub key: u32,
     pub alive: bool,
@@ -1645,7 +1656,7 @@ static DEFAULT_MULTIPLAYER_ALLY: LazyLock<MultiplayerAllyState> =
     LazyLock::new(MultiplayerAllyState::default);
 
 /// One frozen Imitation Learning clone correlated to its Power-card source.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ImitationClone {
     pub target_key: u32,
     pub source_identity: u32,
@@ -1659,7 +1670,7 @@ pub struct ImitationClone {
 }
 
 /// Copy-on-write card-event listener state.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct HotFanouts(Arc<FanoutState>);
 
 impl HotFanouts {
@@ -2394,6 +2405,39 @@ impl HotFanouts {
 
     pub(crate) fn set_gremlin_horn_owned(&mut self, value: bool) {
         self.mutate_batch_nine().gremlin_horn_owned = value;
+    }
+
+    /// Whether a deferred hook action is queued (#3387).
+    pub(crate) fn deferred_hook_action_is_queued(&self) -> bool {
+        self.batch_nine().deferred_hook_action.is_some()
+    }
+
+    fn take_deferred_hook_action(&mut self) -> Option<Arc<DeferredHookAction>> {
+        if !self.deferred_hook_action_is_queued() {
+            return None;
+        }
+        self.mutate_batch_nine().deferred_hook_action.take()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn take_deferred_hook_action_for_test(&mut self) {
+        self.take_deferred_hook_action();
+    }
+
+    fn queue_deferred_hook_action(&mut self, action: DeferredHookAction) {
+        self.mutate_batch_nine().deferred_hook_action = Some(Arc::new(action));
+    }
+
+    pub(crate) fn spiked_gauntlets_owned(&self) -> bool {
+        self.batch_nine().spiked_gauntlets_owned
+    }
+
+    /// Hydrates the immutable Spiked Gauntlets ownership cache (#3437). An
+    /// unchanged value never forces a copy-on-write of the shared cold fanout.
+    pub(crate) fn set_spiked_gauntlets_owned(&mut self, value: bool) {
+        if self.spiked_gauntlets_owned() != value {
+            self.mutate_batch_nine().spiked_gauntlets_owned = value;
+        }
     }
 
     pub(crate) fn red_skull_owned(&self) -> bool {
@@ -5263,7 +5307,7 @@ impl HotOrb {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct OrbQueueState {
     orbs: Vec<HotOrb>,
     reset_order: Vec<OrbResetPower>,
@@ -5299,7 +5343,7 @@ impl Default for OrbQueueState {
 /// The queue is one pointer in [`HotState`]. Capacity writes and per-orb
 /// passive updates clone only this block; ordinary state clones pay one
 /// atomic increment and never walk the ordered list.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct HotOrbs(Arc<OrbQueueState>);
 
 impl HotOrbs {
@@ -5830,7 +5874,7 @@ pub struct RngStreamState {
 /// already is, and every other transition pays one atomic increment. Inline
 /// it would have cost 360 bytes of [`HotState`] against the then-200-byte
 /// budget.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct HotRng(Arc<[RngStreamState; RNG_STREAM_COUNT]>);
 
 impl Default for HotRng {
@@ -5898,7 +5942,7 @@ impl HotRng {
 /// (`PhilosophersStone::AfterCreatureAddedToCombat` `0x994f0`
 /// IL_004b-IL_004e; `Brimstone/<AfterSideTurnStart>d__8::MoveNext` `0x32098c`
 /// IL_012d-IL_0130).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Applier {
     /// `_applier` was never written — the native field is null.
     None,
@@ -5963,7 +6007,7 @@ pub enum Applier {
 /// no reader for it, and an unwitnessed field in a hashed, projected record
 /// is a worse starting point for the migrations than adding it with its first
 /// consumer.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct AttachmentRecord {
     /// The attached instance's native `PowerModel` class.
     pub power: AttachedPowerModel,
@@ -5985,7 +6029,7 @@ pub struct AttachmentRecord {
 /// [`MiseryEntry::Attachment`] generalises that to the native record the
 /// remaining Misery families need — see [`AttachmentRecord`] and
 /// [`MiseryOrder::push_attachment`] for the order contract and its citations.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 enum MiseryEntry {
     Token(MiseryToken),
     KnockdownAmount(i32),
@@ -6010,7 +6054,7 @@ pub enum MiseryLedgerEntry {
     Attachment(AttachmentRecord),
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct MiseryOrder(Arc<Vec<MiseryEntry>>);
 
 /// Borrowed acquisition-token view over the compact shared Misery entries.
@@ -6840,6 +6884,13 @@ pub(crate) enum DrawCaller {
     /// `AfterSideTurnEnd` bodies and owned like the Puzzle's by the
     /// ActionReplay receipt (#3201).
     JossPaper = 22,
+    /// Gremlin Horn's awaited `CardPileCmd.Draw(choiceContext, Cards, Owner,
+    /// false)` (`GremlinHorn/<AfterDeath>d__6::MoveNext` RVA `0x326170`
+    /// IL_00bc-00d9), the listener's tail (#3387). A choice it begins is
+    /// deferred into a queued `GenericHookGameAction`; the Draw frame is then
+    /// published at the base of the stack once the enclosing action has
+    /// finished (`engine::hook_action`), and its completion owns nothing.
+    GremlinHorn = 23,
 }
 
 /// Closed producer continuations which can await an ordinary
@@ -7065,6 +7116,7 @@ impl DrawCaller {
             Self::CentennialPuzzle => "centennial_puzzle",
             Self::SwiftEnchantment => "swift_enchantment",
             Self::JossPaper => "joss_paper",
+            Self::GremlinHorn => "gremlin_horn",
         }
     }
 
@@ -7093,6 +7145,7 @@ impl DrawCaller {
             "centennial_puzzle" => Some(Self::CentennialPuzzle),
             "swift_enchantment" => Some(Self::SwiftEnchantment),
             "joss_paper" => Some(Self::JossPaper),
+            "gremlin_horn" => Some(Self::GremlinHorn),
             _ => None,
         }
     }
@@ -7122,6 +7175,7 @@ impl DrawCaller {
             20 => Some(Self::CentennialPuzzle),
             21 => Some(Self::SwiftEnchantment),
             22 => Some(Self::JossPaper),
+            23 => Some(Self::GremlinHorn),
             _ => None,
         }
     }
@@ -7807,7 +7861,7 @@ impl FrozenAutoBatchSource {
 /// A later child can mutate or remove this uid before the batch reaches it;
 /// projection must still emit the object Python froze when the batch was
 /// gathered rather than rereading the current global side table.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct FrozenAutoBatchEntry {
     pub card: HotCard,
     pub state: CardInstanceState,
@@ -8076,6 +8130,15 @@ pub(crate) enum ActionReplayRootAction {
 pub(crate) enum ActionReplayAnswer {
     CardUid(u32),
     OptionIndex(u32),
+}
+
+/// Word ranges of one validated closed replay record; see
+/// `Frames::action_replay_layout`.
+struct ActionReplayLayout {
+    action: ActionReplayRootAction,
+    json: std::ops::Range<usize>,
+    predecessor_len: usize,
+    answers: std::ops::Range<usize>,
 }
 
 /// Owned depth-one replay witness for a whole external action.
@@ -9063,7 +9126,7 @@ impl CardInstanceState {
 }
 
 /// One ordered, copy-on-write card pile.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct HotPile(Arc<Vec<HotCard>>);
 
 impl HotPile {
@@ -9099,7 +9162,7 @@ impl HotPile {
 }
 
 /// The five piles, indexed by [`PileId`].
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct HotPiles([HotPile; PileId::COUNT]);
 
 impl HotPiles {
@@ -9124,21 +9187,21 @@ impl HotPiles {
 /// `card.uid` is the native DeckVersion row ordinal as well as the combat
 /// object's initial physical uid. The full card and instance payload are
 /// retained because the sole stolen row is absent from all five combat piles.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct HopperDeckRow {
     pub card: HotCard,
     pub state: CardInstanceState,
 }
 
 /// Native MapPointHistory loot facts for the one fixed Hopper theft.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum HopperLootKind {
     Stolen,
     Returned,
 }
 
 /// One exact ordered loot-history entry, including the absent row payload.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct HopperLootEvent {
     pub kind: HopperLootKind,
     pub row: HopperDeckRow,
@@ -9149,7 +9212,7 @@ pub(crate) struct HopperLootEvent {
 /// The deterministic encounter can steal at most one row. Its history is
 /// therefore exactly empty, `Stolen(row)`, or `Stolen(row), Returned(row)`;
 /// admission authenticates that closed grammar and the live Swipe owner.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub(crate) struct HopperDeckState {
     pub master: Vec<HopperDeckRow>,
     pub history: Vec<HopperLootEvent>,
@@ -9160,7 +9223,7 @@ pub(crate) struct HopperDeckState {
 /// Native stores the original upgrade level in insertion order. The current
 /// admitted catalog has only L0/L1 rows, but retaining the exact byte keeps
 /// the cold state faithful and makes a widened generated table fail closed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct DampenCardRow {
     pub uid: u32,
     pub old_level: u8,
@@ -9173,7 +9236,7 @@ pub(crate) struct DampenCardRow {
 }
 
 /// Dampen's one-caster, ordered downgrade snapshot.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct DampenState {
     pub caster_uid: u32,
     pub cards: Vec<DampenCardRow>,
@@ -9187,7 +9250,7 @@ pub(crate) struct DampenState {
 /// canonical reference witness.  The three vectors retain insertion/pile
 /// order because both replay de-duplication and listener execution order are
 /// observable.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub(crate) struct SelfReturnState {
     pub current_turn: Vec<u32>,
     pub previous_turn: Vec<u32>,
@@ -9203,7 +9266,7 @@ impl SelfReturnState {
 }
 
 /// The owner-disjoint cold encounter-card payload.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum EncounterCardState {
     Hopper(HopperDeckState),
     Dampen(DampenState),
@@ -9212,7 +9275,7 @@ enum EncounterCardState {
 /// The cold allocation behind [`CardStates`]. Hopper and Dampen are encounter
 /// disjoint, so one tagged optional shared arc carries either payload without
 /// changing the one-word hot handle or the fixed 32-byte per-card row.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct CardStateStore {
     /// Removed DUPE Strike objects retained only by an in-flight Draw.
     removed_draw: Vec<FrozenAutoBatchEntry>,
@@ -9231,7 +9294,7 @@ struct CardStateStore {
 /// Most states modify no card, and that case is one pointer and one atomic
 /// increment. Lookup is a binary search; there is no ordered map and no
 /// per-card allocation.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct CardStates(Arc<CardStateStore>);
 
 impl CardStates {
@@ -9765,19 +9828,49 @@ impl CardStates {
     }
 }
 
+/// A relocatable Draw-child frame segment detached from the stack (#3387,
+/// [`Frames::detach_hook_segment`]). Record indices are relative to the
+/// segment's first word.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct HookFrameSegment {
+    frames: Vec<Frame>,
+    words: Vec<PendingWord>,
+}
+
+/// One queued `GenericHookGameAction` whose body is a suspended Gremlin Horn
+/// Draw (#3387, `engine::hook_action`).
+///
+/// Transient: it exists only between the Draw's detach and the end of the
+/// same public transaction, and the boundary refuses a state carrying one.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct DeferredHookAction {
+    segment: HookFrameSegment,
+    /// The pending choice, its record index relative to the segment.
+    pending: PendingSelection,
+    /// The Hand and Draw piles (with each card's instance state) when the
+    /// choice began: the piles native reads the option list from once the
+    /// hook action starts.
+    hand: Vec<(HotCard, CardInstanceState)>,
+    draw: Vec<(HotCard, CardInstanceState)>,
+    /// The Play cards of the segment's own suspended card plays (Hellraiser
+    /// AutoPlays), in Play order: once the enclosing action has finished,
+    /// the Play pile must hold exactly these (#3387).
+    play: Vec<(HotCard, CardInstanceState)>,
+}
+
 /// The complete choice-bound continuation store.
 ///
 /// Both vectors share one COW owner, so [`Frames`] remains one pointer and a
 /// clone increments exactly one strong count. Vector equality ignores spare
 /// capacity, keeping canonical/search equality content-based.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct FrameStore {
     frames: Vec<Frame>,
     words: Vec<PendingWord>,
 }
 
 /// The copy-on-write continuation stack and its stable word records.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Frames(Arc<FrameStore>);
 
 impl Frames {
@@ -11442,10 +11535,15 @@ impl Frames {
         Some(index)
     }
 
-    /// Decode the closed replay record, including canonical zero padding.
-    #[cold]
-    #[inline(never)]
-    pub(crate) fn action_replay(&self, index: WordRecordIndex) -> Option<ActionReplayRecord> {
+    /// Validate the closed replay record at `index`, including canonical zero
+    /// padding, without copying its predecessor document or answers.
+    ///
+    /// Every check [`Self::action_replay`] makes is made here, and that
+    /// decoder is built on this one, so `action_replay_layout(i).is_some()`
+    /// iff `action_replay(i).is_some()`. Continuation validators ask this
+    /// question several times per public transition; materializing the
+    /// predecessor JSON for each ask dominated selection-heavy fights (#3420).
+    fn action_replay_layout(&self, index: WordRecordIndex) -> Option<ActionReplayLayout> {
         let start = index.offset()?;
         let (kind, count) = self.0.words.get(start)?.parse_header()?;
         if kind != WordRecordKind::ActionReplay || count < 4 {
@@ -11499,23 +11597,62 @@ impl Frames {
         if 3_usize.checked_add(json_words)?.checked_add(answer_count)? != count as usize {
             return None;
         }
-        let json_slice = self.0.words.get(start + 4..start + 4 + json_words)?;
-        let mut predecessor_json = Vec::with_capacity(json_words * 8);
+        let json = start + 4..start + 4 + json_words;
+        let json_slice = self.0.words.get(json.clone())?;
+        // Canonical zero padding: the bytes past `predecessor_len` all sit in
+        // the last JSON word, laid out `body` then `meta`, little-endian.
+        let last = json_slice.last()?;
+        let mut last_bytes = [0_u8; 8];
+        last_bytes[..4].copy_from_slice(&last.body.to_le_bytes());
+        last_bytes[4..].copy_from_slice(&last.meta.to_le_bytes());
+        let used_in_last = predecessor_len - (json_words - 1) * 8;
+        if last_bytes[used_in_last..].iter().any(|byte| *byte != 0) {
+            return None;
+        }
+        let answers = start + 4 + json_words..end;
+        if self
+            .0
+            .words
+            .get(answers.clone())?
+            .iter()
+            .any(|word| word.meta > 1)
+        {
+            return None;
+        }
+        Some(ActionReplayLayout {
+            action,
+            json,
+            predecessor_len,
+            answers,
+        })
+    }
+
+    /// The root action of the valid closed replay record at `index`; `None`
+    /// exactly when [`Self::action_replay`] is. For callers that need only
+    /// the action or the record's validity, this copies nothing.
+    pub(crate) fn action_replay_action(
+        &self,
+        index: WordRecordIndex,
+    ) -> Option<ActionReplayRootAction> {
+        self.action_replay_layout(index).map(|layout| layout.action)
+    }
+
+    /// Decode the closed replay record, including canonical zero padding.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn action_replay(&self, index: WordRecordIndex) -> Option<ActionReplayRecord> {
+        let layout = self.action_replay_layout(index)?;
+        let json_slice = self.0.words.get(layout.json)?;
+        let mut predecessor_json = Vec::with_capacity(json_slice.len() * 8);
         for word in json_slice {
             predecessor_json.extend_from_slice(&word.body.to_le_bytes());
             predecessor_json.extend_from_slice(&word.meta.to_le_bytes());
         }
-        if predecessor_json
-            .get(predecessor_len..)
-            .is_none_or(|padding| padding.iter().any(|byte| *byte != 0))
-        {
-            return None;
-        }
-        predecessor_json.truncate(predecessor_len);
+        predecessor_json.truncate(layout.predecessor_len);
         let answers = self
             .0
             .words
-            .get(start + 4 + json_words..end)?
+            .get(layout.answers)?
             .iter()
             .map(|word| match word.meta {
                 0 => Some(ActionReplayAnswer::CardUid(word.body)),
@@ -11525,7 +11662,7 @@ impl Frames {
             .collect::<Option<Vec<_>>>()?;
         Some(ActionReplayRecord {
             predecessor_json,
-            action,
+            action: layout.action,
             answers,
         })
     }
@@ -11590,6 +11727,95 @@ impl Frames {
             },
             other => other,
         })
+    }
+
+    /// The word arena's length: the offset the next pushed record will take.
+    pub(crate) fn word_len(&self) -> usize {
+        self.0.words.len()
+    }
+
+    /// The record of a frame that owns its own words, with that frame's
+    /// kind accepted in a detached hook-action segment (#3387): the Draw
+    /// child grammar only (`rooted_draw_child_suffix_is_exact`).
+    fn hook_segment_record(frame: Frame) -> Option<WordRecordIndex> {
+        match frame {
+            Frame::Draw { record }
+            | Frame::CardPlay { record }
+            | Frame::AfterCardDrawnPower { record }
+            | Frame::AfterCardExhaustedPower { record }
+            | Frame::AfterPowerAmountChanged { record }
+            | Frame::CardFinish { record } => Some(record),
+            _ => None,
+        }
+    }
+
+    fn with_hook_segment_record(frame: Frame, record: WordRecordIndex) -> Option<Frame> {
+        Some(match frame {
+            Frame::Draw { .. } => Frame::Draw { record },
+            Frame::CardPlay { .. } => Frame::CardPlay { record },
+            Frame::AfterCardDrawnPower { .. } => Frame::AfterCardDrawnPower { record },
+            Frame::AfterCardExhaustedPower { .. } => Frame::AfterCardExhaustedPower { record },
+            Frame::AfterPowerAmountChanged { .. } => Frame::AfterPowerAmountChanged { record },
+            Frame::CardFinish { .. } => Frame::CardFinish { record },
+            _ => return None,
+        })
+    }
+
+    /// Detach every frame at or above `depth`, with the words from
+    /// `word_base` on, as a relocatable segment (#3387,
+    /// `engine::hook_action`). The store is stack-like
+    /// (`continuation_store_is_valid` requires records to be contiguous in
+    /// stack order), so the segment owns exactly those words. Every segment
+    /// frame must own its record and be of the Draw child grammar; the
+    /// records are stored relative to the segment.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn detach_hook_segment(
+        &mut self,
+        depth: usize,
+        word_base: usize,
+    ) -> Option<HookFrameSegment> {
+        if depth >= self.0.frames.len() || word_base > self.0.words.len() {
+            return None;
+        }
+        let frames = self.0.frames[depth..]
+            .iter()
+            .copied()
+            .map(|frame| {
+                let offset = Self::hook_segment_record(frame)?.offset()?;
+                let relative = WordRecordIndex::from_offset(offset.checked_sub(word_base)?)?;
+                Self::with_hook_segment_record(frame, relative)
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let store = Arc::make_mut(&mut self.0);
+        let words = store.words.split_off(word_base);
+        store.frames.truncate(depth);
+        Some(HookFrameSegment { frames, words })
+    }
+
+    /// Re-attach a detached segment on top of the stack, returning the word
+    /// offset its records were rebased onto.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn attach_hook_segment(&mut self, segment: &HookFrameSegment) -> Option<usize> {
+        let base = self.0.words.len();
+        if base.checked_add(segment.words.len())? > u32::MAX as usize {
+            return None;
+        }
+        let frames = segment
+            .frames
+            .iter()
+            .copied()
+            .map(|frame| {
+                let offset = Self::hook_segment_record(frame)?.offset()?;
+                let rebased = WordRecordIndex::from_offset(offset.checked_add(base)?)?;
+                Self::with_hook_segment_record(frame, rebased)
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let store = Arc::make_mut(&mut self.0);
+        store.words.extend_from_slice(&segment.words);
+        store.frames.extend(frames);
+        Some(base)
     }
 
     /// Prepend the sole replay root beneath an already-authenticated parked
@@ -14232,7 +14458,7 @@ impl Frames {
             match *frame {
                 Frame::ActionReplay { .. } => {
                     replay_frames += 1;
-                    if position != 0 || self.action_replay(record).is_none() {
+                    if position != 0 || self.action_replay_action(record).is_none() {
                         return false;
                     }
                 }
@@ -14430,6 +14656,18 @@ impl Frames {
                 Frame::Phase { record } => self.auto_pre_history_course_phase(record).is_some(),
                 _ => false,
             });
+        // Gremlin Horn's Draw parks on Stratagem inside its AfterDeath listener
+        // with no root yet: that choice is detached into the deferred hook
+        // action and re-attached on the transaction's root (#3387,
+        // `engine::hook_action`). The grammar and admission still require the
+        // root; this is only the store shape.
+        let rootless_gremlin_horn_stratagem = replay_frames == 0
+            && self.0.frames.iter().any(|frame| match *frame {
+                Frame::Draw { record } => self
+                    .draw(record)
+                    .is_some_and(|draw| draw.caller == DrawCaller::GremlinHorn),
+                _ => false,
+            });
         match pending {
             Some(pending) => {
                 (pending_frames == 1
@@ -14487,7 +14725,7 @@ impl Frames {
                                 return false;
                             };
                             matches!(
-                                self.action_replay(record).map(|root| root.action),
+                                self.action_replay_action(record),
                                 Some(ActionReplayRootAction::UsePotion { target: None, .. })
                             )
                         })
@@ -14515,7 +14753,7 @@ impl Frames {
                                 return false;
                             };
                             matches!(
-                                self.action_replay(record).map(|root| root.action),
+                                self.action_replay_action(record),
                                 Some(ActionReplayRootAction::UsePotion { target: None, .. })
                             )
                         })
@@ -14540,7 +14778,8 @@ impl Frames {
                         && (replay_frames == 1
                             || rootless_tyranny_stratagem
                             || rootless_foregone_stratagem
-                            || rootless_puzzle_stratagem)
+                            || rootless_puzzle_stratagem
+                            || rootless_gremlin_horn_stratagem)
                         && pending.frame_uid == STRATAGEM_SELECTION_PENDING_UID
                         && match self.top() {
                             Some(Frame::PotionFinish { record })
@@ -14814,7 +15053,7 @@ impl Frames {
 }
 
 /// Closed payload for one externally selected card-play continuation.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PendingSelection {
     pub frame_uid: u32,
     pub(crate) frame_record: WordRecordIndex,
@@ -15046,7 +15285,7 @@ const _: () = assert!(PendingSelectionKind::COUNT == 11);
 /// `combat_sim.Monster` fields with no dataclass default, so a monster
 /// cannot be conjured without them — [`HotMonster::new`] takes both and
 /// leaves the rest at their canonical zero-defaults.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct HotMonster {
     /// Active powers, ascending by id.
     pub powers: Slots<PowerId>,
@@ -16020,7 +16259,7 @@ impl HotHistory {
 }
 
 /// The search-owned combat state.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct HotState {
     /// The nine live xoshiro streams, words and counters.
     pub rng: HotRng,
@@ -17070,6 +17309,114 @@ impl HotState {
         Some(())
     }
 
+    fn hook_choice_piles(&self, pile: PileId) -> Vec<(HotCard, CardInstanceState)> {
+        self.piles
+            .get(pile)
+            .as_slice()
+            .iter()
+            .map(|card| (*card, self.card_states.get(card.uid)))
+            .collect()
+    }
+
+    /// Detach the suspended Draw at `depth` (its words from `word_base`) and
+    /// the pending choice above it into the queued deferred hook action
+    /// (#3387). `None` leaves `self` untouched: the pending choice must be
+    /// the segment's, and no action may already be queued.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn queue_deferred_hook_draw(
+        &mut self,
+        depth: usize,
+        word_base: usize,
+    ) -> Option<()> {
+        if self.fanouts.deferred_hook_action_is_queued() {
+            return None;
+        }
+        let mut pending = self.pending.as_deref()?.clone();
+        let offset = pending.frame_record.offset()?;
+        pending.frame_record = WordRecordIndex::from_offset(offset.checked_sub(word_base)?)?;
+        let mut frames = self.frames.clone();
+        let segment = frames.detach_hook_segment(depth, word_base)?;
+        if pending.frame_record.offset()? >= segment.words.len() {
+            return None;
+        }
+        // The segment's own card plays keep their cards in Play while the
+        // enclosing action finishes (#3387): each must be there, once.
+        let child_uids = self.frames.as_slice()[depth..]
+            .iter()
+            .filter_map(|frame| match *frame {
+                Frame::CardPlay { record } => Some(self.frames.card_play(record).map(|p| p.uid)),
+                _ => None,
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let play = self
+            .hook_choice_piles(PileId::Play)
+            .into_iter()
+            .filter(|(card, _)| child_uids.contains(&card.uid))
+            .collect::<Vec<_>>();
+        if play.len() != child_uids.len() {
+            return None;
+        }
+        let action = DeferredHookAction {
+            segment,
+            pending,
+            hand: self.hook_choice_piles(PileId::Hand),
+            draw: self.hook_choice_piles(PileId::Draw),
+            play,
+        };
+        self.frames = frames;
+        self.pending = None;
+        self.fanouts.queue_deferred_hook_action(action);
+        Some(())
+    }
+
+    /// Whether the Hand and Draw piles still read as they did when the
+    /// queued hook action's choice began (#3387).
+    pub(crate) fn deferred_hook_choice_piles_are_unmoved(&self) -> bool {
+        self.fanouts
+            .batch_nine()
+            .deferred_hook_action
+            .as_deref()
+            .is_some_and(|action| {
+                action.hand == self.hook_choice_piles(PileId::Hand)
+                    && action.draw == self.hook_choice_piles(PileId::Draw)
+            })
+    }
+
+    /// Whether the Play pile holds exactly the queued hook action's own
+    /// suspended card plays, as they were when its choice began: the
+    /// enclosing action's card has left and nothing else moved (#3387).
+    pub(crate) fn deferred_hook_play_pile_is_the_segments(&self) -> bool {
+        self.fanouts
+            .batch_nine()
+            .deferred_hook_action
+            .as_deref()
+            .is_some_and(|action| action.play == self.hook_choice_piles(PileId::Play))
+    }
+
+    /// Re-attach the queued deferred hook action on top of the stack and
+    /// restore its pending choice, emptying the queue (#3387).
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn publish_deferred_hook_draw(&mut self) -> Option<()> {
+        if self.pending.is_some() {
+            return None;
+        }
+        let action = self.fanouts.batch_nine().deferred_hook_action.clone()?;
+        let mut frames = self.frames.clone();
+        let base = frames.attach_hook_segment(&action.segment)?;
+        let mut pending = action.pending.clone();
+        let offset = pending.frame_record.offset()?;
+        pending.frame_record = WordRecordIndex::from_offset(offset.checked_add(base)?)?;
+        if !frames.continuation_store_is_valid(Some(&pending)) {
+            return None;
+        }
+        self.fanouts.take_deferred_hook_action();
+        self.frames = frames;
+        self.pending = Some(Arc::new(pending));
+        Some(())
+    }
+
     /// A state carrying every canonical zero-default, and nothing else.
     ///
     /// The defaults are the dataclass defaults of `combat_sim.State`, which
@@ -17261,10 +17608,25 @@ const _: () = assert!(size_of::<HotFanouts>() == size_of::<usize>());
 /// the boundary/admission pair still rejects every out-of-domain value. R50
 /// spends the two remaining alignment bytes by growing `AfterBlockCleared`
 /// from one `PowerId` to two; the allocation remains exactly 312 bytes.
+///
+/// The exact pins here and on [`FrameStore`] hold pointer-width fields, so
+/// each is pinned per target width (#3469): the measured 64-bit layout, and
+/// the wasm32 layout the browser build compiles (`FanoutState` 296,
+/// `MultiplayerAllyState` 112, `FrameStore` 24, measured on
+/// `wasm32-unknown-unknown`). A widening still trips the pin on both.
+#[cfg(target_pointer_width = "64")]
 const _: () = assert!(size_of::<FanoutState>() == 312);
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<FanoutState>() == 296);
 const _: () = assert!(size_of::<ColdPowerRecord>() == 24);
+#[cfg(target_pointer_width = "64")]
 const _: () = assert!(size_of::<MultiplayerAllyState>() == 120);
+#[cfg(target_pointer_width = "64")]
 const _: () = assert!(size_of::<Option<MultiplayerAllyState>>() == 120);
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<MultiplayerAllyState>() == 112);
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<Option<MultiplayerAllyState>>() == 112);
 /// 96 measured after #1675 adds the distinct nonowner-same-side powered-result
 /// counter to the prior 88-byte layout. Both history counters are complete
 /// state and can coexist on one target. #1560 Batch F added the two signed
@@ -17313,7 +17675,10 @@ const _: () = assert!(size_of::<PendingSelection>() == 8);
 const _: () = assert!(size_of::<PendingWord>() == 8);
 const _: () = assert!(align_of::<PendingWord>() == align_of::<HotCard>());
 const _: () = assert!(size_of::<WordRecordIndex>() == 4);
+#[cfg(target_pointer_width = "64")]
 const _: () = assert!(size_of::<FrameStore>() == 48);
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<FrameStore>() == 24);
 
 #[cfg(test)]
 mod tests {
@@ -17968,6 +18333,58 @@ mod tests {
         );
         assert!(rejected.is_empty());
         assert!(rejected.0.words.is_empty());
+    }
+
+    #[test]
+    fn action_replay_action_agrees_with_the_full_decoder_at_every_padding_width() {
+        let set_byte = |frames: &mut Frames, word: usize, byte: usize, value: u8| {
+            let word = &mut Arc::make_mut(&mut frames.0).words[word];
+            let half = if byte < 4 {
+                &mut word.body
+            } else {
+                &mut word.meta
+            };
+            let mut bytes = half.to_le_bytes();
+            bytes[byte % 4] = value;
+            *half = u32::from_le_bytes(bytes);
+        };
+        let action = ActionReplayRootAction::Play {
+            uid: 7,
+            target: Some(1),
+            selection_uid: Some(9),
+        };
+        for len in 1_usize..=17 {
+            let record = ActionReplayRecord {
+                predecessor_json: (1..=len).map(|byte| byte as u8).collect(),
+                action,
+                answers: vec![
+                    ActionReplayAnswer::CardUid(3),
+                    ActionReplayAnswer::OptionIndex(0),
+                ],
+            };
+            let mut frames = Frames::new();
+            let index = frames.push_action_replay(&record).unwrap();
+            assert_eq!(frames.action_replay(index), Some(record.clone()));
+            assert_eq!(frames.action_replay_action(index), Some(action));
+
+            let json_words = len.div_ceil(8);
+            for position in 0..json_words * 8 {
+                let mut drifted = frames.clone();
+                set_byte(&mut drifted, 4 + position / 8, position % 8, 0xa5);
+                let decoded = drifted.action_replay(index);
+                assert_eq!(
+                    drifted.action_replay_action(index),
+                    decoded.as_ref().map(|replay| replay.action),
+                    "len {len}, byte {position}"
+                );
+                // Content bytes are the predecessor's own; padding must be zero.
+                assert_eq!(
+                    decoded.is_some(),
+                    position < len,
+                    "len {len}, byte {position}"
+                );
+            }
+        }
     }
 
     #[test]

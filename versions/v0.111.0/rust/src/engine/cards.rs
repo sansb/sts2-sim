@@ -1471,6 +1471,15 @@ pub(crate) fn spectral_hex_fresh_entry_is_exact(state: &HotState, catalog: &Cata
 /// Call's generated pool) is not a writer: it has to exist to have been
 /// played, and a marked card whose writer has since left every pile refuses
 /// by name rather than being guessed at.
+///
+/// Music Box (#3551) is a fourth writer. `MusicBox::BeforeCardPlayed` RVA
+/// `0x972ac` arms on the owner's first Attack of the turn (`Type == 1`,
+/// IL_0041-004d), and `MusicBox/<AfterCardPlayed>d__13::MoveNext` RVA
+/// `0x32ae04` clones that card (`CreateClone` IL_0046), applies keyword 2
+/// (Ethereal, IL_004c-0057) and adds the clone to Hand (IL_005c-0065). The
+/// clone keeps the source's upgrade and enchantment, and a played clone
+/// carries its marker for the rest of combat, so while the relic is owned the
+/// envelope is any unique live physical Attack.
 pub(crate) fn call_local_ethereal_provenance_is_exact(state: &HotState, catalog: &Catalog) -> bool {
     let mut found = false;
     let call_writer_is_exact = state.powers.value(PowerId::CallOfTheVoid) > 0
@@ -1487,6 +1496,7 @@ pub(crate) fn call_local_ethereal_provenance_is_exact(state: &HotState, catalog:
         Vec::new()
     };
     let ghost_writer = catalog.hooks().owns(crate::ids::RelicId::RelicGhostSeed);
+    let music_box_writer = catalog.hooks().owns(crate::ids::RelicId::RelicMusicBox);
     // Computed only once a marked card is found: this runs on every preflight.
     let mut sculpting_writer: Option<bool> = None;
     for (uid, instance) in state.card_states.as_slice() {
@@ -1511,25 +1521,26 @@ pub(crate) fn call_local_ethereal_provenance_is_exact(state: &HotState, catalog:
         let exact_owner = match (live.next(), live.next()) {
             (Some(card), None) if sculpting_writer => catalog.spec(card.atom).is_some(),
             (Some(card), None) => catalog.spec(card.atom).is_some_and(|spec| {
-                spec.identity.upgrade <= 1
-                    && spec.identity.enchantment.is_none()
-                    && ((call_writer_is_exact
-                        && card.flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE != 0
-                        && call_pool.contains(&spec.identity.id))
-                        || (ghost_writer
-                            && matches!(
-                                spec.identity.id,
-                                CardId::StrikeIronclad
-                                    | CardId::StrikeSilent
-                                    | CardId::StrikeDefect
-                                    | CardId::StrikeNecrobinder
-                                    | CardId::StrikeRegent
-                                    | CardId::DefendIronclad
-                                    | CardId::DefendSilent
-                                    | CardId::DefendDefect
-                                    | CardId::DefendNecrobinder
-                                    | CardId::DefendRegent
-                            )))
+                music_box_writer && spec.is_attack
+                    || spec.identity.upgrade <= 1
+                        && spec.identity.enchantment.is_none()
+                        && ((call_writer_is_exact
+                            && card.flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE != 0
+                            && call_pool.contains(&spec.identity.id))
+                            || (ghost_writer
+                                && matches!(
+                                    spec.identity.id,
+                                    CardId::StrikeIronclad
+                                        | CardId::StrikeSilent
+                                        | CardId::StrikeDefect
+                                        | CardId::StrikeNecrobinder
+                                        | CardId::StrikeRegent
+                                        | CardId::DefendIronclad
+                                        | CardId::DefendSilent
+                                        | CardId::DefendDefect
+                                        | CardId::DefendNecrobinder
+                                        | CardId::DefendRegent
+                                )))
             }),
             _ => false,
         };
@@ -1537,7 +1548,11 @@ pub(crate) fn call_local_ethereal_provenance_is_exact(state: &HotState, catalog:
             return false;
         }
     }
-    !found || call_writer_is_exact || ghost_writer || sculpting_writer == Some(true)
+    !found
+        || call_writer_is_exact
+        || ghost_writer
+        || music_box_writer
+        || sculpting_writer == Some(true)
 }
 
 #[cfg(test)]
@@ -2314,41 +2329,201 @@ fn apply_physical_card_after_entered_suffix(
         card.flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
         if !is_clone {
             let completed = state.history.skill_plays_finished_this_turn;
-            if completed > 0 {
-                state.card_states.append_local_cost_modifier(
-                    card.uid,
-                    LocalCostModifier {
-                        kind: LocalCostModifierKind::Add,
-                        amount: -i64::from(completed),
-                        expiration: LocalCostExpiration::ThisTurn,
-                        reduce_only: false,
-                    },
-                );
-                if !state.exact_piles {
-                    let mut matching_live = false;
-                    for pile in PileId::ALL {
-                        for live in state.piles.get(pile).as_slice() {
-                            let live_spec = catalog
-                                .spec(live.atom)
-                                .ok_or(EngineRefusal::UnknownAtom(live.atom))?;
-                            matching_live |= matches!(
-                                live_spec.identity,
-                                CardIdentity {
-                                    id: CardId::Pinpoint,
-                                    upgrade,
-                                    ..
-                                } if upgrade == spec.identity.upgrade
-                            );
-                        }
-                    }
-                    if matching_live {
-                        state.exact_piles = true;
-                    }
-                }
+            append_entered_this_turn_play_count_row(state, catalog, spec, card.uid, completed)?;
+        }
+    }
+    // Stomp is Pinpoint's Attack twin (#3424); the IL is on
+    // [`stomp_entered_combat_attack_count`].
+    if spec.identity.id == CardId::Stomp {
+        card.flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        if !is_clone {
+            let completed = stomp_entered_combat_attack_count(state);
+            append_entered_this_turn_play_count_row(state, catalog, spec, card.uid, completed)?;
+        }
+    }
+    // Flatten has no clone gate (#3444); the IL is on
+    // [`flatten_entered_after_osty_attack`].
+    if spec.identity.id == CardId::Flatten && flatten_entered_after_osty_attack(state) {
+        state.card_states.append_local_cost_modifier(
+            card.uid,
+            LocalCostModifier {
+                kind: LocalCostModifierKind::Set,
+                amount: 0,
+                expiration: LocalCostExpiration::ThisTurn,
+                reduce_only: false,
+            },
+        );
+        require_exact_piles_for_live_sibling(state, catalog, spec)?;
+    }
+    Ok(())
+}
+
+/// The finished owner Attack plays a fresh Stomp backfills when it enters
+/// combat (#3424).
+///
+/// Native authority: v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// - `Stomp::AfterCardEnteredCombat` RVA `0xeced8`: returns unless the entering
+///   card is this instance (`IL_000c`-`IL_000e` `beq.s`) and returns for a
+///   clone (`get_IsClone`, `IL_0017`-`IL_001c`). Otherwise it counts
+///   `CombatManager.Instance.History.CardPlaysFinished` (`IL_0024`-`IL_002e`)
+///   with `Enumerable.Count<CardPlayFinishedEntry>` (MethodSpec `0x2b000b7f`,
+///   `IL_003f`) over `<AfterCardEnteredCombat>b__5_0`, and passes the count to
+///   `ReduceCostBy` (`IL_0047`).
+/// - `<AfterCardEnteredCombat>b__5_0` RVA `0xecf75`: `CardPlay.Card.Type == 1`
+///   (Attack, `IL_000c`-`IL_0012`), `CardPlay.Player == Owner`
+///   (`IL_001a`-`IL_0025`) and `HappenedThisTurn(CombatState)` (`IL_002e`).
+///   It is Pinpoint's predicate (`0xe7c41`) with `ldc.i4.1` for `ldc.i4.2`.
+/// - `Stomp::ReduceCostBy` RVA `0xecf65` is `EnergyCost.AddThisTurn(-n, 0)`
+///   (`IL_0007`-`IL_000a`).
+///
+/// A Calamity-made Stomp counts the Attack that made it, because that play
+/// is already finished: `CardModel/<OnPlayWrapper>d__339::MoveNext` (RVA
+/// `0x31b8d0`) records `CombatHistory::CardPlayFinished` at `IL_084e`, before
+/// `Hook.AfterCardPlayed` at `IL_0874`. `CalamityPower/<AfterCardPlayed>d__7`
+/// (RVA `0x3368bc`) adds each card through
+/// `CardPileCmd::AddGeneratedCardToCombat` (`IL_010b`), and
+/// `CardPileCmd/<Add>d__10::MoveNext` (RVA `0x3e1ba4`) raises
+/// `Hook.AfterCardEnteredCombat` at `IL_0659`. Rust keeps that order:
+/// `record_card_play_finished` runs before the AfterCardPlayed power fan-out
+/// in `engine::play`.
+///
+/// `Stomp::BeforeCardPlayed` (RVA `0xecf2a`) does not reach the new Stomp for
+/// that play. `CombatState/<IterateHookListeners>d__69::MoveNext` (RVA
+/// `0x3f9720`) builds the whole listener list on its first step (`List` at
+/// `IL_0048`, pile cards added at `IL_019b`) and then yields from that list's
+/// enumerator (`IL_0282`), rechecking only `CombatState::Contains`
+/// (`IL_02a6`). A card created during an iteration is not visited by it, and
+/// BeforeCardPlayed has finished by then in any case.
+///
+/// `history.attack_plays_finished_this_turn` is this predicate's quotient:
+/// `record_card_play_finished` increments it for each owner Attack play and
+/// every `SwitchSides` clears it (#3466, `turn::roll_happened_this_turn_counters`),
+/// as `skill_plays_finished_this_turn` does for Pinpoint's Skills.
+fn stomp_entered_combat_attack_count(state: &HotState) -> i16 {
+    state.history.attack_plays_finished_this_turn
+}
+
+/// Append a fresh card's `ReduceCostBy(count)` row, one turn-long local
+/// `Add(-count)`, for Pinpoint and Stomp. A zero count appends nothing:
+/// `CardEnergyCost::AddThisTurn` (RVA `0x11e273`) returns on a zero amount
+/// (`IL_0001`-`IL_0004`).
+///
+/// The entering card has not reached its destination yet, so a live copy
+/// with the same `(id, upgrade)` is enough to require exact pile order.
+fn append_entered_this_turn_play_count_row(
+    state: &mut HotState,
+    catalog: &Catalog,
+    spec: &CardSpec,
+    uid: u32,
+    completed: i16,
+) -> Result<(), EngineRefusal> {
+    if completed <= 0 {
+        return Ok(());
+    }
+    state.card_states.append_local_cost_modifier(
+        uid,
+        LocalCostModifier {
+            kind: LocalCostModifierKind::Add,
+            amount: -i64::from(completed),
+            expiration: LocalCostExpiration::ThisTurn,
+            reduce_only: false,
+        },
+    );
+    require_exact_piles_for_live_sibling(state, catalog, spec)
+}
+
+/// The entering card has not reached its destination yet, so a live copy with
+/// the same `(id, upgrade)` is enough to require exact pile order once the
+/// entering card carries a local-cost row its siblings may lack.
+fn require_exact_piles_for_live_sibling(
+    state: &mut HotState,
+    catalog: &Catalog,
+    spec: &CardSpec,
+) -> Result<(), EngineRefusal> {
+    if !state.exact_piles {
+        let mut matching_live = false;
+        for pile in PileId::ALL {
+            for live in state.piles.get(pile).as_slice() {
+                let live_spec = catalog
+                    .spec(live.atom)
+                    .ok_or(EngineRefusal::UnknownAtom(live.atom))?;
+                matching_live |= live_spec.identity.id == spec.identity.id
+                    && live_spec.identity.upgrade == spec.identity.upgrade;
             }
+        }
+        if matching_live {
+            state.exact_piles = true;
         }
     }
     Ok(())
+}
+
+/// Whether an entering Flatten takes its `ReduceCost` backfill (#3444).
+///
+/// Native authority: v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// - `Flatten::AfterCardEnteredCombat` RVA `0xe030f`: returns unless the
+///   entering card is this instance (`IL_0001`-`IL_0003` `beq.s`). There is no
+///   `get_IsClone` test, so a clone takes the backfill as well as a fresh copy,
+///   on top of the rows `MutableClone` already copied. It tests
+///   `get_HasOstyAttackedThisTurn` (`IL_000c`-`IL_0011`) and calls
+///   `ReduceCost` (`IL_001a`).
+/// - `Flatten::ReduceCost` RVA `0xe0368` is `EnergyCost.SetThisTurn(0, false)`
+///   (`IL_0002`-`IL_0009`). `CardEnergyCost::SetThisTurn` RVA `0x11e1f9`
+///   appends one `LocalCostModifier(0, Set, ThisTurn, false)`
+///   (`IL_000e`-`IL_001d`); its early return (`IL_0001`-`IL_000d`) needs a
+///   negative canonical cost, which Flatten never has. It is the same row the
+///   `Flatten::AfterAttack` listener (RVA `0xe0334`, `IL_0029`) appends in
+///   `engine::damage`, so an Osty attack after the entry appends a second row,
+///   as native calls `SetThisTurn` twice.
+/// - `Flatten::get_HasOstyAttackedThisTurn` RVA `0xe0377` is
+///   `Any(OfType<CreatureAttackedEntry>(History.Entries), b__15_0)`
+///   (MethodSpecs `0x2b001161`/`0x2b001162`, `IL_0010`-`IL_0021`).
+///   `<get_HasOstyAttackedThisTurn>b__15_0` RVA `0xe039e` is
+///   `Actor == Owner.Osty` (`IL_0001`-`IL_0012`) and
+///   `HappenedThisTurn(CombatState)` (`IL_001b`).
+///
+/// `SoloPetState::attacks_this_turn` is this predicate's quotient:
+///
+/// - **What writes the entries.** `CombatHistory::CreatureAttacked` RVA
+///   `0x1387c5` has one caller, `AttackCommand/<Execute>d__90::MoveNext` RVA
+///   `0x3f19c0`, which records `Actor = Attacker` once per command after the
+///   hit loop (`IL_07e5`-`IL_082a`), before `Hook.AfterAttack` (`IL_0845`).
+///   The engine counts one per `PlayerPet` command in the same position
+///   (`SoloPetState::record_attack`), independent of hit count. The in-loop
+///   exits for a dead attacker (`IL_0161`) and an empty target list
+///   (`IL_01b3`) branch to that record site, and the engine records on
+///   those paths too. The command-entry exits record nothing. For a dead
+///   attacker (`IL_00a8`-`IL_00b1`) the engine agrees, because `osty_body`
+///   issues no command without a live Osty. For a combat already over or
+///   ending (`IL_0067`-`IL_008a`) the engine's Osty command returns at entry
+///   too (#3466, `damage::player_attack_inner`).
+/// - **Null actor.** No entry has a null actor: `Execute` throws
+///   "No attacker set." for a null `Attacker` (`IL_0055`-`IL_0066`). An owner
+///   with no Osty (`Player::get_Osty` RVA `0x116721` returns null at
+///   `IL_000b`, else `GetPet<Osty>`) therefore matches nothing, and the counter
+///   is zero because no pet command ran.
+/// - **Osty identity.** Every summoned Osty gets `DieForYouPower`
+///   (`OstyCmd/<Summon>d__0::MoveNext` RVA `0x3ee040` `IL_02f5`), whose
+///   `ShouldCreatureBeRemovedFromCombatAfterDeath` (RVA `0xa1861`) vetoes
+///   removal, so `PlayerCombatState::OnPetDied` (RVA `0x11844c`) returns at
+///   `IL_003e` and keeps the corpse in `Pets`. A later summon revives that
+///   same creature (`IL_00e8`-`IL_0103` finds it in `Allies`, `IL_0191`
+///   `isReviving`). `Owner.Osty` is therefore the one creature every Osty
+///   entry names, for the rest of combat.
+/// - **This turn.** `CombatHistoryEntry::HappenedThisTurn` RVA `0x138a48`
+///   compares the stamped RoundNumber (`IL_001d`), CurrentSide (`IL_002d`) and
+///   player TurnNumbers with the live ones. The counter rolls at every
+///   `SwitchSides`, the enemy-side switch included (#3466,
+///   `turn::roll_happened_this_turn_counters`), so on either side it holds
+///   exactly the Osty attacks stamped with the live side and turn. An entry on
+///   the enemy side is therefore exact: it backfills only after an Osty
+///   attack made on that enemy side.
+fn flatten_entered_after_osty_attack(state: &HotState) -> bool {
+    state.fanouts.pet().attacks_this_turn() != 0
 }
 
 fn apply_physical_card_after_entered_inner(
@@ -10782,6 +10957,72 @@ mod tests {
         assert!(state.card_states.get(3).local_ethereal(), "discard Defend");
         assert_eq!(state.card_states.get(4), before, "already Ethereal");
         assert!(!state.exact_piles);
+    }
+
+    /// #3551: an owned Music Box authenticates a local Ethereal on any unique
+    /// live Attack, at any upgrade; a marked non-Attack, a duplicated marked
+    /// card, and a marked Attack without the relic do not pass.
+    #[test]
+    fn music_box_is_a_local_ethereal_writer_for_live_attacks_only() {
+        let build = |relics: &[crate::ids::RelicId]| {
+            let mut builder = CatalogBuilder::new();
+            let attack = builder
+                .intern(CardIdentity {
+                    id: CardId::Bash,
+                    upgrade: 1,
+                    enchantment: None,
+                })
+                .unwrap();
+            let skill = builder
+                .intern(CardIdentity {
+                    id: CardId::DefendIronclad,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            builder.set_relics(relics).unwrap();
+            (builder.build(), attack, skill)
+        };
+        let marked_hand = |atom| {
+            let mut state = HotState::at_defaults();
+            state.piles.set(
+                PileId::Hand,
+                crate::hot::HotPile::from_cards(vec![HotCard {
+                    uid: 2,
+                    atom,
+                    flags: 0,
+                }]),
+            );
+            let mut marked = state.card_states.get(2);
+            marked.set_local_ethereal(true);
+            state.card_states.set(2, marked);
+            state
+        };
+        let (owned, attack, skill) = build(&[crate::ids::RelicId::RelicMusicBox]);
+        let state = marked_hand(attack);
+        assert!(call_local_ethereal_provenance_is_exact(&state, &owned));
+        assert!(
+            !call_local_ethereal_provenance_is_exact(&marked_hand(skill), &owned),
+            "Music Box only copies Attacks"
+        );
+        let mut duplicated = state.clone();
+        duplicated.piles.set(
+            PileId::Discard,
+            crate::hot::HotPile::from_cards(vec![HotCard {
+                uid: 2,
+                atom: attack,
+                flags: 0,
+            }]),
+        );
+        assert!(
+            !call_local_ethereal_provenance_is_exact(&duplicated, &owned),
+            "the marked card must be unique and live"
+        );
+        let (unowned, attack, _) = build(&[]);
+        assert!(
+            !call_local_ethereal_provenance_is_exact(&marked_hand(attack), &unowned),
+            "no writer without the relic"
+        );
     }
 
     /// #3022: a live Sculpting Strike (L0 or L1, any pile) authenticates a

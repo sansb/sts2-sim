@@ -295,10 +295,13 @@ pub(crate) fn adaptive_strike_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
 /// * the snapshot is taken **after** the attack, so a card the attack's Thorns
 ///   retaliation put in the Discard is eligible;
 /// * the filter is `cost == 0 && !x_cost && (attack || skill || power)` on the
-///   *live* cost. The admitted local cost-modifier list and Tangled's Attack
-///   surcharge are applied by the same resolver legal-action enumeration and
-///   payment use. Corruption, Borrowed Time, Curious, Spiked Gauntlets,
-///   Brilliant Scarf and Void Form remain refused content;
+///   *live* cost: `AllForOne::Filter` RVA `0xd7ad4` reads
+///   `EnergyCost.GetWithModifiers(-1)` (every modifier, IL_000c-IL_0013).
+///   That is [`resolved_energy_cost`], the resolver legal-action enumeration
+///   and payment use, so the card-local list, the early listeners (Tangled,
+///   Borrowed Time, Curious, Spiked Gauntlets) and the Late zeroes
+///   (Corruption, Free*, Brilliant Scarf, Void Form) all apply here as they
+///   do there;
 /// * the recall is serial and re-checks `s.over` per candidate, and a full
 ///   hand sends that candidate to the Discard **bottom** instead — it is not
 ///   skipped.
@@ -309,6 +312,11 @@ pub(crate) fn adaptive_strike_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
 /// `legal_actions` deduplicates by hand shape rather than by payload. An empty
 /// frozen list performs no Add and therefore does not promote — which is why
 /// the flag is written inside the loop and not before it.
+///
+/// `AllForOne/<OnPlay>d__3` RVA `0x389aa8` awaits one plural `CardPileCmd.Add`
+/// to Hand (IL_0131). `<Add>d__10` (`0x3e1ba4`) skips every combat-pile move at
+/// `IsEnding` (IL_0041-008a), so the recall tests the shared IsEnding
+/// projection, not `history.over` (#3515).
 pub(crate) fn all_for_one_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(damage)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("all_for_one_exact"));
@@ -345,7 +353,7 @@ pub(crate) fn all_for_one_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
     for candidate in frozen {
         // `_all_for_one_add_hand_bottom` returns False on an ended combat,
         // and the caller breaks rather than continuing down the list.
-        if ctx.state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(ctx.state) {
             break;
         }
         let Some(index) = ctx
@@ -586,6 +594,12 @@ struct FlakContinuation<'a> {
     frozen_count: u32,
 }
 
+/// `FlakCannon/<OnPlay>d__6` RVA `0x39ed78` awaits `CardCmd.Exhaust` per frozen
+/// Status (IL_008c), and `<Exhaust>d__6` (`0x3e06c8`) returns at
+/// `IsOverOrEnding` (IL_0025-002a) before its `CardPileCmd.Add`. An exhaust
+/// listener that ends the combat therefore stops the walk before the next card
+/// leaves Hand: the shared IsOverOrEnding projection, not `history.over`
+/// (#3515). The attack after the walk carries its own entry return.
 fn continue_flak_cannon(
     state: &mut crate::hot::HotState,
     catalog: &Catalog,
@@ -600,7 +614,7 @@ fn continue_flak_cannon(
         frozen_count,
     } = continuation;
     for (cursor, uid) in remaining.iter().copied().enumerate() {
-        if state.history.over {
+        if crate::engine::damage::damage_combat_is_ending(state) {
             break;
         }
         let (pile, index) = match unique_live_card_location(state, uid)? {
@@ -1051,7 +1065,9 @@ pub(crate) fn preflight_one_for_all_exact(
     if catalog.spec(active.atom) != Some(spec) {
         return Err(EngineRefusal::MalformedArgs("one_for_all_exact source"));
     }
-    if state.history.over {
+    // The overflow preflight is vacuous where `Apply` itself returns
+    // (IsEnding, see `allies::add_one_for_all`).
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     for key in crate::engine::allies::living_keys(state) {
@@ -1408,6 +1424,10 @@ mod tests {
             let atom = builder.intern(identity).unwrap();
             let catalog = builder.build();
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.multiplayer_ally_key = 1;
@@ -1455,6 +1475,10 @@ mod tests {
         let atom = builder.intern(identity).unwrap();
         let catalog = builder.build();
         let mut dead_remote = HotState::at_defaults();
+        dead_remote.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         dead_remote.hp = 50;
         dead_remote.energy = 3;
         dead_remote.multiplayer_ally_key = 1;
@@ -1479,6 +1503,11 @@ mod tests {
         assert_eq!(dead_remote.fanouts.multiplayer_ally().one_for_all, 0);
 
         let mut overflow = HotState::at_defaults();
+
+        overflow.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         overflow.hp = 50;
         overflow.energy = 3;
         overflow.multiplayer_ally_key = 1;
@@ -1519,6 +1548,10 @@ mod tests {
         let catalog = builder.build();
         for remote_overflow in [false, true] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.multiplayer_ally_key = 1;
@@ -1566,6 +1599,10 @@ mod tests {
         let atom = builder.intern(identity).unwrap();
         let catalog = builder.build();
         let mut manual = HotState::at_defaults();
+        manual.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         manual.hp = 50;
         manual.energy = 3;
         manual
@@ -1584,6 +1621,11 @@ mod tests {
         assert_eq!(manual, before);
 
         let mut autoplay = HotState::at_defaults();
+
+        autoplay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         autoplay.hp = 50;
         autoplay.energy = 3;
         autoplay
@@ -1598,6 +1640,52 @@ mod tests {
         autoplay_draw_top(&mut autoplay, &catalog, 1, &mut Vec::new()).unwrap();
         assert_eq!(autoplay.powers.value(PowerId::OneForAll), 3);
         assert_eq!(autoplay.energy, 3);
+    }
+
+    /// #3502: the overflow preflight is vacuous where `PowerCmd.Apply`
+    /// returns (`<Apply>d__1`1` `0x3ef988` IL_0020-0034, IsEnding): with the
+    /// only enemy dead before the over latch an overflowing amount no longer
+    /// refuses, while the live control does.
+    #[test]
+    fn one_for_all_preflight_skips_while_the_combat_is_ending_before_the_over_latch() {
+        let identity = CardIdentity {
+            id: CardId::OneForAll,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(identity).unwrap();
+        let catalog = builder.build();
+        let exact = *catalog.spec(atom).unwrap();
+        for ending in [false, true] {
+            let mut state = HotState::at_defaults();
+            state.monsters_mut().push(HotMonster::new(
+                MonsterKind::Toadpole,
+                if ending { 0 } else { 100 },
+            ));
+            state.hp = 50;
+            state
+                .powers
+                .set(PowerId::OneForAll, SlotWire::Int, i32::MAX);
+            state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+                uid: 7,
+                atom,
+                flags: 0,
+            });
+            assert!(!state.history.over);
+            assert_eq!(
+                crate::engine::damage::damage_combat_is_ending(&state),
+                ending
+            );
+            assert_eq!(
+                preflight_one_for_all_exact(&state, &catalog, 7, &exact),
+                if ending {
+                    Ok(())
+                } else {
+                    Err(EngineRefusal::CounterOverflow("one_for_all"))
+                }
+            );
+        }
     }
 
     #[test]
@@ -2257,6 +2345,10 @@ mod tests {
     fn modded_append_precedes_native_after_play_expiration_cleanup() {
         let (catalog, modded, strike, _) = modded_catalog(0);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.orbs.set_base_slots(3);
         state.orbs.set_slots(3);
@@ -2861,6 +2953,10 @@ mod tests {
         for (upgrade, increase) in [(0, 3), (1, 4)] {
             let (mut state, catalog, card) =
                 genetic_algorithm_fixture(upgrade, 5, Some(100 + u32::from(upgrade)));
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             let mut events = Vec::new();
 
             play_card(&mut state, &catalog, card.uid, None, None, &mut events).unwrap();
@@ -3000,6 +3096,10 @@ mod tests {
     #[test]
     fn genetic_algorithm_burst_replay_observes_the_prior_growth() {
         let (mut state, catalog, card) = genetic_algorithm_fixture(0, 0, Some(12));
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Burst, SlotWire::Int, 1);
         crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut state);
         let mut events = Vec::new();
@@ -3053,6 +3153,10 @@ mod tests {
     #[test]
     fn genetic_algorithm_nonterminal_late_replay_overflow_rolls_back_the_action() {
         let (mut state, catalog, card) = genetic_algorithm_fixture(0, i32::MAX - 3, Some(12));
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Burst, SlotWire::Int, 1);
         state.powers.set(PowerId::NoBlock, SlotWire::Int, 1);
         crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut state);
@@ -3345,6 +3449,10 @@ mod tests {
     fn reboot_direct_autoplay_keeps_the_same_frozen_uid_and_exhaust_result() {
         let (catalog, reboot, cards) = reboot_catalog(0);
         let mut state = reboot_state(reboot, &cards);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let source = state.piles.get_mut(PileId::Hand).make_mut().remove(0);
         state
             .piles
@@ -3399,6 +3507,10 @@ mod tests {
             .unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 2;
         state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
@@ -3535,6 +3647,10 @@ mod tests {
         let (catalog, reboot, cards) = reboot_catalog(0);
         for power in [PowerId::Burst, PowerId::EchoForm] {
             let mut state = reboot_state(reboot, &cards);
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.powers.set(power, SlotWire::Int, 1);
             crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut state);
             let mut events = Vec::new();
@@ -4118,5 +4234,120 @@ mod tests {
         assert!(play_card(&mut listener, &catalog, 7, None, None, &mut events).is_err());
         assert_eq!(listener, before);
         assert!(events.is_empty());
+    }
+
+    /// #3515: Flak Cannon's per-Status `CardCmd.Exhaust` (`<Exhaust>d__6`
+    /// 0x3e06c8 IL_0025, `IsOverOrEnding`) and All For One's plural
+    /// `CardPileCmd.Add` recall (`<Add>d__10` 0x3e1ba4 IL_0053, `IsEnding`)
+    /// move no card while the combat is ending before the over latch; the
+    /// Adaptable-vetoed control exhausts the Burn and recalls the Claw.
+    #[test]
+    fn flak_and_all_for_one_move_nothing_while_combat_is_ending_before_the_over_latch() {
+        let flak = CardIdentity {
+            id: CardId::FlakCannon,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let all_for_one = CardIdentity {
+            id: CardId::AllForOne,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let burn = CardIdentity {
+            id: CardId::Burn,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let claw = CardIdentity {
+            id: CardId::Claw,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let flak_atom = builder.intern(flak).unwrap();
+        let all_for_one_atom = builder.intern(all_for_one).unwrap();
+        let burn_atom = builder.intern(burn).unwrap();
+        let claw_atom = builder.intern(claw).unwrap();
+        let catalog = builder.build();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.rng.set(
+            RngStream::Targets,
+            RngStreamState {
+                words: [1, 2, 3, 4],
+                counter: 0,
+            },
+        );
+        template.piles.get_mut(PileId::Play).make_mut().extend([
+            HotCard {
+                uid: 7,
+                atom: flak_atom,
+                flags: 0,
+            },
+            HotCard {
+                uid: 8,
+                atom: all_for_one_atom,
+                flags: 0,
+            },
+        ]);
+        template
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(HotCard {
+                uid: 12,
+                atom: burn_atom,
+                flags: 0,
+            });
+        template
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .push(HotCard {
+                uid: 13,
+                atom: claw_atom,
+                flags: 0,
+            });
+        let flak_spec = *catalog.spec(flak_atom).unwrap();
+        crate::engine::damage::assert_ending_window_gate(&template, "Flak Cannon", |s, _| {
+            flak_cannon_exact(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &flak_spec,
+                source_uid: 7,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(8)],
+                events: &mut Vec::new(),
+            })
+        });
+        let all_for_one_spec = *catalog.spec(all_for_one_atom).unwrap();
+        let run_all_for_one = |s: &mut HotState, t: usize| {
+            all_for_one_exact(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &all_for_one_spec,
+                source_uid: 8,
+                target: Some(t),
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(10)],
+                events: &mut Vec::new(),
+            })
+        };
+        crate::engine::damage::assert_ending_window_gate(&template, "All For One", run_all_for_one);
+        let mut control = template.clone();
+        let target = crate::engine::damage::push_ending_window_roster(&mut control, true);
+        run_all_for_one(&mut control, target).unwrap();
+        assert!(
+            control
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .any(|card| card.uid == 13),
+            "the live control recalls the Claw"
+        );
     }
 }

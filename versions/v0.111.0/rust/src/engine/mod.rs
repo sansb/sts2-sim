@@ -69,6 +69,7 @@ pub(crate) mod allies;
 pub mod cards;
 pub mod damage;
 pub mod draw;
+pub(crate) mod hook_action;
 pub(crate) mod monsters;
 pub mod native_checkpoint;
 pub mod orbs;
@@ -525,6 +526,10 @@ pub enum EngineRefusal {
     /// `<Damage>d__12` (RVA `0x3e96c8`) has no ending gate on entry; the
     /// full pipeline under IsEnding is not represented.
     EndingDamageNotModeled(&'static str),
+    /// A card-body step kind was reached while the combat is ending, and its
+    /// native command's ending gate has not been audited (#3495). See
+    /// `play::step_kind_runs_after_combat_end`.
+    EndingStepNotModeled(StepKind),
     /// A body read a sentinel-backed history counter that this fight never
     /// tracked (still at its `-1` "absent" sentinel), so the native count is
     /// unknown (#3003: Voltaic played in a fight whose root held none).
@@ -637,6 +642,11 @@ impl fmt::Display for EngineRefusal {
             Self::EndingDamageNotModeled(site) => {
                 write!(f, "{site} damages a live enemy while the combat is ending")
             }
+            Self::EndingStepNotModeled(kind) => write!(
+                f,
+                "card step {:?} runs while the combat is ending, and its ending gate is not audited",
+                kind.as_str()
+            ),
             Self::UntrackedCounterNotModeled(counter) => {
                 write!(f, "{counter} is read but was never tracked in this fight")
             }
@@ -1283,9 +1293,10 @@ fn passive_relic_pets_before_combat_start(catalog: &Catalog) {
 /// (`OpeningRefusal::PotionBeltNotExact`), as the oracle does. No RNG stream is
 /// read: the potion is fixed, not generated.
 ///
-/// The oracle's hazards on this hook are all refused before here in the
-/// opening: `DELICATE_FROND` (the other procurer on the same combat start) and
-/// `BELT_BUCKLE` (whose latch this procurement clears) are still in
+/// `DELICATE_FROND`, the other procurer on the same combat start, runs in the
+/// ordinary pass ([`delicate_frond_before_combat_start`]) and so always
+/// before this: a belt the Frond filled leaves the Toad's procurement to fail.
+/// `BELT_BUCKLE` (whose latch a procurement clears) is still refused in
 /// `entry::opening`'s room-entry gate.
 fn petrified_toad_before_combat_start_late(
     catalog: &Catalog,
@@ -1300,6 +1311,36 @@ fn petrified_toad_before_combat_start_late(
     Ok(())
 }
 
+/// Delicate Frond's `BeforeCombatStart` belt fill (#3533).
+///
+/// The body and its IL are [`potions::delicate_frond_before_combat_start`].
+/// Delicate Frond is not a template relic, so like the Toad it has no
+/// compiled subscriber and is called by name from catalog ownership.
+///
+/// # Where it runs
+///
+/// It is an ordinary `BeforeCombatStart` listener, so it belongs to the first
+/// walk of `Hook/<BeforeCombatStart>d__18::MoveNext` (`0x3d2574`,
+/// `IL_002a`-`IL_00be`) and completes before the `…Late` walk starts. Native
+/// orders it among the other first-walk listeners by relic acquisition,
+/// which this function does not reproduce: it runs after all of them. That
+/// is exact because the body reads and writes only the belt and the
+/// `CombatPotionGeneration` stream, and the one first-walk peer that touches
+/// either, `BELT_BUCKLE` (`AfterPotionProcured` unlatches its Dexterity), is
+/// refused by `entry::opening`'s room-entry gate.
+fn delicate_frond_before_combat_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if !catalog.hooks().owns(RelicId::RelicDelicateFrond) {
+        return Ok(());
+    }
+    potions::delicate_frond_before_combat_start(state, catalog, events)?;
+    crate::coverage::record_relic(RelicId::RelicDelicateFrond);
+    Ok(())
+}
+
 pub(crate) fn fire_before_combat_start(
     catalog: &Catalog,
     state: &mut HotState,
@@ -1311,6 +1352,7 @@ pub(crate) fn fire_before_combat_start(
     phylactery_before_combat_start(catalog, state)?;
     seed_creature_uid_counter(catalog, state)?;
     vambrace_before_combat_start(catalog, state);
+    delicate_frond_before_combat_start(catalog, state, events)?;
     // Pass 2: the distinct `…Late` walk. `PETRIFIED_TOAD` is its only
     // v0.111.0 subscriber (`0x9939c`); the base body (`0x7a00f`) is
     // `Task::get_CompletedTask; ret`, so every other listener contributes
@@ -2691,16 +2733,7 @@ fn apply_public_action_with_replay(
     let terminal_aware_root = state.pending.is_none()
         && state.frames.is_empty()
         && (catalog.eidolon_recursive_root_requires_rehearsal()
-            || catalog.reachable_specs().any(|spec| {
-                catalog.steps(spec).iter().any(|step| {
-                    matches!(
-                        step.kind,
-                        StepKind::AlchemizeExact
-                            | StepKind::ConstellationExact
-                            | StepKind::HuddleUpExact
-                    )
-                })
-            }));
+            || catalog.terminal_aware_root_step_reachable());
     if terminal_aware_root
         && let Err(refusal) = play::rehearse_preserving_active_plays(|| {
             let _scope = ExactRootRehearsalGuard::enter(state, *action)?;
@@ -2947,8 +2980,15 @@ fn apply_action_into_replay(
         return resumed;
     }
     let mut next = state.clone();
+    // The native action this transaction runs or resumes, for a choice
+    // deferred into a queued hook action (#3387).
+    let hook_scope = hook_action::scope_for(
+        action,
+        replay_root.as_ref().map(|(_, replay)| replay.action),
+    );
     let action_result = (|| {
         let _replay_lifecycle = ReplayLifecycleGuard::enter(true)?;
+        let _hook_scope = hook_action::ScopeGuard::enter(hook_scope);
         let carrier = puzzle::CarrierGuard::enter();
         let dispatched = (|| -> Result<(), EngineRefusal> {
             match action {
@@ -3051,7 +3091,7 @@ fn apply_action_into_replay(
                 .is_some()
         }) && play::persisted_card_play_stack_is_exact(&next, catalog)
             .is_ok();
-        let installed_root = if replay_root.is_none()
+        let mut installed_root = if replay_root.is_none()
             && next.pending.is_some()
             && !rootless_tyranny
             && !rootless_relic
@@ -3065,6 +3105,13 @@ fn apply_action_into_replay(
         let stop_depth = usize::from(replay_root.is_some() || installed_root);
         let driven = play::drive_until_depth(&mut next, catalog, events, stop_depth).map(|_| ());
         carrier.settle(&mut next, driven)?;
+        // The action has finished: its queued hook action is the next ready
+        // action, and it parks as an ordinary Draw rooted at this action
+        // (#3387, `engine::hook_action`).
+        if hook_action::publish_queued(&mut next)? && replay_root.is_none() {
+            install_parked_action_replay_root(state, &mut next, catalog, action)?;
+            installed_root = true;
+        }
         match (replay_root.as_ref(), installed_root, next.pending.is_some()) {
             // The resumed end-turn action can finish and reach the next
             // turn's independent Mittens choice. Its sentinel is not a word
@@ -6317,6 +6364,10 @@ mod tests {
 
         let physical = CARD_FLAG_DEFAULT_PHYSICAL_STATE;
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.energy = 3;
@@ -8138,6 +8189,10 @@ mod tests {
         let defend_atom = builder.intern(defend).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         state.exact_piles = true;
@@ -9797,6 +9852,10 @@ mod tests {
         let defend_atom = builder.intern(defend).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
         state.exact_piles = true;
@@ -17371,6 +17430,65 @@ mod tests {
         }
     }
 
+    /// #3515: `DistilledChaos/<OnUse>d__8` (`0x34cec0`) awaits
+    /// `CardPileCmd.AutoPlayFromDrawPile` (IL_006e), which returns at
+    /// `IsOverOrEnding` before it gathers (`<AutoPlayFromDrawPile>d__23`
+    /// `0x3e3638` IL_0025-0031). While the combat is ending before the over
+    /// latch the potion gathers and plays nothing; the Adaptable-vetoed
+    /// control plays all three Defends.
+    #[test]
+    fn distilled_chaos_gathers_nothing_while_combat_is_ending_before_the_over_latch() {
+        let mut builder = CatalogBuilder::new();
+        let defend = builder
+            .intern_reachable(plain_identity(CardId::DefendIronclad, 0))
+            .unwrap();
+        let catalog = builder.build();
+        for vetoed in [false, true] {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.max_hp = 50;
+            state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
+            state.next_card_uid = 4;
+            state.exact_piles = true;
+            assert!(state.fanouts.set_potion_belt(
+                vec![Some(PotionId::DistilledChaos)],
+                false,
+                false,
+                false,
+                false,
+                true,
+            ));
+            state
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .extend((1..=3).map(|uid| HotCard {
+                    uid,
+                    atom: defend,
+                    flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                }));
+            crate::engine::damage::push_ending_window_roster(&mut state, vetoed);
+            let result = apply_action(
+                &state,
+                &catalog,
+                &Action::UsePotion {
+                    slot: 0,
+                    target: None,
+                },
+            )
+            .unwrap();
+            assert_eq!(
+                result.state.piles.get(PileId::Draw).len(),
+                if vetoed { 0 } else { 3 },
+                "vetoed={vetoed}"
+            );
+            assert_eq!(
+                result.state.history.card_plays_finished_combat,
+                if vetoed { 3 } else { 0 }
+            );
+        }
+    }
+
     #[test]
     fn distilled_chaos_gathers_three_before_playing_and_finishes_once() {
         let mut builder = CatalogBuilder::new();
@@ -17378,8 +17496,15 @@ mod tests {
             .intern_reachable(plain_identity(CardId::DefendIronclad, 0))
             .unwrap();
         builder.mark_persistent_action_replay_required();
+        builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -17446,6 +17571,9 @@ mod tests {
             let blood_wall = builder
                 .intern_reachable(plain_identity(CardId::BloodWall, 0))
                 .unwrap();
+            builder
+                .intern_monster(crate::ids::MonsterKind::Toadpole)
+                .unwrap();
             let catalog = if persistent {
                 builder.build().with_action_replay_required()
             } else {
@@ -17453,6 +17581,10 @@ mod tests {
             };
             assert_eq!(catalog.requires_action_replay(), persistent);
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.max_hp = 50;
             state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -17513,10 +17645,17 @@ mod tests {
             .intern_reachable(plain_identity(CardId::DefendIronclad, 0))
             .unwrap();
         builder.mark_persistent_action_replay_required();
+        builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let catalog = builder.build();
 
         for available in 0..=2_u32 {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.max_hp = 50;
             state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -17582,6 +17721,10 @@ mod tests {
         builder.mark_persistent_action_replay_required();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -17656,6 +17799,10 @@ mod tests {
         builder.mark_persistent_action_replay_required();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.energy = 3;
@@ -17922,8 +18069,15 @@ mod tests {
             .intern_reachable(plain_identity(CardId::DefendIronclad, 0))
             .unwrap();
         builder.mark_persistent_action_replay_required();
+        builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -18587,6 +18741,10 @@ mod tests {
         builder.mark_persistent_action_replay_required();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -19287,8 +19445,15 @@ mod tests {
             .unwrap();
         builder.intern_all_card_upgrade_closure().unwrap();
         builder.mark_persistent_action_replay_required();
+        builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -19354,8 +19519,15 @@ mod tests {
             .intern_reachable(plain_identity(CardId::DefendIronclad, 0))
             .unwrap();
         builder.mark_persistent_action_replay_required();
+        builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -19412,6 +19584,10 @@ mod tests {
             builder.mark_persistent_action_replay_required();
             let catalog = builder.build();
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.max_hp = 50;
             state.player_phase = admission::PHASE_ORDINARY_ACTIONS;
@@ -19507,8 +19683,15 @@ mod tests {
                 .unwrap();
             builder.intern_all_card_upgrade_closure().unwrap();
             builder.mark_persistent_action_replay_required();
+            builder
+                .intern_monster(crate::ids::MonsterKind::Toadpole)
+                .unwrap();
             let catalog = builder.build();
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.max_hp = 50;
             state.energy = 10;
@@ -20308,6 +20491,10 @@ mod tests {
         builder.mark_persistent_action_replay_required();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = admission::PHASE_ORDINARY_ACTIONS;

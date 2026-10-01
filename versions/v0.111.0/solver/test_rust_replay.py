@@ -167,8 +167,10 @@ def test_real_queen_capture_replays_through_rust(queen, monkeypatch):
     CI skips this; the binary-free test above keeps its pin tied to the gated
     Rust-lane line. Refresh `expected` only after deciding the move is an
     intended engine change (the `.mcr` checkpoints below must still pass), and
-    name the merge that moved it: #2638 (step 34's hook-deactivation carrier)
-    and #3088 (steps 7 and 27, the paused SetupPlayerTurn side-start tail).
+    name the merge that moved it: #2638 (step 34's hook-deactivation carrier),
+    #3088 (steps 7 and 27, the paused SetupPlayerTurn side-start tail) and
+    #3466 (step 34 again: the player dies on the enemy side, where the
+    attack/skill play counters have rolled at SwitchSides).
     """
     binary = review.default_binary()
     if binary is None:

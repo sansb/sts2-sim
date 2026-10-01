@@ -7,20 +7,38 @@
 //! cutover and its versioned serialization boundary must remain an explicit
 //! separate decision; these Rust library types are not a wire protocol.
 //!
-//! The first memo key is intentionally conservative: canonical projection
-//! bytes plus the requested horizon.  Projection is much slower than a
-//! purpose-built hot hash, but it contains every semantically observable
-//! state field and makes incorrect state merging impossible by construction.
-//! Optimize this only after a measured corpus says it matters.
+//! The memo key is the SHA-256 of the requested horizon and the state's
+//! derived `Hash` ([`MemoKey`], #3522).  `HotState` is the whole mutable
+//! state and the engine is deterministic in `(state, catalog)`, so two states
+//! share a key only if they are equal or SHA-256 collides.  Until #3522 the
+//! digest was over the canonical projection bytes instead; building that
+//! projection cost 20-33 us per node, 4-22x a transition, on every #3420 panel
+//! fight.  Debug builds still project every node, keep the projection's
+//! refusal, and assert that both keys partition the visited states
+//! identically.  Until #3470 the key was the
+//! projection bytes themselves, which made incorrect merging impossible by
+//! construction. That key was measured as the whole of solve memory: on the
+//! three heaviest certified-fixture exact solves, the memo took 225-424 MB,
+//! against 6.8-12.5 MB hashed. Solutions and node counts were identical, and
+//! solve time was 6-17% higher. The browser engine cannot carry the unhashed
+//! memo. The trade was
+//! Sean's (2026-09-29): a false merge now needs a SHA-256 collision, about
+//! `n^2 / 2^257` for `n` memoized states, so about 1e-59 even at a billion
+//! entries. That is far below the rate of undetected hardware error.
 
+#[cfg(target_arch = "wasm32")]
+use crate::wasm_clock::Instant;
 use std::collections::{HashMap, HashSet};
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicU64, Ordering},
 };
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::boundary::{BoundaryRefusal, HotBoundary};
 use crate::canonical::CanonicalStateV2;
@@ -78,6 +96,20 @@ pub struct ExactDfsConfig {
     pub deadline: Option<Duration>,
     /// Enable the correctness-first canonical memo table.
     pub memo: bool,
+    /// Optional cap on the memo table's accounted bytes (#3470). Past it, no
+    /// further subtree is memoized, and the search continues without them.
+    /// The memo is a pure cache, so a capped solve returns exactly the result
+    /// an uncapped one would. It costs only recomputation, which the
+    /// deadline bounds, and it can cost a lot: memoization is post-order, so
+    /// a full memo keeps deep subtrees and refuses the shallow ones worth
+    /// the most. Solve memory is essentially the memo (a deadline solve with
+    /// full-projection keys measured 777 MB peak RSS with memo on and 6.5 MB
+    /// with it off), so this is the backstop that keeps a browser solve
+    /// inside wasm32's 4 GB (and a phone tab's much smaller) ceiling. Hashed
+    /// keys ([`MemoKey`]) are what keep it from binding. `None` is unlimited,
+    /// the prior behaviour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo_budget_bytes: Option<u64>,
 }
 
 impl Default for ExactDfsConfig {
@@ -86,6 +118,7 @@ impl Default for ExactDfsConfig {
             max_turns: 12,
             deadline: None,
             memo: true,
+            memo_budget_bytes: None,
         }
     }
 }
@@ -226,6 +259,12 @@ pub struct ExactDfsTelemetry {
     pub memo_misses: u64,
     /// Number of completed subtrees retained in the memo.
     pub memo_entries: usize,
+    /// The memo's accounted bytes at stop (see [`memo_entry_bytes`]).
+    pub memo_bytes: u64,
+    /// Whether `memo_budget_bytes` stopped at least one memo insert. The
+    /// result is still exact when `status` says so; see
+    /// [`ExactDfsConfig::memo_budget_bytes`].
+    pub memo_budget_reached: bool,
     /// Current-thread allocations during the complete solve invocation when
     /// the allocation-counting feature is on.
     pub allocations: u64,
@@ -257,7 +296,22 @@ pub struct ExactDfsResult {
 struct NodeValue {
     objective: ExactObjective,
     line: Option<Arc<LineNode>>,
-    final_digest: Option<Arc<str>>,
+}
+
+/// A winning line the search achieved, before its terminal digest is known.
+///
+/// The search carries no digests (#3420). Projecting every kept terminal
+/// state was 40-66% of search time on fights whose search finds wins, and
+/// every such projection was of a distinct state. The digest never orders
+/// values (`visit` compares objective, then presentation), and it is a
+/// function of the root and the line, because the engine is deterministic and
+/// the search produced the line by applying exactly those actions. So
+/// [`certify`] replays the one reported line and projects its final state
+/// once. A caller's seed arrives already certified.
+struct Achieved {
+    actions: Vec<Action>,
+    objective: ExactObjective,
+    final_digest: Option<String>,
 }
 
 #[derive(Debug)]
@@ -270,10 +324,9 @@ impl NodeValue {
     const LOSS: Self = Self {
         objective: ExactObjective::LOSS,
         line: None,
-        final_digest: None,
     };
 
-    fn solution_with_prefix(&self, prefix: &[Action]) -> Option<ExactSolution> {
+    fn achieved_with_prefix(&self, prefix: &[Action]) -> Option<Achieved> {
         self.objective.won.then(|| {
             // Memo entries share immutable tails, retaining one node per
             // chosen edge rather than a copied Vec suffix per state.
@@ -284,17 +337,99 @@ impl NodeValue {
                 actions.push(current.action);
                 node = current.next.as_deref();
             }
-            ExactSolution {
+            Achieved {
                 actions,
                 objective: self.objective,
-                final_digest: self
-                    .final_digest
-                    .as_deref()
-                    .expect("winning DFS values always carry terminal evidence")
-                    .to_owned(),
+                final_digest: None,
             }
         })
     }
+}
+
+/// The memo key: SHA-256 over the horizon and the state's derived `Hash` (see
+/// the module docs for why a digest, and why of the hot state).
+type MemoKey = [u8; 32];
+
+/// SHA-256 over the horizon and `state`'s derived `Hash` (#3522).
+fn structural_memo_key(max_turns: i16, state: &HotState) -> MemoKey {
+    use std::hash::{Hash, Hasher};
+    let mut writer = Sha256Writer::new();
+    writer.write(&max_turns.to_be_bytes());
+    state.hash(&mut writer);
+    writer.finish_key()
+}
+
+/// Streams a value's derived `Hash` into SHA-256 through a staging buffer, so
+/// each of the many small field writes is a copy rather than a compression
+/// call. Integers hash in native byte order and `usize` at native width, so a
+/// key is stable within one process, which is all a per-solve memo needs.
+struct Sha256Writer {
+    digest: Sha256,
+    staged: [u8; 256],
+    len: usize,
+}
+
+impl Sha256Writer {
+    fn new() -> Self {
+        Self {
+            digest: Sha256::new(),
+            staged: [0; 256],
+            len: 0,
+        }
+    }
+
+    fn finish_key(mut self) -> MemoKey {
+        self.digest.update(&self.staged[..self.len]);
+        self.digest.finalize().into()
+    }
+}
+
+impl std::hash::Hasher for Sha256Writer {
+    fn write(&mut self, bytes: &[u8]) {
+        if self.len + bytes.len() > self.staged.len() {
+            self.digest.update(&self.staged[..self.len]);
+            self.len = 0;
+            if bytes.len() > self.staged.len() {
+                self.digest.update(bytes);
+                return;
+            }
+        }
+        self.staged[self.len..self.len + bytes.len()].copy_from_slice(bytes);
+        self.len += bytes.len();
+    }
+
+    /// Never called: derived `Hash` impls only write. The key is the full
+    /// 256-bit digest from [`Sha256Writer::finish_key`].
+    fn finish(&self) -> u64 {
+        unreachable!("Sha256Writer yields its key through finish_key")
+    }
+}
+
+/// Heap bytes one memo entry owns beyond its table slot. The key is inline
+/// in the slot, so this is only the one [`LineNode`] allocation a win's line
+/// adds, counted with an `Arc` header. Line tails are shared with other
+/// entries and are not charged again. Allocator overhead
+/// is not counted, so the accounting is a lower bound on real memory.
+fn memo_entry_bytes(value: &NodeValue) -> u64 {
+    if value.line.is_some() {
+        (std::mem::size_of::<LineNode>() + 2 * std::mem::size_of::<usize>()) as u64
+    } else {
+        0
+    }
+}
+
+/// Bytes of a memo table with `capacity` usable slots. The std `HashMap`
+/// keeps at most 7/8 of its buckets full, and each bucket holds one
+/// `(key, value)` pair plus one control byte.
+fn memo_table_bytes(capacity: usize) -> u64 {
+    if capacity == 0 {
+        return 0;
+    }
+    let buckets = (capacity.saturating_mul(8) / 7)
+        .max(capacity + 1)
+        .next_power_of_two();
+    let slot = std::mem::size_of::<(MemoKey, NodeValue)>() + 1;
+    (buckets as u64).saturating_mul(slot as u64)
 }
 
 enum VisitFailure {
@@ -310,10 +445,20 @@ struct Dfs<'a> {
     deadline: Option<(Instant, Duration)>,
     legal_actions: LegalActionBuffer,
     events: Vec<engine::Event>,
-    memo: HashMap<Vec<u8>, NodeValue>,
-    active: HashSet<Vec<u8>>,
+    memo: HashMap<MemoKey, NodeValue>,
+    /// Heap bytes owned by memo entries (their line nodes), excluding the
+    /// table; see [`memo_entry_bytes`].
+    memo_heap_bytes: u64,
+    active: HashSet<MemoKey>,
+    /// Debug-only cross-check of the structural key against the canonical
+    /// projection key it replaced (#3522): each structural key must name one
+    /// projection, and each projection one structural key.
+    #[cfg(debug_assertions)]
+    projection_of: HashMap<MemoKey, MemoKey>,
+    #[cfg(debug_assertions)]
+    structure_of: HashMap<MemoKey, MemoKey>,
     path: Vec<Action>,
-    best_achieved: Option<ExactSolution>,
+    best_achieved: Option<Achieved>,
     /// Constructive seed/observed HP floor.  It never supplies a line by
     /// itself; a future certified ceiling may safely prune only when strictly
     /// below it, preserving equal-HP potion/turn ties. Only a win that keeps
@@ -352,11 +497,20 @@ impl<'a> Dfs<'a> {
             legal_actions: LegalActionBuffer::new(),
             events: Vec::new(),
             memo: HashMap::new(),
+            memo_heap_bytes: 0,
             active: HashSet::new(),
+            #[cfg(debug_assertions)]
+            projection_of: HashMap::new(),
+            #[cfg(debug_assertions)]
+            structure_of: HashMap::new(),
             path: Vec::new(),
             alpha_final_hp,
             battleworn,
-            best_achieved: seed,
+            best_achieved: seed.map(|seed| Achieved {
+                actions: seed.actions,
+                objective: seed.objective,
+                final_digest: Some(seed.final_digest),
+            }),
             telemetry: ExactDfsTelemetry {
                 allocation_instrumented: crate::allocation::instrumented(),
                 alpha_final_hp,
@@ -395,7 +549,7 @@ impl<'a> Dfs<'a> {
             }
             self.telemetry.memo_misses += 1;
         }
-        if !self.active.insert(key.clone()) {
+        if !self.active.insert(key) {
             return Err(VisitFailure::Refusal(ExactDfsRefusal::CycleDetected));
         }
 
@@ -425,7 +579,6 @@ impl<'a> Dfs<'a> {
                         next: child_value.line,
                     })
                 }),
-                final_digest: child_value.final_digest,
             };
             let presentation = self.presentation_key(state, &action, &child, order);
             if candidate.objective > best.objective
@@ -438,9 +591,43 @@ impl<'a> Dfs<'a> {
         }
         self.active.remove(&key);
         if self.config.memo {
-            self.memo.insert(key, best.clone());
+            self.memoize(key, &best);
         }
         Ok(best)
+    }
+
+    /// Insert a completed subtree unless it would take the memo past its
+    /// budget. Skipping is always sound: the memo only ever returns a value
+    /// the search would recompute identically.
+    fn memoize(&mut self, key: MemoKey, value: &NodeValue) {
+        let entry = memo_entry_bytes(value);
+        let table = if self.memo.len() == self.memo.capacity() {
+            // This insert rehashes into a table about twice the size; charge
+            // the table that will exist, not the one that does.
+            memo_table_bytes(self.memo.capacity().saturating_mul(2).max(3))
+        } else {
+            memo_table_bytes(self.memo.capacity())
+        };
+        let projected = self
+            .memo_heap_bytes
+            .saturating_add(entry)
+            .saturating_add(table);
+        if self
+            .config
+            .memo_budget_bytes
+            .is_some_and(|budget| projected > budget)
+        {
+            self.telemetry.memo_budget_reached = true;
+            return;
+        }
+        self.memo_heap_bytes += entry;
+        self.memo.insert(key, value.clone());
+    }
+
+    /// The accounted memo size: entry heap plus the table itself.
+    fn memo_bytes(&self) -> u64 {
+        self.memo_heap_bytes
+            .saturating_add(memo_table_bytes(self.memo.capacity()))
     }
 
     /// Current v0.111.0 authority is `sts2.dll` SHA-256
@@ -456,21 +643,23 @@ impl<'a> Dfs<'a> {
         if state.hp <= 0 || state.monsters.iter().any(|monster| monster.hp > 0) {
             return Ok(Some(NodeValue::LOSS));
         }
-        let (objective, final_digest) = terminal_objective(state, self.catalog, self.battleworn)
+        let objective = terminal_objective(state, self.catalog, self.battleworn)
             .map_err(VisitFailure::Refusal)?
             .expect("winning terminal state has an objective");
+        // Debug builds project every winning leaf as before, so the test suite
+        // keeps an unchosen leaf's projection refusal (#3420).
+        #[cfg(debug_assertions)]
+        terminal_digest(state, self.catalog).map_err(VisitFailure::Refusal)?;
         let value = NodeValue {
             objective,
             line: None,
-            final_digest: Some(Arc::from(final_digest)),
         };
-        if let Some(solution) = value.solution_with_prefix(&self.path)
-            && self
-                .best_achieved
-                .as_ref()
-                .is_none_or(|best| solution.objective > best.objective)
+        if self
+            .best_achieved
+            .as_ref()
+            .is_none_or(|best| objective > best.objective)
         {
-            self.best_achieved = Some(solution);
+            self.best_achieved = value.achieved_with_prefix(&self.path);
         }
         if objective.event_reward {
             self.alpha_final_hp = self.alpha_final_hp.max(objective.final_hp);
@@ -479,14 +668,32 @@ impl<'a> Dfs<'a> {
         Ok(Some(value))
     }
 
-    fn memo_key(&self, state: &HotState) -> Result<Vec<u8>, VisitFailure> {
+    fn memo_key(&mut self, state: &HotState) -> Result<MemoKey, VisitFailure> {
+        let key = structural_memo_key(self.config.max_turns, state);
+        #[cfg(debug_assertions)]
+        self.check_key_partition(state, key)?;
+        Ok(key)
+    }
+
+    /// The canonical projection key (#3516), kept in debug builds so the test
+    /// suite projects every node as before, keeps that projection's refusal,
+    /// and checks the structural key against it.
+    #[cfg(debug_assertions)]
+    fn check_key_partition(&mut self, state: &HotState, key: MemoKey) -> Result<(), VisitFailure> {
         let document = HotBoundary::try_to_canonical(state, self.catalog)
             .map_err(|refusal| VisitFailure::Refusal(ExactDfsRefusal::MemoProjection(refusal)))?;
-        let canonical = document.canonical_json();
-        let mut key = Vec::with_capacity(canonical.len() + 2);
-        key.extend_from_slice(&self.config.max_turns.to_be_bytes());
-        key.extend_from_slice(canonical.as_bytes());
-        Ok(key)
+        let mut hasher = Sha256::new();
+        hasher.update(self.config.max_turns.to_be_bytes());
+        hasher.update(document.canonical_json().as_bytes());
+        let projected: MemoKey = hasher.finalize().into();
+        let projection = *self.projection_of.entry(key).or_insert(projected);
+        assert_eq!(projection, projected, "one structural key, two projections");
+        let structure = *self.structure_of.entry(projected).or_insert(key);
+        assert_eq!(
+            structure, key,
+            "one projection, two structural keys: the hot key split a projection class"
+        );
+        Ok(())
     }
 
     fn presentation_key(
@@ -673,17 +880,35 @@ fn solve_hot_inner(
     );
     let outcome = dfs.visit(&root);
     dfs.telemetry.memo_entries = dfs.memo.len();
+    dfs.telemetry.memo_bytes = dfs.memo_bytes();
     // A caller's seed is an achieved fallback for an *incomplete* search,
     // not an extra branch within this invocation's horizon.  In particular,
     // a valid turn-4 seed must not turn an exact max-turn-0 loss into an
     // exact win.  The complete result therefore comes only from `outcome`;
     // `best_achieved` (which includes the seed) is retained for deadline/
     // cancellation paths below.
-    let (status, best) = match outcome {
-        Ok(value) => (ExactDfsStatus::Exact, value.solution_with_prefix(&[])),
+    let (status, achieved) = match outcome {
+        Ok(value) => (ExactDfsStatus::Exact, value.achieved_with_prefix(&[])),
         Err(VisitFailure::Deadline) => (ExactDfsStatus::Deadline, dfs.best_achieved),
         Err(VisitFailure::Cancelled) => (ExactDfsStatus::Cancelled, dfs.best_achieved),
         Err(VisitFailure::Refusal(refusal)) => {
+            return finish(
+                ExactDfsStatus::Refused,
+                None,
+                Some(refusal),
+                dfs.telemetry,
+                invocation.started,
+                invocation.allocations_before,
+                invocation.bytes_before,
+            );
+        }
+    };
+    let best = match achieved
+        .map(|achieved| certify(&root, catalog, achieved))
+        .transpose()
+    {
+        Ok(best) => best,
+        Err(refusal) => {
             return finish(
                 ExactDfsStatus::Refused,
                 None,
@@ -724,8 +949,7 @@ fn validate_seed(
                 ExactDfsRefusal::InvalidSeed(format!("seed action did not replay: {error}"))
             })?;
     }
-    let Some((objective, final_digest)) =
-        terminal_objective(&state, catalog, BattlewornObjective::of_root(root))?
+    let Some(objective) = terminal_objective(&state, catalog, BattlewornObjective::of_root(root))?
     else {
         return Err(ExactDfsRefusal::InvalidSeed(
             "seed line did not reach a winning terminal state".to_owned(),
@@ -741,7 +965,7 @@ fn validate_seed(
             seed.objective, objective
         )));
     }
-    if final_digest != seed.final_digest {
+    if terminal_digest(&state, catalog)? != seed.final_digest {
         return Err(ExactDfsRefusal::InvalidSeed(
             "seed terminal digest did not replay".to_owned(),
         ));
@@ -765,13 +989,10 @@ fn terminal_objective(
     state: &HotState,
     catalog: &Catalog,
     battleworn: BattlewornObjective,
-) -> Result<Option<(ExactObjective, String)>, ExactDfsRefusal> {
+) -> Result<Option<ExactObjective>, ExactDfsRefusal> {
     if !state.history.over || state.hp <= 0 || state.monsters.iter().any(|monster| monster.hp > 0) {
         return Ok(None);
     }
-    let final_digest = HotBoundary::try_to_canonical(state, catalog)
-        .map_err(ExactDfsRefusal::MemoProjection)?
-        .differential_digest();
     let potions_kept = state
         .fanouts
         .potion_slots()
@@ -793,19 +1014,51 @@ fn terminal_objective(
     } else {
         state.hp
     };
-    Ok(Some((
-        ExactObjective {
-            won: true,
-            event_reward: !battleworn.timed_out(state),
-            final_hp,
-            potions_kept,
-            negative_turns: state
-                .turn
-                .checked_neg()
-                .expect("exact-solve entry rejects negative turns"),
-        },
+    Ok(Some(ExactObjective {
+        won: true,
+        event_reward: !battleworn.timed_out(state),
+        final_hp,
+        potions_kept,
+        negative_turns: state
+            .turn
+            .checked_neg()
+            .expect("exact-solve entry rejects negative turns"),
+    }))
+}
+
+/// Replay an achieved line from the root and project its final state: the one
+/// digest a solve reports (see [`Achieved`]).
+fn certify(
+    root: &HotState,
+    catalog: &Catalog,
+    achieved: Achieved,
+) -> Result<ExactSolution, ExactDfsRefusal> {
+    let final_digest = match achieved.final_digest {
+        Some(digest) => digest,
+        None => {
+            let mut state = root.clone();
+            let mut events = Vec::new();
+            for action in &achieved.actions {
+                state = engine::apply_action_into(&state, catalog, action, &mut events)
+                    .map_err(ExactDfsRefusal::Transition)?;
+            }
+            terminal_digest(&state, catalog)?
+        }
+    };
+    Ok(ExactSolution {
+        actions: achieved.actions,
+        objective: achieved.objective,
         final_digest,
-    )))
+    })
+}
+
+/// The canonical `differential_digest` of a winning terminal state: the
+/// `final_digest` a solution reports. Meat on the Bone's post-terminal heal is
+/// in the objective, not in this digest (see [`terminal_objective`]).
+fn terminal_digest(state: &HotState, catalog: &Catalog) -> Result<String, ExactDfsRefusal> {
+    Ok(HotBoundary::try_to_canonical(state, catalog)
+        .map_err(ExactDfsRefusal::MemoProjection)?
+        .differential_digest())
 }
 
 fn refused(
@@ -846,5 +1099,85 @@ fn finish(
         best,
         refusal,
         telemetry,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ids::PowerId;
+    use crate::powers::SlotWire;
+    use std::hash::Hasher;
+
+    const FIXTURE: &str = include_str!("../fixtures/canonical_state_v2_ironclad_toadpoles.json");
+
+    fn root() -> (Catalog, HotState) {
+        let document: CanonicalStateV2 = serde_json::from_str(FIXTURE).unwrap();
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        (catalog, state)
+    }
+
+    #[test]
+    fn sha256_writer_matches_one_shot_sha256_across_staging_boundaries() {
+        let bytes: Vec<u8> = (0..2000_u32).map(|i| (i * 31 % 251) as u8).collect();
+        let expected: MemoKey = Sha256::digest(&bytes).into();
+        for chunk in [1, 7, 64, 255, 256, 257, 511, 2000] {
+            let mut writer = Sha256Writer::new();
+            for part in bytes.chunks(chunk) {
+                writer.write(part);
+            }
+            assert_eq!(writer.finish_key(), expected, "chunk {chunk}");
+        }
+        // Fill the stage exactly, overflow it, write one byte, then one
+        // larger than the stage.
+        let mut writer = Sha256Writer::new();
+        for range in [0..256, 256..1000, 1000..1001, 1001..2000] {
+            writer.write(&bytes[range]);
+        }
+        assert_eq!(writer.finish_key(), expected);
+    }
+
+    #[test]
+    fn the_structural_key_separates_every_changed_field_and_the_horizon() {
+        let (_, state) = root();
+        let key = structural_memo_key(3, &state);
+        assert_eq!(structural_memo_key(3, &state.clone()), key);
+        assert_ne!(structural_memo_key(4, &state), key, "the horizon is keyed");
+
+        let mut hp = state.clone();
+        hp.hp -= 1;
+        let mut power = state.clone();
+        power.powers.set(PowerId::Strength, SlotWire::Int, 1);
+        let mut pile = state.clone();
+        let hand = pile.piles.get(crate::hot::PileId::Hand).clone();
+        pile.piles.set(crate::hot::PileId::Discard, hand);
+        let changed = [hp, power, pile];
+        for (index, changed) in changed.iter().enumerate() {
+            assert_ne!(changed, &state, "case {index} changes the state");
+            assert_ne!(structural_memo_key(3, changed), key, "case {index}");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "one projection, two structural keys")]
+    #[cfg(debug_assertions)]
+    fn the_debug_cross_check_rejects_a_split_projection_class() {
+        let (catalog, state) = root();
+        let cancellation = ExactCancellation::default();
+        let mut dfs = Dfs::new(
+            &catalog,
+            ExactDfsConfig::default(),
+            &cancellation,
+            Instant::now(),
+            None,
+            0,
+            BattlewornObjective::of_root(&state),
+        );
+        let key = structural_memo_key(dfs.config.max_turns, &state);
+        assert!(dfs.check_key_partition(&state, key).is_ok());
+        let mut other = key;
+        other[0] ^= 1;
+        let _ = dfs.check_key_partition(&state, other);
     }
 }

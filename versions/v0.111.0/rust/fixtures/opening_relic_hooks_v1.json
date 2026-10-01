@@ -228,7 +228,7 @@
   },
   {
    "relic": "RELIC.DELICATE_FROND",
-   "rust_body_site": false,
+   "rust_body_site": true,
    "template": false,
    "turn_one_hooks": [],
    "window_hooks": [

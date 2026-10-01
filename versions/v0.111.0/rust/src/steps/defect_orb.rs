@@ -65,6 +65,9 @@ fn exact_int(
     }
 }
 
+/// Storm (`Storm/<OnPlay>d__5` `0x3bf534` IL_00d1) and Thunder
+/// (`Thunder/<OnPlay>d__5` `0x3c3a5c` IL_00d1) each await one
+/// `PowerCmd.Apply`. `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 fn stack_power(
     ctx: &mut StepCtx<'_>,
     site: &'static str,
@@ -75,6 +78,9 @@ fn stack_power(
     let amount: i32 = amount
         .try_into()
         .map_err(|_| EngineRefusal::CounterOverflow(site))?;
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
+    }
     let current = ctx.state.powers.value(power);
     let updated = current
         .checked_add(amount)
@@ -234,6 +240,11 @@ pub(crate) fn compile_driver_unique_orb_exact(ctx: &mut StepCtx<'_>) -> Result<(
 ///
 /// Python: `_run_steps_inner` dispatch; the kind is read in
 /// `_run_steps_inner`.
+///
+/// `Darkness/<OnPlay>d__3` RVA `0x396690` awaits `OrbCmd.Passive` for each Dark
+/// orb (IL_0199). `OrbCmd/<Passive>d__7` (`0x3ede90`) returns at
+/// `CombatManager.IsOverOrEnding` (IL_0022-0029), so each trigger tests the
+/// shared IsOverOrEnding projection, not `history.over` (#3515).
 pub(crate) fn darkness(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let count = exact_int(
         ctx,
@@ -250,7 +261,7 @@ pub(crate) fn darkness(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         .collect();
     for index in indices {
         for _ in 0..count {
-            if ctx.state.history.over {
+            if crate::engine::damage::damage_combat_is_ending(ctx.state) {
                 return Ok(());
             }
             let orb = ctx.state.orbs.as_slice()[index];
@@ -317,13 +328,16 @@ pub(crate) fn evoke_front_x(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> 
 ///
 /// Python `_run_steps_inner` (frozen, deleted #2827) pins the two v0.111.0 Hyperbeam
 /// bodies and applies the signed wrapper only while combat remains live.
+///
+/// v0.111.0 `Hyperbeam/<OnPlay>` RVA `0x3a6444` awaits `PowerCmd.Apply<HyperbeamFocusDownPower>` at IL_0108.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn hyperbeam_focus_down_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = exact_int(
         ctx,
         "hyperbeam_focus_down_exact",
         &[(CardId::Hyperbeam, 0, -3), (CardId::Hyperbeam, 1, -3)],
     )?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     add_temp_focus(ctx, amount)
@@ -339,6 +353,13 @@ pub(crate) fn lightning_rod(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> 
         "lightning_rod",
         &[(CardId::LightningRod, 0, 2), (CardId::LightningRod, 1, 2)],
     )?;
+    // `PowerCmd.Apply<LightningRodPower>` returns on `IsEnding`
+    // (`<Apply>d__1`1` RVA `0x3ef988` IL_0020-0034). Lightning Rod applies it
+    // after `GainBlock` (`LightningRod/<OnPlay>d__7` RVA `0x3a9ccc` IL_00c3
+    // then IL_0151), whose listeners (Juggernaut) can end the combat (#3495).
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
+    }
     let was_absent = ctx.state.powers.value(PowerId::LightningRod) == 0;
     let amount: i32 = amount
         .try_into()
@@ -427,6 +448,9 @@ pub(crate) fn storm(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Python `_run_steps_inner` (frozen, deleted #2827) pins the two source bodies, counts
 /// distinct live orb ids, and applies level amount times that count through
 /// the shared turn-end-expiring Focus wrapper.
+///
+/// v0.111.0 `Synchronize/<OnPlay>` RVA `0x3c1738` awaits `PowerCmd.Apply<SynchronizePower>` at IL_00e1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn synchronize_unique_orb_focus_exact(
     ctx: &mut StepCtx<'_>,
 ) -> Result<(), EngineRefusal> {
@@ -442,7 +466,7 @@ pub(crate) fn synchronize_unique_orb_focus_exact(
     let amount = multiplier
         .checked_mul(i64::from(kinds.count_ones()))
         .ok_or(EngineRefusal::CounterOverflow("synchronize focus"))?;
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     add_temp_focus(ctx, amount)
@@ -720,6 +744,10 @@ mod tests {
     #[test]
     fn synchronize_snapshots_distinct_kinds_into_temporary_focus() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.orbs.set_slots(3);
         state.orbs.set_orbs(vec![
             HotOrb::from_parts(OrbKind::Lightning, None).unwrap(),
@@ -741,6 +769,10 @@ mod tests {
     #[test]
     fn focus_wrappers_pin_sources_and_skip_their_grant_while_ending() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         run(
             identity(CardId::Hyperbeam, 0),
@@ -820,6 +852,45 @@ mod tests {
                 channeled_lightning(&state),
                 expected,
                 "Tempest upgrade={upgrade} X={x_value}"
+            );
+        }
+    }
+
+    /// #3515: each body gates on its native command, not `history.over`.
+    /// Storm, Thunder, Hyperbeam and Synchronize await one `PowerCmd.Apply`
+    /// (`<Apply>d__1`1` `0x3ef988` IL_0025, `IsEnding`); Darkness awaits
+    /// `OrbCmd.Passive` per Dark orb (`<Passive>d__7` `0x3ede90` IL_0022,
+    /// `IsOverOrEnding`). While the combat is ending before the over latch
+    /// each is a no-op; the Adaptable-vetoed control writes.
+    #[test]
+    fn orb_power_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.orbs.set_slots(3);
+        template.orbs.set_orbs(vec![
+            HotOrb::from_parts(OrbKind::Dark, Some(6)).unwrap(),
+            HotOrb::from_parts(OrbKind::Frost, None).unwrap(),
+        ]);
+        let rows: [(CardId, StepKind, &[CompiledArg]); 5] = [
+            (CardId::Storm, StepKind::Storm, &[CompiledArg::I(1)]),
+            (CardId::Thunder, StepKind::Thunder, &[CompiledArg::I(8)]),
+            (
+                CardId::Hyperbeam,
+                StepKind::HyperbeamFocusDownExact,
+                &[CompiledArg::I(-3)],
+            ),
+            (
+                CardId::Synchronize,
+                StepKind::SynchronizeUniqueOrbFocusExact,
+                &[CompiledArg::I(1)],
+            ),
+            (CardId::Darkness, StepKind::Darkness, &[CompiledArg::I(1)]),
+        ];
+        for (id, kind, args) in rows {
+            crate::engine::damage::assert_ending_window_gate(
+                &template,
+                &format!("{id:?}"),
+                |s, _| run(identity(id, 0), kind, args, s),
             );
         }
     }

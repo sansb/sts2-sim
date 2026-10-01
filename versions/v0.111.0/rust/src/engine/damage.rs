@@ -1116,12 +1116,56 @@ fn require_live_card_source_if_curl_up(
     Ok(())
 }
 
+/// One powered player or Osty `AttackCommand`.
+///
+/// A command issued while the combat is over or ending does nothing at all,
+/// whichever of the two dealers issues it (Osty since #3466, the player since
+/// #3483): `AttackCommand/<Execute>d__90::MoveNext` RVA `0x3f19c0` tests
+/// `CombatManager::get_IsOverOrEnding` (IL_0067-006c; RVA `0x1358be` is
+/// `IsEnding || !IsInProgress`) and, for a live combat
+/// (`CombatState::IsLiveCombat` RVA `0x1377db` is constant true;
+/// IL_0073-0086), leaves at IL_0088-008a. That is before BeforeAttack
+/// (IL_00d8, so Vigor and Gigantification never bind the command), any hit,
+/// the `CombatHistory::CreatureAttacked` record (IL_07e5-082a) and AfterAttack
+/// (IL_0845). So no Osty attack is counted for Flatten or Rattle, and a player
+/// command leaves Vigor where it was.
+///
+/// The test is live, not a latch: `get_IsEnding` RVA `0x135834` calls
+/// `CombatManager::IsCombatEnding` RVA `0x135854`, which is true for a pending
+/// loss (IL_0016-0025) or when no enemy passes `IsAlive && IsPrimaryEnemy`
+/// (`<IsCombatEnding>b__82_0` RVA `0x3f2532`) and no `ShouldStopCombatFromEnding`
+/// listener holds it open (IL_0026-0069). [`damage_combat_is_ending`] is the
+/// shared projection of that test.
+///
+/// It sits at command entry only. The per-hit loop (IL_0156-07e0) never
+/// re-tests it: a multi-hit command whose earlier hit ends the combat leaves
+/// the loop at the next hit's empty `validTargets` (IL_01a6-01b3) or dead
+/// attacker (IL_0161), and both branch to the record site, so that command
+/// still records and runs AfterAttack. A later command in the same card body
+/// is the one that returns here. The engine's step runner keeps running a
+/// card body after the combat is over while the player lives, so this entry
+/// return, not a caller gate, is what keeps such a command inert.
+///
+/// A dead attacker returns next (IL_00a2-00b1: `Attacker.IsDead`, leave at
+/// IL_00b1), also before BeforeAttack and the record site (#3502). A dead
+/// player makes the combat ending (pending loss), so only Osty reaches it
+/// with the combat live: its killed or never-summoned state is
+/// `pet().osty().is_none()`. Every step caller already tests that before
+/// issuing the command (`osty_body`, `sic_em_exact`, `rattle_exact`); the
+/// return keeps a direct command caller from counting an Osty attack for
+/// Flatten or Rattle, or binding Gigantification, with no Osty.
 fn player_attack_inner(
     state: &mut HotState,
     source: &CardSpec,
     plan: AttackPlan<'_, '_>,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
+    if damage_combat_is_ending(state) {
+        return Ok(());
+    }
+    if plan.dealer == AttackDealer::PlayerPet && state.fanouts.pet().osty().is_none() {
+        return Ok(());
+    }
     let fixed_target_identities = match plan.targeting {
         AttackTargeting::Fixed(targets) => {
             let mut identities = targets
@@ -1295,9 +1339,11 @@ fn player_attack_inner_apply(
     } else {
         0
     };
-    // GigantificationPower BeforeAttack/AfterAttack (RVA 0xa2a78 and
-    // 0xa2ad0) binds the first owner-card AttackCommand issued by that player
-    // or their Osty, not an individual hit. The latch also prevents nested
+    // GigantificationPower BeforeAttack/AfterAttack (RVA 0xa2e3c and
+    // 0xa2f28; `<AfterAttack>d__8` 0x33b668) binds the first owner-card
+    // AttackCommand issued by that player or their Osty, not an individual
+    // hit: BeforeAttack stores the command in `Data.commandToModify`
+    // (IL_005c-0073), and AfterAttack clears it and decrements (IL_0034-003c). The latch also prevents nested
     // commands from taking a second stack while this command is open. Python
     // `player_attack` keeps the owner CardModel for `PLAYER_PET` (frozen Python, deleted #2827); a non-Attack or absent source never enters this API.
     let gigantification = matches!(plan.dealer, AttackDealer::Player | AttackDealer::PlayerPet)
@@ -1365,20 +1411,42 @@ fn player_attack_inner_apply(
     let mut pending_hits = plan.hits;
     while pending_hits > 0 {
         pending_hits -= 1;
-        // `player_attack`: `while pending_hits > 0: if s.over: break`
-        // (frozen Python, deleted #2827).
-        if state.history.over {
+        // Native's two per-hit exits (#3495), replacing the frozen-Python
+        // `if s.over: break`. `AttackCommand/<Execute>d__90::MoveNext`
+        // (`0x3f19c0`) re-tests nothing about the combat's outcome per hit:
+        // - IL_0156-0161: a dead attacker leaves for the record site. The
+        //   player's death, or Osty's, including Osty killed by Thorns while
+        //   the combat continues.
+        // - IL_0168-01b3: `validTargets` (`IsAlive`, `b__90_1` `0x3f18b6`) is
+        //   empty in a live combat (`CombatState.IsLiveCombat` `0x1377db` is
+        //   constant true). Each targeting arm below tests it.
+        // A won combat has no live enemy, and a lost one has a dead attacker
+        // (Kill `0x3ebe90` IL_06ac-06ca kills Osty with its owner), so these
+        // cover every exit the `over` test took.
+        // The player's death is projected as `hp <= 0` with the outcome
+        // latched: `resolve_player_lethal_with_catalog` sets `history.over`
+        // once no reviver saved the player, and a revive restores HP instead.
+        let attacker_dead = match plan.dealer {
+            AttackDealer::Player => state.history.over && state.hp <= 0,
+            AttackDealer::PlayerPet => state.fanouts.pet().osty().is_none(),
+        };
+        if attacker_dead {
             break;
         }
         let hit_targets = match (plan.context_mode, plan.targeting) {
-            (AttackContextMode::EchoingSlash, _) => alive_targets(state),
+            (AttackContextMode::EchoingSlash, _) => {
+                let targets = alive_targets(state);
+                if targets.is_empty() {
+                    break;
+                }
+                targets
+            }
             (_, AttackTargeting::Random) => match roll_target(state)? {
                 Some(target) => vec![target],
                 None => break,
             },
             // `validTargets` re-read per hit (IL_0168-IL_0196); an empty set
-            // in a live combat leaves the loop (IL_01a6-IL_01b3). A combat
-            // already over broke out at the top of this iteration.
+            // in a live combat leaves the loop (IL_01a6-IL_01b3).
             (_, AttackTargeting::AllOpponents) => {
                 let targets = alive_targets(state);
                 if targets.is_empty() {
@@ -1386,7 +1454,20 @@ fn player_attack_inner_apply(
                 }
                 targets
             }
-            (_, AttackTargeting::Fixed(targets)) => targets.to_vec(),
+            // `GetPossibleTargets` (`0x1348ac` IL_000c-001f) is the fixed
+            // target alone, filtered by `IsAlive`: once none is alive the
+            // command leaves rather than entering an empty Damage batch.
+            (_, AttackTargeting::Fixed(targets)) => {
+                if !targets.iter().any(|target| {
+                    state
+                        .monsters
+                        .get(*target)
+                        .is_some_and(|monster| monster.hp > 0)
+                }) {
+                    break;
+                }
+                targets.to_vec()
+            }
         };
         // This slice's new callbacks use synchronous unpowered batches. A
         // Strike-tagged child issuing an AoE still needs the separate native
@@ -1618,8 +1699,16 @@ fn player_attack_inner_apply(
                     .checked_mul(DotNetDecimal::from_i64(2))
                     .map_err(|_| overflow("attack damage"))?;
             }
+            // `PenNib::ModifyDamageMultiplicative` RVA `0x9917c`: a powered
+            // attack (IL_000c-IL_0012) with a card source (IL_001a-IL_001c)
+            // whose dealer is the owner's Creature (IL_0024-IL_0031) OR the
+            // owner's Osty (IL_0033-IL_0040) — any other dealer returns One
+            // at IL_0042 — is doubled when that card is `AttackToDouble`
+            // (IL_0082-IL_008d). Both [`AttackDealer`] variants are eligible,
+            // so an Osty-issued body of the tenth Attack (Poke, #3438) is
+            // doubled exactly like the owner's own hit.
             if source.is_attack
-                && plan.dealer == AttackDealer::Player
+                && matches!(plan.dealer, AttackDealer::Player | AttackDealer::PlayerPet)
                 && relics_live
                 && super::play::active_play_pen_double()
             {
@@ -1968,6 +2057,15 @@ fn player_attack_inner_apply(
         state.powers.set(PowerId::Vigor, SlotWire::Int, 0);
         note_power(events, Subject::Player, PowerId::Vigor, 0);
     }
+    // AfterAttack (`0x3f19c0` IL_0845) runs after the hit loop even when a hit
+    // ended the combat, but `Hook.AfterAttack` (`<AfterAttack>d__3` 0x3cb644
+    // IL_001d) walks `Hook.IterateCombatHookListeners`
+    // (`<IterateCombatHookListeners>d__0` 0x3d3bc0), which yields nothing
+    // while `IsOverOrEnding && !IsStarting` (IL_0028-0042). So a command whose
+    // earlier hit ended the combat never reaches
+    // `GigantificationPower.AfterAttack`: native keeps `commandToModify`
+    // bound and the stack undecremented in the terminal state, as here
+    // (#3495). The same gate keeps Vigor above.
     if gigantification
         && !damage_combat_is_ending(state)
         && !state.fanouts.player_hooks_deactivated()
@@ -4195,6 +4293,60 @@ pub(crate) fn damage_combat_is_ending(state: &HotState) -> bool {
     })
 }
 
+/// Test fixture for the ending-but-not-over window (#3502, #3515).
+///
+/// Appends a dead primary Toadpole and a live secondary Gas Bomb, so no
+/// living primary remains while a creature is still alive: native
+/// `IsCombatEnding` (`0x135854` IL_0026-0069) is true and `history.over` has
+/// not latched. With `vetoed`, the dead primary carries Adaptable, whose
+/// `ShouldStopCombatFromEnding` keeps the same roster live: the control.
+/// Returns the Gas Bomb's roster index, a live target for targeted bodies.
+#[cfg(test)]
+pub(crate) fn push_ending_window_roster(state: &mut HotState, vetoed: bool) -> usize {
+    let base = u32::try_from(state.monsters.len()).expect("small test roster");
+    let mut primary = HotMonster::new(MonsterKind::Toadpole, 100);
+    primary.hp = 0;
+    primary.uid = base;
+    primary.slot = i32::try_from(base).expect("small test roster");
+    if vetoed {
+        primary
+            .powers
+            .set(PowerId::Adaptable, crate::powers::SlotWire::Int, 1);
+    }
+    state.monsters_mut().push(primary);
+    // Enough HP that no witness attack kills it and latches `history.over`.
+    let mut bomb = HotMonster::new(MonsterKind::GasBomb, 100);
+    bomb.uid = base + 1;
+    bomb.slot = i32::try_from(base + 1).expect("small test roster");
+    state.monsters_mut().push(bomb);
+    assert!(!state.history.over);
+    assert_eq!(damage_combat_is_ending(state), !vetoed);
+    state.monsters.len() - 1
+}
+
+/// Witness harness for an ending-gated body (#3515).
+///
+/// Replaces `template`'s roster with [`push_ending_window_roster`] and runs
+/// `run` with the Gas Bomb's index as the live target. The ending roster must
+/// leave the state untouched; the Adaptable-vetoed control must change it,
+/// which proves the fixture reaches the write the gate guards.
+#[cfg(test)]
+pub(crate) fn assert_ending_window_gate(
+    template: &HotState,
+    label: &str,
+    mut run: impl FnMut(&mut HotState, usize) -> Result<(), EngineRefusal>,
+) {
+    for vetoed in [false, true] {
+        let mut state = template.clone();
+        state.monsters_mut().clear();
+        let target = push_ending_window_roster(&mut state, vetoed);
+        let before = state.clone();
+        run(&mut state, target)
+            .unwrap_or_else(|error| panic!("{label} vetoed={vetoed}: {error:?}"));
+        assert_eq!(state == before, !vetoed, "{label} vetoed={vetoed}");
+    }
+}
+
 /// Whether a Phrog Parasite still owns its `InfestedPower`.
 ///
 /// `InfestedPower.ShouldStopCombatFromEnding` (`0xa4017`) returns true for as
@@ -4811,7 +4963,10 @@ fn finish_monster_death_body(
                 .ok_or(EngineRefusal::CounterOverflow("Gremlin Horn energy"))?;
         }
         if !damage_combat_is_ending(state) {
-            super::draw::draw_cards(state, catalog, 1, super::draw::DrawSource::Command, events)?;
+            // A choice this Draw begins resolves in a queued hook action
+            // after the rest of this walk and of the enclosing action
+            // (#3387, `engine::hook_action`).
+            super::draw::gremlin_horn_draw(state, catalog, events)?;
         }
         crate::coverage::record_relic(RelicId::RelicGremlinHorn);
     }
@@ -4853,7 +5008,9 @@ fn finish_monster_death_body(
     super::monsters::crab_rage_after_death(state, target, events)?;
     super::monsters::queen_after_monster_death(state, dying_kind)?;
     restore_possess_debit_after_owner_death(state, target, events)?;
-    drop(after_death_listener);
+    // A select that resolved without a prompt in a listener other than
+    // Gremlin Horn's (whose Draw counts its own, #3387) refuses here (#3485).
+    after_death_listener.settle(Ok(()))?;
     if axebot_respawns || test_subject_retains {
         // The fresh replacement is already live; Stock's
         // ShouldStopCombatFromEnding result suppresses both the secondary
@@ -6810,9 +6967,9 @@ pub fn gain_powered_card_block(
     raw: i64,
     events: &mut Vec<Event>,
 ) -> Result<i32, EngineRefusal> {
-    if !state.history.over
-        && state.card_states.dampen().is_some()
+    if state.card_states.dampen().is_some()
         && state.powers.value(PowerId::Juggernaut) > 0
+        && !damage_combat_is_ending(state)
         && modified_card_block(state, source, raw, true)? > 0
         && !super::play::active_play_transaction_is_running()
     {
@@ -6833,9 +6990,9 @@ pub(crate) fn gain_powered_card_block_retained_decimal(
     raw: i64,
     events: &mut Vec<Event>,
 ) -> Result<DotNetDecimal, EngineRefusal> {
-    if !state.history.over
-        && state.card_states.dampen().is_some()
+    if state.card_states.dampen().is_some()
         && state.powers.value(PowerId::Juggernaut) > 0
+        && !damage_combat_is_ending(state)
         && modified_card_block_decimal(state, source, raw, true)? > DotNetDecimal::zero()
         && !super::play::active_play_transaction_is_running()
     {
@@ -6943,9 +7100,9 @@ pub fn gain_card_unpowered_block(
     raw: i64,
     events: &mut Vec<Event>,
 ) -> Result<i32, EngineRefusal> {
-    if !state.history.over
-        && state.card_states.dampen().is_some()
+    if state.card_states.dampen().is_some()
         && state.powers.value(PowerId::Juggernaut) > 0
+        && !damage_combat_is_ending(state)
         && modified_card_block(state, source, raw, false)? > 0
         && !super::play::active_play_transaction_is_running()
     {
@@ -6970,7 +7127,7 @@ pub(crate) fn gain_flat_power_block_decimal(
     raw: DotNetDecimal,
     events: &mut Vec<Event>,
 ) -> Result<DotNetDecimal, EngineRefusal> {
-    if state.history.over {
+    if damage_combat_is_ending(state) {
         return Ok(DotNetDecimal::zero());
     }
     let shadowmeld = state.powers.value(PowerId::Shadowmeld);
@@ -7014,6 +7171,15 @@ fn gain_flat_power_block(
     native_block_storage_amount(modified, "flat player block")
 }
 
+/// The player `CreatureCmd.GainBlock` body shared by powered and unpowered
+/// card Block. `CreatureCmd/<GainBlock>d__18::MoveNext` (v0.111.0 RVA
+/// `0x3eaec0`) returns zero on `CombatManager.IsOverOrEnding`
+/// (IL_002d-0041) and on a dead recipient (IL_0046-005b), before any
+/// modifier, history or `AfterBlockGained` listener. A dead player is a
+/// pending loss, so [`damage_combat_is_ending`] is the whole gate; it also
+/// covers the ending-but-not-over window `history.over` missed (#3502). The
+/// flat-power and Decimal variants, and the Dampen/Juggernaut preflights in
+/// front of them, read the same gate.
 fn gain_card_block(
     state: &mut HotState,
     catalog: &Catalog,
@@ -7022,7 +7188,7 @@ fn gain_card_block(
     powered: bool,
     events: &mut Vec<Event>,
 ) -> Result<i32, EngineRefusal> {
-    if state.history.over {
+    if damage_combat_is_ending(state) {
         return Ok(0);
     }
     let gained = modified_card_block(state, source, raw, powered)?;
@@ -7084,7 +7250,7 @@ fn gain_card_block_decimal(
     powered: bool,
     events: &mut Vec<Event>,
 ) -> Result<DotNetDecimal, EngineRefusal> {
-    if state.history.over {
+    if damage_combat_is_ending(state) {
         return Ok(DotNetDecimal::zero());
     }
     let modified = modified_card_block_decimal(state, source, raw, powered)?;
@@ -11448,6 +11614,8 @@ mod tests {
         for (amounts, expected) in [(&[2][..], 20), (&[3][..], 30), (&[2, 3][..], 60)] {
             let mut pet = HotState::at_defaults();
             pet.hp = 50;
+            // A live Osty: a dead or absent attacker lands no hit (#3495).
+            pet.fanouts.set_osty(Some((5, 5))).unwrap();
             let mut target = HotMonster::new(MonsterKind::Toadpole, 100);
             for amount in amounts {
                 target.misery_debuff_order.push_knockdown(*amount);
@@ -11489,6 +11657,7 @@ mod tests {
 
         let mut fractional = HotState::at_defaults();
         fractional.hp = 50;
+        fractional.fanouts.set_osty(Some((5, 5))).unwrap();
         fractional.powers.set(PowerId::Tracking, SlotWire::Int, 50);
         let mut target = HotMonster::new(MonsterKind::Toadpole, 100);
         target.powers.set(PowerId::Weak, SlotWire::Int, 1);
@@ -11510,6 +11679,7 @@ mod tests {
 
         let mut overflowed = HotState::at_defaults();
         overflowed.hp = 50;
+        overflowed.fanouts.set_osty(Some((5, 5))).unwrap();
         let mut target = HotMonster::new(MonsterKind::Toadpole, i32::MAX);
         for _ in 0..3 {
             target.misery_debuff_order.push_knockdown(i32::MAX);
@@ -11577,6 +11747,13 @@ mod tests {
             let mut state = HotState::at_defaults();
             state.hp = 50;
             state.monsters_mut().push(monster);
+            // A live bystander keeps the combat from ending, so the command
+            // passes its `IsOverOrEnding` entry return (#3483) and reaches
+            // the Knockdown validation.
+            let mut bystander = HotMonster::new(MonsterKind::Toadpole, 20);
+            bystander.uid = 5;
+            bystander.slot = 1;
+            state.monsters_mut().push(bystander);
             let before = state.clone();
             let mut events = vec![Event::CombatOver { player_won: false }];
             let events_before = events.clone();
@@ -11676,6 +11853,8 @@ mod tests {
 
         let mut pet = HotState::at_defaults();
         pet.hp = 50;
+        // A live Osty: a dead or absent attacker lands no hit (#3495).
+        pet.fanouts.set_osty(Some((5, 5))).unwrap();
         pet.monsters_mut()
             .push(HotMonster::new(MonsterKind::Toadpole, 100));
         pet.powers.set(PowerId::DoubleDamage, SlotWire::Int, 1);
@@ -11699,6 +11878,48 @@ mod tests {
         composed.powers.set(PowerId::PlayerWeak, SlotWire::Int, 1);
         player_attack(&mut composed, &source, &[0], 5, 1, &mut Vec::new()).unwrap();
         assert_eq!(composed.monsters[0].hp, 93, "5 * 2 * 3/4 floors once");
+    }
+
+    /// #3438: `PenNib::ModifyDamageMultiplicative` (`0x9917c` IL_0033-IL_0040)
+    /// admits the owner's Osty as a dealer, so the doubled card's Osty body is
+    /// x2 — composed with the receiver's Vulnerable, Poke's 6 is 18 (the
+    /// Aeonglass `f0d7a23c7f949351` step-42 hit). Without the double the same
+    /// hit is 9, and the pet's hit is never doubled by a play Pen Nib did not
+    /// mark.
+    #[test]
+    fn pen_nib_doubles_the_marked_cards_osty_body() {
+        let (catalog, source, _) = pet_attack_catalog();
+        for (pen_double, vulnerable, expected_loss) in [
+            (true, false, 12),
+            (false, false, 6),
+            (true, true, 18),
+            (false, true, 9),
+        ] {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.fanouts.set_osty(Some((5, 5))).unwrap();
+            let mut target = HotMonster::new(MonsterKind::Toadpole, 100);
+            if vulnerable {
+                target.powers.set(PowerId::Vuln, SlotWire::Int, 2);
+            }
+            state.monsters_mut().push(target);
+            crate::engine::play::with_test_active_play_pen_double(7, pen_double, || {
+                player_pet_attack_from_card(
+                    &mut state,
+                    (&catalog, &source, 7),
+                    &[0],
+                    6,
+                    1,
+                    &mut Vec::new(),
+                )
+                .unwrap();
+            });
+            assert_eq!(
+                100 - state.monsters[0].hp,
+                expected_loss,
+                "pen_double={pen_double} vulnerable={vulnerable}"
+            );
+        }
     }
 
     #[test]
@@ -14633,6 +14854,197 @@ mod tests {
         assert_eq!(state.powers.value(PowerId::Vigor), 0);
     }
 
+    /// #3483: a player `AttackCommand` issued while the combat is ending or
+    /// over returns at entry (`AttackCommand/<Execute>d__90::MoveNext` RVA
+    /// `0x3f19c0` IL_0067-008a), before BeforeAttack (IL_00d8). Vigor and
+    /// Gigantification never bind it, nothing is hit, and the state is
+    /// unchanged. Before #3483 only Osty's command returned here, and a
+    /// player command latched Gigantification that its ending-gated
+    /// AfterAttack tail then never released. The same command in a live
+    /// combat binds and consumes both.
+    #[test]
+    fn player_attack_command_on_an_ending_or_over_combat_does_nothing() {
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut live = HotState::at_defaults();
+        live.hp = 50;
+        live.monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        live.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+        assert!(live.fanouts.set_gigantification(1));
+        let attack = |state: &mut HotState| {
+            player_attack(state, &source, &[0], 2, 2, &mut Vec::new()).unwrap();
+        };
+
+        // Ending: the only primary enemy is dead, the fight not yet over.
+        let mut ending = live.clone();
+        ending.monsters_mut()[0].hp = 0;
+        assert!(!ending.history.over);
+        assert!(damage_combat_is_ending(&ending));
+        let before = ending.clone();
+        attack(&mut ending);
+        assert_eq!(ending, before, "the command returns at entry");
+        assert!(!ending.fanouts.gigantification_bound());
+
+        // Over: a live enemy, but the outcome is already fixed.
+        let mut over = live.clone();
+        over.history.over = true;
+        let before = over.clone();
+        attack(&mut over);
+        assert_eq!(over, before, "the command returns at entry");
+
+        attack(&mut live);
+        assert_eq!(
+            live.powers.value(PowerId::Vigor),
+            0,
+            "Vigor bound and consumed"
+        );
+        assert_eq!(
+            live.fanouts.gigantification(),
+            0,
+            "Gigantification consumed"
+        );
+        assert!(!live.fanouts.gigantification_bound());
+        assert!(live.monsters[0].hp < 100);
+    }
+
+    /// #3483: the entry test is not repeated per hit. A two-hit command whose
+    /// first hit kills the last enemy keeps running: its next hit finds no
+    /// `validTargets` (IL_01a6-01b3) and leaves for the record site and
+    /// AfterAttack, so the killing hit carried the Vigor BeforeAttack bound.
+    /// A second command in the same card body then enters an ending combat
+    /// and returns at entry.
+    #[test]
+    fn a_multi_hit_player_attack_that_ends_the_combat_finishes_and_the_next_command_is_inert() {
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 10));
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+
+        player_attack(&mut state, &source, &[0], 7, 2, &mut Vec::new()).unwrap();
+
+        assert_eq!(
+            state.monsters[0].hp, 0,
+            "7 + Vigor 3 kills on the first hit"
+        );
+        assert!(state.history.over);
+        assert!(damage_combat_is_ending(&state));
+
+        let before = state.clone();
+        let mut events = Vec::new();
+        player_attack(&mut state, &source, &[0], 7, 2, &mut events).unwrap();
+        assert_eq!(state, before, "the next command returns at entry");
+        assert!(events.is_empty());
+    }
+
+    /// #3495: a command whose first hit ends the combat keeps its
+    /// Gigantification bound. Native AfterAttack (`0x3f19c0` IL_0845) still
+    /// runs, but `Hook.IterateCombatHookListeners` (`0x3d3bc0` IL_0028-0042)
+    /// yields no listener once the combat is over or ending, so
+    /// `GigantificationPower.<AfterAttack>d__8` (`0x33b668`) never clears
+    /// `commandToModify` or decrements (IL_0034-003c). Vigor stays for the
+    /// same reason. The same command in a live combat releases both.
+    #[test]
+    fn a_command_that_ends_the_combat_keeps_gigantification_bound() {
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 10));
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+        assert!(state.fanouts.set_gigantification(2));
+        let mut live = state.clone();
+        live.monsters_mut()[0].hp = 1000;
+
+        player_attack(&mut state, &source, &[0], 7, 2, &mut Vec::new()).unwrap();
+
+        assert!(state.history.over);
+        assert!(state.fanouts.gigantification_bound(), "never released");
+        assert_eq!(state.fanouts.gigantification(), 2, "never decremented");
+        assert_eq!(state.powers.value(PowerId::Vigor), 3);
+
+        player_attack(&mut live, &source, &[0], 7, 2, &mut Vec::new()).unwrap();
+        assert!(!live.fanouts.gigantification_bound());
+        assert_eq!(live.fanouts.gigantification(), 1);
+        assert_eq!(live.powers.value(PowerId::Vigor), 0);
+    }
+
+    /// #3495: the hit loop leaves on native's own exits, not on
+    /// `history.over`. Once a fixed multi-target hit kills every listed
+    /// target, `validTargets` is empty (`0x3f19c0` IL_0168-01b3). The next hit
+    /// then leaves before entering an empty Damage batch. A second hit changes
+    /// nothing: the state after the command equals a one-hit command's.
+    #[test]
+    fn a_fixed_multi_target_command_leaves_when_no_listed_target_lives() {
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        for slot in 0..2 {
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, 5);
+            monster.uid = slot;
+            monster.slot = slot as i32;
+            state.monsters_mut().push(monster);
+        }
+        let mut one_hit = state.clone();
+        let mut events = Vec::new();
+        let mut one_hit_events = Vec::new();
+
+        player_attack(&mut state, &source, &[0, 1], 10, 3, &mut events).unwrap();
+        player_attack(&mut one_hit, &source, &[0, 1], 10, 1, &mut one_hit_events).unwrap();
+
+        assert!(state.history.over);
+        assert_eq!(state, one_hit);
+        assert_eq!(events, one_hit_events);
+    }
+
+    /// #3495: Echoing Slash's kill wave adds a hit per kill, so a wave that
+    /// kills every enemy leaves pending hits behind. The next one finds no
+    /// `validTargets` (`0x3f19c0` IL_0168-01b3) and the command leaves,
+    /// exactly as it would with the combat still live.
+    #[test]
+    fn an_echoing_slash_wave_that_kills_everything_leaves_on_no_valid_targets() {
+        let (catalog, atom) = source_catalog(CardId::EchoingSlash);
+        let spec = *catalog.spec(atom).unwrap();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+            uid: 3,
+            atom,
+            flags: 0,
+        });
+        for slot in 0..2 {
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, 5);
+            monster.uid = slot;
+            monster.slot = slot as i32;
+            state.monsters_mut().push(monster);
+        }
+        let mut events = Vec::new();
+
+        player_attack_context_from_card(
+            &mut state,
+            (&catalog, &spec, 3),
+            &[],
+            10,
+            AttackContextMode::EchoingSlash,
+            &mut events,
+        )
+        .unwrap();
+
+        assert!(state.history.over);
+        assert!(state.monsters.iter().all(|monster| monster.hp <= 0));
+        assert_eq!(
+            events
+                .iter()
+                .filter(|event| matches!(event, Event::MonsterDamaged { .. }))
+                .count(),
+            2,
+            "one wave; the two pending hits it earned find no target"
+        );
+    }
+
     /// #2655 witness state: the thorny receiver is the last live enemy and
     /// the player's Inferno, fired by the Thorns loss, kills it.
     fn thorns_inferno_last_receiver_state() -> HotState {
@@ -15370,6 +15782,10 @@ mod tests {
     #[test]
     fn powered_block_folds_temp_dex_fasten_and_the_unmovable_window() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 100;
         state.powers.set(PowerId::Dexterity, SlotWire::Int, -1);
         state.powers.set(PowerId::TempDexterity, SlotWire::Int, 2);
@@ -15411,6 +15827,10 @@ mod tests {
     #[test]
     fn powered_block_preview_is_the_mutating_result_without_any_mutation() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Dexterity, SlotWire::Int, -3);
         state.powers.set(PowerId::TempDexterity, SlotWire::Int, 2);
         state.powers.set(PowerId::Fasten, SlotWire::Int, 4);
@@ -15443,6 +15863,10 @@ mod tests {
     fn card_block_clamps_storage_at_the_native_cap_without_clamping_the_event() {
         let source = source_spec(CardId::DefendIronclad);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.block = NATIVE_PLAYER_BLOCK_CAP as i32 - 2;
         let mut events = Vec::new();
 
@@ -15495,6 +15919,10 @@ mod tests {
         let source = source_spec(CardId::DefendIronclad);
         for malformed_block in [-1, NATIVE_PLAYER_BLOCK_CAP as i32 + 1] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.block = malformed_block;
             let before = state.clone();
             let mut events = vec![Event::TurnEnded { turn: 17 }];
@@ -15514,6 +15942,11 @@ mod tests {
         }
 
         let mut state = HotState::at_defaults();
+
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.history.card_block_gains = i16::MAX;
         let before = state.clone();
         let mut events = Vec::new();
@@ -15535,6 +15968,10 @@ mod tests {
     fn no_block_zeroes_only_powered_card_block_and_keeps_preview_pure() {
         let source = source_spec(CardId::DefendIronclad);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::NoBlock, SlotWire::Int, 2);
         state.powers.set(PowerId::Dexterity, SlotWire::Int, 3);
         state.powers.set(PowerId::Unmovable, SlotWire::Int, 1);
@@ -15576,6 +16013,10 @@ mod tests {
     fn no_block_cannot_hide_shadowmeld_native_decimal_overflow() {
         let source = source_spec(CardId::DefendIronclad);
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::NoBlock, SlotWire::Int, 1);
         state.powers.set(PowerId::Shadowmeld, SlotWire::Int, 95);
 
@@ -15670,6 +16111,10 @@ mod tests {
     fn frail_multiplies_only_powered_card_block_after_unmovable() {
         let source = source_spec(CardId::DefendIronclad);
         let mut powered = HotState::at_defaults();
+        powered.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         powered.powers.set(PowerId::PlayerFrail, SlotWire::Int, 2);
         powered.powers.set(PowerId::Unmovable, SlotWire::Int, 1);
         let mut events = Vec::new();
@@ -15688,6 +16133,11 @@ mod tests {
         assert_eq!(powered.block, 7); // trunc((5 * 2) * 3/4)
 
         let mut unpowered = HotState::at_defaults();
+
+        unpowered.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         unpowered.powers.set(PowerId::PlayerFrail, SlotWire::Int, 2);
         assert_eq!(
             gain_card_unpowered_block(
@@ -15708,6 +16158,10 @@ mod tests {
     #[test]
     fn fasten_adds_only_to_powered_defend_tagged_card_block() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 100;
         state.powers.set(PowerId::Fasten, SlotWire::Int, 6);
         let defend = source_spec(CardId::DefendIronclad);
@@ -15753,6 +16207,10 @@ mod tests {
     #[test]
     fn unpowered_card_block_skips_additives_but_keeps_unmovable() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 100;
         state.powers.set(PowerId::Dexterity, SlotWire::Int, 9);
         state.powers.set(PowerId::TempDexterity, SlotWire::Int, 9);
@@ -15775,6 +16233,110 @@ mod tests {
         );
         assert_eq!(state.block, 80);
         assert_eq!(state.history.card_block_gains, 1);
+    }
+
+    /// #3502: `CreatureCmd/<GainBlock>d__18::MoveNext` (`0x3eaec0`) returns
+    /// zero on `IsOverOrEnding` (IL_002d-0041) before any modifier, history or
+    /// listener. With the only enemy dead and the over latch not yet set, the
+    /// powered, unpowered, retained-Decimal and flat player Block commands all
+    /// gain nothing and change nothing, and the Dampen + Juggernaut preflight
+    /// in front of the card forms does not refuse a command native skips. The
+    /// live control gains every Block and refuses the preflight.
+    #[test]
+    fn player_gain_block_returns_at_entry_while_the_combat_is_ending_before_the_over_latch() {
+        let catalog = CatalogBuilder::new().build();
+        let defend = source_spec(CardId::DefendIronclad);
+        for ending in [false, true] {
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.hp = 100;
+            if ending {
+                state.monsters_mut()[0].hp = 0;
+            }
+            assert!(!state.history.over);
+            assert_eq!(damage_combat_is_ending(&state), ending);
+            let before = state.clone();
+            let mut events = Vec::new();
+
+            let powered =
+                gain_powered_card_block(&mut state, &catalog, &defend, 5, &mut events).unwrap();
+            let unpowered =
+                gain_card_unpowered_block(&mut state, &catalog, &defend, 5, &mut events).unwrap();
+            let retained = gain_powered_card_block_retained_decimal(
+                &mut state,
+                &catalog,
+                &defend,
+                5,
+                &mut events,
+            )
+            .unwrap();
+            let flat = gain_flat_power_block_decimal(
+                &mut state,
+                Some(&catalog),
+                DotNetDecimal::from_i64(5),
+                &mut events,
+            )
+            .unwrap();
+            if ending {
+                assert_eq!((powered, unpowered), (0, 0));
+                assert_eq!(retained, DotNetDecimal::zero());
+                assert_eq!(flat, DotNetDecimal::zero());
+                assert_eq!(state, before);
+                assert!(events.is_empty());
+            } else {
+                assert_eq!((powered, unpowered), (5, 5));
+                assert_eq!(retained, DotNetDecimal::from_i64(5));
+                assert_eq!(flat, DotNetDecimal::from_i64(5));
+                assert_eq!(state.block, 20);
+                assert_eq!(state.history.card_block_gains, 3);
+            }
+
+            let mut dampened = before.clone();
+            dampened
+                .card_states
+                .set_dampen(Some(crate::hot::DampenState {
+                    caster_uid: 2,
+                    cards: Vec::new(),
+                }));
+            dampened.powers.set(PowerId::Juggernaut, SlotWire::Int, 1);
+            let untouched = dampened.clone();
+            let powered = gain_powered_card_block(&mut dampened, &catalog, &defend, 5, &mut events);
+            let unpowered =
+                gain_card_unpowered_block(&mut dampened, &catalog, &defend, 5, &mut events);
+            let retained = gain_powered_card_block_retained_decimal(
+                &mut dampened,
+                &catalog,
+                &defend,
+                5,
+                &mut events,
+            );
+            if ending {
+                assert_eq!((powered, unpowered), (Ok(0), Ok(0)));
+                assert_eq!(retained, Ok(DotNetDecimal::zero()));
+                assert_eq!(dampened, untouched);
+            } else {
+                assert_eq!(
+                    powered,
+                    Err(EngineRefusal::MalformedArgs(
+                        "Dampen powered block Juggernaut catalog"
+                    ))
+                );
+                assert_eq!(
+                    unpowered,
+                    Err(EngineRefusal::MalformedArgs(
+                        "Dampen unpowered block Juggernaut catalog"
+                    ))
+                );
+                assert_eq!(
+                    retained,
+                    Err(EngineRefusal::MalformedArgs(
+                        "Dampen powered block Juggernaut catalog"
+                    ))
+                );
+            }
+        }
     }
 
     #[test]
@@ -17936,6 +18498,10 @@ mod tests {
     #[test]
     fn shroud_flat_block_refuses_native_overflow_before_block_or_events() {
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Shadowmeld, SlotWire::Int, 1);
         let mut events = vec![Event::PlayerBlockGained {
             amount: 1,

@@ -40,6 +40,9 @@ pub const IMPLEMENTED: &[StepKind] = &[
 /// row amount. `NoEnergyGainPower` is boundary-representable and
 /// ledger-authenticated but independently admission-refused until every local
 /// gain modifier is modeled.
+///
+/// `ForgottenRitual/<OnPlay>d__9` RVA `0x39ffa4` awaits `PlayerCmd.GainEnergy`
+/// (IL_00e4). `PlayerCmd/<GainEnergy>d__3` (`0x3ee8a0`) returns at `IsEnding` (IL_0035-003c): the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn forgotten_ritual_energy_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::ForgottenRitual, 0, [CompiledArg::I(3)]) => 3_i16,
@@ -50,7 +53,7 @@ pub(crate) fn forgotten_ritual_energy_exact(ctx: &mut StepCtx<'_>) -> Result<(),
             ));
         }
     };
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     ctx.state.energy =
@@ -386,5 +389,19 @@ mod tests {
         .unwrap();
         assert_eq!(state.monsters[0].hp, 45);
         assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+    }
+
+    /// #3515: Forgotten Ritual's `PlayerCmd.GainEnergy` (`0x39ffa4` IL_00e4)
+    /// returns at `IsEnding` (`<GainEnergy>d__3` 0x3ee8a0 IL_0035). While the
+    /// combat is ending before the over latch it gains nothing; the
+    /// Adaptable-vetoed control gains.
+    #[test]
+    fn forgotten_ritual_gains_nothing_while_combat_is_ending_before_the_over_latch() {
+        let source = identity(CardId::ForgottenRitual, 0);
+        let (mut template, catalog) = setup(source);
+        template.energy = 2;
+        crate::engine::damage::assert_ending_window_gate(&template, "Forgotten Ritual", |s, _| {
+            run(source, s, &catalog, None, &[CompiledArg::I(3)])
+        });
     }
 }

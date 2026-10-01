@@ -308,6 +308,11 @@ pub(crate) fn temp_strength_enemy_model(
 /// the same at every sibling — is the player, and
 /// `TemporaryStrengthPower/<BeforeApplied>d__20::MoveNext` `0x348d20`
 /// IL_003e-IL_004b forwards it to the nested `Apply<StrengthPower>`.
+///
+/// The wrapper is one `PowerCmd.Apply` (Piercing Wail `0x3b253c` IL_00f3, Dark
+/// Shackles `0x396954`), and `<Apply>d__1`1` (`0x3ef988`) returns at `IsEnding`
+/// (IL_0025-002a) before Artifact, Lamp or the nested Strength run. So the gate
+/// is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn apply_temp_strength_enemy(
     state: &mut crate::hot::HotState,
     target: usize,
@@ -318,7 +323,7 @@ pub(crate) fn apply_temp_strength_enemy(
     let Some(monster) = state.monsters.get(target) else {
         return Err(EngineRefusal::TargetMismatch { required: true });
     };
-    if state.history.over || monster.hp <= 0 {
+    if crate::engine::damage::damage_combat_is_ending(state) || monster.hp <= 0 {
         return Ok(());
     }
     let checkpoint = state.clone();
@@ -499,6 +504,12 @@ pub(crate) fn attack_random_x(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal
 /// `_run_steps_inner` consumes that private list for Doom,
 /// powered Block, Stars, or Energy. Exact card/level/operand rows are
 /// allowlisted here so the result channel cannot become a generic shortcut.
+///
+/// Sunder's reward is `PlayerCmd.GainEnergy` (`Sunder/<OnPlay>d__5` `0x3c06e4`
+/// IL_014e), whose `<GainEnergy>d__3` (`0x3ee8a0`) returns at `IsEnding`
+/// (IL_0035-003c). It follows a kill, and the engine latches `history.over`
+/// at a killing blow that leaves no living primary, so `history.over` is that
+/// gate here; an ending combat never reaches the kill (#3515).
 pub(crate) fn attack_result(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let target = ctx
         .target
@@ -695,13 +706,16 @@ pub(crate) fn block(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 ///
 /// The separate pet attack entry point is the only reader: ordinary player
 /// card attacks therefore cannot observe this amount.
+///
+/// v0.111.0 `Calcify/<OnPlay>` RVA `0x390c7c` awaits `PowerCmd.Apply<CalcifyPower>` at IL_00d1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn calcify(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::Calcify, 0, [CompiledArg::I(4)]) => 4,
         (CardId::Calcify, 1, [CompiledArg::I(6)]) => 6,
         _ => return Err(EngineRefusal::MalformedArgs("calcify")),
     };
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let updated = ctx
@@ -1013,6 +1027,15 @@ fn channel_source_is_exact(ctx: &StepCtx<'_>, kind: OrbKind, count: i64) -> bool
     )
 }
 
+/// `("channel", orb, count)` — `count` `OrbCmd.Channel` commands.
+///
+/// Each command returns on `IsOverOrEnding` (`OrbCmd/<Channel>d__3::MoveNext`
+/// RVA `0x3ed69c` IL_0029-0035; the generic `<Channel>d__2`1` `0x3ed5c4`
+/// forwards to it at IL_0032). [`crate::engine::orbs::channel`] carries that
+/// gate through the shared IsEnding projection, so once the combat is ending
+/// every later iteration is a no-op; the `history.over` break below only
+/// stops the loop early and matches native in the ending-but-not-over window
+/// too (#3502).
 pub(crate) fn channel(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (kind, count) =
         crate::engine::admission::channel_args(ctx.args).map_err(EngineRefusal::MalformedArgs)?;
@@ -1081,6 +1104,12 @@ pub(crate) fn dexterity(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount: i32 = amount
         .try_into()
         .map_err(|_| EngineRefusal::CounterOverflow("dexterity"))?;
+    // `PowerCmd.Apply<DexterityPower>` returns on `IsEnding`
+    // (`<Apply>d__1`1` RVA `0x3ef988` IL_0020-0034). Bulk Up and Prowess apply
+    // it after an earlier command that can end the combat (#3495).
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
+    }
     let updated = ctx
         .state
         .powers
@@ -1112,17 +1141,40 @@ pub(crate) fn draw(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 
 /// `("energy", amount)` — `PlayerCmd::GainEnergy`.
 ///
-/// Python: `_run_steps_inner` (frozen, deleted #2827). The gain lands unless
-/// NoEnergyGainPower zeroes it. That object is boundary-representable and
-/// ledger-authenticated, but independently admission-refused until the
-/// complete local gain modifier surface (including this command) is modeled.
-/// Thus every admitted call reduces to the bare gain. There is deliberately
-/// no combat-over gate — Python's branch has none.
+/// v0.111.0 `sts2.dll` (sha `9cb4f1ad…`) `PlayerCmd/<GainEnergy>d__3::MoveNext`
+/// RVA `0x3ee8a0`, in order:
+/// - IL_0019-002b: returns when `amount <= 0`.
+/// - IL_0030-003c: returns on `CombatManager.IsEnding`. Bloodletting and
+///   Offering gain after their HP loss, whose listeners (Inferno) can end the
+///   combat (#3495).
+/// - IL_0062: `Hook.ModifyEnergyGain` (`0x1053e8`) folds every combat hook
+///   listener's `ModifyEnergyGain` (IL_002f); AfterModifyingEnergyGain
+///   (IL_006e) then notifies the listeners that changed it.
+/// - IL_00c8-00fa: gains `finalAmount` only when it is positive.
+///
+/// The DLL declares exactly one `ModifyEnergyGain` override besides the
+/// identity `AbstractModel::ModifyEnergyGain` (`0x7a261`, IL_0001-0002):
+/// `NoEnergyGainPower::ModifyEnergyGain` (`0xa4f9d`), which returns zero when
+/// the gaining player is the power's owner (IL_0001-0016) (#3502). So the
+/// fold is "zero while the local NoEnergyGain flag is set", exactly the
+/// Plasma (`orbs::turn_start_passives`) and Tea Set (`relics::after_energy_reset`)
+/// gates. Nothing in v0.111.0 applies `NoEnergyGainPower` outside the
+/// `ApplyPowerConsoleCmd` developer console (its only references are the
+/// `AbstractModelSubtypes` registry `0x84d4c` IL_485a, and `ModelDb.AllPowers`
+/// feeds only `Preload` and the console), and admission refuses a local one
+/// by name ("NoEnergyGain local GainEnergy modifier"). The gate here keeps
+/// this command exact regardless.
 pub(crate) fn energy(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "energy")?;
     let amount: i16 = amount
         .try_into()
         .map_err(|_| EngineRefusal::CounterOverflow("energy"))?;
+    if amount <= 0
+        || crate::engine::damage::damage_combat_is_ending(ctx.state)
+        || ctx.state.fanouts.no_energy_gain()
+    {
+        return Ok(());
+    }
     ctx.state.energy = ctx
         .state
         .energy
@@ -1485,6 +1537,9 @@ pub(crate) fn generate_fixed_status(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
 /// Python: `_run_steps_inner` (frozen, deleted #2827). HAUNT/HAUNT+ add 7/9 to the
 /// owner singleton after the generic ending gate; the reader lives in
 /// `engine::play`.
+///
+/// v0.111.0 `Haunt/<OnPlay>` RVA `0x3a3c7c` awaits `PowerCmd.Apply<HauntPower>` at IL_00cc.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn haunt_power(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "haunt_power")?;
     if !matches!(
@@ -1493,7 +1548,7 @@ pub(crate) fn haunt_power(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     ) {
         return Err(EngineRefusal::MalformedArgs("haunt_power"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let current = ctx.state.powers.value(PowerId::HauntPower);
@@ -1524,6 +1579,11 @@ pub(crate) fn haunt_power(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// metadata `heal` field and body operand to agree. Python's loop-top guard
 /// refuses a body reached after combat ended; retain that atomic boundary
 /// rather than mutating the exit save.
+///
+/// `NotYet/<OnPlay>d__7` RVA `0x3af6d8` awaits `CreatureCmd.Heal` (IL_00ba), and
+/// `<Heal>d__20` (`0x3eb4b0`) returns at `IsEnding` (IL_0046-004b). A combat
+/// that is ending before the over latch heals nothing; `history.over` keeps its
+/// refusal (#3515).
 pub(crate) fn heal(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "heal")?;
     let expected = 10 + 3 * i64::from(ctx.spec.identity.upgrade);
@@ -1538,6 +1598,9 @@ pub(crate) fn heal(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     }
     if ctx.state.history.over {
         return Err(EngineRefusal::CombatOver);
+    }
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
     }
     let amount: i32 = amount
         .try_into()
@@ -1633,6 +1696,9 @@ pub(crate) fn hp_loss(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// `ModifyDamageMultiplicative` (RVA 0x250640) is read by the physical-card
 /// attack pipeline. Python `_run_steps_inner` (frozen, deleted #2827) owns the same
 /// over-gated Intensity stack.
+///
+/// v0.111.0 `Lethality/<OnPlay>` RVA `0x3a9a54` awaits `PowerCmd.Apply<LethalityPower>` at IL_00d1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn lethality(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::Lethality, 0, [CompiledArg::I(50)]) => 50,
@@ -1642,7 +1708,7 @@ pub(crate) fn lethality(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if ctx.target.is_some() || ctx.selection.is_some() || ctx.x_value != 0 {
         return Err(EngineRefusal::MalformedArgs("lethality"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let updated = ctx
@@ -1668,6 +1734,13 @@ pub(crate) fn lethality(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Slice 5 completed every current argument's reader: Weak, Poison, Doom,
 /// permanent signed Strength, and the enemy temporary-Strength wrapper. The
 /// source allowlist below pins every generated carrier and exact amount.
+///
+/// Every member is one `PowerCmd.Apply` (Resonance `0x3b71cc` IL_0185, Piercing
+/// Wail `0x3b253c` IL_00f3), and `<Apply>d__1`1` (`0x3ef988`) returns at
+/// `IsEnding` (IL_0025-002a). The monster debuff writers carry that gate
+/// themselves; the permanent Strength writer `apply_card_monster_strength_delta`
+/// still reads `history.over`, so this loop tests the shared IsEnding
+/// projection (#3515).
 pub(crate) fn power_all_serial(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::Power(power), CompiledArg::I(raw)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("power_all_serial"));
@@ -1701,7 +1774,9 @@ pub(crate) fn power_all_serial(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusa
         .map_err(|_| EngineRefusal::CounterOverflow("power_all_serial"))?;
     let targets = alive_targets(ctx.state);
     for target in targets {
-        if ctx.state.history.over || ctx.state.monsters[target].hp <= 0 {
+        if crate::engine::damage::damage_combat_is_ending(ctx.state)
+            || ctx.state.monsters[target].hp <= 0
+        {
             continue;
         }
         match power {
@@ -1772,6 +1847,9 @@ pub(crate) fn select(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Python: `_run_steps_inner` (frozen, deleted #2827). The old amount is frozen by
 /// `engine::play` before this body, so the applying play cannot hit with its
 /// newly added amount.
+///
+/// v0.111.0 `SerpentForm/<OnPlay>` RVA `0x3b9d78` awaits `PowerCmd.Apply<SerpentFormPower>` at IL_00d1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn serpent_form(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "serpent_form")?;
     if !matches!(
@@ -1780,7 +1858,7 @@ pub(crate) fn serpent_form(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     ) {
         return Err(EngineRefusal::MalformedArgs("serpent_form"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let current = ctx.state.powers.value(PowerId::SerpentForm);
@@ -1806,6 +1884,9 @@ pub(crate) fn serpent_form(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Amount 96, the first power of two outside the native double-to-Decimal
 /// conversion.
 ///
+///
+/// v0.111.0 `Shadowmeld/<OnPlay>` RVA `0x3ba50c` awaits `PowerCmd.Apply<ShadowmeldPower>` at IL_00d1.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn shadowmeld(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "shadowmeld")?;
     if ctx.spec.identity.id != CardId::Shadowmeld
@@ -1814,7 +1895,7 @@ pub(crate) fn shadowmeld(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     {
         return Err(EngineRefusal::MalformedArgs("shadowmeld"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let current = ctx.state.powers.value(PowerId::Shadowmeld);
@@ -1843,13 +1924,16 @@ pub(crate) fn shadowmeld(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// adds its Intensity and publishes the resulting amount. Combat ending makes
 /// the complete body a no-op. The Doom-only reader lands atomically in
 /// `engine::damage` and reads this live amount when its hook fires.
+///
+/// v0.111.0 `Shroud/<OnPlay>` RVA `0x3bb7b8` awaits `PowerCmd.Apply<ShroudPower>` at IL_00cc.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn shroud(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::Shroud, 0, [CompiledArg::I(3)]) => 3,
         (CardId::Shroud, 1, [CompiledArg::I(4)]) => 4,
         _ => return Err(EngineRefusal::MalformedArgs("shroud")),
     };
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
 
@@ -2094,6 +2178,9 @@ pub(crate) fn soul_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// Python `_run_steps_inner` validates the same exact solo-Regent generation
 /// provenance (frozen Python, deleted #2827) before registering the first positive stack in
 /// `before_hand_draw_power_order` and adding the Intensity amount.
+///
+/// v0.111.0 `SpectrumShift/<OnPlay>` RVA `0x3bd9ac` awaits `PowerCmd.Apply<SpectrumShiftPower>` at IL_00cc.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn spectrum_shift(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(1)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("spectrum_shift"));
@@ -2115,7 +2202,7 @@ pub(crate) fn spectrum_shift(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
     {
         return Err(EngineRefusal::MalformedArgs("spectrum_shift"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     let old = ctx.state.powers.value(PowerId::SpectrumShift);
@@ -2149,6 +2236,13 @@ pub(crate) fn spinner(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         || amount != 1
     {
         return Err(EngineRefusal::MalformedArgs("spinner"));
+    }
+    // `PowerCmd.Apply<SpinnerPower>` returns on `IsEnding` (`<Apply>d__1`1`
+    // RVA `0x3ef988` IL_0020-0034). Spinner+ applies it after
+    // `Channel<GlassOrb>` (`Spinner/<OnPlay>d__5` RVA `0x3bdc28` IL_00b9 then
+    // IL_0146), whose full-slot evoke can end the combat (#3495).
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
     }
     let was_absent = ctx.state.powers.value(PowerId::Spinner) == 0;
     let updated = ctx
@@ -2209,6 +2303,13 @@ pub(crate) fn stars(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// `FightMe/<OnPlay>d__6::MoveNext` **0x39e360** applies its 3/4 owner
 /// Strength after the two-hit attack and before the enemy's `+1` Strength.
 ///
+///
+/// Every source awaits one `PowerCmd.Apply<StrengthPower>` on its owner:
+/// Inflame `0x3a76c8` IL_0061, Bulk Up `0x38fa40` IL_00f4, Brand `0x38edbc`
+/// IL_02a3, Prowess `0x3b4064` IL_0052, Resonance `0x3b71cc` IL_00e0, Fight Me
+/// `0x39e360` IL_012b. `<Apply>d__1`1` (`0x3ef988`) returns at `IsEnding`
+/// (IL_0025-002a); `apply_owner_strength` still reads `history.over`, so the
+/// body tests the shared IsEnding projection first (#3515).
 pub(crate) fn strength(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = one_int(ctx, "strength")?;
     let expected = match (ctx.spec.identity.id, ctx.spec.identity.upgrade) {
@@ -2228,6 +2329,9 @@ pub(crate) fn strength(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount: i32 = amount
         .try_into()
         .map_err(|_| EngineRefusal::CounterOverflow("strength"))?;
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
+    }
     apply_owner_strength(ctx.state, amount, ctx.events)
 }
 
@@ -2392,6 +2496,9 @@ fn apply_turn_start_hand_choice_power(
 /// Python `_run_steps_inner` (frozen, deleted #2827) owns the same zero-to-positive
 /// registration and additive amount. The catalog-aware Vulnerable command in
 /// `engine::damage` owns the callback's exact Draw and whole-command preflight.
+///
+/// v0.111.0 `Vicious/<OnPlay>` RVA `0x3c6714` awaits `PowerCmd.Apply<ViciousPower>` at IL_00cc.
+/// `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn vicious(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let amount = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::Vicious, 0, [CompiledArg::I(1)]) => 1,
@@ -2412,7 +2519,7 @@ pub(crate) fn vicious(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     {
         return Err(EngineRefusal::MalformedArgs("vicious"));
     }
-    if ctx.state.history.over {
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
         return Ok(());
     }
     if !crate::engine::damage::player_type_one_listener_order_is_exact(ctx.state) {
@@ -2770,12 +2877,29 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let args = [CompiledArg::I(i64::from(amount))];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.powers.set(PowerId::SleightOfFlesh, SlotWire::Int, 9);
             assert!(
                 state
                     .fanouts
                     .set_after_power_amount_changed_order(&[PowerId::SleightOfFlesh])
             );
+            crate::engine::damage::assert_ending_window_gate(&state, "shroud", |s, _| {
+                shroud(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 7,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &args,
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,
@@ -2828,6 +2952,10 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             assert_eq!(spec.row.cost, cost);
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.reward_card_pool = Some(crate::catalog::RewardPool::Regent);
             state.entropy_card_pool = Some(crate::catalog::RewardPool::Regent);
             state.set_spectrum_shift_generation_pool(true);
@@ -2847,6 +2975,19 @@ mod tests {
                         .set_before_hand_draw_order(&[PowerId::InfiniteBlades])
                 );
             }
+            crate::engine::damage::assert_ending_window_gate(&state, "spectrum shift", |s, _| {
+                spectrum_shift(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 7,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &[CompiledArg::I(1)],
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,
@@ -2882,6 +3023,10 @@ mod tests {
         let catalog = builder.build();
         let spec = *catalog.spec(atom).unwrap();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.reward_card_pool = Some(crate::catalog::RewardPool::Regent);
         state.entropy_card_pool = Some(crate::catalog::RewardPool::Regent);
         state.set_spectrum_shift_generation_pool(true);
@@ -2934,6 +3079,10 @@ mod tests {
         let bad_args = [CompiledArg::I(4)];
 
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Shroud, SlotWire::Int, i32::MAX);
         assert!(
             state
@@ -3004,12 +3153,29 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let args = [CompiledArg::I(i64::from(amount))];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.powers.set(PowerId::SleightOfFlesh, SlotWire::Int, 9);
             assert!(
                 state
                     .fanouts
                     .set_after_power_amount_changed_order(&[PowerId::SleightOfFlesh])
             );
+            crate::engine::damage::assert_ending_window_gate(&state, "vicious", |s, _| {
+                vicious(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 7,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &args,
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,
@@ -3063,6 +3229,10 @@ mod tests {
         let good_args = [CompiledArg::I(1)];
         let bad_args = [CompiledArg::I(2)];
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Vicious, SlotWire::Int, i32::MAX);
         assert!(
             state
@@ -3141,6 +3311,23 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let args = [CompiledArg::I(i64::from(amount))];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
+            crate::engine::damage::assert_ending_window_gate(&state, "calcify", |s, _| {
+                calcify(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 7,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &args,
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,
@@ -3185,6 +3372,10 @@ mod tests {
         let spec = *catalog.spec(atom).unwrap();
         let args = [CompiledArg::I(4)];
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Calcify, SlotWire::Int, i32::MAX);
         let mut events = vec![Event::PowerChanged {
             subject: Subject::Player,
@@ -3242,7 +3433,24 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let args = [CompiledArg::I(i64::from(amount))];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.powers.set(PowerId::Lethality, SlotWire::Int, 25);
+            crate::engine::damage::assert_ending_window_gate(&state, "lethality", |s, _| {
+                lethality(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 7,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &args,
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,
@@ -3288,6 +3496,10 @@ mod tests {
         let good_args = [CompiledArg::I(50)];
         let bad_args = [CompiledArg::I(75)];
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state
             .powers
             .set(PowerId::Lethality, SlotWire::Int, i32::MAX);
@@ -3363,8 +3575,25 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let args = [CompiledArg::I(1)];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.powers.set(PowerId::Shadowmeld, SlotWire::Int, 2);
             crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut state);
+            crate::engine::damage::assert_ending_window_gate(&state, "shadowmeld", |s, _| {
+                shadowmeld(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 7,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: &args,
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             let mut ctx = StepCtx {
                 state: &mut state,
@@ -3428,11 +3657,32 @@ mod tests {
                 let spec = *catalog.spec(atom).unwrap();
                 let args = [CompiledArg::I(i64::from(amount))];
                 let mut state = HotState::at_defaults();
+                state.monsters_mut().push(crate::hot::HotMonster::new(
+                    crate::ids::MonsterKind::Toadpole,
+                    100,
+                ));
                 crate::engine::play::prepare_after_card_played_scalar_write(
                     &mut state, power, 0, 2,
                 )
                 .unwrap();
                 state.powers.set(power, SlotWire::Int, 2);
+                crate::engine::damage::assert_ending_window_gate(
+                    &state,
+                    "haunt/serpent form",
+                    |s, _| {
+                        body(&mut StepCtx {
+                            state: s,
+                            catalog: &catalog,
+                            spec: &spec,
+                            source_uid: 7,
+                            target: None,
+                            selection: None,
+                            x_value: 0,
+                            args: &args,
+                            events: &mut Vec::new(),
+                        })
+                    },
+                );
                 let mut events = Vec::new();
                 let mut ctx = StepCtx {
                     state: &mut state,
@@ -4989,7 +5239,7 @@ mod tests {
     }
 
     #[test]
-    fn generic_attribute_sources_are_exact_and_dexterity_has_no_ending_gate() {
+    fn generic_attribute_sources_are_exact_and_dexterity_is_ending_gated() {
         let strength_sources = CARD_ROWS
             .iter()
             .filter_map(|row| {
@@ -5020,8 +5270,25 @@ mod tests {
                 (CardId::Resonance, 1, 2),
             ]
         );
+        // #3495: `PowerCmd.Apply<DexterityPower>` returns on `IsEnding`
+        // (`<Apply>d__1`1` 0x3ef988 IL_0020-0034). The frozen Python applied
+        // it after the outcome was fixed; native does not.
         let mut state = HotState::at_defaults();
-        state.history.over = true;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 12));
+        let mut over = state.clone();
+        over.history.over = true;
+        let before = over.clone();
+        run_source_step(
+            StepKind::Dexterity,
+            CardId::Footwork,
+            0,
+            &mut over,
+            &[CompiledArg::I(2)],
+        )
+        .unwrap();
+        assert_eq!(over, before, "no Dexterity once the combat is over");
         run_source_step(
             StepKind::Dexterity,
             CardId::Footwork,
@@ -5054,6 +5321,9 @@ mod tests {
         assert_eq!(state.powers.value(PowerId::Dexterity), 6);
 
         let mut overflow = HotState::at_defaults();
+        overflow
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 12));
         overflow
             .powers
             .set(PowerId::Dexterity, SlotWire::Int, i32::MAX);
@@ -5348,10 +5618,24 @@ mod tests {
     }
 
     #[test]
-    fn energy_adds_without_an_over_gate() {
+    fn energy_is_ending_gated_like_gain_energy() {
+        // #3495: `PlayerCmd/<GainEnergy>d__3` (0x3ee8a0) returns on
+        // `IsEnding` (IL_0030-003c). The frozen Python gained it after the
+        // outcome was fixed; native does not.
         let (mut state, catalog) = ctx_state();
         state.energy = 1;
-        state.history.over = true;
+        let mut over = state.clone();
+        over.history.over = true;
+        run(
+            StepKind::Energy,
+            &mut over,
+            &catalog,
+            None,
+            0,
+            &[CompiledArg::I(2)],
+        )
+        .unwrap();
+        assert_eq!(over.energy, 1);
         run(
             StepKind::Energy,
             &mut state,
@@ -5362,6 +5646,52 @@ mod tests {
         )
         .unwrap();
         assert_eq!(state.energy, 3);
+    }
+
+    /// #3502: `PlayerCmd/<GainEnergy>d__3` (`0x3ee8a0`) returns on a
+    /// non-positive amount (IL_0019-002b), and `Hook.ModifyEnergyGain`
+    /// (IL_0062) zeroes the gain while the owner holds `NoEnergyGainPower`
+    /// (`ModifyEnergyGain` `0xa4f9d`, the DLL's only override). The ending
+    /// gate is pinned above, on an over state and here on an ending one.
+    #[test]
+    fn energy_step_folds_modify_energy_gain_and_skips_non_positive_amounts() {
+        let (mut live, catalog) = ctx_state();
+        live.energy = 1;
+        let gain = |state: &mut HotState, amount: i64| {
+            run(
+                StepKind::Energy,
+                state,
+                &catalog,
+                None,
+                0,
+                &[CompiledArg::I(amount)],
+            )
+            .unwrap();
+        };
+
+        let mut negative = live.clone();
+        gain(&mut negative, -1);
+        assert_eq!(negative.energy, 1, "a negative GainEnergy is a no-op");
+        let mut zero = live.clone();
+        gain(&mut zero, 0);
+        assert_eq!(zero.energy, 1);
+
+        let mut blocked = live.clone();
+        blocked.fanouts.set_no_energy_gain(true);
+        gain(&mut blocked, 2);
+        assert_eq!(blocked.energy, 1, "NoEnergyGain zeroes the owner's gain");
+
+        let mut ending = live.clone();
+        for monster in ending.monsters_mut() {
+            monster.hp = 0;
+        }
+        assert!(!ending.history.over);
+        assert!(crate::engine::damage::damage_combat_is_ending(&ending));
+        gain(&mut ending, 2);
+        assert_eq!(ending.energy, 1, "IsEnding before the over latch");
+
+        gain(&mut live, 2);
+        assert_eq!(live.energy, 3);
     }
 
     #[test]
@@ -6234,6 +6564,75 @@ mod tests {
         }));
     }
 
+    /// #3515: the owner and enemy Strength writers behind the `strength`,
+    /// `power_all_serial` and temporary-Strength-wrapper bodies still read
+    /// `history.over`, so each body tests the shared IsEnding projection
+    /// itself (`PowerCmd/<Apply>d__1`1` 0x3ef988 IL_0025). Inflame's owner
+    /// Strength, Resonance's enemy Strength and Piercing Wail's wrapper on a
+    /// live Gas Bomb are no-ops while the combat is ending before the over
+    /// latch; the Adaptable-vetoed control writes each.
+    #[test]
+    fn strength_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let mut builder = CatalogBuilder::new();
+        let inflame = builder
+            .intern(CardIdentity {
+                id: CardId::Inflame,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let resonance = builder
+            .intern(CardIdentity {
+                id: CardId::Resonance,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let inflame = *catalog.spec(inflame).unwrap();
+        let resonance = *catalog.spec(resonance).unwrap();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        crate::engine::damage::assert_ending_window_gate(&template, "Inflame", |s, _| {
+            strength(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &inflame,
+                source_uid: 7,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(2)],
+                events: &mut Vec::new(),
+            })
+        });
+        crate::engine::damage::assert_ending_window_gate(&template, "Resonance", |s, _| {
+            power_all_serial(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &resonance,
+                source_uid: 7,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[
+                    CompiledArg::Power(PowerId::StrengthEnemy),
+                    CompiledArg::I(-1),
+                ],
+                events: &mut Vec::new(),
+            })
+        });
+        crate::engine::damage::assert_ending_window_gate(&template, "Piercing Wail", |s, t| {
+            apply_temp_strength_enemy(
+                s,
+                t,
+                temp_strength_enemy_model(CardId::PiercingWail)?,
+                6,
+                &mut Vec::new(),
+            )
+        });
+    }
+
     #[test]
     fn not_yet_heals_to_max_and_refuses_after_combat_without_mutation() {
         for (upgrade, amount) in [(0, 10), (1, 13)] {
@@ -6248,8 +6647,25 @@ mod tests {
             let spec = *catalog.spec(atom).unwrap();
             let step = catalog.steps(&spec)[0];
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 95;
             state.max_hp = 100;
+            crate::engine::damage::assert_ending_window_gate(&state, "Not Yet", |s, _| {
+                heal(&mut StepCtx {
+                    state: s,
+                    catalog: &catalog,
+                    spec: &spec,
+                    source_uid: 1,
+                    target: None,
+                    selection: None,
+                    x_value: 0,
+                    args: catalog.args(step.args),
+                    events: &mut Vec::new(),
+                })
+            });
             let mut events = Vec::new();
             {
                 let mut ctx = StepCtx {
@@ -6303,6 +6719,10 @@ mod tests {
         let step = catalog.steps(&spec)[0];
         for (hp, after, strength) in [(35, 45, 0), (25, 35, 3)] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = hp;
             state.max_hp = 80;
             state.fanouts.set_red_skull_owned(true);
@@ -6368,6 +6788,9 @@ mod tests {
         let catalog = builder.build();
         let spec = *catalog.spec(atom).unwrap();
         let mut state = HotState::at_defaults();
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 12));
         state.powers.set(PowerId::LightningRod, SlotWire::Int, 1);
         let mut events = Vec::new();
         let args = [CompiledArg::I(1)];

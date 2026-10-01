@@ -205,6 +205,12 @@ pub(crate) fn end_of_days_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
     Ok(())
 }
 
+/// `EndOfDays/<OnPlay>d__6` RVA `0x39b604` awaits `PowerCmd.Apply<DoomPower>` per
+/// hittable enemy (IL_01ad) and then `DoomPower.DoomKill` (IL_024c), which has
+/// no combat gate (`<DoomKill>d__6` `0x3392c8`). Each Apply returns at
+/// `IsEnding` (`<Apply>d__1`1` `0x3ef988` IL_0025-002a), and the Doom writer
+/// carries that gate itself; the DoomKill must still run while the combat is
+/// ending, so the body's own gate stays `history.over` (#3515).
 #[allow(clippy::too_many_arguments)]
 fn end_of_days_inner(
     state: &mut crate::hot::HotState,
@@ -262,6 +268,9 @@ fn end_of_days_target_snapshot(state: &crate::hot::HotState) -> Vec<(usize, u32)
         .collect()
 }
 
+/// Each member is one `PowerCmd.Apply<DoomPower>` (`0x39b604` IL_01ad), which
+/// returns at `IsEnding` (`<Apply>d__1`1` `0x3ef988` IL_0025-002a); the Doom
+/// writer (`apply_card_monster_debuff`) carries that gate (#3515).
 fn apply_end_of_days_snapshot(
     state: &mut crate::hot::HotState,
     amount: i32,
@@ -486,6 +495,11 @@ pub(crate) fn misery_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     )
 }
 
+/// `Misery/<OnPlay>d__3` RVA `0x3ad358` copies each frozen power with
+/// `PowerCmd.ModifyAmount` (IL_02bd) or `PowerCmd.Apply` (IL_035b); both return
+/// at `IsEnding` (`<ModifyAmount>d__6` `0x3f032c` IL_003a-003f, `<Apply>d__1`1`
+/// `0x3ef988` IL_0025-002a). Knockdown's writer still reads `history.over`, so
+/// the walk tests the shared IsEnding projection (#3515).
 #[allow(clippy::too_many_arguments)]
 fn misery_inner(
     state: &mut crate::hot::HotState,
@@ -591,7 +605,7 @@ fn misery_inner(
             return Err(EngineRefusal::MalformedArgs("Imbalanced clone recipient"));
         }
         for frozen in &snapshot {
-            if ctx.state.history.over {
+            if crate::engine::damage::damage_combat_is_ending(ctx.state) {
                 break;
             }
             let Some(recipient) =
@@ -725,6 +739,9 @@ fn misery_program_is_exact(
 ///
 /// Python: `_run_steps_inner` (frozen, deleted #2827) awaits owner Strength -2 before applying
 /// -2/-3 to the still-live selected enemy through the card-debuff path.
+///
+/// `SharedFate/<OnPlay>d__9` RVA `0x3baaec` awaits `Apply<StrengthPower>` on the
+/// owner (IL_00f3) and then on the target (IL_0186). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
 pub(crate) fn shared_fate_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (owner, enemy) = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
         (CardId::SharedFate, 0, [CompiledArg::I(-2), CompiledArg::I(-2)]) => (-2, -2),
@@ -736,6 +753,9 @@ pub(crate) fn shared_fate_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
         .ok_or(EngineRefusal::TargetMismatch { required: true })?;
     if ctx.state.monsters.get(target).is_none() {
         return Err(EngineRefusal::TargetMismatch { required: true });
+    }
+    if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+        return Ok(());
     }
     apply_owner_strength(ctx.state, owner, ctx.events)?;
     apply_card_monster_strength_delta(ctx.state, target, enemy, ctx.events)
@@ -3755,5 +3775,69 @@ mod tests {
             state.monsters[0].misery_debuff_order.as_slice(),
             [MiseryToken::Hang]
         );
+    }
+
+    /// #3515: End of Days' `Apply<DoomPower>` walk, Misery's copies
+    /// (`PowerCmd.ModifyAmount` / `PowerCmd.Apply`) and Shared Fate's two
+    /// `Apply<StrengthPower>` all return at `IsEnding` (`<Apply>d__1`1`
+    /// 0x3ef988 IL_0025, `<ModifyAmount>d__6` 0x3f032c IL_003a). While the
+    /// combat is ending before the over latch each writes nothing (End of
+    /// Days through its Doom writer; its ungated DoomKill finds nothing to
+    /// kill); the Adaptable-vetoed control dooms, copies Knockdown and
+    /// weakens.
+    #[test]
+    fn necrobinder_rare_bodies_skip_while_combat_is_ending_before_the_over_latch() {
+        let (template, catalog, source) = fixture(CardId::EndOfDays, 0, 50);
+        crate::engine::damage::assert_ending_window_gate(&template, "End of Days", |s, _| {
+            run_end_of_days(s, &catalog, source, 0, &mut Vec::new())
+        });
+
+        let (template, catalog, source) = fixture(CardId::SharedFate, 0, 50);
+        let spec = *catalog.spec(source.atom).unwrap();
+        crate::engine::damage::assert_ending_window_gate(&template, "Shared Fate", |s, t| {
+            shared_fate_exact(&mut StepCtx {
+                state: s,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: source.uid,
+                target: Some(t),
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(-2), CompiledArg::I(-2)],
+                events: &mut Vec::new(),
+            })
+        });
+
+        // Misery copies the target's Knockdown, whose writer still reads
+        // `history.over`, onto a second live Gas Bomb.
+        let (template, catalog, source) = misery_fixture(0, 50);
+        for vetoed in [false, true] {
+            let mut state = template.clone();
+            state.monsters_mut().clear();
+            let mut target = HotMonster::new(MonsterKind::GasBomb, 100);
+            target.misery_debuff_order.push_knockdown(2);
+            let mut primary = HotMonster::new(MonsterKind::Toadpole, 100);
+            primary.hp = 0;
+            primary.uid = 1;
+            primary.slot = 1;
+            if vetoed {
+                primary.powers.set(PowerId::Adaptable, SlotWire::Int, 1);
+            }
+            let mut recipient = HotMonster::new(MonsterKind::GasBomb, 100);
+            recipient.uid = 2;
+            recipient.slot = 2;
+            state.monsters_mut().extend([target, primary, recipient]);
+            assert!(!state.history.over);
+            assert_eq!(
+                crate::engine::damage::damage_combat_is_ending(&state),
+                !vetoed
+            );
+            let (next, _) = play_misery(&state, &catalog, source).unwrap();
+            assert_eq!(
+                next.monsters[2].misery_debuff_order.knockdown(),
+                if vetoed { &[2][..] } else { &[][..] },
+                "Misery vetoed={vetoed}"
+            );
+        }
     }
 }

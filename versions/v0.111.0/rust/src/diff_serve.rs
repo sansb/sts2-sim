@@ -1263,6 +1263,7 @@ fn engine_refusal_kind(refusal: &EngineRefusal) -> RefusalKind {
         | EngineRefusal::PowerHookNotModeled { .. }
         | EngineRefusal::EndingSummonNotModeled(_)
         | EngineRefusal::EndingDamageNotModeled(_)
+        | EngineRefusal::EndingStepNotModeled(_)
         | EngineRefusal::UntrackedCounterNotModeled(_)
         | EngineRefusal::FrozenCardVanished { .. }
         | EngineRefusal::ActiveCardNotUnique { .. }

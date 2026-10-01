@@ -5685,9 +5685,41 @@ fn resolved_energy_cost_without_free_from_local(
     let early = (i128::from(local) + i128::from(tangled) + i128::from(borrowed_time))
         .clamp(0, i128::from(i64::MAX)) as i64;
     if spec.is_power {
-        curious_reduced_energy_cost(state, early)
+        spiked_gauntlets_surcharged_energy_cost(state, curious_reduced_energy_cost(state, early))
     } else {
         early
+    }
+}
+
+/// Spiked Gauntlets' early `TryModifyEnergyCostInCombat` term on a Power
+/// card (#3437), placed after every player power's early term.
+///
+/// Current v0.111.0 `SpikedGauntlets::TryModifyEnergyCostInCombat` RVA
+/// `0x9bd30` declines unless the card owner's creature is the relic owner's
+/// (IL_0008-IL_0021) and `card.Type == 3` (Power, IL_0022-IL_002c), then
+/// writes `cost + 1` (IL_002d-IL_0039). Unlike Curious it has no `<= 0`
+/// guard, so a zero-cost Power costs 1.
+///
+/// Position: `Hook::ModifyEnergyCostInCombat` RVA `0x1052f0` folds every
+/// early listener, each reading the running value (IL_001d-IL_0043), before
+/// any Late one (IL_0051-IL_0079), and `CardEnergyCost::GetWithModifiers`
+/// RVA `0x11e044` only then clamps at zero (IL_00c3-IL_00ca). The listener
+/// list, `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`,
+/// adds each creature's `Powers` (IL_0092) before that player's `Relics`
+/// (IL_00c9-IL_0103), and adds the relics only while `IsActiveForHooks`
+/// (IL_00bb-IL_00c2). So the player's Borrowed Time, Tangled and Curious
+/// always run before this relic, whatever their acquisition order. That order
+/// is load-bearing: Curious's "decline at or below zero, else subtract and
+/// clamp" does not commute with `+1` on a Power costing less than or equal
+/// to the Curious amount (Curious first gives 1, the reverse gives 0).
+/// Every Late absolute-zero row (Free Power, Void Form, Brilliant Scarf)
+/// follows in the callers.
+#[inline]
+fn spiked_gauntlets_surcharged_energy_cost(state: &HotState, cost: i64) -> i64 {
+    if state.fanouts.spiked_gauntlets_owned() && !state.fanouts.player_hooks_deactivated() {
+        cost.saturating_add(1)
+    } else {
+        cost
     }
 }
 
@@ -5705,11 +5737,14 @@ fn resolved_energy_cost_without_free_from_local(
 /// (IL_0051-IL_006d), so this term precedes every absolute-zero Late row.
 ///
 /// The only other early listeners that can reach a Power card are Borrowed
-/// Time and Spiked Gauntlets. A Curious beside either refuses at the
-/// application sites (`steps::templates::mad_science_curious` /
-/// `borrowed_time`) and at admission; Tangled reads Attacks only. So `cost`
-/// here is the unmodified local cost whenever Curious is live, and the fold
-/// order is not observable.
+/// Time and Spiked Gauntlets. A Curious beside a live Borrowed Time refuses
+/// at the application sites (`steps::templates::mad_science_curious` /
+/// `borrowed_time`) and at admission, since both are player powers whose
+/// relative order is their unrecorded first-application order; Tangled reads
+/// Attacks only. So `cost` here is the unmodified local cost whenever Curious
+/// is live. Spiked Gauntlets is a relic, which the listener walk always puts
+/// after the player's powers, so its `+1` follows this term
+/// ([`spiked_gauntlets_surcharged_energy_cost`]).
 #[inline]
 fn curious_reduced_energy_cost(state: &HotState, cost: i64) -> i64 {
     let curious = state.powers.value(PowerId::Curious);
@@ -6704,6 +6739,79 @@ fn autoplay_hellraiser_strike_inner(
         );
     }
     Ok(())
+}
+
+/// Detach a manual card's played instance from Play for its inline result
+/// routing, by reference (#3387).
+///
+/// v0.111.0 (SHA-256 `9cb4f1ad…`): `CardModel/<OnPlayWrapper>d__339::MoveNext`
+/// RVA `0x31b8d0` holds `this` in loc.1 (IL_0014-0019) and routes that
+/// object: `RemoveFromCombat` (IL_0ba2-0ba9), `CardCmd.Exhaust`
+/// (IL_0c12-0c1a) or `CardPileCmd.Add` (IL_0c7b-0c99). `<Add>d__10` RVA
+/// `0x3e1ba4` detaches it with `card.RemoveFromCurrentPile` (IL_053f-054b),
+/// which is `Pile.RemoveInternal(this)` (`CardModel::RemoveFromCurrentPile`
+/// RVA `0x7db98` IL_0007-0014) and `_cards.Remove(card)`
+/// (`CardPile::RemoveInternal` RVA `0x11eb7c` IL_0051-0058). A card above
+/// the finishing one, such as a Hellraiser AutoPlay suspended in a queued
+/// hook action (`engine::hook_action`), stays in Play.
+///
+/// The instance is almost always Play's top, which `rposition` finds first.
+/// Uids are unique among live cards, so the match is the instance. If the
+/// uid is absent (a body moved its own card), the previous positional pop
+/// is kept unchanged.
+fn take_manual_play_instance(state: &mut HotState, uid: u32) -> HotCard {
+    let play = state.piles.get_mut(PileId::Play).make_mut();
+    match play.iter().rposition(|card| card.uid == uid) {
+        Some(index) => play.remove(index),
+        None => play.pop().expect("the played instance is on the play pile"),
+    }
+}
+
+#[cfg(test)]
+mod take_manual_play_instance_tests {
+    use super::*;
+
+    fn play_pile(uids: &[u32]) -> HotState {
+        let mut state = HotState::at_defaults();
+        state
+            .piles
+            .get_mut(PileId::Play)
+            .make_mut()
+            .extend(uids.iter().map(|&uid| HotCard {
+                uid,
+                atom: 0,
+                flags: 0,
+            }));
+        state
+    }
+
+    fn play_uids(state: &HotState) -> Vec<u32> {
+        state
+            .piles
+            .get(PileId::Play)
+            .as_slice()
+            .iter()
+            .map(|card| card.uid)
+            .collect()
+    }
+
+    /// #3387: the finishing card leaves Play by reference. The top-of-Play
+    /// case is unchanged, a card beneath a suspended AutoPlay leaves from
+    /// under it, and an absent uid keeps the previous positional pop.
+    #[test]
+    fn a_finishing_manual_card_leaves_play_by_reference() {
+        let mut top = play_pile(&[1]);
+        assert_eq!(take_manual_play_instance(&mut top, 1).uid, 1);
+        assert!(play_uids(&top).is_empty());
+
+        let mut beneath = play_pile(&[1, 2]);
+        assert_eq!(take_manual_play_instance(&mut beneath, 1).uid, 1);
+        assert_eq!(play_uids(&beneath), vec![2]);
+
+        let mut absent = play_pile(&[3, 2]);
+        assert_eq!(take_manual_play_instance(&mut absent, 1).uid, 2);
+        assert_eq!(play_uids(&absent), vec![3]);
+    }
 }
 
 fn take_frozen_for_routing(
@@ -7999,6 +8107,40 @@ fn route_auto_play_without_playing(
     Ok(())
 }
 
+/// Whether `CardModel/<OnPlayWrapper>d__339::MoveNext` (RVA `0x31b8d0`) stops
+/// its generated-body series at the loop head: `CombatManager.IsOverOrEnding`
+/// (IL_0428-0432, leave at IL_0432 → IL_090e), re-tested before every body
+/// through the back edge (IL_08ec-0909). [`super::damage::damage_combat_is_ending`]
+/// is the engine's IsOverOrEnding projection (it is true once `history.over`
+/// latches); `hp <= 0` is the pending loss before the latch (#3502).
+fn replay_series_stops(state: &HotState) -> bool {
+    state.hp <= 0 || super::damage::damage_combat_is_ending(state)
+}
+
+/// Whether native `CardCmd.AutoPlay` returns at entry, before
+/// `Hook.ShouldPlay`, target selection, play history or any pile move.
+/// v0.111.0 (`sts2.dll` `9cb4f1ad…`) `CardCmd/<AutoPlay>d__0::MoveNext` RVA
+/// `0x3df9d4` leaves on `CombatManager.IsOverOrEnding` (IL_0051-IL_005d) and
+/// then on `card.Owner.Creature.IsDead` (IL_0062-IL_007e). IsOverOrEnding
+/// (`get_IsOverOrEnding` `0x1358be`) is `IsEnding || !IsInProgress`, and
+/// `IsCombatEnding` (`0x135854`) is true on a pending loss (IL_0016-IL_0025)
+/// or when no living primary enemy remains and no `ShouldStopCombatFromEnding`
+/// veto holds (IL_0026-IL_0069). [`super::damage::damage_combat_is_ending`] is
+/// that projection (true once `history.over` latches); the owner's death is
+/// `hp <= 0` (#3515). The former gate tested only `history.over || hp <= 0`,
+/// so an AutoPlay issued after the last primary died but before the over
+/// latch still played.
+///
+/// The draw-top gatherers share it: `CardPileCmd/<AutoPlayFromDrawPile>d__23`
+/// (`0x3e3638`) returns at `IsOverOrEnding` before it gathers (IL_0025-0031),
+/// and each gathered card's `CardPileCmd.Add` to Play skips at `IsEnding`
+/// (`<Add>d__10` `0x3e1ba4` IL_0041-008a). Testing only `history.over` there
+/// would move a card to Play that this entry then refuses to play.
+#[inline]
+pub(crate) fn auto_play_entry_stops(state: &HotState) -> bool {
+    state.hp <= 0 || super::damage::damage_combat_is_ending(state)
+}
+
 /// One CardPlay: resolve, pay, route, then run every generated body.
 ///
 /// The generated-body loop mirrors v0.111.0 (`sts2.dll` SHA-256 `9cb4f1ad…`)
@@ -8043,7 +8185,7 @@ fn play_card_with_work_inner(
     } = source;
     let manual = provenance.is_manual();
     // --- (1) resolve and gate -------------------------------------------
-    if !manual && (state.history.over || state.hp <= 0) {
+    if !manual && auto_play_entry_stops(state) {
         return Ok(());
     }
     let index = if manual {
@@ -8865,7 +9007,10 @@ fn play_card_with_work_inner(
         // Blade's included, still runs a later body against its retained dead
         // target object; that body's damage command no-ops (see this
         // function's doc comment for the IL, #3101).
-        if play_index > 0 && (state.history.over || state.hp <= 0) {
+        // The loop-head test is `IsOverOrEnding` (IL_0428-0432), so a
+        // combat that is ending but not yet over stops the series too
+        // (#3502). A dead player is a pending loss, hence ending.
+        if play_index > 0 && replay_series_stops(state) {
             break;
         }
         // CardPlay re-enters the same live CardModel for every generated
@@ -9380,12 +9525,7 @@ fn play_card_with_work_inner(
         CardResultRoute::HandTop | CardResultRoute::HandBottom
     ) && state.piles.get(PileId::Hand).len() >= MAX_CARDS_IN_HAND;
     let played = if manual {
-        state
-            .piles
-            .get_mut(PileId::Play)
-            .make_mut()
-            .pop()
-            .expect("the played instance is on the play pile")
+        take_manual_play_instance(state, uid)
     } else {
         take_frozen_for_routing(state, uid, source_pile, frozen)?
     };
@@ -11780,9 +11920,9 @@ fn foregone_before_hand_draw_stack_is_exact(
         Some(root) => {
             let replay = state
                 .frames
-                .action_replay(root)
+                .action_replay_action(root)
                 .ok_or(EngineRefusal::ContinuationNotModeled)?;
-            if !matches!(replay.action, crate::hot::ActionReplayRootAction::EndTurn) {
+            if !matches!(replay, crate::hot::ActionReplayRootAction::EndTurn) {
                 return Err(EngineRefusal::ContinuationNotModeled);
             }
             frames
@@ -11915,7 +12055,7 @@ fn receipt_owned_draw_stack_is_exact(
     use crate::frame::Frame;
     let rooted = matches!(
         frames.first(),
-        Some(Frame::ActionReplay { record }) if state.frames.action_replay(*record).is_some()
+        Some(Frame::ActionReplay { record }) if state.frames.action_replay_action(*record).is_some()
     );
     if rooted {
         if position == 0 {
@@ -12023,8 +12163,8 @@ fn receipt_owned_history_course_stack_is_exact(
         };
         if !state
             .frames
-            .action_replay(root)
-            .is_some_and(|replay| replay.action == crate::hot::ActionReplayRootAction::EndTurn)
+            .action_replay_action(root)
+            .is_some_and(|replay| replay == crate::hot::ActionReplayRootAction::EndTurn)
         {
             return Err(EngineRefusal::ContinuationNotModeled);
         }
@@ -12099,13 +12239,22 @@ fn replay_rooted_stack_is_exact(
     use crate::hot::FrozenAutoBatchSource;
     use crate::ids::{SelectOp, StepKind};
 
-    if state.frames.action_replay(root).is_none()
+    if state.frames.action_replay_action(root).is_none()
         || frames.len() == 1
         || frames[1..]
             .iter()
             .any(|frame| matches!(frame, Frame::ActionReplay { .. }))
     {
         return Err(EngineRefusal::ContinuationNotModeled);
+    }
+
+    if let Some(Frame::Draw { record }) = frames.get(1).copied()
+        && state
+            .frames
+            .draw(record)
+            .is_some_and(|draw| draw.caller == DrawCaller::GremlinHorn)
+    {
+        return gremlin_horn_draw_stack_is_exact(state, catalog, frames, root);
     }
 
     if foregone_before_hand_draw_stack_is_exact(state, catalog, frames, Some(root)).is_ok() {
@@ -12160,7 +12309,7 @@ fn replay_rooted_stack_is_exact(
     if let Some(Frame::CardPlay { record }) = frames.get(1).copied() {
         let replay = state
             .frames
-            .action_replay(root)
+            .action_replay_action(root)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         let play = state
             .frames
@@ -12168,7 +12317,7 @@ fn replay_rooted_stack_is_exact(
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         if play.source != CardPlaySource::Manual
             || !matches!(
-                replay.action,
+                replay,
                 crate::hot::ActionReplayRootAction::Play { uid, .. } if uid == play.uid
             )
         {
@@ -12193,7 +12342,7 @@ fn replay_rooted_stack_is_exact(
     if let [Frame::ActionReplay { .. }, Frame::PotionFinish { record }] = frames {
         let replay = state
             .frames
-            .action_replay(root)
+            .action_replay_action(root)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         let finish = state
             .frames
@@ -12212,7 +12361,7 @@ fn replay_rooted_stack_is_exact(
             .as_deref()
             .and_then(|pending| pending.stratagem_potion_record(&state.frames));
         return if matches!(
-            replay.action,
+            replay,
             crate::hot::ActionReplayRootAction::UsePotion { target: None, .. }
         ) && ((finish.stage == crate::frame::PotionFinishStage::Effect
             && finish.body_stage == crate::hot::PotionBodyStage::Selecting
@@ -12254,7 +12403,7 @@ fn replay_rooted_stack_is_exact(
     {
         let replay = state
             .frames
-            .action_replay(root)
+            .action_replay_action(root)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         let Frame::PotionFinish {
             record: finish_record,
@@ -12277,7 +12426,7 @@ fn replay_rooted_stack_is_exact(
             .frozen_auto_batch(batch_record)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         if !matches!(
-            replay.action,
+            replay,
             crate::hot::ActionReplayRootAction::UsePotion { target: None, .. }
         ) || finish.name != crate::ids::PotionId::DistilledChaos
             || finish.stage != crate::frame::PotionFinishStage::Effect
@@ -12386,7 +12535,7 @@ fn replay_rooted_stack_is_exact(
     {
         let replay = state
             .frames
-            .action_replay(root)
+            .action_replay_action(root)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         let finish = state
             .frames
@@ -12442,7 +12591,7 @@ fn replay_rooted_stack_is_exact(
             None => !child.pending_choice,
         };
         return if matches!(
-            replay.action,
+            replay,
             crate::hot::ActionReplayRootAction::UsePotion { target: None, .. }
         ) && finish_cursor_matches
             && (draw.caller == crate::hot::DrawCaller::AshwaterExhaust
@@ -12472,7 +12621,7 @@ fn replay_rooted_stack_is_exact(
     {
         let replay = state
             .frames
-            .action_replay(root)
+            .action_replay_action(root)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         let finish = state
             .frames
@@ -12507,7 +12656,7 @@ fn replay_rooted_stack_is_exact(
         };
         return if state.pending.is_none()
             && matches!(
-                replay.action,
+                replay,
                 crate::hot::ActionReplayRootAction::UsePotion { target: None, .. }
             )
             && finish_cursor_matches
@@ -12530,7 +12679,7 @@ fn replay_rooted_stack_is_exact(
     {
         let replay = state
             .frames
-            .action_replay(root)
+            .action_replay_action(root)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         let turn_start = state
             .frames
@@ -12546,7 +12695,7 @@ fn replay_rooted_stack_is_exact(
         return if (catalog.requires_action_replay()
             || catalog.cardplay_draw_hook_can_suspend()
             || end_turn_replay_predecessor_has_foregone(state))
-            && replay.action == crate::hot::ActionReplayRootAction::EndTurn
+            && replay == crate::hot::ActionReplayRootAction::EndTurn
             && (selecting
                 .is_some_and(|record| turn_start_hand_choice_selecting_is_exact(state, record))
                 || state.pending.is_none() && tools_turn_start_effect_is_exact(state, turn_start))
@@ -12592,7 +12741,7 @@ fn replay_rooted_stack_is_exact(
             Frame::TurnStartHandChoice { record } => {
                 let replay = state
                     .frames
-                    .action_replay(root)
+                    .action_replay_action(root)
                     .ok_or(EngineRefusal::ContinuationNotModeled)?;
                 let parent = state
                     .frames
@@ -12614,7 +12763,7 @@ fn replay_rooted_stack_is_exact(
                 if position != 1
                     || !(catalog.requires_action_replay()
                         || end_turn_replay_predecessor_has_foregone(state))
-                    || replay.action != crate::hot::ActionReplayRootAction::EndTurn
+                    || replay != crate::hot::ActionReplayRootAction::EndTurn
                     || !owns_next
                 {
                     return Err(EngineRefusal::ContinuationNotModeled);
@@ -12627,7 +12776,7 @@ fn replay_rooted_stack_is_exact(
                     .ok_or(EngineRefusal::ContinuationNotModeled)?;
                 let replay = state
                     .frames
-                    .action_replay(root)
+                    .action_replay_action(root)
                     .ok_or(EngineRefusal::ContinuationNotModeled)?;
                 let gambler = finish.name == crate::ids::PotionId::GamblersBrew
                     && finish.body_stage == crate::hot::PotionBodyStage::AfterChild
@@ -12646,7 +12795,7 @@ fn replay_rooted_stack_is_exact(
                     || finish.stage != crate::frame::PotionFinishStage::Effect
                     || !(gambler || distilled)
                     || !matches!(
-                        replay.action,
+                        replay,
                         crate::hot::ActionReplayRootAction::UsePotion { target: None, .. }
                     )
                 {
@@ -13080,11 +13229,11 @@ fn replay_rooted_after_card_exhausted_stack_is_exact(
             }
             let replay = state
                 .frames
-                .action_replay(root)
+                .action_replay_action(root)
                 .ok_or(EngineRefusal::ContinuationNotModeled)?;
             if parent_position == 1
                 && (!matches!(
-                    replay.action,
+                    replay,
                     crate::hot::ActionReplayRootAction::Play { uid, .. }
                         if uid == finish.uid
                 ) || finish.source != crate::hot::CardPlaySource::Manual)
@@ -13477,7 +13626,7 @@ fn replay_rooted_cardplay_draw_stack_is_exact(
 
     state
         .frames
-        .action_replay(root)
+        .action_replay_action(root)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
     let draw_position = frames
         .iter()
@@ -14062,7 +14211,7 @@ fn replay_rooted_card_finish_stack_is_exact(
     use crate::frame::Frame;
     let replay = state
         .frames
-        .action_replay(root)
+        .action_replay_action(root)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
     let first_finish = frames[1..]
         .iter()
@@ -14083,7 +14232,7 @@ fn replay_rooted_card_finish_stack_is_exact(
     // enclosing Draw below.
     if first_finish == 1 {
         if !matches!(
-            replay.action,
+            replay,
             crate::hot::ActionReplayRootAction::Play { uid, .. } if uid == first.uid
         ) || first.source != crate::hot::CardPlaySource::Manual
         {
@@ -14130,10 +14279,7 @@ fn replay_rooted_card_finish_stack_is_exact(
                 return Err(EngineRefusal::ContinuationNotModeled);
             }
         }
-        if matches!(
-            replay.action,
-            crate::hot::ActionReplayRootAction::UsePotion { .. }
-        ) {
+        if matches!(replay, crate::hot::ActionReplayRootAction::UsePotion { .. }) {
             let Some(Frame::PotionFinish { record }) = frames.get(1).copied() else {
                 return Err(EngineRefusal::ContinuationNotModeled);
             };
@@ -14405,7 +14551,7 @@ fn replay_rooted_dark_embrace_side_end_stack_is_exact(
     use crate::frame::Frame;
     let replay = state
         .frames
-        .action_replay(root)
+        .action_replay_action(root)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
     let Some(Frame::AfterSideTurnEndPower {
         record: owner_record,
@@ -14453,7 +14599,7 @@ fn replay_rooted_dark_embrace_side_end_stack_is_exact(
         .checked_mul(dark.payload[1])
         .and_then(|value| u32::try_from(value).ok())
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
-    if !matches!(replay.action, crate::hot::ActionReplayRootAction::EndTurn)
+    if !matches!(replay, crate::hot::ActionReplayRootAction::EndTurn)
         || state.player_phase != super::turn::PHASE_TURN_END
         || dark.payload[1] <= 0
         || !super::turn::dark_embrace_suspended_suffix_carriers_are_default(state, catalog)
@@ -14563,7 +14709,7 @@ fn replay_rooted_turn_start_draw_stack_is_exact(
     use crate::frame::Frame;
     let replay = state
         .frames
-        .action_replay(root)
+        .action_replay_action(root)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
     let Frame::Draw {
         record: outer_record,
@@ -14575,13 +14721,64 @@ fn replay_rooted_turn_start_draw_stack_is_exact(
         .frames
         .draw(outer_record)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
-    if !matches!(replay.action, crate::hot::ActionReplayRootAction::EndTurn)
+    if !matches!(replay, crate::hot::ActionReplayRootAction::EndTurn)
         || !matches!(
             (outer.caller, outer.from_hand_draw),
             (crate::hot::DrawCaller::TurnStart, true)
                 | (crate::hot::DrawCaller::UnceasingTopTurnStart, false)
         )
     {
+        return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    rooted_draw_child_suffix_is_exact(state, catalog, frames, 1)
+}
+
+/// A published deferred hook action (#3387, `engine::hook_action`): Gremlin
+/// Horn's suspended one-card Draw directly on the ActionReplay root of the
+/// player action it followed, with the ordinary Draw child grammar above it.
+///
+/// `GremlinHorn/<AfterDeath>d__6::MoveNext` RVA `0x326170` (v0.111.0,
+/// SHA-256 `9cb4f1ad…`) awaits one `CardPileCmd.Draw(choiceContext,
+/// Cards.BaseValue, Owner, false)` (IL_00bc-00d9) from an owned relic. The
+/// hook action is queued only inside a PlayCardAction or a potion's action,
+/// so the root names a Play or a UsePotion; the receipt's replay
+/// authenticates everything else on import.
+///
+/// The pending choice is not required here. The child grammar pins it where
+/// a stage needs one, and the drive re-checks this grammar on every
+/// intermediate state of a resumed Hellraiser AutoPlay (#3387 gap 1), where
+/// no choice is pending. Admission still refuses a parked state with frames
+/// but no pending choice (`engine::admission`, `ContinuationFrame`).
+fn gremlin_horn_draw_stack_is_exact(
+    state: &HotState,
+    catalog: &Catalog,
+    frames: &[crate::frame::Frame],
+    root: crate::hot::WordRecordIndex,
+) -> Result<(), EngineRefusal> {
+    use crate::frame::Frame;
+    let replay = state
+        .frames
+        .action_replay(root)
+        .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    let Some(Frame::Draw { record }) = frames.get(1).copied() else {
+        return Err(EngineRefusal::ContinuationNotModeled);
+    };
+    let draw = state
+        .frames
+        .draw(record)
+        .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    let owner_is_exact = matches!(
+        replay.action,
+        crate::hot::ActionReplayRootAction::Play { .. }
+            | crate::hot::ActionReplayRootAction::UsePotion { .. }
+    ) && draw.caller == DrawCaller::GremlinHorn
+        && !draw.from_hand_draw
+        && draw.gamble_paired().is_none()
+        && draw.requested == 1
+        && draw.completed < draw.requested
+        && catalog.hooks().owns(crate::ids::RelicId::RelicGremlinHorn)
+        && state.fanouts.gremlin_horn_owned();
+    if !owner_is_exact {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     rooted_draw_child_suffix_is_exact(state, catalog, frames, 1)
@@ -14751,12 +14948,9 @@ fn replay_rooted_potion_draw_stack_is_exact(
 ) -> Result<(), EngineRefusal> {
     let replay = state
         .frames
-        .action_replay(root)
+        .action_replay_action(root)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
-    if !matches!(
-        replay.action,
-        crate::hot::ActionReplayRootAction::UsePotion { .. }
-    ) {
+    if !matches!(replay, crate::hot::ActionReplayRootAction::UsePotion { .. }) {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     rooted_potion_draw_suffix_is_exact(state, catalog, frames, 1)
@@ -16452,7 +16646,7 @@ fn advance_top_card_play_one(
             if record.play_index == 0 {
                 spend_glam(state, catalog, &spec, record.uid, record.glam)?;
             }
-            if record.play_index + 1 < record.plays && !state.history.over && state.hp > 0 {
+            if record.play_index + 1 < record.plays && !replay_series_stops(state) {
                 record.play_index += 1;
                 record.stage = CardPlayStage::StartBody;
                 record.latch_kind = CardPlayLatchKind::Empty;
@@ -17589,7 +17783,7 @@ fn drain_authenticated_restricted_frozen_batch(
     }
     let replay_root_only = matches!(
         state.frames.as_slice(),
-        [Frame::ActionReplay { record }] if state.frames.action_replay(*record).is_some()
+        [Frame::ActionReplay { record }] if state.frames.action_replay_action(*record).is_some()
     );
     if state.pending.is_some() || !state.frames.is_empty() && !replay_root_only {
         return Err(EngineRefusal::ContinuationNotModeled);
@@ -18405,10 +18599,10 @@ pub(crate) fn synchronous_autoplay_child_context_is_exact(
     let mut frames = state.frames.as_slice();
     let mut replay_action = None;
     if let Some(Frame::ActionReplay { record }) = frames.first().copied() {
-        let Some(replay) = state.frames.action_replay(record) else {
+        let Some(replay) = state.frames.action_replay_action(record) else {
             return false;
         };
-        replay_action = Some(replay.action);
+        replay_action = Some(replay);
         frames = &frames[1..];
     }
     if let [Frame::CardPlay { record }] = frames {
@@ -19138,7 +19332,7 @@ fn autoplay_draw_top_with_result(
     let mut work = Vec::new();
     let mut gathered = Vec::new();
     for _ in 0..count {
-        if state.history.over || state.hp <= 0 {
+        if auto_play_entry_stops(state) {
             break;
         }
         if state.piles.get(PileId::Draw).is_empty() {
@@ -19247,6 +19441,158 @@ pub(crate) fn dispatch_step(kind: StepKind, ctx: &mut StepCtx<'_>) -> Result<(),
     crate::steps::apply_step(kind, ctx)
 }
 
+/// Refuse by name a card-body step that follows an earlier step of the same
+/// run while the combat is ending, unless its kind is audited (#3495).
+///
+/// Only a later step can follow a kill made by this body. The first step of a
+/// run is not tested: it starts under the caller's own gate. The audited-kind
+/// test comes first, so a real card row never pays for the ending projection:
+/// every later kind in `CARD_ROWS` is audited.
+#[inline]
+fn refuse_unaudited_step_after_combat_end(
+    state: &HotState,
+    kind: StepKind,
+    follows_a_step: bool,
+) -> Result<(), EngineRefusal> {
+    if follows_a_step
+        && !step_kind_runs_after_combat_end(kind)
+        && super::damage::damage_combat_is_ending(state)
+    {
+        return Err(EngineRefusal::EndingStepNotModeled(kind));
+    }
+    Ok(())
+}
+
+/// Whether a card-body step kind may run after a combat-ending kill (#3495).
+///
+/// Native never stops a card body at a winning kill (see [`RunStepsOutcome`]).
+/// Every later command gates itself, so each step body here must carry its
+/// command's gate. The kinds below are every kind that follows another step
+/// in some `CARD_ROWS` program; a kind that only opens a program runs after
+/// `OnPlayWrapper`'s per-play gate (`0x31b8d0` IL_0428-0432) and is not
+/// admitted here. The test `every_later_card_step_kind_is_audited_for_a_combat_end`
+/// derives the set from `CARD_ROWS`. Each kind was audited against its
+/// native command (v0.111.0 `sts2.dll`, sha `9cb4f1ad…`):
+///
+/// - **AttackCommand**, entry return on `IsOverOrEnding`
+///   (`<Execute>d__90` `0x3f19c0` IL_0067-008a, #3483): `Attack`, `AttackAll`.
+/// - **PowerCmd.Apply**, which returns on `IsEnding` (`<Apply>d__1`1`
+///   `0x3ef988` IL_0020-0034; `<Apply>d__2` `0x3efbac` IL_0039-0045). The
+///   body tests `damage_combat_is_ending` or `history.over`, or its dead
+///   target:
+///   - player powers: `BiasedCognition`, `Blur`, `BorrowedTime`, `Colossus`,
+///     `Dexterity`, `DrawNextTurn`, `EnergyNextTurn`, `FlameBarrier`,
+///     `FreeAttack`, `FreeEthereal`, `FreePower`, `FreeSkill`,
+///     `GuidingStarDrawNextTurnExact`, `HyperbeamFocusDownExact`,
+///     `InterceptExact`, `LightningRod`, `NecroMastery`, `Neurosurge`,
+///     `NoDraw`, `Rebound`, `Reflect`, `RetainHand`, `ShadowStepPowerExact`,
+///     `Spinner`, `StarNextTurn`, `Strength`, `TempFocus`, `TempStrength`,
+///     `TheGambit`, `Thorns`, `Vigor`, `WraithForm`;
+///   - enemy powers: `Debilitate`, `Knockdown`, `MoltenVuln`, `Poison`,
+///     `PowerAllSerial`, `Strangle`, `StrengthEnemy`, `TempStrengthEnemy`,
+///     `Vulnerable`, `Weak`.
+/// - **CreatureCmd.GainBlock**, `IsOverOrEnding` (`<GainBlock>d__18`
+///   `0x3eaec0` IL_0032): `Block`, `DemonicShieldBlockExact`.
+/// - **CardPileCmd.Draw**, `IsOverOrEnding` (`<DrawInternal>d__21`
+///   `0x3e3a70` IL_002e and per card IL_01ab): `Draw`.
+/// - **PlayerCmd.GainEnergy**, `IsEnding` (`<GainEnergy>d__3` `0x3ee8a0`
+///   IL_0030-003c): `Energy`. **PlayerCmd.GainStars**, `IsEnding`
+///   (`<GainStars>d__6` `0x3eec94` IL_001e): `Stars`.
+/// - **OrbCmd.Channel**, `IsOverOrEnding` (`<Channel>d__3` `0x3ed69c`
+///   IL_002e): `Channel`. **OrbCmd.Passive** (`<Passive>d__7` `0x3ede90`
+///   IL_0022): `Darkness`, `TeslaCoil`.
+/// - **CardCmd.Exhaust**, `IsOverOrEnding` (`<Exhaust>d__6` `0x3e06c8`
+///   IL_0025), after Cinder's ungated `CombatCardSelection` pick
+///   (`<OnPlay>d__5` `0x392350` IL_0143): `ExhaustRandom`.
+/// - **Card generation**: `Shiv.CreateInHand` (`<CreateInHand>d__12`
+///   `0x3bb20c` IL_0031) and `CardCmd.Upgrade` (`0x12f660` IL_0011):
+///   `GenerateFixedShivs`, `GenerateShivsThenUpgradeExact`.
+///   `AddGeneratedCardToCombat` (`<AddGeneratedCardsToCombat>d__6`
+///   `0x3e2f0c`): `GenerateFixedStatus`, whose record-before-Add transaction
+///   is modeled in `inject_generated_record_before_ending_bottom`.
+/// - **CardSelectCmd**, `IsOverOrEnding` (`<FromHand>d__28` `0x3e7568`
+///   IL_0036, which `FromHandForDiscard` `0x3e7a64` delegates to), or
+///   `IsEnding` (`<FromCombatPile>d__20` `0x3e5e84` IL_0036): `Select`,
+///   whose candidates are empty once over.
+/// - **CardCmd.Upgrade**, `IsEnding` (`0x12f660` IL_0011): `UpgradeAllHand`.
+/// - **CreatureCmd.Stun**: `Creature.StunInternal` (`0x11d7cc` IL_0028-0030)
+///   returns on a dead creature, and Whistle's only target is dead whenever
+///   its attack ended the combat: `StunTarget`.
+/// - **Ungated native field writes**, left ungated here too:
+///   - `ActiveCardCostAddExact`: Modded `AddThisCombat`, `<OnPlay>d__3`
+///     `0x3ad830` IL_0196.
+///   - `GeneticAlgorithmGrowthExact`: `BuffFromPlay`, `<OnPlay>d__16`
+///     `0x3a1118` IL_00ad/IL_00c4.
+///   - `UpMySleeveCostExact`: `AddThisCombat`, `<OnPlay>d__9` `0x3c5cc0`
+///     IL_01c4.
+pub(crate) const fn step_kind_runs_after_combat_end(kind: StepKind) -> bool {
+    matches!(
+        kind,
+        StepKind::ActiveCardCostAddExact
+            | StepKind::Attack
+            | StepKind::AttackAll
+            | StepKind::BiasedCognition
+            | StepKind::Block
+            | StepKind::Blur
+            | StepKind::BorrowedTime
+            | StepKind::Channel
+            | StepKind::Colossus
+            | StepKind::Darkness
+            | StepKind::Debilitate
+            | StepKind::DemonicShieldBlockExact
+            | StepKind::Dexterity
+            | StepKind::Draw
+            | StepKind::DrawNextTurn
+            | StepKind::Energy
+            | StepKind::EnergyNextTurn
+            | StepKind::ExhaustRandom
+            | StepKind::FlameBarrier
+            | StepKind::FreeAttack
+            | StepKind::FreeEthereal
+            | StepKind::FreePower
+            | StepKind::FreeSkill
+            | StepKind::GenerateFixedShivs
+            | StepKind::GenerateFixedStatus
+            | StepKind::GenerateShivsThenUpgradeExact
+            | StepKind::GeneticAlgorithmGrowthExact
+            | StepKind::GuidingStarDrawNextTurnExact
+            | StepKind::HyperbeamFocusDownExact
+            | StepKind::InterceptExact
+            | StepKind::Knockdown
+            | StepKind::LightningRod
+            | StepKind::MoltenVuln
+            | StepKind::NecroMastery
+            | StepKind::Neurosurge
+            | StepKind::NoDraw
+            | StepKind::Poison
+            | StepKind::PowerAllSerial
+            | StepKind::Rebound
+            | StepKind::Reflect
+            | StepKind::RetainHand
+            | StepKind::Select
+            | StepKind::ShadowStepPowerExact
+            | StepKind::Spinner
+            | StepKind::StarNextTurn
+            | StepKind::Stars
+            | StepKind::Strangle
+            | StepKind::Strength
+            | StepKind::StrengthEnemy
+            | StepKind::StunTarget
+            | StepKind::TempFocus
+            | StepKind::TempStrength
+            | StepKind::TempStrengthEnemy
+            | StepKind::TeslaCoil
+            | StepKind::TheGambit
+            | StepKind::Thorns
+            | StepKind::UpMySleeveCostExact
+            | StepKind::UpgradeAllHand
+            | StepKind::Vigor
+            | StepKind::Vulnerable
+            | StepKind::Weak
+            | StepKind::WraithForm
+    )
+}
+
 /// The step program (`_run_steps_inner`).
 ///
 /// Python's dispatch is a 333-branch chain inside one function. In Rust it is
@@ -19266,6 +19612,16 @@ pub(crate) fn dispatch_step(kind: StepKind, ctx: &mut StepCtx<'_>) -> Result<(),
 /// conjunction and not `over` alone. Missing this break is what the R0.7
 /// differential caught, on a Bash whose thorns retaliation killed the player
 /// between the attack step and the vulnerable step.
+///
+/// A winning kill does not stop the remainder natively either (#3495).
+/// `CardModel/<OnPlayWrapper>d__339::MoveNext` (RVA `0x31b8d0`) tests
+/// `IsOverOrEnding` only before each play of the play count (IL_0428-0432).
+/// It then awaits the whole `CardModel::OnPlay` body (IL_0659), with no gate
+/// between that body's commands. Each command gates itself instead. So the
+/// steps after a combat-ending kill keep running here too, and each body must
+/// carry its command's own gate. See [`step_kind_runs_after_combat_end`] for
+/// the audited set. Any other kind refuses by name when a later step reaches
+/// it while the combat is ending ([`refuse_unaudited_step_after_combat_end`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum RunStepsOutcome {
     Complete,
@@ -19366,6 +19722,7 @@ macro_rules! define_run_steps_with_precommit {
             break;
         }
         let step = catalog.steps(&spec)[index];
+        refuse_unaudited_step_after_combat_end(state, step.kind, index > run.start)?;
         before_step(state, index + 1)?;
         let mut ctx = StepCtx {
             state: &mut *state,
@@ -19494,6 +19851,186 @@ define_run_steps_with_precommit!(
     cold,
     inline(never)
 );
+
+/// Card-body steps after a combat-ending kill (#3495).
+#[cfg(test)]
+mod post_combat_end_step_tests {
+    use super::*;
+    use crate::catalog::{CardIdentity, CatalogBuilder};
+    use crate::hot::HotMonster;
+    use crate::ids::{CardId, MonsterKind};
+
+    const UID: u32 = 7;
+
+    /// A one-card fight with the card in Play and one Toadpole, live or dead.
+    /// A dead lone primary enemy is the ending-but-not-over shape; `over`
+    /// additionally latches the outcome.
+    fn fight(id: CardId, upgrade: u8, enemy_hp: i32, over: bool) -> (HotState, Catalog, HotCard) {
+        let mut builder = CatalogBuilder::new();
+        let atom = builder
+            .intern(CardIdentity {
+                id,
+                upgrade,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 1;
+        state.orbs.set_base_slots(3);
+        state.orbs.set_slots(3);
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, enemy_hp));
+        state.history.over = over;
+        state.next_card_uid = UID + 1;
+        let card = HotCard {
+            uid: UID,
+            atom,
+            flags: 0,
+        };
+        state.piles.get_mut(PileId::Play).make_mut().push(card);
+        (state, catalog, card)
+    }
+
+    fn run_from(
+        state: &mut HotState,
+        catalog: &Catalog,
+        card: HotCard,
+        start: usize,
+    ) -> Result<RunStepsOutcome, EngineRefusal> {
+        run_steps(
+            state,
+            catalog,
+            card,
+            RunStepsArgs {
+                target: None,
+                selection: None,
+                x_value: 0,
+                start,
+            },
+            &mut Vec::new(),
+        )
+    }
+
+    /// Derive-the-surface guard: every kind that follows another step in a
+    /// `CARD_ROWS` program was audited against its native command, and the
+    /// audited set holds nothing else. A new card row that puts an unaudited
+    /// kind second fails here before it can refuse in a real fight.
+    #[test]
+    fn every_later_card_step_kind_is_audited_for_a_combat_end() {
+        let mut later = std::collections::BTreeSet::new();
+        for row in crate::content_tables::CARD_ROWS.iter() {
+            for step in row.steps.iter().skip(1) {
+                assert!(
+                    step_kind_runs_after_combat_end(step.kind),
+                    "{} step {:?} can run after a combat-ending kill but is not audited",
+                    row.name,
+                    step.kind.as_str()
+                );
+                later.insert(step.kind as u16);
+            }
+        }
+        for name in StepKind::NAMES {
+            let kind = StepKind::from_str(name).unwrap();
+            assert_eq!(
+                step_kind_runs_after_combat_end(kind),
+                later.contains(&(kind as u16)),
+                "{name}: the audited set is exactly the later kinds"
+            );
+        }
+        assert_eq!(later.len(), 62);
+    }
+
+    /// Every arm of the named refusal. An unaudited kind (`HpLoss` only ever
+    /// opens a program) refuses when a later step reaches it while the combat
+    /// is ending or over. It passes as a run's first step, in a live combat,
+    /// or when its kind is audited. No real row reaches the refusing arm; the
+    /// derive-the-surface test above pins that.
+    #[test]
+    fn an_unaudited_later_step_reached_while_ending_refuses_by_name() {
+        for over in [false, true] {
+            let (ending, _, _) = fight(CardId::Offering, 0, 0, over);
+            assert_eq!(
+                refuse_unaudited_step_after_combat_end(&ending, StepKind::HpLoss, true),
+                Err(EngineRefusal::EndingStepNotModeled(StepKind::HpLoss))
+            );
+            assert_eq!(
+                refuse_unaudited_step_after_combat_end(&ending, StepKind::HpLoss, false),
+                Ok(())
+            );
+            assert_eq!(
+                refuse_unaudited_step_after_combat_end(&ending, StepKind::Energy, true),
+                Ok(())
+            );
+        }
+        let (live, _, _) = fight(CardId::Offering, 0, 30, false);
+        assert_eq!(
+            refuse_unaudited_step_after_combat_end(&live, StepKind::HpLoss, true),
+            Ok(())
+        );
+
+        // Through the runner: Offering's opening `HpLoss` still runs on an
+        // ending combat, and its later `Energy` and `Draw` are gated.
+        let (mut ending, catalog, card) = fight(CardId::Offering, 0, 0, false);
+        assert_eq!(
+            run_from(&mut ending, &catalog, card, 0),
+            Ok(RunStepsOutcome::Complete)
+        );
+        assert!(ending.hp < 50);
+        assert_eq!(ending.energy, 1, "GainEnergy is ending-gated");
+    }
+
+    /// The four bodies that lacked their command's ending gate (#3495). Each
+    /// is the later step of its card, run through the step runner:
+    /// - Bloodletting's `Energy`: `PlayerCmd.GainEnergy` `0x3ee8a0`
+    ///   IL_0030-003c;
+    /// - Bulk Up's `Dexterity`, Lightning Rod's `LightningRod` and Spinner+'s
+    ///   `Spinner`: `PowerCmd.Apply` `0x3ef988` IL_0020-0034.
+    ///
+    /// Ending (lone enemy dead, not over) and over both leave the state
+    /// untouched; the live fight applies each. Each fails with its new gate
+    /// removed.
+    #[test]
+    fn later_energy_and_power_steps_do_nothing_once_the_combat_is_ending() {
+        type Probe = fn(&HotState) -> i64;
+        let cases: [(CardId, u8, usize, Probe); 4] = [
+            (CardId::Bloodletting, 0, 1, |state| i64::from(state.energy)),
+            (CardId::BulkUp, 0, 2, |state| {
+                i64::from(state.powers.value(PowerId::Dexterity))
+            }),
+            (CardId::LightningRod, 0, 1, |state| {
+                i64::from(state.powers.value(PowerId::LightningRod))
+            }),
+            (CardId::Spinner, 1, 1, |state| {
+                i64::from(state.powers.value(PowerId::Spinner))
+            }),
+        ];
+        for (id, upgrade, start, probe) in cases {
+            for over in [false, true] {
+                let (mut state, catalog, card) = fight(id, upgrade, 0, over);
+                assert!(super::super::damage::damage_combat_is_ending(&state));
+                let before = state.clone();
+                assert_eq!(
+                    run_from(&mut state, &catalog, card, start),
+                    Ok(RunStepsOutcome::Complete),
+                    "{id:?}"
+                );
+                assert_eq!(state, before, "{id:?} over={over}");
+            }
+            let (mut live, catalog, card) = fight(id, upgrade, 30, false);
+            let before = probe(&live);
+            assert_eq!(
+                run_from(&mut live, &catalog, card, start),
+                Ok(RunStepsOutcome::Complete)
+            );
+            assert!(probe(&live) > before, "{id:?} applies in a live fight");
+        }
+    }
+}
 
 /// GOOPY's per-play Amount growth, block additive and Exhaust (#2874).
 #[cfg(test)]
@@ -23508,6 +24045,9 @@ mod tests {
         for identity in identities {
             builder.intern(identity).unwrap();
         }
+        builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let catalog = builder.build();
         let card = |uid, id| HotCard {
             uid,
@@ -23544,6 +24084,10 @@ mod tests {
         };
 
         let mut havoc = HotState::at_defaults();
+        havoc.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         havoc.hp = 50;
         havoc.energy = 3;
         havoc.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -23576,6 +24120,10 @@ mod tests {
         assert!(HotBoundary::from_canonical(&repeated_parent, &catalog).is_err());
 
         let mut cascade = HotState::at_defaults();
+        cascade.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         cascade.hp = 50;
         cascade.energy = 2;
         cascade.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -23612,6 +24160,10 @@ mod tests {
         );
 
         let mut sly = HotState::at_defaults();
+        sly.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         sly.hp = 50;
         sly.energy = 3;
         sly.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -23710,6 +24262,9 @@ mod tests {
             .intern(identity(CardId::Armaments, 1))
             .unwrap();
         mayhem_builder.intern(identity(CardId::Purity, 1)).unwrap();
+        mayhem_builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let mayhem_catalog = mayhem_builder.build();
         let mayhem_card = |uid, id| HotCard {
             uid,
@@ -23717,6 +24272,10 @@ mod tests {
             flags: 0,
         };
         let mut mayhem = HotState::at_defaults();
+        mayhem.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         mayhem.hp = 50;
         mayhem.max_hp = 50;
         mayhem.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -23893,6 +24452,9 @@ mod tests {
         ] {
             sly_builder.intern_reachable(identity).unwrap();
         }
+        sly_builder
+            .intern_monster(crate::ids::MonsterKind::Toadpole)
+            .unwrap();
         let sly_catalog = sly_builder.build();
         let sly_card = |uid, id| HotCard {
             uid,
@@ -23900,6 +24462,10 @@ mod tests {
             flags: 0,
         };
         let mut sly = HotState::at_defaults();
+        sly.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         sly.hp = 50;
         sly.max_hp = 50;
         sly.energy = 3;
@@ -24015,6 +24581,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.player_phase = crate::engine::turn::PHASE_AUTO_POST;
@@ -24588,6 +25158,10 @@ mod tests {
         let catalog = builder.build();
         let spec = *catalog.spec(atom).unwrap();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.next_card_uid = 2;
         state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
@@ -24656,6 +25230,10 @@ mod tests {
         let catalog = builder.build();
         let spec = *catalog.spec(atom).unwrap();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state
             .powers
             .set(PowerId::Unmovable, crate::powers::SlotWire::Int, 1);
@@ -26637,8 +27215,13 @@ mod tests {
         {
             let catalog = razor_tooth_catalog(CardId::Glacier, razor_tooth);
             let mut state = state_with_card(&catalog, identity(CardId::Glacier, 0), 41);
-            state.orbs.set_base_slots(3);
-            state.orbs.set_slots(3);
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
+            // Four slots hold both bodies' two Frost with no evoke.
+            state.orbs.set_base_slots(4);
+            state.orbs.set_slots(4);
             state.powers.set(PowerId::Burst, SlotWire::Int, 1);
             hydrate_side_end_order(&mut state);
             play_card(&mut state, &catalog, 41, None, None, &mut Vec::new()).unwrap();
@@ -26661,8 +27244,13 @@ mod tests {
         {
             let catalog = razor_tooth_catalog(CardId::Glacier, razor_tooth);
             let mut state = state_with_card(&catalog, identity(CardId::Glacier, 0), 41);
-            state.orbs.set_base_slots(3);
-            state.orbs.set_slots(3);
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
+            // Four slots hold both bodies' two Frost with no evoke.
+            state.orbs.set_base_slots(4);
+            state.orbs.set_slots(4);
             assert!(state.fanouts.set_duplication(2));
             hydrate_side_end_order(&mut state);
             play_card(&mut state, &catalog, 41, None, None, &mut Vec::new()).unwrap();
@@ -26684,6 +27272,10 @@ mod tests {
     fn razor_tooth_upgraded_bullet_time_replays_with_its_live_cost() {
         let catalog = razor_tooth_catalog(CardId::BulletTime, true);
         let mut state = state_with_card(&catalog, identity(CardId::BulletTime, 0), 41);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Burst, SlotWire::Int, 1);
         hydrate_side_end_order(&mut state);
         play_card(&mut state, &catalog, 41, None, None, &mut Vec::new()).unwrap();
@@ -28065,6 +28657,11 @@ mod tests {
         let catalog = builder.build();
 
         let mut malformed = state_with_card(&catalog, call, 91);
+
+        malformed.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let before = malformed.clone();
         let mut events = Vec::new();
         assert_eq!(
@@ -28077,6 +28674,11 @@ mod tests {
         assert!(events.is_empty());
 
         let mut closure = state_with_card(&catalog, call, 92);
+
+        closure.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         closure.reward_card_pool = Some(crate::catalog::RewardPool::Necrobinder);
         closure.entropy_card_pool = closure.reward_card_pool;
         closure.fully_unlocked_card_pool_epochs = true;
@@ -28144,6 +28746,10 @@ mod tests {
         builder.intern(inflame).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, inflame, 77);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         state
             .powers
@@ -29404,6 +30010,10 @@ mod tests {
         builder.intern(id).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, id, 17);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.multiplayer_ally_key = 1;
         let mut events = Vec::new();
 
@@ -30412,6 +31022,9 @@ mod tests {
                     flags: 0,
                 };
                 let mut state = state_with_card(&catalog, blaze, source.uid);
+                state
+                    .monsters_mut()
+                    .push(HotMonster::new(MonsterKind::Toadpole, 100));
                 state.multiplayer_ally_key = 1;
                 state.fanouts.set_multiplayer_ally(MultiplayerAllyState {
                     key: 1,
@@ -30461,6 +31074,9 @@ mod tests {
                 flags: 0,
             };
             let mut state = state_with_card(&catalog, blaze, source.uid);
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
             state.multiplayer_ally_key = 1;
             state.fanouts.set_multiplayer_ally(MultiplayerAllyState {
                 key: 1,
@@ -30495,6 +31111,10 @@ mod tests {
         let atom = builder.intern(blaze).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 9;
         state.next_card_uid = 33;
@@ -31515,6 +32135,11 @@ mod tests {
         let catalog = builder.build();
 
         let mut direct = exact_monologue_listener_state();
+
+        direct.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         direct.energy = 3;
         direct.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
             uid: 1,
@@ -31526,6 +32151,11 @@ mod tests {
         assert_eq!(direct.fanouts.monologue_strength_applied(), 1);
 
         let mut replay = exact_monologue_listener_state();
+
+        replay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         replay.energy = 3;
         replay.powers.set(PowerId::Burst, SlotWire::Int, 1);
         hydrate_side_end_order(&mut replay);
@@ -31544,6 +32174,10 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut autoplay = exact_monologue_listener_state();
+        autoplay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         autoplay.energy = 3;
         autoplay.piles.get_mut(PileId::Draw).make_mut().push(source);
         play_card_with_work(
@@ -31572,6 +32206,10 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut suspended = exact_monologue_listener_state();
+        suspended.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         suspended.energy = 3;
         suspended.next_card_uid = 17;
         suspended.exact_piles = true;
@@ -32047,6 +32685,11 @@ mod tests {
         let catalog = builder.build();
 
         let mut direct = exact_void_form_listener_state(2, 0);
+
+        direct.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         direct.energy = 3;
         direct.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
             uid: 81,
@@ -32057,6 +32700,11 @@ mod tests {
         assert_eq!(direct.fanouts.void_form_cards_played_this_turn(), 1);
 
         let mut replay = exact_void_form_listener_state(2, 0);
+
+        replay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         replay.energy = 3;
         replay.powers.set(PowerId::Burst, SlotWire::Int, 1);
         hydrate_side_end_order(&mut replay);
@@ -32074,6 +32722,10 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut autoplay = exact_void_form_listener_state(2, 0);
+        autoplay.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         autoplay
             .piles
             .get_mut(PileId::Draw)
@@ -32099,6 +32751,11 @@ mod tests {
         assert_eq!(autoplay.fanouts.void_form_cards_played_this_turn(), 0);
 
         let mut suspended = exact_void_form_listener_state(2, 0);
+
+        suspended.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         suspended.energy = 3;
         suspended.next_card_uid = 88;
         suspended.exact_piles = true;
@@ -33058,6 +33715,10 @@ mod tests {
         builder.intern(card).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, card, 7);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let mut events = Vec::new();
 
         play_card(&mut state, &catalog, 7, None, None, &mut events).unwrap();
@@ -33448,6 +34109,84 @@ mod tests {
         curious.powers.set(PowerId::Curious, SlotWire::Int, 2);
         curious.powers.set(PowerId::FreePower, SlotWire::Int, 1);
         assert_eq!(cost(&curious, demon_form), (0, 1), "Late Free Power zeroes");
+    }
+
+    /// #3437 witness for `SpikedGauntlets::TryModifyEnergyCostInCombat` RVA
+    /// `0x9bd30` at its native fold position: `+1` on every Power (including
+    /// a zero-cost one, since there is no `<= 0` guard) and nothing on a
+    /// Skill or Attack; after Curious (the relic follows every player power
+    /// in `<IterateHookListeners>d__69` RVA `0x3f9720`), in each of Curious's
+    /// three regimes; additive with Borrowed Time; before the Late Free Power
+    /// zero; absent once the player's hooks are deactivated (IL_00bb); and
+    /// paid on a real play.
+    #[test]
+    fn spiked_gauntlets_surcharges_power_costs_after_curious_and_before_late_zeroes() {
+        let demon_form = identity(CardId::DemonForm, 0);
+        let inflame = identity(CardId::Inflame, 0);
+        let panache = identity(CardId::Panache, 0);
+        let defend = identity(CardId::DefendIronclad, 0);
+        let strike = identity(CardId::StrikeIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        for id in [demon_form, inflame, panache, defend, strike] {
+            builder.intern(id).unwrap();
+        }
+        builder
+            .set_relics(&[crate::ids::RelicId::RelicSpikedGauntlets])
+            .unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_card(&catalog, inflame, 7);
+        let card = |id: CardIdentity| HotCard {
+            uid: 7,
+            atom: catalog.atom(&id).unwrap(),
+            flags: 0,
+        };
+        let cost = |state: &HotState, id: CardIdentity| {
+            let card = card(id);
+            let spec = catalog.spec(card.atom).unwrap();
+            (
+                resolved_energy_cost(state, card, spec),
+                resolved_energy_cost_without_free(state, card, spec),
+            )
+        };
+        // Without the cached ownership bit nothing moves.
+        assert_eq!(cost(&state, inflame), (1, 1));
+        state.fanouts.set_spiked_gauntlets_owned(true);
+        assert_eq!(cost(&state, demon_form), (4, 4));
+        assert_eq!(cost(&state, inflame), (2, 2));
+        assert_eq!(cost(&state, panache), (1, 1), "no <= 0 guard");
+        assert_eq!(cost(&state, defend), (1, 1), "Skills are not Powers");
+        assert_eq!(cost(&state, strike), (1, 1), "Attacks are not Powers");
+
+        // Curious first, then +1. Cost above the amount: 3 - 1 + 1.
+        let mut curious = state.clone();
+        curious.powers.set(PowerId::Curious, SlotWire::Int, 1);
+        assert_eq!(cost(&curious, demon_form), (3, 3));
+        // Cost equal to the amount: Curious clamps to 0, then +1 (the
+        // reverse order would give max(1 + 1 - 1, 0) = 1 here but 0 below).
+        assert_eq!(cost(&curious, inflame), (1, 1));
+        // Cost below the amount: Curious-first gives 0 + 1 = 1, where
+        // Gauntlets-first would give max(1 + 1 - 5, 0) = 0.
+        curious.powers.set(PowerId::Curious, SlotWire::Int, 5);
+        assert_eq!(cost(&curious, inflame), (1, 1));
+        // Zero cost: Curious declines, Gauntlets adds (reverse gives 0).
+        assert_eq!(cost(&curious, panache), (1, 1));
+
+        let mut borrowed = state.clone();
+        borrowed.powers.set(PowerId::BorrowedTime, SlotWire::Int, 1);
+        assert_eq!(cost(&borrowed, inflame), (3, 3));
+        assert_eq!(cost(&borrowed, defend), (2, 2));
+
+        let mut free = state.clone();
+        free.powers.set(PowerId::FreePower, SlotWire::Int, 1);
+        assert_eq!(cost(&free, inflame), (0, 2), "Late Free Power zeroes");
+
+        let mut dead = state.clone();
+        dead.fanouts.set_player_hooks_deactivated(true);
+        assert_eq!(cost(&dead, inflame), (1, 1), "relics need IsActiveForHooks");
+
+        let energy = state.energy;
+        play_card(&mut state, &catalog, 7, None, None, &mut Vec::new()).unwrap();
+        assert_eq!(energy - state.energy, 2, "Inflame is paid at 1 + 1");
     }
 
     #[test]
@@ -34436,6 +35175,9 @@ mod tests {
         };
 
         let mut routed = base();
+        routed
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
         install_after_card_played_scalar(&mut routed, PowerId::Afterimage, 1);
         play_card(&mut routed, &catalog, 7, None, None, &mut Vec::new()).unwrap();
         assert_eq!(routed.block, 6, "APC completed before the finish suffix");
@@ -34816,6 +35558,10 @@ mod tests {
         builder.intern(panache).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, panache, 43);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         assert!(state.fanouts.set_imitation_learning(0, 1));
 
         play_card(&mut state, &catalog, 43, None, None, &mut Vec::new()).unwrap();
@@ -34845,6 +35591,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.next_card_uid = 45;
         state.piles.get_mut(PileId::Play).make_mut().push(source);
@@ -34926,6 +35676,56 @@ mod tests {
                 expected
             );
             assert_eq!(state.history.plays_this_turn, 1);
+        }
+    }
+
+    /// A combat that is ending but not over: the only primary is dead, a
+    /// secondary (Gas Bomb) lives, and `history.over` has not latched.
+    /// `vetoed` gives the dead primary an Adaptable `ShouldStopCombatFromEnding`
+    /// listener, which keeps the same roster live.
+    fn ending_before_the_over_latch(mut state: HotState, vetoed: bool) -> HotState {
+        let mut primary = HotMonster::new(MonsterKind::Toadpole, 100);
+        primary.hp = 0;
+        if vetoed {
+            primary.powers.set(PowerId::Adaptable, SlotWire::Int, 1);
+        }
+        state.monsters_mut().push(primary);
+        let mut bomb = HotMonster::new(MonsterKind::GasBomb, 10);
+        bomb.uid = 1;
+        bomb.slot = 1;
+        state.monsters_mut().push(bomb);
+        assert!(!state.history.over);
+        assert_eq!(
+            super::super::damage::damage_combat_is_ending(&state),
+            !vetoed
+        );
+        state
+    }
+
+    /// #3502: `CardModel/<OnPlayWrapper>d__339::MoveNext` (`0x31b8d0`) tests
+    /// `IsOverOrEnding` at the loop head before every generated body
+    /// (IL_0428-0432). An ending combat whose over latch has not fired stops
+    /// the series after the first body, exactly as an over one does; the
+    /// vetoed control runs both Echo Form bodies.
+    #[test]
+    fn a_replay_series_stops_while_the_combat_is_ending_before_the_over_latch() {
+        let defend = identity(CardId::DefendIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        builder.intern(defend).unwrap();
+        let catalog = builder.build();
+        for (vetoed, expected) in [(false, 1), (true, 2)] {
+            let mut state =
+                ending_before_the_over_latch(state_with_card(&catalog, defend, 7), vetoed);
+            state.powers.set(PowerId::EchoForm, SlotWire::Int, 1);
+
+            play_card(&mut state, &catalog, 7, None, None, &mut Vec::new()).unwrap();
+
+            assert_eq!(state.history.card_plays_finished_combat, expected);
+            assert_eq!(state.history.plays_this_turn, 1);
+            // `CreatureCmd.GainBlock` is ending-gated too (see
+            // `damage::gain_card_block`): the ending body gains nothing.
+            assert_eq!(state.block, if vetoed { 10 } else { 0 });
+            assert!(!state.history.over);
         }
     }
 
@@ -35843,6 +36643,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 10;
         state.next_card_uid = 9;
@@ -36352,6 +37156,10 @@ mod tests {
                 )
             });
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 2;
             state.next_card_uid = 40;
@@ -36458,6 +37266,567 @@ mod tests {
             state.card_states.get(clone.uid),
             state.card_states.get(fresh.uid),
             "IsClone returns before Pinpoint re-reads completed Skill history"
+        );
+    }
+
+    /// #3424: `Stomp::AfterCardEnteredCombat` (`0xeced8`) backfills one
+    /// turn-long `-n` row for the owner Attacks already finished this turn,
+    /// returns for clones, and appends nothing for `n == 0`.
+    #[test]
+    fn stomp_fresh_entry_backfills_attack_history_but_clones_copy_once() {
+        let stomp = identity(CardId::Stomp, 0);
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(stomp).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 10;
+        state.history.attack_plays_finished_this_turn = 2;
+        state.history.skill_plays_finished_this_turn = 5;
+
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            stomp,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let fresh = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(fresh.atom, atom);
+        assert_ne!(fresh.flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE, 0);
+        let rows = state.card_states.get(fresh.uid).local_cost_modifiers;
+        assert_eq!(
+            rows.as_slice(),
+            [LocalCostModifier {
+                kind: LocalCostModifierKind::Add,
+                amount: -2,
+                expiration: LocalCostExpiration::ThisTurn,
+                reduce_only: false,
+            }],
+            "only Attacks count; the five finished Skills do not"
+        );
+        assert_eq!(rows.resolve(catalog.spec(atom).unwrap().cost), 1);
+
+        super::super::cards::inject_generated_clones_bottom(
+            &mut state,
+            &catalog,
+            fresh,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let clone = state.piles.get(PileId::Hand).as_slice()[1];
+        assert_eq!(
+            state.card_states.get(clone.uid),
+            state.card_states.get(fresh.uid),
+            "IsClone returns before Stomp re-reads completed Attack history"
+        );
+
+        state.history.attack_plays_finished_this_turn = 0;
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            stomp,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let unreduced = state.piles.get(PileId::Hand).as_slice()[2];
+        assert!(
+            state
+                .card_states
+                .get(unreduced.uid)
+                .local_cost_modifiers
+                .as_slice()
+                .is_empty(),
+            "AddThisTurn(0) appends no row"
+        );
+    }
+
+    /// #3424 (QJM3FQJ111MG floor 24): a Stomp created after an Attack's
+    /// `CardPlayFinished`, where Calamity's AfterCardPlayed makes it, counts
+    /// that Attack. Every later Attack then reduces it once through the
+    /// BeforeCardPlayed listener, and a Stomp that already existed gets
+    /// exactly one row per Attack.
+    #[test]
+    fn stomp_made_after_an_attack_finishes_counts_it_and_nothing_counts_twice() {
+        let stomp = identity(CardId::Stomp, 0);
+        let strike = identity(CardId::StrikeIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        let stomp_atom = builder.intern(stomp).unwrap();
+        builder.intern(strike).unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_card(&catalog, strike, 1);
+        state.piles.get_mut(PileId::Hand).make_mut().extend([
+            HotCard {
+                uid: 2,
+                atom: stomp_atom,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            },
+            HotCard {
+                uid: 3,
+                atom: catalog.atom(&strike).unwrap(),
+                flags: 0,
+            },
+        ]);
+        state.next_card_uid = 10;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+        let mut events = Vec::new();
+
+        play_card(&mut state, &catalog, 1, Some(0), None, &mut events).unwrap();
+        assert_eq!(state.history.attack_plays_finished_this_turn, 1);
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            stomp,
+            1,
+            PileId::Hand,
+            &mut events,
+        )
+        .unwrap();
+        let made = state
+            .piles
+            .get(PileId::Hand)
+            .as_slice()
+            .iter()
+            .find(|card| card.uid == 10)
+            .copied()
+            .unwrap();
+        let rows = |state: &HotState, uid: u32| {
+            state
+                .card_states
+                .get(uid)
+                .local_cost_modifiers
+                .as_slice()
+                .iter()
+                .map(|row| row.amount)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(rows(&state, made.uid), [-1]);
+        assert_eq!(rows(&state, 2), [-1]);
+
+        play_card(&mut state, &catalog, 3, Some(0), None, &mut events).unwrap();
+        assert_eq!(rows(&state, made.uid), [-1, -1]);
+        assert_eq!(rows(&state, 2), [-1, -1]);
+        let cost = catalog.spec(stomp_atom).unwrap().cost;
+        for uid in [made.uid, 2] {
+            assert_eq!(
+                state
+                    .card_states
+                    .get(uid)
+                    .local_cost_modifiers
+                    .resolve(cost),
+                1
+            );
+        }
+    }
+
+    /// #3444: `Flatten::AfterCardEnteredCombat` (`0xe030f`) appends nothing
+    /// before any Osty attack this turn (including with no Osty at all), and
+    /// one `SetThisTurn(0)` row on a fresh copy after one. A clone takes its
+    /// own row on top of the copied one: the hook has no clone gate.
+    #[test]
+    fn flatten_entry_backfills_after_an_osty_attack_on_fresh_and_cloned_copies() {
+        let flatten = identity(CardId::Flatten, 0);
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(flatten).unwrap();
+        let catalog = builder.build();
+        let cost = catalog.spec(atom).unwrap().cost;
+        assert!(cost > 0);
+        let set_free = LocalCostModifier {
+            kind: LocalCostModifierKind::Set,
+            amount: 0,
+            expiration: LocalCostExpiration::ThisTurn,
+            reduce_only: false,
+        };
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 10;
+        assert!(state.fanouts.pet().osty().is_none());
+
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            flatten,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let unreduced = state.piles.get(PileId::Hand).as_slice()[0];
+        assert!(
+            state
+                .card_states
+                .get(unreduced.uid)
+                .local_cost_modifiers
+                .as_slice()
+                .is_empty(),
+            "no Osty and no Osty attack this turn: HasOstyAttackedThisTurn is false"
+        );
+        state.exact_piles = false;
+
+        state.fanouts.set_osty(Some((5, 5))).unwrap();
+        state.fanouts.set_osty_attacks_this_turn(1).unwrap();
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            flatten,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let fresh = state.piles.get(PileId::Hand).as_slice()[1];
+        let rows = state.card_states.get(fresh.uid).local_cost_modifiers;
+        assert_eq!(rows.as_slice(), [set_free]);
+        assert_eq!(rows.resolve(cost), 0);
+        assert!(
+            state.exact_piles,
+            "the unreduced live sibling now differs from the entering copy"
+        );
+
+        super::super::cards::inject_generated_clones_bottom(
+            &mut state,
+            &catalog,
+            fresh,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let clone = state.piles.get(PileId::Hand).as_slice()[2];
+        assert_eq!(
+            state
+                .card_states
+                .get(clone.uid)
+                .local_cost_modifiers
+                .as_slice(),
+            [set_free, set_free],
+            "MutableClone copies the source row, then the clone runs ReduceCost itself"
+        );
+        assert_eq!(
+            state
+                .card_states
+                .get(fresh.uid)
+                .local_cost_modifiers
+                .as_slice(),
+            [set_free],
+            "the source is not re-entered"
+        );
+    }
+
+    /// #3466 (was the #3444 enemy-side refusal): the pet counter rolls at the
+    /// enemy-side `SwitchSides` too, so on the enemy side it counts only Osty
+    /// attacks stamped there. A Flatten entering on the enemy side with none
+    /// takes no row; after one it takes `SetThisTurn(0)`, exactly as native's
+    /// `HasOstyAttackedThisTurn` does for a row stamped with the live side.
+    #[test]
+    fn flatten_entering_on_the_enemy_side_backfills_only_after_an_enemy_side_osty_attack() {
+        let flatten = identity(CardId::Flatten, 0);
+        let mut builder = CatalogBuilder::new();
+        builder.intern(flatten).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 10;
+        state.player_side_active = false;
+        state.fanouts.set_osty(Some((5, 5))).unwrap();
+
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            flatten,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let fresh = state.piles.get(PileId::Hand).as_slice()[0];
+        assert!(
+            state
+                .card_states
+                .get(fresh.uid)
+                .local_cost_modifiers
+                .as_slice()
+                .is_empty()
+        );
+
+        state.fanouts.set_osty_attacks_this_turn(1).unwrap();
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            flatten,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let backfilled = state.piles.get(PileId::Hand).as_slice()[1];
+        assert_eq!(
+            state
+                .card_states
+                .get(backfilled.uid)
+                .local_cost_modifiers
+                .as_slice(),
+            [LocalCostModifier {
+                kind: LocalCostModifierKind::Set,
+                amount: 0,
+                expiration: LocalCostExpiration::ThisTurn,
+                reduce_only: false,
+            }]
+        );
+    }
+
+    /// #3444: an entry backfill and the retained `Flatten::AfterAttack`
+    /// listener (`0xe0334`) each call `SetThisTurn(0)`. A Flatten that entered
+    /// after the first Osty attack gains one more row per later Osty attack,
+    /// the same rows a Flatten already in the deck gains from both attacks.
+    #[test]
+    fn flatten_entry_row_composes_with_later_osty_attack_listener_rows() {
+        let flatten = identity(CardId::Flatten, 0);
+        let poke = identity(CardId::Poke, 0);
+        let mut builder = CatalogBuilder::new();
+        let flatten_atom = builder.intern(flatten).unwrap();
+        let poke_atom = builder.intern(poke).unwrap();
+        let catalog = builder.build();
+        let poke_spec = *catalog.spec(poke_atom).unwrap();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 10;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.fanouts.set_osty(Some((5, 5))).unwrap();
+        state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+            uid: 2,
+            atom: flatten_atom,
+            flags: 0,
+        });
+        let osty_attack = |state: &mut HotState| {
+            super::super::damage::player_pet_attack_from_card(
+                state,
+                (&catalog, &poke_spec, 1),
+                &[0],
+                1,
+                1,
+                &mut Vec::new(),
+            )
+            .unwrap();
+        };
+        let rows = |state: &HotState, uid: u32| {
+            state
+                .card_states
+                .get(uid)
+                .local_cost_modifiers
+                .as_slice()
+                .len()
+        };
+
+        osty_attack(&mut state);
+        assert_eq!(state.fanouts.pet().attacks_this_turn(), 1);
+        assert_eq!(rows(&state, 2), 1);
+        super::super::cards::inject_generated_exact_bottom(
+            &mut state,
+            &catalog,
+            flatten,
+            1,
+            PileId::Hand,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let entered = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(rows(&state, entered.uid), 1, "the entry backfill");
+
+        osty_attack(&mut state);
+        assert_eq!(state.fanouts.pet().attacks_this_turn(), 2);
+        assert_eq!(rows(&state, entered.uid), 2, "backfill plus AfterAttack");
+        assert_eq!(rows(&state, 2), 2, "two AfterAttack rows");
+        let cost = catalog.spec(flatten_atom).unwrap().cost;
+        for uid in [entered.uid, 2] {
+            assert_eq!(
+                state
+                    .card_states
+                    .get(uid)
+                    .local_cost_modifiers
+                    .resolve(cost),
+                0
+            );
+        }
+    }
+
+    /// #3495: an Osty that Thorns kills mid-command ends the command's hit
+    /// loop. `AttackCommand/<Execute>d__90::MoveNext` (`0x3f19c0`) re-tests
+    /// `Attacker.IsDead` before every hit (IL_0156-0161). The hit that
+    /// provoked the Thorns still commits, but no later hit runs, although the
+    /// combat continues (a second enemy lives). Before #3495 the loop left only
+    /// on `history.over`, so the dead Osty kept hitting.
+    #[test]
+    fn osty_killed_by_thorns_mid_command_lands_no_later_hit() {
+        let poke = identity(CardId::Poke, 0);
+        let mut builder = CatalogBuilder::new();
+        let poke_atom = builder.intern(poke).unwrap();
+        let catalog = builder.build();
+        let poke_spec = *catalog.spec(poke_atom).unwrap();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 10;
+        let mut thorny = HotMonster::new(MonsterKind::Toadpole, 100);
+        thorny
+            .powers
+            .set(PowerId::Thorns, crate::powers::SlotWire::Int, 5);
+        state.monsters_mut().push(thorny);
+        let mut bystander = HotMonster::new(MonsterKind::Toadpole, 100);
+        bystander.uid = 1;
+        bystander.slot = 1;
+        state.monsters_mut().push(bystander);
+        state.fanouts.set_osty(Some((1, 1))).unwrap();
+
+        super::super::damage::player_pet_attack_from_card(
+            &mut state,
+            (&catalog, &poke_spec, 1),
+            &[0],
+            4,
+            3,
+            &mut Vec::new(),
+        )
+        .unwrap();
+
+        assert!(state.fanouts.pet().osty().is_none(), "Thorns killed Osty");
+        assert!(!state.history.over, "the combat continues");
+        assert_eq!(state.monsters[0].hp, 96, "only the first hit landed");
+        assert_eq!(state.monsters[1].hp, 100);
+    }
+
+    /// #3466: an Osty `AttackCommand` issued while the combat is ending or
+    /// over returns at entry (`AttackCommand/<Execute>d__90::MoveNext` RVA
+    /// `0x3f19c0` IL_0067-008a), so it records no Osty attack, hits nothing
+    /// and runs no AfterAttack (no Flatten row). The same command in a live
+    /// combat records one.
+    #[test]
+    fn osty_attack_command_on_an_ending_or_over_combat_does_nothing() {
+        let flatten = identity(CardId::Flatten, 0);
+        let poke = identity(CardId::Poke, 0);
+        let mut builder = CatalogBuilder::new();
+        let flatten_atom = builder.intern(flatten).unwrap();
+        let poke_atom = builder.intern(poke).unwrap();
+        let catalog = builder.build();
+        let poke_spec = *catalog.spec(poke_atom).unwrap();
+        let mut live = HotState::at_defaults();
+        live.hp = 50;
+        live.next_card_uid = 10;
+        live.monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        live.fanouts.set_osty(Some((5, 5))).unwrap();
+        live.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+            uid: 2,
+            atom: flatten_atom,
+            flags: 0,
+        });
+        let osty_attack = |state: &mut HotState| {
+            super::super::damage::player_pet_attack_from_card(
+                state,
+                (&catalog, &poke_spec, 1),
+                &[0],
+                1,
+                1,
+                &mut Vec::new(),
+            )
+            .unwrap();
+        };
+
+        // Ending: the only primary enemy is dead, the fight not yet over.
+        let mut ending = live.clone();
+        ending.monsters_mut()[0].hp = 0;
+        assert!(!ending.history.over);
+        assert!(super::super::damage::damage_combat_is_ending(&ending));
+        let before = ending.clone();
+        osty_attack(&mut ending);
+        assert_eq!(ending, before, "the command returns at entry");
+
+        // Over: a live enemy, but the outcome is already fixed.
+        let mut over = live.clone();
+        over.history.over = true;
+        let before = over.clone();
+        osty_attack(&mut over);
+        assert_eq!(over, before, "the command returns at entry");
+
+        osty_attack(&mut live);
+        assert_eq!(live.fanouts.pet().attacks_this_turn(), 1);
+        assert_eq!(live.monsters[0].hp, 99);
+        assert_eq!(
+            live.card_states
+                .get(2)
+                .local_cost_modifiers
+                .as_slice()
+                .len(),
+            1
+        );
+    }
+
+    /// #3502: an Osty `AttackCommand` whose attacker is dead returns at entry
+    /// (`AttackCommand/<Execute>d__90::MoveNext` `0x3f19c0` IL_00a2-00b1),
+    /// after the ending test and before BeforeAttack, the record site and
+    /// AfterAttack. In a live combat with no Osty the command counts no Osty
+    /// attack, binds no Gigantification, lands no hit and publishes no
+    /// Flatten row; the same command with a live Osty does all four.
+    #[test]
+    fn osty_attack_command_with_a_dead_osty_does_nothing_in_a_live_combat() {
+        let flatten = identity(CardId::Flatten, 0);
+        let poke = identity(CardId::Poke, 0);
+        let mut builder = CatalogBuilder::new();
+        let flatten_atom = builder.intern(flatten).unwrap();
+        let poke_atom = builder.intern(poke).unwrap();
+        let catalog = builder.build();
+        let poke_spec = *catalog.spec(poke_atom).unwrap();
+        assert!(poke_spec.is_attack);
+        let mut live = HotState::at_defaults();
+        live.hp = 50;
+        live.next_card_uid = 10;
+        live.monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        live.fanouts.set_osty(Some((5, 5))).unwrap();
+        assert!(live.fanouts.set_gigantification(1));
+        live.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+            uid: 2,
+            atom: flatten_atom,
+            flags: 0,
+        });
+        let osty_attack = |state: &mut HotState| {
+            super::super::damage::player_pet_attack_from_card(
+                state,
+                (&catalog, &poke_spec, 1),
+                &[0],
+                1,
+                1,
+                &mut Vec::new(),
+            )
+            .unwrap();
+        };
+
+        let mut dead = live.clone();
+        dead.fanouts.set_osty(None).unwrap();
+        assert!(!super::super::damage::damage_combat_is_ending(&dead));
+        let before = dead.clone();
+        osty_attack(&mut dead);
+        assert_eq!(dead, before, "the command returns at entry");
+
+        osty_attack(&mut live);
+        assert_eq!(live.fanouts.pet().attacks_this_turn(), 1);
+        assert!(live.monsters[0].hp < 100);
+        assert_eq!(live.fanouts.gigantification(), 0);
+        assert_eq!(
+            live.card_states
+                .get(2)
+                .local_cost_modifiers
+                .as_slice()
+                .len(),
+            1
         );
     }
 
@@ -36630,6 +37999,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 0;
         state.next_card_uid = 40;
@@ -37111,6 +38484,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 3;
@@ -37147,6 +38524,10 @@ mod tests {
             flags: 0,
         };
         let mut overflow = HotState::at_defaults();
+        overflow.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         overflow.hp = 50;
         overflow.energy = 3;
         overflow.next_card_uid = 12;
@@ -37414,6 +38795,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 51;
@@ -37469,6 +38854,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 61;
@@ -37511,6 +38900,10 @@ mod tests {
             let catalog = builder.build();
             assert!(catalog.atom(&identity(CardId::SweepingGaze, 0)).is_some());
             let mut state = state_with_card(&catalog, sentry, 70 + u32::from(upgrade));
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
 
             play_card(
                 &mut state,
@@ -37534,6 +38927,10 @@ mod tests {
         builder.intern(sentry).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, sentry, 80);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::SignalBoost, SlotWire::Int, 1);
         state
             .powers
@@ -37626,6 +39023,10 @@ mod tests {
         builder.intern(glimpse).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, glimpse, 220);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.multiplayer_ally_key = 1;
         state.fanouts.set_multiplayer_ally(MultiplayerAllyState {
             key: 1,
@@ -37839,6 +39240,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 42;
@@ -37857,6 +39262,11 @@ mod tests {
             );
 
             let mut autoplay = HotState::at_defaults();
+
+            autoplay.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             autoplay.hp = 50;
             autoplay.energy = 3;
             autoplay.next_card_uid = 42;
@@ -37878,6 +39288,11 @@ mod tests {
             );
 
             let mut generated = HotState::at_defaults();
+
+            generated.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             generated.hp = 50;
             generated.energy = 3;
             generated.next_card_uid = 42;
@@ -37915,6 +39330,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = 43;
@@ -37932,6 +39351,13 @@ mod tests {
         assert!(events.is_empty());
 
         let mut generated_overflow = HotState::at_defaults();
+
+        generated_overflow
+            .monsters_mut()
+            .push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
         generated_overflow.hp = 50;
         generated_overflow.energy = 3;
         generated_overflow.next_card_uid = 43;
@@ -37967,6 +39393,7 @@ mod tests {
         assert!(events.is_empty());
 
         let mut terminal_after_first = HotState::at_defaults();
+
         terminal_after_first.hp = 50;
         terminal_after_first.energy = 3;
         terminal_after_first.next_card_uid = 43;
@@ -38068,6 +39495,10 @@ mod tests {
         let atom = builder.intern(infection).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
             uid: 19,
@@ -38407,6 +39838,10 @@ mod tests {
         );
 
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         let eidolon_card = HotCard {
             uid: 21,
@@ -38546,6 +39981,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.card_states.set_local_sly(card.uid);
             state.piles.get_mut(PileId::Discard).make_mut().push(card);
@@ -38665,6 +40104,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 2;
         state.next_card_uid = 8;
@@ -38739,6 +40182,10 @@ mod tests {
         let strike_atom = builder.intern(strike).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 2;
         state.next_card_uid = 12;
@@ -38821,6 +40268,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 1;
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -38944,6 +40395,10 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 1;
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -39117,6 +40572,103 @@ mod tests {
                 HotBoundary::from_canonical(&tampered, &rebuilt_catalog).is_err(),
                 "{power:?} replay accepted a forged frozen play count"
             );
+        }
+    }
+
+    /// #3502: the resumed CardPlay record takes the same `OnPlayWrapper`
+    /// loop-head test (`0x31b8d0` IL_0428-0432) as the direct loop. Burning
+    /// Pact with a base replay count of two plays three bodies; the second
+    /// parks on its exhaust selection. Its only enemy dies without the over
+    /// latch (the combat is ending) before the answer, so the answered body
+    /// is the last. The live control starts the third body.
+    #[test]
+    fn a_resumed_replay_series_stops_while_the_combat_is_ending_before_the_over_latch() {
+        let pact = identity(CardId::BurningPact, 0);
+        let strike = identity(CardId::StrikeIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        let pact_atom = builder.intern_reachable(pact).unwrap();
+        let strike_atom = builder.intern_reachable(strike).unwrap();
+        builder
+            .intern_reachable(identity(CardId::HiddenGem, 0))
+            .unwrap();
+        let catalog = builder.build();
+        for live in [true, false] {
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.hp = 50;
+            state.energy = 1;
+            state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+            state.next_card_uid = 10;
+            state.exact_piles = true;
+            state.piles.get_mut(PileId::Hand).make_mut().extend(
+                [
+                    (1, pact_atom),
+                    (2, strike_atom),
+                    (3, strike_atom),
+                    (4, strike_atom),
+                ]
+                .map(|(uid, atom)| HotCard {
+                    uid,
+                    atom,
+                    flags: if uid == 1 {
+                        CARD_FLAG_DEFAULT_PHYSICAL_STATE
+                    } else {
+                        0
+                    },
+                }),
+            );
+            for uid in 5..10 {
+                state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                    uid,
+                    atom: strike_atom,
+                    flags: 0,
+                });
+            }
+            let mut replay = state.card_states.get(1);
+            replay.set_base_replay_count(Some(2)).unwrap();
+            state.card_states.set(1, replay);
+
+            let mut parked = crate::engine::apply_action_into(
+                &state,
+                &catalog,
+                &crate::engine::Action::Play {
+                    uid: 1,
+                    target: None,
+                    selection: crate::engine::SelectionRef::new(Some(2)),
+                },
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert_eq!(pending_record(&parked).plays, 3);
+            assert_eq!(pending_record(&parked).play_index, 1);
+            if !live {
+                parked.monsters_mut()[0].hp = 0;
+            }
+            assert!(!parked.history.over);
+            assert_eq!(
+                super::super::damage::damage_combat_is_ending(&parked),
+                !live
+            );
+
+            let answered = crate::engine::apply_action_into(
+                &parked,
+                &catalog,
+                &crate::engine::Action::Select {
+                    answer: crate::engine::SelectionAnswer::CardUid(3),
+                },
+                &mut Vec::new(),
+            )
+            .unwrap();
+            if live {
+                // The third body started and parks on its own selection.
+                assert_eq!(pending_record(&answered).play_index, 2);
+            } else {
+                assert!(answered.pending.is_none());
+                assert_eq!(answered.history.card_plays_finished_combat, 2);
+            }
+            assert!(!answered.history.over);
         }
     }
 
@@ -39618,6 +41170,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 1;
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -40221,6 +41777,10 @@ mod tests {
                 },
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 1;
             state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
@@ -40430,6 +41990,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, eidolon, 1);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         let purity_card = HotCard {
             uid: 2,
@@ -40602,6 +42166,10 @@ mod tests {
         builder.intern(identity(CardId::Havoc, 1)).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, havoc, 1);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
             uid: 2,
@@ -40744,6 +42312,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, havoc, 1);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
             uid: 2,
@@ -40955,6 +42527,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.max_hp = 50;
         state.energy = 3;
@@ -41288,6 +42864,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, cascade, 1);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.energy = 3;
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         state.piles.get_mut(PileId::Draw).make_mut().extend([
@@ -41437,6 +43017,10 @@ mod tests {
         }
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, cascade, 1);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.energy = 2;
         state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         state.piles.get_mut(PileId::Draw).make_mut().extend([
@@ -41529,6 +43113,10 @@ mod tests {
                 identity(CardId::CalculatedGamble, level),
                 1,
             );
+            gamble.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             gamble.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
             gamble.piles.get_mut(PileId::Hand).make_mut().extend([
                 HotCard {
@@ -43000,6 +44588,10 @@ mod tests {
         }
         let death_catalog = death_builder.build();
         let mut death = state_with_card(&death_catalog, storm, 1);
+        death.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         death.hp = 1;
         death.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
         death.piles.get_mut(PileId::Hand).make_mut().extend([
@@ -43043,6 +44635,10 @@ mod tests {
         builder.intern(infection).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, havoc, 3);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::FeelNoPain, SlotWire::Int, 4);
         state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
             uid: 4,
@@ -43075,6 +44671,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 70;
         state.powers.set(PowerId::Smoggy, SlotWire::Int, 1);
         state.powers.set(PowerId::SmogLock, SlotWire::Bool, 1);
@@ -43111,6 +44711,10 @@ mod tests {
             flags,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 70;
         state.max_hp = 70;
         state.powers.set(PowerId::Sloth, SlotWire::Int, 3);
@@ -43663,6 +45267,10 @@ mod tests {
         builder.intern(defend).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, catastrophe, 30);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         for uid in 31..34 {
             state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
                 uid,
@@ -43869,6 +45477,10 @@ mod tests {
                     flags: 0,
                 };
                 let mut state = HotState::at_defaults();
+                state.monsters_mut().push(crate::hot::HotMonster::new(
+                    crate::ids::MonsterKind::Toadpole,
+                    100,
+                ));
                 state.hp = 50;
                 state.energy = 3;
                 state.next_card_uid = 100;
@@ -43999,6 +45611,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = u32::MAX;
@@ -44114,6 +45730,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 100;
@@ -44157,6 +45777,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.energy = 3;
         state.next_card_uid = u32::MAX - 1;
@@ -44185,6 +45809,10 @@ mod tests {
         builder.intern_all_card_upgrade_closure().unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, catastrophe, 30);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
             uid: 31,
             atom: catalog.atom(&apotheosis).unwrap(),
@@ -44312,6 +45940,10 @@ mod tests {
         builder.intern_all_card_upgrade_closure().unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, apotheosis, 40);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
             uid: 41,
             atom: catalog.atom(&strike).unwrap(),
@@ -44575,6 +46207,10 @@ mod tests {
         builder.intern(defend).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, catastrophe, 35);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Smoggy, SlotWire::Int, 1);
         state.powers.set(PowerId::SmogLock, SlotWire::Bool, 1);
         hydrate_after_card_played_power_order_for_test(&mut state);
@@ -44625,6 +46261,10 @@ mod tests {
         builder.intern(defend).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, catastrophe, 39);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.powers.set(PowerId::Smoggy, SlotWire::Int, 1);
         hydrate_after_card_played_power_order_for_test(&mut state);
         let defend_atom = catalog.atom(&defend).unwrap();
@@ -44695,6 +46335,10 @@ mod tests {
         builder.intern(defend).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, catastrophe, 37);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         let duplicate = HotCard {
             uid: 38,
             atom: catalog.atom(&defend).unwrap(),
@@ -45682,6 +47326,10 @@ mod tests {
         builder.intern(catastrophe).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, catastrophe, 45);
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
             uid: 46,
             atom: catalog.atom(&catastrophe).unwrap(),
@@ -46304,6 +47952,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 100;
@@ -46365,6 +48017,10 @@ mod tests {
                 flags: 0,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 100;
@@ -46406,6 +48062,10 @@ mod tests {
                 flags: u16::from(!legacy_source) * CARD_FLAG_LEGACY,
             };
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 3;
             state.next_card_uid = 100;
@@ -46436,6 +48096,10 @@ mod tests {
             flags: 0,
         };
         let mut overflow = HotState::at_defaults();
+        overflow.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         overflow.hp = 50;
         overflow.energy = 3;
         overflow.next_card_uid = 100;
@@ -46958,6 +48622,9 @@ mod tests {
         assert!(lethal.piles.get(PileId::Draw).is_empty());
 
         let mut wall_state = state_with_card(&catalog, wall, 410);
+        wall_state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
         wall_state.stars = 2;
         wall_state.powers.set(PowerId::Burst, SlotWire::Int, 1);
         hydrate_side_end_order(&mut wall_state);
@@ -47037,6 +48704,10 @@ mod tests {
             flags: 0,
         };
         let mut state = HotState::at_defaults();
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
         state.hp = 50;
         state.piles.get_mut(PileId::Draw).make_mut().push(source);
         state
@@ -47073,6 +48744,10 @@ mod tests {
             builder.intern(wall).unwrap();
             let catalog = builder.build();
             let mut state = state_with_card(&catalog, wall, 610 + u32::from(upgrade));
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.stars = 2;
             state.powers.set(PowerId::Shadowmeld, SlotWire::Int, 95);
             let before = state.clone();
@@ -47469,6 +49144,10 @@ mod tests {
         };
         for mut state in {
             let mut missing = HotState::at_defaults();
+            missing.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             missing.hp = 50;
             let mut duplicate = missing.clone();
             duplicate
@@ -47589,6 +49268,10 @@ mod tests {
         };
         for direct in [false, true] {
             let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                100,
+            ));
             state.hp = 50;
             state.energy = 9;
             state.next_card_uid = 261;
@@ -48654,5 +50337,81 @@ mod whispering_earring_child_tests {
                 "{id:?}"
             );
         }
+    }
+
+    /// #3515: `CardCmd/<AutoPlay>d__0` (0x3df9d4) returns at
+    /// `CombatManager.IsOverOrEnding` (IL_0051-005d) before `Hook.ShouldPlay`,
+    /// target selection, history or any pile move. With the only primary dead
+    /// and a live Gas Bomb, before the over latch, a direct AutoPlay of a
+    /// Defend in Draw is a complete no-op: no CardPlay starts and the card
+    /// stays where it is. The Adaptable-vetoed control plays it.
+    #[test]
+    fn auto_play_entry_returns_while_combat_is_ending_before_the_over_latch() {
+        let defend = CardIdentity {
+            id: CardId::DefendIronclad,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(defend).unwrap();
+        let catalog = builder.build();
+        let card = HotCard {
+            uid: 7,
+            atom,
+            flags: 0,
+        };
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.next_card_uid = 8;
+        template.piles.get_mut(PileId::Draw).make_mut().push(card);
+        crate::engine::damage::assert_ending_window_gate(&template, "AutoPlay", |s, _| {
+            play_card_with_work(
+                s,
+                &catalog,
+                card.uid,
+                None,
+                None,
+                &mut Vec::new(),
+                PlaySource {
+                    pile: PileId::Draw,
+                    provenance: PlayProvenance::Auto,
+                    force_exhaust: false,
+                    frozen: Some(card),
+                    allow_dead_target: false,
+                },
+            )
+        });
+    }
+
+    /// #3515: the draw-top gatherer is `CardPileCmd.AutoPlayFromDrawPile`
+    /// (`<AutoPlayFromDrawPile>d__23` 0x3e3638), which returns at
+    /// `IsOverOrEnding` (IL_0025-0031) before it moves any card to Play.
+    /// While the combat is ending before the over latch the top card stays in
+    /// Draw; the Adaptable-vetoed control flips and plays it.
+    #[test]
+    fn draw_top_autoplay_gathers_nothing_while_combat_is_ending_before_the_over_latch() {
+        let defend = CardIdentity {
+            id: CardId::DefendIronclad,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(defend).unwrap();
+        let catalog = builder.build();
+        let mut template = HotState::at_defaults();
+        template.hp = 50;
+        template.next_card_uid = 8;
+        template
+            .piles
+            .get_mut(PileId::Draw)
+            .make_mut()
+            .push(HotCard {
+                uid: 7,
+                atom,
+                flags: 0,
+            });
+        crate::engine::damage::assert_ending_window_gate(&template, "draw-top AutoPlay", |s, _| {
+            autoplay_draw_top(s, &catalog, 1, &mut Vec::new())
+        });
     }
 }

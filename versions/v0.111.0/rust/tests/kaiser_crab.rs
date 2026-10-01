@@ -600,9 +600,10 @@ fn a_prevented_player_death_leaves_the_whole_kaiser_lifecycle_untouched() {
 // State, keys and cold reload
 // --------------------------------------------------------------------------
 
-/// `kaiser_facing` and `crab_rage` are keyed state: the exact-search and memo
-/// key IS `try_to_canonical` (`exact_dfs::memo_key`), so two states that
-/// differ only in facing must project differently, and both must reload.
+/// `kaiser_facing` and `crab_rage` are keyed state: the exact-search memo
+/// key is the SHA-256 of `try_to_canonical`'s bytes (`exact_dfs::memo_key`,
+/// #3470), so two states that differ only in facing must project differently,
+/// and both must reload.
 #[test]
 fn facing_and_rage_are_keyed_state_that_survives_a_cold_reload() {
     let zero = kaiser(0);
