@@ -1,0 +1,462 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "hp": 272,
+   "kind": "SLIMED_BERSERKER",
+   "max_hp": 281
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "id": "UNLEASH",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "END_OF_DAYS",
+    "uid": 7,
+    "upgrade": 1
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "DANSE_MACABRE",
+    "uid": 9,
+    "upgrade": 1
+   },
+   {
+    "id": "SOUL",
+    "uid": 42,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "SKEWER",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "DELAY",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "SERPENT_FORM",
+    "uid": 13,
+    "upgrade": 1
+   },
+   {
+    "id": "WISP",
+    "uid": 14,
+    "upgrade": 1
+   },
+   {
+    "id": "GRAVE_WARDEN",
+    "uid": 15,
+    "upgrade": 0
+   },
+   {
+    "id": "DEVOUR_LIFE",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "PULL_FROM_BELOW",
+    "uid": 17,
+    "upgrade": 0
+   },
+   {
+    "id": "DEATHBRINGER",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "REAVE",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFY",
+    "uid": 21,
+    "upgrade": 0
+   },
+   {
+    "id": "NEGATIVE_PULSE",
+    "uid": 22,
+    "upgrade": 1
+   },
+   {
+    "id": "PUTREFY",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "extra": [
+     [
+      "MAD_SCIENCE_TINKER",
+      3,
+      7
+     ]
+    ],
+    "id": "MAD_SCIENCE",
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "id": "REAVE",
+    "uid": 26,
+    "upgrade": 0
+   },
+   {
+    "id": "CLEANSE",
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "id": "SLEIGHT_OF_FLESH",
+    "uid": 28,
+    "upgrade": 0
+   },
+   {
+    "id": "BODYGUARD",
+    "uid": 29,
+    "upgrade": 0
+   },
+   {
+    "id": "SOUL_STORM",
+    "uid": 30,
+    "upgrade": 0
+   },
+   {
+    "id": "CAPTURE_SPIRIT",
+    "uid": 31,
+    "upgrade": 1
+   },
+   {
+    "id": "DEATHBRINGER",
+    "uid": 32,
+    "upgrade": 0
+   },
+   {
+    "id": "SOUL",
+    "uid": 43,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFILE",
+    "uid": 33,
+    "upgrade": 1
+   },
+   {
+    "id": "DIRGE",
+    "uid": 34,
+    "upgrade": 1
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 35,
+    "upgrade": 0
+   },
+   {
+    "id": "CLUMSY",
+    "uid": 36,
+    "upgrade": 0
+   },
+   {
+    "id": "MELANCHOLY",
+    "physical_state": [
+     "PHYSICAL_CARD_STATE",
+     [],
+     0,
+     false,
+     []
+    ],
+    "uid": 37,
+    "upgrade": 1
+   },
+   {
+    "id": "SOUL",
+    "uid": 41,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 38,
+    "upgrade": 0
+   },
+   {
+    "id": "ENTHRALLED",
+    "uid": 39,
+    "upgrade": 0
+   },
+   {
+    "id": "SCOURGE",
+    "uid": 40,
+    "upgrade": 1
+   }
+  ],
+  "hand": [
+   {
+    "id": "GRAVE_WARDEN",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFLECT",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "GREED",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_NECROBINDER",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "STRIKE_NECROBINDER",
+    "uid": 4,
+    "upgrade": 0
+   },
+   {
+    "id": "FETCH",
+    "uid": 5,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "ally": [
+   "OSTY",
+   1,
+   1
+  ],
+  "ascension": 9,
+  "bound_phylactery": true,
+  "cards_drawn_combat": 6,
+  "energy": 5,
+  "flower": 2,
+  "fully_unlocked_potion_pool": true,
+  "funerary_mask": true,
+  "gold": 89,
+  "gremlin_horn": true,
+  "hp": 62,
+  "inky_attack_damage": 0,
+  "lamp": true,
+  "lantern": true,
+  "max_hp": 83,
+  "next_card_uid": 44,
+  "next_creature_uid": 2,
+  "next_generated_hook_uid": 3,
+  "owner_generated_cards_combat": 3,
+  "plating": 4,
+  "player_phase": 3,
+  "popper": true,
+  "potion_slots": [
+   "BONE_BREW",
+   "SWIFT_POTION"
+  ],
+  "potions": [
+   "BONE_BREW",
+   "SWIFT_POTION"
+  ],
+  "ps_strikes": 3,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BOUND_PHYLACTERY",
+   "RELIC.CURSED_PEARL",
+   "RELIC.MAW_BANK",
+   "RELIC.GORGET",
+   "RELIC.FESTIVE_POPPER",
+   "RELIC.PEAR",
+   "RELIC.OLD_COIN",
+   "RELIC.PRAYER_WHEEL",
+   "RELIC.HAPPY_FLOWER",
+   "RELIC.PAELS_BLOOD",
+   "RELIC.UNSETTLING_LAMP",
+   "RELIC.STRAWBERRY",
+   "RELIC.THE_ABACUS",
+   "RELIC.LANTERN",
+   "RELIC.BLOOD_SOAKED_ROSE",
+   "RELIC.FUNERARY_MASK",
+   "RELIC.GREMLIN_HORN",
+   "RELIC.VAJRA"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Necrobinder",
+  "reward_card_rarity_odds": "RegularEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "strength": 1,
+  "template_relics": [
+   "RELIC.PAELS_BLOOD",
+   "RELIC.BLOOD_SOAKED_ROSE"
+  ],
+  "the_abacus": true,
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 5,
+   "words": [
+    4363148315175191636,
+    9703154263717883338,
+    13830992486274411968,
+    8819393298688389086
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    2729921348974772687,
+    8009899843147022489,
+    1694933768093748009,
+    16894641328531266636
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    16858516349071757896,
+    7113837134996428819,
+    8431656875677657313,
+    3825147926876076781
+   ]
+  },
+  "generation": {
+   "counter": 0,
+   "words": [
+    2576148352437093688,
+    11438339332583302284,
+    8949198274193766452,
+    10746306256870279247
+   ]
+  },
+  "niche": {
+   "counter": 26,
+   "words": [
+    13894716244519365015,
+    11539145737322887076,
+    18312972914670913111,
+    6557298032981887993
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    3596886418230049905,
+    13614221112086622995,
+    6303131015776505951,
+    1503042833368218251
+   ]
+  },
+  "rng": {
+   "counter": 557,
+   "words": [
+    9304912369918009535,
+    12045528096892378975,
+    557270551689955309,
+    2614301768418388058
+   ]
+  },
+  "sel": {
+   "counter": 0,
+   "words": [
+    2300370489536750397,
+    18407265508526734325,
+    12002356710252908464,
+    7450573262111285136
+   ]
+  },
+  "targets": {
+   "counter": 62,
+   "words": [
+    1829980407513945819,
+    18298302408577687190,
+    8027217389529947574,
+    4153299371978091547
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

@@ -20,7 +20,7 @@ Shapes: {'procedural': 30, 'tabular': 58} · Rust: {'built': 88} · with corpus 
 | `ENCOUNTER.ENTOMANCER` + | 34 | 13 | elite.py | `_entomancer` L92-L93 | tabular | — | built |
 | `ENCOUNTER.BOWLBUGS_WEAK` | 33 | 13 | weak.py | `_bowlbugs` L231-L243 | procedural | branching, encounter_rng | built |
 | `ENCOUNTER.TOADPOLES_WEAK` | 33 | 9 | weak.py | `_toadpoles` L183-L194 | tabular | — | built |
-| `ENCOUNTER.BYGONE_EFFIGY` + | 32 | 13 | elite.py | `_effigy` L81-L82 | procedural | helper:AscensionTier | built |
+| `ENCOUNTER.BYGONE_EFFIGY` + | 32 | 16 | elite.py | `_effigy` L81-L82 | procedural | helper:AscensionTier | built |
 | `ENCOUNTER.THIEVING_HOPPER_WEAK` | 32 | 13 | normal.py | `_thieving_hopper` L384-L387 | tabular | — | built |
 | `ENCOUNTER.DECIMILLIPEDE` + | 32 | 11 | elite.py | `_decimillipede` L119-L141 | procedural | branching, ctx:tier, encounter_rng, loop_while | built |
 | `ENCOUNTER.INFESTED_PRISMS` + | 31 | 16 | elite.py | `_prisms` L96-L98 | procedural | helper:AscensionTier | built |
@@ -33,37 +33,37 @@ Shapes: {'procedural': 30, 'tabular': 58} · Rust: {'built': 88} · with corpus 
 | `ENCOUNTER.PHANTASMAL_GARDENERS` + | 24 | 9 | elite.py | `_gardeners` L101-L111 | procedural | ctx:tier, helper:AscensionTier | built |
 | `ENCOUNTER.TUNNELER_WEAK` | 24 | 9 | weak.py | `_tunneler` L197-L200 | procedural | helper:AscensionTier | built |
 | `ENCOUNTER.DEVOTED_SCULPTOR_WEAK` | 23 | 7 | weak.py | `_devoted_sculptor` L211-L212 | tabular | — | built |
-| `ENCOUNTER.TERROR_EEL` + | 22 | 8 | elite.py | `_eel` L73-L74 | procedural | helper:AscensionTier | built |
-| `ENCOUNTER.KAISER_CRAB_BOSS` | 21 | 8 | boss.py | `_kaiser_crab` L310-L318 | tabular | — | built |
+| `ENCOUNTER.TERROR_EEL` + | 22 | 9 | elite.py | `_eel` L73-L74 | procedural | helper:AscensionTier | built |
+| `ENCOUNTER.KAISER_CRAB_BOSS` | 21 | 12 | boss.py | `_kaiser_crab` L310-L318 | tabular | — | built |
 | `ENCOUNTER.SCROLLS_OF_BITING_WEAK` | 21 | 7 | normal.py | `_scrolls_of_biting` L1013-L1031 | procedural | branching, encounter_rng | built |
 | `ENCOUNTER.VANTOM_BOSS` | 17 | 10 | boss.py | `_vantom` L217-L218 | tabular | — | built |
-| `ENCOUNTER.KNIGHTS_ELITE` | 16 | 6 | elite.py | `_knights` L165-L180 | procedural | ctx:tier, raw_niche_draw | built |
-| `ENCOUNTER.SOUL_NEXUS` + | 15 | 5 | elite.py | `_soul_nexus` L144-L151 | procedural | helper:AscensionTier | built |
+| `ENCOUNTER.KNIGHTS_ELITE` | 16 | 7 | elite.py | `_knights` L165-L180 | procedural | ctx:tier, raw_niche_draw | built |
+| `ENCOUNTER.SOUL_NEXUS` + | 15 | 6 | elite.py | `_soul_nexus` L144-L151 | procedural | helper:AscensionTier | built |
+| `ENCOUNTER.WATERFALL_GIANT_BOSS` | 14 | 9 | boss.py | `_waterfall_giant` L240-L243 | tabular | — | built |
 | `ENCOUNTER.TURRET_OPERATOR_WEAK` | 14 | 8 | weak.py | `_turret_operator` L246-L255 | tabular | — | built |
-| `ENCOUNTER.WATERFALL_GIANT_BOSS` | 14 | 6 | boss.py | `_waterfall_giant` L240-L243 | tabular | — | built |
+| `ENCOUNTER.OVICOPTER_NORMAL` | 14 | 6 | normal.py | `_ovicopter` L267-L274 | tabular | — | built |
 | `ENCOUNTER.MYTES_NORMAL` | 14 | 5 | normal.py | `_mytes` L513-L519 | tabular | — | built |
-| `ENCOUNTER.OVICOPTER_NORMAL` | 14 | 5 | normal.py | `_ovicopter` L267-L274 | tabular | — | built |
+| `ENCOUNTER.KNOWLEDGE_DEMON_BOSS` | 13 | 9 | boss.py | `_knowledge_demon` L82-L83 | tabular | — | built |
+| `ENCOUNTER.MECHA_KNIGHT_ELITE` | 13 | 9 | elite.py | `_mecha_knight` L202-L203 | tabular | — | built |
 | `ENCOUNTER.SLUMBERING_BEETLE_NORMAL` | 13 | 9 | normal.py | `_slumbering_beetle` L734-L751 | procedural | ctx:tier | built |
-| `ENCOUNTER.KNOWLEDGE_DEMON_BOSS` | 13 | 8 | boss.py | `_knowledge_demon` L82-L83 | tabular | — | built |
-| `ENCOUNTER.MECHA_KNIGHT_ELITE` | 13 | 8 | elite.py | `_mecha_knight` L202-L203 | tabular | — | built |
-| `ENCOUNTER.THE_KIN_BOSS` | 13 | 8 | boss.py | `_the_kin` L187-L202 | tabular | — | built |
-| `ENCOUNTER.AEONGLASS_BOSS` | 13 | 5 | boss.py | `_aeonglass` L32-L35 | tabular | — | built |
+| `ENCOUNTER.THE_KIN_BOSS` | 13 | 9 | boss.py | `_the_kin` L187-L202 | tabular | — | built |
+| `ENCOUNTER.AEONGLASS_BOSS` | 13 | 6 | boss.py | `_aeonglass` L32-L35 | tabular | — | built |
+| `ENCOUNTER.THE_OBSCURA_NORMAL` | 13 | 6 | normal.py | `_the_obscura` L972-L978 | tabular | — | built |
 | `ENCOUNTER.CULTISTS_NORMAL` | 13 | 5 | normal.py | `_cultists` L297-L307 | tabular | — | built |
-| `ENCOUNTER.THE_OBSCURA_NORMAL` | 13 | 4 | normal.py | `_the_obscura` L972-L978 | tabular | — | built |
-| `ENCOUNTER.THE_INSATIABLE_BOSS` | 12 | 7 | boss.py | `_the_insatiable` L259-L260 | tabular | — | built |
+| `ENCOUNTER.THE_INSATIABLE_BOSS` | 12 | 8 | boss.py | `_the_insatiable` L259-L260 | tabular | — | built |
+| `ENCOUNTER.CEREMONIAL_BEAST_BOSS` | 11 | 9 | boss.py | `_ceremonial_beast` L124-L125 | tabular | — | built |
 | `ENCOUNTER.CHOMPERS_NORMAL` | 11 | 8 | normal.py | `_chompers` L849-L865 | tabular | — | built |
-| `ENCOUNTER.CEREMONIAL_BEAST_BOSS` | 11 | 7 | boss.py | `_ceremonial_beast` L124-L125 | tabular | — | built |
+| `ENCOUNTER.QUEEN_BOSS` | 11 | 8 | boss.py | `_queen` L153-L163 | tabular | — | built |
 | `ENCOUNTER.RUBY_RAIDERS_NORMAL` | 11 | 7 | normal.py | `_ruby_raiders` L556-L569 | procedural | encounter_rng | built |
-| `ENCOUNTER.QUEEN_BOSS` | 11 | 6 | boss.py | `_queen` L153-L163 | tabular | — | built |
 | `ENCOUNTER.CUBEX_CONSTRUCT_NORMAL` | 10 | 7 | normal.py | `_cubex_construct` L940-L944 | tabular | — | built |
 | `ENCOUNTER.MAWLER_NORMAL` | 10 | 7 | normal.py | `_mawler` L527-L529 | procedural | helper:AscensionTier | built |
-| `ENCOUNTER.GREMLIN_MERC_NORMAL` | 10 | 5 | normal.py | `_gremlin_merc` L345-L349 | tabular | — | built |
+| `ENCOUNTER.GREMLIN_MERC_NORMAL` | 10 | 6 | normal.py | `_gremlin_merc` L345-L349 | tabular | — | built |
 | `ENCOUNTER.VINE_SHAMBLER_NORMAL` | 9 | 9 | normal.py | `_vine_shambler` L918-L919 | tabular | — | built |
 | `ENCOUNTER.LOUSE_PROGENITOR_NORMAL` | 9 | 7 | normal.py | `_louse_progenitor` L250-L255 | procedural | ctx:tier | built |
+| `ENCOUNTER.EXOSKELETONS_NORMAL` | 9 | 5 | normal.py | `_exoskeletons_normal` L634-L653 | procedural | branching | built |
 | `ENCOUNTER.INKLETS_NORMAL` | 9 | 5 | normal.py | `_inklets_normal` L656-L675 | tabular | — | built |
-| `ENCOUNTER.EXOSKELETONS_NORMAL` | 9 | 4 | normal.py | `_exoskeletons_normal` L634-L653 | procedural | branching | built |
-| `ENCOUNTER.SLIMED_BERSERKER_NORMAL` | 9 | 4 | normal.py | `_slimed_berserker` L902-L903 | tabular | — | built |
-| `ENCOUNTER.BOWLBUGS_NORMAL` | 9 | 3 | normal.py | `_bowlbugs_normal` L754-L776 | procedural | encounter_rng | built |
+| `ENCOUNTER.SLIMED_BERSERKER_NORMAL` | 9 | 5 | normal.py | `_slimed_berserker` L902-L903 | tabular | — | built |
+| `ENCOUNTER.BOWLBUGS_NORMAL` | 9 | 4 | normal.py | `_bowlbugs_normal` L754-L776 | procedural | encounter_rng | built |
 | `ENCOUNTER.OVERGROWTH_CRAWLERS` | 8 | 5 | normal.py | `_overgrowth_crawlers` L807-L819 | tabular | — | built |
 | `ENCOUNTER.SOUL_FYSH_BOSS` | 8 | 5 | boss.py | `_soul_fysh` L50-L51 | tabular | — | built |
 | `ENCOUNTER.HUNTER_KILLER_NORMAL` | 8 | 3 | normal.py | `_hunter_killer` L334-L342 | tabular | — | built |
@@ -72,27 +72,27 @@ Shapes: {'procedural': 30, 'tabular': 58} · Rust: {'built': 88} · with corpus 
 | `ENCOUNTER.HAUNTED_SHIP_NORMAL` | 7 | 5 | normal.py | `_haunted_ship` L490-L491 | tabular | — | built |
 | `ENCOUNTER.TWO_TAILED_RATS_NORMAL` | 7 | 3 | normal.py | `_two_tailed_rats` L283-L294 | procedural | encounter_rng | built |
 | `ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS` | 7 | 2 | boss.py | `_lagavulin_matriarch` L103-L107 | tabular | — | built |
+| `ENCOUNTER.FABRICATOR_NORMAL` | 6 | 4 | normal.py | `_fabricator` L258-L264 | tabular | — | built |
 | `ENCOUNTER.SEWER_CLAM_NORMAL` | 6 | 4 | normal.py | `_sewer_clam` L443-L444 | tabular | — | built |
-| `ENCOUNTER.FABRICATOR_NORMAL` | 6 | 3 | normal.py | `_fabricator` L258-L264 | tabular | — | built |
 | `ENCOUNTER.PUNCH_CONSTRUCT_NORMAL` | 6 | 3 | normal.py | `_punch_construct` L416-L419 | tabular | — | built |
 | `ENCOUNTER.CORPSE_SLUGS_NORMAL` | 5 | 4 | normal.py | `_corpse_slugs_normal` L71-L72 | procedural | ctx:tier, encounter_rng | built |
 | `ENCOUNTER.NIBBITS_NORMAL` | 5 | 4 | normal.py | `_nibbits_normal` L310-L325 | tabular | — | built |
 | `ENCOUNTER.SPINY_TOAD_NORMAL` | 5 | 4 | normal.py | `_spiny_toad` L802-L804 | tabular | — | built |
 | `ENCOUNTER.FLYCONID_NORMAL` | 5 | 3 | normal.py | `_flyconid_normal` L694-L717 | procedural | branching, encounter_rng | built |
 | `ENCOUNTER.FROG_KNIGHT_NORMAL` | 5 | 3 | normal.py | `_frog_knight` L352-L355 | tabular | — | built |
+| `ENCOUNTER.AXEBOTS_NORMAL` | 4 | 4 | normal.py | `_axebots` L358-L364 | tabular | — | built |
 | `ENCOUNTER.LIVING_FOG_NORMAL` | 4 | 4 | normal.py | `_living_fog` L277-L280 | tabular | — | built |
 | `ENCOUNTER.SLIMES_NORMAL` | 4 | 4 | normal.py | `_slimes_normal` L822-L835 | procedural | branching, encounter_rng | built |
+| `ENCOUNTER.GLOBE_HEAD_NORMAL` | 4 | 3 | normal.py | `_globe_head` L328-L331 | tabular | — | built |
 | `ENCOUNTER.OWL_MAGISTRATE_NORMAL` | 4 | 3 | normal.py | `_owl_magistrate` L469-L470 | tabular | — | built |
-| `ENCOUNTER.AXEBOTS_NORMAL` | 4 | 2 | normal.py | `_axebots` L358-L364 | tabular | — | built |
 | `ENCOUNTER.CONSTRUCT_MENAGERIE_NORMAL` | 4 | 2 | normal.py | `_construct_menagerie` L947-L962 | tabular | — | built |
 | `ENCOUNTER.FOSSIL_STALKER_NORMAL` | 4 | 2 | normal.py | `_fossil_stalker` L626-L631 | tabular | — | built |
-| `ENCOUNTER.SCROLLS_OF_BITING_NORMAL` | 4 | 1 | normal.py | `_scrolls_of_biting` L1013-L1031 | procedural | branching, encounter_rng | built |
-| `ENCOUNTER.SEAPUNK_NORMAL` | 4 | 1 | normal.py | `_seapunk_normal` L367-L381 | tabular | — | built |
-| `ENCOUNTER.GLOBE_HEAD_NORMAL` | 4 | 0 | normal.py | `_globe_head` L328-L331 | tabular | — | built |
+| `ENCOUNTER.SCROLLS_OF_BITING_NORMAL` | 4 | 2 | normal.py | `_scrolls_of_biting` L1013-L1031 | procedural | branching, encounter_rng | built |
+| `ENCOUNTER.SEAPUNK_NORMAL` | 4 | 2 | normal.py | `_seapunk_normal` L367-L381 | tabular | — | built |
 | `ENCOUNTER.TEST_SUBJECT_BOSS` | 3 | 2 | boss.py | `_test_subject` L283-L286 | tabular | — | built |
 | `ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL` | 3 | 2 | normal.py | `_the_lost_and_forgotten` L101-L108 | tabular | — | built |
 | `ENCOUNTER.FOGMOG_NORMAL` | 2 | 2 | normal.py | `_fogmog` L1034-L1038 | tabular | — | built |
-| `ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER` | 2 | 0 | event.py | `_battleworn_dummy_v2` L52-L53 | tabular | — | built |
+| `ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER` | 2 | 1 | event.py | `_battleworn_dummy_v2` L52-L53 | tabular | — | built |
 | `ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER` | 2 | 0 | event.py | `_mysterious_knight` L76-L95 | procedural | ctx:tier, raw_niche_draw | built |
 | `ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER` | 1 | 1 | event.py | `_dense_vegetation` L60-L73 | tabular | — | built |
 | `ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER` | 1 | 0 | event.py | `_fake_merchant` L25-L39 | procedural | ctx:tier, raw_niche_draw | built |

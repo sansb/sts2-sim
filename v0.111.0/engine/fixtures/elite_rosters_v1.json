@@ -209,7 +209,7 @@
      11998693293740646088
     ]
    },
-   "fixture": null,
+   "fixture": "faee51323024258a",
    "niche_in": {
     "counter": 0,
     "words": [
@@ -7650,12 +7650,12 @@
  "corpus_fights": 128,
  "explicit_fixture_fights": 3,
  "family": "E4b F2 \u2014 elite pool (#2532)",
- "fixture_fights": 37,
+ "fixture_fights": 38,
  "generated_by": "sim/v0.111.0/engine/tools/gen_roster_pins.py",
  "per_encounter": {
   "ENCOUNTER.BYGONE_EFFIGY_ELITE": {
    "corpus": 11,
-   "fixtures": 3
+   "fixtures": 4
   },
   "ENCOUNTER.BYRDONIS_ELITE": {
    "corpus": 12,
@@ -7756,6 +7756,7 @@
   "f4231f8751497c7c",
   "f4683789ba0a3d2c",
   "f56c516b384937ef",
+  "f574ceba3ef2446f",
   "f5e5c9da44952ffc",
   "f644b44ff047b254",
   "f651e6d9316fcacb",
@@ -7773,6 +7774,7 @@
   "f830aea0cf1ef4f6",
   "f83de385c21dbec1",
   "f8703765d69f7ec6",
+  "f88b91747240e7af",
   "f895982da494a444",
   "f89c3e611bf72889",
   "f8c8189dde3f65d0",
@@ -7784,10 +7786,13 @@
   "f9a46d53d73d3452",
   "f9d41915161f9438",
   "f9f52626c7a0885d",
+  "fa1777995c15c308",
   "fa966f63692f4a1d",
+  "fad0232cc0daf808",
   "fae227072bbaa5c9",
   "fb5c72e7444ac807",
   "fb92aa172b9a5eaa",
+  "fb93c2d9969fef5d",
   "fb99b503e401bcdf",
   "fbe9106e7d27b939",
   "fc1563fe886a54fb",
@@ -7799,6 +7804,7 @@
   "fdf75ef08ebc70f8",
   "fe5903e6db12aa28",
   "fe9f74a8236bbf82",
+  "fec28b0a2cf6c72f",
   "fec533c1eef1df7f",
   "feddbf19f99ef6bb",
   "ff0518784f87ab1a",

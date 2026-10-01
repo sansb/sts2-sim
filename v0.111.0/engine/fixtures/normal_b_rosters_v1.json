@@ -13,7 +13,7 @@
      657454236745272875
     ]
    },
-   "fixture": null,
+   "fixture": "fcee945d12f3541e",
    "niche_in": {
     "counter": 0,
     "words": [
@@ -67,7 +67,7 @@
      4992952222442126802
     ]
    },
-   "fixture": null,
+   "fixture": "f143823c5616f2df",
    "niche_in": {
     "counter": 0,
     "words": [
@@ -2908,12 +2908,12 @@
  "corpus_fights": 47,
  "explicit_fixture_fights": 0,
  "family": "E4b F4 \u2014 normal pool, demand rank 16-30 (#2534)",
- "fixture_fights": 24,
+ "fixture_fights": 26,
  "generated_by": "sim/v0.111.0/engine/tools/gen_roster_pins.py",
  "per_encounter": {
   "ENCOUNTER.AXEBOTS_NORMAL": {
    "corpus": 2,
-   "fixtures": 0
+   "fixtures": 2
   },
   "ENCOUNTER.BOWLBUGS_NORMAL": {
    "corpus": 4,
@@ -3002,6 +3002,7 @@
   "f2888d8e048c505c",
   "f368f3a9c0863f47",
   "f4491cf8252a9d6d",
+  "f4617197ec9b1669",
   "f4df9236cc2d5127",
   "f568704fe2503998",
   "f57e223853b3668c",
@@ -3027,6 +3028,7 @@
   "fd404cb2f5c60ee6",
   "fd4f8d1f0792c947",
   "fda9a60c2984af50",
+  "fdeb0ce8303668f8",
   "fe205edaa1c1e997",
   "fe451970dbacaa95",
   "fe4776823060d599",

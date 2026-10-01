@@ -67,7 +67,7 @@
      11766600055032732937
     ]
    },
-   "fixture": null,
+   "fixture": "ff66794c5dbd6d66",
    "niche_in": {
     "counter": 0,
     "words": [
@@ -3822,12 +3822,12 @@
  "corpus_fights": 6,
  "explicit_fixture_fights": 0,
  "family": "E4b F7 \u2014 event pool (#2537)",
- "fixture_fights": 1,
+ "fixture_fights": 2,
  "generated_by": "sim/v0.111.0/engine/tools/gen_roster_pins.py",
  "per_encounter": {
   "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER": {
    "corpus": 2,
-   "fixtures": 0
+   "fixtures": 1
   },
   "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER": {
    "corpus": 1,

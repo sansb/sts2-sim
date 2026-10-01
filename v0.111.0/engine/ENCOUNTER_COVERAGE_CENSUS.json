@@ -30,7 +30,7 @@
   "with_corpus_demand": 84,
   "zero_corpus_demand": 4,
   "corpus_fights_covered": 1201,
-  "fixtures_covered": 538
+  "fixtures_covered": 576
  },
  "rows": [
   {
@@ -40,7 +40,7 @@
     "ENCOUNTER.KNIGHTS_ELITE"
    ],
    "corpus_fights": 16,
-   "fixtures": 6,
+   "fixtures": 7,
    "module": "content/encounters/elite.py",
    "builder": "_knights",
    "source": "L165-L180",
@@ -58,7 +58,7 @@
     "ENCOUNTER.TERROR_EEL_ELITE"
    ],
    "corpus_fights": 22,
-   "fixtures": 8,
+   "fixtures": 9,
    "module": "content/encounters/elite.py",
    "builder": "_eel",
    "source": "L73-L74",
@@ -92,7 +92,7 @@
     "ENCOUNTER.BYGONE_EFFIGY_ELITE"
    ],
    "corpus_fights": 32,
-   "fixtures": 13,
+   "fixtures": 16,
    "module": "content/encounters/elite.py",
    "builder": "_effigy",
    "source": "L81-L82",
@@ -211,7 +211,7 @@
     "ENCOUNTER.SOUL_NEXUS_ELITE"
    ],
    "corpus_fights": 15,
-   "fixtures": 5,
+   "fixtures": 6,
    "module": "content/encounters/elite.py",
    "builder": "_soul_nexus",
    "source": "L144-L151",
@@ -228,7 +228,7 @@
     "ENCOUNTER.MECHA_KNIGHT_ELITE"
    ],
    "corpus_fights": 13,
-   "fixtures": 8,
+   "fixtures": 9,
    "module": "content/encounters/elite.py",
    "builder": "_mecha_knight",
    "source": "L202-L203",
@@ -499,7 +499,7 @@
     "ENCOUNTER.EXOSKELETONS_NORMAL"
    ],
    "corpus_fights": 9,
-   "fixtures": 4,
+   "fixtures": 5,
    "module": "content/encounters/normal.py",
    "builder": "_exoskeletons_normal",
    "source": "L634-L653",
@@ -644,7 +644,7 @@
     "ENCOUNTER.SEAPUNK_NORMAL"
    ],
    "corpus_fights": 4,
-   "fixtures": 1,
+   "fixtures": 2,
    "module": "content/encounters/normal.py",
    "builder": "_seapunk_normal",
    "source": "L367-L381",
@@ -674,7 +674,7 @@
     "ENCOUNTER.AXEBOTS_NORMAL"
    ],
    "corpus_fights": 4,
-   "fixtures": 2,
+   "fixtures": 4,
    "module": "content/encounters/normal.py",
    "builder": "_axebots",
    "source": "L358-L364",
@@ -689,7 +689,7 @@
     "ENCOUNTER.GLOBE_HEAD_NORMAL"
    ],
    "corpus_fights": 4,
-   "fixtures": 0,
+   "fixtures": 3,
    "module": "content/encounters/normal.py",
    "builder": "_globe_head",
    "source": "L328-L331",
@@ -734,7 +734,7 @@
     "ENCOUNTER.GREMLIN_MERC_NORMAL"
    ],
    "corpus_fights": 10,
-   "fixtures": 5,
+   "fixtures": 6,
    "module": "content/encounters/normal.py",
    "builder": "_gremlin_merc",
    "source": "L345-L349",
@@ -781,7 +781,7 @@
     "ENCOUNTER.FABRICATOR_NORMAL"
    ],
    "corpus_fights": 6,
-   "fixtures": 3,
+   "fixtures": 4,
    "module": "content/encounters/normal.py",
    "builder": "_fabricator",
    "source": "L258-L264",
@@ -796,7 +796,7 @@
     "ENCOUNTER.OVICOPTER_NORMAL"
    ],
    "corpus_fights": 14,
-   "fixtures": 5,
+   "fixtures": 6,
    "module": "content/encounters/normal.py",
    "builder": "_ovicopter",
    "source": "L267-L274",
@@ -858,7 +858,7 @@
     "ENCOUNTER.BOWLBUGS_NORMAL"
    ],
    "corpus_fights": 9,
-   "fixtures": 3,
+   "fixtures": 4,
    "module": "content/encounters/normal.py",
    "builder": "_bowlbugs_normal",
    "source": "L754-L776",
@@ -1015,7 +1015,7 @@
     "ENCOUNTER.SLIMED_BERSERKER_NORMAL"
    ],
    "corpus_fights": 9,
-   "fixtures": 4,
+   "fixtures": 5,
    "module": "content/encounters/normal.py",
    "builder": "_slimed_berserker",
    "source": "L902-L903",
@@ -1075,7 +1075,7 @@
     "ENCOUNTER.THE_OBSCURA_NORMAL"
    ],
    "corpus_fights": 13,
-   "fixtures": 4,
+   "fixtures": 6,
    "module": "content/encounters/normal.py",
    "builder": "_the_obscura",
    "source": "L972-L978",
@@ -1123,7 +1123,7 @@
     "ENCOUNTER.SCROLLS_OF_BITING_NORMAL"
    ],
    "corpus_fights": 4,
-   "fixtures": 1,
+   "fixtures": 2,
    "module": "content/encounters/normal.py",
    "builder": "_scrolls_of_biting",
    "source": "L1013-L1031",
@@ -1141,7 +1141,7 @@
     "ENCOUNTER.AEONGLASS_BOSS"
    ],
    "corpus_fights": 13,
-   "fixtures": 5,
+   "fixtures": 6,
    "module": "content/encounters/boss.py",
    "builder": "_aeonglass",
    "source": "L32-L35",
@@ -1171,7 +1171,7 @@
     "ENCOUNTER.KNOWLEDGE_DEMON_BOSS"
    ],
    "corpus_fights": 13,
-   "fixtures": 8,
+   "fixtures": 9,
    "module": "content/encounters/boss.py",
    "builder": "_knowledge_demon",
    "source": "L82-L83",
@@ -1186,7 +1186,7 @@
     "ENCOUNTER.WATERFALL_GIANT_BOSS"
    ],
    "corpus_fights": 14,
-   "fixtures": 6,
+   "fixtures": 9,
    "module": "content/encounters/boss.py",
    "builder": "_waterfall_giant",
    "source": "L240-L243",
@@ -1216,7 +1216,7 @@
     "ENCOUNTER.CEREMONIAL_BEAST_BOSS"
    ],
    "corpus_fights": 11,
-   "fixtures": 7,
+   "fixtures": 9,
    "module": "content/encounters/boss.py",
    "builder": "_ceremonial_beast",
    "source": "L124-L125",
@@ -1231,7 +1231,7 @@
     "ENCOUNTER.QUEEN_BOSS"
    ],
    "corpus_fights": 11,
-   "fixtures": 6,
+   "fixtures": 8,
    "module": "content/encounters/boss.py",
    "builder": "_queen",
    "source": "L153-L163",
@@ -1246,7 +1246,7 @@
     "ENCOUNTER.THE_KIN_BOSS"
    ],
    "corpus_fights": 13,
-   "fixtures": 8,
+   "fixtures": 9,
    "module": "content/encounters/boss.py",
    "builder": "_the_kin",
    "source": "L187-L202",
@@ -1276,7 +1276,7 @@
     "ENCOUNTER.THE_INSATIABLE_BOSS"
    ],
    "corpus_fights": 12,
-   "fixtures": 7,
+   "fixtures": 8,
    "module": "content/encounters/boss.py",
    "builder": "_the_insatiable",
    "source": "L259-L260",
@@ -1306,7 +1306,7 @@
     "ENCOUNTER.KAISER_CRAB_BOSS"
    ],
    "corpus_fights": 21,
-   "fixtures": 8,
+   "fixtures": 12,
    "module": "content/encounters/boss.py",
    "builder": "_kaiser_crab",
    "source": "L310-L318",
@@ -1385,7 +1385,7 @@
     "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER"
    ],
    "corpus_fights": 2,
-   "fixtures": 0,
+   "fixtures": 1,
    "module": "content/encounters/event.py",
    "builder": "_battleworn_dummy_v2",
    "source": "L52-L53",

@@ -1,0 +1,399 @@
+{
+ "game_build": "v0.111.0",
+ "monsters": [
+  {
+   "crab_rage": true,
+   "hp": 219,
+   "kind": "CRUSHER",
+   "max_hp": 219
+  },
+  {
+   "crab_rage": true,
+   "hp": 209,
+   "kind": "ROCKET",
+   "max_hp": 209,
+   "slot": 1,
+   "uid": 1
+  }
+ ],
+ "piles": {
+  "discard": [],
+  "draw": [
+   {
+    "enchantment": [
+     "TEZCATARAS_EMBER",
+     1
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "uid": 5,
+    "upgrade": 0
+   },
+   {
+    "id": "DARK_SHACKLES",
+    "uid": 6,
+    "upgrade": 0
+   },
+   {
+    "id": "FERAL",
+    "uid": 7,
+    "upgrade": 0
+   },
+   {
+    "id": "BASH",
+    "uid": 8,
+    "upgrade": 0
+   },
+   {
+    "id": "FORGOTTEN_RITUAL",
+    "uid": 9,
+    "upgrade": 0
+   },
+   {
+    "id": "BULLY",
+    "uid": 10,
+    "upgrade": 0
+   },
+   {
+    "id": "RAGE",
+    "uid": 11,
+    "upgrade": 0
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 12,
+    "upgrade": 0
+   },
+   {
+    "id": "ASCENDERS_BANE",
+    "uid": 13,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 14,
+    "upgrade": 0
+   },
+   {
+    "id": "CASCADE",
+    "uid": 15,
+    "upgrade": 1
+   },
+   {
+    "id": "ASHEN_STRIKE",
+    "uid": 16,
+    "upgrade": 0
+   },
+   {
+    "id": "SWORD_BOOMERANG",
+    "uid": 17,
+    "upgrade": 1
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 18,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 19,
+    "upgrade": 0
+   },
+   {
+    "id": "TREMBLE",
+    "uid": 20,
+    "upgrade": 0
+   },
+   {
+    "id": "ARMAMENTS",
+    "uid": 21,
+    "upgrade": 1
+   },
+   {
+    "id": "CINDER",
+    "uid": 22,
+    "upgrade": 0
+   },
+   {
+    "id": "ARMAMENTS",
+    "uid": 23,
+    "upgrade": 0
+   },
+   {
+    "id": "NOT_YET",
+    "uid": 24,
+    "upgrade": 0
+   },
+   {
+    "id": "EVIL_EYE",
+    "uid": 25,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "TEZCATARAS_EMBER",
+     1
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "uid": 26,
+    "upgrade": 0
+   },
+   {
+    "id": "TAUNT",
+    "uid": 27,
+    "upgrade": 0
+   },
+   {
+    "id": "DEFEND_IRONCLAD",
+    "uid": 28,
+    "upgrade": 0
+   },
+   {
+    "id": "DRUM_OF_BATTLE",
+    "uid": 29,
+    "upgrade": 1
+   },
+   {
+    "id": "HOWL_FROM_BEYOND",
+    "uid": 30,
+    "upgrade": 0
+   },
+   {
+    "id": "TRUE_GRIT",
+    "uid": 31,
+    "upgrade": 1
+   },
+   {
+    "id": "HOLOGRAM",
+    "uid": 32,
+    "upgrade": 1
+   },
+   {
+    "id": "BURNING_PACT",
+    "uid": 33,
+    "upgrade": 0
+   }
+  ],
+  "hand": [
+   {
+    "enchantment": [
+     "SHARP",
+     2
+    ],
+    "id": "BREAKTHROUGH",
+    "uid": 0,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "TEZCATARAS_EMBER",
+     1
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "uid": 1,
+    "upgrade": 0
+   },
+   {
+    "id": "BUFFER",
+    "uid": 2,
+    "upgrade": 0
+   },
+   {
+    "enchantment": [
+     "TEZCATARAS_EMBER",
+     1
+    ],
+    "id": "STRIKE_IRONCLAD",
+    "uid": 3,
+    "upgrade": 0
+   },
+   {
+    "id": "POMMEL_STRIKE",
+    "uid": 4,
+    "upgrade": 0
+   }
+  ]
+ },
+ "player": {
+  "cards_drawn_combat": 5,
+  "charons_ashes": true,
+  "entropy_card_pool": "ironclad",
+  "fully_unlocked_potion_pool": true,
+  "gold": 187,
+  "gremlin_horn": true,
+  "horn_cleat": true,
+  "hp": 69,
+  "inky_attack_damage": 0,
+  "kaiser_facing": 0,
+  "max_hp": 80,
+  "next_card_uid": 34,
+  "player_phase": 3,
+  "potion_slots": [
+   null,
+   "SPEED_POTION"
+  ],
+  "potions": [
+   "SPEED_POTION"
+  ],
+  "ps_strikes": 6,
+  "puzzle": true,
+  "regalite_block_amount": 4,
+  "relics_entering": [
+   "RELIC.BURNING_BLOOD",
+   "RELIC.NEW_LEAF",
+   "RELIC.GREMLIN_HORN",
+   "RELIC.CENTENNIAL_PUZZLE",
+   "RELIC.HORN_CLEAT",
+   "RELIC.NUTRITIOUS_SOUP",
+   "RELIC.TOXIC_EGG",
+   "RELIC.MEAL_TICKET",
+   "RELIC.CHARONS_ASHES"
+  ],
+  "relics_entering_dispatch_ordered": true,
+  "reward_card_pool": "Ironclad",
+  "reward_card_rarity_odds": "BossEncounter",
+  "splash_unlock_epochs": [
+   "ACT2_B_EPOCH",
+   "ACT3_B_EPOCH",
+   "COLORLESS1_EPOCH",
+   "COLORLESS2_EPOCH",
+   "COLORLESS3_EPOCH",
+   "COLORLESS4_EPOCH",
+   "COLORLESS5_EPOCH",
+   "CUSTOM_AND_SEEDS_EPOCH",
+   "DAILY_RUN_EPOCH",
+   "DARV_EPOCH",
+   "DEFECT1_EPOCH",
+   "DEFECT2_EPOCH",
+   "DEFECT3_EPOCH",
+   "DEFECT4_EPOCH",
+   "DEFECT5_EPOCH",
+   "DEFECT6_EPOCH",
+   "DEFECT7_EPOCH",
+   "EVENT1_EPOCH",
+   "EVENT2_EPOCH",
+   "EVENT3_EPOCH",
+   "IRONCLAD2_EPOCH",
+   "IRONCLAD3_EPOCH",
+   "IRONCLAD4_EPOCH",
+   "IRONCLAD5_EPOCH",
+   "IRONCLAD6_EPOCH",
+   "IRONCLAD7_EPOCH",
+   "NECROBINDER1_EPOCH",
+   "NECROBINDER2_EPOCH",
+   "NECROBINDER3_EPOCH",
+   "NECROBINDER4_EPOCH",
+   "NECROBINDER5_EPOCH",
+   "NECROBINDER6_EPOCH",
+   "NECROBINDER7_EPOCH",
+   "NEOW_EPOCH",
+   "OROBAS_EPOCH",
+   "POTION1_EPOCH",
+   "POTION2_EPOCH",
+   "REGENT1_EPOCH",
+   "REGENT2_EPOCH",
+   "REGENT3_EPOCH",
+   "REGENT4_EPOCH",
+   "REGENT5_EPOCH",
+   "REGENT6_EPOCH",
+   "REGENT7_EPOCH",
+   "RELIC1_EPOCH",
+   "RELIC2_EPOCH",
+   "RELIC3_EPOCH",
+   "RELIC4_EPOCH",
+   "RELIC5_EPOCH",
+   "SILENT1_EPOCH",
+   "SILENT2_EPOCH",
+   "SILENT3_EPOCH",
+   "SILENT4_EPOCH",
+   "SILENT5_EPOCH",
+   "SILENT6_EPOCH",
+   "SILENT7_EPOCH",
+   "UNDERDOCKS_EPOCH"
+  ],
+  "after_energy_reset_order": []
+ },
+ "rng": {
+  "ai": {
+   "counter": 9,
+   "words": [
+    2180419369243507468,
+    4825792553132113315,
+    7362900138631705107,
+    7802080986144708145
+   ]
+  },
+  "combat_orbs": {
+   "counter": 0,
+   "words": [
+    14510303900271860861,
+    3755501862792178298,
+    9418321381086397396,
+    7116881563631443843
+   ]
+  },
+  "energy_costs": {
+   "counter": 0,
+   "words": [
+    5085155150497372047,
+    11754157591363769210,
+    17243351245862282182,
+    14041668872223649366
+   ]
+  },
+  "generation": {
+   "counter": 1,
+   "words": [
+    11374687620568493419,
+    17497497548688884644,
+    482807724810258402,
+    5295900176437537432
+   ]
+  },
+  "niche": {
+   "counter": 43,
+   "words": [
+    11939446287622030512,
+    11402018261700616661,
+    10581014930569749916,
+    1310379040912295042
+   ]
+  },
+  "potion_generation": {
+   "counter": 0,
+   "words": [
+    16752800673491906653,
+    12903051108875708464,
+    10799464852757611545,
+    15697707848494371408
+   ]
+  },
+  "rng": {
+   "counter": 540,
+   "words": [
+    9408132935842453833,
+    5777262117403694618,
+    1697538784662939747,
+    11314664394250859419
+   ]
+  },
+  "sel": {
+   "counter": 22,
+   "words": [
+    3896178191351111144,
+    4777067911800003320,
+    14877358616804668175,
+    6691760826264110438
+   ]
+  },
+  "targets": {
+   "counter": 49,
+   "words": [
+    12054796109669234159,
+    13783666481799930683,
+    14699786363946514492,
+    7126512538832935942
+   ]
+  }
+ },
+ "schema": "sts-sim-canonical-v2"
+}

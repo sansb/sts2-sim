@@ -2142,7 +2142,7 @@
      18229849555420327154
     ]
    },
-   "fixture": null,
+   "fixture": "ffd962a2e98d3b7b",
    "niche_in": {
     "counter": 0,
     "words": [
@@ -6256,7 +6256,7 @@
  "corpus_fights": 98,
  "explicit_fixture_fights": 0,
  "family": "E4b F3 \u2014 normal pool, demand rank 1-15 (#2533)",
- "fixture_fights": 35,
+ "fixture_fights": 36,
  "generated_by": "sim/v0.111.0/engine/tools/gen_roster_pins.py",
  "per_encounter": {
   "ENCOUNTER.CORPSE_SLUGS_NORMAL": {
@@ -6281,7 +6281,7 @@
   },
   "ENCOUNTER.GREMLIN_MERC_NORMAL": {
    "corpus": 6,
-   "fixtures": 2
+   "fixtures": 3
   },
   "ENCOUNTER.HUNTER_KILLER_NORMAL": {
    "corpus": 5,
@@ -6345,12 +6345,14 @@
   "f29971a906734ea9",
   "f2afddc7a9d240d3",
   "f33355dad24d51be",
+  "f356176a597546bc",
   "f3798e0102466ba0",
   "f3e20e2e67d11aab",
   "f455b98252e9a699",
   "f4d1d4811ecc9425",
   "f519310eac459afa",
   "f614114285ac15d0",
+  "f6706a4e38f307ca",
   "f6a9960e04e1a262",
   "f708d3cc2a8900aa",
   "f7314e7c049fe009",
@@ -6369,7 +6371,9 @@
   "fb4b52d985761d0b",
   "fb7f48052c636d6b",
   "fd35abf60b5a4ea4",
+  "fd94f26c0afe17f9",
   "fdff03df1fe66a90",
+  "fe28bb35f0b49af6",
   "feffc6b74728c455"
  ]
 }

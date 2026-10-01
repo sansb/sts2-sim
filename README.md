@@ -1,25 +1,20 @@
 # sts2-sim
 
-<!-- SEAN: one or two sentences in your own words: what this is and why you built it. -->
+Combat simulator and solver for Slay the Spire 2, from [Relay the Spire](https://relaythespire.com).
 
-A combat simulator and solver for Slay the Spire 2, from [Relay the Spire](https://relaythespire.com).
+Not affiliated with or endorsed by Mega Crit. No game files included; some tooling requires you to have your own copy of sts2 on your machine.
 
-Not affiliated with or endorsed by Mega Crit. No game files are included; tools that
-read the game's `sts2.dll` expect you to point them at your own install.
+## Repo structure
 
-## What's here
+Core sim/solver will be forked per game build (`vX.Y.Z/`).
 
-- `v0.111.0/engine/`: the combat engine and exact solver (`sts-sim`, Rust), certified
-  against the game's own `.mcr` replay checksums.
-- `v0.111.0/python/`: the Python layer around it: `.run` parsing, RNG and map
-  reconstruction, `.mcr` decoding, and replay/review adapters.
-- `v0.111.0/eval/`: the eval fixtures the certification census runs over.
-- `builds.json`: the game builds the engine is admitted for.
-- `dll-archive/`: hashes of each archived game build, and the script that archives
-  your own install's files there (they are never committed).
-- `meta/`: how builds are versioned, and what changed between them.
-
-Each `vX.Y.Z/` tree is keyed to the game build it is certified against.
+- `v0.111.0/engine/`: the combat engine and solver code
+- `v0.111.0/python/`: python tooling: `.run` parsing, RNG and map
+  reconstruction, `.mcr` decoding, and replay/review adapters
+- `v0.111.0/eval/`: eval fixtures
+- `builds.json`: game build manifest
+- `dll-archive/`: tools for archiving dlls locally
+- `meta/`: versioning stuff
 
 ## Build
 
@@ -30,10 +25,7 @@ cargo build --release
 
 ## Certification census
 
-The census replays captured fights (the game's `.mcr` files, recorded with the
-Relay the Spire mod) through the release binary and checks every action against
-the game's own checksums. The census corpus is not included (only the test suite's
-own captures under `v0.111.0/python/testdata/` are); point it at your own:
+The census replays captured fights (`.mcr` files, currently dumped from live games via the RelayTheSpire companion mod) through the release binary and compares sim actions with game actions. Census corpus  not included (only the test suite's own captures under `v0.111.0/python/testdata/` are); point it at your own:
 
 ```bash
 python3 v0.111.0/engine/tools/eval_suite.py census --captures PATH_TO_CAPTURES
@@ -41,16 +33,14 @@ python3 v0.111.0/engine/tools/eval_suite.py census --captures PATH_TO_CAPTURES
 
 `--self-test` runs the decoder and tally checks without a corpus.
 
-<!-- SEAN: current certified count, how to contribute, where to talk about it (Discord?). -->
+The sim currently replays 1,196 of 1,206 captured fights from my personal census correctly. If you find fights with invalid simulations, please send them my way via a GitHub issue or pull request!
 
 ## Notes
 
-This repo is synced from the private monorepo Relay the Spire is developed in;
-`SYNCED_FROM` names the commit the tree was exported from. Pull requests are
-welcome here and are landed upstream, then arrive in the next sync.
+This repo is synced from the private monorepo for RelayTheSpire;
+`SYNCED_FROM` names the commit the tree was exported from. PRs welcome against this repo; PRs that are accepted will be commited into the RelayTheSpire monorepo and synced back to this repo (for now).
 
-Issue and PR numbers cited throughout (`#1282` etc.) refer to the private repo this
-code was developed in; they are kept as a record, not as links.
+Issue and PR numbers cited throughout (`#1282` etc.) refer to the RelayTheSpire monorepo.
 
 ## License
 
