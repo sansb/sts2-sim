@@ -5,3 +5,4 @@ __pycache__/
 *.dll
 *.pck
 .DS_Store
+dll-archive/*/

@@ -1,0 +1,512 @@
+{
+ "schema": 1,
+ "issue": 2542,
+ "game_build": {
+  "version": "v0.111.0",
+  "commit": "41cef1ea",
+  "sts2_dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4"
+ },
+ "source": {
+  "kind": "static-il",
+  "reader": "sim/v0.111.0/engine/tools/dll_content.py",
+  "methods": [
+   "DllFacts.character_potion_pools",
+   "DllFacts.shared_potion_pool",
+   "DllFacts.potions"
+  ],
+  "note": "Read from the assembly's own IL, not from the headless harness: `<Character>PotionPool::GenerateAllPotions` is literally `return <Character>4Epoch.Potions` and `GetUnlockedPotions` returns it only when that one epoch is revealed, while `SharedPotionPool::GetUnlockedPotions` removes the `Potion<N>Epoch.Potions` rows per epoch. `potion_pool_census.json` remains the harness oracle for the Ironclad projection, the rarity roll and the procurement semantics; this file adds only the per-character membership those four other characters never had.",
+  "rvas": {
+   "ironclad_potion_pool_GenerateAllPotions": "0xadd30",
+   "ironclad_potion_pool_GetUnlockedPotions": "0xadd38",
+   "ironclad4_epoch_get_potions": "0x10894",
+   "silent_potion_pool_GenerateAllPotions": "0xae07e",
+   "silent_potion_pool_GetUnlockedPotions": "0xae088",
+   "silent4_epoch_get_potions": "0x11cc4",
+   "regent_potion_pool_GenerateAllPotions": "0xaddd1",
+   "regent_potion_pool_GetUnlockedPotions": "0xaddd8",
+   "regent4_epoch_get_potions": "0x114a8",
+   "necrobinder_potion_pool_GenerateAllPotions": "0xadd8f",
+   "necrobinder_potion_pool_GetUnlockedPotions": "0xadd98",
+   "necrobinder4_epoch_get_potions": "0x10d20",
+   "defect_potion_pool_GenerateAllPotions": "0xadca1",
+   "defect_potion_pool_GetUnlockedPotions": "0xadca8",
+   "defect4_epoch_get_potions": "0x102c0",
+   "shared_potion_pool_GenerateAllPotions": "0xade0c",
+   "shared_potion_pool_GetUnlockedPotions": "0xadfb4",
+   "potion_model_can_be_generated_in_combat": "0x83120"
+  }
+ },
+ "character_pool_order": [
+  "IRONCLAD",
+  "SILENT",
+  "REGENT",
+  "NECROBINDER",
+  "DEFECT"
+ ],
+ "pools": {
+  "IRONCLAD": {
+   "epoch": "IRONCLAD4_EPOCH",
+   "potions": [
+    "POTION.BLOOD_POTION",
+    "POTION.SOLDIERS_STEW",
+    "POTION.ASHWATER"
+   ]
+  },
+  "SILENT": {
+   "epoch": "SILENT4_EPOCH",
+   "potions": [
+    "POTION.POISON_POTION",
+    "POTION.GHOST_IN_A_JAR",
+    "POTION.CUNNING_POTION"
+   ]
+  },
+  "REGENT": {
+   "epoch": "REGENT4_EPOCH",
+   "potions": [
+    "POTION.STAR_POTION",
+    "POTION.COSMIC_CONCOCTION",
+    "POTION.KINGS_COURAGE"
+   ]
+  },
+  "NECROBINDER": {
+   "epoch": "NECROBINDER4_EPOCH",
+   "potions": [
+    "POTION.POTION_OF_DOOM",
+    "POTION.POT_OF_GHOULS",
+    "POTION.BONE_BREW"
+   ]
+  },
+  "DEFECT": {
+   "epoch": "DEFECT4_EPOCH",
+   "potions": [
+    "POTION.FOCUS_POTION",
+    "POTION.ESSENCE_OF_DARKNESS",
+    "POTION.POTION_OF_CAPACITY"
+   ]
+  }
+ },
+ "shared": [
+  [
+   "POTION.ATTACK_POTION",
+   null
+  ],
+  [
+   "POTION.BEETLE_JUICE",
+   "POTION1_EPOCH"
+  ],
+  [
+   "POTION.BLESSING_OF_THE_FORGE",
+   null
+  ],
+  [
+   "POTION.BLOCK_POTION",
+   null
+  ],
+  [
+   "POTION.BOTTLED_POTENTIAL",
+   null
+  ],
+  [
+   "POTION.CLARITY",
+   null
+  ],
+  [
+   "POTION.COLORLESS_POTION",
+   null
+  ],
+  [
+   "POTION.CURE_ALL",
+   null
+  ],
+  [
+   "POTION.DEXTERITY_POTION",
+   null
+  ],
+  [
+   "POTION.DISTILLED_CHAOS",
+   null
+  ],
+  [
+   "POTION.DROPLET_OF_PRECOGNITION",
+   "POTION1_EPOCH"
+  ],
+  [
+   "POTION.DUPLICATOR",
+   null
+  ],
+  [
+   "POTION.ENERGY_POTION",
+   null
+  ],
+  [
+   "POTION.ENTROPIC_BREW",
+   null
+  ],
+  [
+   "POTION.EXPLOSIVE_AMPOULE",
+   null
+  ],
+  [
+   "POTION.FAIRY_IN_A_BOTTLE",
+   null
+  ],
+  [
+   "POTION.FIRE_POTION",
+   null
+  ],
+  [
+   "POTION.FLEX_POTION",
+   null
+  ],
+  [
+   "POTION.FORTIFIER",
+   null
+  ],
+  [
+   "POTION.FRUIT_JUICE",
+   null
+  ],
+  [
+   "POTION.FYSH_OIL",
+   null
+  ],
+  [
+   "POTION.GAMBLERS_BREW",
+   null
+  ],
+  [
+   "POTION.GIGANTIFICATION_POTION",
+   null
+  ],
+  [
+   "POTION.HEART_OF_IRON",
+   null
+  ],
+  [
+   "POTION.LIQUID_BRONZE",
+   null
+  ],
+  [
+   "POTION.LIQUID_MEMORIES",
+   null
+  ],
+  [
+   "POTION.LUCKY_TONIC",
+   null
+  ],
+  [
+   "POTION.MAZALETHS_GIFT",
+   "POTION1_EPOCH"
+  ],
+  [
+   "POTION.OROBIC_ACID",
+   null
+  ],
+  [
+   "POTION.POTION_OF_BINDING",
+   null
+  ],
+  [
+   "POTION.POWDERED_DEMISE",
+   "POTION2_EPOCH"
+  ],
+  [
+   "POTION.POWER_POTION",
+   null
+  ],
+  [
+   "POTION.RADIANT_TINCTURE",
+   null
+  ],
+  [
+   "POTION.REGEN_POTION",
+   null
+  ],
+  [
+   "POTION.SHACKLING_POTION",
+   null
+  ],
+  [
+   "POTION.SHIP_IN_A_BOTTLE",
+   "POTION2_EPOCH"
+  ],
+  [
+   "POTION.SKILL_POTION",
+   null
+  ],
+  [
+   "POTION.SNECKO_OIL",
+   null
+  ],
+  [
+   "POTION.SPEED_POTION",
+   null
+  ],
+  [
+   "POTION.STABLE_SERUM",
+   null
+  ],
+  [
+   "POTION.STRENGTH_POTION",
+   null
+  ],
+  [
+   "POTION.SWIFT_POTION",
+   null
+  ],
+  [
+   "POTION.TOUCH_OF_INSANITY",
+   "POTION2_EPOCH"
+  ],
+  [
+   "POTION.VULNERABLE_POTION",
+   null
+  ],
+  [
+   "POTION.WEAK_POTION",
+   null
+  ]
+ ],
+ "rows": {
+  "POTION.ASHWATER": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.ATTACK_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.BEETLE_JUICE": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.BLESSING_OF_THE_FORGE": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.BLOCK_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.BLOOD_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.BONE_BREW": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.BOTTLED_POTENTIAL": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.CLARITY": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.COLORLESS_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.COSMIC_CONCOCTION": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.CUNNING_POTION": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.CURE_ALL": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.DEXTERITY_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.DISTILLED_CHAOS": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.DROPLET_OF_PRECOGNITION": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.DUPLICATOR": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.ENERGY_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.ENTROPIC_BREW": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.ESSENCE_OF_DARKNESS": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.EXPLOSIVE_AMPOULE": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.FAIRY_IN_A_BOTTLE": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": false
+  },
+  "POTION.FIRE_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.FLEX_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.FOCUS_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.FORTIFIER": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.FRUIT_JUICE": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": false
+  },
+  "POTION.FYSH_OIL": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.GAMBLERS_BREW": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.GHOST_IN_A_JAR": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.GIGANTIFICATION_POTION": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.HEART_OF_IRON": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.KINGS_COURAGE": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.LIQUID_BRONZE": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.LIQUID_MEMORIES": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.LUCKY_TONIC": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.MAZALETHS_GIFT": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.OROBIC_ACID": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POISON_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POTION_OF_BINDING": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POTION_OF_CAPACITY": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POTION_OF_DOOM": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POT_OF_GHOULS": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POWDERED_DEMISE": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.POWER_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.RADIANT_TINCTURE": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.REGEN_POTION": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": false
+  },
+  "POTION.SHACKLING_POTION": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.SHIP_IN_A_BOTTLE": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.SKILL_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.SNECKO_OIL": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.SOLDIERS_STEW": {
+   "rarity": "Rare",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.SPEED_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.STABLE_SERUM": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.STAR_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.STRENGTH_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.SWIFT_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.TOUCH_OF_INSANITY": {
+   "rarity": "Uncommon",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.VULNERABLE_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  },
+  "POTION.WEAK_POTION": {
+   "rarity": "Common",
+   "can_be_generated_in_combat": true
+  }
+ }
+}

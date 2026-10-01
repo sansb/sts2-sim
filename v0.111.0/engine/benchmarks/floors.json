@@ -1,0 +1,39 @@
+{
+  "notes": [
+    "Floors are enforced post-submit only (.github/workflows/rust-port-perf.yml).",
+    "A floor moves only in a reviewed diff that names its evidence artifact.",
+    "throughput floor = best-of-N baseline * (1 - throughput tolerance).",
+    "peak_rss / allocation ceilings = baseline * (1 + their tolerance).",
+    "The workload is the #1283 synthetic stand-in; eval fights append rows."
+  ],
+  "schema": "sts-sim-perf-floors/v1",
+  "workloads": {
+    "ironclad_toadpoles_uniform_v1": {
+      "allocated_bytes_per_transition_ceiling": 975.3,
+      "allocations_per_transition_ceiling": 14.64,
+      "evidence": "benchmarks/2026-10-01-perf-floor-baseline-v1.json",
+      "measured_at_baseline": {
+        "allocated_bytes_per_transition": 886.6355,
+        "allocations_per_transition": 13.3105,
+        "best_transitions_per_second": 1049254.4,
+        "median_transitions_per_second": 1042712.1,
+        "peak_rss_bytes": 5914624,
+        "relative_spread": 0.0086,
+        "runs": 5,
+        "worst_transitions_per_second": 1040184.1
+      },
+      "observed_at_baseline": {
+        "checksum": "5d4f992689b53874",
+        "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
+        "transitions": 4078800
+      },
+      "peak_rss_bytes_ceiling": 8871936,
+      "tolerance": {
+        "allocation": 0.1,
+        "peak_rss": 0.5,
+        "throughput": 0.15
+      },
+      "transitions_per_second_floor": 891866
+    }
+  }
+}

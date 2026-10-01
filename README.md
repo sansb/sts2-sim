@@ -9,18 +9,22 @@ read the game's `sts2.dll` expect you to point them at your own install.
 
 ## What's here
 
-- `versions/v0.111.0/rust/`: the combat engine and exact solver (`sts-sim`), certified
+- `v0.111.0/engine/`: the combat engine and exact solver (`sts-sim`, Rust), certified
   against the game's own `.mcr` replay checksums.
-- `versions/v0.111.0/solver/`: the Python layer around it: `.run` parsing, RNG and map
+- `v0.111.0/python/`: the Python layer around it: `.run` parsing, RNG and map
   reconstruction, `.mcr` decoding, and replay/review adapters.
-- `versions/v0.111.0/eval/`: the eval fixtures the certification census runs over.
+- `v0.111.0/eval/`: the eval fixtures the certification census runs over.
+- `builds.json`: the game builds the engine is admitted for.
+- `dll-archive/`: hashes of each archived game build, and the script that archives
+  your own install's files there (they are never committed).
+- `meta/`: how builds are versioned, and what changed between them.
 
-Each tree is keyed to the game build it is certified against (v0.111.0).
+Each `vX.Y.Z/` tree is keyed to the game build it is certified against.
 
 ## Build
 
 ```bash
-cd versions/v0.111.0/rust
+cd v0.111.0/engine
 cargo build --release
 ```
 
@@ -29,10 +33,10 @@ cargo build --release
 The census replays captured fights (the game's `.mcr` files, recorded with the
 Relay the Spire mod) through the release binary and checks every action against
 the game's own checksums. The census corpus is not included (only the test suite's
-own captures under `versions/v0.111.0/solver/testdata/` are); point it at your own:
+own captures under `v0.111.0/python/testdata/` are); point it at your own:
 
 ```bash
-python3 versions/v0.111.0/rust/tools/eval_suite.py census --captures PATH_TO_CAPTURES
+python3 v0.111.0/engine/tools/eval_suite.py census --captures PATH_TO_CAPTURES
 ```
 
 `--self-test` runs the decoder and tally checks without a corpus.
