@@ -1,0 +1,57 @@
+# Both test suites, on every push to main (each sync) and every pull request.
+# This file lives at `sim/.github/` in the monorepo, where GitHub ignores it;
+# it runs only in sts2-sim, where `sim/` is the repository root.
+#
+# The engine job builds the release binary and runs the Rust tests. The
+# python job needs that binary too: several tests replay fights through
+# `sts-sim` and skip when it is absent, so it builds first.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain (pinned by rust-toolchain.toml)
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: v0.111.0/engine
+      - name: Rust tests
+        working-directory: v0.111.0/engine
+        run: cargo test --release --locked
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain (pinned by rust-toolchain.toml)
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: v0.111.0/engine
+      - name: Build the release binary
+        working-directory: v0.111.0/engine
+        run: cargo build --release --locked --bin sts-sim
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Test dependencies
+        run: python -m pip install --quiet pytest dnfile dncil
+      - name: Python tests
+        run: python -m pytest v0.111.0/python v0.111.0/engine/tools v0.111.0/eval -q
