@@ -9,6 +9,7 @@
  "ascension": 10,
  "capture_sha256": "5c48f07d594be7f56872ceb9f2f3c8f4cfa0f43223f52827531e090b276e236c",
  "save_sha256": "05b7aee7cae9e7645889bd3f75d83bd9a07e4f71fc6c0769c90e24e5771ce45e",
- "entry_digest": "923f362c50d8c2bc85f23b50c8238217bd6223d006d497382e3202d804c478df",
- "checksummed": true
+ "entry_digest": "50fbb9656e53b87893f7203de9bade4799cd02a2bc081053a3964c3ed7ce0f7c",
+ "checksummed": true,
+ "entry_input": "--capture-run"
 }

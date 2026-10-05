@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "ZXJ7WX1JHA04",
+ "node": 39,
+ "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "d5db3b4c73477557248b17e79a377fb62716de75d5a6840145122fc5985ab160",
+ "save_sha256": "ac0bc93211c2be360594d07436d5be640295d159e47604270a098ea486b13911",
+ "entry_digest": "5a46f6bf6b483af8cc50d00d47f36e488ad56a47ff330a44741890c476993805",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

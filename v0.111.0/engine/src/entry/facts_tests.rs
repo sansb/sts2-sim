@@ -329,9 +329,29 @@ fn belt_and_relic_facts_must_agree_with_each_other() {
         Some(true)
     );
 
-    let mut fur = valid();
-    fur["entry"]["fur_coat_active"] = json!(false);
-    assert_eq!(field_of(refusal_of(&fur)), "entry.fur_coat_active");
+    // Fur Coat membership (#2526) has the Tea Sets' rule: a value needs its
+    // owner, and an owner carries either answer or the unprovable null.
+    let fur_coat_of = |fur: &Value| {
+        parse(&fur.to_string(), GameBuild::V0_111_0)
+            .unwrap()
+            .relic_entry
+            .fur_coat_active
+    };
+    for flag in [false, true] {
+        let mut fur = valid();
+        fur["entry"]["fur_coat_active"] = json!(flag);
+        assert_eq!(field_of(refusal_of(&fur)), "entry.fur_coat_active");
+        fur["entry"]["relics_entering"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!("RELIC.FUR_COAT"));
+        assert_eq!(fur_coat_of(&fur), Some(flag));
+        fur["entry"]["fur_coat_active"] = json!(null);
+        assert_eq!(fur_coat_of(&fur), None);
+        fur["entry"]["fur_coat_active"] = json!(1);
+        // A non-boolean is outside the taught surface, not an inconsistency.
+        assert_eq!(refusal_of(&fur).class(), "unknown_facts_field");
+    }
     let mut ambiguous = valid();
     ambiguous["entry"]["entry_ambiguous"] = json!(true);
     assert_eq!(field_of(refusal_of(&ambiguous)), "entry.entry_ambiguous");

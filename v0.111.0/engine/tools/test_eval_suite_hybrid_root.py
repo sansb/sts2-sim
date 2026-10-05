@@ -69,7 +69,8 @@ class TheRegistryAgreesWithBoundaryRs(unittest.TestCase):
         because such slots exist today (#3026 added the second).
         """
         self.assertEqual(eval_suite.derive_rust_only_slots(),
-                         ("power_attachments", "scroll_chew_repeated"))
+                         ("power_attachments", "scroll_chew_repeated",
+                          "session_bookkeeping"))
 
     def test_the_marker_really_annotates_a_spec_in_that_file(self) -> None:
         text = BOUNDARY_RS.read_text(encoding="utf-8")

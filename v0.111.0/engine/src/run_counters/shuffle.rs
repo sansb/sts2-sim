@@ -7,7 +7,9 @@
 //! * the entry deck is the final deck array filtered to
 //!   `floor_added_to_deck < floor`, plus the cards the per-node
 //!   `cards_removed` / `cards_transformed` logs say were purged later,
-//!   re-inserted after their last same-`(id, floor)` sibling;
+//!   re-inserted after their last same-`(id, floor)` sibling (and, with no
+//!   sibling, on the side of Ascender's Bane the run's first node implies:
+//!   see `entry_deck`, the second departure);
 //! * each prior fight shuffles its entry deck once (`n - 1` draws;
 //!   `CardPile::RandomizeOrderInternal` `0x11ea84` is one `UnstableShuffle`,
 //!   see [`crate::entry::opening::shuffle`]), draws five a turn for
@@ -19,7 +21,7 @@
 //! holds any card whose play can change the cycle makes the counter a
 //! baseline (the `cycle_leavers` caveat), as does an event-node combat.
 //!
-//! # The seed (the one departure)
+//! # The seed (the first departure)
 //!
 //! The replay runs on the `Shuffle` stream as v0.111.0 seeds it:
 //! [`crate::rng::run_stream_at_zero`]`(seed, "shuffle")`, i.e.
@@ -86,6 +88,19 @@ pub struct Combats {
     deck: Vec<Card>,
     pub combats: Vec<Combat>,
     removals: Vec<Removal>,
+    /// How many copies of each card id the run's first node added to the
+    /// deck: its `cards_gained` rows plus its `cards_transformed` results.
+    /// See [`entry_deck`].
+    first_node_gains: HashMap<String, usize>,
+}
+
+/// One id a first-node row names, where the row must be an object carrying a
+/// string `id`.
+fn gained_id(row: &Value, path: &str) -> Result<String, RunCountersRefusal> {
+    row.get("id")
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| run_malformed(format!("{path}.id"), "expected a string"))
 }
 
 fn run_malformed(path: impl Into<String>, detail: impl Into<String>) -> RunCountersRefusal {
@@ -181,6 +196,7 @@ pub fn load_combats(run: &Value) -> Result<Combats, RunCountersRefusal> {
 
     let mut combats = Vec::new();
     let mut removals = Vec::new();
+    let mut first_node_gains: HashMap<String, usize> = HashMap::new();
     for (i, pt) in nodes.iter().enumerate() {
         let path = format!("$.run.nodes[{i}]");
         let stats = pt
@@ -206,6 +222,30 @@ pub fn load_combats(run: &Value) -> Result<Combats, RunCountersRefusal> {
                     row
                 };
                 removals.push(removal(removed, i, &row_path)?);
+                if i == 0 && key == "cards_transformed" {
+                    let result = row.get("final_card").ok_or_else(|| {
+                        run_malformed(format!("{row_path}.final_card"), "missing")
+                    })?;
+                    let id = gained_id(result, &format!("{row_path}.final_card"))?;
+                    *first_node_gains.entry(id).or_default() += 1;
+                }
+            }
+        }
+        if i == 0 {
+            match stats.get("cards_gained") {
+                None | Some(Value::Null) => {}
+                Some(Value::Array(rows)) => {
+                    for (r, row) in rows.iter().enumerate() {
+                        let id = gained_id(row, &format!("{path}.cards_gained[{r}]"))?;
+                        *first_node_gains.entry(id).or_default() += 1;
+                    }
+                }
+                Some(_) => {
+                    return Err(run_malformed(
+                        format!("{path}.cards_gained"),
+                        "expected a list",
+                    ));
+                }
             }
         }
         let rooms: Vec<&Value> = match pt.get("rooms") {
@@ -260,6 +300,7 @@ pub fn load_combats(run: &Value) -> Result<Combats, RunCountersRefusal> {
         deck,
         combats,
         removals,
+        first_node_gains,
     })
 }
 
@@ -270,14 +311,54 @@ fn floor_of(card: &Card, node: usize) -> Result<i64, RunCountersRefusal> {
         .ok_or(RunCountersRefusal::RemovalRowWithoutFloor { node })
 }
 
+/// The deck entering a floor.
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct EntryDeck {
+    ids: Vec<String>,
+    /// Re-inserted floor-1 ids whose side of Ascender's Bane the run does not
+    /// record, sorted. Non-empty only when the deck holds the Bane.
+    unplaceable: Vec<String>,
+}
+
 /// `replay_fight.entry_deck`: the ids of the deck entering `floor`.
-fn entry_deck(combats: &Combats, floor: i64) -> Result<Vec<String>, RunCountersRefusal> {
+///
+/// The replay reads the order only through where Ascender's Bane sits, so a
+/// re-inserted removal row matters by which side of the Bane it lands on.
+///
+/// # Floor-1 cards are on both sides of the Bane (#2997)
+///
+/// `AscensionManager::ApplyEffectsTo` (`0x11fa94`, `IL_002c`) creates the Bane
+/// when the run is set up, so the starter cards precede it and every card the
+/// first node adds follows it, all stamped `floor_added_to_deck` 1. The
+/// Python original put a siblingless floor-1 removal row *at* the Bane's slot,
+/// which is right for a starter card and one slot wrong for a first-node gain.
+/// The witness is run `1787438922`: Kaleidoscope granted Flick-Flack and
+/// Sunder at Neow, a Thieving Hopper stole the Sunder at node 19
+/// (`cards_removed`), and `SwipePower::BeforeDeath` (`0xa8ed4`,
+/// `IL_0073`-`IL_00a0`) handed it back as a card reward stamped floor 20. The
+/// captured start saves of that run hold `..., UNLEASH, ASCENDERS_BANE,
+/// FLICK_FLACK, SUNDER`; the old rule rebuilt `..., UNLEASH, SUNDER,
+/// ASCENDERS_BANE, FLICK_FLACK`, moved the Bane's shuffled position, and
+/// predicted a reshuffle one card short.
+///
+/// So a siblingless floor-1 row whose id the first node gained
+/// ([`Combats::first_node_gains`]: `cards_gained` plus the `cards_transformed`
+/// results, which the captured saves show appended after the Bane too) goes
+/// after the last floor-1 card instead. Across the 531 captured start saves
+/// the rebuilt Bane index then matches the save's on 530 (511 before).
+///
+/// The one left over is the case no rule can place: the id is *both* a starter
+/// card and a first-node gain (Large Capsule adds a Strike and a Defend), so
+/// the removed copy may have been on either side. That deck is reported in
+/// `unplaceable` and the counter becomes a baseline.
+fn entry_deck(combats: &Combats, floor: i64) -> Result<EntryDeck, RunCountersRefusal> {
     let mut cards: Vec<Card> = combats
         .deck
         .iter()
         .filter(|c| c.floor.is_some_and(|f| f < floor))
         .cloned()
         .collect();
+    let mut reinserted_gains: Vec<&str> = Vec::new();
     for rc in &combats.removals {
         // Present iff the removal node is at or after the fight's node: a
         // removal logged at the fight's own node happened during its combat.
@@ -298,10 +379,20 @@ fn entry_deck(combats: &Combats, floor: i64) -> Result<Vec<String>, RunCountersR
                 pos = k + 1;
             }
         }
+        let gained = rc_floor == 1 && combats.first_node_gains.contains_key(&rc_id);
+        if gained {
+            reinserted_gains.push(
+                combats
+                    .first_node_gains
+                    .get_key_value(&rc_id)
+                    .map(|(id, _)| id.as_str())
+                    .expect("the key was just found"),
+            );
+        }
         if pos == 0 {
             let bane = cards.iter().position(|c| c.id == ETHEREAL_UNPLAYABLE);
             match bane {
-                Some(bane) if rc_floor == 1 => pos = bane,
+                Some(bane) if rc_floor == 1 && !gained => pos = bane,
                 _ => {
                     for (k, c) in cards.iter().enumerate() {
                         if floor_of(c, rc.node)? <= rc_floor {
@@ -319,7 +410,27 @@ fn entry_deck(combats: &Combats, floor: i64) -> Result<Vec<String>, RunCountersR
             },
         );
     }
-    Ok(cards.into_iter().map(|c| c.id).collect())
+    // A re-inserted first-node gain is placeable only when every floor-1 copy
+    // of its id is such a gain; more copies than gains means some are starter
+    // cards, on the other side of the Bane.
+    let mut unplaceable: Vec<String> = Vec::new();
+    if cards.iter().any(|c| c.id == ETHEREAL_UNPLAYABLE) {
+        for id in reinserted_gains {
+            let copies = cards
+                .iter()
+                .filter(|c| c.id == id && c.floor.unwrap_or(1) == 1)
+                .count();
+            if copies > combats.first_node_gains[id] {
+                unplaceable.push(id.to_owned());
+            }
+        }
+        unplaceable.sort();
+        unplaceable.dedup();
+    }
+    Ok(EntryDeck {
+        ids: cards.into_iter().map(|c| c.id).collect(),
+        unplaceable,
+    })
 }
 
 /// `replay_fight.fight_consumption`: advance `rng` past one prior fight.
@@ -457,7 +568,7 @@ pub fn predict(
     let mut rng = run_stream_at_zero(&combats.seed, "shuffle");
     let mut caveats = Vec::new();
     for (k, fight) in list.iter().enumerate().take(fight_index) {
-        let ids = entry_deck(combats, fight.floor)?;
+        let EntryDeck { ids, unplaceable } = entry_deck(combats, fight.floor)?;
         let turns = match fight.turns {
             Some(turns) if turns >= 0 => turns,
             _ => return Err(RunCountersRefusal::PriorFightTurnsUnknown { fight: k }),
@@ -481,6 +592,16 @@ pub fn predict(
                 fight.encounter
             ));
         }
+        if !unplaceable.is_empty() {
+            let names: Vec<String> = unplaceable.iter().map(|c| c.replace("CARD.", "")).collect();
+            caveats.push(format!(
+                "fight {k} ({}): a floor-1 copy of {} was removed later, and the run's first \
+                 node added copies of a card the starter deck also holds, so its side of \
+                 Ascender's Bane is unrecorded — the counter is a baseline, not exact",
+                fight.encounter,
+                names.join(", ")
+            ));
+        }
     }
     // The target's own entry deck is built too, as Python built it, so a row it
     // would have raised on refuses here rather than being skipped.
@@ -495,7 +616,13 @@ pub fn predict(
 pub(super) mod test_support {
     pub fn entry_deck_ids(run: &serde_json::Value, floor: i64) -> Vec<String> {
         let combats = super::load_combats(run).unwrap();
-        super::entry_deck(&combats, floor).unwrap()
+        super::entry_deck(&combats, floor).unwrap().ids
+    }
+
+    /// The ids [`super::entry_deck`] could not place around the Bane.
+    pub fn entry_deck_unplaceable(run: &serde_json::Value, floor: i64) -> Vec<String> {
+        let combats = super::load_combats(run).unwrap();
+        super::entry_deck(&combats, floor).unwrap().unplaceable
     }
 
     pub fn cycle_leavers(ids: &[&str]) -> Vec<String> {

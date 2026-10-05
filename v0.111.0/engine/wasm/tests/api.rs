@@ -53,6 +53,21 @@ fn state(response: &str) -> u32 {
     ok(response)["state"].as_u64().expect("state id") as u32
 }
 
+/// Prints the fixture, step and action being applied if the thread unwinds
+/// while it is alive.
+struct PanicContext<'a>(&'a str, usize, &'a Value);
+
+impl Drop for PanicContext<'_> {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            eprintln!(
+                "while replaying fixture {} step {} action {}",
+                self.0, self.1, self.2
+            );
+        }
+    }
+}
+
 #[test]
 fn every_certified_human_line_replays_with_its_step_digests() {
     let fixtures = fixtures();
@@ -71,6 +86,9 @@ fn every_certified_human_line_replays_with_its_step_digests() {
             .iter()
             .enumerate()
         {
+            // A debug assertion inside the engine panics without knowing
+            // which fixture it is replaying (#3583); this names it.
+            let _context = PanicContext(fid, index, action);
             let next = ok(&engine.apply(current, &action.to_string()));
             assert_eq!(next["digest"], digests[index], "{fid} step {index}");
             engine.drop_state(current);
@@ -380,4 +398,220 @@ fn entry_refuses_argv_shaped_mistakes_by_name() {
         answer.get("refusal").is_some() || answer.get("opening").is_some(),
         "{answer}"
     );
+}
+
+/// The two committed captures that pair with an eval fixture (#3578):
+/// (capture under python/testdata, fixture id).
+const RECORDED_PAIRS: [(&str, &str); 2] = [
+    ("6P96T755CNZ3_mawler_win.mcr", "f04442cd475cdc72"),
+    ("YLVVPKPH1MTW_f33_the_insatiable.mcr", "fc78829c88941121"),
+];
+
+fn capture(name: &str) -> Vec<u8> {
+    std::fs::read(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../python/testdata")
+            .join(name),
+    )
+    .unwrap()
+}
+
+#[test]
+fn recorded_line_resolves_a_capture_to_its_fixtures_line() {
+    for (name, id) in RECORDED_PAIRS {
+        let dir = eval_dir().join("fights").join(id);
+        let entry = std::fs::read_to_string(dir.join("entry.canonical.json")).unwrap();
+        let expected: Value =
+            serde_json::from_str(&std::fs::read_to_string(dir.join("human_line.json")).unwrap())
+                .unwrap();
+        let mcr = capture(name);
+        let line = ok(&sts_sim_wasm::recorded_line(&entry, &mcr, 2048));
+        for key in ["actions", "step_digests", "terminal"] {
+            assert_eq!(line[key], expected[key], "{name}: {key}");
+        }
+        // No budget (0) answers the same; a budget of one selection answer
+        // changes nothing for a line with no large selection.
+        assert_eq!(ok(&sts_sim_wasm::recorded_line(&entry, &mcr, 0)), line);
+    }
+}
+
+#[test]
+fn recorded_line_refuses_by_name() {
+    let (name, id) = RECORDED_PAIRS[0];
+    let entry = std::fs::read_to_string(
+        eval_dir()
+            .join("fights")
+            .join(id)
+            .join("entry.canonical.json"),
+    )
+    .unwrap();
+    let mcr = capture(name);
+    assert_eq!(
+        refusal_code(&sts_sim_wasm::recorded_line("{not json", &mcr, 0)),
+        "malformed_entry"
+    );
+    assert_eq!(
+        refusal_code(&sts_sim_wasm::recorded_line(&entry, &[], 0)),
+        "truncated_replay"
+    );
+    // Another build's capture, and another fight's.
+    assert_eq!(
+        refusal_code(&sts_sim_wasm::recorded_line(
+            &entry,
+            &capture("latest.mcr"),
+            0
+        )),
+        "unsupported_replay_build"
+    );
+    let other: Value = serde_json::from_str(&sts_sim_wasm::recorded_line(
+        &entry,
+        &capture(RECORDED_PAIRS[1].0),
+        0,
+    ))
+    .unwrap();
+    assert_eq!(other["refusal"]["code"], "entry_deal");
+    assert_eq!(other["refusal"]["step"], 0);
+    assert!(other["refusal"]["turn"].is_i64());
+}
+
+#[test]
+fn capture_summary_names_the_fight_a_capture_records() {
+    let summary = ok(&sts_sim_wasm::capture_summary(&capture(
+        RECORDED_PAIRS[0].0,
+    )));
+    assert_eq!(summary["version"], "v0.111.0");
+    assert_eq!(summary["seed"], "6P96T755CNZ3");
+    assert_eq!(summary["players"], 1);
+    assert!(summary["history_depth"].is_u64(), "{summary}");
+    assert!(summary["history_depth_issue"].is_null());
+    assert!(summary["start_time"].is_i64());
+    assert_eq!(summary["monsters"], json!(["MAWLER"]));
+    // The act's pools name the next monster fight: the one being fought.
+    assert_eq!(
+        summary["selected_encounter"]["monster"],
+        "ENCOUNTER.MAWLER_NORMAL"
+    );
+    assert!(summary["events"].as_u64().unwrap() > 0);
+    assert_eq!(
+        refusal_code(&sts_sim_wasm::capture_summary(&capture("latest.mcr"))),
+        "unsupported_replay_build"
+    );
+    // Four bytes cannot hold the header's first string.
+    assert_eq!(
+        refusal_code(&sts_sim_wasm::capture_summary(b"junk")),
+        "malformed_replay"
+    );
+    assert_eq!(
+        refusal_code(&sts_sim_wasm::capture_summary(&[])),
+        "truncated_replay"
+    );
+}
+
+/// `selected_uids` (the review's wording for a choice): every recorded
+/// `select` in the fixture tree decodes, a `card_uid` answer names exactly
+/// its card, and any other action names none.
+#[test]
+fn selected_uids_decodes_every_fixture_selection() {
+    let mut engine = Engine::default();
+    let (mut selects, mut physical, mut others) = (0, 0, 0);
+    for (fid, entry, line) in &fixtures() {
+        let mut current = state(&engine.load(entry));
+        for action in line["actions"].as_array().expect("actions") {
+            let text = action.to_string();
+            let named = ok(&engine.selected_uids(current, &text));
+            if action["kind"] == "select" {
+                selects += 1;
+                if let Some(uids) = named["uids"].as_array() {
+                    physical += 1;
+                    assert!(
+                        !uids.is_empty() || action["answer"]["kind"] == "option_index",
+                        "{fid}"
+                    );
+                    if action["answer"]["kind"] == "card_uid" {
+                        assert_eq!(named["uids"], json!([action["answer"]["uid"]]), "{fid}");
+                    }
+                }
+            } else {
+                others += 1;
+                assert!(named["uids"].is_null(), "{fid}: {text} names no selection");
+            }
+            let next = ok(&engine.apply(current, &text));
+            engine.drop_state(current);
+            current = next["state"].as_u64().unwrap() as u32;
+        }
+        engine.drop_state(current);
+    }
+    assert!(selects > 100, "{selects} recorded selections");
+    assert!(physical > 50, "{physical} of them name physical cards");
+    assert!(others > 10_000);
+    assert_eq!(
+        refusal_code(&engine.selected_uids(999_999, r#"{"kind":"end"}"#)),
+        "unknown_state"
+    );
+    let root = state(&engine.load(&fixtures()[0].1));
+    assert_eq!(
+        refusal_code(&engine.selected_uids(root, "{")),
+        "malformed_action"
+    );
+}
+
+/// A potion holdback reaches the browser search as it reaches the command
+/// line: the reported line obeys it, the report names it, and a held slot the
+/// entry belt cannot honour is refused.
+#[test]
+fn search_honours_a_potion_holdback() {
+    // The Mawler fixture enters with one potion, in belt slot 0.
+    let dir = eval_dir().join("fights").join("f04442cd475cdc72");
+    let entry: Value =
+        serde_json::from_str(&std::fs::read_to_string(dir.join("entry.canonical.json")).unwrap())
+            .unwrap();
+    assert!(entry["player"]["potion_slots"][0].is_string());
+    assert!(entry["player"]["potion_slots"][1].is_null());
+    let request = |extra: Value| {
+        let mut request = json!({
+            "entry": entry, "mode": "uct", "seed": 2, "seconds": 600.0,
+            "max_turns": 20, "max_playouts": 200,
+        });
+        for (key, value) in extra.as_object().unwrap() {
+            request[key] = value.clone();
+        }
+        request.to_string()
+    };
+    let drinks = |report: &Value| -> Vec<Value> {
+        report["best"]["actions"]
+            .as_array()
+            .map(|actions| {
+                actions
+                    .iter()
+                    .filter(|action| action["kind"] == "potion")
+                    .cloned()
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let plain = ok(&search(&request(json!({}))));
+    assert!(plain.get("potion_limit").is_none());
+
+    let none = ok(&search(&request(json!({ "max_potions": 0 }))));
+    assert_eq!(
+        none["potion_limit"],
+        json!({ "max_drinks": 0, "held_slots": [] })
+    );
+    assert!(drinks(&none).is_empty());
+
+    let held = ok(&search(&request(json!({ "hold_slots": [0] }))));
+    assert_eq!(
+        held["potion_limit"],
+        json!({ "max_drinks": null, "held_slots": [0] })
+    );
+    assert!(drinks(&held).iter().all(|drink| drink["slot"] != json!(0)));
+
+    for bad in [
+        json!({ "hold_slots": [1] }),
+        json!({ "hold_slots": [0, 0] }),
+        json!({ "hold_slots": [64] }),
+    ] {
+        let answer: Value = serde_json::from_str(&search(&request(bad.clone()))).unwrap();
+        assert_eq!(answer["refusal"]["code"], "search_refused", "{bad}");
+    }
 }

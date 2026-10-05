@@ -88,6 +88,12 @@ FROZEN: dict[str, tuple[str, str]] = {
         "a byte copy of python/cards_census.json, verified by the cargo "
         "test until #2999",
     ),
+    "data/mcr_tables.v0.111.0.json": (
+        "ec1b62d8648180b17db81559bb176f7004970e8ab2411fc388fe64279a386dfd",
+        "a byte copy of python/mcr_tables.json (tools/build_mcr_tables.py, "
+        "from the v0.111.0 sts2.dll), verified by the cargo test "
+        "tests/mcr_decode.rs; the .mcr decoder's net-id tables (#3578)",
+    ),
     "data/card_max_upgrade.json": (
         "234ffb707dae61893c12e97e4cf01671ada91875a8ec9f4c8638762e883d315c",
         "python/card_templates.json's max_upgrade table, verified by the "

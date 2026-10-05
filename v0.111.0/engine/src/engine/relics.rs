@@ -2919,12 +2919,29 @@ pub(crate) fn after_shuffle(
 
 /// Player-owned discard relics in Python order: Tingsha, then Tough
 /// Bandages. Each card gets a separate callback after its history row.
+///
+/// Both bodies answer only on their owner's side (#3650). v0.111.0 DLL
+/// 9cb4f1ad: `Tingsha/<AfterCardDiscarded>d__4::MoveNext` RVA `0x3326e0` and
+/// `ToughBandages/<AfterCardDiscarded>d__6::MoveNext` RVA `0x332e2c` test
+/// `card.Owner == Owner` (IL_0020-IL_0031), then `Owner.Creature.Side ==
+/// Owner.Creature.CombatState.CurrentSide` (IL_0038-IL_005d), and leave at
+/// IL_005f when they differ. Tingsha's test precedes its `CombatTargets`
+/// roll (IL_006a-IL_0094), so an enemy-side discard consumes no RNG.
+/// [`HotState::player_side_active`] is `CurrentSide`.
+///
+/// No admitted state reaches this on the enemy side. `Hook.AfterCardDiscarded`
+/// is fired only by `CardCmd/<DiscardAndDraw>d__4::MoveNext` `0x3e0274`
+/// (IL_01a5), whose callers are nine card bodies, Gambling Chip, Tools of
+/// the Trade and Gambler's Brew. The only card played on the enemy side is
+/// one Hellraiser AutoPlays (`0x33c1a8` IL_0043-IL_004e, `CardTag.Strike`),
+/// and no Strike-tagged card discards. The gate is native's own condition,
+/// pinned by a unit test.
 pub(crate) fn after_card_discarded(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if state.history.over {
+    if state.history.over || !state.player_side_active {
         return Ok(());
     }
     if catalog.hooks().owns(RelicId::RelicTingsha) {
@@ -2948,10 +2965,21 @@ pub(crate) fn after_card_discarded(
     Ok(())
 }
 
+/// Bookmark's `AfterFlush`: one `AddUntilPlayed(-1)` row on a random flushed
+/// card whose local Energy cost is positive.
+///
+/// The row lives in the chosen card's slot-7 payload, which the boundary
+/// emits only for a card carrying `CARD_FLAG_DEFAULT_PHYSICAL_STATE`
+/// (`HotBoundary::card_to_canonical_with_instance`). `flushed` is the caller's
+/// snapshot, and on the retaining path the cards are not in Discard yet, so
+/// the bit is set here on the snapshot and the caller commits it to the pile
+/// ([`super::draw::flush_hand`]). Without it the row was live in the engine
+/// and dropped from the canonical root, so a reloaded root charged the full
+/// cost (#3180, the #3176 class).
 pub(crate) fn after_hand_flushed(
     catalog: &Catalog,
     state: &mut HotState,
-    flushed: &[HotCard],
+    flushed: &mut [HotCard],
 ) -> Result<(), EngineRefusal> {
     if state.history.over || !catalog.hooks().owns(RelicId::RelicBookmark) {
         return Ok(());
@@ -2992,6 +3020,12 @@ pub(crate) fn after_hand_flushed(
                 reduce_only: false,
             },
         );
+        let live = flushed
+            .iter_mut()
+            .find(|card| card.uid == chosen.uid)
+            .ok_or(EngineRefusal::ContinuationNotModeled)?;
+        live.flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        state.exact_piles = true;
     }
     crate::coverage::record_relic(RelicId::RelicBookmark);
     Ok(())
@@ -3870,6 +3904,42 @@ pub(crate) fn intimidating_helmet_before_card_played(
     Ok(())
 }
 
+/// Music Box's `BeforeCardPlayed` for one owner Attack CardPlay (#3640).
+///
+/// v0.111.0 (DLL 9cb4f1ad) `MusicBox::BeforeCardPlayed` RVA `0x972ac`
+/// returns while `CardBeingPlayed` is set (IL_000d-IL_0019), for a foreign
+/// card (IL_001b-IL_0032), once `WasUsedThisTurn` (IL_0034-IL_0040) and for
+/// a non-Attack (`Type == 1`, IL_0042-IL_004f); otherwise it stores this
+/// play's card in `CardBeingPlayed` (IL_0055-IL_005c). It reads nothing
+/// else of the `CardPlay`: no `IsAutoPlay` and no `PlayIndex`, so an
+/// AutoPlayed Attack latches like a manual one, and a replay body after the
+/// clone is stopped by `WasUsedThisTurn`. The caller has tested the Attack
+/// type and ownership; this engine has one player, so every card is the
+/// owner's.
+///
+/// `MusicBox/<AfterCardPlayed>d__13::MoveNext` RVA `0x32ae04` clones only
+/// when `cardPlay.Card == CardBeingPlayed` (IL_001e-IL_002e), with no type,
+/// owner or used test of its own, and sets `WasUsedThisTurn` and clears the
+/// latch after the add (IL_00bf, IL_00c6). `CardModel/<OnPlayWrapper>d__339`
+/// (`0x31b8d0`) awaits `Hook::BeforeCardPlayed` at IL_05a1, before
+/// `CardPlayStarted` (IL_0626) and `OnPlay` (IL_0659), and
+/// `Hook::AfterCardPlayed` at IL_0874. So the Attack cloned is the turn's
+/// first to START. A nested Attack played inside it (a Hellraiser AutoPlay
+/// under a draw in its `OnPlay`, or under an earlier relic's
+/// AfterCardPlayed body such as Iron Club's) finds the latch taken and is
+/// not cloned, though it finishes first.
+///
+/// The latch is otherwise cleared only by `BeforeSideTurnStart` (`0x9735f`,
+/// the owner's side: IL_001c, IL_0023) and `AfterCombatEnd` (`0x9738d`).
+/// Both fields are plain instance fields with no `SavedProperty`, so a
+/// combat starts with them at their defaults. A play suspended inside the
+/// latched Attack keeps the latch in the document's `music_box_card_uid`.
+fn music_box_before_card_played(state: &mut HotState, played_uid: u32) {
+    if state.fanouts.music_box_card_uid().is_none() && !state.fanouts.music_box_used_this_turn() {
+        state.fanouts.set_music_box_card_uid(Some(played_uid));
+    }
+}
+
 /// Pen Nib's `BeforeCardPlayed` for one generated CardPlay; returns whether
 /// this body's Attack is the one Pen Nib doubles.
 ///
@@ -3911,11 +3981,18 @@ pub(crate) fn intimidating_helmet_before_card_played(
 /// `CombatManager.IsOverOrEnding` (IL_0428-IL_0432): there is no dead-target
 /// test before BeforeCardPlayed, so a Sovereign Blade body against a dead
 /// target still advances this counter (#3101).
+///
+/// Music Box's latch is the other relic body here
+/// ([`music_box_before_card_played`]); `played_uid` is its `CardPlay.Card`.
 pub(crate) fn before_card_played_hand(
     catalog: &Catalog,
     state: &mut HotState,
     spec: &crate::catalog::CardSpec,
+    played_uid: u32,
 ) -> Result<bool, EngineRefusal> {
+    if spec.is_attack && catalog.hooks().owns(RelicId::RelicMusicBox) {
+        music_box_before_card_played(state, played_uid);
+    }
     if spec.is_attack && catalog.hooks().owns(RelicId::RelicPenNib) {
         if state.powers.value(PowerId::SealedThrone) > 0
             && state.powers.value(PowerId::BlackHole) > 0
@@ -3978,9 +4055,9 @@ pub(crate) const COUNTER_OUT_OF_WALK_PEERS: [RelicId; 6] = [
     RelicId::RelicVelvetChoker,
 ];
 
-/// Whether a counter relic (Iron Club or Tuning Fork) recorded *before* an
-/// out-of-walk peer commutes with it, so the engine's fixed placement of the
-/// peer is unobservable. v0.111.0, DLL 9cb4f1ad:
+/// Whether a counter relic (Iron Club or Tuning Fork), or Game Piece, recorded
+/// *before* an out-of-walk peer commutes with it, so the engine's fixed
+/// placement of the peer is unobservable. v0.111.0, DLL 9cb4f1ad:
 ///
 /// - Pocketwatch: `AfterCardPlayed` RVA `0x99724` only increments
 ///   `_cardsPlayedThisTurn` (IL_0037-IL_0040) and refreshes the counter
@@ -3998,85 +4075,107 @@ pub(crate) const COUNTER_OUT_OF_WALK_PEERS: [RelicId; 6] = [
 ///   Attack (IL_0012-IL_0018); Tuning Fork's `<AfterCardPlayed>d__22`
 ///   (`0x3334b8`) acts only on the owner's Skill. For one CardPlay at most one
 ///   of the two has an effect. Iron Club's draw fires on every card type, so
-///   Pen Nib after Iron Club is not covered.
+///   Pen Nib after Iron Club is not covered. Game Piece
+///   (`<AfterCardPlayed>d__6` `0x325930`) acts only on the owner's Power
+///   (#2909), so it is covered as Tuning Fork is.
 /// - Brilliant Scarf (`_cardsPlayedThisTurn`, read by `ShouldModifyCost`
 ///   `0x91828` IL_0035), Velvet Choker (`_cardsPlayedThisTurn`, read by
 ///   `get_ShouldPreventCardPlay` `0x9d945` IL_0002) and Unsettling Lamp
 ///   (`IsFinishedTriggering`, `0x9d606` IL_0024-IL_002b) all have in-turn
-///   readers, so none is covered.
+///   readers, so none is covered. Game Piece's draw is Iron Club's command
+///   (`CardPileCmd::Draw`), and a Hellraiser AutoPlay nested in it is a play
+///   those counts see, so it is held to the same table.
 pub(crate) fn counter_precedes_out_of_walk_peer_commutes(counter: RelicId, peer: RelicId) -> bool {
     match peer {
         RelicId::RelicPocketwatch | RelicId::RelicRippleBasin => true,
-        RelicId::RelicPenNib => counter == RelicId::RelicTuningFork,
+        RelicId::RelicPenNib => counter != RelicId::RelicIronClub,
         _ => false,
     }
 }
 
-/// The owned counter relics (Iron Club, Tuning Fork) in AfterCardPlayed
-/// dispatch order, and how every other in-walk relic is placed around them.
+/// Which relic bodies one call of [`after_card_played_peer_segment`] runs.
 ///
 /// v0.111.0 (DLL 9cb4f1ad): `Hook.<AfterCardPlayed>d__16::MoveNext` RVA
 /// `0x3ccbf4` walks `CombatState.IterateHookListeners` (IL_0024), awaiting each
 /// listener's `AfterCardPlayed` (IL_0070-IL_00c5) before advancing
 /// (IL_00f3). `<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720` yields the
 /// player's relics in `Player.Relics` list order (IL_00c9-IL_00ef), skipping a
-/// melted relic (`get_IsMelted`, IL_00de). So the counters run exactly at their
-/// inventory positions. With authenticated dispatch-order provenance the
-/// counters are ordered, and every other relic is placed, by the recorded
-/// inventory. Without it, admission has already refused any same-hook peer
-/// (`counter relic AfterCardPlayed dispatch provenance`), and the legacy order
-/// (every peer, then Iron Club, then Tuning Fork) stands.
+/// melted relic (`get_IsMelted`, IL_00de). So natively every relic's
+/// `AfterCardPlayed` runs at its inventory position, and each finishes before
+/// the next starts.
+///
+/// This engine does that for 22 of the 27 relics that override the hook, the
+/// ones in [`in_after_card_played_walk`]. The other five run at a fixed place
+/// before the walk whatever the inventory says: Brilliant Scarf, Pen Nib,
+/// Pocketwatch, Ripple Basin and Unsettling Lamp
+/// ([`COUNTER_OUT_OF_WALK_PEERS`]). Velvet Choker is in both lists: its count
+/// is written when the play finishes, before the walk, and its walk entry only
+/// records coverage. Admission refuses a drawing or counter body recorded
+/// before an out-of-walk peer it does not commute with
+/// ([`counter_precedes_out_of_walk_peer_commutes`]).
+///
+/// With authenticated dispatch-order provenance
+/// ([`crate::hooks::HookTable::dispatch_ordered`]) the walk visits the recorded
+/// inventory and runs one body per walk relic ([`WalkSlot::Relic`]), then the
+/// bodies of relics the inventory does not hold ([`WalkSlot::Unowned`]).
+/// Without it the order is unknown: the legacy fixed order stands
+/// ([`WalkSlot::Every`], then Iron Club, then Tuning Fork), and admission
+/// refuses by name every co-owned pair whose bodies do not commute.
+///
+/// Music Box's body clones the card `MusicBox::BeforeCardPlayed` latched,
+/// which is not always the played card of this walk: a nested Attack (a
+/// Hellraiser AutoPlay inside Iron Club's or Game Piece's draw) runs its own
+/// walk inside this one and is not the latched card
+/// ([`music_box_before_card_played`], #3640).
+///
+/// One limit this walk does not lift: the owner-death check is made once,
+/// before the walk, not between bodies (#3642).
 #[derive(Clone, Copy)]
-struct CounterSplit {
-    counters: [RelicId; 2],
-    len: usize,
-    ordered: bool,
+enum WalkSlot {
+    /// Every body, in this engine's fixed peer order (unvouched inventory).
+    Every,
+    /// The one body of the relic the vouched walk has reached.
+    Relic(RelicId),
+    /// Bodies whose relic is not in the inventory. Three bodies are gated on
+    /// combat state rather than on ownership (Vambrace, Pael's Legion,
+    /// Permafrost), and this slot runs them after the recorded relics. No
+    /// admitted root reaches one: Vambrace's latch is armed only for an
+    /// owner, Pael's Legion's trigger needs a zero cooldown and an unowned
+    /// relic's cooldown is negative (`boundary::batch_nine_relic_state_is_exact`),
+    /// and an armed Permafrost without the relic refuses
+    /// (`batch-6 relic inventory/state`). So the slot's place is unobservable.
+    Unowned,
 }
 
-impl CounterSplit {
-    fn of(catalog: &Catalog) -> Self {
-        let hooks = catalog.hooks();
-        let mut split = Self {
-            counters: [RelicId::RelicIronClub; 2],
-            len: 0,
-            ordered: hooks.dispatch_ordered(),
-        };
-        let owned = |relic| hooks.owns(relic);
-        if split.ordered {
-            for relic in hooks.relics() {
-                if matches!(relic, RelicId::RelicIronClub | RelicId::RelicTuningFork)
-                    && owned(*relic)
-                    && !split.counters[..split.len].contains(relic)
-                {
-                    split.counters[split.len] = *relic;
-                    split.len += 1;
-                }
-            }
-        } else {
-            for relic in [RelicId::RelicIronClub, RelicId::RelicTuningFork] {
-                if owned(relic) {
-                    split.counters[split.len] = relic;
-                    split.len += 1;
-                }
-            }
-        }
-        split
-    }
-
-    /// How many counters dispatch before `relic`: its segment of the walk.
-    fn segment(&self, catalog: &Catalog, relic: RelicId) -> usize {
-        if self.len == 0 || !self.ordered {
-            return 0;
-        }
-        let relics = catalog.hooks().relics();
-        let Some(position) = relics.iter().position(|r| *r == relic) else {
-            return 0;
-        };
-        relics[..position]
-            .iter()
-            .filter(|r| self.counters[..self.len].contains(r))
-            .count()
-    }
+/// Whether `relic` has a body in the inventory-ordered AfterCardPlayed walk
+/// ([`after_card_played_hand`]): the two counters and every relic
+/// [`after_card_played_peer_segment`] names.
+fn in_after_card_played_walk(relic: RelicId) -> bool {
+    matches!(
+        relic,
+        RelicId::RelicArtOfWar
+            | RelicId::RelicDaughterOfTheWind
+            | RelicId::RelicGamePiece
+            | RelicId::RelicHelicalDart
+            | RelicId::RelicIronClub
+            | RelicId::RelicIvoryTile
+            | RelicId::RelicKunai
+            | RelicId::RelicKusarigama
+            | RelicId::RelicLetterOpener
+            | RelicId::RelicLostWisp
+            | RelicId::RelicMummifiedHand
+            | RelicId::RelicMusicBox
+            | RelicId::RelicNunchaku
+            | RelicId::RelicOrnamentalFan
+            | RelicId::RelicPaelsLegion
+            | RelicId::RelicPermafrost
+            | RelicId::RelicRainbowRing
+            | RelicId::RelicRazorTooth
+            | RelicId::RelicShuriken
+            | RelicId::RelicTuningFork
+            | RelicId::RelicVambrace
+            | RelicId::RelicVelvetChoker
+    )
 }
 
 /// TuningFork/<AfterCardPlayed>d__22 MoveNext RVA 0x3334b8 (v0.111.0,
@@ -4131,7 +4230,7 @@ fn iron_club_after_card_played(
 
 /// Mummified Hand's `AfterCardPlayed` for an owner Power play: make one Hand
 /// card free this turn. The caller has already checked the Power type and the
-/// relic's inventory segment.
+/// relic's place in the walk.
 ///
 /// v0.111.0 DLL `9cb4f1ad…`, `MummifiedHand::AfterCardPlayed` RVA `0x97148`
 /// (synchronous, no state machine):
@@ -4216,6 +4315,22 @@ fn mummified_hand_after_card_played(
             .card_states
             .set_to_free_this_turn(chosen.uid, chosen_spec.cost)
             .ok_or(EngineRefusal::CounterOverflow("Mummified Hand free card"))?;
+        // The rows just appended live in the card's slot-7 payload, which the
+        // boundary emits only for a card carrying this bit
+        // (`HotBoundary::card_to_canonical_with_instance`). Without it they
+        // were live here and dropped from the canonical root, so a reloaded
+        // root charged the chosen card's full cost (#3180, the #3176 class).
+        // Bullet Time's live-Hand write sets the same bit and promotes exact
+        // piles (`steps::silent_rare`).
+        let live = state
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .iter_mut()
+            .find(|card| card.uid == chosen.uid)
+            .ok_or(EngineRefusal::ContinuationNotModeled)?;
+        live.flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        state.exact_piles = true;
     }
     crate::coverage::record_relic(RelicId::RelicMummifiedHand);
     Ok(())
@@ -4265,11 +4380,13 @@ fn permafrost_after_card_played(
 /// is a resumed AutoPlay whose value no record carries; Ivory Tile, its one
 /// reader here, refuses by name on it.
 ///
-/// #3192: the counter relics run at their recorded inventory positions
-/// ([`CounterSplit`]): the in-walk peers recorded before the first counter
-/// run (in this engine's fixed order), then that counter, then the peers
-/// between the two counters, and so on. Every cross-segment pair is thereby in
-/// native order and every within-segment pair keeps the order it had before.
+/// #3192, #2909: on a vouched inventory every relic body runs at its recorded
+/// position, one relic at a time, as the native Hook awaits them (see
+/// [`WalkSlot`] for the IL). #3192 placed only Iron Club and Tuning Fork that
+/// way and kept this engine's fixed order between them, which ran Music Box's
+/// clone ahead of a Razor Tooth recorded before it (and so on for every other
+/// pair the fixed order has backwards). An unvouched inventory keeps the fixed
+/// order, and `engine::admission` refuses its non-commuting pairs by name.
 pub(crate) fn after_card_played_hand(
     catalog: &Catalog,
     state: &mut HotState,
@@ -4314,8 +4431,8 @@ pub(crate) fn after_card_played_hand(
             "Iron Club and Tuning Fork simultaneous thresholds",
         ));
     }
-    let split = CounterSplit::of(catalog);
-    for segment in 0..=split.len {
+    let hooks = catalog.hooks();
+    if !hooks.dispatch_ordered() {
         after_card_played_peer_segment(
             catalog,
             state,
@@ -4323,16 +4440,41 @@ pub(crate) fn after_card_played_hand(
             played_uid,
             energy_value,
             events,
-            &split,
-            segment,
+            WalkSlot::Every,
         )?;
-        match split.counters[..split.len].get(segment) {
-            Some(RelicId::RelicIronClub) => iron_club_after_card_played(catalog, state, events)?,
-            Some(_) => tuning_fork_after_card_played(catalog, state, spec, events)?,
-            None => {}
+        iron_club_after_card_played(catalog, state, events)?;
+        return tuning_fork_after_card_played(catalog, state, spec, events);
+    }
+    let relics = hooks.relics();
+    for (index, relic) in relics.iter().enumerate() {
+        if !in_after_card_played_walk(*relic) || relics[..index].contains(relic) {
+            continue;
+        }
+        match relic {
+            RelicId::RelicIronClub => iron_club_after_card_played(catalog, state, events)?,
+            RelicId::RelicTuningFork => {
+                tuning_fork_after_card_played(catalog, state, spec, events)?
+            }
+            _ => after_card_played_peer_segment(
+                catalog,
+                state,
+                spec,
+                played_uid,
+                energy_value,
+                events,
+                WalkSlot::Relic(*relic),
+            )?,
         }
     }
-    Ok(())
+    after_card_played_peer_segment(
+        catalog,
+        state,
+        spec,
+        played_uid,
+        energy_value,
+        events,
+        WalkSlot::Unowned,
+    )
 }
 
 /// Whether Letter Opener's private `SkillsPlayedThisTurn` equals the shared
@@ -4362,9 +4504,9 @@ fn letter_opener_count_is_shared(state: &HotState) -> bool {
         && (state.turn <= 1 || !super::turn::player_side_start_tail_is_pending())
 }
 
-/// One segment of the in-walk AfterCardPlayed peers: every block whose relic
-/// has `segment` counters dispatched before it (see [`CounterSplit`]), in this
-/// engine's fixed peer order.
+/// The in-walk AfterCardPlayed peer bodies `slot` selects (see [`WalkSlot`]),
+/// in this engine's fixed peer order. A vouched walk calls this once per
+/// recorded relic, so that order only decides anything for [`WalkSlot::Every`].
 #[allow(clippy::too_many_arguments)]
 fn after_card_played_peer_segment(
     catalog: &Catalog,
@@ -4373,12 +4515,16 @@ fn after_card_played_peer_segment(
     played_uid: u32,
     energy_value: Option<i16>,
     events: &mut Vec<Event>,
-    split: &CounterSplit,
-    segment: usize,
+    slot: WalkSlot,
 ) -> Result<(), EngineRefusal> {
-    let runs = |relic: RelicId| split.segment(catalog, relic) == segment;
-    if spec.is_attack
-        && !state.fanouts.music_box_used_this_turn()
+    let runs = |relic: RelicId| match slot {
+        WalkSlot::Every => true,
+        WalkSlot::Relic(current) => current == relic,
+        WalkSlot::Unowned => !catalog.hooks().owns(relic),
+    };
+    // The card latched at BeforeCardPlayed, and only that one (`0x32ae04`
+    // IL_001e-IL_002e): see [`music_box_before_card_played`].
+    if state.fanouts.music_box_card_uid() == Some(played_uid)
         && catalog.hooks().owns(RelicId::RelicMusicBox)
         && runs(RelicId::RelicMusicBox)
     {
@@ -4390,7 +4536,6 @@ fn after_card_played_peer_segment(
             .copied()
             .find(|card| card.uid == played_uid)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
-        state.fanouts.set_music_box_card_uid(Some(played_uid));
         let clone_uid = state.next_card_uid;
         super::cards::inject_generated_clones_bottom(
             state,
@@ -4995,6 +5140,44 @@ mod tests {
         assert_eq!((state.monsters[0].hp, state.monsters[0].block), (15, 0));
         assert_eq!(state.monsters[1].hp, 17);
         assert_eq!(state.rng.get(crate::hot::RngStream::Targets).counter, 1);
+    }
+
+    /// #3650: Tingsha (`0x3326e0`) and Tough Bandages (`0x332e2c`) leave at
+    /// IL_005f unless `CurrentSide` is their owner's side (IL_0038-IL_005d),
+    /// before Tingsha rolls its target. No admitted state discards on the
+    /// enemy side, so this sets the marker directly. The live engine does the
+    /// same with `CurrentSide` forced to Enemy around a Storm of Steel: four
+    /// discards, no damage and no Block.
+    #[test]
+    fn discard_relics_answer_only_on_the_owners_side() {
+        let catalog = catalog(&[RelicId::RelicTingsha, RelicId::RelicToughBandages]);
+        let fight = |owner_side: bool| {
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 20));
+            state.player_side_active = owner_side;
+            let mut events = Vec::new();
+            for _ in 0..4 {
+                after_card_discarded(&catalog, &mut state, &mut events).unwrap();
+            }
+            (
+                state.block,
+                state.monsters[0].hp,
+                state.rng.get(crate::hot::RngStream::Targets).counter,
+                events.len(),
+            )
+        };
+        assert_eq!(fight(false), (0, 20, 0, 0), "enemy side: neither relic");
+        let (block, hp, rolls, events) = fight(true);
+        assert_eq!(
+            (block, hp, rolls),
+            (12, 8, 4),
+            "owner side: 3 and 3, four times"
+        );
+        assert!(events > 0);
     }
 
     /// Bone Flute's `BlockVar(2m, ValueProp.Unpowered)` (`get_CanonicalVars`
@@ -6006,7 +6189,7 @@ mod tests {
 
         let mut pen = HotState::at_defaults();
         assert!(pen.fanouts.set_pen_nib(9));
-        assert!(before_card_played_hand(&catalog, &mut pen, &attack).unwrap());
+        assert!(before_card_played_hand(&catalog, &mut pen, &attack, 7).unwrap());
         assert_eq!(pen.fanouts.pen_nib(), 0);
 
         let mut counters = HotState::at_defaults();
@@ -6323,7 +6506,7 @@ mod tests {
             flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
         };
 
-        after_hand_flushed(&catalog, &mut state, &[card]).unwrap();
+        after_hand_flushed(&catalog, &mut state, &mut [card]).unwrap();
 
         let spec = catalog.spec(strike).unwrap();
         assert_eq!(
@@ -6761,6 +6944,11 @@ mod tests {
         state.next_card_uid = 2;
         state.piles.get_mut(PileId::Play).make_mut().push(source);
 
+        // The Attack's BeforeCardPlayed latches it (#3640).
+        let spec = catalog.spec(strike).unwrap();
+        assert!(!before_card_played_hand(&catalog, &mut state, spec, source.uid).unwrap());
+        assert_eq!(state.fanouts.music_box_card_uid(), Some(source.uid));
+
         after_card_played_hand(
             &catalog,
             &mut state,
@@ -6775,6 +6963,78 @@ mod tests {
         assert_eq!((clone.uid, clone.atom), (2, strike));
         assert!(state.card_states.get(clone.uid).local_ethereal());
         assert!(state.fanouts.music_box_used_this_turn());
+        assert_eq!(state.fanouts.music_box_card_uid(), None);
+
+        // Used: neither hook does anything for a later Attack this turn
+        // (`0x972ac` IL_0034-IL_0040).
+        assert!(!before_card_played_hand(&catalog, &mut state, spec, source.uid).unwrap());
+        assert_eq!(state.fanouts.music_box_card_uid(), None);
+        after_card_played_hand(
+            &catalog,
+            &mut state,
+            spec,
+            source.uid,
+            Some(1),
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+
+        // An unlatched Attack's AfterCardPlayed clones nothing, whatever
+        // `WasUsedThisTurn` says (`0x32ae04` IL_001e-IL_002e), and a latch
+        // naming another card is left for that card.
+        for latch in [None, Some(9)] {
+            let mut unlatched = HotState::at_defaults();
+            unlatched.hp = 20;
+            unlatched.max_hp = 20;
+            unlatched.next_card_uid = 10;
+            unlatched
+                .piles
+                .get_mut(PileId::Play)
+                .make_mut()
+                .push(source);
+            unlatched.fanouts.set_music_box_card_uid(latch);
+            after_card_played_hand(
+                &catalog,
+                &mut unlatched,
+                spec,
+                source.uid,
+                Some(1),
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert!(unlatched.piles.get(PileId::Hand).is_empty(), "{latch:?}");
+            assert!(!unlatched.fanouts.music_box_used_this_turn(), "{latch:?}");
+            assert_eq!(unlatched.fanouts.music_box_card_uid(), latch);
+            // A taken latch is not replaced (`0x972ac` IL_000d-IL_0019).
+            before_card_played_hand(&catalog, &mut unlatched, spec, source.uid).unwrap();
+            assert_eq!(
+                unlatched.fanouts.music_box_card_uid(),
+                latch.or(Some(source.uid))
+            );
+        }
+        // A Skill never latches (IL_0042-IL_004f), and neither does an
+        // Attack without the relic.
+        let mut builder = CatalogBuilder::new();
+        let defend = builder
+            .intern(CardIdentity {
+                id: CardId::DefendIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let strike = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let unowned = builder.build();
+        let mut fresh = HotState::at_defaults();
+        before_card_played_hand(&catalog, &mut fresh, unowned.spec(defend).unwrap(), 1).unwrap();
+        before_card_played_hand(&unowned, &mut fresh, unowned.spec(strike).unwrap(), 1).unwrap();
+        assert_eq!(fresh.fanouts.music_box_card_uid(), None);
     }
 
     #[test]
@@ -6831,6 +7091,195 @@ mod tests {
             ),
             0
         );
+    }
+
+    /// The Energy cost of `uid` on a state reloaded through the canonical
+    /// document (#3180).
+    fn reloaded_energy_cost(state: &HotState, catalog: &Catalog, uid: u32) -> i64 {
+        let document = crate::boundary::HotBoundary::try_to_canonical(state, catalog)
+            .expect("the state projects");
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&document)
+            .expect("the document builds a catalog");
+        let loaded = crate::boundary::HotBoundary::from_canonical(&document, &catalog)
+            .expect("the document hydrates");
+        let card = PileId::ALL
+            .into_iter()
+            .flat_map(|pile| loaded.piles.get(pile).as_slice())
+            .copied()
+            .find(|card| card.uid == uid)
+            .expect("the card survives the reload");
+        super::super::play::resolved_local_energy_cost(
+            &loaded,
+            card,
+            catalog.spec(card.atom).unwrap(),
+        )
+    }
+
+    /// A default state with a live `CombatCardSelection` stream, which both
+    /// relics below draw from.
+    fn state_with_seeded_selection() -> HotState {
+        let mut state = HotState::at_defaults();
+        state.hp = 20;
+        state.max_hp = 20;
+        let seeded = crate::rng::Xoshiro256StarStar::from_seed(7);
+        state.rng.set(
+            RngStream::Sel,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        state
+    }
+
+    /// #3180: Mummified Hand's `SetToFreeThisTurn` rows (IL_0113) live in the
+    /// chosen card's slot-7 payload. A plain deck Defend carries no slot-7
+    /// bit, so before the fix the rows were live in the engine and absent
+    /// from the canonical document, and a reloaded root charged the full
+    /// cost (the #3176 class).
+    #[test]
+    fn mummified_hand_free_card_stays_free_through_the_canonical_root() {
+        let mut builder = CatalogBuilder::new();
+        let power = builder
+            .intern(CardIdentity {
+                id: CardId::DemonForm,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let defend = builder
+            .intern(CardIdentity {
+                id: CardId::DefendIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.set_relics(&[RelicId::RelicMummifiedHand]).unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_seeded_selection();
+        state.next_card_uid = 3;
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: 2,
+            atom: defend,
+            flags: 0,
+        });
+        assert_eq!(reloaded_energy_cost(&state, &catalog, 2), 1);
+
+        after_card_played_hand(
+            &catalog,
+            &mut state,
+            catalog.spec(power).unwrap(),
+            1,
+            Some(3),
+            &mut Vec::new(),
+        )
+        .unwrap();
+
+        let live = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(
+            super::super::play::resolved_local_energy_cost(
+                &state,
+                live,
+                catalog.spec(defend).unwrap()
+            ),
+            0
+        );
+        assert_eq!(reloaded_energy_cost(&state, &catalog, 2), 0);
+        assert_ne!(live.flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE, 0);
+        assert!(state.exact_piles);
+    }
+
+    /// #3180 sweep: Bookmark's `UntilPlayed` `-1` row is the same shape, on
+    /// whichever card it picks. A plain Strike carries no slot-7 bit.
+    #[test]
+    fn bookmark_discount_survives_the_canonical_root() {
+        let mut builder = CatalogBuilder::new();
+        let strike = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.set_relics(&[RelicId::RelicBookmark]).unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_seeded_selection();
+        state.next_card_uid = 2;
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: 1,
+            atom: strike,
+            flags: 0,
+        });
+        assert_eq!(reloaded_energy_cost(&state, &catalog, 1), 1);
+
+        super::super::draw::flush_hand(&mut state, &catalog, &mut Vec::new()).unwrap();
+
+        let live = state.piles.get(PileId::Discard).as_slice()[0];
+        assert_eq!(
+            super::super::play::resolved_local_energy_cost(
+                &state,
+                live,
+                catalog.spec(strike).unwrap()
+            ),
+            0
+        );
+        assert_eq!(reloaded_energy_cost(&state, &catalog, 1), 0);
+        assert_ne!(live.flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE, 0);
+        assert!(state.exact_piles);
+    }
+
+    /// The retaining flush is a second path: the relic runs on the discarded
+    /// partition before those cards reach Discard, so the bit has to travel
+    /// on the snapshot. The retained Strike stays in Hand, untouched.
+    #[test]
+    fn bookmark_discount_survives_the_canonical_root_beside_a_retained_card() {
+        let mut builder = CatalogBuilder::new();
+        let strike = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.set_relics(&[RelicId::RelicBookmark]).unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_seeded_selection();
+        state.next_card_uid = 3;
+        state.piles.get_mut(PileId::Hand).make_mut().extend([
+            HotCard {
+                uid: 1,
+                atom: strike,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            },
+            HotCard {
+                uid: 2,
+                atom: strike,
+                flags: 0,
+            },
+        ]);
+        state.card_states.set_local_retain(1);
+        state.exact_piles = true;
+
+        super::super::draw::flush_hand(&mut state, &catalog, &mut Vec::new()).unwrap();
+
+        assert_eq!(
+            state.piles.get(PileId::Hand).as_slice(),
+            [HotCard {
+                uid: 1,
+                atom: strike,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            }]
+        );
+        assert_eq!(
+            state.piles.get(PileId::Discard).as_slice(),
+            [HotCard {
+                uid: 2,
+                atom: strike,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            }]
+        );
+        assert_eq!(reloaded_energy_cost(&state, &catalog, 1), 1);
+        assert_eq!(reloaded_energy_cost(&state, &catalog, 2), 0);
     }
 
     /// #3247: `MummifiedHand::AfterCardPlayed` RVA `0x97148` gates only on
@@ -7478,6 +7927,14 @@ mod tests {
             // No provenance: every peer first, so the kill precedes both.
             (vec![club, opener], false, 3, 0, 0, 0),
             (vec![fork, opener], false, 0, 9, 0, 0),
+            // No provenance, both counters, recorded fork-first: still every
+            // peer, then Iron Club, then Tuning Fork. Which of the two runs
+            // first is not observable (both acting on one play refuses as
+            // `Iron Club and Tuning Fork simultaneous thresholds`), so the
+            // witness is that neither acts ahead of the peer's kill.
+            (vec![fork, club, opener], false, 3, 0, 0, 0),
+            (vec![fork, club, opener], false, 0, 9, 0, 0),
+            (vec![fork, opener, club], false, 0, 9, 0, 0),
         ] {
             let mut builder = CatalogBuilder::new();
             let defend = builder
@@ -7541,68 +7998,518 @@ mod tests {
         }
     }
 
-    /// #3192: the in-walk peers split around a counter by inventory, not by
-    /// this engine's fixed peer order. Tuning Fork recorded between Letter
-    /// Opener and Daughter of the Wind is not a code-order neighbour of
-    /// either, yet an Attack still grants Daughter of the Wind's block and a
-    /// Skill still runs the fork before the later peers.
-    #[test]
-    fn counter_split_places_every_in_walk_peer_by_inventory() {
+    /// One Strike in Play (uid 1) under `order`, facing `monsters`, with or
+    /// without a live Juggernaut. Returns the catalog, the state and the
+    /// atoms of Strike, Strike+ and Defend.
+    fn walk_order_fixture(
+        order: &[RelicId],
+        vouched: bool,
+        monsters: &[i32],
+        juggernaut: bool,
+    ) -> (Catalog, HotState, [crate::engine::CardAtom; 3]) {
         let mut builder = CatalogBuilder::new();
-        builder
-            .set_relics_ordered(
-                &[
-                    RelicId::RelicDaughterOfTheWind,
-                    RelicId::RelicLetterOpener,
-                    RelicId::RelicTuningFork,
-                    RelicId::RelicMusicBox,
-                    RelicId::RelicIronClub,
-                    RelicId::RelicKunai,
-                ],
-                true,
-            )
-            .unwrap();
-        let catalog = builder.build();
-        let split = CounterSplit::of(&catalog);
-        assert_eq!(
-            &split.counters[..split.len],
-            &[RelicId::RelicTuningFork, RelicId::RelicIronClub]
-        );
-        for (relic, segment) in [
-            (RelicId::RelicDaughterOfTheWind, 0),
-            (RelicId::RelicLetterOpener, 0),
-            (RelicId::RelicMusicBox, 1),
-            (RelicId::RelicKunai, 2),
-            // Not in the inventory: the legacy first segment.
-            (RelicId::RelicNunchaku, 0),
-        ] {
-            assert_eq!(split.segment(&catalog, relic), segment, "{relic:?}");
-        }
-        let mut builder = CatalogBuilder::new();
-        builder
-            .set_relics(&[
-                RelicId::RelicTuningFork,
-                RelicId::RelicIronClub,
-                RelicId::RelicKunai,
-            ])
-            .unwrap();
-        let unordered = builder.build();
-        let split = CounterSplit::of(&unordered);
-        assert_eq!(
-            &split.counters[..split.len],
-            &[RelicId::RelicIronClub, RelicId::RelicTuningFork]
-        );
-        assert_eq!(split.segment(&unordered, RelicId::RelicKunai), 0);
-        let none = catalog_with_no_counter();
-        assert_eq!(CounterSplit::of(&none).len, 0);
-
-        fn catalog_with_no_counter() -> Catalog {
-            let mut builder = CatalogBuilder::new();
+        let mut intern = |id, upgrade| {
             builder
-                .set_relics_ordered(&[RelicId::RelicKunai], true)
-                .unwrap();
-            builder.build()
+                .intern(CardIdentity {
+                    id,
+                    upgrade,
+                    enchantment: None,
+                })
+                .unwrap()
+        };
+        let atoms = [
+            intern(CardId::StrikeIronclad, 0),
+            intern(CardId::StrikeIronclad, 1),
+            intern(CardId::DefendIronclad, 0),
+        ];
+        builder.set_relics_ordered(order, vouched).unwrap();
+        let catalog = builder.build();
+        let mut state = juggernaut_state(monsters);
+        if !juggernaut {
+            state
+                .powers
+                .set(PowerId::Juggernaut, crate::powers::SlotWire::Int, 0);
+            assert!(state.fanouts.set_after_block_gained_order(&[]));
         }
+        state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+            uid: 1,
+            atom: atoms[0],
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        });
+        state.next_card_uid = 3;
+        // The Strike's BeforeCardPlayed ran before this walk (#3640).
+        before_card_played_hand(&catalog, &mut state, catalog.spec(atoms[0]).unwrap(), 1).unwrap();
+        (catalog, state, atoms)
+    }
+
+    fn play_walk_strike(
+        catalog: &Catalog,
+        state: &mut HotState,
+        strike: crate::engine::CardAtom,
+    ) -> Vec<Event> {
+        let mut events = Vec::new();
+        after_card_played_hand(
+            catalog,
+            state,
+            catalog.spec(strike).unwrap(),
+            1,
+            Some(1),
+            &mut events,
+        )
+        .unwrap();
+        events
+    }
+
+    /// #2909: `MusicBox/<AfterCardPlayed>d__13` (`0x32ae04`) clones
+    /// `cardPlay.Card` as it stands when the body runs (`CreateClone`,
+    /// IL_0046), and `RazorTooth::AfterCardPlayed` (`0x9a1b8`) upgrades that
+    /// same card (`CardCmd::Upgrade`, IL_0060). The Hook awaits the relics in
+    /// `Player.Relics` order, so the clone is upgraded exactly when Razor
+    /// Tooth is recorded first. An unvouched inventory keeps the fixed order
+    /// (clone first), which admission refuses.
+    #[test]
+    fn music_box_clone_copies_the_upgrade_only_when_razor_tooth_is_recorded_first() {
+        for razor_recorded_first in [true, false] {
+            for vouched in [true, false] {
+                let order = if razor_recorded_first {
+                    [RelicId::RelicRazorTooth, RelicId::RelicMusicBox]
+                } else {
+                    [RelicId::RelicMusicBox, RelicId::RelicRazorTooth]
+                };
+                let (catalog, mut state, [strike, strike_plus, _]) =
+                    walk_order_fixture(&order, vouched, &[50], false);
+                play_walk_strike(&catalog, &mut state, strike);
+                let played = state.piles.get(PileId::Play).as_slice()[0];
+                assert_eq!(played.atom, strike_plus, "{order:?}: the source upgrades");
+                let hand = state.piles.get(PileId::Hand).as_slice();
+                assert_eq!(hand.len(), 1, "{order:?} vouched={vouched}");
+                assert!(state.card_states.get(hand[0].uid).local_ethereal());
+                let expected = if vouched && razor_recorded_first {
+                    strike_plus
+                } else {
+                    strike
+                };
+                assert_eq!(hand[0].atom, expected, "{order:?} vouched={vouched}");
+            }
+        }
+    }
+
+    /// #2909: Music Box's clone (`AddGeneratedCardToCombat`, IL_0065) and Iron
+    /// Club's fourth-card draw both add to the Hand, so the recorded order is
+    /// the Hand order.
+    #[test]
+    fn music_box_and_iron_club_fill_the_hand_in_recorded_order() {
+        let run = |order: [RelicId; 2]| {
+            let (catalog, mut state, [strike, _, defend]) =
+                walk_order_fixture(&order, true, &[50], false);
+            state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                uid: 2,
+                atom: defend,
+                flags: 0,
+            });
+            assert!(state.fanouts.set_iron_club_cards(3));
+            play_walk_strike(&catalog, &mut state, strike);
+            state
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .collect::<Vec<_>>()
+        };
+        let box_first = run([RelicId::RelicMusicBox, RelicId::RelicIronClub]);
+        let club_first = run([RelicId::RelicIronClub, RelicId::RelicMusicBox]);
+        assert_eq!(box_first.len(), 2);
+        assert_eq!(
+            club_first,
+            box_first.iter().rev().copied().collect::<Vec<_>>()
+        );
+    }
+
+    /// #2909: `Kusarigama/<AfterCardPlayed>d__19` (`0x327fe0`) deals its third
+    /// Attack's damage at IL_00f6. Recorded before Music Box, a lethal hit
+    /// ends the combat before the clone is added: the clone is generated and
+    /// recorded, and `CardPileCmd/<Add>d__10` (`0x3e1ba4`) drops it at its
+    /// `IsEnding` check (IL_0053). Recorded after, the clone is already in
+    /// the Hand. The same holds for Daughter of the Wind's block and for
+    /// Ornamental Fan's third-Attack block under Juggernaut, whose nested hit is
+    /// the lethal one.
+    #[test]
+    fn music_box_clone_lands_only_ahead_of_a_recorded_lethal_peer() {
+        for (peer, juggernaut) in [
+            (RelicId::RelicKusarigama, false),
+            (RelicId::RelicDaughterOfTheWind, true),
+            (RelicId::RelicOrnamentalFan, true),
+        ] {
+            for box_recorded_first in [true, false] {
+                let order = if box_recorded_first {
+                    [RelicId::RelicMusicBox, peer]
+                } else {
+                    [peer, RelicId::RelicMusicBox]
+                };
+                let (catalog, mut state, [strike, ..]) =
+                    walk_order_fixture(&order, true, &[5], juggernaut);
+                assert!(state.fanouts.set_kusarigama(2));
+                assert!(state.set_ornamental_fan(2));
+                play_walk_strike(&catalog, &mut state, strike);
+                assert!(state.history.over, "{order:?}");
+                assert_eq!(
+                    state.piles.get(PileId::Hand).len(),
+                    usize::from(box_recorded_first),
+                    "{order:?}"
+                );
+                assert!(state.fanouts.music_box_used_this_turn(), "{order:?}");
+            }
+        }
+    }
+
+    /// #2909: Ornamental Fan's third-Attack block feeds Juggernaut's
+    /// `CombatTargets` hit (`JuggernautPower/<AfterBlockGained>d__4`
+    /// `0x33dab4`), and Kusarigama's third-Attack hit rolls the same stream.
+    /// The recorded order decides which hit takes the first roll.
+    #[test]
+    fn ornamental_fan_and_kusarigama_roll_targets_in_recorded_order_under_juggernaut() {
+        let first_hit = |order: [RelicId; 2], vouched: bool| {
+            let (catalog, mut state, [strike, ..]) =
+                walk_order_fixture(&order, vouched, &[100, 100], true);
+            assert!(state.fanouts.set_kusarigama(2));
+            assert!(state.set_ornamental_fan(2));
+            let events = play_walk_strike(&catalog, &mut state, strike);
+            let hits = events
+                .iter()
+                .filter_map(|event| match event {
+                    Event::MonsterDamaged { unblocked, .. } => Some(*unblocked),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(hits.len(), 2, "{order:?}");
+            assert_eq!(state.block, 4, "{order:?}");
+            hits[0]
+        };
+        let fan = RelicId::RelicOrnamentalFan;
+        let kusarigama = RelicId::RelicKusarigama;
+        assert_eq!(first_hit([fan, kusarigama], true), 5, "Juggernaut's hit");
+        assert_eq!(first_hit([kusarigama, fan], true), 6, "Kusarigama's hit");
+        // Unvouched: the fixed order, which admission refuses.
+        assert_eq!(first_hit([kusarigama, fan], false), 5);
+    }
+
+    /// #2909: `MummifiedHand::AfterCardPlayed` (`0x97148`) picks from the Hand
+    /// as it stands (IL_0061-IL_010e) and Game Piece draws a card into it.
+    /// Game Piece recorded first puts the drawn card among the candidates and
+    /// the pick consumes a `CombatCardSelection` draw; recorded second, the
+    /// Hand is empty at the pick, nothing is rolled, and the drawn card keeps
+    /// its cost.
+    #[test]
+    fn mummified_hand_picks_the_card_game_piece_drew_only_when_recorded_after_it() {
+        for piece_recorded_first in [true, false] {
+            for vouched in [true, false] {
+                let order = if piece_recorded_first {
+                    [RelicId::RelicGamePiece, RelicId::RelicMummifiedHand]
+                } else {
+                    [RelicId::RelicMummifiedHand, RelicId::RelicGamePiece]
+                };
+                let mut builder = CatalogBuilder::new();
+                let power = builder
+                    .intern(CardIdentity {
+                        id: CardId::DemonForm,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+                let defend = builder
+                    .intern(CardIdentity {
+                        id: CardId::DefendIronclad,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+                builder.set_relics_ordered(&order, vouched).unwrap();
+                let catalog = builder.build();
+                let mut state = state_with_seeded_selection();
+                state.next_card_uid = 3;
+                state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                    uid: 2,
+                    atom: defend,
+                    flags: 0,
+                });
+                let rolls_before = state.rng.get(RngStream::Sel).counter;
+                after_card_played_hand(
+                    &catalog,
+                    &mut state,
+                    catalog.spec(power).unwrap(),
+                    1,
+                    Some(3),
+                    &mut Vec::new(),
+                )
+                .unwrap();
+                let drawn = state.piles.get(PileId::Hand).as_slice()[0];
+                let picked = vouched && piece_recorded_first;
+                assert_eq!(
+                    super::super::play::resolved_local_energy_cost(
+                        &state,
+                        drawn,
+                        catalog.spec(defend).unwrap()
+                    ),
+                    if picked { 0 } else { 1 },
+                    "{order:?} vouched={vouched}"
+                );
+                assert_eq!(
+                    state.rng.get(RngStream::Sel).counter != rolls_before,
+                    picked,
+                    "{order:?} vouched={vouched}"
+                );
+            }
+        }
+    }
+
+    /// #2909: three walk relics in three recorded orders give three results.
+    /// The fixed order is Music Box, Kusarigama, Razor Tooth, which is none of
+    /// them.
+    #[test]
+    fn three_walk_relics_run_in_each_recorded_order() {
+        let razor = RelicId::RelicRazorTooth;
+        let music = RelicId::RelicMusicBox;
+        let kusarigama = RelicId::RelicKusarigama;
+        // (order, clone in Hand, clone upgraded, played card upgraded)
+        for (order, cloned, clone_upgraded, played_upgraded) in [
+            ([razor, music, kusarigama], true, true, true),
+            ([music, razor, kusarigama], true, false, true),
+            // The lethal hit comes first: Razor Tooth's upgrade and the
+            // clone's insertion both see the ended combat.
+            ([kusarigama, razor, music], false, false, false),
+        ] {
+            let (catalog, mut state, [strike, strike_plus, _]) =
+                walk_order_fixture(&order, true, &[5], false);
+            assert!(state.fanouts.set_kusarigama(2));
+            play_walk_strike(&catalog, &mut state, strike);
+            assert!(state.history.over, "{order:?}");
+            let hand = state.piles.get(PileId::Hand).as_slice();
+            assert_eq!(hand.len(), usize::from(cloned), "{order:?}");
+            if cloned {
+                let expected = if clone_upgraded { strike_plus } else { strike };
+                assert_eq!(hand[0].atom, expected, "{order:?}");
+            }
+            let played = state.piles.get(PileId::Play).as_slice()[0];
+            assert_eq!(played.atom == strike_plus, played_upgraded, "{order:?}");
+        }
+    }
+
+    /// #2909: every body runs exactly once per play, in any inventory order.
+    ///
+    /// One inventory holds all 22 walk relics. An Attack, a Skill and a Power
+    /// are played, and each body's effect is counted: a counter that advanced
+    /// by one, one block gain, one hit, one draw, one Energy. A body that
+    /// lost its `runs(..)` gate would run once per recorded relic and move
+    /// its count. The bodies whose effect is a latch (Art of War, Rainbow
+    /// Ring's type bits, Vambrace, Pael's Legion, Velvet Choker) cannot be
+    /// counted that way, so the source scan below holds every body to a
+    /// `runs(..)` gate as well.
+    #[test]
+    fn every_walk_body_runs_exactly_once_per_play() {
+        let production = include_str!("relics.rs")
+            .split("\nmod tests {")
+            .next()
+            .unwrap();
+        let body = production
+            .split("fn after_card_played_peer_segment(")
+            .nth(1)
+            .unwrap()
+            .split("\n}\n")
+            .next()
+            .unwrap();
+        let walked = production
+            .split("fn in_after_card_played_walk(")
+            .nth(1)
+            .unwrap()
+            .split("\n}\n")
+            .next()
+            .unwrap();
+        let mut named = std::collections::BTreeSet::new();
+        for chunk in body.split("runs(RelicId::").skip(1) {
+            let name = chunk.split(')').next().unwrap();
+            assert!(
+                walked.contains(&format!("RelicId::{name}\n")),
+                "{name} has a body and is not walked"
+            );
+            named.insert(name);
+        }
+        assert_eq!(named.len(), 20, "{named:?}");
+        // Every top-level statement that can run a body is gated by `runs`.
+        let mut statements = 0;
+        let mut statement = String::new();
+        for line in body.lines() {
+            if line.starts_with("    if ") {
+                statement.clear();
+            }
+            statement.push_str(line);
+            statement.push('\n');
+            if line == "    }" {
+                assert!(statement.contains("runs("), "ungated body:\n{statement}");
+                statements += 1;
+            }
+        }
+        assert!(statements >= 18, "{statements} gated statements");
+        for recorded in body.split("record_relic(RelicId::").skip(1) {
+            let name = recorded.split(')').next().unwrap();
+            assert!(named.contains(name), "{name} records coverage ungated");
+        }
+
+        let all = [
+            RelicId::RelicArtOfWar,
+            RelicId::RelicDaughterOfTheWind,
+            RelicId::RelicGamePiece,
+            RelicId::RelicHelicalDart,
+            RelicId::RelicIronClub,
+            RelicId::RelicIvoryTile,
+            RelicId::RelicKunai,
+            RelicId::RelicKusarigama,
+            RelicId::RelicLetterOpener,
+            RelicId::RelicLostWisp,
+            RelicId::RelicMummifiedHand,
+            RelicId::RelicMusicBox,
+            RelicId::RelicNunchaku,
+            RelicId::RelicOrnamentalFan,
+            RelicId::RelicPaelsLegion,
+            RelicId::RelicPermafrost,
+            RelicId::RelicRainbowRing,
+            RelicId::RelicRazorTooth,
+            RelicId::RelicShuriken,
+            RelicId::RelicTuningFork,
+            RelicId::RelicVambrace,
+            RelicId::RelicVelvetChoker,
+        ];
+        assert!(all.iter().all(|relic| in_after_card_played_walk(*relic)));
+        let reversed = all.iter().rev().copied().collect::<Vec<_>>();
+        let mut rotated = all.to_vec();
+        rotated.rotate_left(9);
+        for (order, vouched) in [
+            (all.to_vec(), true),
+            (reversed, true),
+            (rotated, true),
+            (all.to_vec(), false),
+        ] {
+            let mut builder = CatalogBuilder::new();
+            let mut intern = |id, upgrade| {
+                builder
+                    .intern(CardIdentity {
+                        id,
+                        upgrade,
+                        enchantment: None,
+                    })
+                    .unwrap()
+            };
+            let strike = intern(CardId::StrikeIronclad, 0);
+            intern(CardId::StrikeIronclad, 1);
+            let defend = intern(CardId::DefendIronclad, 0);
+            intern(CardId::DefendIronclad, 1);
+            let power = intern(CardId::DemonForm, 0);
+            builder.set_relics_ordered(&order, vouched).unwrap();
+            let catalog = builder.build();
+            let mut state = state_with_seeded_selection();
+            state.hp = 80;
+            state.max_hp = 80;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            for (uid, atom) in [(1, strike), (2, defend), (3, power)] {
+                state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+                    uid,
+                    atom,
+                    flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                });
+            }
+            for uid in [4, 5] {
+                state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                    uid,
+                    atom: defend,
+                    flags: 0,
+                });
+            }
+            state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+                uid: 6,
+                atom: defend,
+                flags: 0,
+            });
+            state.next_card_uid = 7;
+            state.history.skill_plays_finished_this_turn = 3;
+            state.set_permafrost_armed(true);
+            let energy = state.energy;
+            let selections = state.rng.get(RngStream::Sel).counter;
+            let mut events = Vec::new();
+            let label = format!("{order:?} vouched={vouched}");
+            for (uid, atom) in [(1, strike), (2, defend), (3, power)] {
+                let spec = catalog.spec(atom).unwrap();
+                if catalog.hooks().owns(RelicId::RelicMusicBox) && spec.is_attack {
+                    // Its BeforeCardPlayed latch (#3640); Pen Nib is not held.
+                    state.fanouts.set_music_box_card_uid(Some(uid));
+                }
+                after_card_played_hand(&catalog, &mut state, spec, uid, Some(3), &mut events)
+                    .unwrap();
+            }
+            // Attack bodies.
+            assert_eq!(state.ornamental_fan(), 1, "{label}");
+            assert_eq!(state.nunchaku(), 1, "{label}");
+            assert_eq!(state.kunai(), 1, "{label}");
+            assert_eq!(state.shuriken(), 1, "{label}");
+            assert_eq!(state.fanouts.kusarigama(), 1, "{label}");
+            assert!(state.fanouts.music_box_used_this_turn(), "{label}");
+            // Skill bodies.
+            assert_eq!(state.fanouts.tuning_fork_skills(), 1, "{label}");
+            // Every-type bodies: three plays.
+            assert_eq!(state.fanouts.iron_club_cards(), 3, "{label}");
+            assert_eq!(state.energy, energy + 3, "{label}: Ivory Tile");
+            // Daughter of the Wind's 1 and Permafrost's 7, once each.
+            assert_eq!(state.block, 8, "{label}");
+            let gains = events
+                .iter()
+                .filter(|event| matches!(event, Event::PlayerBlockGained { .. }))
+                .count();
+            assert_eq!(gains, 2, "{label}");
+            // Letter Opener's 5 and Lost Wisp's 8, once each.
+            assert_eq!(state.monsters[0].hp, 100 - 5 - 8, "{label}");
+            // The Music Box clone and Game Piece's draw, beside the Defend.
+            assert_eq!(state.piles.get(PileId::Hand).len(), 3, "{label}");
+            assert_eq!(state.piles.get(PileId::Draw).len(), 1, "{label}");
+            // One Mummified Hand pick.
+            assert_eq!(
+                state.rng.get(RngStream::Sel).counter,
+                selections + 1,
+                "{label}"
+            );
+            // Rainbow Ring completes once, on the third type.
+            assert_eq!(state.powers.value(PowerId::Strength), 1, "{label}");
+            assert_eq!(state.powers.value(PowerId::Dexterity), 1, "{label}");
+            // Razor Tooth upgraded the Attack and the Skill, once each.
+            let play = state.piles.get(PileId::Play).as_slice();
+            assert!(play.iter().all(|card| card.atom != strike), "{label}");
+            assert!(play.iter().all(|card| card.atom != defend), "{label}");
+        }
+    }
+
+    /// #2909: a duplicated inventory entry runs its body once. A body gated
+    /// on combat state rather than ownership still runs for an inventory that
+    /// does not hold its relic; that state is fabricated here, since no
+    /// admitted root carries it (see [`WalkSlot::Unowned`]).
+    #[test]
+    fn vouched_walk_handles_duplicate_and_unowned_entries() {
+        let order = [
+            RelicId::RelicDaughterOfTheWind,
+            RelicId::RelicKunai,
+            RelicId::RelicDaughterOfTheWind,
+        ];
+        let (catalog, mut state, [strike, ..]) = walk_order_fixture(&order, true, &[50], false);
+        play_walk_strike(&catalog, &mut state, strike);
+        assert_eq!(state.block, 1);
+        let (catalog, mut state, [strike, ..]) =
+            walk_order_fixture(&[RelicId::RelicKunai], true, &[50], false);
+        state.fanouts.set_vambrace_available(true);
+        state.fanouts.set_vambrace_trigger_uid(Some(1));
+        state.fanouts.set_paels_legion_trigger_uid(Some(1));
+        play_walk_strike(&catalog, &mut state, strike);
+        assert!(!state.fanouts.vambrace_available());
+        assert_eq!(state.fanouts.paels_legion_trigger_uid(), None);
+        assert_eq!(state.fanouts.paels_legion_cooldown(), 2);
     }
 
     /// #3192 commutation table for counters recorded before an out-of-walk
@@ -8235,11 +9142,10 @@ mod tests {
         assert_eq!(wisp_first.monsters[1].hp, 50 - 8 - 5);
     }
 
-    /// #2909: a counter relic recorded between the pair puts them in
-    /// different #3192 segments, which already run in recorded order; the
-    /// swap then moves neither out of its segment, and Permafrost runs once.
+    /// #2909: a counter relic recorded between the pair changes nothing: each
+    /// still runs at its recorded position, and Permafrost runs once.
     #[test]
-    fn permafrost_and_lost_wisp_split_by_a_counter_keep_their_segments() {
+    fn permafrost_and_lost_wisp_split_by_a_counter_keep_their_recorded_order() {
         for order in [
             [
                 RelicId::RelicPermafrost,
@@ -8373,6 +9279,348 @@ mod tests {
             after_player_turn_start_dispatch(&catalog),
             AFTER_PLAYER_TURN_START_RELIC_DISPATCH
         );
+    }
+
+    /// The #3640 fixture: one 1,000-HP Toadpole, `relics` recorded in order
+    /// (vouched or not), and `cards` interned in order. Three energy, the
+    /// ordinary-actions phase.
+    fn latch_fixture(
+        cards: &[CardId],
+        relics: &[RelicId],
+        vouched: bool,
+    ) -> (HotState, Catalog, Vec<crate::catalog::CardAtom>) {
+        let mut builder = CatalogBuilder::new();
+        let atoms = cards
+            .iter()
+            .map(|id| {
+                builder
+                    .intern_reachable(CardIdentity {
+                        id: *id,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap()
+            })
+            .collect();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics_ordered(relics, vouched).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 3;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.next_card_uid = 40;
+        state.exact_piles = true;
+        for stream in [RngStream::Rng, RngStream::Sel, RngStream::Targets] {
+            state.rng.set(
+                stream,
+                RngStreamState {
+                    words: [1, 2, 3, 4],
+                    counter: 0,
+                },
+            );
+        }
+        let mut monster = HotMonster::new(MonsterKind::Toadpole, 1_000);
+        monster.max_hp = 1_000;
+        state.monsters = std::sync::Arc::new(vec![monster]);
+        (state, catalog, atoms)
+    }
+
+    fn with_hellraiser(state: &mut HotState) {
+        state
+            .powers
+            .set(PowerId::Hellraiser, crate::powers::SlotWire::Int, 1);
+        crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(state);
+    }
+
+    fn latch_push(state: &mut HotState, pile: PileId, cards: &[(u32, crate::catalog::CardAtom)]) {
+        state
+            .piles
+            .get_mut(pile)
+            .make_mut()
+            .extend(cards.iter().map(|&(uid, atom)| HotCard {
+                uid,
+                atom,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            }));
+    }
+
+    /// Canonical round trip plus admission: the state is a document an
+    /// admitted root can hold.
+    fn latch_cold(state: &HotState, catalog: &Catalog) -> (HotState, Catalog) {
+        use crate::boundary::HotBoundary;
+        let wire = HotBoundary::try_to_canonical(state, catalog).unwrap();
+        let loaded_catalog = HotBoundary::catalog_from_canonical(&wire).unwrap();
+        let loaded = HotBoundary::from_canonical(&wire, &loaded_catalog).unwrap();
+        assert_eq!(
+            HotBoundary::try_to_canonical(&loaded, &loaded_catalog).unwrap(),
+            wire
+        );
+        assert_eq!(
+            crate::engine::admission::admit(&wire, &loaded, &loaded_catalog),
+            Ok(())
+        );
+        (loaded, loaded_catalog)
+    }
+
+    fn latch_play(state: &HotState, catalog: &Catalog, uid: u32) -> HotState {
+        crate::engine::apply_action(
+            state,
+            catalog,
+            &crate::engine::Action::Play {
+                uid,
+                target: Some(0),
+                selection: crate::engine::SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state
+    }
+
+    /// The Ethereal Music Box clones in the Hand, by card.
+    fn latch_clones(state: &HotState, catalog: &Catalog) -> Vec<CardId> {
+        state
+            .piles
+            .get(PileId::Hand)
+            .as_slice()
+            .iter()
+            .filter(|card| state.card_states.get(card.uid).local_ethereal())
+            .map(|card| catalog.spec(card.atom).unwrap().identity.id)
+            .collect()
+    }
+
+    /// #3640: `MusicBox::BeforeCardPlayed` (`0x972ac`) latches the turn's
+    /// first owner Attack to START, and `<AfterCardPlayed>d__13` (`0x32ae04`
+    /// IL_0029-IL_002e) clones only that card. A Pommel Strike draws a
+    /// Strike, Hellraiser AutoPlays it inside the Pommel Strike's own play,
+    /// and the nested Strike FINISHES first. Its Before found the latch
+    /// taken (IL_000d-IL_0019), its After is not the latched card, and the
+    /// Pommel Strike is the card cloned. Before the latch was modeled this
+    /// engine cloned the Strike and skipped the Pommel Strike.
+    #[test]
+    fn music_box_clones_the_outer_attack_not_a_nested_attack_that_finishes_first() {
+        for vouched in [true, false] {
+            let (mut state, catalog, atoms) = latch_fixture(
+                &[
+                    CardId::PommelStrike,
+                    CardId::StrikeIronclad,
+                    CardId::DefendIronclad,
+                ],
+                &[RelicId::RelicMusicBox],
+                vouched,
+            );
+            let (pommel, strike, defend) = (atoms[0], atoms[1], atoms[2]);
+            with_hellraiser(&mut state);
+            latch_push(&mut state, PileId::Hand, &[(1, pommel)]);
+            latch_push(&mut state, PileId::Draw, &[(2, strike), (3, defend)]);
+            let (state, catalog) = latch_cold(&state, &catalog);
+
+            let done = latch_play(&state, &catalog, 1);
+
+            assert!(done.frames.is_empty());
+            // The nested Strike finished first: it is under the Pommel
+            // Strike in the Discard pile.
+            let discard = done.piles.get(PileId::Discard).as_slice();
+            assert_eq!(
+                discard.iter().map(|card| card.uid).collect::<Vec<_>>(),
+                [2, 1]
+            );
+            assert_eq!(done.history.card_plays_finished_combat, 2);
+            assert_eq!(
+                latch_clones(&done, &catalog),
+                [CardId::PommelStrike],
+                "vouched={vouched}"
+            );
+            assert_eq!(done.piles.get(PileId::Hand).len(), 1);
+            assert!(done.fanouts.music_box_used_this_turn());
+            assert_eq!(done.fanouts.music_box_card_uid(), None);
+            latch_cold(&done, &catalog);
+        }
+    }
+
+    /// #3640 beside #2909's inventory walk. Iron Club's fourth card draws a
+    /// Strike inside the outer Bash's AfterCardPlayed walk and Hellraiser
+    /// AutoPlays it there. Recorded before Music Box, the nested Strike's
+    /// whole play runs before Music Box's body for the Bash; the latch still
+    /// names the Bash, so that is the one clone in either order. The nested
+    /// play's own walk advances Iron Club.
+    #[test]
+    fn music_box_clones_the_outer_attack_on_either_side_of_iron_club() {
+        for order in [
+            [RelicId::RelicMusicBox, RelicId::RelicIronClub],
+            [RelicId::RelicIronClub, RelicId::RelicMusicBox],
+        ] {
+            let (mut state, catalog, atoms) = latch_fixture(
+                &[CardId::Bash, CardId::StrikeIronclad, CardId::DefendIronclad],
+                &order,
+                true,
+            );
+            let (bash, strike, defend) = (atoms[0], atoms[1], atoms[2]);
+            with_hellraiser(&mut state);
+            assert!(state.fanouts.set_iron_club_cards(3));
+            latch_push(&mut state, PileId::Hand, &[(1, bash)]);
+            latch_push(&mut state, PileId::Draw, &[(2, strike), (3, defend)]);
+            let (state, catalog) = latch_cold(&state, &catalog);
+
+            let done = latch_play(&state, &catalog, 1);
+
+            assert!(done.frames.is_empty(), "{order:?}");
+            assert_eq!(done.history.card_plays_finished_combat, 2, "{order:?}");
+            assert_eq!(latch_clones(&done, &catalog), [CardId::Bash], "{order:?}");
+            assert_eq!(done.piles.get(PileId::Hand).len(), 1, "{order:?}");
+            assert_eq!(done.fanouts.iron_club_cards(), 1, "{order:?}");
+            assert!(done.fanouts.music_box_used_this_turn(), "{order:?}");
+            assert_eq!(done.fanouts.music_box_card_uid(), None, "{order:?}");
+            latch_cold(&done, &catalog);
+        }
+    }
+
+    /// #3640: the plain case is unchanged, and `WasUsedThisTurn` (set at
+    /// `0x32ae04` IL_00bf, read by Before at `0x972ac` IL_0034-IL_0040)
+    /// keeps a second Attack of the turn from latching.
+    #[test]
+    fn music_box_clones_the_first_attack_of_the_turn_and_no_second() {
+        let (mut state, catalog, atoms) = latch_fixture(
+            &[CardId::StrikeIronclad, CardId::Bash],
+            &[RelicId::RelicMusicBox],
+            true,
+        );
+        let (strike, bash) = (atoms[0], atoms[1]);
+        latch_push(&mut state, PileId::Hand, &[(1, strike), (2, bash)]);
+        let (state, catalog) = latch_cold(&state, &catalog);
+
+        let first = latch_play(&state, &catalog, 1);
+        assert_eq!(latch_clones(&first, &catalog), [CardId::StrikeIronclad]);
+        assert!(first.fanouts.music_box_used_this_turn());
+        assert_eq!(first.fanouts.music_box_card_uid(), None);
+        let (first, catalog) = latch_cold(&first, &catalog);
+
+        let second = latch_play(&first, &catalog, 2);
+        assert_eq!(latch_clones(&second, &catalog), [CardId::StrikeIronclad]);
+        assert_eq!(second.piles.get(PileId::Hand).len(), 1);
+        assert_eq!(second.fanouts.music_box_card_uid(), None);
+    }
+
+    /// #3640: Before has no `IsAutoPlay` test (`0x972ac` reads only
+    /// `CardPlay.Card`), so an AutoPlayed Attack that is the turn's first
+    /// latches like a manual one. Havoc AutoPlays the top Strike; it is
+    /// cloned and the manual Bash after it is not.
+    #[test]
+    fn music_box_latches_an_autoplayed_first_attack() {
+        let (mut state, catalog, atoms) = latch_fixture(
+            &[CardId::Havoc, CardId::StrikeIronclad, CardId::Bash],
+            &[RelicId::RelicMusicBox],
+            true,
+        );
+        let (havoc, strike, bash) = (atoms[0], atoms[1], atoms[2]);
+        latch_push(&mut state, PileId::Hand, &[(1, havoc), (3, bash)]);
+        latch_push(&mut state, PileId::Draw, &[(2, strike)]);
+        let (state, catalog) = latch_cold(&state, &catalog);
+
+        let done = crate::engine::apply_action(
+            &state,
+            &catalog,
+            &crate::engine::Action::Play {
+                uid: 1,
+                target: None,
+                selection: crate::engine::SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state;
+        assert!(done.frames.is_empty());
+        assert_eq!(latch_clones(&done, &catalog), [CardId::StrikeIronclad]);
+        assert!(done.fanouts.music_box_used_this_turn());
+        let (done, catalog) = latch_cold(&done, &catalog);
+
+        let after_bash = latch_play(&done, &catalog, 3);
+        assert_eq!(
+            latch_clones(&after_bash, &catalog),
+            [CardId::StrikeIronclad]
+        );
+    }
+
+    /// #3640: the clone sets `WasUsedThisTurn` and clears `CardBeingPlayed`
+    /// together (`0x32ae04` IL_00bf, IL_00c6) and Before never latches once
+    /// used (`0x972ac` IL_0034-IL_0040), so a document holding both is no
+    /// native state and does not publish. A latch alone does.
+    #[test]
+    fn a_used_music_box_with_a_latch_is_not_a_document() {
+        use crate::boundary::HotBoundary;
+        let (mut state, catalog, atoms) =
+            latch_fixture(&[CardId::StrikeIronclad], &[RelicId::RelicMusicBox], true);
+        latch_push(&mut state, PileId::Hand, &[(1, atoms[0])]);
+        state.fanouts.set_music_box_card_uid(Some(1));
+        assert!(HotBoundary::try_to_canonical(&state, &catalog).is_ok());
+        state.fanouts.set_music_box_used_this_turn(true);
+        assert!(HotBoundary::try_to_canonical(&state, &catalog).is_err());
+        state.fanouts.set_music_box_card_uid(None);
+        assert!(HotBoundary::try_to_canonical(&state, &catalog).is_ok());
+    }
+
+    /// #3640: the latch crosses a park. The Pommel Strike draws a Seeker
+    /// Strike, Hellraiser AutoPlays it, and its selection suspends inside
+    /// the Pommel Strike's play with `CardBeingPlayed` naming the Pommel
+    /// Strike. The parked document carries that in `music_box_card_uid`,
+    /// reloads cold, and every answer ends with the Pommel Strike cloned
+    /// and no clone of the Seeker Strike.
+    #[test]
+    fn music_box_latch_survives_a_park_inside_the_outer_attack() {
+        let (mut state, catalog, atoms) = latch_fixture(
+            &[
+                CardId::PommelStrike,
+                CardId::SeekerStrike,
+                CardId::DefendIronclad,
+            ],
+            &[RelicId::RelicMusicBox],
+            true,
+        );
+        let (pommel, seeker, defend) = (atoms[0], atoms[1], atoms[2]);
+        with_hellraiser(&mut state);
+        latch_push(&mut state, PileId::Hand, &[(1, pommel)]);
+        latch_push(
+            &mut state,
+            PileId::Draw,
+            &[
+                (2, seeker),
+                (3, defend),
+                (4, defend),
+                (5, defend),
+                (6, defend),
+            ],
+        );
+        let (state, catalog) = latch_cold(&state, &catalog);
+
+        let parked = latch_play(&state, &catalog, 1);
+        assert!(parked.pending.is_some());
+        assert_eq!(parked.fanouts.music_box_card_uid(), Some(1));
+        assert!(!parked.fanouts.music_box_used_this_turn());
+
+        let mut work = vec![parked];
+        let mut terminals = 0;
+        while let Some(state) = work.pop() {
+            let (loaded, loaded_catalog) = latch_cold(&state, &catalog);
+            assert_eq!(loaded, state);
+            let actions = crate::engine::legal_actions(&loaded, &loaded_catalog);
+            assert!(!actions.is_empty());
+            for action in actions {
+                let next = crate::engine::apply_action(&loaded, &loaded_catalog, &action)
+                    .unwrap()
+                    .state;
+                if next.pending.is_some() {
+                    work.push(next);
+                    continue;
+                }
+                terminals += 1;
+                assert!(next.frames.is_empty());
+                assert_eq!(latch_clones(&next, &catalog), [CardId::PommelStrike]);
+                assert!(next.fanouts.music_box_used_this_turn());
+                assert_eq!(next.fanouts.music_box_card_uid(), None);
+                latch_cold(&next, &catalog);
+            }
+        }
+        assert!(terminals > 1);
     }
 
     /// The refusal arm of

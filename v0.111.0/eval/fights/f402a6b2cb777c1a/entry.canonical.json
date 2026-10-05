@@ -360,6 +360,11 @@
   "relics_entering_dispatch_ordered": true,
   "reward_card_pool": "Regent",
   "reward_card_rarity_odds": "RegularEncounter",
+  "session_bookkeeping": [
+   "misery_ledger",
+   "normality_count",
+   "self_return_uids"
+  ],
   "spectrum_shift_generation_pool": [
    "ANOINTED",
    "AUTOMATION",

@@ -1,0 +1,32 @@
+{
+  "schema": "search-historical-reports-v1",
+  "about": "Search reports in this directory that record a past measurement and are not held to the current engine. engine/tools/verify_search_suite.py checks each file against its sha256 and skips the replay, printing the reason; --include-historical replays them anyway. A report that should stay reproducible is NOT listed here, and the tool then replays it. See README.md, 'Which reports still replay'.",
+  "written": "2026-09-17",
+  "reports": {
+    "pilot-v1-results.json": {
+      "sha256": "5347a750e626a82a267e6c1aab7ace52c485cab8aa4c55f37541a9ba45acbba3",
+      "witnesses": 48,
+      "reason": "2026-09-17 measurement on the engine of that day; frozen as a record, never regenerated. The engine and the fixture tree have both moved since, so it no longer replays. Its manifest names three fixtures the 2026-09-25 A9/A10 re-seed (#2915) removed."
+    },
+    "pilot-v1-equal-playouts.json": {
+      "sha256": "df16e39c52b1fca37537ee4a4328f42576f6df035f6548f27625a89e0729ed9b",
+      "witnesses": 48,
+      "reason": "2026-09-17 measurement on the engine of that day; frozen as a record, never regenerated. The engine and the fixture tree have both moved since, so it no longer replays. Its manifest names three fixtures the 2026-09-25 A9/A10 re-seed (#2915) removed."
+    },
+    "mining-v1-results.json": {
+      "sha256": "e4ee7a947c68f567c7ee4610404dd4d66ff167cd11e058412e67d6de9d7bbf35",
+      "witnesses": 167,
+      "reason": "2026-09-17 measurement on the engine of that day; frozen as a record, never regenerated. The engine and the fixture tree have both moved since, so it no longer replays. Its manifest names 112 fixtures the 2026-09-25 A9/A10 re-seed (#2915) removed."
+    },
+    "challenge-v1-results.json": {
+      "sha256": "7186c78b7273eba533a6a52b1c63dd42bf9f915750f43a3cb095e642ec8ea4f0",
+      "witnesses": 12,
+      "reason": "2026-09-17 measurement on the engine of that day; frozen as a record, never regenerated. The engine and the fixture tree have both moved since, so it no longer replays. Its manifest names one fixture the 2026-09-25 A9/A10 re-seed (#2915) removed."
+    },
+    "stress-v1-results.json": {
+      "sha256": "465f4c7b2fa1fe3044cbf13e8f1f815d86c789f4061b92e1ec7a87c9ce1cd243",
+      "witnesses": 18,
+      "reason": "2026-09-17 measurement on the engine of that day; frozen as a record, never regenerated. The engine and the fixture tree have both moved since, so it no longer replays. Its synthetic entries are still in the tree, but its searches ran for wall time, so a re-run is a different experiment and would change the reported results."
+    }
+  }
+}

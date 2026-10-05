@@ -30,7 +30,7 @@
   "with_corpus_demand": 84,
   "zero_corpus_demand": 4,
   "corpus_fights_covered": 1201,
-  "fixtures_covered": 576
+  "fixtures_covered": 595
  },
  "rows": [
   {
@@ -40,7 +40,7 @@
     "ENCOUNTER.KNIGHTS_ELITE"
    ],
    "corpus_fights": 16,
-   "fixtures": 7,
+   "fixtures": 8,
    "module": "content/encounters/elite.py",
    "builder": "_knights",
    "source": "L165-L180",
@@ -58,7 +58,7 @@
     "ENCOUNTER.TERROR_EEL_ELITE"
    ],
    "corpus_fights": 22,
-   "fixtures": 9,
+   "fixtures": 10,
    "module": "content/encounters/elite.py",
    "builder": "_eel",
    "source": "L73-L74",
@@ -141,7 +141,7 @@
     "ENCOUNTER.INFESTED_PRISMS_ELITE"
    ],
    "corpus_fights": 31,
-   "fixtures": 16,
+   "fixtures": 17,
    "module": "content/encounters/elite.py",
    "builder": "_prisms",
    "source": "L96-L98",
@@ -158,7 +158,7 @@
     "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE"
    ],
    "corpus_fights": 24,
-   "fixtures": 9,
+   "fixtures": 10,
    "module": "content/encounters/elite.py",
    "builder": "_gardeners",
    "source": "L101-L111",
@@ -191,7 +191,7 @@
     "ENCOUNTER.DECIMILLIPEDE_ELITE"
    ],
    "corpus_fights": 32,
-   "fixtures": 11,
+   "fixtures": 12,
    "module": "content/encounters/elite.py",
    "builder": "_decimillipede",
    "source": "L119-L141",
@@ -228,7 +228,7 @@
     "ENCOUNTER.MECHA_KNIGHT_ELITE"
    ],
    "corpus_fights": 13,
-   "fixtures": 9,
+   "fixtures": 10,
    "module": "content/encounters/elite.py",
    "builder": "_mecha_knight",
    "source": "L202-L203",
@@ -243,7 +243,7 @@
     "ENCOUNTER.CORPSE_SLUGS_WEAK"
    ],
    "corpus_fights": 28,
-   "fixtures": 10,
+   "fixtures": 11,
    "module": "content/encounters/weak.py",
    "builder": "_corpse_slugs_weak",
    "source": "L62-L63",
@@ -276,7 +276,7 @@
     "ENCOUNTER.SLUDGE_SPINNER_WEAK"
    ],
    "corpus_fights": 28,
-   "fixtures": 11,
+   "fixtures": 12,
    "module": "content/encounters/weak.py",
    "builder": "_sludge",
    "source": "L156-L161",
@@ -306,7 +306,7 @@
     "ENCOUNTER.TOADPOLES_WEAK"
    ],
    "corpus_fights": 33,
-   "fixtures": 9,
+   "fixtures": 10,
    "module": "content/encounters/weak.py",
    "builder": "_toadpoles",
    "source": "L183-L194",
@@ -353,7 +353,7 @@
     "ENCOUNTER.DEVOTED_SCULPTOR_WEAK"
    ],
    "corpus_fights": 23,
-   "fixtures": 7,
+   "fixtures": 8,
    "module": "content/encounters/weak.py",
    "builder": "_devoted_sculptor",
    "source": "L211-L212",
@@ -434,7 +434,7 @@
     "ENCOUNTER.TURRET_OPERATOR_WEAK"
    ],
    "corpus_fights": 14,
-   "fixtures": 8,
+   "fixtures": 9,
    "module": "content/encounters/weak.py",
    "builder": "_turret_operator",
    "source": "L246-L255",
@@ -719,7 +719,7 @@
     "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL"
    ],
    "corpus_fights": 3,
-   "fixtures": 2,
+   "fixtures": 3,
    "module": "content/encounters/normal.py",
    "builder": "_the_lost_and_forgotten",
    "source": "L101-L108",
@@ -955,7 +955,7 @@
     "ENCOUNTER.SPINY_TOAD_NORMAL"
    ],
    "corpus_fights": 5,
-   "fixtures": 4,
+   "fixtures": 5,
    "module": "content/encounters/normal.py",
    "builder": "_spiny_toad",
    "source": "L802-L804",
@@ -985,7 +985,7 @@
     "ENCOUNTER.CHOMPERS_NORMAL"
    ],
    "corpus_fights": 11,
-   "fixtures": 8,
+   "fixtures": 9,
    "module": "content/encounters/normal.py",
    "builder": "_chompers",
    "source": "L849-L865",
@@ -1075,7 +1075,7 @@
     "ENCOUNTER.THE_OBSCURA_NORMAL"
    ],
    "corpus_fights": 13,
-   "fixtures": 6,
+   "fixtures": 7,
    "module": "content/encounters/normal.py",
    "builder": "_the_obscura",
    "source": "L972-L978",
@@ -1141,7 +1141,7 @@
     "ENCOUNTER.AEONGLASS_BOSS"
    ],
    "corpus_fights": 13,
-   "fixtures": 6,
+   "fixtures": 7,
    "module": "content/encounters/boss.py",
    "builder": "_aeonglass",
    "source": "L32-L35",
@@ -1201,7 +1201,7 @@
     "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS"
    ],
    "corpus_fights": 7,
-   "fixtures": 2,
+   "fixtures": 3,
    "module": "content/encounters/boss.py",
    "builder": "_lagavulin_matriarch",
    "source": "L103-L107",
@@ -1291,7 +1291,7 @@
     "ENCOUNTER.TEST_SUBJECT_BOSS"
    ],
    "corpus_fights": 3,
-   "fixtures": 2,
+   "fixtures": 3,
    "module": "content/encounters/boss.py",
    "builder": "_test_subject",
    "source": "L283-L286",
@@ -1306,7 +1306,7 @@
     "ENCOUNTER.KAISER_CRAB_BOSS"
    ],
    "corpus_fights": 21,
-   "fixtures": 12,
+   "fixtures": 13,
    "module": "content/encounters/boss.py",
    "builder": "_kaiser_crab",
    "source": "L310-L318",

@@ -48,9 +48,24 @@ thread_local! {
 ///   `options.Take(maxSelect).ToList()` (IL_0001-IL_0008), so the answer is
 ///   the first `MaxSelect` options.
 ///
-/// Only the selector programs whose `CardSelectCmd` path was read above
-/// resolve through the scope ([`vakuu_program_is_exact`], Glimmer). Every
-/// other selection still suspends, which the Earring loop refuses by name.
+/// Only the selections whose `CardSelectCmd` path was read resolve through
+/// the scope: the selector programs above ([`vakuu_program_order`], Glimmer)
+/// and Stratagem's `AfterShuffle` pick after a Draw command's shuffle
+/// (#3637, `draw::stratagem_after_shuffle`). Every other selection still
+/// suspends, and no suspension leaves the scope as a player choice (#3666):
+///
+/// - the Earring's child wall keeps a fight that could reach one out of the
+///   loop;
+/// - the loop refuses a child left with a pending choice
+///   (`turn::finish_auto_pre_relic_tail`);
+/// - a receipt-owned Draw (Swift, Joss Paper, Centennial Puzzle) that
+///   suspends, which outside the scope parks the whole action or reads its
+///   answer from a tape, refuses by `puzzle::VAKUU_SELECTOR_CHOICE`. The one
+///   way there is a selecting Strike that Hellraiser AutoPlays out of that
+///   Draw.
+///
+/// The refusals do not rest on the wall: they hold for a caller that
+/// skipped admission and for a later, wider wall.
 pub(crate) struct VakuuSelectorScope {
     previous: bool,
 }
@@ -73,8 +88,110 @@ pub(crate) fn vakuu_selector_active() -> bool {
     VAKUU_SELECTOR_ACTIVE.with(std::cell::Cell::get)
 }
 
-/// Whether a generic select program resolves exactly under
-/// [`VakuuSelectorScope`]: today only Cosmic Indifference (#3414).
+/// The order in which `VakuuCardSelector` sees a resolved program's options.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum VakuuOrder {
+    /// The filtered pile in live order.
+    Live,
+    /// `FromCombatPile`'s automated-selector view of the Draw pile
+    /// ([`vakuu_draw_view`]).
+    DrawView,
+}
+
+/// `CardRarity`'s native enum value, the first key of
+/// [`sort_native_draw_view`].
+///
+/// Read from the `Constant` rows of
+/// `MegaCrit.Sts2.Core.Entities.Cards.CardRarity`'s fields in the current
+/// v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`):
+/// `None` 0, `Basic` 1, `Common` 2, `Uncommon` 3, `Rare` 4, `Ancient` 5,
+/// `Event` 6, `Token` 7, `Status` 8, `Curse` 9, `Quest` 10. This is not the
+/// generated enum's alphabetical order.
+fn native_card_rarity_value(rarity: crate::content_tables::CardRarity) -> u8 {
+    use crate::content_tables::CardRarity;
+    match rarity {
+        CardRarity::Basic => 1,
+        CardRarity::Common => 2,
+        CardRarity::Uncommon => 3,
+        CardRarity::Rare => 4,
+        CardRarity::Ancient => 5,
+        CardRarity::Event => 6,
+        CardRarity::Token => 7,
+        CardRarity::Status => 8,
+        CardRarity::Curse => 9,
+        CardRarity::Quest => 10,
+    }
+}
+
+/// Reorder filtered Draw-pile options the way an automated selector sees
+/// them (#3608).
+///
+/// `CardSelectCmd/<FromCombatPile>d__20::MoveNext` RVA `0x3e5e84`: with a
+/// `Selector` set (IL_0181-IL_0186) and `pile.Type == PileType.Draw`
+/// (IL_018b-IL_0197, `ldc.i4.1`), the filtered list (`pile.Cards` under
+/// `Where`/`ToList`, IL_0120-IL_0136, so in live pile order) is replaced by
+/// `OrderBy(<>c::<FromCombatPile>b__20_0).ThenBy(<>c::<FromCombatPile>b__20_1)`
+/// (IL_0199-IL_01e2) before `ICardSelector::GetSelectedCards(options,
+/// MinSelect, MaxSelect)` (IL_01e3-IL_01ff). Every other pile type skips the
+/// reorder (IL_0197 `bne.un.s`).
+///
+/// - `b__20_0` RVA `0x3e5481` is `CardModel::get_Rarity`, RVA `0x7c86c`, a
+///   plain read of the constructor-set `<Rarity>k__BackingField` (no
+///   `set_Rarity` and no card override exists). `OrderBy<CardModel,
+///   CardRarity>` compares the enum's integer values
+///   ([`native_card_rarity_value`]).
+/// - `b__20_1` RVA `0x3e5489` is `AbstractModel::get_Id`, RVA `0x79d79`.
+///   `ModelId` implements `IComparable<ModelId>` (its `InterfaceImpl` row
+///   names TypeSpec 60, the generic instance of `IComparable` over
+///   `ModelId`), so the default comparer is `ModelId::CompareTo` RVA
+///   `0x8190c`: `String.Compare(Category, other.Category,
+///   StringComparison.Ordinal)` (IL_000c-IL_001f, `ldc.i4.4`), then the same
+///   ordinal compare of `Entry` (IL_002a-IL_003d). Every card shares one
+///   category, and the entries are the ASCII ids this crate names its
+///   `CardId`s by, so byte order is the ordinal order.
+/// - Neither key reads the upgrade level, an enchantment or any instance
+///   state. `Enumerable.OrderBy`/`ThenBy` is a stable sort, so identical
+///   cards, and a base copy against its upgraded twin, keep their live
+///   Draw-pile order.
+///
+/// `options` must already be the filtered pile in live order, each atom
+/// known to `catalog`.
+fn vakuu_draw_view(catalog: &Catalog, mut options: Vec<HotCard>) -> Vec<HotCard> {
+    sort_native_draw_view(catalog, &mut options);
+    options
+}
+
+/// The one sort behind every Draw-pile selector view in this crate (#3621):
+/// stable, by ([`native_card_rarity_value`], ordinal `ModelId`), as
+/// [`vakuu_draw_view`] cites it. Besides the Whispering Earring's selector,
+/// it orders the frozen option snapshots of Stratagem and Foregone Conclusion
+/// (`draw::stratagem_exact_candidates`) and of Droplet of Precognition
+/// (`potions::potion_selection_candidates`).
+///
+/// The same method's local-selector arm repeats the sort (`get_LocalSelector`
+/// IL_0280, `get_Type` == 1 IL_028a-IL_0296, `OrderBy(b__20_2)` /
+/// `ThenBy(b__20_3)` IL_0298-IL_02e1; `b__20_2` RVA `0x3e5491` and `b__20_3`
+/// RVA `0x3e5499` are the same two getters). Neither arm is reached by a
+/// pile no larger than `MinSelect`: IL_015a-IL_017c returns the filtered
+/// list in live pile order before either selector is read.
+///
+/// Every atom must be known to `catalog`.
+pub(crate) fn sort_native_draw_view(catalog: &Catalog, options: &mut [HotCard]) {
+    options.sort_by_key(|card| {
+        let spec = catalog
+            .spec(card.atom)
+            .expect("Draw view candidates were validated against the catalog");
+        (
+            native_card_rarity_value(spec.row.rarity),
+            spec.identity.id.as_str(),
+        )
+    });
+}
+
+/// Whether, and in which option order, a generic select program resolves
+/// exactly under [`VakuuSelectorScope`]: Cosmic Indifference (#3414),
+/// Thinking Ahead (#3433) and Secret Weapon (#3608).
 ///
 /// `CosmicIndifference/<OnPlay>d__5::MoveNext` RVA `0x3950c0` builds
 /// `CardSelectorPrefs(SelectionScreenPrompt, 1)` (IL_00aa-IL_00b0; the
@@ -84,57 +201,166 @@ pub(crate) fn vakuu_selector_active() -> bool {
 /// `ldc.i4.3`). `<FromCombatPile>d__19::MoveNext` RVA `0x3e5d8c` forwards to
 /// the filtered overload with the always-true `<>c::<FromCombatPile>b__19_0`
 /// (IL_002e-IL_004d), so the Vakuu answer is the Discard pile's first card.
-fn vakuu_program_is_exact(owner: &CardSpec, selector: Selector) -> bool {
-    owner.identity.id == crate::ids::CardId::CosmicIndifference
-        && matches!(owner.identity.upgrade, 0 | 1)
+///
+/// `ThinkingAhead/<OnPlay>d__5::MoveNext` RVA `0x3c3300` awaits
+/// `CardPileCmd::Draw(choiceContext, Cards, Owner, false)` first
+/// (IL_002c-IL_00a6), and only then builds
+/// `CardSelectorPrefs(SelectionScreenPrompt, 1)` (IL_00a7-IL_00b0, the same
+/// two-argument constructor) and awaits `CardSelectCmd::FromHand(context,
+/// Owner, prefs, null, this)` (IL_00b5-IL_00c4). The null filter becomes the
+/// always-true `<>c::<FromHand>b__28_0` RVA `0x3e54dd`
+/// (`<FromHand>d__28::MoveNext` RVA `0x3e7568` IL_011f-IL_0147), over
+/// `PileType.Hand.GetPile(player).Cards` (IL_010d-IL_0119), so the options
+/// are the whole post-draw Hand in live order: the card itself is already in
+/// Play. An empty Hand returns the empty list (IL_0152-IL_0161) and a
+/// one-card Hand is auto-taken (IL_0166-IL_018d) before the selector is
+/// asked (IL_0192-IL_01b8). `FirstOrDefault` of the result (IL_0126-IL_0130)
+/// skips the move when it is null. Otherwise `CardPileCmd::Add(card,
+/// PileType.Draw, CardPilePosition.Top, null, false)` (IL_0132-IL_0138, the
+/// constants Glimmer passes at RVA `0x3a173c` IL_0149-IL_014d). So the
+/// Vakuu answer is the first card of the Hand as the draw left it.
+///
+/// `SecretWeapon/<OnPlay>d__3::MoveNext` RVA `0x3b95a8` builds
+/// `CardSelectorPrefs(SelectionScreenPrompt, 1)` (IL_0027-IL_0030, the same
+/// two-argument constructor) and awaits the five-argument
+/// `CardSelectCmd::FromCombatPile(choiceContext, PileType.Draw.GetPile(Owner),
+/// Owner, prefs, <>c::<OnPlay>b__3_0)` (IL_0035-IL_006d, `ldc.i4.1` at
+/// IL_003b). The filter `b__3_0` RVA `0x3b959a` is `card.Type == 1`
+/// (Attack; `CardModel::get_Type` RVA `0x7c864` reads a constructor-set
+/// field). `<FromCombatPile>d__20::MoveNext` RVA `0x3e5e84` returns the empty
+/// list while the combat is ending (IL_0031-IL_0043), reserves no choice id
+/// under a `Selector` (IL_0077-IL_007c), returns an empty filtered list as is
+/// (IL_0140-IL_0155) and auto-takes one no longer than `MinSelect`
+/// (IL_015a-IL_017c; `RequireManualConfirmation` is not set by that
+/// constructor) before any selector is asked. Otherwise the selector gets
+/// the Draw view of [`vakuu_draw_view`] and takes its first card.
+/// `FirstOrDefault` of the result (IL_00cf-IL_00d5) skips the move when it
+/// is null (IL_00d9). Otherwise `CardPileCmd::Add(card, PileType.Hand,
+/// CardPilePosition.Bottom, null, false)` (IL_00db-IL_00e1, `ldc.i4.2`,
+/// `ldc.i4.1`). So the Vakuu answer is the first Attack of the Draw pile in
+/// rarity, then id, then live order, and not Draw's topmost Attack.
+fn vakuu_program_order(owner: &CardSpec, selector: Selector) -> Option<VakuuOrder> {
+    use crate::ids::CardId;
+    let draw_top = Operation::Move {
+        destination: PileId::Draw,
+        top: true,
+    };
+    let (pile, filter, operation, order) = match owner.identity.id {
+        CardId::CosmicIndifference => (PileId::Discard, None, draw_top, VakuuOrder::Live),
+        CardId::ThinkingAhead => (PileId::Hand, None, draw_top, VakuuOrder::Live),
+        CardId::SecretWeapon => (
+            PileId::Draw,
+            Some(FilterMode::Attack),
+            Operation::Move {
+                destination: PileId::Hand,
+                top: false,
+            },
+            VakuuOrder::DrawView,
+        ),
+        _ => return None,
+    };
+    (matches!(owner.identity.upgrade, 0 | 1)
         && crate::content_tables::card_row(owner.identity.id, owner.identity.upgrade)
             == Some(owner.row)
         && crate::engine::play::body_enchantment_is_exact(owner)
-        && selector.pile == PileId::Discard
+        && selector.pile == pile
         && selector.min == 1
         && selector.max == 1
-        && selector.filter.is_none()
-        && selector.operation
-            == Operation::Move {
-                destination: PileId::Draw,
-                top: true,
-            }
+        && selector.filter == filter
+        && selector.operation == operation)
+        .then_some(order)
 }
 
 /// Whether Whispering Earring's AutoPlay of `spec` can meet a selection
-/// only at the program [`VakuuSelectorScope`] resolves (#3414).
+/// only at the program [`VakuuSelectorScope`] resolves (#3414, #3433,
+/// #3608).
 ///
 /// Glimmer (`FromHand`, `CardSelectorPrefs(prompt, PutBack)` with a null
 /// filter at `Glimmer/<OnPlay>d__4::MoveNext` RVA `0x3a173c`
-/// IL_00a7-IL_00d8) and Cosmic Indifference ([`vakuu_program_is_exact`]).
+/// IL_00a7-IL_00d8), and Cosmic Indifference, Thinking Ahead and Secret
+/// Weapon ([`vakuu_program_order`]). Thinking Ahead's generated program is
+/// its Draw followed by its select, the native order. Secret Weapon's is its
+/// select alone.
 /// `draw_hooks_quiet` says no Draw hook can suspend (Stratagem, or
-/// Hellraiser with a selecting Strike). Without it the answer is false:
-/// those hooks' selections under the selector were not read here.
+/// Hellraiser with a selecting Strike). Without it those four stay
+/// unresolved: their own selection beside a live Draw hook was not read
+/// here. Secret Weapon draws nothing, but it is held to the same condition.
+/// The one child resolved beside a live Draw hook is the plain-Draw child
+/// of [`plain_draw_child_meets_only_stratagem`] (#3637).
 pub(crate) fn whispering_earring_child_selection_is_vakuu_resolved(
     spec: &CardSpec,
     catalog: &Catalog,
     draw_hooks_quiet: bool,
 ) -> bool {
-    if !draw_hooks_quiet
-        || !crate::engine::play::body_enchantment_is_exact(spec)
+    use crate::ids::CardId;
+    if !crate::engine::play::body_enchantment_is_exact(spec)
         || crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
             != Some(spec.row)
     {
         return false;
     }
-    match spec.identity.id {
-        crate::ids::CardId::Glimmer => {
-            crate::engine::admission::body_owned_select_program_is_supported(spec.row)
-        }
-        crate::ids::CardId::CosmicIndifference => match catalog.steps(spec) {
-            [block, select] if block.kind == StepKind::Block && select.kind == StepKind::Select => {
-                selector_from_args(catalog, spec, catalog.args(select.args))
-                    .is_ok_and(|selector| vakuu_program_is_exact(spec, selector))
-            }
-            _ => false,
-        },
-        _ => false,
+    if !draw_hooks_quiet {
+        return plain_draw_child_meets_only_stratagem(spec, catalog);
     }
+    let prefix = match spec.identity.id {
+        CardId::Glimmer => {
+            return crate::engine::admission::body_owned_select_program_is_supported(spec.row);
+        }
+        CardId::CosmicIndifference => Some(StepKind::Block),
+        CardId::ThinkingAhead => Some(StepKind::Draw),
+        CardId::SecretWeapon => None,
+        _ => return false,
+    };
+    let select = match (prefix, catalog.steps(spec)) {
+        (Some(prefix), [first, select]) if first.kind == prefix => select,
+        (None, [select]) => select,
+        _ => return false,
+    };
+    select.kind == StepKind::Select
+        && selector_from_args(catalog, spec, catalog.args(select.args))
+            .is_ok_and(|selector| vakuu_program_order(spec, selector).is_some())
+}
+
+/// Whether the only selection Whispering Earring's AutoPlay of `spec` can
+/// meet beside a live Draw hook is Stratagem's `AfterShuffle`, which the
+/// Earring's selector answers (#3637, `draw::stratagem_after_shuffle`).
+///
+/// That holds for a child whose program suspends only through the generated
+/// plain `Draw` step (`play::draw_cardplay_no_result`, the bare
+/// `CardPileCmd.Draw`), in a fight where Hellraiser cannot be live: no
+/// Hellraiser card is reachable and the power was not live at the root
+/// (`Catalog::hellraiser_reachable`). A Draw's only other blocking listener
+/// is Hellraiser's AutoPlay of a selecting Strike
+/// (`draw::centennial_puzzle_draw_one` has the census), and what the
+/// selector answers for such a Strike was not read here.
+///
+/// Still unresolved, and so still refused by the Earring's child wall: a
+/// child with a selection of its own, a fused Draw kind (Big Bang, Scrawl,
+/// Burning Pact and the rest of `play::cardplay_no_result_draw_source_step_is_exact`),
+/// a Draw tail or a result Draw (Scrape, Pillage). Each has a handler of its
+/// own around the Draw that was not read under the selector.
+fn plain_draw_child_meets_only_stratagem(spec: &CardSpec, catalog: &Catalog) -> bool {
+    use crate::engine::play::{
+        autoplay_child_requires_explicit_selection, cardplay_no_result_draw_step_is_exact,
+        cardplay_owned_draw_tail_step_is_exact, cardplay_result_draw_step_is_exact,
+    };
+    let mut plain_draw = false;
+    for (index, step) in spec.row.steps.iter().enumerate() {
+        if cardplay_owned_draw_tail_step_is_exact(spec, catalog, index)
+            || cardplay_result_draw_step_is_exact(spec, catalog, index)
+        {
+            return false;
+        }
+        if cardplay_no_result_draw_step_is_exact(spec, catalog, index) {
+            if step.kind != StepKind::Draw {
+                return false;
+            }
+            plain_draw = true;
+        }
+    }
+    plain_draw
+        && !autoplay_child_requires_explicit_selection(PileId::Hand, spec, catalog)
+        && !catalog.hellraiser_reachable()
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -2019,14 +2245,22 @@ pub(crate) fn execute(ctx: &mut StepCtx<'_>) -> Result<SelectDisposition, Engine
         );
         apply(ctx.state, ctx.catalog, selector, &candidates, ctx.events)?;
         Ok(SelectDisposition::Complete)
-    } else if vakuu_selector_active() && vakuu_program_is_exact(ctx.spec, selector) {
-        // `VakuuCardSelector` takes the first `MaxSelect` options in live
-        // pile order ([`VakuuSelectorScope`]).
+    } else if let Some(order) = vakuu_selector_active()
+        .then(|| vakuu_program_order(ctx.spec, selector))
+        .flatten()
+    {
+        // `VakuuCardSelector` takes the first `MaxSelect` options
+        // ([`VakuuSelectorScope`]): in live pile order, or for a Draw-pile
+        // `FromCombatPile` in its re-sorted view ([`vakuu_draw_view`]).
+        let options = match order {
+            VakuuOrder::Live => candidates,
+            VakuuOrder::DrawView => vakuu_draw_view(ctx.catalog, candidates),
+        };
         apply(
             ctx.state,
             ctx.catalog,
             selector,
-            &candidates[..selector.max],
+            &options[..selector.max],
             ctx.events,
         )?;
         Ok(SelectDisposition::Complete)
@@ -2110,10 +2344,15 @@ pub fn recorded_selection_answer(
                 super::Action::Select { answer } => Some(answer),
                 _ => None,
             });
+    // One enumeration serves every candidate (#3581): `state` is borrowed
+    // shared for the whole walk, so the card-play answer list is the same for
+    // each decode. Rebuilding it per candidate was quadratic in the answer
+    // count (a 14,000-answer ordered surface took minutes).
+    let answers = std::cell::RefCell::new(None);
     unique_recorded_answer(
         offered,
         uids,
-        |answer| selected_card_uids(state, catalog, answer),
+        |answer| selected_card_uids_in(state, catalog, answer, &mut answers.borrow_mut()),
         |answer| super::apply_action(state, catalog, &super::Action::Select { answer }).is_ok(),
     )
 }
@@ -2153,6 +2392,25 @@ pub fn selected_card_uids(
     state: &HotState,
     catalog: &Catalog,
     answer: super::SelectionAnswer,
+) -> Result<Option<Vec<u32>>, EngineRefusal> {
+    selected_card_uids_in(state, catalog, answer, &mut None)
+}
+
+/// The complete ordered answer list of a pending card-play selection, in
+/// `option_index` order: `Ok(None)` is a nonphysical choice.
+type CardPlayAnswers = Result<Option<Vec<Vec<HotCard>>>, EngineRefusal>;
+
+/// [`selected_card_uids`] with the card-play answer list memoized in
+/// `answers` (#3581). The list is a function of `state` and `catalog` alone,
+/// so one caller decoding many answers of ONE state may pass the same slot
+/// to every call; a fresh `None` slot is the uncached decode. The decoded
+/// value for any answer is the same either way: the list is what the
+/// uncached decode would rebuild and index.
+fn selected_card_uids_in(
+    state: &HotState,
+    catalog: &Catalog,
+    answer: super::SelectionAnswer,
+    answers: &mut Option<CardPlayAnswers>,
 ) -> Result<Option<Vec<u32>>, EngineRefusal> {
     let pending = state
         .pending
@@ -2214,62 +2472,66 @@ pub fn selected_card_uids(
     {
         return Ok(None);
     } else {
-        let (record, active) = state.pending_card_play(pending).ok_or_else(bad)?;
-        let spec = catalog
-            .spec(active.atom)
-            .ok_or(EngineRefusal::UnknownAtom(active.atom))?;
-        let (_, kind) = record.route()?;
-        let frozen = record.selection_cards();
-        match kind {
-            PendingSelectionKind::Program => {
-                let step = catalog
-                    .steps(spec)
-                    .get(record.next_step.checked_sub(1).ok_or_else(bad)? as usize)
-                    .ok_or_else(bad)?;
-                let selector = selector_from_args(catalog, spec, catalog.args(step.args))?;
-                options(state, catalog, selector)?
-                    .get(index)
-                    .cloned()
-                    .ok_or_else(bad)?
-            }
-            PendingSelectionKind::Purity => purity_options(
-                purity_candidates(state, frozen)?,
-                record.selection_amount as usize,
-            )?
-            .get(index)
-            .cloned()
-            .ok_or_else(bad)?,
-            PendingSelectionKind::SeekerStrike => vec![
-                *seeker_candidates(state, frozen)?
-                    .get(index)
-                    .ok_or_else(bad)?,
-            ],
-            PendingSelectionKind::HandCap => options(
-                state,
-                catalog,
-                hand_cap_selector(
-                    state,
-                    spec,
-                    record.next_step,
-                    record.selection_amount,
-                    frozen,
-                )?,
-            )?
-            .get(index)
-            .cloned()
-            .ok_or_else(bad)?,
-            PendingSelectionKind::Glimmer => options(state, catalog, glimmer_selector())?
-                .get(index)
-                .cloned()
-                .ok_or_else(bad)?,
-            PendingSelectionKind::Abundance
-            | PendingSelectionKind::Discovery
-            | PendingSelectionKind::Splash
-            | PendingSelectionKind::Quasar => return Ok(None),
-            PendingSelectionKind::Replay | PendingSelectionKind::Tutor => return Err(bad()),
+        let answers =
+            answers.get_or_insert_with(|| card_play_selection_answers(state, catalog, pending));
+        match answers {
+            Ok(Some(answers)) => answers.get(index).cloned().ok_or_else(bad)?,
+            Ok(None) => return Ok(None),
+            Err(refusal) => return Err(refusal.clone()),
         }
     };
     Ok(Some(cards.iter().map(|card| card.uid).collect()))
+}
+
+/// Every answer of the pending card-play selection, in `option_index` order,
+/// from the same option enumerators the transition applies.
+fn card_play_selection_answers(
+    state: &HotState,
+    catalog: &Catalog,
+    pending: &PendingSelection,
+) -> CardPlayAnswers {
+    let bad = || EngineRefusal::MalformedArgs("selection option index");
+    let (record, active) = state.pending_card_play(pending).ok_or_else(bad)?;
+    let spec = catalog
+        .spec(active.atom)
+        .ok_or(EngineRefusal::UnknownAtom(active.atom))?;
+    let (_, kind) = record.route()?;
+    let frozen = record.selection_cards();
+    Ok(Some(match kind {
+        PendingSelectionKind::Program => {
+            let step = catalog
+                .steps(spec)
+                .get(record.next_step.checked_sub(1).ok_or_else(bad)? as usize)
+                .ok_or_else(bad)?;
+            let selector = selector_from_args(catalog, spec, catalog.args(step.args))?;
+            options(state, catalog, selector)?
+        }
+        PendingSelectionKind::Purity => purity_options(
+            purity_candidates(state, frozen)?,
+            record.selection_amount as usize,
+        )?,
+        PendingSelectionKind::SeekerStrike => seeker_candidates(state, frozen)?
+            .into_iter()
+            .map(|card| vec![card])
+            .collect(),
+        PendingSelectionKind::HandCap => options(
+            state,
+            catalog,
+            hand_cap_selector(
+                state,
+                spec,
+                record.next_step,
+                record.selection_amount,
+                frozen,
+            )?,
+        )?,
+        PendingSelectionKind::Glimmer => options(state, catalog, glimmer_selector())?,
+        PendingSelectionKind::Abundance
+        | PendingSelectionKind::Discovery
+        | PendingSelectionKind::Splash
+        | PendingSelectionKind::Quasar => return Ok(None),
+        PendingSelectionKind::Replay | PendingSelectionKind::Tutor => return Err(bad()),
+    }))
 }
 
 pub(crate) fn apply_option(
@@ -2836,6 +3098,163 @@ mod tests {
             Err(EngineRefusal::MalformedArgs(
                 "recorded selection names more than one answer"
             ))
+        );
+    }
+
+    /// #3581: `recorded_selection_answer` enumerates a pending card-play
+    /// selection once and decodes every candidate from that list. The oracle
+    /// is the uncached `selected_card_uids`, which rebuilds the enumeration
+    /// per answer: over Guards' ordered any-number surface (six other hand
+    /// cards, `Σ_k P(6, k)` = 1957 answers) the memoized decode equals it at
+    /// every ordinal, past the end, and for the resolved recorded picks.
+    #[test]
+    fn recorded_selection_answer_decodes_a_large_ordered_surface_from_one_enumeration() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_reachable(identity(CardId::Guards)).unwrap();
+        builder
+            .intern_reachable(identity(CardId::DefendIronclad))
+            .unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build().with_action_replay_required();
+        let mut state = HotState::at_defaults();
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 3;
+        state.next_card_uid = 8;
+        let hand = state.piles.get_mut(PileId::Hand).make_mut();
+        hand.push(card(&catalog, CardId::Guards, 1));
+        hand.extend((2..=7).map(|uid| card(&catalog, CardId::DefendIronclad, uid)));
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+        let pending = apply_action(
+            &state,
+            &catalog,
+            &Action::Play {
+                uid: 1,
+                target: None,
+                selection: SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state;
+
+        let offered = legal_actions(&pending, &catalog)
+            .into_iter()
+            .map(|action| match action {
+                Action::Select { answer } => answer,
+                other => panic!("expected a selection, got {other:?}"),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(offered.len(), 1957);
+
+        // The old path, one enumeration per answer.
+        let oracle = offered
+            .iter()
+            .map(|answer| selected_card_uids(&pending, &catalog, *answer))
+            .collect::<Vec<_>>();
+        // The new path, one enumeration for all of them.
+        let mut answers = None;
+        let memoized = offered
+            .iter()
+            .map(|answer| selected_card_uids_in(&pending, &catalog, *answer, &mut answers))
+            .collect::<Vec<_>>();
+        assert_eq!(memoized, oracle);
+        assert!(matches!(&answers, Some(Ok(Some(list))) if list.len() == 1957));
+        // Past the end refuses identically from the filled slot.
+        let past = SelectionAnswer::OptionIndex(1957);
+        assert_eq!(
+            selected_card_uids_in(&pending, &catalog, past, &mut answers),
+            selected_card_uids(&pending, &catalog, past)
+        );
+        assert_eq!(
+            selected_card_uids(&pending, &catalog, past),
+            Err(EngineRefusal::MalformedArgs("selection option index"))
+        );
+
+        // The resolver names the ordinal the old per-answer walk finds.
+        let old_ordinal = |uids: &[u32]| {
+            let hits = oracle
+                .iter()
+                .enumerate()
+                .filter(|(_, decoded)| matches!(decoded, Ok(Some(selected)) if selected == uids))
+                .map(|(index, _)| offered[index])
+                .collect::<Vec<_>>();
+            assert!(hits.len() <= 1);
+            hits.first().copied()
+        };
+        for recorded in [
+            vec![],
+            vec![5],
+            vec![7, 2],
+            vec![4, 7, 2, 6],
+            vec![7, 6, 5, 4, 3, 2],
+            vec![2, 3, 4, 5, 6, 7],
+        ] {
+            let resolved = recorded_selection_answer(&pending, &catalog, &recorded).unwrap();
+            assert!(resolved.is_some(), "{recorded:?}");
+            assert_eq!(resolved, old_ordinal(&recorded), "{recorded:?}");
+        }
+        // Uids that name no answer still name none.
+        for recorded in [vec![1], vec![2, 2], vec![9]] {
+            assert_eq!(old_ordinal(&recorded), None);
+            assert_eq!(
+                recorded_selection_answer(&pending, &catalog, &recorded),
+                Ok(None),
+                "{recorded:?}"
+            );
+        }
+    }
+
+    /// #3581: the memo slot also carries the two non-list outcomes. A
+    /// nonphysical card-play choice and a refused enumeration answer every
+    /// later decode from the slot, without re-deriving.
+    #[test]
+    fn memoized_card_play_answers_replay_nonphysical_and_refused_outcomes() {
+        let (mut state, catalog, cards) = armaments_l0_fixture();
+        state.piles.get_mut(PileId::Hand).make_mut().extend(cards);
+        let pending = apply_action(
+            &state,
+            &catalog,
+            &Action::Play {
+                uid: 1,
+                target: None,
+                selection: SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state;
+        let answer = SelectionAnswer::OptionIndex(0);
+        assert!(matches!(
+            selected_card_uids(&pending, &catalog, answer),
+            Ok(Some(_))
+        ));
+
+        // A slot already holding "nonphysical" answers None.
+        let mut nonphysical = Some(Ok(None));
+        assert_eq!(
+            selected_card_uids_in(&pending, &catalog, answer, &mut nonphysical),
+            Ok(None)
+        );
+        // A slot holding a refusal answers that refusal, every time.
+        let refusal = EngineRefusal::ContinuationNotModeled;
+        let mut refused = Some(Err(refusal.clone()));
+        for _ in 0..2 {
+            assert_eq!(
+                selected_card_uids_in(&pending, &catalog, answer, &mut refused),
+                Err(refusal.clone())
+            );
+        }
+        // A direct uid answer never reads the slot.
+        assert_eq!(
+            selected_card_uids_in(
+                &pending,
+                &catalog,
+                SelectionAnswer::CardUid(2),
+                &mut refused
+            ),
+            Ok(Some(vec![2]))
         );
     }
 
@@ -5248,7 +5667,11 @@ mod tests {
         );
         let rebuilt_catalog = HotBoundary::catalog_from_canonical(&wire).unwrap();
         let rebuilt = HotBoundary::from_canonical(&wire, &rebuilt_catalog).unwrap();
-        assert_eq!(HotBoundary::to_canonical(&rebuilt, &rebuilt_catalog), wire);
+        // `catalog` is hand-built and interns less than the document's own
+        // closure, so only the rebuilt projection records bookkeeping (#3660).
+        let mut reprojected = HotBoundary::to_canonical(&rebuilt, &rebuilt_catalog);
+        reprojected.player.remove("session_bookkeeping");
+        assert_eq!(reprojected, wire);
 
         let skipped = apply_action(&suspended, &catalog, &select_action(3))
             .unwrap()
@@ -5572,6 +5995,22 @@ mod tests {
             .map(|card| card.uid)
             .collect();
         assert_eq!(crate::engine::legal_actions(&suspended, &catalog).len(), 3);
+        // Each ordinal decodes to its one live Draw card (#3581), and the
+        // position past the last refuses.
+        for (ordinal, uid) in live_options.iter().enumerate() {
+            assert_eq!(
+                selected_card_uids(
+                    &suspended,
+                    &catalog,
+                    SelectionAnswer::OptionIndex(ordinal as u32)
+                ),
+                Ok(Some(vec![*uid]))
+            );
+        }
+        assert_eq!(
+            selected_card_uids(&suspended, &catalog, SelectionAnswer::OptionIndex(3)),
+            Err(EngineRefusal::MalformedArgs("selection option index"))
+        );
         let wire = HotBoundary::to_canonical(&suspended, &catalog);
         assert_eq!(
             HotBoundary::from_canonical(&wire, &catalog).unwrap(),
@@ -7147,7 +7586,7 @@ mod tests {
     }
 
     /// Cosmic Indifference under the scope takes the Discard pile's first
-    /// card to Draw's top (`vakuu_program_is_exact`); Headbutt, the same
+    /// card to Draw's top (`vakuu_program_order`); Headbutt, the same
     /// Discard-to-Draw-top shape but a `CardSelectCmd` path not read for
     /// #3414, still suspends for the player.
     #[test]
@@ -7182,6 +7621,546 @@ mod tests {
             parked.pending.is_some(),
             "an unread selector is never auto-picked"
         );
+    }
+
+    fn thinking_ahead_fixture(hand: &[u32], draw: &[u32]) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        for id in [CardId::ThinkingAhead, CardId::StrikeIronclad] {
+            builder.intern(identity(id)).unwrap();
+        }
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 70;
+        state.energy = 3;
+        state.next_card_uid = 10;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 40));
+        let hand_pile = state.piles.get_mut(PileId::Hand).make_mut();
+        hand_pile.push(card(&catalog, CardId::ThinkingAhead, 1));
+        hand_pile.extend(
+            hand.iter()
+                .map(|uid| card(&catalog, CardId::StrikeIronclad, *uid)),
+        );
+        state.piles.get_mut(PileId::Draw).make_mut().extend(
+            draw.iter()
+                .map(|uid| card(&catalog, CardId::StrikeIronclad, *uid)),
+        );
+        (state, catalog)
+    }
+
+    fn pile_uids(state: &HotState, pile: PileId) -> Vec<u32> {
+        state
+            .piles
+            .get(pile)
+            .as_slice()
+            .iter()
+            .map(|card| card.uid)
+            .collect()
+    }
+
+    const PLAY_THINKING_AHEAD: Action = Action::Play {
+        uid: 1,
+        target: None,
+        selection: SelectionRef::NONE,
+    };
+
+    /// Thinking Ahead under the scope (#3433) puts Hand's first card on
+    /// Draw's top (`vakuu_program_order`, `ThinkingAhead/<OnPlay>d__5`
+    /// RVA `0x3c3300`); without the scope the player chooses.
+    #[test]
+    fn vakuu_scope_puts_back_the_first_hand_card_for_thinking_ahead() {
+        let (state, catalog) = thinking_ahead_fixture(&[2, 3], &[4, 5, 6]);
+        let resolved = {
+            let _vakuu = VakuuSelectorScope::enter();
+            apply_action(&state, &catalog, &PLAY_THINKING_AHEAD)
+                .unwrap()
+                .state
+        };
+        assert!(resolved.pending.is_none());
+        assert_eq!(pile_uids(&resolved, PileId::Hand), [3, 4, 5]);
+        assert_eq!(pile_uids(&resolved, PileId::Draw), [2, 6]);
+        assert_eq!(pile_uids(&resolved, PileId::Exhaust), [1]);
+
+        let outside = apply_action(&state, &catalog, &PLAY_THINKING_AHEAD)
+            .unwrap()
+            .state;
+        assert!(
+            outside.pending.is_some(),
+            "the player chooses without the scope"
+        );
+    }
+
+    /// The draw is awaited before `FromHand` reads the Hand (RVA `0x3c3300`
+    /// IL_002c-IL_00a6, then IL_00b5-IL_00c4): from an otherwise empty Hand
+    /// the first drawn card is the one that goes back. A put-back that ran
+    /// first would find no card and leave both draws in Hand.
+    #[test]
+    fn vakuu_scope_thinking_ahead_selects_after_its_draw() {
+        let (state, catalog) = thinking_ahead_fixture(&[], &[4, 5, 6]);
+        let _vakuu = VakuuSelectorScope::enter();
+        let resolved = apply_action(&state, &catalog, &PLAY_THINKING_AHEAD)
+            .unwrap()
+            .state;
+        assert!(resolved.pending.is_none());
+        assert_eq!(pile_uids(&resolved, PileId::Hand), [5]);
+        assert_eq!(pile_uids(&resolved, PileId::Draw), [4, 6]);
+    }
+
+    /// `<FromHand>d__28` RVA `0x3e7568` returns an empty Hand's empty list
+    /// (IL_0152-IL_0161) and auto-takes a Hand no larger than `MinSelect`
+    /// (IL_0166-IL_018d) before any selector is asked, so these two cases
+    /// are the same with and without the scope.
+    #[test]
+    fn vakuu_scope_thinking_ahead_empty_and_single_card_hands_never_ask() {
+        for scoped in [true, false] {
+            let _vakuu = scoped.then(VakuuSelectorScope::enter);
+
+            let (state, catalog) = thinking_ahead_fixture(&[], &[]);
+            let empty = apply_action(&state, &catalog, &PLAY_THINKING_AHEAD)
+                .unwrap()
+                .state;
+            assert!(empty.pending.is_none());
+            assert!(pile_uids(&empty, PileId::Hand).is_empty());
+            assert!(pile_uids(&empty, PileId::Draw).is_empty());
+
+            let (state, catalog) = thinking_ahead_fixture(&[], &[4]);
+            let single = apply_action(&state, &catalog, &PLAY_THINKING_AHEAD)
+                .unwrap()
+                .state;
+            assert!(single.pending.is_none());
+            assert!(pile_uids(&single, PileId::Hand).is_empty());
+            assert_eq!(pile_uids(&single, PileId::Draw), [4]);
+        }
+    }
+
+    /// The Earring's child wall (#3433): both Thinking Ahead levels resolve
+    /// under the selector when no Draw hook can suspend, and stay refused
+    /// when one can.
+    #[test]
+    fn whispering_earring_thinking_ahead_child_is_vakuu_resolved_only_with_quiet_draw_hooks() {
+        let mut builder = CatalogBuilder::new();
+        for upgrade in [0, 1] {
+            builder
+                .intern_reachable(CardIdentity {
+                    upgrade,
+                    ..identity(CardId::ThinkingAhead)
+                })
+                .unwrap();
+        }
+        builder
+            .intern_reachable(identity(CardId::Headbutt))
+            .unwrap();
+        let catalog = builder.build();
+        let mut seen = 0;
+        for spec in catalog.reachable_specs() {
+            let resolved =
+                |quiet| whispering_earring_child_selection_is_vakuu_resolved(spec, &catalog, quiet);
+            if spec.identity.id == CardId::ThinkingAhead {
+                seen += 1;
+                assert!(resolved(true), "{:?}", spec.identity);
+                assert!(!resolved(false), "{:?}", spec.identity);
+            } else {
+                assert!(!resolved(true), "{:?}", spec.identity);
+            }
+        }
+        assert_eq!(seen, 2);
+        assert_eq!(catalog.reachable_specs().count(), 3);
+    }
+
+    /// The Earring's child wall beside a live Draw hook (#3637). A child
+    /// whose program suspends only through the plain `Draw` step is resolved
+    /// when no Hellraiser card is reachable: the one selection its Draw can
+    /// meet is Stratagem's, which the selector answers. A fused Draw kind, a
+    /// Draw tail, a result Draw and every selecting child stay unresolved,
+    /// and so does the plain Draw when Hellraiser can be live. A plain-Draw
+    /// child whose enchantment leaves the body inexact (Nimble) is never
+    /// resolved, with quiet Draw hooks or without.
+    #[test]
+    fn whispering_earring_plain_draw_child_is_resolved_beside_a_live_stratagem_only() {
+        const PLAIN: [CardId; 5] = [
+            CardId::FlashOfSteel,
+            CardId::Backflip,
+            CardId::BattleTrance,
+            CardId::Adrenaline,
+            CardId::Finesse,
+        ];
+        const UNRESOLVED: [CardId; 11] = [
+            CardId::BigBang,
+            CardId::Scrawl,
+            CardId::BurningPact,
+            CardId::Scrape,
+            CardId::Pillage,
+            CardId::Acrobatics,
+            CardId::ThinkingAhead,
+            CardId::SecretWeapon,
+            CardId::Glimmer,
+            CardId::Stratagem,
+            CardId::StrikeIronclad,
+        ];
+        // Hellraiser can be live through a reachable card, or through a
+        // power already live at the root with no card left in any pile.
+        for (hellraiser, live_power_only) in [(false, false), (true, false), (true, true)] {
+            let mut builder = CatalogBuilder::new();
+            for id in PLAIN.into_iter().chain(UNRESOLVED) {
+                for upgrade in [0, 1] {
+                    builder
+                        .intern_reachable(CardIdentity {
+                            upgrade,
+                            ..identity(id)
+                        })
+                        .unwrap();
+                }
+            }
+            if live_power_only {
+                builder.mark_live_hellraiser_reachable();
+            } else if hellraiser {
+                builder
+                    .intern_reachable(identity(CardId::Hellraiser))
+                    .unwrap();
+            }
+            let catalog = builder.build();
+            assert!(catalog.cardplay_draw_hook_can_suspend());
+            assert_eq!(catalog.hellraiser_reachable(), hellraiser);
+            assert_eq!(
+                catalog
+                    .reachable_specs()
+                    .any(|spec| spec.identity.id == CardId::Hellraiser),
+                hellraiser && !live_power_only
+            );
+            let mut plain_seen = 0;
+            for spec in catalog.reachable_specs() {
+                let beside_a_live_hook =
+                    whispering_earring_child_selection_is_vakuu_resolved(spec, &catalog, false);
+                let plain = PLAIN.contains(&spec.identity.id);
+                plain_seen += usize::from(plain);
+                assert_eq!(
+                    beside_a_live_hook,
+                    plain && !hellraiser,
+                    "{:?} hellraiser={hellraiser}",
+                    spec.identity
+                );
+                if plain {
+                    assert!(
+                        crate::engine::play::autoplay_child_requires_suspension(
+                            PileId::Hand,
+                            spec,
+                            &catalog
+                        ),
+                        "{:?} is a child the wall asks about",
+                        spec.identity
+                    );
+                }
+            }
+            assert_eq!(plain_seen, 10);
+        }
+
+        let nimble = CardIdentity {
+            enchantment: Some(crate::catalog::CardEnchantment {
+                id: crate::ids::EnchantmentId::Nimble,
+                amount: 2,
+            }),
+            ..identity(CardId::FlashOfSteel)
+        };
+        let mut builder = CatalogBuilder::new();
+        builder.intern_reachable(nimble).unwrap();
+        builder
+            .intern_reachable(identity(CardId::Stratagem))
+            .unwrap();
+        let catalog = builder.build();
+        let spec = catalog.spec(catalog.atom(&nimble).unwrap()).unwrap();
+        assert!(!crate::engine::play::body_enchantment_is_exact(spec));
+        for quiet in [false, true] {
+            assert!(!whispering_earring_child_selection_is_vakuu_resolved(
+                spec, &catalog, quiet
+            ));
+        }
+    }
+
+    const SECRET_WEAPON_DRAW_IDS: [CardId; 9] = [
+        CardId::StrikeIronclad,
+        CardId::Bash,
+        CardId::Anger,
+        CardId::TwinStrike,
+        CardId::Shiv,
+        CardId::DefendIronclad,
+        CardId::Slimed,
+        CardId::AscendersBane,
+        CardId::SecretWeapon,
+    ];
+
+    /// Secret Weapon (uid 1, `upgrade`) alone in Hand over the given Draw
+    /// pile, top first, as `(id, upgrade, uid)`.
+    fn secret_weapon_fixture(upgrade: u8, draw: &[(CardId, u8, u32)]) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        for id in SECRET_WEAPON_DRAW_IDS {
+            for upgrade in [0, 1] {
+                if crate::content_tables::card_row(id, upgrade).is_some() {
+                    builder
+                        .intern(CardIdentity {
+                            upgrade,
+                            ..identity(id)
+                        })
+                        .unwrap();
+                }
+            }
+        }
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 70;
+        state.energy = 3;
+        state.next_card_uid = 20;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 40));
+        state
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(leveled_card(&catalog, CardId::SecretWeapon, upgrade, 1));
+        state.piles.get_mut(PileId::Draw).make_mut().extend(
+            draw.iter()
+                .map(|(id, upgrade, uid)| leveled_card(&catalog, *id, *upgrade, *uid)),
+        );
+        (state, catalog)
+    }
+
+    fn play_secret_weapon(state: &HotState, catalog: &Catalog, scoped: bool) -> HotState {
+        let _vakuu = scoped.then(VakuuSelectorScope::enter);
+        apply_action(
+            state,
+            catalog,
+            &Action::Play {
+                uid: 1,
+                target: None,
+                selection: SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state
+    }
+
+    /// Secret Weapon under the scope (#3608) takes the first Attack of
+    /// `FromCombatPile`'s Draw view to Hand's bottom (`vakuu_program_order`,
+    /// `SecretWeapon/<OnPlay>d__3` RVA `0x3b95a8`): rarity, then id, and
+    /// neither Draw's topmost Attack (Twin Strike), nor the first id (Anger),
+    /// nor a non-Attack. Without the scope the player chooses.
+    #[test]
+    fn vakuu_scope_secret_weapon_takes_the_first_attack_of_the_sorted_draw_view() {
+        let draw = [
+            (CardId::DefendIronclad, 0, 2),
+            (CardId::TwinStrike, 0, 3),
+            (CardId::Shiv, 0, 4),
+            (CardId::Anger, 0, 5),
+            (CardId::StrikeIronclad, 0, 6),
+            (CardId::Bash, 0, 7),
+        ];
+        for upgrade in [0, 1] {
+            let (state, catalog) = secret_weapon_fixture(upgrade, &draw);
+            let resolved = play_secret_weapon(&state, &catalog, true);
+            assert!(resolved.pending.is_none());
+            assert_eq!(pile_uids(&resolved, PileId::Hand), [7]);
+            assert_eq!(pile_uids(&resolved, PileId::Draw), [2, 3, 4, 5, 6]);
+            // `SecretWeapon::get_CanonicalKeywords` Exhaust, removed by
+            // `OnUpgrade` RVA `0xea6eb`.
+            let (exhaust, discard): (&[u32], &[u32]) = if upgrade == 0 {
+                (&[1], &[])
+            } else {
+                (&[], &[1])
+            };
+            assert_eq!(pile_uids(&resolved, PileId::Exhaust), exhaust);
+            assert_eq!(pile_uids(&resolved, PileId::Discard), discard);
+
+            let outside = play_secret_weapon(&state, &catalog, false);
+            assert!(
+                outside.pending.is_some(),
+                "the player chooses without the scope"
+            );
+        }
+    }
+
+    /// Neither sort key reads the upgrade level and `OrderBy`/`ThenBy` is
+    /// stable (`<FromCombatPile>d__20` RVA `0x3e5e84` IL_0199-IL_01e2), so
+    /// identical cards, and a base copy against its upgraded twin, keep live
+    /// Draw order: the earlier one is taken whichever it is.
+    #[test]
+    fn vakuu_scope_secret_weapon_breaks_ties_by_live_draw_order() {
+        for (draw, expected) in [
+            (
+                [
+                    (CardId::TwinStrike, 0, 2),
+                    (CardId::Anger, 0, 3),
+                    (CardId::Anger, 0, 4),
+                ],
+                3,
+            ),
+            (
+                [
+                    (CardId::TwinStrike, 0, 2),
+                    (CardId::Anger, 1, 3),
+                    (CardId::Anger, 0, 4),
+                ],
+                3,
+            ),
+            (
+                [
+                    (CardId::Anger, 0, 4),
+                    (CardId::Anger, 1, 3),
+                    (CardId::TwinStrike, 0, 2),
+                ],
+                4,
+            ),
+        ] {
+            let (state, catalog) = secret_weapon_fixture(0, &draw);
+            let resolved = play_secret_weapon(&state, &catalog, true);
+            assert!(resolved.pending.is_none());
+            assert_eq!(pile_uids(&resolved, PileId::Hand), [expected]);
+        }
+    }
+
+    /// `<FromCombatPile>d__20` RVA `0x3e5e84` returns an empty filtered list
+    /// as is (IL_0140-IL_0155) and auto-takes one no longer than `MinSelect`
+    /// (IL_015a-IL_017c) before any selector is asked: an empty Draw pile, a
+    /// Draw pile with no Attack, and a single Attack under other cards are
+    /// the same with and without the scope.
+    #[test]
+    fn vakuu_scope_secret_weapon_empty_filtered_empty_and_single_attack_never_ask() {
+        for scoped in [true, false] {
+            let (state, catalog) = secret_weapon_fixture(0, &[]);
+            let empty = play_secret_weapon(&state, &catalog, scoped);
+            assert!(empty.pending.is_none());
+            assert!(pile_uids(&empty, PileId::Hand).is_empty());
+
+            let skills = [(CardId::DefendIronclad, 0, 2), (CardId::Slimed, 0, 3)];
+            let (state, catalog) = secret_weapon_fixture(0, &skills);
+            let filtered = play_secret_weapon(&state, &catalog, scoped);
+            assert!(filtered.pending.is_none());
+            assert!(pile_uids(&filtered, PileId::Hand).is_empty());
+            assert_eq!(pile_uids(&filtered, PileId::Draw), [2, 3]);
+
+            let one = [
+                (CardId::DefendIronclad, 0, 2),
+                (CardId::TwinStrike, 0, 3),
+                (CardId::Slimed, 0, 4),
+            ];
+            let (state, catalog) = secret_weapon_fixture(0, &one);
+            let single = play_secret_weapon(&state, &catalog, scoped);
+            assert!(single.pending.is_none());
+            assert_eq!(pile_uids(&single, PileId::Hand), [3]);
+            assert_eq!(pile_uids(&single, PileId::Draw), [2, 4]);
+        }
+    }
+
+    /// The Draw view's keys over every rarity the fixture holds
+    /// (`native_card_rarity_value`): Basic < Common < Token < Status < Curse,
+    /// ids ordinal inside a rarity, live order inside an id. Token sorts
+    /// before Status and Curse before Quest in the native enum.
+    #[test]
+    fn vakuu_draw_view_orders_by_native_rarity_then_id_then_live_order() {
+        let draw = [
+            (CardId::AscendersBane, 0, 2),
+            (CardId::Slimed, 0, 3),
+            (CardId::Shiv, 1, 4),
+            (CardId::TwinStrike, 0, 5),
+            (CardId::Anger, 1, 6),
+            (CardId::StrikeIronclad, 0, 7),
+            (CardId::Shiv, 0, 8),
+            (CardId::DefendIronclad, 0, 9),
+            (CardId::Anger, 0, 10),
+            (CardId::Bash, 0, 11),
+        ];
+        let (state, catalog) = secret_weapon_fixture(0, &draw);
+        let view = vakuu_draw_view(&catalog, state.piles.get(PileId::Draw).as_slice().to_vec());
+        let uids: Vec<u32> = view.iter().map(|card| card.uid).collect();
+        assert_eq!(uids, [11, 9, 7, 6, 10, 5, 4, 8, 3, 2]);
+
+        use crate::content_tables::CardRarity;
+        let values: Vec<u8> = [
+            CardRarity::Basic,
+            CardRarity::Common,
+            CardRarity::Uncommon,
+            CardRarity::Rare,
+            CardRarity::Ancient,
+            CardRarity::Event,
+            CardRarity::Token,
+            CardRarity::Status,
+            CardRarity::Curse,
+            CardRarity::Quest,
+        ]
+        .into_iter()
+        .map(native_card_rarity_value)
+        .collect();
+        assert_eq!(values, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    }
+
+    /// The Earring's child wall (#3608): both Secret Weapon levels resolve
+    /// under the selector when no Draw hook can suspend, and stay refused
+    /// when one can. Secret Technique, the same Draw-to-Hand shape with a
+    /// Skill filter, was not read and stays refused. A Secret Weapon select
+    /// with any other pile, count, filter or sink is not the resolved
+    /// program.
+    #[test]
+    fn whispering_earring_secret_weapon_child_is_vakuu_resolved_only_with_quiet_draw_hooks() {
+        let mut builder = CatalogBuilder::new();
+        for upgrade in [0, 1] {
+            builder
+                .intern_reachable(CardIdentity {
+                    upgrade,
+                    ..identity(CardId::SecretWeapon)
+                })
+                .unwrap();
+        }
+        builder
+            .intern_reachable(identity(CardId::SecretTechnique))
+            .unwrap();
+        let catalog = builder.build();
+        let mut seen = 0;
+        for spec in catalog.reachable_specs() {
+            let resolved =
+                |quiet| whispering_earring_child_selection_is_vakuu_resolved(spec, &catalog, quiet);
+            if spec.identity.id == CardId::SecretWeapon {
+                seen += 1;
+                assert!(resolved(true), "{:?}", spec.identity);
+                assert!(!resolved(false), "{:?}", spec.identity);
+
+                let exact = Selector {
+                    pile: PileId::Draw,
+                    min: 1,
+                    max: 1,
+                    filter: Some(FilterMode::Attack),
+                    operation: Operation::Move {
+                        destination: PileId::Hand,
+                        top: false,
+                    },
+                };
+                assert_eq!(vakuu_program_order(spec, exact), Some(VakuuOrder::DrawView));
+                for forged in [
+                    Selector {
+                        pile: PileId::Discard,
+                        ..exact
+                    },
+                    Selector { min: 0, ..exact },
+                    Selector { max: 2, ..exact },
+                    Selector {
+                        filter: None,
+                        ..exact
+                    },
+                    Selector {
+                        operation: Operation::Move {
+                            destination: PileId::Draw,
+                            top: true,
+                        },
+                        ..exact
+                    },
+                ] {
+                    assert_eq!(vakuu_program_order(spec, forged), None, "{forged:?}");
+                }
+            } else {
+                assert!(!resolved(true), "{:?}", spec.identity);
+            }
+        }
+        assert_eq!(seen, 2);
+        assert_eq!(catalog.reachable_specs().count(), 3);
     }
 
     #[test]

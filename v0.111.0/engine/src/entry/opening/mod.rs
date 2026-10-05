@@ -158,14 +158,14 @@ pub struct Opening {
 ///
 /// The list that one-liner prints has **46** entries at the `main` this was
 /// last re-derived against (re-derived again 2026-09-22: still 46), and
-/// **thirty-nine** of them are deliberately not here (eleven when this
+/// **forty** of them are deliberately not here (eleven when this
 /// sentence was first written; Vajra, Bound Phylactery, Byrdpip, Pael's Legion,
 /// Ring of the Snake, Girya, Petrified Toad, Letter Opener, Pael's Flesh,
 /// Eternal Feather, Ghost Seed, Kusarigama, Phylactery Unbound, Pollinous
 /// Core, Vambrace, Stone Cracker, Sling of Courage, Toolbox, Meat on the Bone,
 /// Pocketwatch, Unsettling Lamp, Blessed Antler, Jeweled Mask, Funerary Mask,
-/// Radiant Pearl, Big Mushroom, Tea of Discourtesy and Delicate Frond left the
-/// table since) —
+/// Radiant Pearl, Big Mushroom, Tea of Discourtesy, Delicate Frond and Ring of
+/// the Drake left the table since) —
 /// exactly
 /// `OPENING_WINDOW_GATE_EXCLUSIONS`, which a test pins against the oracle's own
 /// manifest (`fixtures/opening_relic_hooks_v1.json`) so neither the count in
@@ -588,17 +588,127 @@ pub struct Opening {
 /// that gate is ported here by name ([`refuse_unordered_blessed_antler_peers`]).
 /// `PENDULUM`, whose `BeforeHandDraw` counter advance the oracle leaves out of
 /// the group, runs first on both sides and touches no pile, RNG or uid.
-const OPENING_WINDOW_RELIC_BODIES: [&str; 7] = [
+///
+/// # `RING_OF_THE_DRAKE` (#2758)
+///
+/// Left the table on 2026-10-02. It was an **over-refusal** of the Pendulum
+/// kind: its whole body was already `engine::relics`'. IL read on the v0.111.0
+/// DLL (sha256 `9cb4f1ad…`, `dump_il.py RingOfTheDrake`); the type declares
+/// five members and one of them is a hook:
+///
+/// * `ModifyHandDraw` (RVA `0x9a6d0`): the owner test `ldarg.1; get_Owner;
+///   beq.s` at `IL_000c`-`IL_0013` (another player's draw returns unchanged at
+///   `IL_0015`-`IL_0016`), then `Owner.PlayerCombatState.TurnNumber >
+///   DynamicVars["Turns"].BaseValue` at `IL_0017`-`IL_0041` (`op_GreaterThan`),
+///   which returns the draw unchanged at `IL_0048`-`IL_0049`, else `draw +
+///   DynamicVars.Cards.BaseValue` at `IL_004a`-`IL_0060`.
+/// * `get_CanonicalVars` (`0x9a6a6`): `CardsVar(2)` at `IL_0009`-`IL_000a` and
+///   `'Turns'` = `Decimal(3)` at `IL_0012`-`IL_0018`.
+/// * `get_Rarity` (`0x9a6a3`), the constructor (`0x9a731`) and the `_turnsKey`
+///   string constant. There is no saved property and no counter field: the
+///   condition reads the combat's own one-based `TurnNumber`, so nothing
+///   persists across fights and the opening has nothing to seed.
+///
+/// So: `+2` cards while the player turn is 1, 2 or 3. That is the
+/// `state.turn <= 3 && owns(RelicRingOfTheDrake)` row of
+/// `engine::relics::modifier_total`'s `ModifyHandDraw` fold, which the opening
+/// reaches through [`crate::engine::deal_opening_hand`] and every later turn
+/// reaches through the same hand draw. The fold is additive and
+/// non-exclusive, as native's listeners are (each returns `draw ± its own
+/// CanonicalVar`), so the ring commutes with every other row there and owes
+/// no same-hook refusal; turn one's `Math.Max(innate count, modified draw)`
+/// clamp is applied to the total afterwards.
+///
+/// No capture in the corpus owns the relic and the frozen oracle that printed
+/// the earlier parity digests is deleted (#2827), so its witnesses are the
+/// fixture tests' direct assertions: the turn-1 Hand, the three following
+/// hand draws, and the sums beside the other `ModifyHandDraw` rows.
+///
+/// # The six still gated (#2758 audit, 2026-10-02)
+///
+/// Each was re-read on the same DLL. None is a pure over-refusal: every one
+/// has a window member this opening does not run, or state it cannot seed.
+///
+/// * `BELT_BUCKLE` (#3617) — `<BeforeCombatStart>d__11::MoveNext` (`0x31f444`) clears
+///   `DexterityApplied` (`IL_001e`-`IL_001f`) and, when the belt holds no
+///   potion (`Owner.Potions.Any()` at `IL_002b`-`IL_003a`), runs
+///   `ApplyDexterity` (`<ApplyDexterity>d__17` `0x31f344`: latch at
+///   `IL_002b`-`IL_002c`, `Apply<DexterityPower>` of `CanonicalVars`' 2 with a
+///   null applier at `IL_0048`-`IL_005a`). The in-fight half exists
+///   (`engine::potions::apply_belt_buckle_after_use` and the `belt_buckle` /
+///   `belt_buckle_applied` belt flags), but nothing runs the combat-start
+///   half or seeds those flags, and its `AfterPotionProcured` removal
+///   (`<AfterPotionProcured>d__13` `0x31f164`) observes Delicate Frond's and
+///   Petrified Toad's combat-start procurements.
+/// * `SNECKO_EYE` and `FAKE_SNECKO_EYE` (#3618) — `<BeforeCombatStart>d__8`
+///   (`0x331628` / `0x3248b8`) is `ApplyPower` (`<ApplyPower>d__10`
+///   `0x33153c` / `<ApplyPower>d__9` `0x3247cc`): `Apply<ConfusedPower>` of
+///   `Decimal::One` on the owner at `IL_001d`-`IL_003f`. This crate carries
+///   Confused as a projection of ownership (`boundary.rs`'s `"confused"`
+///   mirror) and rolls it per drawn card in `engine::draw`
+///   (`confused_after_card_drawn`, on `CombatEnergyCosts`); Snecko Eye's
+///   `ModifyHandDraw` (`0x9ba8b`, `+ CardsVar(2)` unconditionally) is a row of
+///   the same fold as the ring's. What the opening still owes is a witness
+///   that its first deal rolls each card exactly once and in native order
+///   (#2690 made the engine listener exactly-once; the opening's own deal is
+///   not yet measured), and the entry refusals
+///   `engine::admission` carries by name and the opening does not run
+///   (`Tea of Discourtesy + Snecko Eye entry order`, `Confused EnergyCosts
+///   provenance`). No capture owns either relic, so nothing measures it.
+/// * `FUR_COAT` — `<BeforeCombatStart>d__26` (`0x325360`) sets every hittable
+///   enemy to 1 HP (`CreatureCmd::SetCurrentHp` at `IL_00c2`-`IL_00c7`) when
+///   `GetMarkedCoords` contains the current map point (`IL_0021`-`IL_0045`).
+///   The entry now answers that membership (#2526,
+///   `entry::relics::fur_coat_membership`), and a fight it proves **unmarked**
+///   passes this gate ([`fur_coat_is_inert_here`]). A marked room still
+///   refuses, because the opening has no body for the initial roster and
+///   `fur_coat_active` is not seeded (#3634), and so does a save whose
+///   membership is unprovable.
+/// * `NINJA_SCROLL` (#3619) — `<BeforeHandDraw>d__7` (`0x32b770`): owner test, then
+///   `TurnNumber; ldc.i4.1; ble.s` at `IL_0034`-`IL_0044`, then
+///   `Shiv::CreateInHand(Owner, DynamicVars["Shivs"], null)` at
+///   `IL_0052`-`IL_0073` (`'Shivs'` = 3, `get_CanonicalVars` `0x97752`). No
+///   Rust body exists anywhere.
+/// * `PHILOSOPHERS_STONE` (#3620) — `<AfterRoomEntered>d__8` (`0x32dff0`) applies
+///   `StrengthPower` of `DynamicVars["StrengthPower"]` (1) with a null applier
+///   to every living opponent in a combat room (`IL_0033`-`IL_009b`). The
+///   opening's room-entry Strength block is the player's only. Its
+///   `ModifyMaxEnergy` row and its `AfterCreatureAddedToCombat` body for
+///   enemies added mid-fight (`engine::monsters::fur_coat_after_opponent_added`)
+///   are already the engine's.
+const OPENING_WINDOW_RELIC_BODIES: [&str; 6] = [
     "RELIC.BELT_BUCKLE",
     "RELIC.FAKE_SNECKO_EYE",
     "RELIC.FUR_COAT",
     "RELIC.NINJA_SCROLL",
     "RELIC.PHILOSOPHERS_STONE",
-    "RELIC.RING_OF_THE_DRAKE",
     "RELIC.SNECKO_EYE",
 ];
 
-/// The thirty-nine window-hook relics deliberately **not** in
+/// Whether `relic` is a Fur Coat the entry proves does nothing in this room
+/// (#2526), the one case [`OPENING_WINDOW_RELIC_BODIES`] lets an owner past.
+///
+/// `FurCoat` declares two combat hooks and both leave before any write when
+/// `GetMarkedCoords` (RVA `0x94204`) is null or does not hold
+/// `CurrentMapPoint.coord`: `<BeforeCombatStart>d__26` (`0x325360`) at
+/// `IL_0027`-`IL_0047`, and `<AfterCreatureAddedToCombat>d__27` (`0x325238`)
+/// at `IL_003a`-`IL_005a`. The current map point does not change inside a
+/// combat, so one answer covers the initial roster and every enemy added
+/// later. Its other members are `AfterObtained` (`0x93ef9`) and
+/// `ModifyGeneratedMapLate` (`0x93f2d`), which run outside combat, and a
+/// whole-DLL call scan finds no other reader of the type or its four saved
+/// properties. An unmarked room's fight is therefore the fight without the
+/// relic, and the engine's own flag (`fur_coat_active`, read by
+/// `engine::monsters::fur_coat_after_opponent_added`) stays at its `false`
+/// default.
+///
+/// Only `Some(false)` passes. `Some(true)` owes the initial-roster body
+/// (#3634) and `None` is a membership the save could not prove; both refuse.
+fn fur_coat_is_inert_here(relic: &str, entry: &EntryDocument) -> bool {
+    relic == "RELIC.FUR_COAT" && entry.relic_entry.fur_coat_active == Some(false)
+}
+
+/// The forty window-hook relics deliberately **not** in
 /// [`OPENING_WINDOW_RELIC_BODIES`], each justified in that table's doc comment.
 ///
 /// Spelled as data rather than prose so the pin
@@ -668,8 +778,10 @@ const OPENING_WINDOW_RELIC_BODIES: [&str; 7] = [
 /// `DELICATE_FROND` followed on 2026-09-30 (#3533): its `BeforeCombatStart`
 /// belt fill is `engine::potions::delicate_frond_before_combat_start`, in the
 /// ordinary pass of [`crate::engine::fire_before_combat_start`].
+/// `RING_OF_THE_DRAKE` followed on 2026-10-02 (#2758): its only hook is
+/// `ModifyHandDraw`, already a row of `engine::relics::modifier_total`'s fold.
 #[cfg(test)]
-const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 39] = [
+const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
     "RELIC.ANCHOR",
     "RELIC.BAG_OF_PREPARATION",
     "RELIC.BIG_MUSHROOM",
@@ -701,6 +813,7 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 39] = [
     "RELIC.POCKETWATCH",
     "RELIC.POLLINOUS_CORE",
     "RELIC.RADIANT_PEARL",
+    "RELIC.RING_OF_THE_DRAKE",
     "RELIC.RING_OF_THE_SNAKE",
     "RELIC.SLING_OF_COURAGE",
     "RELIC.STONE_CRACKER",
@@ -1968,7 +2081,7 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
         .into_iter()
         .chain(TURN_ONE_ORB_RELICS)
     {
-        if relics.contains(relic) {
+        if relics.contains(relic) && !fur_coat_is_inert_here(relic, entry) {
             return Err(OpeningRefusal::RoomEntryRelicNotModeled {
                 relic: relic.to_string(),
             });
@@ -4073,6 +4186,22 @@ fn pre_hook_document(
     // / `_inky_attack_damage_for_build`, frozen Python `_relic_cond_eval`, deleted #2827.
     player.insert("regalite_block_amount".to_string(), Value::from(4));
     player.insert("inky_attack_damage".to_string(), Value::from(0));
+    // The AfterEnergyReset ledger's known-empty witness (#3687). This
+    // document is the combat entry before any hook has run: it seeds none of
+    // the six listeners (`from_canonical` refuses a `[]` beside a live one),
+    // so their acquisition order is empty as a fact, not as legacy absence.
+    // With the witness the engine orders every listener the opening or the
+    // fight attaches by acquisition, and the projected root keeps the ledger.
+    // Without it the root reloads legacy-unknown, and admission refuses
+    // `terminal star/orb AfterEnergyReset order` whenever Black Hole, a star
+    // source and another reset peer are all reachable, which a held Entropic
+    // Brew's potion closure alone satisfies. The eval census stamped the same
+    // order from each capture's opening checkpoint (`with_native_reset_order`
+    // in `tools/eval_suite.py`, #3020); it now compares that against this.
+    player.insert(
+        "after_energy_reset_order".to_string(),
+        Value::Array(Vec::new()),
+    );
     for (field, value) in seeded {
         player.insert((*field).to_string(), Value::from(*value));
     }
@@ -4094,6 +4223,39 @@ fn pre_hook_document(
     }
     if entry.fully_unlocked_potion_pool == Some(true) {
         player.insert("fully_unlocked_potion_pool".to_string(), Value::Bool(true));
+    }
+    // `State.sozu`: the owner's standing procurement veto (#2890), seeded from
+    // ownership and elided at its `false` default.
+    //
+    // v0.111.0 IL (sts2.dll sha256 `9cb4f1ad…`): `Sozu` declares two gameplay
+    // members and no nested state machine, so nothing of its own fires inside
+    // the combat-opening window and it keeps no per-fight state.
+    //
+    // * `Sozu::ShouldProcurePotion` (RVA `0x9bbf3`): `ldarg.2; Owner; ceq;
+    //   ldc.i4.0; ceq` (`IL_0001`-`IL_000d`) — false exactly for its owner.
+    //   `Hook::ShouldProcurePotion` (`0x106820`) returns false on the first
+    //   listener that does (`IL_0025`-`IL_002e`), and
+    //   `PotionCmd/<TryToProcure>d__1::MoveNext` (`0x3ef588`) asks it at
+    //   `IL_004b`, before `AddPotionInternal` (`IL_008b`), returning a failed
+    //   result (`IL_0052`-`IL_0072`). So the veto is a function of ownership
+    //   alone, which is what this flag carries;
+    //   `engine::potions::procure_potion` reads it. On the opening path that
+    //   is Petrified Toad's rock (belt unchanged) and Delicate Frond's loop
+    //   (one generated potion, two `CombatPotionGeneration` draws, then the
+    //   failed result leaves the loop:
+    //   `DelicateFrond/<BeforeCombatStart>d__2::MoveNext` `0x3229bc`
+    //   `IL_00b7`-`IL_00bc`).
+    // * `Sozu::ModifyMaxEnergy` (`0x9bc01`): `+ DynamicVars.Energy` for the
+    //   owner (`IL_000c`-`IL_0027`; `get_CanonicalVars` `0x9bbd9` is
+    //   `EnergyVar(1)`). It is not a window hook; the catalog's
+    //   `ModifyMaxEnergy` rule serves the first turn's energy reset like any
+    //   later one.
+    //
+    // `boundary::batch_eight_relic_state_is_exact` requires this carrier of an
+    // owned Sozu, so before this seed every Sozu fight refused as
+    // `boundary_unrepresentable`.
+    if relics.contains("RELIC.SOZU") {
+        player.insert("sozu".to_string(), Value::Bool(true));
     }
     // The dense compatibility mirror (`combat_sim._sync_potion_belt_mirrors`).
     // It goes through the same [`potion_identity`] strip as the authoritative

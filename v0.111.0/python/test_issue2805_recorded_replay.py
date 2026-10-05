@@ -237,3 +237,54 @@ def test_ylvv_lagavulin_root_carries_the_native_opening_block(ylvv):
     native = [c for c in first['full_state']['creatures'] if c.get('monster_id')]
     assert [(m['current_hp'], m['block']) for m in native] == [(233, 12)]
     assert [(m['hp'], m.get('block', 0), m['mplating']) for m in fight['entry']['monsters']] == [(233, 12, 12)]
+
+
+class _RootProbe(replay.RustReplay):
+    """`RustReplay` with the engine replaced by one scripted `project` reply."""
+
+    def __init__(self, entry, root):
+        super().__init__(None, entry)
+        self.root, self.asked = root, []
+
+    def ask(self, request):
+        self.asked.append(request)
+        assert request == {'cmd': 'project'}
+        return {'state': copy.deepcopy(self.root)}
+
+
+def _root_check(entry, root):
+    from rust_exact_solve import canonical_document
+    probe = _RootProbe(entry, root)
+    return probe._root_is_the_entry_plus_its_bookkeeping_record(canonical_document), probe.asked
+
+
+def test_root_check_accepts_only_an_entry_plus_its_bookkeeping_record():
+    """#3660: the one difference the root check tolerates, and the three it does not."""
+    entry = {'schema': 'sts-sim-canonical-v2', 'player': {'hp': 50}, 'piles': {'hand': []}}
+    recorded = copy.deepcopy(entry)
+    recorded['player']['session_bookkeeping'] = ['normality_count']
+
+    # An entry written before the record: Rust projects it with the record.
+    assert _root_check(entry, recorded) == (True, [{'cmd': 'project'}])
+
+    # 1. The entry already carries a record: it must round-trip as it stands,
+    #    and the engine is not even asked.
+    assert _root_check(recorded, recorded) == (False, [])
+    wider = copy.deepcopy(recorded)
+    wider['player']['session_bookkeeping'] = ['misery_ledger', 'normality_count']
+    assert _root_check(recorded, wider) == (False, [])
+
+    # 2. The root carries no record: the mismatch is something else.
+    other = copy.deepcopy(entry)
+    other['player']['hp'] = 49
+    assert _root_check(entry, other)[0] is False
+    assert _root_check(entry, entry)[0] is False
+
+    # 3. The root carries the record AND differs elsewhere.
+    both = copy.deepcopy(recorded)
+    both['player']['hp'] = 49
+    assert _root_check(entry, both)[0] is False
+    extra = copy.deepcopy(recorded)
+    extra['piles']['hand'].append({'id': 'STRIKE_IRONCLAD', 'uid': 0, 'upgrade': 0})
+    assert _root_check(entry, extra)[0] is False
+

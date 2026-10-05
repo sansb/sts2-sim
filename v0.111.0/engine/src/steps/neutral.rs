@@ -482,9 +482,9 @@ pub(crate) fn brightest_flame_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
 /// Which rarity comparison a generator's pool projection uses (#2542).
 ///
 /// The game spells the filter two different ways and they are not the same
-/// set. `CardFactory::FilterForCombat` `0x11634a` excludes Basic, Ancient and
+/// set. `CardFactory::FilterForCombat` `0x112932` excludes Basic, Ancient and
 /// Event; the `rarity >= Common && rarity <= Rare` comparisons in
-/// `GetForCombat` `0x1162e8` and the generation-potion partitions also exclude
+/// `GetForCombat` `0x1128d0` and the generation-potion partitions also exclude
 /// every Status, Token, Curse and Quest rarity. Abundance v0.111.0
 /// `0x3888ec` reaches FilterForCombat through GetDistinctForCombat (0x112878).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -560,8 +560,8 @@ fn character_pool_index(owner: RewardPool) -> usize {
 /// epoch whose `Cards` list `FilterThroughEpochs` (`0xf1f98` / `0xf2cf8` /
 /// `0xf28e0` / `0xf2468` / `0xf1944`) removes when the profile does not carry
 /// it; the two profile-independent predicates
-/// (`CardFactory::FilterForPlayerCount` `0x115f1c` and `FilterForCombat`
-/// `0x11634a`) are already applied in the generated table.
+/// (`CardFactory::FilterForPlayerCount` `0x112504` and `FilterForCombat`
+/// `0x112932`) are already applied in the generated table.
 ///
 /// `epochs` is the normalized ascending profile the boundary admits, so
 /// membership is a binary search. Consumes no RNG.
@@ -1813,7 +1813,7 @@ pub(crate) fn metamorphosis_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
 /// Complete exact L0 Attack generation pools admitted by R38.5.
 ///
 /// Metamorphosis (`<OnPlay>d__5::MoveNext` `0x3ac1e8`, `Where` IL_0075; the older `0x3a9b08` citation named no MoveNext in this build) filters `CardType.Attack` and then
-/// `FilterForCombat` `0x11634a`, which excludes Basic, Ancient and Event —
+/// `FilterForCombat` `0x112932`, which excludes Basic, Ancient and Event —
 /// a *different* comparison from Calamity's `Common..Rare`, and the reason
 /// these two Attack pools are derived with different [`PoolRarity`] values.
 /// `METAMORPHOSIS_ATTACK_POOLS_V1101` is this derivation at the

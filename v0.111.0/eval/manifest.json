@@ -2,7 +2,7 @@
  "schema": "sts-eval-manifest-v1",
  "build": "v0.111.0",
  "generated_by": "sim/v0.111.0/engine/tools/eval_suite.py",
- "consent": "Captures contributed by Sean and consenting friends (#2048, 2026-09-05). Fixtures carry opaque ids and sha256 provenance; no usernames, file names, or raw capture bytes.",
+ "consent": "Sean's own fights, published with their raw capture pairs (#3592). Fixtures carry opaque ids; each capture.mcr.gz and entry.save.gz is the file its provenance sha256 names.",
  "census": {
   "fights": 1206,
   "certified": 1196,
@@ -198,6 +198,7 @@
    "f0ab2c243932074c",
    "f0b21c6cce1ba3d9",
    "f0b390784b854232",
+   "f0b5d13ef96d8493",
    "f0c5fb3799e13b1a",
    "f0c63b3b966190f7",
    "f0c64ba0c32b937f",
@@ -245,8 +246,10 @@
    "f17e1193c4864ed4",
    "f1836b96428b7c5c",
    "f18446f60bbc5783",
+   "f189d02256a4ecc4",
    "f18a23df3f19038e",
    "f18acd6ccc464007",
+   "f191360938d8d77c",
    "f1a7d54ee1d71c94",
    "f1b20dde922644e8",
    "f1b2172ac6278631",
@@ -257,6 +260,7 @@
    "f1ce68dddd8858b2",
    "f1dbc03c80965f2f",
    "f1e17a89e32a62dc",
+   "f1e33284df70a38c",
    "f1e5a224f607f7d8",
    "f2069fc258db870a",
    "f2086fa99d5b8084",
@@ -275,6 +279,7 @@
    "f2380252a120c695",
    "f23c44890aeda184",
    "f242d907d37c247e",
+   "f24d803b7539ac36",
    "f252278e9e841c6c",
    "f2582451d01471d0",
    "f25a5fda04e82415",
@@ -319,6 +324,7 @@
    "f3798e0102466ba0",
    "f37b8f7e82f32a62",
    "f3818e59bc0a6bb1",
+   "f38b1a5233db4886",
    "f3929324689faa7e",
    "f3939bb49c5afa08",
    "f39a2ac4c9678347",
@@ -368,6 +374,7 @@
    "f4f39c22e22f0e48",
    "f4f408cd23234242",
    "f4f88773e3cd3764",
+   "f508fafe0e4db381",
    "f50bddfb744da3db",
    "f510bcebc9eb1844",
    "f514509521a80ff3",
@@ -425,6 +432,7 @@
    "f6706a4e38f307ca",
    "f670ba25ea742502",
    "f675805caa6fa2bd",
+   "f67c0dd9458e0362",
    "f684913cb05f11f3",
    "f688cdd1e40165dc",
    "f68c1b1c5fb3d93f",
@@ -453,6 +461,7 @@
    "f7314e7c049fe009",
    "f7386f3a77ebff92",
    "f74b06aad8d2e41f",
+   "f771589a4ca07255",
    "f77329f24d2bcd04",
    "f781a46c22ca1d9a",
    "f784773f40f06ea3",
@@ -537,6 +546,7 @@
    "f9789b43ded6d6f5",
    "f97e2d70495434a4",
    "f9893abf59f17637",
+   "f98aa6512d7b0c2c",
    "f98c2d87a6b5e4eb",
    "f993702ddf1c54af",
    "f9964df749ae3fe1",
@@ -579,6 +589,7 @@
    "fa966f63692f4a1d",
    "fa99609671fdc74f",
    "faa08bc8df2fad51",
+   "faacb43c875d9884",
    "faafc68e8ea87d22",
    "fabd5c2277dd8061",
    "fabfce8e9cef1e2e",
@@ -622,6 +633,7 @@
    "fc66b15822d20bd5",
    "fc78829c88941121",
    "fc7bb1252dca6980",
+   "fc8d9af5ecea7c60",
    "fc9379cc1d0a34b5",
    "fc96ee08cc1e8241",
    "fca2bfe571594c01",
@@ -631,6 +643,7 @@
    "fcdfaef0733d19d0",
    "fce5518390b09fcf",
    "fcee945d12f3541e",
+   "fcf6661fc63a2364",
    "fcf7ba0de51d2e74",
    "fcf9a129cddb7715",
    "fcff98143980de0e",
@@ -650,8 +663,10 @@
    "fd6f89adeff95c8b",
    "fd6fd0bc484ff4a4",
    "fd701fc2558ed811",
+   "fd7db42da9b0b41f",
    "fd7f1a5e95d3f3c9",
    "fd8c6865387f01f5",
+   "fd90322e3eed5e7c",
    "fd94f26c0afe17f9",
    "fd98d7de707b9fd7",
    "fd9f3c2d53398b42",
@@ -668,6 +683,7 @@
    "fdeb0ce8303668f8",
    "fdf75ef08ebc70f8",
    "fdf7919d9d938691",
+   "fdfbee1931ccccb7",
    "fdff03df1fe66a90",
    "fe0f180ce2a6b755",
    "fe1747f6776f8cad",
@@ -675,11 +691,13 @@
    "fe28bb35f0b49af6",
    "fe2b9bc8a7959d11",
    "fe2ba91acc42d0b6",
+   "fe3d9fbe5070fd29",
    "fe42ad19e5a65c21",
    "fe451970dbacaa95",
    "fe4776823060d599",
    "fe4b6b377c327b53",
    "fe4f7a300bbcfe56",
+   "fe4fb5986031fecf",
    "fe510ffeb95c6fa0",
    "fe5903e6db12aa28",
    "fe5a3cc004941aeb",
@@ -727,6 +745,7 @@
    "ff9da317acc9cc1a",
    "ffab7ff3a453d873",
    "ffc19a45c017c3bf",
+   "ffc7d7aa93fa9518",
    "ffcd24a691473a84",
    "ffd21a6b2755bbe7",
    "ffd21d8dcfa21aae",
@@ -758,6 +777,7 @@
    "f29e8ebdad08c5ee",
    "f2b8b36c3cc90af4",
    "f34e6cceb9fbcce4",
+   "f38b1a5233db4886",
    "f4148aa9fdac0f7c",
    "f41a3d66c3383f12",
    "f57e223853b3668c",
@@ -851,6 +871,7 @@
    "f0ab2c243932074c",
    "f0b21c6cce1ba3d9",
    "f0b390784b854232",
+   "f0b5d13ef96d8493",
    "f0c5fb3799e13b1a",
    "f0c63b3b966190f7",
    "f0c64ba0c32b937f",
@@ -898,8 +919,10 @@
    "f17e1193c4864ed4",
    "f1836b96428b7c5c",
    "f18446f60bbc5783",
+   "f189d02256a4ecc4",
    "f18a23df3f19038e",
    "f18acd6ccc464007",
+   "f191360938d8d77c",
    "f1a7d54ee1d71c94",
    "f1b20dde922644e8",
    "f1b2172ac6278631",
@@ -910,6 +933,7 @@
    "f1ce68dddd8858b2",
    "f1dbc03c80965f2f",
    "f1e17a89e32a62dc",
+   "f1e33284df70a38c",
    "f1e5a224f607f7d8",
    "f2069fc258db870a",
    "f2086fa99d5b8084",
@@ -928,6 +952,7 @@
    "f2380252a120c695",
    "f23c44890aeda184",
    "f242d907d37c247e",
+   "f24d803b7539ac36",
    "f252278e9e841c6c",
    "f2582451d01471d0",
    "f25a5fda04e82415",
@@ -972,6 +997,7 @@
    "f3798e0102466ba0",
    "f37b8f7e82f32a62",
    "f3818e59bc0a6bb1",
+   "f38b1a5233db4886",
    "f3929324689faa7e",
    "f3939bb49c5afa08",
    "f39a2ac4c9678347",
@@ -1021,6 +1047,7 @@
    "f4f39c22e22f0e48",
    "f4f408cd23234242",
    "f4f88773e3cd3764",
+   "f508fafe0e4db381",
    "f50bddfb744da3db",
    "f510bcebc9eb1844",
    "f514509521a80ff3",
@@ -1078,6 +1105,7 @@
    "f6706a4e38f307ca",
    "f670ba25ea742502",
    "f675805caa6fa2bd",
+   "f67c0dd9458e0362",
    "f684913cb05f11f3",
    "f688cdd1e40165dc",
    "f68c1b1c5fb3d93f",
@@ -1106,6 +1134,7 @@
    "f7314e7c049fe009",
    "f7386f3a77ebff92",
    "f74b06aad8d2e41f",
+   "f771589a4ca07255",
    "f77329f24d2bcd04",
    "f781a46c22ca1d9a",
    "f784773f40f06ea3",
@@ -1190,6 +1219,7 @@
    "f9789b43ded6d6f5",
    "f97e2d70495434a4",
    "f9893abf59f17637",
+   "f98aa6512d7b0c2c",
    "f98c2d87a6b5e4eb",
    "f993702ddf1c54af",
    "f9964df749ae3fe1",
@@ -1232,6 +1262,7 @@
    "fa966f63692f4a1d",
    "fa99609671fdc74f",
    "faa08bc8df2fad51",
+   "faacb43c875d9884",
    "faafc68e8ea87d22",
    "fabd5c2277dd8061",
    "fabfce8e9cef1e2e",
@@ -1275,6 +1306,7 @@
    "fc66b15822d20bd5",
    "fc78829c88941121",
    "fc7bb1252dca6980",
+   "fc8d9af5ecea7c60",
    "fc9379cc1d0a34b5",
    "fc96ee08cc1e8241",
    "fca2bfe571594c01",
@@ -1284,6 +1316,7 @@
    "fcdfaef0733d19d0",
    "fce5518390b09fcf",
    "fcee945d12f3541e",
+   "fcf6661fc63a2364",
    "fcf7ba0de51d2e74",
    "fcf9a129cddb7715",
    "fcff98143980de0e",
@@ -1303,8 +1336,10 @@
    "fd6f89adeff95c8b",
    "fd6fd0bc484ff4a4",
    "fd701fc2558ed811",
+   "fd7db42da9b0b41f",
    "fd7f1a5e95d3f3c9",
    "fd8c6865387f01f5",
+   "fd90322e3eed5e7c",
    "fd94f26c0afe17f9",
    "fd98d7de707b9fd7",
    "fd9f3c2d53398b42",
@@ -1321,6 +1356,7 @@
    "fdeb0ce8303668f8",
    "fdf75ef08ebc70f8",
    "fdf7919d9d938691",
+   "fdfbee1931ccccb7",
    "fdff03df1fe66a90",
    "fe0f180ce2a6b755",
    "fe1747f6776f8cad",
@@ -1328,11 +1364,13 @@
    "fe28bb35f0b49af6",
    "fe2b9bc8a7959d11",
    "fe2ba91acc42d0b6",
+   "fe3d9fbe5070fd29",
    "fe42ad19e5a65c21",
    "fe451970dbacaa95",
    "fe4776823060d599",
    "fe4b6b377c327b53",
    "fe4f7a300bbcfe56",
+   "fe4fb5986031fecf",
    "fe510ffeb95c6fa0",
    "fe5903e6db12aa28",
    "fe5a3cc004941aeb",
@@ -1380,6 +1418,7 @@
    "ff9da317acc9cc1a",
    "ffab7ff3a453d873",
    "ffc19a45c017c3bf",
+   "ffc7d7aa93fa9518",
    "ffcd24a691473a84",
    "ffd21a6b2755bbe7",
    "ffd21d8dcfa21aae",
@@ -1414,6 +1453,7 @@
    "f0a19e39f167594f",
    "f0b21c6cce1ba3d9",
    "f0b390784b854232",
+   "f0b5d13ef96d8493",
    "f0c5fb3799e13b1a",
    "f0c63b3b966190f7",
    "f0c64ba0c32b937f",
@@ -1440,8 +1480,10 @@
    "f17a727144e0c62c",
    "f17e1193c4864ed4",
    "f1836b96428b7c5c",
+   "f189d02256a4ecc4",
    "f18a23df3f19038e",
    "f18acd6ccc464007",
+   "f191360938d8d77c",
    "f1b2172ac6278631",
    "f1bd35a4da5dc7cc",
    "f1c399132fa069ed",
@@ -1459,6 +1501,7 @@
    "f232d07ae4f96a5b",
    "f23306e652a8b0cb",
    "f2380252a120c695",
+   "f24d803b7539ac36",
    "f252278e9e841c6c",
    "f2582451d01471d0",
    "f25a5fda04e82415",
@@ -1510,6 +1553,7 @@
    "f4da53bdf3186079",
    "f4df9236cc2d5127",
    "f4f408cd23234242",
+   "f508fafe0e4db381",
    "f50bddfb744da3db",
    "f510bcebc9eb1844",
    "f514509521a80ff3",
@@ -1549,6 +1593,7 @@
    "f66b49ec15d1235d",
    "f6706a4e38f307ca",
    "f670ba25ea742502",
+   "f67c0dd9458e0362",
    "f684913cb05f11f3",
    "f68c1b1c5fb3d93f",
    "f68d44556f8de95d",
@@ -1636,6 +1681,7 @@
    "fa8417ca31149b55",
    "fa966f63692f4a1d",
    "faa08bc8df2fad51",
+   "faacb43c875d9884",
    "fad0232cc0daf808",
    "fae227072bbaa5c9",
    "faf9054c56d0828f",
@@ -1667,6 +1713,7 @@
    "fcc9975437e245a9",
    "fcdfaef0733d19d0",
    "fcee945d12f3541e",
+   "fcf6661fc63a2364",
    "fcff98143980de0e",
    "fd09046066a4c292",
    "fd1488962a45e412",
@@ -1675,6 +1722,7 @@
    "fd216bdd6f9ee4a4",
    "fd35abf60b5a4ea4",
    "fd404cb2f5c60ee6",
+   "fd7db42da9b0b41f",
    "fd7f1a5e95d3f3c9",
    "fd8c6865387f01f5",
    "fd98d7de707b9fd7",
@@ -1688,11 +1736,13 @@
    "fdeafdfe845c3ff1",
    "fdf75ef08ebc70f8",
    "fdf7919d9d938691",
+   "fdfbee1931ccccb7",
    "fdff03df1fe66a90",
    "fe0f180ce2a6b755",
    "fe1747f6776f8cad",
    "fe205edaa1c1e997",
    "fe2ba91acc42d0b6",
+   "fe3d9fbe5070fd29",
    "fe42ad19e5a65c21",
    "fe451970dbacaa95",
    "fe4776823060d599",
@@ -2153,17 +2203,24 @@
    "f049d495b4530e41",
    "f076a21649735927",
    "f0b390784b854232",
+   "f0b5d13ef96d8493",
    "f0fa5c28a483445f",
    "f11f68443e7e29c8",
+   "f189d02256a4ecc4",
+   "f191360938d8d77c",
+   "f1e33284df70a38c",
+   "f24d803b7539ac36",
    "f2c620d384dd64fe",
    "f3176cbf06f74463",
    "f340c11b10d706dd",
    "f356176a597546bc",
    "f37b8f7e82f32a62",
+   "f38b1a5233db4886",
    "f39a2ac4c9678347",
    "f402a6b2cb777c1a",
    "f4051bdad0c87668",
    "f4231f8751497c7c",
+   "f508fafe0e4db381",
    "f5350e1315c43ecf",
    "f53f954626940900",
    "f5651235fc98ff65",
@@ -2171,12 +2228,14 @@
    "f59f10efed9fb15f",
    "f5a68f3e1efbd383",
    "f6706a4e38f307ca",
+   "f67c0dd9458e0362",
    "f68d44556f8de95d",
    "f6f0636a4f8e945b",
    "f6f2775d7978fcd0",
    "f6f52550122e36d2",
    "f710f28a26a546c1",
    "f723e370ba446465",
+   "f771589a4ca07255",
    "f77329f24d2bcd04",
    "f79824df413fd3c8",
    "f7a183fca5e71e81",
@@ -2193,11 +2252,13 @@
    "f91f53e4fccf2817",
    "f934dbbba1a61262",
    "f9893abf59f17637",
+   "f98aa6512d7b0c2c",
    "fa0c1dc0349d3f87",
    "fa1467462f0c75d3",
    "fa2abd5b351163b2",
    "fa8417ca31149b55",
    "fa99609671fdc74f",
+   "faacb43c875d9884",
    "fad0232cc0daf808",
    "faee51323024258a",
    "fb234d3e38ff7ca0",
@@ -2209,16 +2270,24 @@
    "fbeedb4c680b9b06",
    "fc1563fe886a54fb",
    "fc66b15822d20bd5",
+   "fc8d9af5ecea7c60",
+   "fcf6661fc63a2364",
    "fd15b12c1db5f101",
+   "fd7db42da9b0b41f",
+   "fd90322e3eed5e7c",
    "fd94f26c0afe17f9",
    "fdbbfac0d36a8659",
+   "fdfbee1931ccccb7",
    "fe1747f6776f8cad",
+   "fe3d9fbe5070fd29",
    "fe4b6b377c327b53",
+   "fe4fb5986031fecf",
    "feb491c4e21bea17",
    "fec28b0a2cf6c72f",
    "fec533c1eef1df7f",
    "ff8e6d84d0bfd3fa",
    "ff9a03be947aba35",
+   "ffc7d7aa93fa9518",
    "ffd508a478458302",
    "fffb376814a88839"
   ],
@@ -2328,6 +2397,7 @@
    "f10158ac7ccfae5d",
    "f143c7e6993ed27c",
    "f17e1193c4864ed4",
+   "f189d02256a4ecc4",
    "f1bd35a4da5dc7cc",
    "f1ce68dddd8858b2",
    "f2086fa99d5b8084",
@@ -2337,6 +2407,7 @@
    "f2a887a9533f9a63",
    "f2b8b36c3cc90af4",
    "f3176cbf06f74463",
+   "f38b1a5233db4886",
    "f39a2ac4c9678347",
    "f41a3d66c3383f12",
    "f42d7c9308f48522",
@@ -2347,6 +2418,7 @@
    "f4b5fc8722d50803",
    "f4ca826efcfa76b6",
    "f4f408cd23234242",
+   "f508fafe0e4db381",
    "f50bddfb744da3db",
    "f5549cb3085a3c2b",
    "f55d1931137eb0d5",
@@ -2393,6 +2465,7 @@
    "fc638a95503e82bb",
    "fc78829c88941121",
    "fcc9975437e245a9",
+   "fd7db42da9b0b41f",
    "fd98d7de707b9fd7",
    "fdc2a370ea3d4980",
    "fe0f180ce2a6b755",
@@ -2420,6 +2493,7 @@
    "f07c33c5b6c8c4b4",
    "f0942a34bff6b546",
    "f0a19e39f167594f",
+   "f0b5d13ef96d8493",
    "f0e7e54f7de80b85",
    "f1092391282cb818",
    "f10b187826242ac5",
@@ -2428,6 +2502,7 @@
    "f13774c66bbeebb3",
    "f146003af50f4cd0",
    "f16d1fb1d0a0d1fe",
+   "f191360938d8d77c",
    "f1a7d54ee1d71c94",
    "f1b20dde922644e8",
    "f1b2e68c28256c93",
@@ -2507,6 +2582,7 @@
    "fa57a667f19929bd",
    "fa7c6be4e8c21a27",
    "fa966f63692f4a1d",
+   "faacb43c875d9884",
    "fad0232cc0daf808",
    "fae227072bbaa5c9",
    "faee51323024258a",
@@ -2528,6 +2604,8 @@
    "fde05b1163268f4d",
    "fdf75ef08ebc70f8",
    "fe2ba91acc42d0b6",
+   "fe3d9fbe5070fd29",
+   "fe4fb5986031fecf",
    "fe5903e6db12aa28",
    "fe9f74a8236bbf82",
    "fec28b0a2cf6c72f",
@@ -2545,6 +2623,7 @@
    "ff9a03be947aba35",
    "ff9d384d4cf02f16",
    "ffab7ff3a453d873",
+   "ffc7d7aa93fa9518",
    "fff541f76041131f"
   ],
   "node:monster": [
@@ -2611,6 +2690,7 @@
    "f1b2172ac6278631",
    "f1ce12682413fbde",
    "f1dbc03c80965f2f",
+   "f1e33284df70a38c",
    "f209b8ae0073f2bd",
    "f211c8d4064f9f13",
    "f2173639b92b99d1",
@@ -2620,6 +2700,7 @@
    "f2364468ecd01dc1",
    "f23c44890aeda184",
    "f242d907d37c247e",
+   "f24d803b7539ac36",
    "f2784174692c4cfa",
    "f27a005187c3f24b",
    "f2803bae0621bfbe",
@@ -2717,6 +2798,7 @@
    "f6706a4e38f307ca",
    "f670ba25ea742502",
    "f675805caa6fa2bd",
+   "f67c0dd9458e0362",
    "f688cdd1e40165dc",
    "f68c1b1c5fb3d93f",
    "f68d44556f8de95d",
@@ -2733,6 +2815,7 @@
    "f71ad011c69c00a6",
    "f723e370ba446465",
    "f7314e7c049fe009",
+   "f771589a4ca07255",
    "f77329f24d2bcd04",
    "f7864f4a0dbb5b92",
    "f7970aafb0dfcc53",
@@ -2779,6 +2862,7 @@
    "f958eebaf1b35e78",
    "f97e2d70495434a4",
    "f9893abf59f17637",
+   "f98aa6512d7b0c2c",
    "f98c2d87a6b5e4eb",
    "f993702ddf1c54af",
    "f9964df749ae3fe1",
@@ -2830,6 +2914,7 @@
    "fc5e053094d551c0",
    "fc66b15822d20bd5",
    "fc7bb1252dca6980",
+   "fc8d9af5ecea7c60",
    "fc9379cc1d0a34b5",
    "fca2bfe571594c01",
    "fcc0cbc20cc2f3e0",
@@ -2837,6 +2922,7 @@
    "fcdfaef0733d19d0",
    "fce5518390b09fcf",
    "fcee945d12f3541e",
+   "fcf6661fc63a2364",
    "fcf7ba0de51d2e74",
    "fcff98143980de0e",
    "fd09046066a4c292",
@@ -2852,6 +2938,7 @@
    "fd6f89adeff95c8b",
    "fd7f1a5e95d3f3c9",
    "fd8c6865387f01f5",
+   "fd90322e3eed5e7c",
    "fd94f26c0afe17f9",
    "fd9f3c2d53398b42",
    "fda01d0f2a524652",
@@ -2864,6 +2951,7 @@
    "fdeafdfe845c3ff1",
    "fdeb0ce8303668f8",
    "fdf7919d9d938691",
+   "fdfbee1931ccccb7",
    "fdff03df1fe66a90",
    "fe205edaa1c1e997",
    "fe28bb35f0b49af6",
@@ -2924,6 +3012,7 @@
    "f0ab2c243932074c",
    "f0b21c6cce1ba3d9",
    "f0b390784b854232",
+   "f0b5d13ef96d8493",
    "f0c5fb3799e13b1a",
    "f0c63b3b966190f7",
    "f0c64ba0c32b937f",
@@ -2953,8 +3042,10 @@
    "f16d1fb1d0a0d1fe",
    "f17e1193c4864ed4",
    "f18446f60bbc5783",
+   "f189d02256a4ecc4",
    "f18a23df3f19038e",
    "f18acd6ccc464007",
+   "f191360938d8d77c",
    "f1a7d54ee1d71c94",
    "f1b20dde922644e8",
    "f1b2172ac6278631",
@@ -2977,6 +3068,7 @@
    "f2380252a120c695",
    "f23c44890aeda184",
    "f242d907d37c247e",
+   "f24d803b7539ac36",
    "f252278e9e841c6c",
    "f2582451d01471d0",
    "f25a5fda04e82415",
@@ -3009,6 +3101,7 @@
    "f368f3a9c0863f47",
    "f3798e0102466ba0",
    "f37b8f7e82f32a62",
+   "f38b1a5233db4886",
    "f3929324689faa7e",
    "f3939bb49c5afa08",
    "f39a2ac4c9678347",
@@ -3097,6 +3190,7 @@
    "f66b49ec15d1235d",
    "f6706a4e38f307ca",
    "f675805caa6fa2bd",
+   "f67c0dd9458e0362",
    "f68d44556f8de95d",
    "f692cad2797d9b2a",
    "f69a9ead0a012bb9",
@@ -3220,6 +3314,7 @@
    "fa966f63692f4a1d",
    "fa99609671fdc74f",
    "faa08bc8df2fad51",
+   "faacb43c875d9884",
    "fabd5c2277dd8061",
    "fabfce8e9cef1e2e",
    "fad0232cc0daf808",
@@ -3255,6 +3350,7 @@
    "fc5e053094d551c0",
    "fc66b15822d20bd5",
    "fc78829c88941121",
+   "fc8d9af5ecea7c60",
    "fc9379cc1d0a34b5",
    "fc96ee08cc1e8241",
    "fca2bfe571594c01",
@@ -3275,8 +3371,10 @@
    "fd4f8d1f0792c947",
    "fd6f89adeff95c8b",
    "fd6fd0bc484ff4a4",
+   "fd7db42da9b0b41f",
    "fd7f1a5e95d3f3c9",
    "fd8c6865387f01f5",
+   "fd90322e3eed5e7c",
    "fd94f26c0afe17f9",
    "fd98d7de707b9fd7",
    "fda9a60c2984af50",
@@ -3289,17 +3387,20 @@
    "fdeafdfe845c3ff1",
    "fdf75ef08ebc70f8",
    "fdf7919d9d938691",
+   "fdfbee1931ccccb7",
    "fdff03df1fe66a90",
    "fe0f180ce2a6b755",
    "fe1747f6776f8cad",
    "fe205edaa1c1e997",
    "fe28bb35f0b49af6",
    "fe2ba91acc42d0b6",
+   "fe3d9fbe5070fd29",
    "fe42ad19e5a65c21",
    "fe451970dbacaa95",
    "fe4776823060d599",
    "fe4b6b377c327b53",
    "fe4f7a300bbcfe56",
+   "fe4fb5986031fecf",
    "fe510ffeb95c6fa0",
    "fe5903e6db12aa28",
    "fe5a3cc004941aeb",
@@ -3339,6 +3440,7 @@
    "ff9da317acc9cc1a",
    "ffab7ff3a453d873",
    "ffc19a45c017c3bf",
+   "ffc7d7aa93fa9518",
    "ffd21d8dcfa21aae",
    "ffd508a478458302",
    "ffd962a2e98d3b7b",
@@ -3376,6 +3478,7 @@
    "f156e43104f3752c",
    "f1b20dde922644e8",
    "f1b2e68c28256c93",
+   "f1e33284df70a38c",
    "f2173639b92b99d1",
    "f229f4a5b67da8d7",
    "f231ac77d787a904",
@@ -3392,6 +3495,7 @@
    "f34e6cceb9fbcce4",
    "f3685fc9fb44b1e2",
    "f3818e59bc0a6bb1",
+   "f38b1a5233db4886",
    "f3929324689faa7e",
    "f3a11518fd40fe5b",
    "f3b3cfa132103498",
@@ -3475,6 +3579,7 @@
    "fdeb0ce8303668f8",
    "fe28bb35f0b49af6",
    "fe4b6b377c327b53",
+   "fe4fb5986031fecf",
    "feb491c4e21bea17",
    "feb791cf921faedb",
    "fec28b0a2cf6c72f",
@@ -3482,6 +3587,7 @@
    "ff048525e2583950",
    "ff66794c5dbd6d66",
    "ff92eb478672da24",
+   "ffc7d7aa93fa9518",
    "ffd508a478458302",
    "ffd962a2e98d3b7b",
    "fff541f76041131f"
@@ -3525,6 +3631,7 @@
    "f0ab2c243932074c",
    "f0b21c6cce1ba3d9",
    "f0b390784b854232",
+   "f0b5d13ef96d8493",
    "f0c5fb3799e13b1a",
    "f0c63b3b966190f7",
    "f0c64ba0c32b937f",
@@ -3572,8 +3679,10 @@
    "f17e1193c4864ed4",
    "f1836b96428b7c5c",
    "f18446f60bbc5783",
+   "f189d02256a4ecc4",
    "f18a23df3f19038e",
    "f18acd6ccc464007",
+   "f191360938d8d77c",
    "f1a7d54ee1d71c94",
    "f1b20dde922644e8",
    "f1b2172ac6278631",
@@ -3584,6 +3693,7 @@
    "f1ce68dddd8858b2",
    "f1dbc03c80965f2f",
    "f1e17a89e32a62dc",
+   "f1e33284df70a38c",
    "f1e5a224f607f7d8",
    "f2069fc258db870a",
    "f2086fa99d5b8084",
@@ -3602,6 +3712,7 @@
    "f2380252a120c695",
    "f23c44890aeda184",
    "f242d907d37c247e",
+   "f24d803b7539ac36",
    "f252278e9e841c6c",
    "f2582451d01471d0",
    "f25a5fda04e82415",
@@ -3646,6 +3757,7 @@
    "f3798e0102466ba0",
    "f37b8f7e82f32a62",
    "f3818e59bc0a6bb1",
+   "f38b1a5233db4886",
    "f3929324689faa7e",
    "f3939bb49c5afa08",
    "f39a2ac4c9678347",
@@ -3695,6 +3807,7 @@
    "f4f39c22e22f0e48",
    "f4f408cd23234242",
    "f4f88773e3cd3764",
+   "f508fafe0e4db381",
    "f50bddfb744da3db",
    "f510bcebc9eb1844",
    "f514509521a80ff3",
@@ -3752,6 +3865,7 @@
    "f6706a4e38f307ca",
    "f670ba25ea742502",
    "f675805caa6fa2bd",
+   "f67c0dd9458e0362",
    "f684913cb05f11f3",
    "f688cdd1e40165dc",
    "f68c1b1c5fb3d93f",
@@ -3780,6 +3894,7 @@
    "f7314e7c049fe009",
    "f7386f3a77ebff92",
    "f74b06aad8d2e41f",
+   "f771589a4ca07255",
    "f77329f24d2bcd04",
    "f781a46c22ca1d9a",
    "f784773f40f06ea3",
@@ -3864,6 +3979,7 @@
    "f9789b43ded6d6f5",
    "f97e2d70495434a4",
    "f9893abf59f17637",
+   "f98aa6512d7b0c2c",
    "f98c2d87a6b5e4eb",
    "f993702ddf1c54af",
    "f9964df749ae3fe1",
@@ -3906,6 +4022,7 @@
    "fa966f63692f4a1d",
    "fa99609671fdc74f",
    "faa08bc8df2fad51",
+   "faacb43c875d9884",
    "faafc68e8ea87d22",
    "fabd5c2277dd8061",
    "fabfce8e9cef1e2e",
@@ -3949,6 +4066,7 @@
    "fc66b15822d20bd5",
    "fc78829c88941121",
    "fc7bb1252dca6980",
+   "fc8d9af5ecea7c60",
    "fc9379cc1d0a34b5",
    "fc96ee08cc1e8241",
    "fca2bfe571594c01",
@@ -3958,6 +4076,7 @@
    "fcdfaef0733d19d0",
    "fce5518390b09fcf",
    "fcee945d12f3541e",
+   "fcf6661fc63a2364",
    "fcf7ba0de51d2e74",
    "fcf9a129cddb7715",
    "fcff98143980de0e",
@@ -3977,8 +4096,10 @@
    "fd6f89adeff95c8b",
    "fd6fd0bc484ff4a4",
    "fd701fc2558ed811",
+   "fd7db42da9b0b41f",
    "fd7f1a5e95d3f3c9",
    "fd8c6865387f01f5",
+   "fd90322e3eed5e7c",
    "fd94f26c0afe17f9",
    "fd98d7de707b9fd7",
    "fd9f3c2d53398b42",
@@ -3995,6 +4116,7 @@
    "fdeb0ce8303668f8",
    "fdf75ef08ebc70f8",
    "fdf7919d9d938691",
+   "fdfbee1931ccccb7",
    "fdff03df1fe66a90",
    "fe0f180ce2a6b755",
    "fe1747f6776f8cad",
@@ -4002,11 +4124,13 @@
    "fe28bb35f0b49af6",
    "fe2b9bc8a7959d11",
    "fe2ba91acc42d0b6",
+   "fe3d9fbe5070fd29",
    "fe42ad19e5a65c21",
    "fe451970dbacaa95",
    "fe4776823060d599",
    "fe4b6b377c327b53",
    "fe4f7a300bbcfe56",
+   "fe4fb5986031fecf",
    "fe510ffeb95c6fa0",
    "fe5903e6db12aa28",
    "fe5a3cc004941aeb",
@@ -4054,6 +4178,7 @@
    "ff9da317acc9cc1a",
    "ffab7ff3a453d873",
    "ffc19a45c017c3bf",
+   "ffc7d7aa93fa9518",
    "ffcd24a691473a84",
    "ffd21a6b2755bbe7",
    "ffd21d8dcfa21aae",
@@ -4077,7 +4202,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4107,7 +4234,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4138,7 +4267,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4168,7 +4299,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4199,7 +4332,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4230,7 +4365,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4260,7 +4397,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4291,7 +4430,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4322,7 +4463,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4352,7 +4495,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4382,7 +4527,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4413,7 +4560,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4445,7 +4594,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4475,7 +4626,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4505,7 +4658,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4535,7 +4690,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4566,7 +4723,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4597,7 +4756,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4606,7 +4767,7 @@
    "encounter": "ENCOUNTER.QUEEN_BOSS",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "6afc796790d88236222f9ed70372d18cd34ddcc46703b8d78cdd4cf9d61753f2",
+   "entry_digest": "dda770392220b2ecab1c87fdfb8d8fa98af0d40cad76477334ac89b8cb6eb6d3",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -4627,7 +4788,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4657,7 +4820,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4688,7 +4853,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4719,7 +4886,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4728,7 +4897,7 @@
    "encounter": "ENCOUNTER.THE_KIN_BOSS",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "f1c85c4c7c14515ed78167e85dd915d0fc7602a9170da6846be42cd6b9add074",
+   "entry_digest": "873f40a87339f57960a9c8a91a2c286562d8537dcdd0646ed5272b42e387c589",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -4749,7 +4918,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4758,7 +4929,7 @@
    "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "99cce5a82f3e4b1430cb72824b2dda1fac7c08a542764bcf4993788575526273",
+   "entry_digest": "1d477ecad45d98ae191c3626b158228a2b17b559900f7598ee8c1bccd29bdab8",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -4781,7 +4952,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4812,7 +4985,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4843,7 +5018,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4874,7 +5051,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4883,7 +5062,7 @@
    "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "6b5d2ec08d1b2085541be779d30ae87f0329fb7499ee7b263f75f9d09d7d0f3c",
+   "entry_digest": "3d47402def58332ca6ab18ae241fe3f61396a32147d812906cd7ee5eeddf20e5",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -4904,7 +5083,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4934,7 +5115,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4965,7 +5148,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -4996,7 +5181,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5025,7 +5212,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5055,7 +5244,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5085,7 +5276,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5114,7 +5307,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5145,7 +5340,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5176,7 +5373,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5207,7 +5406,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5216,13 +5417,46 @@
    "encounter": "ENCOUNTER.VANTOM_BOSS",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "c339571f306b25da0b1a541b9e96920b0f8fcb0eb45a0880ab7ca08d3d69c805",
+   "entry_digest": "6f18d5e91b5754e50dd2b6d92ee54d4f8111ea4d0b1c9656a2ae8ca371867df9",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
    "turns": 8,
    "actions": 41,
    "terminal_hp": 32,
+   "won": true
+  },
+  {
+   "id": "f0b5d13ef96d8493",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:elite",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 39,
+   "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "5a46f6bf6b483af8cc50d00d47f36e488ad56a47ff330a44741890c476993805",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 8,
+   "actions": 46,
+   "terminal_hp": 37,
    "won": true
   },
   {
@@ -5238,7 +5472,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5269,7 +5505,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5278,7 +5516,7 @@
    "encounter": "ENCOUNTER.CULTISTS_NORMAL",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "4ce14ab3eeccd83f2695b590a045de35fa142087ee094885c7ed3fa81c0cbdb8",
+   "entry_digest": "aec9267d0ab1a7187a567c539b23a67f2c76dd18d727791085b0fe98ec2139cc",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -5300,7 +5538,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5329,7 +5569,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5359,7 +5601,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5390,7 +5634,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5420,7 +5666,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5450,7 +5698,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5481,7 +5731,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5511,7 +5763,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5540,7 +5794,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5570,7 +5826,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5579,7 +5837,7 @@
    "encounter": "ENCOUNTER.FABRICATOR_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "42b7e2e5ba23456094a3ba97700315bc2212df0bcb30e6d79e0fc3245be67ee1",
+   "entry_digest": "0ee3b068a1cf7824ab262f0b7812038f35d05b2721b3a56daf39143d7cc45a2d",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -5600,7 +5858,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5630,7 +5890,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5639,7 +5901,7 @@
    "encounter": "ENCOUNTER.TOADPOLES_WEAK",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "a5e3d7bd17847944f4b86cff1e72d37d203c83390f03033e99b64041734bb2eb",
+   "entry_digest": "c268896f9ed8409fc4dd5ab126468616cbdb14464ec429ef35d2ec587eafb83b",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -5661,7 +5923,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5692,7 +5956,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5722,7 +5988,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5752,7 +6020,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5783,7 +6053,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5792,7 +6064,7 @@
    "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "eb83bed19ae7cd328aa7a6fde85a0803cfe1cd4026a7f29f95ced71544e05155",
+   "entry_digest": "3e151022d761e8bbebb96faa77523560013c3a33d1bbfc858178bda9b4ae43ea",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -5813,7 +6085,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5844,7 +6118,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5874,7 +6150,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5905,7 +6183,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5935,7 +6215,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5964,7 +6246,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -5994,7 +6278,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6025,7 +6311,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6056,7 +6344,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6085,7 +6375,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6115,7 +6407,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6146,7 +6440,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6176,7 +6472,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6207,7 +6505,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6216,7 +6516,7 @@
    "encounter": "ENCOUNTER.LIVING_FOG_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "97f783d2013753372a88823daaa04c9c7f1e864267d7df632d8f471e08617a5d",
+   "entry_digest": "e81512bf4341c7f11d433c6e4cd8c5422a60189d73db4f46f9ab69269f0b83a4",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -6237,7 +6537,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6267,7 +6569,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6298,7 +6602,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6307,7 +6613,7 @@
    "encounter": "ENCOUNTER.LOUSE_PROGENITOR_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "a985ad19bcf04d4955240a02e39ac2e36a537c78a845cafa4e7b0f873cd93ac4",
+   "entry_digest": "422c3dd29352d91e43fee85de36f7ddda176d9f01d6830e9a66a6f1148fc6965",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -6329,7 +6635,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6361,7 +6669,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6392,7 +6702,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6423,7 +6735,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6453,7 +6767,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6483,7 +6799,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6513,7 +6831,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6522,7 +6842,7 @@
    "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "af1aa1c514de2568b6b8ea7da485f1828e7fe9eefd3941dac0f8a208dabcf868",
+   "entry_digest": "04618c473db2635ccd13d95d50f2e1ba56b049c90e14ed4561f766deb0dc5304",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -6543,7 +6863,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6574,7 +6896,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6604,7 +6928,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6634,7 +6960,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6653,6 +6981,39 @@
    "won": true
   },
   {
+   "id": "f189d02256a4ecc4",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:boss",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 47,
+   "encounter": "ENCOUNTER.AEONGLASS_BOSS",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "12681fbafe9307f53f266f366fd82e4b887662f367af9503890fa4f82b7fa051",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 10,
+   "actions": 67,
+   "terminal_hp": 58,
+   "won": true
+  },
+  {
    "id": "f18a23df3f19038e",
    "kind": "line",
    "categories": [
@@ -6665,7 +7026,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6696,7 +7059,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6715,6 +7080,39 @@
    "won": true
   },
   {
+   "id": "f191360938d8d77c",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:elite",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 7,
+   "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "1afafd83cf22c990399b1fbdf5d8f4dc35a63fa814844f4e1b39de5d3978d2a3",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 9,
+   "actions": 37,
+   "terminal_hp": 7,
+   "won": true
+  },
+  {
    "id": "f1a7d54ee1d71c94",
    "kind": "line",
    "categories": [
@@ -6726,7 +7124,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6757,7 +7157,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6788,7 +7190,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6820,7 +7224,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6851,7 +7257,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6882,7 +7290,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6891,7 +7301,7 @@
    "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "56ec8321c7fc8a66ca17704ce51d29aa5cc924ecbacafb3884a89fdb567e117d",
+   "entry_digest": "b1d09c1fb1b1b2d7fbda8cfe2a6ca8eba96309133fbbc391817e191e0a1ddaea",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -6913,7 +7323,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6945,7 +7357,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -6976,7 +7390,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7007,7 +7423,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7026,6 +7444,38 @@
    "won": true
   },
   {
+   "id": "f1e33284df70a38c",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:monster",
+    "short",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 3,
+   "encounter": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "782bfe1698207415de5fee4f0bd7e5c90d6e1f39fe6b33b11c2798e8417325a2",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 3,
+   "actions": 15,
+   "terminal_hp": 40,
+   "won": true
+  },
+  {
    "id": "f1e5a224f607f7d8",
    "kind": "line",
    "categories": [
@@ -7037,7 +7487,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7067,7 +7519,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7099,7 +7553,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7130,7 +7586,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7159,7 +7617,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7189,7 +7649,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7220,7 +7682,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7251,7 +7715,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7282,7 +7748,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7312,7 +7780,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7343,7 +7813,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7375,7 +7847,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7406,7 +7880,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7435,7 +7911,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7444,7 +7922,7 @@
    "encounter": "ENCOUNTER.SEAPUNK_WEAK",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "b9dad06ae1277a9f43bcee1f09bbe11276371d0177c8c8073e0a07b21c4784f4",
+   "entry_digest": "3ac4f2eca46a7602c5f3f3dba42d8d6636108c234a27e36240074586e0b539c1",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -7465,7 +7943,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7496,7 +7976,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7527,7 +8009,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7557,7 +8041,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7576,6 +8062,39 @@
    "won": true
   },
   {
+   "id": "f24d803b7539ac36",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:monster",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 22,
+   "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "712ffa937000e9210b9c57b55fc08fb3a7edad2e1a01d4536808249dc50d7be2",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 5,
+   "actions": 27,
+   "terminal_hp": 56,
+   "won": true
+  },
+  {
    "id": "f252278e9e841c6c",
    "kind": "line",
    "categories": [
@@ -7588,7 +8107,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7619,7 +8140,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7628,7 +8151,7 @@
    "encounter": "ENCOUNTER.AEONGLASS_BOSS",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "294d2c1a7f4176d6aaf3cbebdad7ef61358ae67c14d329277b83acf7fc22f723",
+   "entry_digest": "4d740f7146906124375dac8e913bbe8408a4d9e82e841972a8facf4233785be2",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -7650,7 +8173,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7681,7 +8206,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7712,7 +8239,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7721,7 +8250,7 @@
    "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "9a72437cc47c4f0e3c7d01aa9080cf463426006f48f4eddd63ff1f42e644007f",
+   "entry_digest": "c119798d3d1c6c96eaec38fe46439e2a0635656f141d0951fa1b233aef328f7e",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -7743,7 +8272,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7774,7 +8305,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7804,7 +8337,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7835,7 +8370,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7867,7 +8404,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7898,7 +8437,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7928,7 +8469,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7959,7 +8502,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -7990,7 +8535,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8021,7 +8568,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8053,7 +8602,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8062,7 +8613,7 @@
    "encounter": "ENCOUNTER.KNIGHTS_ELITE",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "352bc4a38a543a4eea2150c6efc0466db190555ed901a145037f71cb316a1cac",
+   "entry_digest": "42407c77f08b2a35f22943a45ac015152dfc559d2cf18ad56222b0a88a5cf375",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8084,7 +8635,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8115,7 +8668,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8146,7 +8701,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8176,7 +8733,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8206,7 +8765,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8237,7 +8798,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8267,7 +8830,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8297,7 +8862,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8328,7 +8895,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8357,7 +8926,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8388,7 +8959,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8419,7 +8992,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8450,7 +9025,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8459,7 +9036,7 @@
    "encounter": "ENCOUNTER.THE_KIN_BOSS",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "6f52ffefdd09ad80f025e4094ea2174a30b80bd7822718e2ec4a77584baed919",
+   "entry_digest": "7e6a8cd913c54973277e4712dc0c73047490c030df87635270902d6cd65c16d7",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8481,7 +9058,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8512,7 +9091,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8543,7 +9124,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8573,7 +9156,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8604,7 +9189,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8635,7 +9222,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8644,7 +9233,7 @@
    "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "d7c026a3c4789ccec594a0d20bdf3fd1b39c530da2ec4317d29804ed8ebe0bb6",
+   "entry_digest": "36ce9629438482b73922b8e59bb052888a0b58018c49623939e64f0dc021defc",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8667,7 +9256,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8697,7 +9288,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8706,7 +9299,7 @@
    "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "2abbba070f7efe1758b7e17f6303e69b03ea907f08cb0838df0bb815185ed6df",
+   "entry_digest": "331a2ba3c53638558f71d27d95436944c32492552058876cb94d0a52c1409334",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8727,7 +9320,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8736,7 +9331,7 @@
    "encounter": "ENCOUNTER.OWL_MAGISTRATE_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "1dddcde1b7309a7bc434433377dfeab57a2b1362e5f758648e2fbff0bb6ac934",
+   "entry_digest": "fa59c0782f5275ffb06214ca7861621d3611157c28c454542753afdfbcce1480",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8757,7 +9352,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8788,7 +9385,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8797,7 +9396,7 @@
    "encounter": "ENCOUNTER.SPINY_TOAD_NORMAL",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "9b683e410ae6e0a5d5c222970f53682f60d35b847a51efa06a0eaf89a81219db",
+   "entry_digest": "4dced7853f4b9d22ee7479b3bc693a86beaefd64a6286f7d37a1dc65e829ec18",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8818,7 +9417,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8848,7 +9449,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8879,7 +9482,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8888,7 +9493,7 @@
    "encounter": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "b2ce89653375371931a4776dcdc0b4139794ddfcfa222d031b845ec6daa10df6",
+   "entry_digest": "95c3c422acd96afe44baca6e07872bf7c661afac23e333c01c70557541dcf1a0",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -8909,7 +9514,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8928,6 +9535,40 @@
    "won": true
   },
   {
+   "id": "f38b1a5233db4886",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "death",
+    "human",
+    "multi:REGENT",
+    "node:boss",
+    "potions",
+    "short",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 48,
+   "encounter": "ENCOUNTER.TEST_SUBJECT_BOSS",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "1766bf02d6f6d4547bc1fc1cabbe735116c8878386d327daec835929266742d7",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 2,
+   "actions": 11,
+   "terminal_hp": 0,
+   "won": false
+  },
+  {
    "id": "f3929324689faa7e",
    "kind": "line",
    "categories": [
@@ -8940,7 +9581,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -8970,7 +9613,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9001,7 +9646,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9032,7 +9679,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9063,7 +9712,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9094,7 +9745,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9124,7 +9777,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9153,7 +9808,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9182,7 +9839,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9213,7 +9872,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9222,7 +9883,7 @@
    "encounter": "ENCOUNTER.EXOSKELETONS_NORMAL",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "47345b4da4ec4a992908318a21c61f7a240b4196c0478211eaead43450df50e6",
+   "entry_digest": "fe23b45ec2062671196809f1b47cb79e79d563b5e523829491d09e6adbab43d3",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -9244,7 +9905,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9273,7 +9936,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9303,7 +9968,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9334,7 +10001,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9365,7 +10034,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9374,7 +10045,7 @@
    "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "d7901d6d0f240acf59285f19c8cc04c9367c1008f0e0536ed4c0fd8d5401e03b",
+   "entry_digest": "dc4c2464d661e7884a791f1f01e9c149f249a34d11006ee00d96d58013c6d1d9",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -9396,7 +10067,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9405,7 +10078,7 @@
    "encounter": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "39c1b3438dc10fe0c1a2de58264bb7d6a8b16f2ed290256b282219a96a36d8f8",
+   "entry_digest": "27c21a84a41e9bd02057b6e6fd4282bf04f7a873046782e4af62e9d6a103cd11",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -9428,7 +10101,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9459,7 +10134,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9489,7 +10166,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9520,7 +10199,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9549,7 +10230,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9579,7 +10262,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9610,7 +10295,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9640,7 +10327,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9669,7 +10358,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9700,7 +10391,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9731,7 +10424,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9762,7 +10457,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9793,7 +10490,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9824,7 +10523,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9833,7 +10534,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_NORMAL",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "0509347afc7e1564c57bd615671dbb99d77c9c6a55fa6441941eb98e1af82f83",
+   "entry_digest": "777020c13d222767f23d290d0045dcfeed658b2990f471a4f795f8f7291b109c",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -9855,7 +10556,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9886,7 +10589,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9916,7 +10621,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9946,7 +10653,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -9977,7 +10686,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10008,7 +10719,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10039,7 +10752,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10070,7 +10785,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10101,7 +10818,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10131,7 +10850,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10162,7 +10883,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10193,7 +10916,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10202,7 +10927,7 @@
    "encounter": "ENCOUNTER.LOUSE_PROGENITOR_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "f1cd987a7ae7cb221f85d796213d84ed72c5ae9b1462fc2c702dbde1428141e9",
+   "entry_digest": "72bd60a3ff2761cd0dcc436f9f53f7b3157be9ee1a370876513d9f5568548620",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -10223,7 +10948,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10253,7 +10980,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10283,7 +11012,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10314,7 +11045,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10345,7 +11078,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10376,7 +11111,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10406,7 +11143,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10425,6 +11164,38 @@
    "won": true
   },
   {
+   "id": "f508fafe0e4db381",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:boss",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 32,
+   "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "b2ece5d583a60ce08ffeb4b72e0e18b72fa3a220c42c735d88df506457c54b57",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 10,
+   "actions": 65,
+   "terminal_hp": 29,
+   "won": true
+  },
+  {
    "id": "f50bddfb744da3db",
    "kind": "line",
    "categories": [
@@ -10437,7 +11208,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10467,7 +11240,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10498,7 +11273,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10527,7 +11304,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10558,7 +11337,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10589,7 +11370,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10620,7 +11403,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10629,7 +11414,7 @@
    "encounter": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "75b69a3f48b3244ef533767de3b42d3b4e47bb5199a136719f3ea13169e71ed5",
+   "entry_digest": "f3f23550357e40235a8571485c3f0ae47af2b1e5d23f768be529470cae79e842",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -10651,7 +11436,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10681,7 +11468,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10712,7 +11501,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10743,7 +11534,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10774,7 +11567,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10805,7 +11600,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10836,7 +11633,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10866,7 +11665,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10875,7 +11676,7 @@
    "encounter": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "b4145616d87bcc30dab885b85633b639cd66c0946b65e006e55af8c0fba983b3",
+   "entry_digest": "ace77c15ad7904f498f5bc50992534a8392aaa4bc084534a79742417fc465d99",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -10897,7 +11698,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10928,7 +11731,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10937,7 +11742,7 @@
    "encounter": "ENCOUNTER.TURRET_OPERATOR_WEAK",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "5c9979294aa92e26f86e2723eb494b1cc2a2d6c7bd925430ff9c1b94da3df3fd",
+   "entry_digest": "b058c4e60af969e9ef15b533dc5e4efb8e3e3daf0f614838f120798b7e35b058",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -10959,7 +11764,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -10990,7 +11797,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11021,7 +11830,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11052,7 +11863,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11061,7 +11874,7 @@
    "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "d34c7a940fe7a3900ce551745f0440c8988ab759b9f53f8be9b82d198e1c8d2f",
+   "entry_digest": "5d2a72970ea355ef415f8b2742d39897d5d8315204736a7a349c6e2ed1afe22b",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -11083,7 +11896,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11115,7 +11930,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11146,7 +11963,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11177,7 +11996,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11186,7 +12007,7 @@
    "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "fc35fd79fdf4de841f97fe068b257468a60e3b7337cf185ae893541fd43e3e5b",
+   "entry_digest": "95c903e7c90eb9da1869113f06a998483f9993bcf7e1c88ef7a740b5bf16a2f5",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -11208,7 +12029,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11239,7 +12062,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11270,7 +12095,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11301,7 +12128,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11332,7 +12161,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11341,7 +12172,7 @@
    "encounter": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "18ab8c8d068d7ea341adb6954ee354ad4f470a402b7a31366e58d50600782bf4",
+   "entry_digest": "6af2b82e94393a8d788cc83e7aa84453cbaaa83b11b00cb7e883b96161505f7e",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -11363,7 +12194,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11394,7 +12227,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11424,7 +12259,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11455,7 +12292,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11464,7 +12303,7 @@
    "encounter": "ENCOUNTER.FOGMOG_NORMAL",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "47082a758ed27ccd4765616913bfef87545a4cf0723676181b7ecae32332b72c",
+   "entry_digest": "456f8ac604bd9af1535ca79157cda284d4ab62f7a43848b5d7640096a8e06ef8",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -11486,7 +12325,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11495,7 +12336,7 @@
    "encounter": "ENCOUNTER.DEVOTED_SCULPTOR_WEAK",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "b8a253ab7ef91c99e3c4bd68663ddb589f3e6a37f1fc6b93d942aef32dcc21d0",
+   "entry_digest": "a35b4c3b26fc7a67a610d96e5afd79c983b10daf1160de422e41e9c283d3cc03",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -11516,7 +12357,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11547,7 +12390,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11578,7 +12423,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11607,7 +12454,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11638,7 +12487,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11669,7 +12520,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11700,7 +12553,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11731,7 +12586,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11762,7 +12619,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11792,7 +12651,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11823,7 +12684,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11855,7 +12718,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11886,7 +12751,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11895,7 +12762,7 @@
    "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "5de7f8eea3afd01b46fa35c7672b131f6fb3d9f6efb3595a67ad85b028de44e3",
+   "entry_digest": "fc5cc0e068ea0473c1200a2cca9711b81e16f3c80d8439a40d6a2db0c8fe0aef",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -11918,7 +12785,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11949,7 +12818,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -11980,7 +12851,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12009,7 +12882,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12040,7 +12915,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12071,7 +12948,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12103,7 +12982,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12112,7 +12993,7 @@
    "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "2687f784b0ef4326c1123fc2dceafc15ba7b0f9aee31dfb4ab433c4272c97654",
+   "entry_digest": "a43d481d219fe28c55532e05c6b476f1788ec37897054eb70ac4f3e246aba7d1",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -12133,7 +13014,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12142,7 +13025,7 @@
    "encounter": "ENCOUNTER.TUNNELER_WEAK",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "934523ea47ddff40bffdcfa8132bd15a7df0f1df35cca4995f7a9ad5de14168d",
+   "entry_digest": "4c23330a8364b0b924aac79bfd7d4ea29dcea756d62bb4214e3fe948561c2fc4",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -12163,7 +13046,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12182,6 +13067,39 @@
    "won": true
   },
   {
+   "id": "f67c0dd9458e0362",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:monster",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 34,
+   "encounter": "ENCOUNTER.DEVOTED_SCULPTOR_WEAK",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "7f2baff7a48bb761c73c3b9741c9ad5eb35c5d1b241c5ca672de51775aa5f819",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 6,
+   "actions": 33,
+   "terminal_hp": 38,
+   "won": true
+  },
+  {
    "id": "f684913cb05f11f3",
    "kind": "line",
    "categories": [
@@ -12194,7 +13112,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12223,7 +13143,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12253,7 +13175,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12284,7 +13208,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12293,7 +13219,7 @@
    "encounter": "ENCOUNTER.SCROLLS_OF_BITING_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "6883e8ad4dc007159c7e056531c7ca2953ec09b5efe30fe2e84a5bf183fe0dd5",
+   "entry_digest": "7a0148126690b4d14d292b8501d43619b5c6d181c207c5a82715292b943082b5",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -12315,7 +13241,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12346,7 +13274,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12377,7 +13307,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12409,7 +13341,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12439,7 +13373,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12470,7 +13406,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12501,7 +13439,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12531,7 +13471,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12562,7 +13504,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12593,7 +13537,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12624,7 +13570,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12633,7 +13581,7 @@
    "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "b6003d7b5feb965d7ebd42c31d88aa7fdfd06b6b6a9b31626609e1c217bcca20",
+   "entry_digest": "4ffed141a3a36d15fff9f1669ef5198891f0812b7aed5b6f9c1e9e0c2798ffcb",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -12654,7 +13602,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12684,7 +13634,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12715,7 +13667,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12746,7 +13700,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12776,7 +13732,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12806,7 +13764,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12834,6 +13794,7 @@
     "refusal:capture-pairing"
    ],
    "files": [
+    "capture.mcr.gz",
     "provenance.json",
     "refusal.json"
    ],
@@ -12863,7 +13824,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12872,7 +13835,7 @@
    "encounter": "ENCOUNTER.TURRET_OPERATOR_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "6dd6706c92593e3dd9482c7202c71c610c26601d1cf3a36464671e2aee5e22d7",
+   "entry_digest": "f061d23dfaaa7b5e44e1b15d2069731971658cc40142edd11d4d93c33aa078e0",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -12893,7 +13856,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12925,7 +13890,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12956,7 +13923,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12986,7 +13955,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -12995,7 +13966,7 @@
    "encounter": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "82f4b978ec9dbafc7598fd2835f6a8203036507c253e895493a55366913ed9a1",
+   "entry_digest": "cb8cf4b2ca4f5c2051c3bdf2bdfc25ad190127d1b838bc00f4aba97137c6ec29",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -13016,7 +13987,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13046,7 +14019,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13065,6 +14040,37 @@
    "won": true
   },
   {
+   "id": "f771589a4ca07255",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:monster",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 1,
+   "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "e0c568fc604a947f660d3372f6e81b71b9560f8c9961b9f6938c2c46ca729dd0",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 4,
+   "actions": 19,
+   "terminal_hp": 41,
+   "won": true
+  },
+  {
    "id": "f77329f24d2bcd04",
    "kind": "line",
    "categories": [
@@ -13076,7 +14082,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13107,7 +14115,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13137,7 +14147,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13168,7 +14180,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13199,7 +14213,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13229,7 +14245,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13257,6 +14275,8 @@
     "refusal:capture-pairing"
    ],
    "files": [
+    "capture.mcr.gz",
+    "entry.save.gz",
     "provenance.json",
     "refusal.json"
    ],
@@ -13285,7 +14305,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13316,7 +14338,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13347,7 +14371,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13378,7 +14404,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13409,7 +14437,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13441,7 +14471,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13472,7 +14504,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13503,7 +14537,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13535,7 +14571,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13566,7 +14604,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13596,7 +14636,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13605,7 +14647,7 @@
    "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "571ce17e69d80d2cc9729c10d7aeb050a39ee11f7d7ad4ed56b37f010b80787b",
+   "entry_digest": "59d6ab07842d82d981c02fa8335f91cd78467aee1a82ff3d9e4da4f81f14f054",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -13627,7 +14669,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13658,7 +14702,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13689,7 +14735,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13720,7 +14768,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13750,7 +14800,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13780,7 +14832,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13811,7 +14865,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13820,7 +14876,7 @@
    "encounter": "ENCOUNTER.KNIGHTS_ELITE",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "9dc3170e064312d1296f382bddca116e93e353129ba16aed584f490552a43d8c",
+   "entry_digest": "575020121a36b3a5467f1b9daa5e7092cde05996b55e7b721f97f28e3020686a",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -13843,7 +14899,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13874,7 +14932,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13905,7 +14965,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13936,7 +14998,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13967,7 +15031,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -13998,7 +15064,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14029,7 +15097,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14060,7 +15130,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14091,7 +15163,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14100,7 +15174,7 @@
    "encounter": "ENCOUNTER.NIBBITS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "7e69dd0b6c72f0e4c84ecb0e9afd23a76d20bb6b0ae5e757e8644c49c5a31d5e",
+   "entry_digest": "29a9b25d97731037ad2006f93048be7291625ea659f5b680807cd2d0f0977757",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -14121,7 +15195,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14152,7 +15228,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14183,7 +15261,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14213,7 +15293,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14243,7 +15325,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14252,7 +15336,7 @@
    "encounter": "ENCOUNTER.OVICOPTER_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "a292fe642edd947e46645bc75abe223bb55d9d36de21e850a95d15a79084f352",
+   "entry_digest": "3f4e4b5c0f65bc52dfbda9a1904ae2407571e36e74b8d626050a32a93fa04a57",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -14272,7 +15356,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14303,7 +15389,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14334,7 +15422,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14365,7 +15455,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14374,7 +15466,7 @@
    "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "c6e390c7a52200234f8e62736572db9d7212e7b09f09509d4dfeb679e16c6ec0",
+   "entry_digest": "c117786be45a90ee0ae31cd178e2543a1f39574729609ff5cdd63ae56144cd11",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -14395,7 +15487,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14426,7 +15520,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14457,7 +15553,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14487,7 +15585,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14517,7 +15617,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14547,7 +15649,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14578,7 +15682,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14587,7 +15693,7 @@
    "encounter": "ENCOUNTER.KNIGHTS_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "393e104011ddd9ea88d05a7c9fd458193756297a698ca3577fa56cca63cba972",
+   "entry_digest": "f1d6402f340d9d2382b8bc31516d0589cbf227855575493acb7fa3d770f2bdfa",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -14609,7 +15715,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14640,7 +15748,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14671,7 +15781,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14703,7 +15815,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14734,7 +15848,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14766,7 +15882,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14775,7 +15893,7 @@
    "encounter": "ENCOUNTER.QUEEN_BOSS",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "b3b4ba789a2801339498e83bafbd91f5821d834025b1254e3af1665fb012aa1e",
+   "entry_digest": "21218c64aaebe8ac504d21b9f6fb26b53ac0ddcfe2882aef4e5b761969544edc",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -14797,7 +15915,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14806,7 +15926,7 @@
    "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "470f750e0fa484f768bd07d09c7d05cb51e7e17eb0fbd56283d6c1705252a704",
+   "entry_digest": "c0e93a00a01df63ac4528eab9fe1994ffc49156c537e2d1431e6147d53cee281",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -14828,7 +15948,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14860,7 +15982,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14890,7 +16014,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14920,7 +16046,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14951,7 +16079,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -14981,7 +16111,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15012,7 +16144,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15043,7 +16177,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15073,7 +16209,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15104,7 +16242,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15134,7 +16274,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15164,7 +16306,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15173,7 +16317,7 @@
    "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "8dadcb4aaa2b65482dc43d51b40115a0eeb7c5d8a053d8306e396143a7c79e5a",
+   "entry_digest": "8390490c04d8e65679509ad96f012c8785df26d068a0d383db7284a0366258f2",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -15196,7 +16340,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15226,7 +16372,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15257,7 +16405,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15288,7 +16438,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15319,7 +16471,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15350,7 +16504,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15381,7 +16537,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15412,7 +16570,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15444,7 +16604,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15475,7 +16637,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15506,7 +16670,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15537,7 +16703,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15546,7 +16714,7 @@
    "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "3ffe5863be540f5fc81f76b17d50e784b671d4a2212e74877cb185519d57b040",
+   "entry_digest": "ed800ed64abda8c1ff340c6311a47251f7b8dd9427fe6171946688a27a85b319",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -15569,7 +16737,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15600,7 +16770,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15631,7 +16803,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15662,7 +16836,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15671,13 +16847,44 @@
    "encounter": "ENCOUNTER.CULTISTS_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "4cca980e1be838b7d8469864d0c4147f69b6d458399a7acf5f67dc47aaf3c367",
+   "entry_digest": "f515adba15fe053273f981d46b018cd7a6a783a99461a7a1fdceeeb5e923fe48",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
    "turns": 6,
    "actions": 29,
    "terminal_hp": 23,
+   "won": true
+  },
+  {
+   "id": "f98aa6512d7b0c2c",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:monster",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 4,
+   "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "098a2c7c2b1576d8fd22b62a680a82c2c786d6d835d9a152dc0747931dd7b53b",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 4,
+   "actions": 17,
+   "terminal_hp": 40,
    "won": true
   },
   {
@@ -15692,7 +16899,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15723,7 +16932,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15754,7 +16965,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15784,7 +16997,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15815,7 +17030,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15845,7 +17062,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15876,7 +17095,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15906,7 +17127,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15937,7 +17160,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15967,7 +17192,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -15998,7 +17225,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16030,7 +17259,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16059,7 +17290,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16090,7 +17323,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16121,7 +17356,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16151,7 +17388,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16181,7 +17420,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16211,7 +17452,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16241,7 +17484,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16272,7 +17517,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16301,7 +17548,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16332,7 +17581,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16341,7 +17592,7 @@
    "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "442215c698fd51e8776bc6d448707f3ca54928ca6f98191635ca6766df377303",
+   "entry_digest": "9eddc2c2f4dc3fce023b13a665e6d59e5a58683f9f1176c1397a5dd4016ed8c9",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -16363,7 +17614,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16393,7 +17646,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16402,7 +17657,7 @@
    "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "cac24fc859748d5ae8066908826f69dae6c1e4430fef6a4b01b9c4ebf6fa40dc",
+   "entry_digest": "7404a2e70d042edb976cec3c8787a6cbc97cfc2136ca37dfbe614081d9cff123",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -16424,7 +17679,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16433,7 +17690,7 @@
    "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "366b47cd4e31212001c18e8777ef93a2abd7adf5247b31384db0065af68f3103",
+   "entry_digest": "f8e658f7b23c337793a9b04ca22f847f73a26a0e71480d6ff7e0154b7813c625",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -16455,7 +17712,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16486,7 +17745,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16518,7 +17779,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16527,7 +17790,7 @@
    "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "a51a7d3a6f8aedf186b8b3f056630a5ab0fb82207340c703c39edb0f1d1c3331",
+   "entry_digest": "283d094ddc1708f34597e7060b8dbe63a053ea1e9faf17f9809b35702112e59d",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -16549,7 +17812,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16580,7 +17845,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16589,7 +17856,7 @@
    "encounter": "ENCOUNTER.CORPSE_SLUGS_NORMAL",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "da91598a6e25109020c9100ddcd2eb89fd34366982d66ef64d80b26f3455a095",
+   "entry_digest": "1c9b79a3cab326674f4dacf7fc10f172a2cf6f8cbbd053f747c9174c95acb21f",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -16610,7 +17877,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16641,7 +17910,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16672,7 +17943,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16702,7 +17975,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16734,7 +18009,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16764,7 +18041,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16795,7 +18074,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16804,7 +18085,7 @@
    "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "b9cda0ccc96256b4f7e3db7d9847ce078fb2373a662959d9b374ea117202818c",
+   "entry_digest": "ef5a908f1778df44d3d3af5d71bd8619b2a50bcb16e70244678ae8ac39631abf",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -16826,7 +18107,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16857,7 +18140,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16888,7 +18173,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16919,7 +18206,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16950,7 +18239,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -16969,6 +18260,39 @@
    "won": true
   },
   {
+   "id": "faacb43c875d9884",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:elite",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 27,
+   "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "fc9c1db918fc97294264764ef59c557c327e1a029343f46b9d0f8e1643014404",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 5,
+   "actions": 26,
+   "terminal_hp": 33,
+   "won": true
+  },
+  {
    "id": "faafc68e8ea87d22",
    "kind": "line",
    "categories": [
@@ -16979,7 +18303,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17010,7 +18336,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17040,7 +18368,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17071,7 +18401,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17080,7 +18412,7 @@
    "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "4f45b631a8e1ecaa2c1c1f8ceb5494d0963d276e730bb6161b9dd6eddba7d956",
+   "entry_digest": "a87710959c3aa6aeceaead4ceca725da7d7615af016012b65d59592f9a286fad",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17101,7 +18433,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17132,7 +18466,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17141,7 +18477,7 @@
    "encounter": "ENCOUNTER.BYRDONIS_ELITE",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "d749c86c82290c72e09ec6e27a864982268045e72c6e2105ff8493cd8525dc98",
+   "entry_digest": "d22638dafd415d69fdb22f99af5560b369e97aaeb3670d5b1e8d3a295ad5cd37",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17163,7 +18499,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17172,7 +18510,7 @@
    "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "0e162126cbae4e1a8332a80658587ca9ebd6fa6e430884a3b9f5a7c9537a910a",
+   "entry_digest": "82a0d455b56c9cfbcc26986c8fbf552e96e59df7571058f68757ef45c6bebb88",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17194,7 +18532,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17226,7 +18566,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17257,7 +18599,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17288,7 +18632,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17319,7 +18665,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17328,7 +18676,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "10fe3c2d1047f5425e5f96c541e149ccd28eec658a447031900b428377a24fdc",
+   "entry_digest": "a96107765597be860a5146e0f5dbf6cd504a264ec370fe83a69aedec57cd0204",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17350,7 +18698,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17380,7 +18730,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17411,7 +18763,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17442,7 +18796,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17473,7 +18829,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17503,7 +18861,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17534,7 +18894,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17543,7 +18905,7 @@
    "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "420fb434ad94258a983144603da6e68da8d05276321db977428adda58e81a93c",
+   "entry_digest": "e36d3d49d23b2e143f20f25b3278df46c07d8b32303ea1eef44abb2f50ccc2af",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17565,7 +18927,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17574,7 +18938,7 @@
    "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "395d62e83bce218281fc9f9b91af7e70d69876183f1755b82b2842d3de233f5d",
+   "entry_digest": "d80ceee38698fc0729a68bb5a9c98a556d66b71431f06bda1eb14135d29fd930",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17596,7 +18960,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17627,7 +18993,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17657,7 +19025,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17688,7 +19058,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17697,7 +19069,7 @@
    "encounter": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "587fab4873d7d2b609c98ab3397a4d70937eab3d54076b27eea7a0905d35d051",
+   "entry_digest": "f8e5b95385678a0b4780cbd10a5378dfdeb1df3eb9f4d17a18f2b4467f50e41e",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17719,7 +19091,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17750,7 +19124,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17759,7 +19135,7 @@
    "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "c4cc15a49bde87812f7ae060ef3d7f21f9a72137b3796f7b58d9d36931599fc0",
+   "entry_digest": "5c51fbb6c345d25782b0f1b7e056607a337e1c2c04fe1d8283687951458ae1d3",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17780,7 +19156,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17811,7 +19189,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17820,7 +19200,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "c26636819ebf97813611284f7cf2b91b15bdcb960ef62b93f21f35b887dd6430",
+   "entry_digest": "e1e92e29d60b3f81de116719d62a8269869983c7b60c262c0d91982461afb6bd",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17842,7 +19222,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17873,7 +19255,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17882,7 +19266,7 @@
    "encounter": "ENCOUNTER.SCROLLS_OF_BITING_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "f046e6ab1f6c317dc96f4dd294073f5b9c0509352ec145efb2dfadc0b74817f1",
+   "entry_digest": "c5e8728ee28716bbdfefa48111f2b32f59d96a6f5d1f6ddf94a319c1781e7053",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -17903,7 +19287,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17934,7 +19320,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17965,7 +19353,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -17995,7 +19385,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18025,7 +19417,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18056,7 +19450,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18086,7 +19482,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18117,7 +19515,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18147,7 +19547,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18178,7 +19580,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18209,7 +19613,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18218,7 +19624,7 @@
    "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "a0c27d4f2666786218cd6e1dafe281c1147b25840d84414c3deb4feb0cb591f8",
+   "entry_digest": "19c825d1c03a092bac5e90c0fb3cf82557d02c2c297b1776c09beacfd9f22ad3",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -18241,7 +19647,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18250,7 +19658,7 @@
    "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "d2e1da88f50bbd2788745af5a6aeb700f6040dbaa887d4cd7b4895c49c719fa2",
+   "entry_digest": "8001ceca31096d86cede1f59acf1828da158f7c5e1e15939e1673e6eb2158fef",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -18271,7 +19679,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18290,6 +19700,38 @@
    "won": true
   },
   {
+   "id": "fc8d9af5ecea7c60",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:monster",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 24,
+   "encounter": "ENCOUNTER.SPINY_TOAD_NORMAL",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "5a8f1aa88ebebdb8d0dacc490075a19e8af910136df1aaaedf9d49036bfd09ef",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 4,
+   "actions": 27,
+   "terminal_hp": 48,
+   "won": true
+  },
+  {
    "id": "fc9379cc1d0a34b5",
    "kind": "line",
    "categories": [
@@ -18301,7 +19743,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18332,7 +19776,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18341,7 +19787,7 @@
    "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "ca2b4db2d8af92839aa09735724e09147c2944924a30194fe91dbacd53ab7e07",
+   "entry_digest": "3fb63cd9d3cef393362f4c9e3f1f104f32a9841e430072005ac949792a74788f",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -18363,7 +19809,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18394,7 +19842,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18425,7 +19875,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18457,7 +19909,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18488,7 +19942,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18518,7 +19974,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18549,7 +20007,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18568,6 +20028,38 @@
    "won": true
   },
   {
+   "id": "fcf6661fc63a2364",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:monster",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 41,
+   "encounter": "ENCOUNTER.TURRET_OPERATOR_WEAK",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "1cc78826c3267bdc07138313bead2e516dda9a221cfa75e3e01a5c946966d741",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 5,
+   "actions": 21,
+   "terminal_hp": 10,
+   "won": true
+  },
+  {
    "id": "fcf7ba0de51d2e74",
    "kind": "line",
    "categories": [
@@ -18579,7 +20071,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18611,7 +20105,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18641,7 +20137,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18672,7 +20170,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18681,7 +20181,7 @@
    "encounter": "ENCOUNTER.OWL_MAGISTRATE_NORMAL",
    "character": "DEFECT",
    "ascension": 9,
-   "entry_digest": "042886b92679351ad22af37204bdb2c7225fab4b118d72009eb83db0a16db7e0",
+   "entry_digest": "0e4e15612be80c434d0d9a5ebd9f04f3464ba3f71b0decbfbb6a7d905b3df480",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -18703,7 +20203,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18735,7 +20237,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18766,7 +20270,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18797,7 +20303,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18827,7 +20335,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18857,7 +20367,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18887,7 +20399,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18918,7 +20432,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18927,7 +20443,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "2b299e219f5c02511f4a6efc798f3a4d72616b7de77271ec2fab44c1747fb272",
+   "entry_digest": "bfad1d31ad55d1237bc1548af44942203ae3f352ada4449a59bf6bb500240b9e",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -18949,7 +20465,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -18979,7 +20497,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19008,7 +20528,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19038,7 +20560,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19069,7 +20593,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19099,7 +20625,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19108,7 +20636,7 @@
    "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "f75572579227ecb74bda68297d1c66f1d398939a0fcdbd73de02d64f09190fee",
+   "entry_digest": "ed45e43228a52071d7b15e29c601db8b23d049b75282c045dec2ab8cbbcae0ee",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19128,7 +20656,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19147,6 +20677,39 @@
    "won": true
   },
   {
+   "id": "fd7db42da9b0b41f",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:boss",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 16,
+   "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "1f7d5c2bfdc8c12700f2e6aa1625fb55d1967ac746898a92f83680d121a03d9f",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 16,
+   "actions": 67,
+   "terminal_hp": 9,
+   "won": true
+  },
+  {
    "id": "fd7f1a5e95d3f3c9",
    "kind": "line",
    "categories": [
@@ -19159,7 +20722,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19190,7 +20755,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19209,6 +20776,38 @@
    "won": true
   },
   {
+   "id": "fd90322e3eed5e7c",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:monster",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 21,
+   "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "574062faad864048e27f7e51a307235ccc78aa33a0e1f587cafce5c6de5addf3",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 4,
+   "actions": 18,
+   "terminal_hp": 68,
+   "won": true
+  },
+  {
    "id": "fd94f26c0afe17f9",
    "kind": "line",
    "categories": [
@@ -19220,7 +20819,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19229,7 +20830,7 @@
    "encounter": "ENCOUNTER.OVICOPTER_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "1dfcb226ced1dbf1fd1ea9e825e79904671672a100028619ff518b4616b8685d",
+   "entry_digest": "76b3d5927d1258e236da3df4e5835eac425c16e40871b5180339c27d985d8fdc",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19251,7 +20852,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19281,7 +20884,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19311,7 +20916,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19340,6 +20947,8 @@
     "refusal:rust-entry"
    ],
    "files": [
+    "capture.mcr.gz",
+    "entry.save.gz",
     "provenance.json",
     "refusal.json"
    ],
@@ -19369,7 +20978,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19400,7 +21011,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19431,7 +21044,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19462,7 +21077,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19492,7 +21109,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19523,7 +21142,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19554,7 +21175,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19586,7 +21209,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19617,7 +21242,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19626,7 +21253,7 @@
    "encounter": "ENCOUNTER.SCROLLS_OF_BITING_WEAK",
    "character": "SILENT",
    "ascension": 10,
-   "entry_digest": "3f4f377ca2a0cb3593252a6b5ae9bd00ce485a640146311cccb8bc2bc1247fc5",
+   "entry_digest": "f3e8a8505b0bb51d4c51ed6ae9b8ee823708e7c7c8b96f9abff1c45eed6ba1b9",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19648,7 +21275,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19657,7 +21286,7 @@
    "encounter": "ENCOUNTER.SEAPUNK_NORMAL",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "0608ceb81f42422acb3bccb87ab9900077ed49ded086f927241ec6cd4db28022",
+   "entry_digest": "d2a3ab8915b184e025398df80e3741f06d8f856f9abddebb37aa96b0fc880742",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19679,7 +21308,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19710,7 +21341,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19729,6 +21362,39 @@
    "won": true
   },
   {
+   "id": "fdfbee1931ccccb7",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:monster",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 42,
+   "encounter": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "c7f74aee4e846871301fcbb24617fe29449b0fbd88ca79d09e7ed4bde7621053",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 7,
+   "actions": 43,
+   "terminal_hp": 8,
+   "won": true
+  },
+  {
    "id": "fdff03df1fe66a90",
    "kind": "line",
    "categories": [
@@ -19741,7 +21407,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19750,7 +21418,7 @@
    "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "a6d41d8fe2fc59969afe790ec78cc64051514dd4ba73e41740b4cfb82e6b0f08",
+   "entry_digest": "7ffb9ffe0bb7901ebb6c3cdb2e82f0121f7ef8127a52ba4fc8c841d18ae7249b",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19773,7 +21441,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19804,7 +21474,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19813,7 +21485,7 @@
    "encounter": "ENCOUNTER.AEONGLASS_BOSS",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "58ca3999e873fded501d4aaed1544929b83c9966fbb6b9c9acc76246fb34a920",
+   "entry_digest": "427f39c9f9000c1b8f9fd9f6adc4f86afc0a86ebac1c722657aed98f4985b75e",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19835,7 +21507,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19844,7 +21518,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_NORMAL",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "811a362a93a9c5b8282935a034921a42c0218e2c5eda44abf565fafa0effcbb5",
+   "entry_digest": "7e1c4f4df6a773e8988261a867083319eb8cef9b6e408802887dca696730a66d",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19866,7 +21540,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19895,7 +21571,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19904,7 +21582,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "5fb3811ca1c3d61c08a24cf20552b7f27a4207a0b2f70884d3cb4161b691ae0e",
+   "entry_digest": "767e7db92c95c5b593475381536483eac53ba6b831a1f31c0f73b06f1d4e6be8",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -19926,7 +21604,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19945,6 +21625,39 @@
    "won": true
   },
   {
+   "id": "fe3d9fbe5070fd29",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "long",
+    "multi:REGENT",
+    "node:elite",
+    "potions",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 45,
+   "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "1844abd9eda72cb3e7f4e9a2d2dd8e94a1a8fc475b8af03d2655d3e3df77e9ef",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 6,
+   "actions": 38,
+   "terminal_hp": 28,
+   "won": true
+  },
+  {
    "id": "fe42ad19e5a65c21",
    "kind": "line",
    "categories": [
@@ -19957,7 +21670,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -19988,7 +21703,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20019,7 +21736,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20028,7 +21747,7 @@
    "encounter": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "ee532b4c521e5bc459662ff0593b8a8df9578667fd473a1a9ad40aca5cb918fd",
+   "entry_digest": "24995b13398305e5af3703c2cbc44e4f75ac8f84a943bd95f5ab171a091fa7a0",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20050,7 +21769,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20081,7 +21802,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20100,6 +21823,39 @@
    "won": true
   },
   {
+   "id": "fe4fb5986031fecf",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:elite",
+    "potions",
+    "short",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 29,
+   "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "51aeb2115e19103e1c2f8c8e39a9a5b0d57edc31c700264984b9d666e859496d",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 3,
+   "actions": 21,
+   "terminal_hp": 41,
+   "won": true
+  },
+  {
    "id": "fe510ffeb95c6fa0",
    "kind": "line",
    "categories": [
@@ -20113,7 +21869,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20144,7 +21902,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20175,7 +21935,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20205,7 +21967,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20237,7 +22001,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20268,7 +22034,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20299,7 +22067,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20330,7 +22100,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20339,7 +22111,7 @@
    "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "ecda94b0e25ae13bd6bce1dbb4aa752611574c150a7c8e17e4816da62ce3f9e5",
+   "entry_digest": "c31db0ac1e279fa8ef5723ceb47657c7120694830725cbc2a766f430f1afcc2a",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20361,7 +22133,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20392,7 +22166,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20401,7 +22177,7 @@
    "encounter": "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "f2905af232ae1f30314869a82a6c13d1de78771b0dbd72672c13034230c155b8",
+   "entry_digest": "42a904a1ce32e18dab70976ab4e9beb0f7db799de0b01f0a7eeb8f6f0a4717eb",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20423,7 +22199,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20453,7 +22231,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20484,7 +22264,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20515,7 +22297,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20546,7 +22330,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20555,7 +22341,7 @@
    "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "5853437ff7921ada7ebfef010d5a8fd59bc68fb7e33aed88465802cd789d698c",
+   "entry_digest": "9a3ffe140c758570ebfc80d805351909dbc3494076d3e5f5d4b7ff67e2d0d929",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20577,7 +22363,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20586,7 +22374,7 @@
    "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "923f362c50d8c2bc85f23b50c8238217bd6223d006d497382e3202d804c478df",
+   "entry_digest": "50fbb9656e53b87893f7203de9bade4799cd02a2bc081053a3964c3ed7ce0f7c",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20608,7 +22396,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20638,7 +22428,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20647,7 +22439,7 @@
    "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "08a2305e04b4ce80747d4b8315400098883c5d351f10df31aedab72dc525dc42",
+   "entry_digest": "6f113b14967fcbfdacbf92e6b60bdd4a8665596d45e55bad31ea2ab8865e434a",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20669,7 +22461,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20700,7 +22494,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20709,7 +22505,7 @@
    "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
    "character": "DEFECT",
    "ascension": 10,
-   "entry_digest": "5d1ada024fff7e5e824f7a18aae2f8b9fb05b7d9dbe930c2fe25d80142def802",
+   "entry_digest": "112e14631e22b7fb1b97949db0b0b124f5620af363ee8960b717328a6a7d8716",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -20731,7 +22527,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20762,7 +22560,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20792,7 +22592,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20824,7 +22626,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20855,7 +22659,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20886,7 +22692,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20918,7 +22726,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20948,7 +22758,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -20978,7 +22790,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21009,7 +22823,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21040,7 +22856,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21071,7 +22889,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21102,7 +22922,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21132,7 +22954,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21163,7 +22987,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21193,7 +23019,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21224,7 +23052,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21233,7 +23063,7 @@
    "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "2c178c3926355ffb65456c0170e516b84ec7cb6fb17544344e99296d879ab47a",
+   "entry_digest": "4f23dfe3907a0307f058cc4444c5300991d1656f99740a3bfb6a7bc9e2bd9df4",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -21254,7 +23084,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21263,7 +23095,7 @@
    "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
    "character": "IRONCLAD",
    "ascension": 10,
-   "entry_digest": "1371fbb1766abc3b5d40f0681a6a6789bfd0bc84d2947342074b732e5a8a59a2",
+   "entry_digest": "f5cb04a1daefc642510d9a4cf17fe6aec160d123fcbbc467bfd3c7a8ac0a22b1",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -21285,7 +23117,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21294,7 +23128,7 @@
    "encounter": "ENCOUNTER.BYRDONIS_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "c230145807080f46ebbbcf03a5f78d1ad4b51b8273b115d72f27d953dc530b7e",
+   "entry_digest": "fa7214e4b20c90691bd012d89194c9018bea29d47eca306b960c03c08c6776b7",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -21316,7 +23150,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21347,7 +23183,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21378,7 +23216,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21387,7 +23227,7 @@
    "encounter": "ENCOUNTER.BYRDONIS_ELITE",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "885a7628b8ccc9d4c953cbd50329b14c9567d020439303f6b2d3aefad30b5ca3",
+   "entry_digest": "80b5f1fe4a00e838993b36f73367f36155a45d9eaffa5368e27b5df9796d02f8",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -21408,7 +23248,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21439,7 +23281,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21470,7 +23314,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21479,7 +23325,7 @@
    "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
    "character": "NECROBINDER",
    "ascension": 9,
-   "entry_digest": "4a0122886b64df6a77a004edfada26135452765c5f731cea713e59bf3c7a708b",
+   "entry_digest": "0aa318c334fd417f45a6fcb7869d8f029e207d6889d49a84fe866702ddf24e26",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -21501,7 +23347,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21531,7 +23379,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21550,6 +23400,39 @@
    "won": true
   },
   {
+   "id": "ffc7d7aa93fa9518",
+   "kind": "line",
+   "categories": [
+    "certified",
+    "human",
+    "multi:REGENT",
+    "node:elite",
+    "potions",
+    "short",
+    "solvable"
+   ],
+   "files": [
+    "capture.mcr.gz",
+    "entry.canonical.json",
+    "entry.save.gz",
+    "human_line.json",
+    "provenance.json"
+   ],
+   "seed": "ZXJ7WX1JHA04",
+   "node": 14,
+   "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+   "character": "REGENT",
+   "ascension": 10,
+   "entry_digest": "d025bf862be01e08b64de8d733b4f155acb1e390a453b0bd5d9b6566cd20f299",
+   "rust_root": "admitted",
+   "rust_refusal_class": null,
+   "lockstep": "lockstep_ok",
+   "turns": 3,
+   "actions": 16,
+   "terminal_hp": 63,
+   "won": true
+  },
+  {
    "id": "ffcd24a691473a84",
    "kind": "line",
    "categories": [
@@ -21560,7 +23443,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21590,7 +23475,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21621,7 +23508,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21652,7 +23541,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21661,7 +23552,7 @@
    "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "98e82bd64f375233f9145635ff1cbffacf712cd858ba52d2ffc9e283d2a0978b",
+   "entry_digest": "917670d434e10bfef852fbdc019d38ae1bbf39aca106b9878c488a90a7fd8a42",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",
@@ -21684,7 +23575,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21714,7 +23607,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21745,7 +23640,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21775,7 +23672,9 @@
     "solvable"
    ],
    "files": [
+    "capture.mcr.gz",
     "entry.canonical.json",
+    "entry.save.gz",
     "human_line.json",
     "provenance.json"
    ],
@@ -21784,7 +23683,7 @@
    "encounter": "ENCOUNTER.SCROLLS_OF_BITING_WEAK",
    "character": "REGENT",
    "ascension": 10,
-   "entry_digest": "4ab7b0cd4bbb93c59e92d2280215d39d31a181ba0b1974c9bd4ed487cb4c0e09",
+   "entry_digest": "3fc72eb5f7aacf6174814a4430520fe2bff53e5e322a2ba4d94436435eb46fc3",
    "rust_root": "admitted",
    "rust_refusal_class": null,
    "lockstep": "lockstep_ok",

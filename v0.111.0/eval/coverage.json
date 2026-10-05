@@ -1,17 +1,17 @@
 {
  "boss_x_character": {
-  "covered": 37,
+  "covered": 40,
   "total": 60
  },
  "build": "v0.111.0",
  "cards_played": {
   "all": {
-   "covered": 358,
+   "covered": 367,
    "total": 547
   },
   "by_pool": {
    "colorless": {
-    "covered": 51,
+    "covered": 56,
     "total": 93
    },
    "defect": {
@@ -27,7 +27,7 @@
     "total": 91
    },
    "regent": {
-    "covered": 53,
+    "covered": 57,
     "total": 91
    },
    "silent": {
@@ -53,16 +53,16 @@
     "total": 19
    },
    "rare": {
-    "covered": 79,
+    "covered": 84,
     "total": 160
    },
    "uncommon": {
-    "covered": 160,
+    "covered": 164,
     "total": 230
    }
   }
  },
- "certified": 575,
+ "certified": 594,
  "corpus": {
   "cells": {
    "ENCOUNTER.AEONGLASS_BOSS": {
@@ -1292,7 +1292,7 @@
    }
   }
  },
- "fixtures": 578,
+ "fixtures": 597,
  "generated_by": "sim/v0.111.0/eval/eval_coverage.py",
  "grid": {
   "boss": [
@@ -1315,7 +1315,7 @@
      },
      "REGENT": {
       "captured": 1,
-      "certified_fixtures": 1,
+      "certified_fixtures": 2,
       "state": "certified"
      },
      "SILENT": {
@@ -1377,8 +1377,8 @@
      },
      "REGENT": {
       "captured": 0,
-      "certified_fixtures": 0,
-      "state": "not_captured"
+      "certified_fixtures": 1,
+      "state": "certified"
      },
      "SILENT": {
       "captured": 2,
@@ -1439,8 +1439,8 @@
      },
      "REGENT": {
       "captured": 0,
-      "certified_fixtures": 0,
-      "state": "not_captured"
+      "certified_fixtures": 1,
+      "state": "certified"
      },
      "SILENT": {
       "captured": 0,
@@ -1532,8 +1532,8 @@
      },
      "REGENT": {
       "captured": 0,
-      "certified_fixtures": 0,
-      "state": "not_captured"
+      "certified_fixtures": 1,
+      "state": "certified"
      },
      "SILENT": {
       "captured": 1,
@@ -1751,7 +1751,7 @@
      },
      "REGENT": {
       "captured": 1,
-      "certified_fixtures": 1,
+      "certified_fixtures": 2,
       "state": "certified"
      },
      "SILENT": {
@@ -1813,7 +1813,7 @@
      },
      "REGENT": {
       "captured": 2,
-      "certified_fixtures": 2,
+      "certified_fixtures": 3,
       "state": "certified"
      },
      "SILENT": {
@@ -1844,7 +1844,7 @@
      },
      "REGENT": {
       "captured": 1,
-      "certified_fixtures": 1,
+      "certified_fixtures": 2,
       "state": "certified"
      },
      "SILENT": {
@@ -1875,7 +1875,7 @@
      },
      "REGENT": {
       "captured": 1,
-      "certified_fixtures": 1,
+      "certified_fixtures": 2,
       "state": "certified"
      },
      "SILENT": {
@@ -1906,7 +1906,7 @@
      },
      "REGENT": {
       "captured": 1,
-      "certified_fixtures": 1,
+      "certified_fixtures": 2,
       "state": "certified"
      },
      "SILENT": {
@@ -2030,7 +2030,7 @@
      },
      "REGENT": {
       "captured": 1,
-      "certified_fixtures": 1,
+      "certified_fixtures": 2,
       "state": "certified"
      },
      "SILENT": {
@@ -2050,7 +2050,7 @@
  },
  "relics_held": {
   "all": {
-   "covered": 213,
+   "covered": 215,
    "total": 297
   },
   "by_pool": {
@@ -2059,7 +2059,7 @@
     "total": 8
    },
    "event": {
-    "covered": 98,
+    "covered": 99,
     "total": 142
    },
    "ironclad": {
@@ -2071,7 +2071,7 @@
     "total": 8
    },
    "regent": {
-    "covered": 4,
+    "covered": 5,
     "total": 8
    },
    "shared": {

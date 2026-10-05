@@ -940,26 +940,173 @@ pub(crate) fn monologue_active_card_play_entry_is_exact(state: &HotState, card: 
         })
 }
 
-/// Exact private owner-side-end subset. The compact carrier records
-/// `[Monologue]`, so every other represented local player-power member of the
-/// same acquisition-ordered hook must be absent rather than silently placed
-/// before or after it.
+/// Exact private owner-side-end subset: the authenticated per-instance
+/// quotient with no still-unread peer beside it. Turn entry reads the two
+/// halves apart so each refuses under its own name.
+#[cfg(test)]
 pub(crate) fn monologue_side_end_entry_is_exact(state: &HotState) -> bool {
-    monologue_private_state_is_exact(state)
-        && [
-            PowerId::RetainHand,
-            PowerId::TempDexterity,
-            PowerId::TempStrength,
-            PowerId::NoDraw,
-            PowerId::Shadowmeld,
-            PowerId::DoubleDamage,
-            PowerId::Doom,
-            PowerId::ConsumingShadow,
-        ]
-        .into_iter()
-        .all(|power| state.powers.value(power) == 0)
-        && state.temp_strength == 0
-        && state.fanouts.dark_embrace_ethereal() == 0
+    monologue_private_state_is_exact(state) && !monologue_side_end_peer_is_unmodeled(state)
+}
+
+/// Whether a player power whose owner-side-end body has not been read beside
+/// Monologue's is live at turn end (#3434).
+///
+/// Both bodies run from the one acquisition-ordered `AfterSideTurnEnd` object
+/// ledger (`engine::turn::dispatch_after_side_turn_end_power`), so a peer is
+/// placed exactly where it was acquired. Retain Hand was the first peer read.
+/// Current v0.111.0 ARM64 `sts2.dll` SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`:
+/// `MonologuePower/<AfterSideTurnEnd>d__17::MoveNext` RVA `0x33e7d8` leaves
+/// unless `participants` holds its owner (IL_0024-IL_0037), removes itself
+/// (`PowerCmd::Remove`, IL_003c-IL_003d), then applies minus its own
+/// `StrengthApplied` to Strength (IL_0097-IL_00c5).
+/// `RetainHandPower/<AfterSideTurnEnd>d__5::MoveNext` RVA `0x342694` takes the
+/// same owner guard (IL_001d-IL_0030) and only decrements itself
+/// (`PowerCmd::Decrement`, IL_0032-IL_0033); `RetainHandPower::ShouldFlush`
+/// RVA `0xa6a8c` reads the owner's player alone. Neither body reads the
+/// other's object, Strength, or the hand, so the two commute and the ledger's
+/// order is the whole interaction. `MonologuePower::BeforeCardPlayed` RVA
+/// `0xa4b6c` and `<AfterCardPlayed>d__16::MoveNext` RVA `0x33e660` compare
+/// only `CardPlay.Card.Owner` with the power's owner (IL_000c-IL_0022,
+/// IL_0020-IL_003d): how the card came to be played, by hand or by an
+/// AutoPlay, is not read anywhere in the power.
+///
+///
+/// # The dispatch order (#3613)
+///
+/// `Hook/<AfterSideTurnEnd>d__81::MoveNext` RVA `0x3d11c0` walks
+/// `Hook::IterateCombatHookListeners` (IL_0058) and awaits each listener's
+/// `AfterSideTurnEnd` to its completion or its player-choice pause before
+/// starting the next (IL_00b0-IL_00bd); no body read here asks for a choice,
+/// so each finishes before the next starts. `CombatState/<IterateHookListeners>d__69::MoveNext` RVA
+/// `0x3f9720` adds each creature's `Creature::get_Powers` whole (IL_0092-
+/// IL_0097), and that list grows only by `Creature::ApplyPowerInternal` RVA
+/// `0x11da0c` IL_0064-IL_006f `List.Add`: acquisition order, which is the
+/// ledger's. `Hook/<IterateCombatHookListeners>d__0::MoveNext` RVA `0x3d3bc0`
+/// tests `IsOverOrEnding` once, before the walk (IL_0028-IL_0042); the inner
+/// iterator then tests `CombatState::Contains` per listener as it is reached
+/// (IL_02a6), and for a power that is `Owner.Player.IsActiveForHooks`
+/// (`CombatState::Contains` RVA `0x137564` IL_00ae-IL_00d1).
+///
+/// # The peers read here (#3613)
+///
+/// Each takes Monologue's owner guard and then touches only itself, or itself
+/// and one stat:
+///
+/// * **No Draw**, `NoDrawPower/<AfterSideTurnEnd>d__5::MoveNext` RVA
+///   `0x33efbc`: guard IL_001d-IL_002e, `PowerCmd::Remove` IL_0032-IL_0033.
+/// * **Shadowmeld**, `ShadowmeldPower/<AfterSideTurnEnd>d__7::MoveNext` RVA
+///   `0x344114`: guard IL_001d-IL_002e, `PowerCmd::Remove` IL_0032-IL_0033.
+/// * **Double Damage**, `DoubleDamagePower/<AfterSideTurnEnd>d__5::MoveNext`
+///   RVA `0x33983c`: guard IL_001d-IL_002e, `PowerCmd::Decrement`
+///   IL_0032-IL_0033.
+/// * **Temporary Dexterity**,
+///   `TemporaryDexterityPower/<AfterSideTurnEnd>d__22::MoveNext` RVA
+///   `0x348498`: guard IL_0025-IL_0035, `PowerCmd::Remove` IL_0043, then
+///   `Apply<DexterityPower>` of minus `Sign * Amount` (IL_00aa-IL_00c4).
+/// * **Temporary Strength**,
+///   `TemporaryStrengthPower/<AfterSideTurnEnd>d__22::MoveNext` RVA
+///   `0x348ba8`: guard IL_0024-IL_0035, `PowerCmd::Remove` IL_0043, then
+///   `Apply<StrengthPower>` of minus `Sign * Amount` (IL_00aa-IL_00c4).
+///
+/// `PowerCmd/<Remove>d__8::MoveNext` RVA `0x3f09bc` is `RemoveInternal`
+/// (IL_0030) and the removed power's own `AfterRemoved` (IL_00b4): it raises
+/// no hook another power hears, and neither these classes nor the wrapper
+/// subclasses Rust carries (`FeedingFrenzyPower`, `SetupStrikePower`,
+/// `AnticipatePower`, `SpeedPotionPower`, `FadePower`: an `OriginModel`
+/// getter and a constructor each) override `AfterRemoved`.
+/// `PowerCmd/<Decrement>d__4::MoveNext` RVA `0x3f025c` is `ModifyAmount`
+/// (IL_0029). Monologue implements none of the power-amount hooks that
+/// `ModifyAmount` and `Apply` raise (its listener set is the three in
+/// [`monologue_private_state_is_exact`]). Among the peers the only one is the
+/// wrapper's own
+/// `Temporary{Strength,Dexterity}Power/<AfterPowerAmountChanged>d__21`
+/// (RVAs `0x348a88`, `0x348378`), which returns unless the changed power is
+/// itself (IL_003d-IL_0046), so Monologue's Strength write does not reach it.
+///
+/// So the first four share no state with Monologue's body, and commute with
+/// it. Temporary Strength shares Strength: natively both bodies subtract from
+/// the one `StrengthPower`, and subtraction commutes, with nothing reading
+/// Strength between the two. Rust holds the wrapper's part in
+/// `HotState::temp_strength`, apart from the Strength slot Monologue's
+/// reversal writes, so its arm clears the wrapper and Monologue's lowers the
+/// slot, and the two cannot meet. An intermediate Strength of exactly zero
+/// removes and re-creates the native `StrengthPower` in one order and not the
+/// other. Its place in the owner's list is not represented for the player,
+/// as it already is not for the wrapper beside Ritual or Tender, and
+/// `StrengthPower` is no ordered listener.
+///
+/// No body read above, Monologue's and Retain Hand's included, can end the
+/// combat or kill the owner. The two that can are read next.
+///
+/// # Doom and Consuming Shadow (#3628)
+///
+/// Both compose with Monologue through the ledger's order alone. Each cell
+/// below was run on the live engine (headless harness, v0.111.0 `41cef1ea`,
+/// seed `PROBE3628`) in both acquisition orders.
+///
+/// **Doom.** `DoomPower/<AfterSideTurnEnd>d__9::MoveNext` RVA `0x3390f0`
+/// leaves on the enemy side (IL_001d-IL_0026) and unless
+/// `ShouldDoomTrigger` RVA `0xa1a00` holds (IL_002b-IL_0039: not
+/// `IsOverOrEnding`, the owner among `participants`, alive, doomed and the
+/// first doomed creature of its side), then awaits `DoomKill`
+/// (IL_003b-IL_0047). `<DoomKill>d__6::MoveNext` RVA `0x3392c8` is
+/// `CreatureCmd::Kill(creature, false)` per doomed creature (IL_00d8-IL_00df)
+/// and `Hook::AfterDiedToDoom` (IL_017d). Monologue's body reads neither HP
+/// nor Doom, and Doom's reads neither Monologue nor Strength, so the order
+/// matters only through the owner's life:
+///
+/// * *Doom does not trigger.* Its body does nothing; Monologue's runs as it
+///   does alone, in either order.
+/// * *Lethal, Monologue acquired first.* Monologue removes itself and
+///   reverses its Strength, then Doom kills.
+/// * *Lethal, Doom acquired first.*
+///   `CreatureCmd/<KillWithoutCheckingWinCondition>d__15::MoveNext` RVA
+///   `0x3ebe90` runs `RemoveAllPowersAfterDeath` (IL_04f1) and
+///   `Player::DeactivateHooks` (IL_072d). The listener walk is a lazy
+///   iterator that tests `CombatState::Contains` per listener as it is
+///   reached (`0x3f9720` IL_02a3-IL_02ab; `Contains` RVA `0x137564`
+///   IL_00ba-IL_00d1 is `Owner.Player.IsActiveForHooks` for a power), so
+///   Monologue's body is never called: no Strength Apply is recorded. The
+///   ledger walk skips every row once the player's hooks are deactivated
+///   (`engine::turn::drive_after_side_turn_end_power_listeners`), which is
+///   that test. The corpse keeps its Monologue object, hooks, ledger row and
+///   Strength, as it keeps every other power a death does not clear in Rust.
+/// * *Prevented* (`Hook::ShouldDie` false at IL_0301-IL_030b, then
+///   `Hook::AfterPreventingDeath` IL_085d; Rust admits Fairy in a Bottle and
+///   Lizard Tail). The owner is alive with active hooks and the combat is not
+///   ending, so Monologue's body runs whole in either order, and Doom stays.
+///
+/// **Consuming Shadow.** `ConsumingShadowPower/<AfterSideTurnEnd>d__4`
+/// RVA `0x3375a4` takes the owner guard (IL_0027-IL_003a), leaves on an empty
+/// orb queue (IL_003f-IL_0060) and awaits `OrbCmd::EvokeLast` once per live
+/// Amount (IL_0071-IL_0083, back-edge IL_014c-IL_0158). An evoke that leaves
+/// the combat going shares nothing with Monologue's body. One that kills the
+/// last enemy leaves the owner's hooks active, so a Monologue acquired later
+/// is still called: `PowerCmd/<Remove>d__8::MoveNext` RVA `0x3f09bc` has no
+/// combat gate (null test IL_0023, `RemoveInternal` IL_0030), and the
+/// reversal stops at `PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988`
+/// IL_0020-IL_002a `IsEnding`. Native ends with Monologue gone and its
+/// Strength still applied. The Monologue arm does the same under
+/// `history.over`, which the evoke's killing blow latches in the same
+/// command (#3515), so the arm sees the ending the evoke made. A Monologue
+/// acquired first has already reversed.
+///
+/// The window in which `history.over` is not native's `IsEnding` (#3515) is a
+/// state that enters the turn end already ending and not over. Native then walks
+/// no listener at all (`Hook/<IterateCombatHookListeners>d__0` `0x3d3bc0`
+/// IL_0028-IL_0042). That is every row's question, not this pair's, and
+/// belongs to #3521.
+///
+/// # Still refused, each for its own reason
+///
+/// * A pending **Dark Embrace** ethereal tally draws from the ledger and can
+///   park mid-walk (#3496).
+/// * The player's `PowerId::TempStrength` **slot** has no writer and no
+///   ledger row (the player's wrapper is `HotState::temp_strength`), so a
+///   nonzero value is a state nothing here produced.
+pub(crate) fn monologue_side_end_peer_is_unmodeled(state: &HotState) -> bool {
+    state.powers.value(PowerId::TempStrength) != 0 || state.fanouts.dark_embrace_ethereal() != 0
 }
 
 /// Exact public Monologue writer. Admission authenticates the generated row,

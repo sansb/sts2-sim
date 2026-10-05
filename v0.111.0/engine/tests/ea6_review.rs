@@ -281,8 +281,33 @@ fn floor12_admits_the_captured_abundance_power_composition() {
     let catalog = HotBoundary::catalog_from_canonical(&entry).unwrap();
     let state = HotBoundary::from_canonical(&entry, &catalog).unwrap();
     engine::admit(&entry, &state, &catalog).unwrap();
-    let projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+    let projected = without_the_bookkeeping_record(
+        HotBoundary::try_to_canonical(&state, &catalog).unwrap(),
+        "floor 12",
+    );
     assert_eq!(projected, entry);
+}
+
+/// These roots were captured before `player.session_bookkeeping` existed
+/// (#3660). Each loads without it, derives the bookkeeping from its closure
+/// and projects with the record added. That record is the only difference.
+fn without_the_bookkeeping_record(
+    mut projected: CanonicalStateV2,
+    floor: &str,
+) -> CanonicalStateV2 {
+    // Floor 12's closure reaches Misery and neither Normality nor a
+    // self-return card; the later floors reach the whole owner pool.
+    let expected = if matches!(floor, "floor 12") {
+        serde_json::json!(["misery_ledger"])
+    } else {
+        serde_json::json!(["misery_ledger", "normality_count", "self_return_uids"])
+    };
+    assert_eq!(
+        projected.player.remove("session_bookkeeping"),
+        Some(expected),
+        "{floor}"
+    );
+    projected
 }
 
 /// The six floors #2637 is about, as committed roots.
@@ -360,7 +385,10 @@ fn the_six_entropy_floors_admit_with_zero_refusals_and_pinned_closures() {
         if let Err(refusal) = engine::admit(&entry, &state, &catalog) {
             panic!("floor {floor}: admission refused: {refusal:?}");
         }
-        let projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        let projected = without_the_bookkeeping_record(
+            HotBoundary::try_to_canonical(&state, &catalog).unwrap(),
+            &format!("floor {floor}"),
+        );
         assert_eq!(
             projected, entry,
             "floor {floor}: cold projection did not round-trip"
@@ -418,7 +446,10 @@ fn floor33_kaiser_crab_admits_with_zero_refusals_and_a_pinned_closure() {
     if let Err(refusal) = engine::admit(&entry, &state, &catalog) {
         panic!("floor 33: admission refused: {refusal:?}");
     }
-    let projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+    let projected = without_the_bookkeeping_record(
+        HotBoundary::try_to_canonical(&state, &catalog).unwrap(),
+        "floor 33",
+    );
     assert_eq!(
         projected, entry,
         "floor 33: cold projection did not round-trip"

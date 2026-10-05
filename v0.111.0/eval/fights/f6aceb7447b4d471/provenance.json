@@ -10,5 +10,6 @@
  "capture_sha256": "ba0db527e80bc159584f8d569f8c747b4279354bec4118ae7368afc27130ccc1",
  "save_sha256": "68e425dbb6f3606b964fec842ff6080793905703cd84e642a11e33ab4f2d8f85",
  "entry_digest": "9663a1c33f54f523893f0ec86a194670433d60ae2df089a1f47b22db46559580",
- "checksummed": true
+ "checksummed": true,
+ "entry_input": "--capture-run"
 }

@@ -4133,6 +4133,29 @@ impl HotFanouts {
         Arc::make_mut(&mut self.0).pet.set_attacks_this_turn(amount)
     }
 
+    /// Hydrate the retained dead Osty from a document (#3674).
+    ///
+    /// This is a decode, not a creation. `OstyCmd/<Summon>d__0::MoveNext`
+    /// (v0.111.0 RVA `0x3ee040`) creates the Osty creature once, through
+    /// `PlayerCmd.AddPet<Osty>` at `IL_01e9`, and that is where
+    /// `CombatState::AttachCreature` (`0x13718f` `IL_0009`-`IL_0022`) advanced
+    /// `_nextCreatureId`. The retained corpse is that same creature, so the
+    /// document's own `next_creature_uid` already counts it, exactly as it
+    /// counts a live `ally` ([`Self::set_osty`], which never advanced the
+    /// counter either).
+    ///
+    /// The loader used to route this through [`Self::mutate_pet`], whose
+    /// absent-to-present edge is the engine's creation and advances a tracked
+    /// counter. `next_creature_uid` sorts before `osty_corpse` in the entity
+    /// bag, so the counter was already tracked when the corpse arrived, and
+    /// every document holding both reloaded with the counter one too high:
+    /// 78 census projections in 30 fights did not project back to themselves,
+    /// and the next spawned enemy of a reloaded state would have taken a uid
+    /// one above the session's (and above native's `.mcr` target id).
+    pub(crate) fn set_osty_corpse(&mut self, corpse: bool) -> Result<(), PetStateError> {
+        Arc::make_mut(&mut self.0).pet.set_corpse(corpse)
+    }
+
     /// Run one pet operation. A fresh Osty creature takes a native creature
     /// id (#3039): `OstyCmd/<Summon>d__0::MoveNext` (RVA `0x3ee040`) looks
     /// the retained Osty up in `Allies` (`IL_00e3`-`IL_0103`) and revives it

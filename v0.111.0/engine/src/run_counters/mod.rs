@@ -45,7 +45,12 @@
 //!
 //! # Where this departs from the Python it replaces
 //!
-//! One place, the `Shuffle` stream's seed ([`shuffle`]). `replay_fight.predict`
+//! Three places. Two are #2997's, where the Python made exact claims that the
+//! captured start saves contradict: the `Niche` registries are held to a
+//! whole-DLL census and name consumers the original missed ([`streams`]), and
+//! a floor-1 removal row the first node had added is rebuilt after Ascender's
+//! Bane rather than in its slot (`shuffle::entry_deck`). The third is older:
+//! the `Shuffle` stream's seed ([`shuffle`]). `replay_fight.predict`
 //! built `RunRngSet(seed)` and `Rng(rs["Shuffle"].seed)` without a build, so
 //! both took `sts2_rng`'s v0.108 default: a djb2 run seed and stream hash added
 //! at 32 bits, truncated to 32 bits before seeding xoshiro. v0.111.0's
@@ -350,7 +355,7 @@ pub fn predict_history(
 
     let mut shuffle_caveats = shuffle.caveats;
     shuffle_caveats.extend(streams::shuffle_counter_caveats(fights, fight_index));
-    let (niche, niche_caveats) = streams::niche_counter_entering(fights, fight_index);
+    let (niche, niche_caveats) = streams::niche_counter_entering(&history.run, fights, fight_index);
     let monster_ai_caveats = streams::monsterai_caveats(fights, fight_index);
     let (selection, selection_caveats) = streams::card_sel_counter_entering(fights, fight_index);
     let (targets, targets_caveats) = streams::combat_targets_counter_entering(fights, fight_index);

@@ -53,10 +53,12 @@ pub fn current_node(run: &SerializedRun) -> Result<i64, EntryRefusal> {
 /// first is an absent map.
 ///
 /// Note what the corpus shows about the point list: `boss` and `ancient`
-/// points live in `saved_map.boss` / `saved_map.start`, not in
-/// `saved_map.points`, so a boss node reaches this function as
-/// [`EntryRefusal::NodeNotOnSavedMap`] — exactly as the oracle reaches `None`
-/// there — and the caller supplies the kind explicitly.
+/// points live in `saved_map.boss` / `saved_map.second_boss` /
+/// `saved_map.start`, not in `saved_map.points`. Both boss points are read
+/// here too (#3688, #3700): a save taken on arriving at a boss says so
+/// itself. Both spell their type `boss`; [`next_encounter`] tells them apart
+/// by the same coordinate. `start` stays
+/// [`EntryRefusal::NodeNotOnSavedMap`]: it is the act's ancient, not a fight.
 pub fn node_type(run: &SerializedRun) -> Result<Option<String>, EntryRefusal> {
     let act = run.act_index();
     let acts = run.acts.len();
@@ -71,7 +73,8 @@ pub fn node_type(run: &SerializedRun) -> Result<Option<String>, EntryRefusal> {
     let Some(map) = act_model.saved_map.as_ref() else {
         return Ok(None);
     };
-    for point in &map.points {
+    let listed = map.points.iter();
+    for point in listed.chain(map.boss.iter()).chain(map.second_boss.iter()) {
         if point.coord != Some(current) {
             continue;
         }
@@ -139,12 +142,16 @@ pub fn next_encounter(run: &SerializedRun, kind: &str) -> Result<String, EntryRe
             &rooms.elite_encounter_ids,
             rooms.elite_encounters_visited,
         ),
-        "boss" => rooms
-            .boss_id
-            .clone()
-            .ok_or_else(|| EntryRefusal::NoEncounterForNode {
+        "boss" => {
+            let id = if on_second_boss(run) {
+                &rooms.second_boss_id
+            } else {
+                &rooms.boss_id
+            };
+            id.clone().ok_or_else(|| EntryRefusal::NoEncounterForNode {
                 node_type: kind.to_string(),
-            }),
+            })
+        }
         "monster" => pick(
             "normal_encounter_ids",
             &rooms.normal_encounter_ids,
@@ -153,6 +160,20 @@ pub fn next_encounter(run: &SerializedRun, kind: &str) -> Result<String, EntryRe
         other => Err(EntryRefusal::NoEncounterForNode {
             node_type: other.to_string(),
         }),
+    }
+}
+
+/// Whether the current coordinate is the act's `second_boss` point, whose
+/// encounter is `rooms.second_boss_id` rather than `rooms.boss_id` (#3700).
+fn on_second_boss(run: &SerializedRun) -> bool {
+    let point = run
+        .acts
+        .get(run.act_index())
+        .and_then(|act| act.saved_map.as_ref())
+        .and_then(|map| map.second_boss.as_ref());
+    match (point, run.visited_map_coords.last()) {
+        (Some(point), Some(current)) => point.coord == Some(*current),
+        _ => false,
     }
 }
 
@@ -254,6 +275,51 @@ mod tests {
         let mut mapless = run(ACT_ZERO);
         mapless.acts[0].saved_map = None;
         assert_eq!(map_point_type(&mapless), None);
+    }
+
+    /// #3688, #3700: the two boss points are outside `points`, and a save on
+    /// either still names its own kind. They share the `boss` spelling and
+    /// differ in the encounter slot.
+    #[test]
+    fn node_type_and_encounter_read_both_boss_points() {
+        let here = Some(crate::entry::save::Coord { col: 3, row: 1 });
+        let boss_point = SerializedMapPoint {
+            coord: here,
+            point_type: Some("boss".to_string()),
+            can_modify: None,
+            children: Vec::new(),
+        };
+        let mut off_points = run(ACT_ZERO);
+        off_points.acts[0].rooms.second_boss_id = Some("ENCOUNTER.QUEEN_BOSS".to_string());
+        let map = off_points.acts[0].saved_map.as_mut().unwrap();
+        map.points.retain(|point| point.coord != here);
+        assert_eq!(
+            node_type(&off_points),
+            Err(EntryRefusal::NodeNotOnSavedMap { col: 3, row: 1 })
+        );
+
+        let mut boss = off_points.clone();
+        boss.acts[0].saved_map.as_mut().unwrap().boss = Some(boss_point.clone());
+        assert_eq!(node_type(&boss).unwrap().as_deref(), Some("boss"));
+        assert_eq!(
+            next_encounter(&boss, "boss").unwrap(),
+            "ENCOUNTER.WATERFALL_GIANT_BOSS"
+        );
+
+        let mut second = off_points.clone();
+        second.acts[0].saved_map.as_mut().unwrap().second_boss = Some(boss_point);
+        assert_eq!(node_type(&second).unwrap().as_deref(), Some("boss"));
+        assert_eq!(
+            next_encounter(&second, "boss").unwrap(),
+            "ENCOUNTER.QUEEN_BOSS"
+        );
+        second.acts[0].rooms.second_boss_id = None;
+        assert_eq!(
+            next_encounter(&second, "boss"),
+            Err(EntryRefusal::NoEncounterForNode {
+                node_type: "boss".to_string()
+            })
+        );
     }
 
     #[test]

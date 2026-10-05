@@ -47,7 +47,7 @@ use sts_sim::catalog::Catalog;
 use sts_sim::engine::{self, Action};
 use sts_sim::exact_solve_v1::{self, ExactSolveActionV1};
 use sts_sim::hot::HotState;
-use sts_sim::search::{SearchParams, search_document};
+use sts_sim::search::{SearchParams, search_document, search_document_holding};
 
 /// Bumped on any incompatible change to an export or a response shape.
 pub const API_VERSION: u32 = 1;
@@ -146,6 +146,32 @@ impl Engine {
             .map(ExactSolveActionV1::from)
             .collect();
         ok(json!({ "actions": actions }))
+    }
+
+    /// Which physical cards a `select` action names in a state, in pick order
+    /// (`engine::selected_card_uids`): the transition's own option enumerator
+    /// read back, never inferred from which cards moved. `uids` is null for a
+    /// choice that names no physical card (a generated card, a monster's
+    /// modal) and for any action that is not a `select`. Read-only: the state
+    /// is not advanced.
+    pub fn selected_uids(&self, id: u32, action: &str) -> String {
+        let action: Action = match serde_json::from_str::<ExactSolveActionV1>(action)
+            .map_err(|error| error.to_string())
+            .and_then(Action::try_from)
+        {
+            Ok(action) => action,
+            Err(detail) => return refusal("malformed_action", detail),
+        };
+        let Some(held) = self.states.get(&id) else {
+            return unknown_state(id);
+        };
+        let Action::Select { answer } = action else {
+            return ok(json!({ "uids": Value::Null }));
+        };
+        match engine::selected_card_uids(&held.state, &held.catalog, answer) {
+            Ok(uids) => ok(json!({ "uids": uids })),
+            Err(error) => refusal("action_refused", error),
+        }
     }
 
     /// Apply one action to a state, returning a **new** state id. The input
@@ -297,6 +323,12 @@ struct SearchRequest {
     max_turns: i16,
     #[serde(default)]
     max_playouts: Option<u64>,
+    /// The potion holdback (`--max-potions`, `--hold-slot`): at most this
+    /// many drinks, and never the entry belt's potion in a held slot.
+    #[serde(default)]
+    max_potions: Option<u32>,
+    #[serde(default)]
+    hold_slots: Vec<u8>,
 }
 
 /// Run the review worker's bounded search (`sts_sim::search`, UCT or random
@@ -313,7 +345,17 @@ pub fn search(request: &str) -> String {
     if let Some(max_playouts) = request.max_playouts {
         params.max_playouts = max_playouts;
     }
-    match search_document(&request.entry, &params) {
+    let report = if request.max_potions.is_none() && request.hold_slots.is_empty() {
+        search_document(&request.entry, &params)
+    } else {
+        search_document_holding(
+            &request.entry,
+            &params,
+            request.max_potions,
+            &request.hold_slots,
+        )
+    };
+    match report {
         Ok(report) => ok(report),
         Err(error) => refusal("search_refused", error),
     }
@@ -403,6 +445,53 @@ pub fn entry(request: &str) -> String {
     serde_json::to_string(&value).expect("an entry document serializes")
 }
 
+/// What one capture (`.mcr` bytes) says about which fight it records
+/// (`sts_sim::recorded::capture_summary`, #3578): the inputs a caller needs to
+/// pair a run's captures with its fights, without the decoded document
+/// crossing the boundary.
+#[must_use]
+pub fn capture_summary(mcr: &[u8]) -> String {
+    match sts_sim::mcr::decode(mcr) {
+        Ok(replay) => ok(sts_sim::recorded::capture_summary(&replay)),
+        Err(error) => refusal(error.code, error.detail),
+    }
+}
+
+/// The player's own line (#3578): decode the capture, resolve every recorded
+/// input to an engine action from `entry` (a canonical root, as text) and
+/// apply it. `max_selection_answers` bounds one selection's offered answers
+/// (0 is no limit; see `RecordedOptions`). Answers `{actions, step_digests,
+/// terminal, nonrepresentative_uids}`, or a refusal whose `code` is the
+/// divergence class and which also carries `step` and `turn`.
+#[must_use]
+pub fn recorded_line(entry: &str, mcr: &[u8], max_selection_answers: u32) -> String {
+    let entry: CanonicalStateV2 = match serde_json::from_str(entry) {
+        Ok(entry) => entry,
+        Err(error) => return refusal("malformed_entry", error),
+    };
+    let replay = match sts_sim::mcr::decode(mcr) {
+        Ok(replay) => replay,
+        Err(error) => return refusal(error.code, error.detail),
+    };
+    let options = sts_sim::recorded::RecordedOptions {
+        max_selection_answers: (max_selection_answers > 0)
+            .then_some(max_selection_answers as usize),
+    };
+    match sts_sim::recorded::recorded_line_with(&entry, &replay, &options) {
+        Ok(line) => ok(json!({
+            "actions": line.actions,
+            "step_digests": line.step_digests,
+            "terminal": line.terminal,
+            "nonrepresentative_uids": line.nonrepresentative_uids,
+        })),
+        Err(diverged) => json!({ "refusal": {
+            "code": diverged.check, "detail": diverged.detail,
+            "step": diverged.step, "turn": diverged.turn,
+        } })
+        .to_string(),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // C ABI
 // ---------------------------------------------------------------------------
@@ -426,6 +515,12 @@ fn take(ptr: *mut u8, len: u32) -> String {
     // and this call is the buffer's single owner from here on.
     let bytes = unsafe { Vec::from_raw_parts(ptr, len as usize, len as usize) };
     String::from_utf8(bytes).unwrap_or_default()
+}
+
+/// Take ownership of a binary request buffer from [`sts_alloc`].
+fn take_bytes(ptr: *mut u8, len: u32) -> Vec<u8> {
+    // SAFETY: as `take`.
+    unsafe { Vec::from_raw_parts(ptr, len as usize, len as usize) }
 }
 
 /// Allocate `len` bytes for one request. The next call that takes a request
@@ -464,6 +559,12 @@ pub extern "C" fn sts_legal(id: u32) -> u32 {
 pub extern "C" fn sts_apply(id: u32, ptr: *mut u8, len: u32) -> u32 {
     let action = take(ptr, len);
     answer(ENGINE.with(|engine| engine.borrow_mut().apply(id, &action)))
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn sts_selected_uids(id: u32, ptr: *mut u8, len: u32) -> u32 {
+    let action = take(ptr, len);
+    answer(ENGINE.with(|engine| engine.borrow().selected_uids(id, &action)))
 }
 
 #[unsafe(no_mangle)]
@@ -513,4 +614,26 @@ pub extern "C" fn sts_entry(ptr: *mut u8, len: u32) -> u32 {
 pub extern "C" fn sts_replay(ptr: *mut u8, len: u32) -> u32 {
     let request = take(ptr, len);
     answer(replay(&request))
+}
+
+/// `capture_summary` over a capture's raw bytes.
+#[unsafe(no_mangle)]
+pub extern "C" fn sts_capture_summary(ptr: *mut u8, len: u32) -> u32 {
+    let mcr = take_bytes(ptr, len);
+    answer(capture_summary(&mcr))
+}
+
+/// `recorded_line` over an entry's text and a capture's raw bytes, each in
+/// its own [`sts_alloc`] buffer.
+#[unsafe(no_mangle)]
+pub extern "C" fn sts_recorded_line(
+    entry_ptr: *mut u8,
+    entry_len: u32,
+    mcr_ptr: *mut u8,
+    mcr_len: u32,
+    max_selection_answers: u32,
+) -> u32 {
+    let entry = take(entry_ptr, entry_len);
+    let mcr = take_bytes(mcr_ptr, mcr_len);
+    answer(recorded_line(&entry, &mcr, max_selection_answers))
 }

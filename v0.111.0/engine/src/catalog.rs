@@ -1002,6 +1002,98 @@ impl<T> std::fmt::Debug for Derived<T> {
     }
 }
 
+/// The bookkeeping a session keeps because of what its catalog can reach,
+/// as a document records it (`player.session_bookkeeping`, #3660).
+///
+/// A session builds one catalog, from the fight's entry document, and keeps
+/// it. Three of its derived bits gate a WRITE to projected state rather than
+/// a scan or a refusal:
+///
+/// * `misery_is_reachable` keeps the monster attachment ledger
+///   (`HotState::misery_attachment_upkeep`, about thirty Strength writers);
+/// * `has_normality` advances the started-play count
+///   (`engine::play::note_normality_card_play_started`);
+/// * `has_batch139_self_return` assigns uids to legacy placeholder cards
+///   before a hand draw (`engine::cards::freeze_self_return_before_hand_draw`).
+///
+/// Each is an "is there any" over the closure, and a mid-fight document's
+/// closure is narrower than the entry's, so a catalog rebuilt from such a
+/// document could lose a bit the session still had and then keep different
+/// bookkeeping from it. The document therefore records the bits, and
+/// `boundary::catalog_from_canonical` ORs them into the rebuilt catalog.
+///
+/// **What a bit can do.** A bit keeps bookkeeping, and in two places it also
+/// moves a refusal; it never changes an admitted outcome. Every read is
+/// classified in `tests/replay_catalog_narrowing.rs`
+/// (`every_read_of_a_bookkeeping_bit_is_classified`), which fails when one is
+/// added.
+///
+/// * The ledger and the count have one reader each in play, found by its own
+///   closure and pile test and not by the bit: a reachable Misery, and a
+///   Normality in Hand. The scalars every ledger writer returns are the same
+///   with the ledger and without it.
+/// * `engine::damage::temp_strength_wrapper_on_retained_owner` refuses a
+///   nested death when it cannot tell whether a temporary-Strength wrapper
+///   is already attached. The ledger tells it, so with `misery_ledger` that
+///   refusal can become an exact result. It reads only rows the ledger
+///   itself recorded (`temp_strength_provenance_is_recorded`): a bit set over
+///   a wrapper it never recorded still refuses.
+/// * `engine::play::note_normality_card_play_started` refuses a card body
+///   started on the enemy side. It looks only when it keeps the count, so
+///   with `normality_count` an exact result can become that refusal.
+/// * `self_return_uids` decides when a placeholder card (one with no uid) is
+///   numbered. Beside such a card the record refuses on load
+///   (`boundary::from_canonical`), because a uid allocated between the two
+///   numbering points would label the cards differently; with a uid on every
+///   card it writes nothing.
+///
+/// So a recorded bit that the closure does not imply (a forged one) costs
+/// upkeep, can turn a refusal into the exact result or an exact result into
+/// a refusal, and cannot make the engine admit another outcome. An absent
+/// record means "derive, as before".
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct SessionBookkeeping {
+    pub misery_ledger: bool,
+    pub normality_count: bool,
+    pub self_return_uids: bool,
+}
+
+impl SessionBookkeeping {
+    /// The wire names, ascending, each with its bit.
+    pub(crate) const NAMES: [&'static str; 3] =
+        ["misery_ledger", "normality_count", "self_return_uids"];
+
+    pub(crate) fn bits(self) -> [bool; 3] {
+        [
+            self.misery_ledger,
+            self.normality_count,
+            self.self_return_uids,
+        ]
+    }
+
+    pub(crate) fn from_bits(bits: [bool; 3]) -> Self {
+        Self {
+            misery_ledger: bits[0],
+            normality_count: bits[1],
+            self_return_uids: bits[2],
+        }
+    }
+
+    pub(crate) fn union(self, other: Self) -> Self {
+        let (mine, theirs) = (self.bits(), other.bits());
+        Self::from_bits([
+            mine[0] || theirs[0],
+            mine[1] || theirs[1],
+            mine[2] || theirs[2],
+        ])
+    }
+
+    /// Whether every bit recorded here is one `host` keeps.
+    pub(crate) fn is_kept_by(self, host: Self) -> bool {
+        self.union(host) == host
+    }
+}
+
 /// Everything constant for the duration of one fight.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Catalog {
@@ -1064,7 +1156,9 @@ pub struct Catalog {
     /// S1, [`crate::engine::damage::write_monster_strength`]). Deriving it
     /// here rather than at each writer keeps the decision a per-fight
     /// constant: a catalog is immutable, so it can never flip mid-combat and
-    /// leave half a fight's provenance recorded.
+    /// leave half a fight's provenance recorded. A catalog REBUILT from a
+    /// mid-fight document could lose it, so a document records it and the
+    /// rebuild keeps it (#3660, [`SessionBookkeeping`]).
     ///
     /// It is deliberately the *reachability* test alone and not admission's
     /// `misery_reachable`, which additionally requires the row to be admitted:
@@ -1087,7 +1181,8 @@ pub struct Catalog {
     /// Generation-potion pool facts, derived on first use; see
     /// [`crate::engine::potions::GenerationPoolFacts`].
     generation_pools: Derived<crate::engine::potions::GenerationPoolFacts>,
-    /// Whether any interned identity is Normality.
+    /// Whether any interned identity is Normality, or the document records
+    /// that its session kept the count (#3660, [`SessionBookkeeping`]).
     ///
     /// A catalog is immutable and every live card carries an interned atom,
     /// so a fight without this bit can never hold a Normality in any pile.
@@ -1107,7 +1202,9 @@ pub struct Catalog {
     /// at every turn boundary while adding nothing to [`crate::hot::HotState`].
     has_auto_post_card_listener: bool,
     /// Whether any immutable fight identity owns Batch139's self-return
-    /// listener. This keeps ordinary turn entry from scanning all five piles.
+    /// listener, or the document records that its session ran that turn
+    /// entry (#3660, [`SessionBookkeeping`]). This keeps ordinary turn entry
+    /// from scanning all five piles.
     has_batch139_self_return: bool,
     /// Whether this immutable fight closure can park a replay-rooted action.
     ///
@@ -1123,6 +1220,12 @@ pub struct Catalog {
     /// Whether Stratagem or a selecting Hellraiser Strike can suspend one
     /// exact CardPlay-owned Draw, independent of the drawing source program.
     cardplay_draw_hook_can_suspend: bool,
+    /// Whether Hellraiser can be live in this fight: a Hellraiser card is
+    /// reachable, or the power was already live at the root
+    /// (`CatalogBuilder::mark_live_hellraiser_reachable`). Unlike
+    /// `cardplay_draw_hook_can_suspend` it does not ask for a selecting
+    /// Strike (#3637).
+    hellraiser_reachable: bool,
     /// Whether a deferred ordinary-Ethereal Dark Embrace Draw can park.
     dark_embrace_side_end_can_suspend: bool,
     /// Whether an ordinary Exhaust's immediate Dark Embrace Draw can park.
@@ -1490,6 +1593,11 @@ impl Catalog {
         self.cardplay_draw_hook_can_suspend
     }
 
+    /// Whether Hellraiser can be live in this fight (#3637).
+    pub(crate) fn hellraiser_reachable(&self) -> bool {
+        self.hellraiser_reachable
+    }
+
     pub(crate) fn dark_embrace_side_end_can_suspend(&self) -> bool {
         self.dark_embrace_side_end_can_suspend
     }
@@ -1505,8 +1613,39 @@ impl Catalog {
         !self.entropy_transform_provably_inert
     }
 
+    /// The bookkeeping this fight's catalog keeps, which is what a document
+    /// projected under it records as `player.session_bookkeeping` (#3660).
+    pub(crate) fn session_bookkeeping(&self) -> SessionBookkeeping {
+        SessionBookkeeping {
+            misery_ledger: self.misery_is_reachable,
+            normality_count: self.has_normality,
+            self_return_uids: self.has_batch139_self_return,
+        }
+    }
+
+    /// A hand-built catalog interns less than the closure of the document
+    /// it projects, so a catalog rebuilt from that document can keep
+    /// bookkeeping the hand-built one does not. A session whose catalog is
+    /// built from its entry document never has that gap; a test that stands
+    /// in for one sets the bits the rebuild derives.
+    #[cfg(test)]
+    pub(crate) fn with_session_bookkeeping_for_test(mut self, kept: SessionBookkeeping) -> Self {
+        self.misery_is_reachable = kept.misery_ledger;
+        self.has_normality = kept.normality_count;
+        self.has_batch139_self_return = kept.self_return_uids;
+        self
+    }
+
     pub(crate) fn with_action_replay_required(mut self) -> Self {
         self.requires_action_replay = true;
+        self
+    }
+
+    /// Flip the other bit `same_content_ignoring_replay_root` ignores, for
+    /// the loader's caller-catalog witness (#3660).
+    #[cfg(test)]
+    pub(crate) fn with_cardplay_draw_hook_can_suspend_for_test(mut self, value: bool) -> Self {
+        self.cardplay_draw_hook_can_suspend = value;
         self
     }
 
@@ -1595,6 +1734,7 @@ impl Catalog {
                 self.cardplay_no_result_draw_can_suspend,
                 host.cardplay_no_result_draw_can_suspend,
             ),
+            (self.hellraiser_reachable, host.hellraiser_reachable),
             (
                 self.dark_embrace_side_end_can_suspend,
                 host.dark_embrace_side_end_can_suspend,
@@ -1760,6 +1900,9 @@ pub struct CatalogBuilder {
     /// See [`Catalog::entropy_transform_provably_inert`]. `false` — the
     /// `Default` — means the Entropy closure expands.
     entropy_transform_provably_inert: bool,
+    /// See [`SessionBookkeeping`]: the bits a document recorded its session
+    /// as keeping, OR-ed into the derived ones at [`Self::build`].
+    session_bookkeeping: SessionBookkeeping,
     /// See [`Catalog::ascension`]; stored as the distance below
     /// [`crate::encounters::MODELED_ASCENSION`] so the `Default` is A10.
     ascension_below_modeled: u8,
@@ -2016,6 +2159,12 @@ impl CatalogBuilder {
     /// Mark the source-absent live Furnace carrier as a future Forge command.
     pub(crate) fn mark_live_furnace_reachable(&mut self) {
         self.forge_command_reachable = true;
+    }
+
+    /// Keep the bookkeeping a document says its session kept (#3660). Only
+    /// ever widens: see [`SessionBookkeeping`].
+    pub(crate) fn mark_session_bookkeeping(&mut self, recorded: SessionBookkeeping) {
+        self.session_bookkeeping = self.session_bookkeeping.union(recorded);
     }
 
     /// Record that this document's own provenance proves a native Entropy
@@ -2919,22 +3068,28 @@ impl CatalogBuilder {
                 CardId::HowlFromBeyond | CardId::IAmInvincible
             )
         });
-        let has_batch139_self_return = self
-            .specs
-            .iter()
-            .any(|spec| matches!(spec.identity.id, CardId::Bolas | CardId::ThrummingHatchet));
-        let has_normality = self
-            .specs
-            .iter()
-            .any(|spec| matches!(spec.identity.id, CardId::Normality));
+        // The three bits below gate bookkeeping WRITES, so each is also true
+        // when the document records that its session kept that bookkeeping
+        // (#3660, [`SessionBookkeeping`]).
+        let has_batch139_self_return = self.session_bookkeeping.self_return_uids
+            || self
+                .specs
+                .iter()
+                .any(|spec| matches!(spec.identity.id, CardId::Bolas | CardId::ThrummingHatchet));
+        let has_normality = self.session_bookkeeping.normality_count
+            || self
+                .specs
+                .iter()
+                .any(|spec| matches!(spec.identity.id, CardId::Normality));
         let has_enthralled = self
             .specs
             .iter()
             .any(|spec| matches!(spec.identity.id, CardId::Enthralled));
-        let misery_is_reachable = self
-            .reachable_identities
-            .iter()
-            .any(|identity| matches!(identity.id, CardId::Misery));
+        let misery_is_reachable = self.session_bookkeeping.misery_ledger
+            || self
+                .reachable_identities
+                .iter()
+                .any(|identity| matches!(identity.id, CardId::Misery));
         let mut selecting_reachable = false;
         let mut selecting_skill_reachable = false;
         let mut selecting_attack_reachable = false;
@@ -3198,6 +3353,7 @@ impl CatalogBuilder {
             requires_action_replay,
             cardplay_no_result_draw_can_suspend,
             cardplay_draw_hook_can_suspend,
+            hellraiser_reachable: self.hellraiser_reachable,
             dark_embrace_side_end_can_suspend,
             after_card_exhausted_dark_can_suspend,
             dark_embrace_ethereal_reachable,

@@ -282,6 +282,9 @@
   "relics_entering_dispatch_ordered": true,
   "reward_card_pool": "Necrobinder",
   "reward_card_rarity_odds": "RegularEncounter",
+  "session_bookkeeping": [
+   "misery_ledger"
+  ],
   "splash_unlock_epochs": [
    "ACT2_B_EPOCH",
    "ACT3_B_EPOCH",

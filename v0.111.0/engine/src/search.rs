@@ -349,6 +349,32 @@ pub fn search_document(
     search_with(document, params, PotionLimit::default(), false)
 }
 
+/// [`search_document`] under a potion holdback, as `--max-potions` and
+/// `--hold-slot` give the command line: the line drinks at most `max_drinks`
+/// potions, and never the entry belt's potion in a held slot. A held slot
+/// must be below 64, named once, and hold a potion on the entry's belt.
+pub fn search_document_holding(
+    document: &CanonicalStateV2,
+    params: &SearchParams,
+    max_drinks: Option<u32>,
+    hold_slots: &[u8],
+) -> Result<Value, String> {
+    let mut limit = PotionLimit {
+        max_drinks,
+        held_slots: 0,
+    };
+    for &slot in hold_slots {
+        if slot >= 64 {
+            return Err("a held slot must be below 64".into());
+        }
+        if limit.held_slots & (1u64 << slot) != 0 {
+            return Err(format!("held slot {slot} given twice"));
+        }
+        limit.held_slots |= 1u64 << slot;
+    }
+    search_with(document, params, limit, false)
+}
+
 /// `trace` writes each improvement to stderr as it is found, as the command
 /// line always has.
 fn search_with(

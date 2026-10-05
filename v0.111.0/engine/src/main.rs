@@ -18,7 +18,8 @@ use std::io::{BufReader, Write};
 use sts_sim::search;
 
 const USAGE: &str = "usage: sts-sim version | sts-sim diff-serve | sts-sim exact-solve | \
-                     sts-sim bench [options] | sts-sim entry [options] | sts-sim run-counters [options] | sts-sim search ENTRY uct|random SEED SECONDS";
+                     sts-sim bench [options] | sts-sim entry [options] | sts-sim run-counters [options] | sts-sim search ENTRY uct|random SEED SECONDS | \
+                     sts-sim mcr-decode FILE.mcr | sts-sim recorded-line ENTRY.json FILE.mcr";
 
 #[cfg(feature = "allocation-counting")]
 #[global_allocator]
@@ -132,6 +133,84 @@ fn main() {
                 std::process::exit(2);
             }
         }
+        return;
+    }
+    // `mcr-decode FILE` prints the decoded replay document (#3578). A file
+    // that does not decode is a named refusal on stdout, as `entry`'s is.
+    if args.first().map(String::as_str) == Some("mcr-decode") {
+        let Some(path) = args.get(1).filter(|_| args.len() == 2) else {
+            eprintln!("usage: sts-sim mcr-decode FILE.mcr");
+            std::process::exit(2);
+        };
+        let bytes = match std::fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                eprintln!("{path}: {error}");
+                std::process::exit(2);
+            }
+        };
+        match sts_sim::mcr::decode(&bytes) {
+            Ok(document) => println!("{document}"),
+            Err(error) => println!(
+                "{}",
+                serde_json::json!({"refusal": {"code": error.code, "detail": error.detail}})
+            ),
+        }
+        return;
+    }
+    // `recorded-line ENTRY.json FILE.mcr` resolves the capture's recorded
+    // inputs against the entry and prints the line (#3578). A capture that
+    // does not decode, or an input with no exact counterpart, is a named
+    // refusal on stdout.
+    if args.first().map(String::as_str) == Some("recorded-line") {
+        // An optional third argument is the selection answer budget
+        // (`RecordedOptions::max_selection_answers`).
+        let budget = match args.get(3).map(|text| text.parse::<usize>()) {
+            None => Some(None),
+            Some(Ok(budget)) => Some(Some(budget)),
+            Some(Err(_)) => None,
+        };
+        let (Some(entry_path), Some(mcr_path), Some(budget)) =
+            (args.get(1), args.get(2).filter(|_| args.len() <= 4), budget)
+        else {
+            eprintln!("usage: sts-sim recorded-line ENTRY.json FILE.mcr [MAX_SELECTION_ANSWERS]");
+            std::process::exit(2);
+        };
+        let options = sts_sim::recorded::RecordedOptions {
+            max_selection_answers: budget,
+        };
+        let read = |path: &String| {
+            std::fs::read(path).unwrap_or_else(|error| {
+                eprintln!("{path}: {error}");
+                std::process::exit(2);
+            })
+        };
+        let entry: sts_sim::canonical::CanonicalStateV2 =
+            match serde_json::from_slice(&read(entry_path)) {
+                Ok(entry) => entry,
+                Err(error) => {
+                    eprintln!("{entry_path}: not a canonical v2 document: {error}");
+                    std::process::exit(2);
+                }
+            };
+        let answer = match sts_sim::mcr::decode(&read(mcr_path)) {
+            Err(error) => {
+                serde_json::json!({"refusal": {"check": error.code, "detail": error.detail}})
+            }
+            Ok(replay) => match sts_sim::recorded::recorded_line_with(&entry, &replay, &options) {
+                Ok(line) => serde_json::json!({"ok": {
+                    "actions": line.actions,
+                    "step_digests": line.step_digests,
+                    "terminal": line.terminal,
+                    "nonrepresentative_uids": line.nonrepresentative_uids,
+                }}),
+                Err(diverged) => serde_json::json!({"refusal": {
+                    "check": diverged.check, "detail": diverged.detail,
+                    "step": diverged.step, "turn": diverged.turn,
+                }}),
+            },
+        };
+        println!("{answer}");
         return;
     }
     if args.first().map(String::as_str) == Some("run-counters") {

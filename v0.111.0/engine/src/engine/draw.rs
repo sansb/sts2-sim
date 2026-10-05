@@ -280,24 +280,111 @@ fn hellraiser_after_card_drawn_early_resumable(
     super::play::autoplay_hellraiser_strike_resumable(state, catalog, card, events)
 }
 
-fn powers_after_card_drawn(
+/// `ConfusedPower`'s `AfterCardDrawn` listener: one `CombatEnergyCosts` roll
+/// per drawn card, exactly once per `Hook.AfterCardDrawn` (#2690).
+///
+/// v0.111.0 (DLL `9cb4f1ad`) `ConfusedPower::AfterCardDrawn` RVA `0xa07f4` is
+/// synchronous (every exit is `Task.CompletedTask`: IL_001f, IL_0033,
+/// IL_0067). IL_000c-001d leaves unless the card's `Owner` is the power
+/// owner's player; IL_0025-0031 leaves on `EnergyCost.Canonical < 0`;
+/// IL_0039-003f rolls `NextEnergyCost` (RVA `0xa0861` IL_0011-002c,
+/// `RunState.Rng.CombatEnergyCosts.NextInt(4)`; `_testEnergyCostOverride` is
+/// `-1` from `.ctor` `0xa0893`); IL_0040-0048 calls
+/// `EnergyCost.SetThisCombat(roll, false)`, whose body (RVA `0x11e21c`
+/// IL_000e-001d) appends one `Set`/`ThisCombat` row for any roll on a
+/// non-negative canonical cost. It reads neither `fromHandDraw` nor the
+/// card's pile, so a card Hellraiser already played out of Hand still rolls,
+/// and so does a removed object: `CardModel::RemoveFromState` RVA `0x7dbb2`
+/// drops pile membership and sets `HasBeenRemovedFromState` but leaves
+/// `_owner` (`get_Owner` RVA `0x7c926`).
+///
+/// Position. `CardPileCmd/<DrawInternal>d__21::MoveNext` RVA `0x3e3a70`
+/// awaits one `Hook.AfterCardDrawn` per moved card (IL_0330).
+/// `Hook/<AfterCardDrawn>d__11::MoveNext` RVA `0x3cc514` awaits every
+/// `AfterCardDrawnEarly` listener (IL_001d-00fe) and only then creates the
+/// ordinary snapshot (IL_0124-0135) and awaits each `AfterCardDrawn` in turn
+/// (IL_0144-0206); a listener that completed is never invoked again when a
+/// later one's await resumes (the machine re-enters at IL_01b5, after the
+/// call). The snapshot (`CombatState/<IterateHookListeners>d__69::MoveNext`
+/// RVA `0x3f9720`) lists the player's `Powers` first (IL_008f-0097), and
+/// `Creature::ApplyPowerInternal` RVA `0x11da0c` appends (IL_0063-006f), so
+/// powers run in acquisition order. Confused has exactly two `Apply` sites,
+/// `SneckoEye/<ApplyPower>d__10` RVA `0x33153c` and
+/// `FakeSneckoEye/<ApplyPower>d__9` RVA `0x3247cc` (IL_003f), each with two
+/// callers. `BeforeCombatStart` (`<BeforeCombatStart>d__8`, `0x331628` /
+/// `0x3248b8`) is the one this port represents: it runs before any card is
+/// played, and every other represented `AfterCardDrawn` power
+/// ([`AFTER_CARD_DRAWN_POWER_FAMILY`]) is applied by a card's `OnPlay` or by
+/// Queen's `PuppetStringsMove`, inside combat. So Confused is the FIRST
+/// ordinary listener of every draw: after the whole early walk (Hellraiser's
+/// AutoPlay and any choice it parks on), before every other power, relic and
+/// card listener.
+///
+/// The second caller is `AfterObtained` (`SneckoEye/<AfterObtained>d__7` RVA
+/// `0x33146c`, `FakeSneckoEye/<AfterObtained>d__7` RVA `0x3246fc`): when
+/// `CombatManager.IsInProgress` (IL_001d-0027) it calls `ApplyPower`
+/// (IL_002b-002c), which would append Confused BEHIND powers already
+/// acquired and break "first". It is unreachable here: every caller of
+/// `RelicCmd.Obtain` / `Replace` in the assembly is an event, a rest-site
+/// option, the merchant, a reward or treasure screen, another relic's own
+/// `AfterObtained`, run setup or the debug console, never a card, power,
+/// potion or monster move; and this crate's relic set is fixed per catalog,
+/// so ownership cannot begin inside a fight.
+///
+/// `get_StackType` RVA `0xa07d2` is `2` (Single) and the type is not
+/// Instanced, so owning both relics is one power object and one roll: the
+/// second `PowerCmd/<Apply>d__1` (RVA `0x3ef988`) finds the existing instance
+/// (`FindExistingInstanceForStacking`, IL_006c-007c) and routes to
+/// `ModifyAmount` (IL_0117-013b) instead of adding a second listener.
+///
+/// X-cost cards roll: `CardEnergyCost::.ctor` RVA `0x11e002` IL_0020-002d
+/// stores `Canonical` 0 for `CostsX`, and this listener never reads `CostsX`
+/// (#3147). The row is inert for them, because `GetWithModifiers` RVA
+/// `0x11e044` returns the base for `CostsX` at IL_002d-0036, before the
+/// local rows. Snecko Oil is the contrast: its own roll loop skips X-cost
+/// cards (`potions::apply_snecko_oil_after_draw`).
+///
+/// Every caller runs this once at the start of a started ordinary walk
+/// ([`after_card_drawn_walk_starts`]): the synchronous command, the
+/// resumable legacy-payload iteration (where a card that would roll refuses,
+/// below), and [`finish_drawn_uid_after_early`],
+/// which is entered exactly once per drawn card (after the early stage, never
+/// from a parked `OrdinaryHook` resume). The roll and its cost row are
+/// ordinary state, so a park at any later listener persists them and a cold
+/// reload cannot roll again.
+///
+/// Refusal, by name and before the roll: a legacy payload card
+/// ([`crate::hot::LEGACY_CARD_UID`]) that would take a roll. Its row would
+/// land on the one placeholder entry every legacy card shares, which the
+/// canonical document cannot carry.
+#[inline]
+fn confused_after_card_drawn(
     state: &mut HotState,
     catalog: &Catalog,
     card: HotCard,
-    source: DrawSource,
-    only_power: Option<PowerId>,
-    resumable_recursive_draw: bool,
-    events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if catalog.hooks().owns(crate::ids::RelicId::RelicSneckoEye)
-        || catalog
-            .hooks()
-            .owns(crate::ids::RelicId::RelicFakeSneckoEye)
+    let hooks = catalog.hooks();
+    if !hooks.owns(RelicId::RelicSneckoEye) && !hooks.owns(RelicId::RelicFakeSneckoEye) {
+        return Ok(());
+    }
+    confused_roll_drawn_card(state, catalog, card)
+}
+
+#[cold]
+#[inline(never)]
+fn confused_roll_drawn_card(
+    state: &mut HotState,
+    catalog: &Catalog,
+    card: HotCard,
+) -> Result<(), EngineRefusal> {
     {
         let spec = catalog
             .spec(card.atom)
             .ok_or(EngineRefusal::UnknownAtom(card.atom))?;
         if spec.cost >= 0 {
+            if card.uid == crate::hot::LEGACY_CARD_UID {
+                return Err(EngineRefusal::MalformedArgs("Confused legacy drawn card"));
+            }
             let live = state.rng.get(RngStream::EnergyCosts);
             let mut rng = Xoshiro256StarStar {
                 words: live.words,
@@ -333,15 +420,26 @@ fn powers_after_card_drawn(
             set_drawn_flags(state, card.uid, CARD_FLAG_DEFAULT_PHYSICAL_STATE)?;
             state.exact_piles = true;
         }
-        for relic in [
-            crate::ids::RelicId::RelicSneckoEye,
-            crate::ids::RelicId::RelicFakeSneckoEye,
-        ] {
+        for relic in [RelicId::RelicSneckoEye, RelicId::RelicFakeSneckoEye] {
             if catalog.hooks().owns(relic) {
                 crate::coverage::record_relic(relic);
             }
         }
     }
+    Ok(())
+}
+
+/// The represented ordinary `AfterCardDrawn` power listeners after Confused
+/// ([`confused_after_card_drawn`], which every caller runs first and once).
+fn powers_after_card_drawn(
+    state: &mut HotState,
+    catalog: &Catalog,
+    card: HotCard,
+    source: DrawSource,
+    only_power: Option<PowerId>,
+    resumable_recursive_draw: bool,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
     let mut order = state.fanouts.after_card_drawn_order().to_vec();
     if order.is_empty() {
         order.extend(
@@ -1075,9 +1173,13 @@ fn finish_drawn_uid_after_early(
     source: DrawSource,
     events: &mut Vec<Event>,
 ) -> Result<Option<HotCard>, EngineRefusal> {
-    drawn_object_card(state, uid)?;
+    let card = drawn_object_card(state, uid)?;
     let walk_started = after_card_drawn_walk_starts(state);
     if walk_started {
+        // Confused is the first ordinary listener (#2690): rolled here, once,
+        // whether the represented power walk below has zero, one or many
+        // members, and before that walk can park.
+        confused_after_card_drawn(state, catalog, card)?;
         if start_after_card_drawn_power_walk(state, catalog, uid, source, events)? {
             return Ok(None);
         }
@@ -1363,6 +1465,7 @@ fn draw_cards_for_potion_from(
                 // a relic still runs after a power ended combat mid-walk.
                 let walk_started = after_card_drawn_walk_starts(state);
                 if walk_started {
+                    confused_after_card_drawn(state, catalog, card)?;
                     powers_after_card_drawn(state, catalog, card, source, None, false, events)?;
                     fire_hook(catalog, HookEvent::AfterCardDrawn, state, events)?;
                 }
@@ -1670,9 +1773,11 @@ fn resume_completed_draw_caller(
 /// `DrawInternal` (d__19 0x42cfc8) checks hand space before touching a pile
 /// and rechecks it after each iteration. No Draw's represented `ShouldDraw`
 /// listener gates command draws before pile/RNG access; Fiddle remains
-/// refused. Stratagem's synchronous, no-choice `AfterShuffle` path runs after
-/// a completed reshuffle; Perfect Fit and real selection remain refused. The
-/// represented `AfterCardDrawn` fan-out runs per moved card.
+/// refused. Stratagem's synchronous `AfterShuffle` path runs after a
+/// completed reshuffle: the no-choice arm, and under Whispering Earring's
+/// selector the selector's pick (#3637, [`stratagem_after_shuffle`]). Perfect
+/// Fit and a selection the player must make remain refused. The represented
+/// `AfterCardDrawn` fan-out runs per moved card.
 ///
 /// A Thieving Hopper fight's entry check admits Thievery's one internal
 /// state as well as the public ones (#2965 lane): `ThievingHopper::
@@ -1944,7 +2049,17 @@ fn draw_cards_into_inner(
                 break;
             }
             reshuffle(state, catalog, events)?;
-            if state.piles.get(PileId::Draw).is_empty() {
+            // `CardPileCmd/<DrawInternal>d__21::MoveNext` RVA `0x3e3a70`
+            // (v0.111.0, SHA-256 `9cb4f1ad…`) awaits `ShuffleIfNecessary`
+            // (IL_01d1), then leaves the loop when the Draw pile's first
+            // card is null (IL_023f-IL_025a) or `hand.Cards.Count >=
+            // MaxCardsInHand` (IL_025f-IL_0274), before `CardPileCmd::Add`
+            // (IL_0299). An `AfterShuffle` listener can fill the Hand and
+            // leave the Draw pile non-empty (#3637): Stratagem's no-choice
+            // arm takes the whole pile, and Biiig Hug then adds its Soot.
+            if state.piles.get(PileId::Draw).is_empty()
+                || state.piles.get(PileId::Hand).len() >= MAX_CARDS_IN_HAND
+            {
                 break;
             }
         }
@@ -1991,6 +2106,7 @@ fn draw_cards_into_inner(
         // (#3099); the Draw itself still completes.
         let walk_started = after_card_drawn_walk_starts(state);
         if walk_started {
+            confused_after_card_drawn(state, catalog, listener_card)?;
             powers_after_card_drawn(state, catalog, listener_card, source, None, false, events)?;
             fire_hook(catalog, HookEvent::AfterCardDrawn, state, events)?;
         }
@@ -3022,13 +3138,22 @@ pub(crate) fn drum_of_battle_plan(
 
 /// The stable reshuffle: sort the live discard, Fisher-Yates it, make it the
 /// draw pile.
+///
+/// This is the shuffle of the synchronous Draw command
+/// ([`draw_cards_into_inner`]) and of the Draw-pile AutoPlay gather
+/// (`play::autoplay_draw_top_with_result`). Neither has a persisted owner
+/// for a Stratagem choice, so admission refuses a root that could reach one
+/// (`stratagem selection`), and a pile larger than Amount refuses here by
+/// the same name, under Whispering Earring's selector as without it
+/// ([`StratagemRoute::Unowned`]).
 pub fn reshuffle(
     state: &mut HotState,
     catalog: &Catalog,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     let discard = state.piles.get(PileId::Discard).as_slice().to_vec();
-    shuffle_into_draw(state, catalog, &discard, events)
+    shuffle_into_draw_raw(state, catalog, &discard, discard.len(), events)?;
+    stratagem_after_shuffle_on(state, catalog, StratagemRoute::Unowned, events)
 }
 
 /// Foregone's `ShuffleIfNecessary` can itself park on Stratagem's
@@ -3060,6 +3185,12 @@ pub(crate) fn reshuffle_for_foregone(
 /// selection parks after the Shuffle command and before the caller can consume
 /// another Draw card; the immutable Draw prefix is rewritten after UID
 /// normalization so every later live lookup is unambiguous.
+///
+/// Under Whispering Earring's selector a Draw command's selection never
+/// blocks (#3637): [`stratagem_after_shuffle`] resolves it, and this command
+/// returns without a pending choice. The two cursors that are not a Draw
+/// command (Foregone Conclusion's `BeforeHandDraw` shuffle and Distilled
+/// Chaos's gather) never run under the selector and keep their park.
 fn reshuffle_for_resumable_draw(
     state: &mut HotState,
     catalog: &Catalog,
@@ -3069,7 +3200,12 @@ fn reshuffle_for_resumable_draw(
     let amount = usize::try_from(state.powers.value(PowerId::Stratagem)).ok();
     let will_park = !state.history.over
         && amount
-            .is_some_and(|amount| amount > 0 && state.piles.get(PileId::Discard).len() > amount);
+            .is_some_and(|amount| amount > 0 && state.piles.get(PileId::Discard).len() > amount)
+        && !(super::selection::vakuu_selector_active()
+            && !matches!(
+                cursor.caller,
+                DrawCaller::ForegoneBeforeHandDraw | DrawCaller::DistilledChaosGather
+            ));
     if will_park {
         checked_stratagem_selection_count(
             state.piles.get(PileId::Discard).len(),
@@ -3243,23 +3379,15 @@ fn full_shuffle_after_frozen_hand(
         if bottled && park_stratagem_on_bottled(state, catalog, events)? {
             return Ok(true);
         }
-        stratagem_after_shuffle(state, catalog, events)?;
+        // Reboot's and Bottled Potential's full shuffle: not read under
+        // Whispering Earring's selector (#3637).
+        stratagem_after_shuffle_on(state, catalog, StratagemRoute::Unowned, events)?;
         Ok(false)
     }
 
     let mut probe = state.clone();
     let _ = apply(&mut probe, catalog, frozen_hand, bottled, &mut Vec::new())?;
     apply(state, catalog, frozen_hand, bottled, events)
-}
-
-fn shuffle_into_draw(
-    state: &mut HotState,
-    catalog: &Catalog,
-    cards: &[HotCard],
-    events: &mut Vec<Event>,
-) -> Result<(), EngineRefusal> {
-    shuffle_into_draw_raw(state, catalog, cards, cards.len(), events)?;
-    stratagem_after_shuffle(state, catalog, events)
 }
 
 /// v0.111.0 PerfectFit::ModifyShuffleOrder (RVA 0xd6259, DLL 9cb4f1ad)
@@ -3451,11 +3579,10 @@ fn blocking_stratagem_count(state: &HotState) -> Result<Option<usize>, EngineRef
     Ok((state.piles.get(PileId::Draw).len() > amount).then_some(amount))
 }
 
-pub(crate) fn stratagem_exact_candidates(
-    state: &HotState,
-    catalog: &Catalog,
-) -> Result<Vec<HotCard>, EngineRefusal> {
-    let mut cards = state.piles.get(PileId::Draw).as_slice().to_vec();
+/// The Draw pile in live order, refused unless every card is one exact,
+/// catalog-known physical instance.
+fn stratagem_live_draw(state: &HotState, catalog: &Catalog) -> Result<Vec<HotCard>, EngineRefusal> {
+    let cards = state.piles.get(PileId::Draw).as_slice().to_vec();
     if cards
         .iter()
         .any(|card| card.uid == crate::hot::LEGACY_CARD_UID)
@@ -3469,26 +3596,52 @@ pub(crate) fn stratagem_exact_candidates(
     if let Some(card) = cards.iter().find(|card| catalog.spec(card.atom).is_none()) {
         return Err(EngineRefusal::UnknownAtom(card.atom));
     }
-    // Vakuu's FromCombatPile Draw view is stable native-rarity then ModelId,
-    // not the generic Python tuple-payload ordering used to enumerate the
-    // resulting selection actions. Stable sort preserves live physical order
-    // for payload-equal siblings.
-    cards.sort_by_key(|card| {
-        let spec = catalog.spec(card.atom).expect("live card atom is interned");
-        let rarity = match spec.row.rarity {
-            crate::content_tables::CardRarity::Basic => 1,
-            crate::content_tables::CardRarity::Common => 2,
-            crate::content_tables::CardRarity::Uncommon => 3,
-            crate::content_tables::CardRarity::Rare => 4,
-            crate::content_tables::CardRarity::Ancient => 5,
-            crate::content_tables::CardRarity::Event => 6,
-            crate::content_tables::CardRarity::Status => 7,
-            crate::content_tables::CardRarity::Token => 8,
-            crate::content_tables::CardRarity::Quest => 9,
-            crate::content_tables::CardRarity::Curse => 10,
-        };
-        (rarity, spec.identity.id.as_str())
-    });
+    Ok(cards)
+}
+
+/// The frozen option snapshot of a blocking `FromCombatPile(Draw, Amount)`
+/// choice (Stratagem, Foregone Conclusion): the whole Draw pile in the
+/// command's selector view (#3621).
+///
+/// Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`),
+/// `CardSelectCmd/<FromCombatPile>d__20::MoveNext` RVA `0x3e5e84`. Its three
+/// arms order a Draw pile differently:
+///
+/// - **No choice** (`RequireManualConfirmation` unset and `Count <=
+///   MinSelect`, IL_015a-IL_017c): the result is the filtered list itself,
+///   `pile.Cards.Where(filter).ToList()` (IL_0120-IL_0136), in live pile
+///   order. No sort runs. That arm is [`stratagem_after_shuffle`] and
+///   [`auto_take_draw_to_hand`], not this function.
+/// - **A selector** (`get_Selector` IL_0181, or `get_LocalSelector` IL_0280):
+///   `OrderBy(card.Rarity).ThenBy(card.Id)` over a Draw pile
+///   (IL_0199-IL_01e2, IL_0298-IL_02e1), stable, by the native `CardRarity`
+///   values of `selection::native_card_rarity_value`, where Token (7) sorts
+///   before Status (8) and Curse (9) before Quest (10).
+/// - **The player** (no selector, `ShouldSelectLocalCard` IL_0270-IL_027b):
+///   `NCombatPileCardSelectScreen::Create(pile, prefs, filter)`
+///   (IL_037f-IL_0391) shows the pile and returns its own `_selectedCards`
+///   (`CompleteSelection` RVA `0x24930e` IL_0008-IL_0013), a `HashSet` each
+///   click adds to (`OnCardClicked` RVA `0x2491ec` IL_005a-IL_0060), so the
+///   cards come back in the order they were clicked, not in a sorted one.
+///   The grid's order is display only: `UpdatePileContents` RVA `0x24935c`
+///   hands a Draw pile to `NCardGrid::SetCards` under `SortingOrders`
+///   `[RarityAscending, AlphabetAscending]` (IL_00df-IL_012d, values 0 and
+///   3), and nothing reads a position back.
+///
+/// So a player's answer is a click-ordered list of physical cards, and the
+/// order of this snapshot never decides which card an answer names:
+/// [`stratagem_selection_at`] enumerates answers over its own payload order,
+/// and a recorded answer is matched by uid. The snapshot is kept in the
+/// selector arm's order so that it is one native order rather than an
+/// invented one; it is compared, element by element, against the live pile
+/// on every reload and resume.
+pub(crate) fn stratagem_exact_candidates(
+    state: &HotState,
+    catalog: &Catalog,
+) -> Result<Vec<HotCard>, EngineRefusal> {
+    let mut cards = stratagem_live_draw(state, catalog)?;
+    super::selection::sort_native_draw_view(catalog, &mut cards);
     Ok(cards)
 }
 
@@ -3800,15 +3953,97 @@ fn park_stratagem_on_bottled(
     Ok(true)
 }
 
-/// The synchronous, no-choice part of StratagemPower.AfterShuffle.
+/// The synchronous part of StratagemPower.AfterShuffle: the arms of its
+/// selection that never ask the player.
 ///
 /// Admission proves the entry population fits Amount. Generated cards can
 /// enlarge a later reshuffle, so this reader repeats the live bound and fails
 /// closed if native would open a selection frame. A no-choice pile moves in
 /// order, redirecting every card beyond the ten-card Hand cap to Discard.
+///
+/// # Under Whispering Earring's selector (#3637)
+///
+/// Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`).
+/// `WhisperingEarring/<AfterAutoPrePlayPhaseEnteredLate>d__8::MoveNext` RVA
+/// `0x333fcc` pushes its `VakuuCardSelector` once, before the AutoPlay loop
+/// (IL_0065-IL_0071), and disposes it in the loop's `finally`
+/// (IL_0264-IL_0276). The selector is therefore set for every command a
+/// child's play awaits, a shuffle's `AfterShuffle` listeners included.
+///
+/// `StratagemPower/<AfterShuffle>d__4::MoveNext` RVA `0x34688c` awaits the
+/// four-argument `CardSelectCmd::FromCombatPile(choiceContext,
+/// PileType.Draw.GetPile(player), player, new CardSelectorPrefs(prompt,
+/// Amount))` (IL_0045-IL_0078; `ldc.i4.1` is `PileType.Draw`). That
+/// `CardSelectorPrefs` constructor, RVA `0x1397d4`, passes `Amount` as both
+/// `MinSelect` and `MaxSelect` (IL_0001-IL_0005). The four-argument overload
+/// (`<FromCombatPile>d__19` RVA `0x3e5d8c`) forwards to the five-argument one
+/// with the always-true filter `b__19_0` (IL_0016-IL_004d).
+///
+/// `CardSelectCmd/<FromCombatPile>d__20::MoveNext` RVA `0x3e5e84` then:
+///
+/// - returns an empty pile's empty list (IL_0140-IL_0155);
+/// - returns a pile no larger than `MinSelect` as it stands, in live pile
+///   order (IL_015a-IL_017c), before any selector is read;
+/// - otherwise, with `get_Selector` set (IL_0181-IL_0186) and a Draw pile
+///   (IL_018b-IL_0197), sorts the options `OrderBy(card.Rarity)
+///   .ThenBy(card.Id)` (IL_0199-IL_01e2) and returns
+///   `Selector.GetSelectedCards(options, MinSelect, MaxSelect)`
+///   (IL_01e3-IL_01ff). `VakuuCardSelector::GetSelectedCards` RVA `0x9d733`
+///   is `options.Take(maxSelect).ToList()` (IL_0001-IL_0008).
+///
+/// So under the selector a Draw pile larger than Amount gives up the first
+/// Amount cards of [`stratagem_exact_candidates`]' view, in that order, and
+/// the power adds each to Hand's bottom (IL_00da-IL_00fe). With the selector
+/// set the command reserves no choice id and never signals the choice
+/// context (IL_0077-IL_007c `brtrue`), so nothing is asked and nothing is
+/// deferred. `super::selection::VakuuSelectorScope` is that selector, held
+/// across the Earring's loop by `turn::finish_auto_pre_relic_tail`.
+///
+/// Only the resumable Draw frame's shuffle takes this arm
+/// ([`StratagemRoute::ResumableDraw`]): a card-owned, Swift, Joss Paper,
+/// Centennial Puzzle or Gremlin Horn Draw while Stratagem is live. The
+/// synchronous Draw command, the Draw-pile AutoPlay gather and Reboot's full
+/// shuffle keep the `stratagem selection` refusal under the selector
+/// ([`StratagemRoute::Unowned`]).
+///
+/// Foregone Conclusion's `FromCombatPile` is not reached under the selector:
+/// it is `ForegoneConclusionPower/<BeforeHandDraw>d__4::MoveNext` RVA
+/// `0x33a8e8` (`ShuffleIfNecessary` IL_0059, `FromCombatPile` IL_00e6), and
+/// `Hook::BeforeHandDraw` runs in `CombatManager/<SetupPlayerTurn>d__102` RVA
+/// `0x3f6c6c` (IL_0177), a task `<RunAutoPrePlayPhase>d__101` RVA `0x3f670c`
+/// awaits to completion (IL_002c-IL_0082) before it calls
+/// `Hook::AfterAutoPrePlayPhaseEntered` (IL_011c). The selector is pushed
+/// only inside that later hook.
 fn stratagem_after_shuffle(
     state: &mut HotState,
     catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    stratagem_after_shuffle_on(state, catalog, StratagemRoute::ResumableDraw, events)
+}
+
+/// Which shuffle Stratagem's `AfterShuffle` is answering (#3637).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum StratagemRoute {
+    /// `CardPileCmd.Draw`'s own `ShuffleIfNecessary`
+    /// (`<DrawInternal>d__21` RVA `0x3e3a70` IL_01d1) on the resumable Draw
+    /// frame ([`reshuffle_for_resumable_draw`]): the one route that owns a
+    /// Stratagem choice. Under Whispering Earring's selector the pick is
+    /// resolved there.
+    ResumableDraw,
+    /// Every other shuffle: the synchronous Draw command, the Draw-pile
+    /// AutoPlay gather, and Reboot's and Bottled Potential's full shuffle.
+    /// A pile larger than Amount refuses by `stratagem selection`, selector
+    /// or not: none of these was read or witnessed under the selector.
+    Unowned,
+}
+
+/// [`stratagem_after_shuffle`] for the shuffle of `route`.
+fn stratagem_after_shuffle_on(
+    state: &mut HotState,
+    catalog: &Catalog,
+    route: StratagemRoute,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     if !state.history.over {
@@ -3825,12 +4060,32 @@ fn stratagem_after_shuffle(
             let amount: usize = amount
                 .try_into()
                 .map_err(|_| EngineRefusal::CounterOverflow("stratagem amount"))?;
-            if state.piles.get(PileId::Draw).len() > amount {
+            let selector_picks = state.piles.get(PileId::Draw).len() > amount;
+            if selector_picks
+                && !(route == StratagemRoute::ResumableDraw
+                    && super::selection::vakuu_selector_active())
+            {
                 return Err(EngineRefusal::MalformedArgs("stratagem selection"));
             }
             super::cards::normalize_card_identities(state)?;
             state.exact_piles = true;
-            for frozen in stratagem_exact_candidates(state, catalog)? {
+            // No choice: `FromCombatPile` d__20 RVA `0x3e5e84` returns the
+            // filtered pile itself, in live order, when `Count <= MinSelect`
+            // (IL_015a-IL_017c), before either selector's rarity sort
+            // (IL_0181, IL_0280) is reached (#3621). The power then adds the
+            // returned enumeration card by card (IL_00da-IL_00fe:
+            // `CardPileCmd::Add(card, PileType.Hand, CardPilePosition.Bottom,
+            // null, false)`).
+            let taken = if selector_picks {
+                // The Earring's selector takes the first Amount cards of the
+                // sorted Draw view (#3637, see the function docs).
+                let mut view = stratagem_exact_candidates(state, catalog)?;
+                view.truncate(amount);
+                view
+            } else {
+                stratagem_live_draw(state, catalog)?
+            };
+            for frozen in taken {
                 let index = state
                     .piles
                     .get(PileId::Draw)
@@ -3862,8 +4117,8 @@ fn stratagem_after_shuffle(
 /// Shared exact no-choice arm for native FromCombatPile(Draw, Amount).
 ///
 /// Foregone Conclusion enumerates Draw in pile order and adds each selected
-/// card to Hand/Bottom. Stratagem uses its separate native rarity/ModelId
-/// option view above. CardPileCmd.Add serially redirects cards beyond the ten-
+/// card to Hand/Bottom. Stratagem's no-choice arm above takes the same live
+/// pile order. CardPileCmd.Add serially redirects cards beyond the ten-
 /// card Hand cap to Discard. A larger live population would open a player-
 /// selection frame, so callers name their refusal site here.
 #[cold]
@@ -3939,7 +4194,7 @@ pub fn flush_hand(
         }
     }
 
-    let hand: Vec<HotCard> = state.piles.get(PileId::Hand).as_slice().to_vec();
+    let mut hand: Vec<HotCard> = state.piles.get(PileId::Hand).as_slice().to_vec();
     if !any_retained {
         state.piles.set(PileId::Hand, Default::default());
         let discard = state.piles.get_mut(PileId::Discard).make_mut();
@@ -3950,7 +4205,12 @@ pub fn flush_hand(
                 pile: PileId::Discard,
             });
         }
-        super::relics::after_hand_flushed(catalog, state, &hand)?;
+        super::relics::after_hand_flushed(catalog, state, &mut hand)?;
+        // Bookmark marks its chosen card's slot-7 bit on the snapshot (#3180).
+        // The flushed cards are the Discard tail, in hand order; commit it.
+        let discard = state.piles.get_mut(PileId::Discard).make_mut();
+        let tail = discard.len() - hand.len();
+        discard[tail..].copy_from_slice(&hand);
         return Ok(());
     }
 
@@ -3970,7 +4230,7 @@ pub fn flush_hand(
         }
     }
     state.piles.set(PileId::Hand, HotPile::from_cards(retained));
-    super::relics::after_hand_flushed(catalog, state, &discarded)?;
+    super::relics::after_hand_flushed(catalog, state, &mut discarded)?;
     let discard = state.piles.get_mut(PileId::Discard).make_mut();
     for card in discarded {
         discard.push(card);
@@ -4216,16 +4476,7 @@ mod tests {
             crate::hot::CardPlaySource::Hellraiser,
         )
         .unwrap();
-        powers_after_card_drawn(
-            &mut state,
-            &catalog,
-            card,
-            DrawSource::Command,
-            None,
-            false,
-            &mut Vec::new(),
-        )
-        .unwrap();
+        confused_after_card_drawn(&mut state, &catalog, card).unwrap();
         assert_eq!(state.rng.get(RngStream::EnergyCosts).counter, 1);
         let current = drawn_object_instance(&state, card.uid).unwrap();
         assert_eq!(current.local_cost_modifiers.as_slice().len(), 1);
@@ -6396,50 +6647,96 @@ mod tests {
         );
     }
 
-    #[test]
-    fn stratagem_no_choice_moves_native_rarity_model_order() {
+    /// A Draw pile holding one card of each rarity #3621 had misordered
+    /// (Quest, Status, Curse, Token) and a Common, in a live order that is
+    /// neither the native selector view nor the old one.
+    fn stratagem_mixed_rarity_draw() -> (HotState, Catalog) {
         let mut builder = CatalogBuilder::new();
-        builder.intern(identity(CardId::DefendSilent)).unwrap();
-        builder.intern(identity(CardId::Rage)).unwrap();
-        builder.intern(identity(CardId::Thunderclap)).unwrap();
-        builder.intern(identity(CardId::Toxic)).unwrap();
+        for id in [
+            CardId::DefendSilent,
+            CardId::SpoilsMap,
+            CardId::Slimed,
+            CardId::AscendersBane,
+            CardId::Shiv,
+            CardId::Thunderclap,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
         let catalog = builder.build();
+        use crate::content_tables::CardRarity;
+        for (id, rarity) in [
+            (CardId::SpoilsMap, CardRarity::Quest),
+            (CardId::Slimed, CardRarity::Status),
+            (CardId::AscendersBane, CardRarity::Curse),
+            (CardId::Shiv, CardRarity::Token),
+            (CardId::Thunderclap, CardRarity::Common),
+        ] {
+            assert_eq!(card_spec(&catalog, id).row.rarity, rarity);
+        }
         let mut state = HotState::at_defaults();
-        for uid in 10..19 {
+        state.piles.get_mut(PileId::Draw).make_mut().extend([
+            card(&catalog, CardId::SpoilsMap, 1),
+            card(&catalog, CardId::Slimed, 2),
+            card(&catalog, CardId::AscendersBane, 3),
+            card(&catalog, CardId::Shiv, 4),
+            card(&catalog, CardId::Thunderclap, 5),
+        ]);
+        (state, catalog)
+    }
+
+    fn card_spec(catalog: &Catalog, id: CardId) -> &crate::catalog::CardSpec {
+        catalog.spec(card(catalog, id, 0).atom).unwrap()
+    }
+
+    /// `FromCombatPile` returns a pile no larger than `MinSelect` as it
+    /// stands (#3621): Stratagem's no-choice arm adds the Draw pile to Hand
+    /// in live order, and the Hand cap sends the rest to Discard in that same
+    /// order. The rarity sort it used to apply, with either set of rarity
+    /// values, would put Common Thunderclap in Hand instead of Quest Spoils
+    /// Map.
+    #[test]
+    fn stratagem_no_choice_moves_the_draw_pile_in_live_order() {
+        let (mut state, catalog) = stratagem_mixed_rarity_draw();
+        for uid in 10..18 {
             state.piles.get_mut(PileId::Hand).make_mut().push(card(
                 &catalog,
                 CardId::DefendSilent,
                 uid,
             ));
         }
-        // Native Draw view puts Common Thunderclap before Uncommon Rage and
-        // Status Toxic, irrespective of reverse live shuffled pile order.
-        state.piles.get_mut(PileId::Draw).make_mut().extend([
-            card(&catalog, CardId::Toxic, 3),
-            card(&catalog, CardId::Rage, 1),
-            card(&catalog, CardId::Thunderclap, 2),
-        ]);
-        state.powers.set(PowerId::Stratagem, SlotWire::Int, 3);
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 5);
+        let uids = |state: &HotState, pile| {
+            state
+                .piles
+                .get(pile)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .collect::<Vec<_>>()
+        };
 
         stratagem_after_shuffle(&mut state, &catalog, &mut Vec::new()).unwrap();
 
+        assert_eq!(uids(&state, PileId::Hand)[8..], [1, 2]);
+        assert_eq!(uids(&state, PileId::Discard), [3, 4, 5]);
+        assert!(state.piles.get(PileId::Draw).is_empty());
+    }
+
+    /// A blocking choice freezes the Draw pile in the selector view, by the
+    /// native `CardRarity` values (#3621): Common, Token, Status, Curse,
+    /// Quest. The old values gave Common, Status, Token, Quest, Curse
+    /// (`[5, 2, 4, 1, 3]`).
+    #[test]
+    fn stratagem_choice_snapshot_orders_token_before_status_and_curse_before_quest() {
+        let (mut state, catalog) = stratagem_mixed_rarity_draw();
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+        assert_eq!(blocking_stratagem_count(&state), Ok(Some(1)));
+
+        let snapshot = stratagem_exact_candidates(&state, &catalog).unwrap();
+
         assert_eq!(
-            catalog
-                .spec(state.piles.get(PileId::Hand).as_slice()[9].atom)
-                .unwrap()
-                .identity
-                .id,
-            CardId::Thunderclap
-        );
-        assert_eq!(
-            state
-                .piles
-                .get(PileId::Discard)
-                .as_slice()
-                .iter()
-                .map(|card| catalog.spec(card.atom).unwrap().identity.id)
-                .collect::<Vec<_>>(),
-            [CardId::Rage, CardId::Toxic]
+            snapshot.iter().map(|card| card.uid).collect::<Vec<_>>(),
+            [5, 4, 2, 3, 1]
         );
     }
 
@@ -7924,6 +8221,1846 @@ mod tests {
                 &mut Vec::new()
             ),
             Err(EngineRefusal::MalformedArgs("automation instances"))
+        );
+    }
+
+    /// #2690 fixture: Snecko Eye (or the fake), a seeded `CombatEnergyCosts`
+    /// stream, one live enemy, and `draw` as the UID-bearing draw pile.
+    fn confused_fixture(
+        relics: &[RelicId],
+        extra: &[CardId],
+        draw: &[(CardId, u32)],
+    ) -> (Catalog, HotState) {
+        let mut builder = CatalogBuilder::new();
+        for id in extra.iter().chain(draw.iter().map(|(id, _)| id)) {
+            builder.intern(identity(*id)).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics(relics).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 10;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        let mut monster = HotMonster::new(MonsterKind::Toadpole, 100);
+        monster.max_hp = 100;
+        monster.loop_pos = 2;
+        state.monsters = std::sync::Arc::new(vec![monster]);
+        let seeded = crate::rng::Xoshiro256StarStar::from_seed(17);
+        state.rng.set(
+            RngStream::EnergyCosts,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        let cards: Vec<HotCard> = draw
+            .iter()
+            .map(|(id, uid)| card(&catalog, *id, *uid))
+            .collect();
+        state.next_card_uid = draw.iter().map(|(_, uid)| *uid).max().unwrap_or(0) + 1;
+        state.piles.set(PileId::Draw, HotPile::from_cards(cards));
+        (catalog, state)
+    }
+
+    /// The issue's reproduction: a public Swift Potion Draw(3) of three
+    /// UID-bearing Strikes with Snecko Eye and no ordinary power listener.
+    ///
+    /// Owning both relics is still one roll per card: `ConfusedPower` is
+    /// Single-stacked (`get_StackType` RVA `0xa07d2`) and the second
+    /// `PowerCmd/<Apply>d__1` (RVA `0x3ef988`) routes the existing instance
+    /// to `ModifyAmount` (IL_0117-013b), so there is one listener.
+    ///
+    /// The drawn cards start with no slot-7 bit. The roll's own flag write is
+    /// what lets the canonical document carry the rows (#3629), so the
+    /// result must publish and reload equal.
+    #[test]
+    fn issue2690_swift_potion_rolls_confused_once_per_drawn_strike() {
+        use crate::boundary::HotBoundary;
+        let relic_sets: [&[RelicId]; 3] = [
+            &[RelicId::RelicSneckoEye],
+            &[RelicId::RelicFakeSneckoEye],
+            &[RelicId::RelicSneckoEye, RelicId::RelicFakeSneckoEye],
+        ];
+        for relics in relic_sets {
+            let (catalog, mut state) = confused_fixture(
+                relics,
+                &[],
+                &[
+                    (CardId::StrikeIronclad, 1),
+                    (CardId::StrikeIronclad, 2),
+                    (CardId::StrikeIronclad, 3),
+                ],
+            );
+            assert!(state.fanouts.set_potion_belt(
+                vec![Some(crate::ids::PotionId::SwiftPotion)],
+                false,
+                false,
+                false,
+                false,
+                true,
+            ));
+            let after = apply_action(
+                &state,
+                &catalog,
+                &Action::UsePotion {
+                    slot: 0,
+                    target: None,
+                },
+            )
+            .unwrap()
+            .state;
+            assert_eq!(after.cards_drawn_combat, 3, "{relics:?}");
+            assert_eq!(after.piles.get(PileId::Hand).len(), 3);
+            assert_eq!(
+                after.rng.get(RngStream::EnergyCosts).counter,
+                3,
+                "{relics:?}"
+            );
+            let document = HotBoundary::try_to_canonical(&after, &catalog).unwrap();
+            let rebuilt_catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let reloaded = HotBoundary::from_canonical(&document, &rebuilt_catalog).unwrap();
+            assert_eq!(reloaded, after, "{relics:?}");
+            let rolls = energy_cost_rolls(3);
+            for (uid, rolled) in (1..=3).zip(rolls) {
+                assert_eq!(
+                    slither_rows(&reloaded, uid),
+                    [(LocalCostModifierKind::Set, rolled)],
+                    "{relics:?}"
+                );
+            }
+        }
+    }
+
+    /// Zero, one and many represented ordinary power listeners: the roll is
+    /// one per drawn card in every case, and the resumable frame agrees with
+    /// the synchronous command on every observable the listeners write.
+    #[test]
+    fn issue2690_resumable_draw_rolls_once_for_zero_one_and_many_listeners() {
+        let listener_sets: [&[PowerId]; 4] = [
+            &[],
+            &[PowerId::Automation],
+            &[PowerId::CorrosiveWave, PowerId::Automation],
+            &[
+                PowerId::Speedster,
+                PowerId::CorrosiveWave,
+                PowerId::Automation,
+            ],
+        ];
+        for listeners in listener_sets {
+            let (catalog, mut state) = confused_fixture(
+                &[RelicId::RelicSneckoEye],
+                &[],
+                &[
+                    (CardId::StrikeIronclad, 1),
+                    (CardId::StrikeIronclad, 2),
+                    (CardId::StrikeIronclad, 3),
+                ],
+            );
+            for power in listeners {
+                state.powers.set(*power, SlotWire::Int, 1);
+            }
+            assert!(state.fanouts.set_after_card_drawn_order(listeners));
+            state.fanouts.set_automation_left(2);
+            let mut synchronous = state.clone();
+
+            assert_eq!(
+                draw_cards_for_potion(
+                    &mut state,
+                    &catalog,
+                    3,
+                    DrawCaller::PotionEpilogue,
+                    &mut Vec::new(),
+                ),
+                Ok(PotionDrawResult::Complete),
+                "{listeners:?}"
+            );
+            draw_cards(
+                &mut synchronous,
+                &catalog,
+                3,
+                DrawSource::Command,
+                &mut Vec::new(),
+            )
+            .unwrap();
+
+            assert!(state.frames.is_empty(), "{listeners:?}");
+            assert_eq!(
+                state.rng.get(RngStream::EnergyCosts).counter,
+                3,
+                "{listeners:?}"
+            );
+            let rolls = energy_cost_rolls(3);
+            for (uid, rolled) in (1..=3).zip(rolls) {
+                assert_eq!(
+                    slither_rows(&state, uid),
+                    [(LocalCostModifierKind::Set, rolled)],
+                    "{listeners:?}"
+                );
+            }
+            // The other listeners still each ran once per card.
+            assert_eq!(state.rng, synchronous.rng, "{listeners:?}");
+            assert_eq!(state.card_states, synchronous.card_states);
+            assert_eq!(state.monsters, synchronous.monsters, "{listeners:?}");
+            assert_eq!(state.energy, synchronous.energy, "{listeners:?}");
+            assert_eq!(
+                state.fanouts.automation_left(),
+                synchronous.fanouts.automation_left()
+            );
+            assert_eq!(state.piles, synchronous.piles, "{listeners:?}");
+        }
+    }
+
+    /// The turn-start `fromHandDraw` command: Confused reads no
+    /// `fromHandDraw` (RVA `0xa07f4`), and a negative canonical cost
+    /// (IL_0025-0031) takes no roll and leaves the stream alone.
+    #[test]
+    fn issue2690_turn_start_draw_rolls_each_nonnegative_cost_card_once() {
+        let (catalog, mut state) = confused_fixture(
+            &[RelicId::RelicFakeSneckoEye],
+            &[],
+            &[
+                (CardId::StrikeIronclad, 1),
+                (CardId::Wound, 2),
+                (CardId::StrikeIronclad, 3),
+            ],
+        );
+        let wound = state.piles.get(PileId::Draw).as_slice()[1];
+        assert!(catalog.spec(wound.atom).unwrap().cost < 0);
+
+        assert_eq!(
+            draw_cards_for_potion(
+                &mut state,
+                &catalog,
+                3,
+                DrawCaller::TurnStart,
+                &mut Vec::new(),
+            ),
+            Ok(PotionDrawResult::Complete)
+        );
+
+        let rolls = energy_cost_rolls(2);
+        assert_eq!(state.rng.get(RngStream::EnergyCosts).counter, 2);
+        assert_eq!(
+            slither_rows(&state, 1),
+            [(LocalCostModifierKind::Set, rolls[0])]
+        );
+        assert!(slither_rows(&state, 2).is_empty());
+        assert_eq!(
+            slither_rows(&state, 3),
+            [(LocalCostModifierKind::Set, rolls[1])]
+        );
+    }
+
+    /// Confused is an ordinary listener: a walk that never starts
+    /// ([`after_card_drawn_walk_starts`]) takes no roll on the resumable path
+    /// either.
+    #[test]
+    fn issue2690_resumable_draw_takes_no_roll_when_the_walk_never_starts() {
+        let (catalog, mut state) = confused_fixture(
+            &[RelicId::RelicSneckoEye],
+            &[],
+            &[(CardId::StrikeIronclad, 1)],
+        );
+        state.hp = 0;
+
+        assert_eq!(
+            draw_cards_for_potion(
+                &mut state,
+                &catalog,
+                1,
+                DrawCaller::PotionEpilogue,
+                &mut Vec::new(),
+            ),
+            Ok(PotionDrawResult::Complete)
+        );
+
+        assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+        assert!(slither_rows(&state, 1).is_empty());
+        assert_eq!(state.rng.get(RngStream::EnergyCosts).counter, 0);
+    }
+
+    /// The resumable path's card-pile listeners still follow Confused:
+    /// Confused takes the first roll and Slither the second.
+    #[test]
+    fn issue2690_resumable_draw_rolls_confused_before_slither() {
+        let (catalog, mut state, slither) = slither_fixture(&[RelicId::RelicSneckoEye], false);
+        state
+            .piles
+            .set(PileId::Draw, HotPile::from_cards(vec![slither]));
+
+        assert_eq!(
+            draw_cards_for_potion(
+                &mut state,
+                &catalog,
+                1,
+                DrawCaller::PotionEpilogue,
+                &mut Vec::new(),
+            ),
+            Ok(PotionDrawResult::Complete)
+        );
+
+        let rolls = energy_cost_rolls(2);
+        assert_eq!(
+            slither_rows(&state, 1),
+            [
+                (LocalCostModifierKind::Set, rolls[0]),
+                (LocalCostModifierKind::Set, rolls[1])
+            ]
+        );
+        assert_eq!(state.rng.get(RngStream::EnergyCosts).counter, 2);
+    }
+
+    /// A legacy payload card that would take a roll refuses by name before
+    /// the stream moves, on the synchronous command and on the resumable
+    /// frame's legacy iteration alike: its row would land on the placeholder
+    /// entry every legacy card shares. A negative-cost legacy card takes no
+    /// roll natively and still draws.
+    #[test]
+    fn issue2690_confused_refuses_a_legacy_payload_roll_before_the_stream_moves() {
+        for resumable in [false, true] {
+            for (id, refused) in [(CardId::StrikeIronclad, true), (CardId::Wound, false)] {
+                let (catalog, mut state) =
+                    confused_fixture(&[RelicId::RelicSneckoEye], &[], &[(id, 1)]);
+                let legacy = HotCard {
+                    uid: crate::hot::LEGACY_CARD_UID,
+                    flags: crate::hot::CARD_FLAG_LEGACY,
+                    ..state.piles.get(PileId::Draw).as_slice()[0]
+                };
+                state
+                    .piles
+                    .set(PileId::Draw, HotPile::from_cards(vec![legacy]));
+                let result = if resumable {
+                    draw_cards_for_potion(
+                        &mut state,
+                        &catalog,
+                        1,
+                        DrawCaller::PotionEpilogue,
+                        &mut Vec::new(),
+                    )
+                    .map(|_| ())
+                } else {
+                    draw_cards(
+                        &mut state,
+                        &catalog,
+                        1,
+                        DrawSource::Command,
+                        &mut Vec::new(),
+                    )
+                };
+                let expected = if refused {
+                    Err(EngineRefusal::MalformedArgs("Confused legacy drawn card"))
+                } else {
+                    Ok(())
+                };
+                assert_eq!(result, expected, "resumable={resumable} {id:?}");
+                assert_eq!(
+                    state.rng.get(RngStream::EnergyCosts).counter,
+                    0,
+                    "resumable={resumable} {id:?}"
+                );
+            }
+        }
+    }
+
+    /// An X-cost card rolls (`Canonical` is 0 for `CostsX`, and Confused
+    /// never reads `CostsX`), and the row is inert: `GetWithModifiers`
+    /// returns the base for an X-cost card before the local rows, so the play
+    /// still spends all energy. Snecko Oil's own loop skips X-cost cards; that
+    /// contrast is pinned in the Snecko Oil witness below.
+    #[test]
+    fn issue2690_a_drawn_x_cost_card_rolls_and_still_plays_for_all_energy() {
+        let (catalog, mut state) = confused_fixture(
+            &[RelicId::RelicSneckoEye],
+            &[],
+            &[(CardId::Whirlwind, 1), (CardId::StrikeIronclad, 2)],
+        );
+        state.energy = 3;
+        let whirlwind = *catalog
+            .spec(state.piles.get(PileId::Draw).as_slice()[0].atom)
+            .unwrap();
+        assert!(whirlwind.x_cost);
+
+        assert_eq!(
+            draw_cards_for_potion(
+                &mut state,
+                &catalog,
+                2,
+                DrawCaller::PotionEpilogue,
+                &mut Vec::new(),
+            ),
+            Ok(PotionDrawResult::Complete)
+        );
+
+        let rolls = energy_cost_rolls(2);
+        assert_eq!(state.rng.get(RngStream::EnergyCosts).counter, 2);
+        assert_eq!(
+            slither_rows(&state, 1),
+            [(LocalCostModifierKind::Set, rolls[0])]
+        );
+        assert_eq!(
+            slither_rows(&state, 2),
+            [(LocalCostModifierKind::Set, rolls[1])]
+        );
+        let live = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(
+            crate::engine::play::resolved_local_energy_cost(&state, live, &whirlwind),
+            whirlwind.cost
+        );
+        let played = apply_action(
+            &state,
+            &catalog,
+            &Action::Play {
+                uid: 1,
+                target: None,
+                selection: SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state;
+        assert_eq!(played.energy, 0);
+        assert_eq!(played.monsters[0].hp, 100 - 3 * 5);
+    }
+
+    /// #2690 public park fixture: Hellraiser live, a Swift Potion, two
+    /// Defends in Hand for Sculpting Strike's selection, and a five-card
+    /// draw pile whose top is a Strike and whose second card is the selecting
+    /// Sculpting Strike. Returns the canonical root reloaded cold.
+    fn confused_park_root(
+        relics: &[RelicId],
+        first_flags: u16,
+        listeners: &[PowerId],
+        monster_hp: i32,
+    ) -> (Catalog, HotState) {
+        use crate::boundary::HotBoundary;
+        let mut builder = CatalogBuilder::new();
+        let strike = builder.intern(identity(CardId::StrikeIronclad)).unwrap();
+        let sculpting = builder.intern(identity(CardId::SculptingStrike)).unwrap();
+        let defend = builder.intern(identity(CardId::DefendIronclad)).unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics(relics).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 3;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.next_card_uid = 8;
+        state.exact_piles = true;
+        let mut monster = HotMonster::new(MonsterKind::Toadpole, monster_hp);
+        monster.max_hp = 60;
+        monster.loop_pos = 2;
+        state.monsters = std::sync::Arc::new(vec![monster]);
+        state.powers.set(PowerId::Hellraiser, SlotWire::Int, 1);
+        for power in listeners {
+            state.powers.set(*power, SlotWire::Int, 1);
+        }
+        assert!(state.fanouts.set_after_card_drawn_order(listeners));
+        if listeners.contains(&PowerId::Automation) {
+            state.fanouts.set_automation_left(7);
+        }
+        crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut state);
+        for stream in [RngStream::Sel, RngStream::Targets] {
+            state.rng.set(
+                stream,
+                RngStreamState {
+                    words: [1, 2, 3, 4],
+                    counter: 0,
+                },
+            );
+        }
+        let seeded = crate::rng::Xoshiro256StarStar::from_seed(17);
+        state.rng.set(
+            RngStream::EnergyCosts,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        let physical = |uid, atom, flags| HotCard {
+            uid,
+            atom,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE | flags,
+        };
+        state.piles.set(
+            PileId::Hand,
+            HotPile::from_cards(vec![physical(6, defend, 0), physical(7, defend, 0)]),
+        );
+        state.piles.set(
+            PileId::Draw,
+            // No slot-7 bit on any card the Draw moves: the roll's own flag
+            // write is what lets the parked document carry its row (#3629).
+            HotPile::from_cards(vec![
+                HotCard {
+                    uid: 1,
+                    atom: strike,
+                    flags: first_flags,
+                },
+                HotCard {
+                    uid: 2,
+                    atom: sculpting,
+                    flags: 0,
+                },
+                HotCard {
+                    uid: 3,
+                    atom: defend,
+                    flags: 0,
+                },
+                HotCard {
+                    uid: 4,
+                    atom: defend,
+                    flags: 0,
+                },
+                HotCard {
+                    uid: 5,
+                    atom: defend,
+                    flags: 0,
+                },
+            ]),
+        );
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(crate::ids::PotionId::SwiftPotion)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+        let document = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert_eq!(
+            crate::engine::admission::admit(&document, &state, &catalog),
+            Ok(())
+        );
+        (catalog, state)
+    }
+
+    /// Drink the Swift Potion, expect a park, and return the parked state
+    /// with its cold reload (state and rebuilt catalog).
+    fn park_swift_and_reload(state: &HotState, catalog: &Catalog) -> (HotState, HotState, Catalog) {
+        use crate::boundary::HotBoundary;
+        let potion = Action::UsePotion {
+            slot: 0,
+            target: None,
+        };
+        assert!(crate::engine::legal_actions(state, catalog).contains(&potion));
+        let parked = apply_action(state, catalog, &potion).unwrap().state;
+        assert!(parked.pending.is_some(), "{parked:#?}");
+        let document = HotBoundary::try_to_canonical(&parked, catalog).unwrap();
+        let rebuilt_catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let rebuilt = HotBoundary::from_canonical(&document, &rebuilt_catalog).unwrap();
+        assert_eq!(rebuilt, parked);
+        crate::engine::admission::admit(&document, &rebuilt, &rebuilt_catalog).unwrap();
+        (parked, rebuilt, rebuilt_catalog)
+    }
+
+    /// Answer the park with its first legal action on the warm state and on
+    /// the cold reload; both must reach the same canonical successor.
+    fn resume_warm_and_cold(
+        parked: &HotState,
+        catalog: &Catalog,
+        rebuilt: &HotState,
+        rebuilt_catalog: &Catalog,
+    ) -> HotState {
+        use crate::boundary::HotBoundary;
+        let warm_action = crate::engine::legal_actions(parked, catalog)[0];
+        let cold_action = crate::engine::legal_actions(rebuilt, rebuilt_catalog)[0];
+        assert_eq!(warm_action, cold_action);
+        let warm = apply_action(parked, catalog, &warm_action).unwrap().state;
+        let cold = apply_action(rebuilt, rebuilt_catalog, &cold_action)
+            .unwrap()
+            .state;
+        assert_eq!(warm, cold);
+        assert_eq!(
+            HotBoundary::try_to_canonical(&warm, catalog).unwrap(),
+            HotBoundary::try_to_canonical(&cold, rebuilt_catalog).unwrap()
+        );
+        assert!(cold.pending.is_none(), "{cold:#?}");
+        assert!(cold.frames.is_empty(), "{cold:#?}");
+        cold
+    }
+
+    /// Pause AFTER Confused: Pagestorm (the first of two ordinary listeners)
+    /// answers the Ethereal Strike with a nested Draw whose Sculpting Strike
+    /// Hellraiser auto-plays into a selection. The outer card's roll is
+    /// already in the parked state, the nested card's is not, and neither a
+    /// warm resume nor a cold reload rolls the outer card again when
+    /// Automation, the listener after the park, runs.
+    #[test]
+    fn issue2690_pause_after_confused_keeps_one_roll_across_a_cold_reload() {
+        for relic in [RelicId::RelicSneckoEye, RelicId::RelicFakeSneckoEye] {
+            let (catalog, mut state) =
+                confused_park_root(&[relic], 0, &[PowerId::Pagestorm, PowerId::Automation], 60);
+            let mut ethereal = state.card_states.get(1);
+            ethereal.set_local_ethereal(true);
+            state.card_states.set(1, ethereal);
+
+            let (parked, rebuilt, rebuilt_catalog) = park_swift_and_reload(&state, &catalog);
+            assert!(
+                parked
+                    .frames
+                    .as_slice()
+                    .iter()
+                    .any(|frame| matches!(frame, crate::frame::Frame::AfterCardDrawnPower { .. }))
+            );
+            let rolls = energy_cost_rolls(4);
+            assert_eq!(parked.rng.get(RngStream::EnergyCosts).counter, 1);
+            assert_eq!(
+                slither_rows(&parked, 1),
+                [(LocalCostModifierKind::Set, rolls[0])]
+            );
+            assert!(slither_rows(&parked, 2).is_empty());
+            // Automation, the listener behind the park, has not run yet.
+            assert_eq!(parked.fanouts.automation_left(), 7);
+
+            let resumed = resume_warm_and_cold(&parked, &catalog, &rebuilt, &rebuilt_catalog);
+            // Outer Draw(3) plus Pagestorm's nested Draw(1).
+            assert_eq!(resumed.cards_drawn_combat, 4);
+            assert_eq!(resumed.rng.get(RngStream::EnergyCosts).counter, 4);
+            for (uid, rolled) in (1..=4).zip(rolls) {
+                assert_eq!(
+                    slither_rows(&resumed, uid),
+                    [(LocalCostModifierKind::Set, rolled)],
+                    "uid {uid}"
+                );
+            }
+            for uid in 5..=7 {
+                assert!(slither_rows(&resumed, uid).is_empty(), "uid {uid}");
+            }
+            assert_eq!(resumed.fanouts.automation_left(), 3);
+        }
+    }
+
+    /// Pause BEFORE Confused, with no represented ordinary listener: the
+    /// DUPE Strike Hellraiser removed is rolled on its retained object before
+    /// the next card moves, the Sculpting Strike parked in its early stage is
+    /// not rolled until its selection resolves, and the cold reload agrees.
+    /// This is the shape the retired `DUPE Strike Confused Draw listener`
+    /// wall refused.
+    #[test]
+    fn issue2690_removed_dupe_strike_rolls_once_and_the_early_park_rolls_after_resume() {
+        for relic in [RelicId::RelicSneckoEye, RelicId::RelicFakeSneckoEye] {
+            let (catalog, state) = confused_park_root(
+                // A DUPE projects only as an exact physical card; the cards
+                // drawn after it still start without the slot-7 bit.
+                &[relic],
+                CARD_FLAG_DEFAULT_PHYSICAL_STATE | crate::hot::CARD_FLAG_DUPE,
+                &[],
+                60,
+            );
+
+            let (parked, rebuilt, rebuilt_catalog) = park_swift_and_reload(&state, &catalog);
+            let rolls = energy_cost_rolls(3);
+            assert_eq!(parked.rng.get(RngStream::EnergyCosts).counter, 1);
+            assert!(parked.card_states.get_ref(1).is_none());
+            let retained = parked.card_states.removed_draw_object(1).unwrap();
+            assert_eq!(
+                retained.state.local_cost_modifiers.as_slice(),
+                [LocalCostModifier {
+                    kind: LocalCostModifierKind::Set,
+                    amount: rolls[0],
+                    expiration: LocalCostExpiration::ThisCombat,
+                    reduce_only: false,
+                }]
+            );
+            assert!(slither_rows(&parked, 2).is_empty());
+
+            let resumed = resume_warm_and_cold(&parked, &catalog, &rebuilt, &rebuilt_catalog);
+            assert_eq!(resumed.cards_drawn_combat, 3);
+            assert!(resumed.card_states.removed_draw_objects().is_empty());
+            assert_eq!(resumed.rng.get(RngStream::EnergyCosts).counter, 3);
+            assert_eq!(
+                slither_rows(&resumed, 2),
+                [(LocalCostModifierKind::Set, rolls[1])]
+            );
+            assert_eq!(
+                slither_rows(&resumed, 3),
+                [(LocalCostModifierKind::Set, rolls[2])]
+            );
+            for uid in 4..=7 {
+                assert!(slither_rows(&resumed, uid).is_empty(), "uid {uid}");
+            }
+        }
+    }
+
+    /// Pause before the card moves: Stratagem's `AfterShuffle` selection
+    /// parks the Draw with nothing drawn and nothing rolled. The card the
+    /// selection moves to Hand is not a Draw result and takes no roll; the
+    /// two cards the resumed command draws take one each, warm and cold.
+    #[test]
+    fn issue2690_stratagem_after_shuffle_park_rolls_only_the_cards_drawn_after_it() {
+        use crate::boundary::HotBoundary;
+        let mut builder = CatalogBuilder::new();
+        let atoms = [
+            CardId::DefendSilent,
+            CardId::DefendIronclad,
+            CardId::DefendDefect,
+        ]
+        .map(|id| builder.intern(identity(id)).unwrap());
+        builder.set_relics(&[RelicId::RelicSneckoEye]).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.next_card_uid = 4;
+        state.exact_piles = true;
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+        let seeded = crate::rng::Xoshiro256StarStar::from_seed(17);
+        state.rng.set(
+            RngStream::EnergyCosts,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .extend((1..=3).zip(atoms).map(|(uid, atom)| HotCard {
+                uid,
+                atom,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            }));
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(crate::ids::PotionId::SwiftPotion)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+        let predecessor = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(
+            crate::engine::admission::admit(&predecessor, &state, &catalog),
+            Ok(())
+        );
+
+        let (parked, rebuilt, rebuilt_catalog) = park_swift_and_reload(&state, &catalog);
+        let draw = parked
+            .pending
+            .as_deref()
+            .unwrap()
+            .stratagem_draw_record(&parked.frames)
+            .unwrap();
+        assert_eq!(draw.stage, DrawStage::AfterShuffle);
+        assert_eq!(parked.rng.get(RngStream::EnergyCosts).counter, 0);
+
+        let resumed = resume_warm_and_cold(&parked, &catalog, &rebuilt, &rebuilt_catalog);
+        assert_eq!(resumed.cards_drawn_combat, 2);
+        let hand: Vec<u32> = resumed
+            .piles
+            .get(PileId::Hand)
+            .as_slice()
+            .iter()
+            .map(|card| card.uid)
+            .collect();
+        assert_eq!(hand.len(), 3);
+        assert_eq!(resumed.rng.get(RngStream::EnergyCosts).counter, 2);
+        // Hand order is the Stratagem pick, then the two Draw results.
+        let rolls = energy_cost_rolls(2);
+        assert!(slither_rows(&resumed, hand[0]).is_empty());
+        assert_eq!(
+            slither_rows(&resumed, hand[1]),
+            [(LocalCostModifierKind::Set, rolls[0])]
+        );
+        assert_eq!(
+            slither_rows(&resumed, hand[2]),
+            [(LocalCostModifierKind::Set, rolls[1])]
+        );
+    }
+
+    /// An `EarlyHook` resume whose Hellraiser AutoPlay ends combat: the
+    /// ordinary walk never starts, so the parked card takes no roll, warm or
+    /// cold. The Strike drawn before it was rolled once while combat was live.
+    ///
+    /// Every selecting Strike deals its damage before its choice, so the kill
+    /// has to come after the park: Kusarigama's third-Attack damage, which
+    /// runs in the auto-played Sculpting Strike's `AfterCardPlayed`.
+    #[test]
+    fn issue2690_early_park_whose_autoplay_ends_combat_takes_no_roll() {
+        use crate::boundary::HotBoundary;
+        // Strike 6 and Sculpting Strike 9 leave the Toadpole at 1.
+        let (catalog, mut state) = confused_park_root(
+            &[RelicId::RelicSneckoEye, RelicId::RelicKusarigama],
+            0,
+            &[],
+            16,
+        );
+        assert!(state.fanouts.set_kusarigama(1));
+
+        let (parked, rebuilt, rebuilt_catalog) = park_swift_and_reload(&state, &catalog);
+        let rolls = energy_cost_rolls(1);
+        assert_eq!(parked.rng.get(RngStream::EnergyCosts).counter, 1);
+        assert_eq!(parked.monsters[0].hp, 1);
+        assert!(!parked.history.over);
+
+        let action = crate::engine::legal_actions(&parked, &catalog)[0];
+        let warm = apply_action(&parked, &catalog, &action).unwrap().state;
+        let cold = apply_action(&rebuilt, &rebuilt_catalog, &action)
+            .unwrap()
+            .state;
+        assert_eq!(warm, cold);
+        assert_eq!(
+            HotBoundary::try_to_canonical(&warm, &catalog).unwrap(),
+            HotBoundary::try_to_canonical(&cold, &rebuilt_catalog).unwrap()
+        );
+        assert!(cold.history.over);
+        assert!(cold.monsters[0].hp <= 0);
+        assert_eq!(cold.rng.get(RngStream::EnergyCosts).counter, 1);
+        assert_eq!(
+            slither_rows(&cold, 1),
+            [(LocalCostModifierKind::Set, rolls[0])]
+        );
+        for uid in 2..=7 {
+            assert!(slither_rows(&cold, uid).is_empty(), "uid {uid}");
+        }
+    }
+
+    /// Snecko Eye with Snecko Oil: the potion's Draw rolls Confused for each
+    /// drawn card first, and only then does the Oil's own loop roll the Hand
+    /// in pile order on the same stream. The X-cost Whirlwind takes
+    /// Confused's roll and is skipped by the Oil.
+    #[test]
+    fn issue2690_snecko_oil_rolls_after_every_confused_roll_of_its_draw() {
+        let (catalog, mut state) = confused_fixture(
+            &[RelicId::RelicSneckoEye],
+            &[],
+            &[
+                (CardId::StrikeIronclad, 1),
+                (CardId::Whirlwind, 2),
+                (CardId::StrikeIronclad, 3),
+            ],
+        );
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(crate::ids::PotionId::SneckoOil)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+
+        let after = apply_action(
+            &state,
+            &catalog,
+            &Action::UsePotion {
+                slot: 0,
+                target: None,
+            },
+        )
+        .unwrap()
+        .state;
+
+        let rolls = energy_cost_rolls(5);
+        assert_eq!(after.rng.get(RngStream::EnergyCosts).counter, 5);
+        let rows = |uid: u32| -> Vec<(i64, LocalCostExpiration)> {
+            after
+                .card_states
+                .get(uid)
+                .local_cost_modifiers
+                .as_slice()
+                .iter()
+                .map(|row| {
+                    assert_eq!(row.kind, LocalCostModifierKind::Set);
+                    (row.amount, row.expiration)
+                })
+                .collect()
+        };
+        let confused = LocalCostExpiration::ThisCombat;
+        let oil = LocalCostExpiration::ThisTurnOrPlayed;
+        assert_eq!(rows(1), [(rolls[0], confused), (rolls[3], oil)]);
+        assert_eq!(rows(2), [(rolls[1], confused)]);
+        assert_eq!(rows(3), [(rolls[2], confused), (rolls[4], oil)]);
+    }
+
+    /// Scrape over a removed DUPE Strike with Confused owned, the shape the
+    /// retired wall refused: Hellraiser plays and removes the Strike, Confused
+    /// rolls on the retained object, and Scrape's filter prices it from that
+    /// row. A roll of 0 drops the removed Strike out of the discard set; any
+    /// other roll keeps it in, counted without a move.
+    #[test]
+    fn issue2690_scrape_prices_a_removed_dupe_strike_from_its_confused_roll() {
+        use crate::boundary::HotBoundary;
+        let (mut zero_seen, mut nonzero_seen) = (false, false);
+        for seed in 0..64_u64 {
+            let mut rng = crate::rng::Xoshiro256StarStar::from_seed(seed);
+            let stream = RngStreamState {
+                words: rng.words,
+                counter: rng.counter,
+            };
+            let rolls: Vec<i32> = (0..4).map(|_| rng.next_bounded(4).unwrap()).collect();
+            if (rolls[0] == 0 && zero_seen) || (rolls[0] != 0 && nonzero_seen) {
+                continue;
+            }
+
+            let mut builder = CatalogBuilder::new();
+            let strike = builder
+                .intern_reachable(identity(CardId::StrikeIronclad))
+                .unwrap();
+            let scrape = builder.intern_reachable(identity(CardId::Scrape)).unwrap();
+            let defend = builder
+                .intern_reachable(identity(CardId::DefendIronclad))
+                .unwrap();
+            builder.mark_live_hellraiser_reachable();
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder
+                .set_relics(&[RelicId::RelicToughBandages, RelicId::RelicSneckoEye])
+                .unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.max_hp = 50;
+            state.energy = 3;
+            state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+            state.exact_piles = true;
+            state.next_card_uid = 6;
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, 60);
+            monster.max_hp = 60;
+            monster.loop_pos = 2;
+            state.monsters = std::sync::Arc::new(vec![monster]);
+            state.powers.set(PowerId::Hellraiser, SlotWire::Int, 1);
+            crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut state);
+            for other in [RngStream::Sel, RngStream::Targets] {
+                state.rng.set(
+                    other,
+                    RngStreamState {
+                        words: [1, 2, 3, 4],
+                        counter: 0,
+                    },
+                );
+            }
+            state.rng.set(RngStream::EnergyCosts, stream);
+            let mut draw = vec![HotCard {
+                uid: 1,
+                atom: strike,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE | crate::hot::CARD_FLAG_DUPE,
+            }];
+            draw.extend((2..=4).map(|uid| HotCard {
+                uid,
+                atom: defend,
+                flags: 0,
+            }));
+            state.piles.set(PileId::Draw, HotPile::from_cards(draw));
+            state.piles.set(
+                PileId::Hand,
+                HotPile::from_cards(vec![HotCard {
+                    uid: 5,
+                    atom: scrape,
+                    flags: 0,
+                }]),
+            );
+            let document = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+            assert_eq!(
+                crate::engine::admission::admit(&document, &state, &catalog),
+                Ok(()),
+                "the retired wall's shape admits"
+            );
+
+            let next = apply_action(
+                &state,
+                &catalog,
+                &Action::Play {
+                    uid: 5,
+                    target: Some(0),
+                    selection: SelectionRef::NONE,
+                },
+            )
+            .unwrap()
+            .state;
+
+            assert!(next.pending.is_none() && next.frames.is_empty());
+            assert!(next.card_states.removed_draw_objects().is_empty());
+            assert_eq!(
+                next.rng.get(RngStream::EnergyCosts).counter,
+                4,
+                "seed {seed}"
+            );
+            let expected: Vec<u32> = (1..=4_u32)
+                .zip(&rolls)
+                .filter(|(_, roll)| **roll != 0)
+                .map(|(uid, _)| uid)
+                .collect();
+            assert_eq!(
+                usize::try_from(next.history.discarded_cards_this_turn).unwrap(),
+                expected.len(),
+                "seed {seed} rolls {rolls:?}"
+            );
+            // Tough Bandages: 3 Block per discarded occurrence.
+            assert_eq!(
+                usize::try_from(next.block).unwrap(),
+                3 * expected.len(),
+                "seed {seed}"
+            );
+            // The removed Strike never enters a pile, discarded or not.
+            let moved: Vec<u32> = expected.iter().copied().filter(|uid| *uid != 1).collect();
+            let discard: Vec<u32> = next
+                .piles
+                .get(PileId::Discard)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .filter(|uid| *uid != 5)
+                .collect();
+            assert_eq!(discard, moved, "seed {seed} rolls {rolls:?}");
+            if rolls[0] == 0 {
+                zero_seen = true;
+            } else {
+                nonzero_seen = true;
+            }
+        }
+        assert!(zero_seen && nonzero_seen);
+    }
+
+    fn pile_uids(state: &HotState, pile: PileId) -> Vec<u32> {
+        state
+            .piles
+            .get(pile)
+            .as_slice()
+            .iter()
+            .map(|card| card.uid)
+            .collect()
+    }
+
+    /// A Draw pile whose live order is neither its selector view nor the
+    /// reverse of it: Common Thunderclap (1), Token Shiv (2), Common Claw
+    /// (3), Common Anger (4), a second Claw (5) and Basic Strike (6). The
+    /// view is Strike, Anger, the two Claws in live order, Thunderclap, Shiv.
+    fn stratagem_selector_draw() -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::Thunderclap,
+            CardId::Shiv,
+            CardId::Claw,
+            CardId::Anger,
+            CardId::StrikeIronclad,
+            CardId::DefendSilent,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
+        let catalog = builder.build();
+        use crate::content_tables::CardRarity;
+        for (id, rarity) in [
+            (CardId::Thunderclap, CardRarity::Common),
+            (CardId::Shiv, CardRarity::Token),
+            (CardId::Claw, CardRarity::Common),
+            (CardId::Anger, CardRarity::Common),
+            (CardId::StrikeIronclad, CardRarity::Basic),
+        ] {
+            assert_eq!(card_spec(&catalog, id).row.rarity, rarity);
+        }
+        let mut state = HotState::at_defaults();
+        state.piles.get_mut(PileId::Draw).make_mut().extend([
+            card(&catalog, CardId::Thunderclap, 1),
+            card(&catalog, CardId::Shiv, 2),
+            card(&catalog, CardId::Claw, 3),
+            card(&catalog, CardId::Anger, 4),
+            card(&catalog, CardId::Claw, 5),
+            card(&catalog, CardId::StrikeIronclad, 6),
+        ]);
+        (state, catalog)
+    }
+
+    /// Under Whispering Earring's selector (#3637) a Draw pile larger than
+    /// Amount gives Stratagem the first Amount cards of the sorted Draw
+    /// view, in view order: rarity first (Basic Strike before every Common),
+    /// a rarity tie by id (Anger before Claw), identical cards in live order
+    /// (Claw 3 before Claw 5). Live order would take Thunderclap, Shiv,
+    /// Claw, Anger. Without the selector the same pile is a player choice,
+    /// which this synchronous reader refuses.
+    #[test]
+    fn stratagem_under_the_earring_selector_takes_the_first_amount_of_the_sorted_view() {
+        let (mut state, catalog) = stratagem_selector_draw();
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 4);
+        let outside = stratagem_after_shuffle(&mut state.clone(), &catalog, &mut Vec::new());
+        assert_eq!(
+            outside,
+            Err(EngineRefusal::MalformedArgs("stratagem selection"))
+        );
+
+        let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
+        let mut events = Vec::new();
+        stratagem_after_shuffle(&mut state, &catalog, &mut events).unwrap();
+
+        assert!(state.pending.is_none() && state.frames.is_empty());
+        assert_eq!(pile_uids(&state, PileId::Hand), [6, 4, 3, 5]);
+        assert_eq!(pile_uids(&state, PileId::Draw), [1, 2]);
+        assert!(state.piles.get(PileId::Discard).is_empty());
+        assert_eq!(
+            events,
+            [6, 4, 3, 5].map(|uid| Event::CardResolved {
+                uid,
+                pile: PileId::Hand
+            })
+        );
+    }
+
+    /// The selector's picks are added one by one (`CardPileCmd::Add`,
+    /// `StratagemPower/<AfterShuffle>d__4` IL_00da-IL_00fe), so the Hand cap
+    /// redirects the later ones to Discard in view order.
+    #[test]
+    fn stratagem_under_the_earring_selector_overflows_to_discard_in_view_order() {
+        let (mut state, catalog) = stratagem_selector_draw();
+        for uid in 10..19 {
+            state.piles.get_mut(PileId::Hand).make_mut().push(card(
+                &catalog,
+                CardId::DefendSilent,
+                uid,
+            ));
+        }
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 3);
+        let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
+
+        stratagem_after_shuffle(&mut state, &catalog, &mut Vec::new()).unwrap();
+
+        assert_eq!(pile_uids(&state, PileId::Hand)[9..], [6]);
+        assert_eq!(pile_uids(&state, PileId::Discard), [4, 3]);
+        assert_eq!(pile_uids(&state, PileId::Draw), [1, 2, 5]);
+    }
+
+    /// A Draw pile no larger than Amount is returned as it stands before any
+    /// selector is read (`<FromCombatPile>d__20` IL_015a-IL_017c), and an
+    /// empty one returns nothing (IL_0140-IL_0155): live order, the same
+    /// with and without the Earring's selector (#3637). Stratagem passes no
+    /// filter, so there is no filtered-empty case apart from the empty pile.
+    /// The sorted view would lead with Strike.
+    #[test]
+    fn stratagem_at_or_under_amount_keeps_live_order_under_the_earring_selector() {
+        for scoped in [true, false] {
+            let _vakuu = scoped.then(crate::engine::selection::VakuuSelectorScope::enter);
+            for amount in [6, 7] {
+                let (mut state, catalog) = stratagem_selector_draw();
+                state.powers.set(PowerId::Stratagem, SlotWire::Int, amount);
+                stratagem_after_shuffle(&mut state, &catalog, &mut Vec::new()).unwrap();
+                assert_eq!(
+                    pile_uids(&state, PileId::Hand),
+                    [1, 2, 3, 4, 5, 6],
+                    "scoped={scoped} amount={amount}"
+                );
+                assert!(state.piles.get(PileId::Draw).is_empty());
+            }
+
+            let (mut state, catalog) = stratagem_selector_draw();
+            state.piles.set(PileId::Draw, Default::default());
+            state.powers.set(PowerId::Stratagem, SlotWire::Int, 2);
+            let mut events = Vec::new();
+            stratagem_after_shuffle(&mut state, &catalog, &mut events).unwrap();
+            assert!(state.piles.get(PileId::Hand).is_empty() && events.is_empty());
+        }
+    }
+
+    fn swift_defend() -> CardIdentity {
+        CardIdentity {
+            id: CardId::DefendIronclad,
+            upgrade: 0,
+            enchantment: Some(crate::catalog::CardEnchantment {
+                id: EnchantmentId::Swift,
+                amount: 2,
+            }),
+        }
+    }
+
+    /// An owner about to end turn zero, whose turn-one hand draw takes the
+    /// whole Draw pile `draw` (top first, uid = position + 1). With the
+    /// Earring, turn one's AutoPre then plays the Hand in that order.
+    fn turn_zero(draw: &[CardIdentity], relics: &[RelicId]) -> (HotState, Catalog) {
+        assert!(draw.len() <= 5, "the hand draw must empty the Draw pile");
+        turn_zero_deck(draw, relics)
+    }
+
+    /// [`turn_zero`] for any Draw pile: the turn-one hand draw takes its top
+    /// five cards and leaves the rest.
+    fn turn_zero_deck(draw: &[CardIdentity], relics: &[RelicId]) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        for identity in draw {
+            builder.intern_reachable(*identity).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics(relics).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.hp = 50;
+        state.max_hp = 50;
+        state.turn = 0;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.next_card_uid = 40;
+        for (index, identity) in draw.iter().enumerate() {
+            state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                uid: u32::try_from(index).unwrap() + 1,
+                atom: catalog.atom(identity).unwrap(),
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            });
+        }
+        (state, catalog)
+    }
+
+    fn root_admission(
+        state: &HotState,
+        catalog: &Catalog,
+    ) -> Result<(), crate::engine::admission::AdmissionRefusal> {
+        let wire = crate::boundary::HotBoundary::try_to_canonical(state, catalog).unwrap();
+        crate::engine::admission::admit(&wire, state, catalog).map(|_| ())
+    }
+
+    const EARRING_LOOP_WALL: crate::engine::admission::MissingCapability =
+        crate::engine::admission::MissingCapability::ArgumentShape(
+            "Whispering Earring bounded live Hand loop",
+        );
+
+    /// End turn zero both ways a public transaction runs it, and require the
+    /// same state from each.
+    fn end_turn_zero(state: &HotState, catalog: &Catalog) -> Result<HotState, EngineRefusal> {
+        let plain = apply_action(state, catalog, &Action::EndTurn).map(|next| next.state);
+        let witnessed = crate::engine::apply_action_with_replay_witness(
+            state,
+            catalog,
+            &Action::EndTurn,
+            &mut Vec::new(),
+        );
+        assert_eq!(plain, witnessed);
+        plain
+    }
+
+    /// #3637 through the public action. Turn one's Earring loop spends its
+    /// four Energy on Stratagem and the next three cards, then plays the
+    /// free Flash of Steel, whose Draw finds an empty Draw pile and
+    /// reshuffles the three cards in Discard: more than Stratagem's Amount
+    /// of one. Native asks nobody: the Earring's selector takes the first
+    /// card of the sorted Draw view, which is the one Basic card, and
+    /// Flash of Steel then draws the new top. The pick costs Energy the loop
+    /// no longer has, so it is still Hand's first card afterwards.
+    ///
+    /// The Basic card is first, second and third of the three by id in
+    /// turn. `Shuffle` sorts by id before its Fisher-Yates, so the three
+    /// runs put the same sorted position on top; a pick by live position
+    /// could match at most one of them.
+    #[test]
+    fn whispering_earring_plain_draw_child_resolves_stratagem_through_the_selector() {
+        for (discards, basic_uid) in [
+            ([CardId::Bash, CardId::IronWave, CardId::Claw], 2),
+            (
+                [
+                    CardId::IronWave,
+                    CardId::StrikeIronclad,
+                    CardId::Thunderclap,
+                ],
+                3,
+            ),
+            (
+                [
+                    CardId::Breakthrough,
+                    CardId::IronWave,
+                    CardId::StrikeIronclad,
+                ],
+                4,
+            ),
+        ] {
+            let draw = [
+                identity(CardId::Stratagem),
+                identity(discards[0]),
+                identity(discards[1]),
+                identity(discards[2]),
+                identity(CardId::FlashOfSteel),
+            ];
+            let (state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
+            assert_eq!(root_admission(&state, &catalog), Ok(()), "{discards:?}");
+
+            let next = end_turn_zero(&state, &catalog).unwrap();
+
+            assert!(next.pending.is_none() && next.frames.is_empty());
+            assert_eq!(next.turn, 1);
+            assert_eq!(
+                next.player_phase,
+                crate::engine::admission::PHASE_ORDINARY_ACTIONS
+            );
+            assert_eq!(next.powers.value(PowerId::Stratagem), 1);
+            assert_eq!(next.energy, 0, "{discards:?}");
+            assert_eq!(
+                pile_uids(&next, PileId::Hand).first(),
+                Some(&basic_uid),
+                "{discards:?}: Stratagem took the Basic card"
+            );
+            let mut rest = [
+                pile_uids(&next, PileId::Hand),
+                pile_uids(&next, PileId::Draw),
+                pile_uids(&next, PileId::Discard),
+            ]
+            .concat();
+            rest.sort_unstable();
+            assert_eq!(rest, [2, 3, 4, 5], "{discards:?}");
+            assert_eq!(pile_uids(&next, PileId::Draw).len(), 1, "{discards:?}");
+        }
+    }
+
+    /// Three openings the live engine was asked (#3637): the headless
+    /// harness on v0.111.0 (41cef1ea), Ironclad with Whispering Earring and
+    /// exactly these five cards against `ENCOUNTER.CULTISTS_NORMAL`. The
+    /// hand order is the harness's opening hand for the named seed. In each,
+    /// Flash of Steel reshuffles two cards under a live Stratagem 1; the
+    /// engine logged the pick (`Player 0 chose cards [...]`), asked nobody,
+    /// and left these piles when the phase reached Play. The other card is
+    /// Flash of Steel's draw, so no shuffle order is involved.
+    ///
+    /// - `I3637S3`: Breakthrough and Strike reshuffled, Basic Strike picked
+    ///   although Breakthrough sorts first by id.
+    /// - `I3637S9`: Breakthrough and Iron Wave, both Common: Breakthrough,
+    ///   first by id.
+    /// - `I3637S9` with Thunderclap and Claw for Breakthrough and Strike:
+    ///   Thunderclap and Iron Wave reshuffled, Iron Wave picked.
+    ///
+    /// The pick joins Hand's bottom, below the card still waiting there,
+    /// which the loop therefore plays first.
+    #[test]
+    fn whispering_earring_stratagem_pick_matches_the_live_engine() {
+        use CardId::{
+            Breakthrough, Claw, FlashOfSteel, IronWave, Stratagem, StrikeIronclad, Thunderclap,
+        };
+        for (opening, hand, discard) in [
+            (
+                [
+                    Breakthrough,
+                    StrikeIronclad,
+                    Stratagem,
+                    FlashOfSteel,
+                    IronWave,
+                ],
+                vec![2, 1],
+                vec![4, 5],
+            ),
+            (
+                [
+                    Breakthrough,
+                    IronWave,
+                    Stratagem,
+                    FlashOfSteel,
+                    StrikeIronclad,
+                ],
+                vec![1, 2],
+                vec![4, 5],
+            ),
+            (
+                [Thunderclap, IronWave, Stratagem, FlashOfSteel, Claw],
+                vec![1],
+                vec![4, 5, 2],
+            ),
+        ] {
+            let (state, catalog) =
+                turn_zero(&opening.map(identity), &[RelicId::RelicWhisperingEarring]);
+            assert_eq!(root_admission(&state, &catalog), Ok(()), "{opening:?}");
+
+            let next = end_turn_zero(&state, &catalog).unwrap();
+
+            assert!(next.pending.is_none() && next.frames.is_empty());
+            assert_eq!(pile_uids(&next, PileId::Hand), hand, "{opening:?}");
+            assert_eq!(pile_uids(&next, PileId::Discard), discard, "{opening:?}");
+            assert!(next.piles.get(PileId::Draw).is_empty(), "{opening:?}");
+            assert_eq!(next.energy, 0, "{opening:?}");
+        }
+    }
+
+    /// The at-or-under arm through the public action (#3637): one card in
+    /// Discard against Amount one is taken without any selector, so the
+    /// loop replays the free Claw and ends with nothing left to draw.
+    #[test]
+    fn whispering_earring_plain_draw_child_auto_takes_a_pile_within_stratagem_amount() {
+        let draw = [
+            identity(CardId::Stratagem),
+            identity(CardId::Claw),
+            identity(CardId::FlashOfSteel),
+        ];
+        let (state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+
+        let next = end_turn_zero(&state, &catalog).unwrap();
+
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert!(next.piles.get(PileId::Hand).is_empty());
+        assert!(next.piles.get(PileId::Draw).is_empty());
+        assert_eq!(pile_uids(&next, PileId::Discard), [3, 2]);
+        // Stratagem, Claw, Flash of Steel, and Claw again.
+        assert_eq!(next.history.card_plays_finished_combat, 4);
+    }
+
+    /// The same fight without the Earring (#3637): the hand draw leaves all
+    /// five cards in Hand, the player plays them in the loop's order, and
+    /// Flash of Steel's reshuffle is the player's Stratagem choice.
+    #[test]
+    fn stratagem_reshuffle_is_still_the_players_choice_without_the_earring() {
+        let draw = [
+            identity(CardId::Stratagem),
+            identity(CardId::Claw),
+            identity(CardId::StrikeIronclad),
+            identity(CardId::BeamCell),
+            identity(CardId::FlashOfSteel),
+        ];
+        let (state, catalog) = turn_zero(&draw, &[]);
+        let mut state = end_turn_zero(&state, &catalog).unwrap();
+        assert_eq!(pile_uids(&state, PileId::Hand), [1, 2, 3, 4, 5]);
+        for uid in 1..=5 {
+            assert!(state.pending.is_none());
+            let target = (uid != 1).then_some(0);
+            state = apply_action(
+                &state,
+                &catalog,
+                &Action::Play {
+                    uid,
+                    target,
+                    selection: SelectionRef::NONE,
+                },
+            )
+            .unwrap()
+            .state;
+        }
+        let pending = state.pending.as_deref().unwrap();
+        let record = pending.stratagem_draw_record(&state.frames).unwrap();
+        assert_eq!(record.shuffle_candidates().count(), 3);
+        assert_eq!(stratagem_selection_action_count(&state, &catalog), Ok(3));
+        assert!(state.piles.get(PileId::Hand).is_empty());
+    }
+
+    /// A relic Draw inside the loop (#3637). A Swift Defend is not a child
+    /// the Earring's wall refuses, and its receipt-owned Draw of two
+    /// reshuffles three cards against Amount one. Before #3637 that parked
+    /// the EndTurn on a Stratagem choice native never offers; the selector
+    /// now takes Basic Strike, and the loop runs to the end of the phase.
+    #[test]
+    fn whispering_earring_swift_draw_resolves_stratagem_without_parking() {
+        let draw = [
+            identity(CardId::Stratagem),
+            identity(CardId::Claw),
+            identity(CardId::BeamCell),
+            identity(CardId::StrikeIronclad),
+            swift_defend(),
+        ];
+        let (state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+
+        let next = end_turn_zero(&state, &catalog).unwrap();
+
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(
+            next.player_phase,
+            crate::engine::admission::PHASE_ORDINARY_ACTIONS
+        );
+        // Swift Defend lands in Discard first. The pick was added to Hand
+        // before the two drawn cards, so the loop replays Strike (4) and
+        // then Claw and Beam Cell.
+        assert_eq!(pile_uids(&next, PileId::Discard), [5, 4, 2, 3]);
+        assert!(next.piles.get(PileId::Hand).is_empty());
+        assert!(next.piles.get(PileId::Draw).is_empty());
+        assert_eq!(next.history.card_plays_finished_combat, 8);
+        assert_eq!(next.energy, 0);
+    }
+
+    /// What #3637 leaves refused, by the names it already had. With a
+    /// Hellraiser card reachable a Draw can also AutoPlay a selecting
+    /// Strike, which the selector's answer was not read for: the root is
+    /// refused at admission, and the loop refuses the drawing child. A
+    /// fused Draw kind (Big Bang) beside a live Stratagem stays behind the
+    /// same wall.
+    #[test]
+    fn whispering_earring_draw_child_stays_refused_beside_hellraiser_or_a_fused_draw() {
+        for draw in [
+            [
+                identity(CardId::Stratagem),
+                identity(CardId::Claw),
+                identity(CardId::BeamCell),
+                identity(CardId::FlashOfSteel),
+                identity(CardId::Hellraiser),
+            ],
+            [
+                identity(CardId::Stratagem),
+                identity(CardId::Claw),
+                identity(CardId::BeamCell),
+                identity(CardId::BigBang),
+                identity(CardId::Thunderclap),
+            ],
+        ] {
+            let (state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
+            assert!(
+                root_admission(&state, &catalog)
+                    .is_err_and(|refusal| refusal.contains(EARRING_LOOP_WALL)),
+                "{draw:?}"
+            );
+            assert_eq!(
+                end_turn_zero(&state, &catalog),
+                Err(EngineRefusal::MalformedArgs(
+                    "Whispering Earring playable child"
+                )),
+                "{draw:?}"
+            );
+        }
+    }
+
+    /// Stratagem 2 through the public action (#3637): one Stratagem live at
+    /// the root and one played by the loop. Flash of Steel reshuffles Iron
+    /// Wave (2), Strike (3) and Claw (4); the selector takes the first two
+    /// of the sorted view, Basic Strike and then Claw (Common, before Iron
+    /// Wave by id), and Flash of Steel draws Iron Wave. With one Energy left
+    /// the loop replays Strike and the free Claw; Iron Wave stays.
+    #[test]
+    fn whispering_earring_stratagem_two_takes_the_first_two_of_the_sorted_view() {
+        use CardId::{Claw, FlashOfSteel, IronWave, Stratagem, StrikeIronclad};
+        let draw = [Stratagem, IronWave, StrikeIronclad, Claw, FlashOfSteel].map(identity);
+        let (mut state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+
+        let next = end_turn_zero(&state, &catalog).unwrap();
+
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(next.powers.value(PowerId::Stratagem), 2);
+        assert_eq!(pile_uids(&next, PileId::Hand), [2]);
+        assert_eq!(pile_uids(&next, PileId::Discard), [5, 3, 4]);
+        assert!(next.piles.get(PileId::Draw).is_empty());
+        assert_eq!(next.history.card_plays_finished_combat, 7);
+    }
+
+    /// The other receipt-owned and listener Draws inside the loop (#3637),
+    /// each reshuffling Iron Wave (2) and Thunderclap (3) against Stratagem 1
+    /// from an admitted root. The selector takes Iron Wave (both Common,
+    /// first by id), then the Draw takes Thunderclap. None parks.
+    ///
+    /// - Centennial Puzzle: Breakthrough's HP loss arms its three one-card
+    ///   Draws. No Energy is left, so both cards stay in Hand, pick first.
+    /// - Joss Paper: Shiv is the fifth exhaust. One Energy is left, so the
+    ///   loop replays Iron Wave.
+    /// - Gremlin Horn: Claw kills the first Toadpole. Its listener gains one
+    ///   Energy and draws inline, where `main` refused `Gremlin Horn Draw
+    ///   choice outside a player action`: with a selector set,
+    ///   `<FromCombatPile>d__20` never signals the listener's context
+    ///   (IL_0077-IL_007c branches past `SignalPlayerChoiceBegun` at
+    ///   IL_00ae), so nothing is deferred. The loop replays both cards.
+    #[test]
+    fn whispering_earring_relic_draws_resolve_stratagem_without_parking() {
+        use CardId::{Breakthrough, Claw, IronWave, Shiv, Stratagem, Thunderclap};
+        let earring = RelicId::RelicWhisperingEarring;
+
+        let draw = [Stratagem, IronWave, Thunderclap, Breakthrough].map(identity);
+        let (mut state, catalog) = turn_zero(&draw, &[earring, RelicId::RelicCentennialPuzzle]);
+        state.block = 200;
+        state.fanouts.set_puzzle_armed(true);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+        let next = end_turn_zero(&state, &catalog).unwrap();
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(next.hp, 49, "only Breakthrough's own HP loss");
+        assert!(!next.fanouts.puzzle_armed());
+        assert_eq!(pile_uids(&next, PileId::Hand), [2, 3]);
+        assert_eq!(pile_uids(&next, PileId::Discard), [4]);
+
+        let draw = [Stratagem, IronWave, Thunderclap, Shiv].map(identity);
+        let (mut state, catalog) = turn_zero(&draw, &[earring, RelicId::RelicJossPaper]);
+        assert!(state.fanouts.set_joss_paper_cards_exhausted(4));
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+        let next = end_turn_zero(&state, &catalog).unwrap();
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(next.fanouts.joss_paper_cards_exhausted(), 0);
+        assert_eq!(pile_uids(&next, PileId::Hand), [3]);
+        assert_eq!(pile_uids(&next, PileId::Discard), [2]);
+        assert_eq!(pile_uids(&next, PileId::Exhaust), [4]);
+        assert_eq!(next.history.card_plays_finished_combat, 5);
+
+        let draw = [Stratagem, IronWave, Thunderclap, Claw].map(identity);
+        let (mut state, catalog) = turn_zero(&draw, &[earring, RelicId::RelicGremlinHorn]);
+        state.block = 200;
+        state.fanouts.set_gremlin_horn_owned(true);
+        state.monsters_mut()[0].hp = 13;
+        let mut second = HotMonster::new(MonsterKind::Toadpole, 100);
+        second.uid = 1;
+        second.slot = 1;
+        state.monsters_mut().push(second);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+        let next = end_turn_zero(&state, &catalog).unwrap();
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert!(next.monsters[0].hp <= 0 && next.monsters[1].hp > 0);
+        assert_eq!(pile_uids(&next, PileId::Discard), [4, 2, 3]);
+        assert!(next.piles.get(PileId::Hand).is_empty());
+        assert_eq!(next.history.card_plays_finished_combat, 6);
+        assert_eq!(next.energy, 0);
+    }
+
+    /// The shuffles #3637 leaves refused under the selector, by the name
+    /// they had: only the resumable Draw frame resolves the pick
+    /// ([`StratagemRoute`]).
+    ///
+    /// - The synchronous Draw command. Brightest Flame's Draw has no
+    ///   persisted owner: admission refuses its root by `stratagem
+    ///   selection`, and so does the loop.
+    /// - Reboot's full shuffle. The Earring's wall does not stop Reboot, so
+    ///   its root is admitted and the loop refuses when it gets there.
+    /// - `reshuffle` itself (the Draw-pile AutoPlay gather's entry), called
+    ///   under the selector.
+    ///
+    /// A pile within Amount is still taken on all three.
+    #[test]
+    fn whispering_earring_unowned_shuffles_keep_the_stratagem_refusal() {
+        use CardId::{BrightestFlame, Claw, IronWave, Reboot, Stratagem, StrikeIronclad};
+        let refused = Err(EngineRefusal::MalformedArgs("stratagem selection"));
+        let wall =
+            crate::engine::admission::MissingCapability::ArgumentShape("stratagem selection");
+        let earring = [RelicId::RelicWhisperingEarring];
+
+        let draw = [Stratagem, IronWave, StrikeIronclad, Claw, BrightestFlame].map(identity);
+        let (state, catalog) = turn_zero(&draw, &earring);
+        assert!(root_admission(&state, &catalog).is_err_and(|refusal| refusal.contains(wall)));
+        assert_eq!(end_turn_zero(&state, &catalog), refused);
+
+        let draw = [Stratagem, IronWave, StrikeIronclad, Claw, Reboot].map(identity);
+        let (state, catalog) = turn_zero(&draw, &earring);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+        assert_eq!(end_turn_zero(&state, &catalog), refused);
+
+        let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
+        for (amount, expected) in [(1, Err(())), (6, Ok(())), (7, Ok(()))] {
+            let (mut state, catalog) = stratagem_selector_draw();
+            let draw = std::mem::take(state.piles.get_mut(PileId::Draw).make_mut());
+            state.piles.get_mut(PileId::Discard).make_mut().extend(draw);
+            state.powers.set(PowerId::Stratagem, SlotWire::Int, amount);
+            let result = reshuffle(&mut state, &catalog, &mut Vec::new());
+            assert_eq!(result.clone().map_err(|_| ()), expected, "amount {amount}");
+            if expected.is_err() {
+                assert_eq!(
+                    result,
+                    Err(EngineRefusal::MalformedArgs("stratagem selection"))
+                );
+            } else {
+                assert_eq!(state.piles.get(PileId::Hand).len(), 6);
+            }
+        }
+    }
+
+    /// `DrawInternal` re-tests the Hand cap after `ShuffleIfNecessary`
+    /// (#3637, `<DrawInternal>d__21` RVA `0x3e3a70` IL_025f-IL_0274): an
+    /// `AfterShuffle` listener that fills the Hand ends the Draw, whatever
+    /// is left to draw.
+    ///
+    /// - The resumable frame under the Earring's selector: Hand at nine,
+    ///   three cards reshuffled against Stratagem 1. The pick is the tenth
+    ///   card; neither requested draw happens.
+    /// - The synchronous command, no selector: Hand at eight, two cards
+    ///   reshuffled within Stratagem 2 are both taken, and Biiig Hug then
+    ///   puts a Soot in the Draw pile. It stays there. Before this change
+    ///   the command drew it as an eleventh card.
+    #[test]
+    fn a_draw_stops_when_the_shuffles_stratagem_pick_fills_the_hand() {
+        let hand_of_defends = |state: &mut HotState, catalog: &Catalog, n: u32| {
+            for uid in 20..20 + n {
+                state.piles.get_mut(PileId::Hand).make_mut().push(card(
+                    catalog,
+                    CardId::DefendSilent,
+                    uid,
+                ));
+            }
+        };
+        let discard_the_draw = |state: &mut HotState, keep: usize| {
+            let mut draw = std::mem::take(state.piles.get_mut(PileId::Draw).make_mut());
+            draw.truncate(keep);
+            state.piles.get_mut(PileId::Discard).make_mut().extend(draw);
+        };
+
+        let (mut state, catalog) = stratagem_selector_draw();
+        state.hp = 50;
+        hand_of_defends(&mut state, &catalog, 9);
+        discard_the_draw(&mut state, 3);
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+        {
+            let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
+            let drawn = draw_cards_for_potion(
+                &mut state,
+                &catalog,
+                2,
+                DrawCaller::SwiftEnchantment,
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert_eq!(drawn, PotionDrawResult::Complete);
+        }
+        assert!(state.pending.is_none() && state.frames.is_empty());
+        assert_eq!(state.piles.get(PileId::Hand).len(), 10);
+        // Thunderclap (1), Shiv (2) and Claw (3) were reshuffled: Claw is
+        // the first Common by id.
+        assert_eq!(pile_uids(&state, PileId::Hand)[9], 3);
+        assert_eq!(state.piles.get(PileId::Draw).len(), 2);
+        assert_eq!(state.cards_drawn_combat, 0);
+
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::DefendSilent,
+            CardId::Claw,
+            CardId::Anger,
+            CardId::Soot,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
+        builder.set_relics(&[RelicId::RelicBiiigHug]).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 40;
+        hand_of_defends(&mut state, &catalog, 8);
+        state.piles.get_mut(PileId::Discard).make_mut().extend([
+            card(&catalog, CardId::Claw, 1),
+            card(&catalog, CardId::Anger, 2),
+        ]);
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 2);
+        draw_cards(
+            &mut state,
+            &catalog,
+            2,
+            DrawSource::Command,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(state.piles.get(PileId::Hand).len(), 10);
+        assert_eq!(state.piles.get(PileId::Draw).len(), 1, "the Soot stays");
+        assert_eq!(state.cards_drawn_combat, 0);
+    }
+
+    /// #3666: a receipt-owned Draw inside the Earring's loop that AutoPlays
+    /// a selecting Hellraiser Strike refuses by name. Before, each of these
+    /// published the EndTurn as a parked player choice (`pending` set, phase
+    /// still AutoPre): a choice native never offers, because the Earring's
+    /// selector is set around the whole loop and answers a nested AutoPlay's
+    /// `CardSelectCmd` too (`puzzle::VAKUU_SELECTOR_CHOICE`).
+    ///
+    /// The loop plays Hellraiser, then a card whose receipt-owned Draw
+    /// reaches the Strike:
+    ///
+    /// - Swift: a Swift 2 Defend's OnPlay Draw.
+    /// - Joss Paper: Shiv is the fifth exhaust.
+    /// - Centennial Puzzle: Breakthrough's HP loss.
+    ///
+    /// Sculpting Strike then selects among three Hand cards, and Seeker
+    /// Strike among the three Draw cards left under it. Every root is
+    /// refused at admission by the Earring's wall, which is why no admitted
+    /// root reached the park; these apply the transition directly.
+    #[test]
+    fn whispering_earring_receipt_owned_draw_refuses_a_hellraiser_strike_choice() {
+        use CardId::{
+            Bash, BeamCell, Breakthrough, Claw, DefendIronclad, Hellraiser, IronWave,
+            SculptingStrike, SeekerStrike, Shiv, Thunderclap,
+        };
+        let earring = RelicId::RelicWhisperingEarring;
+        for strike in [SculptingStrike, SeekerStrike] {
+            let deck = |source: CardIdentity| {
+                [
+                    identity(Hellraiser),
+                    source,
+                    identity(Claw),
+                    identity(BeamCell),
+                    identity(Thunderclap),
+                    identity(strike),
+                    identity(DefendIronclad),
+                    identity(IronWave),
+                    identity(Bash),
+                ]
+            };
+            let refused = |state: &HotState, catalog: &Catalog, source: &str| {
+                assert!(
+                    root_admission(state, catalog)
+                        .is_err_and(|refusal| refusal.contains(EARRING_LOOP_WALL)),
+                    "{strike:?} {source}"
+                );
+                assert_eq!(
+                    end_turn_zero(state, catalog),
+                    Err(EngineRefusal::MalformedArgs(
+                        crate::engine::puzzle::VAKUU_SELECTOR_CHOICE
+                    )),
+                    "{strike:?} {source}"
+                );
+            };
+
+            let (state, catalog) = turn_zero_deck(&deck(swift_defend()), &[earring]);
+            refused(&state, &catalog, "Swift");
+
+            let (mut state, catalog) =
+                turn_zero_deck(&deck(identity(Shiv)), &[earring, RelicId::RelicJossPaper]);
+            assert!(state.fanouts.set_joss_paper_cards_exhausted(4));
+            refused(&state, &catalog, "Joss Paper");
+
+            let (mut state, catalog) = turn_zero_deck(
+                &deck(identity(Breakthrough)),
+                &[earring, RelicId::RelicCentennialPuzzle],
+            );
+            state.block = 200;
+            state.fanouts.set_puzzle_armed(true);
+            refused(&state, &catalog, "Centennial Puzzle");
+        }
+    }
+
+    /// The control for the witness above: the same Swift Draw with a Strike
+    /// that does not select runs the loop to the end of the phase. The
+    /// refusal is for the suspended choice, not for Hellraiser inside the
+    /// loop.
+    #[test]
+    fn whispering_earring_receipt_owned_draw_plays_a_plain_hellraiser_strike() {
+        use CardId::{BeamCell, Claw, Hellraiser, StrikeIronclad, Thunderclap};
+        let draw = [
+            identity(Hellraiser),
+            swift_defend(),
+            identity(Claw),
+            identity(BeamCell),
+            identity(Thunderclap),
+            identity(StrikeIronclad),
+        ];
+        let (state, catalog) = turn_zero_deck(&draw, &[RelicId::RelicWhisperingEarring]);
+        let next = end_turn_zero(&state, &catalog).unwrap();
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(
+            next.player_phase,
+            crate::engine::admission::PHASE_ORDINARY_ACTIONS
+        );
+        assert_eq!(next.powers.value(PowerId::Hellraiser), 1);
+        // Hellraiser, Swift Defend, the AutoPlayed Strike, then the three
+        // Hand cards the loop still affords.
+        assert!(pile_uids(&next, PileId::Discard).contains(&6));
+        assert!(next.piles.get(PileId::Draw).is_empty());
+    }
+
+    /// An enchanted plain-Draw child (#3637). Sharp leaves the body exact,
+    /// so a Sharp Flash of Steel is the same resolved child: its Draw runs
+    /// on the resumable frame and the selector answers. Nimble does not,
+    /// so the wall's predicate never calls that child resolved; its Draw is
+    /// the synchronous command, which refuses.
+    #[test]
+    fn whispering_earring_enchanted_plain_draw_child_follows_its_body_exactness() {
+        use CardId::{Bash, Claw, FlashOfSteel, IronWave, Stratagem};
+        let enchanted = |id| CardIdentity {
+            id: FlashOfSteel,
+            upgrade: 0,
+            enchantment: Some(crate::catalog::CardEnchantment { id, amount: 2 }),
+        };
+        let deck = |flash| {
+            [
+                identity(Stratagem),
+                identity(Bash),
+                identity(IronWave),
+                identity(Claw),
+                flash,
+            ]
+        };
+
+        let (state, catalog) = turn_zero(
+            &deck(enchanted(EnchantmentId::Sharp)),
+            &[RelicId::RelicWhisperingEarring],
+        );
+        let next = end_turn_zero(&state, &catalog).unwrap();
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(pile_uids(&next, PileId::Hand).first(), Some(&2), "Bash");
+
+        let (state, catalog) = turn_zero(
+            &deck(enchanted(EnchantmentId::Nimble)),
+            &[RelicId::RelicWhisperingEarring],
+        );
+        assert_eq!(
+            end_turn_zero(&state, &catalog),
+            Err(EngineRefusal::MalformedArgs("stratagem selection"))
         );
     }
 }

@@ -1,0 +1,363 @@
+{
+  "combat_layout_events": [
+    {
+      "get_LayoutType": "0xcc0bb",
+      "id": "EVENT.PUNCH_OFF",
+      "type": "PunchOff"
+    },
+    {
+      "get_LayoutType": "0xcf2ef",
+      "id": "EVENT.THE_ARCHITECT",
+      "type": "TheArchitect"
+    },
+    {
+      "get_LayoutType": "0xd0231",
+      "id": "EVENT.THE_LANTERN_KEY",
+      "type": "TheLanternKey"
+    }
+  ],
+  "dll_sha256": "9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4",
+  "root": "RunRngSet::get_Niche",
+  "schema": "sts-sim-niche-consumer-census-v1",
+  "sites": [
+    {
+      "calls": "CombatState::CreateCreature",
+      "class": "layout_event",
+      "il": "IL_010e",
+      "key": null,
+      "method": "InitializeForEvent",
+      "rva": "0x6d0ec",
+      "type": "EventCombatSynchronizer"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_0090",
+      "key": "AXEBOT",
+      "method": "MoveNext",
+      "rva": "0x346280",
+      "type": "StockPower/<AfterDeath>d__4"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_0092",
+      "key": "FABRICATOR",
+      "method": "MoveNext",
+      "rva": "0x35a80c",
+      "type": "Fabricator/<SpawnBot>d__25"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_00b5",
+      "key": "FOGMOG",
+      "method": "MoveNext",
+      "rva": "0x35bef4",
+      "type": "Fogmog/<IllusionMove>d__15"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_00ed",
+      "key": "LIVING_FOG",
+      "method": "MoveNext",
+      "rva": "0x3620c0",
+      "type": "LivingFog/<BloatMove>d__26"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_00e7",
+      "key": "OVICOPTER",
+      "method": "MoveNext",
+      "rva": "0x3651e8",
+      "type": "Ovicopter/<LayEggsMove>d__26"
+    },
+    {
+      "calls": "ToughEgg::Hatch",
+      "class": "midfight",
+      "il": "IL_015f",
+      "key": "OVICOPTER",
+      "method": "MoveNext",
+      "rva": "0x3724a8",
+      "type": "ToughEgg/<AfterAddedToRoom>d__33"
+    },
+    {
+      "calls": "ToughEgg::Hatch",
+      "class": "midfight",
+      "il": "IL_018f",
+      "key": "OVICOPTER",
+      "method": "MoveNext",
+      "rva": "0x372874",
+      "type": "ToughEgg/<HatchMove>d__35"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_008b",
+      "key": "PHROG_PARASITE",
+      "method": "MoveNext",
+      "rva": "0x33d3ec",
+      "type": "InfestedPower/<AfterDeath>d__4"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_00b5",
+      "key": "THE_OBSCURA",
+      "method": "MoveNext",
+      "rva": "0x370830",
+      "type": "TheObscura/<IllusionMove>d__25"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight",
+      "il": "IL_0183",
+      "key": "TWO_TAILED_RAT",
+      "method": "MoveNext",
+      "rva": "0x373d98",
+      "type": "TwoTailedRat/<CallForBackup>d__41"
+    },
+    {
+      "calls": "ICombatState::CreateCreature",
+      "class": "midfight_recorded",
+      "il": "IL_0063",
+      "key": "GREMLIN_MERC",
+      "method": "MoveNext",
+      "rva": "0x347044",
+      "type": "SurprisePower/<AfterDeath>d__4"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "midfight_recorded",
+      "il": "IL_0198",
+      "key": "GREMLIN_MERC",
+      "method": "MoveNext",
+      "rva": "0x347044",
+      "type": "SurprisePower/<AfterDeath>d__4"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "modifier",
+      "il": "IL_005b",
+      "key": "MODIFIER.CURSED_RUN",
+      "method": "MoveNext",
+      "rva": "0x377420",
+      "type": "CursedRun/<AfterActEntered>d__0"
+    },
+    {
+      "calls": "ICombatState::CreateCreature",
+      "class": "player_side",
+      "il": "IL_0054",
+      "key": null,
+      "method": "MoveNext",
+      "rva": "0x3ee68c",
+      "type": "PlayerCmd/<AddPet>d__14`1"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_00e5",
+      "key": "RELIC.ASTROLABE",
+      "method": "MoveNext",
+      "rva": "0x31ec44",
+      "type": "Astrolabe/<AfterObtained>d__6"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_005f",
+      "key": "RELIC.BEAUTIFUL_BRACELET",
+      "method": "AfterObtained",
+      "rva": "0x905d8",
+      "type": "BeautifulBracelet"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_00cb",
+      "key": "RELIC.DISTINGUISHED_CAPE",
+      "method": "MoveNext",
+      "rva": "0x322e20",
+      "type": "DistinguishedCape/<AfterObtained>d__9"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_009a",
+      "key": "RELIC.FISHING_ROD",
+      "method": "AfterCombatEnd",
+      "rva": "0x93a4c",
+      "type": "FishingRod"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_00e5",
+      "key": "RELIC.FRAGRANT_MUSHROOM",
+      "method": "MoveNext",
+      "rva": "0x324e50",
+      "type": "FragrantMushroom/<AfterObtained>d__7"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0077",
+      "key": "RELIC.KALEIDOSCOPE",
+      "method": "MoveNext",
+      "rva": "0x3279e4",
+      "type": "Kaleidoscope/<AfterObtained>d__7"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0198",
+      "key": "RELIC.NEOWS_BONES",
+      "method": "MoveNext",
+      "rva": "0x32af84",
+      "type": "NeowsBones/<AfterObtained>d__7"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_00e4",
+      "key": "RELIC.NEW_LEAF",
+      "method": "MoveNext",
+      "rva": "0x32b580",
+      "type": "NewLeaf/<AfterObtained>d__8"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0014",
+      "key": "RELIC.PANDORAS_BOX",
+      "method": "<AfterObtained>b__4_1",
+      "rva": "0x98c77",
+      "type": "PandorasBox"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0077",
+      "key": "RELIC.ROYAL_STAMP",
+      "method": "MoveNext",
+      "rva": "0x32fe20",
+      "type": "RoyalStamp/<AfterObtained>d__8"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0056",
+      "key": "RELIC.SAND_CASTLE",
+      "method": "AfterObtained",
+      "rva": "0x9ab88",
+      "type": "SandCastle"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_006b",
+      "key": "RELIC.WAR_HAMMER",
+      "method": "AfterCombatVictory",
+      "rva": "0x9dc68",
+      "type": "WarHammer"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0056",
+      "key": "RELIC.WAR_PAINT",
+      "method": "AfterObtained",
+      "rva": "0x9dd50",
+      "type": "WarPaint"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_0056",
+      "key": "RELIC.WHETSTONE",
+      "method": "AfterObtained",
+      "rva": "0x9de24",
+      "type": "Whetstone"
+    },
+    {
+      "calls": "RunRngSet::get_Niche",
+      "class": "relic",
+      "il": "IL_005a",
+      "key": "RELIC.WING_CHARM",
+      "method": "TryModifyCardRewardOptionsLate",
+      "rva": "0x9e0e0",
+      "type": "WingCharm"
+    },
+    {
+      "calls": "CombatState::CreateCreature",
+      "class": "setup",
+      "il": "IL_00fc",
+      "key": null,
+      "method": "MoveNext",
+      "rva": "0x310bf0",
+      "type": "CombatRoom/<StartCombat>d__46"
+    },
+    {
+      "calls": "CreatureCmd::Add",
+      "class": "test_only",
+      "il": "IL_009f",
+      "key": null,
+      "method": "MoveNext",
+      "rva": "0x376aec",
+      "type": "MockAttackAndSummonMinionMonster/<AttackAndSummonMinionMove>d__9"
+    }
+  ],
+  "spawning_power_appliers": {
+    "InfestedPower": [
+      {
+        "il": "IL_0098",
+        "method": "MoveNext",
+        "rva": "0x3667dc",
+        "type": "PhrogParasite/<AfterAddedToRoom>d__10"
+      },
+      {
+        "il": "IL_00c5",
+        "method": "MoveNext",
+        "rva": "0x3667dc",
+        "type": "PhrogParasite/<AfterAddedToRoom>d__10"
+      }
+    ],
+    "StockPower": [
+      {
+        "il": "IL_003f",
+        "method": "MoveNext",
+        "rva": "0x352dcc",
+        "type": "Axebot/<AfterAddedToRoom>d__34"
+      },
+      {
+        "il": "IL_006c",
+        "method": "MoveNext",
+        "rva": "0x352dcc",
+        "type": "Axebot/<AfterAddedToRoom>d__34"
+      }
+    ],
+    "SurprisePower": [
+      {
+        "il": "IL_009f",
+        "method": "MoveNext",
+        "rva": "0x35d898",
+        "type": "GremlinMerc/<AfterAddedToRoom>d__21"
+      },
+      {
+        "il": "IL_00cc",
+        "method": "MoveNext",
+        "rva": "0x35d898",
+        "type": "GremlinMerc/<AfterAddedToRoom>d__21"
+      }
+    ]
+  },
+  "wrappers": [
+    "CombatState::CreateCreature (0x137074)",
+    "CreatureCmd::Add (0x132154)",
+    "CreatureCmd::Add (0x1321a0)",
+    "RunRngSet::get_Niche (0x4ddeb)",
+    "ToughEgg::Hatch (0xc3230)"
+  ]
+}

@@ -602,12 +602,21 @@ pub fn end_player_turn(
         require_furnace_turn_entry(state, catalog)?;
     }
     let monologue_reachable = crate::steps::regent_uncommon::monologue_listener_is_reachable(state);
-    if monologue_reachable
-        && !crate::steps::regent_uncommon::monologue_side_end_entry_is_exact(state)
-    {
-        return Err(EngineRefusal::MalformedArgs(
-            "monologue side-end listener state",
-        ));
+    if monologue_reachable {
+        if !crate::steps::regent_uncommon::monologue_private_state_is_exact(state) {
+            return Err(EngineRefusal::MalformedArgs(
+                "monologue side-end listener state",
+            ));
+        }
+        // A well-formed Monologue beside a peer whose side-end body is not
+        // read with it is unmodeled, not malformed (#3434). The peers read
+        // so far (#3613, #3628) are listed at
+        // `monologue_side_end_peer_is_unmodeled`.
+        if crate::steps::regent_uncommon::monologue_side_end_peer_is_unmodeled(state) {
+            return Err(EngineRefusal::MalformedArgs(
+                "monologue side-end peer power not modeled",
+            ));
+        }
     }
     let monologue_applied = state.fanouts.monologue_strength_applied();
     if state.powers.value(PowerId::Monologue) > 0
@@ -2925,11 +2934,30 @@ fn drive_after_side_turn_end_power_listeners(
             .frames
             .set_after_side_turn_end_power_cursor(record_index, next_cursor)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
+        // Every row of this ledger is a power of the represented player, and
+        // native never calls one after that player's hooks deactivate (#3628).
+        // `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`
+        // (v0.111.0, SHA-256 `9cb4f1ad…`) is a lazy iterator: it tests
+        // `CombatState::Contains` on each listener as it is reached
+        // (IL_02a3-IL_02ab), and for a power that is
+        // `Owner.Player.IsActiveForHooks` (`Contains` RVA `0x137564`
+        // IL_00ba-IL_00d1). `Player::DeactivateHooks` RVA `0x117c0a` clears it
+        // inside the owner's Kill
+        // (`CreatureCmd/<KillWithoutCheckingWinCondition>d__15::MoveNext` RVA
+        // `0x3ebe90` IL_072d), so a row placed after a lethal Doom, Constrict
+        // or other killing row is skipped, not run under an ending gate. The
+        // corpse keeps those rows: `RemoveAllPowersAfterDeath` (IL_04f1) is
+        // not represented for the player beyond the few powers
+        // `damage::resolve_player_lethal_with_catalog` clears.
+        if state.fanouts.player_hooks_deactivated() {
+            continue;
+        }
         let _dark_suspended =
             dispatch_after_side_turn_end_power(state, catalog, events, record_index, cursor)?;
-        // Deliberately continue after a parked Dark child and after terminal
-        // effects. Native precommits the captured enumerator and invokes all
-        // later ordinary callbacks before awaiting the aggregate.
+        // Deliberately continue after a parked Dark child and after a row
+        // that ended the combat with the owner alive. Native precommits the
+        // captured enumerator and invokes all later ordinary callbacks before
+        // awaiting the aggregate; each body then meets its own ending gate.
     }
 }
 
@@ -9631,7 +9659,12 @@ pub(crate) fn finish_auto_pre_relic_tail(
     // Whispering Earring is the AutoPre/Late relic listener, on turn one only
     // (#3414, see `whispering_earring_loop_is_ahead`). Its live Hand query is
     // rebuilt after every direct play and is capped at 13 bodies. The loop
-    // runs under its pushed VakuuCardSelector.
+    // runs under its pushed VakuuCardSelector, which also answers the
+    // Stratagem pick when a Draw on the resumable frame reshuffles (#3637,
+    // `draw::stratagem_after_shuffle`). No choice leaves the loop for the
+    // player: a child left pending refuses below, and a receipt-owned Draw
+    // that suspends refuses in `puzzle` instead of parking (#3666,
+    // `puzzle::VAKUU_SELECTOR_CHOICE`).
     if !state.history.over
         && state.turn <= 1
         && catalog.hooks().owns(RelicId::RelicWhisperingEarring)
@@ -9677,9 +9710,12 @@ pub(crate) fn finish_auto_pre_relic_tail(
 /// player turn start, Pael's Eye's extra turn included
 /// (`finish_player_turn_after_ordinary_side_end`), so no later AutoPre is
 /// turn one.
-/// The loop is ahead only before turn one has left its AutoPre phase. It
-/// cannot park (a pending child refuses), so a turn-one state at or past
-/// ordinary actions has already run it.
+/// The loop is ahead only before turn one has left its AutoPre phase. The
+/// loop refuses a child that leaves a choice pending, and the phase marker
+/// advances only after the whole loop, so a turn-one state at or past
+/// ordinary actions has already run it. Nothing parks inside the loop: a
+/// receipt-owned Draw that suspends there refuses (#3666,
+/// `puzzle::VAKUU_SELECTOR_CHOICE`).
 pub(crate) fn whispering_earring_loop_is_ahead(state: &HotState) -> bool {
     state.turn < 1 || (state.turn == 1 && state.player_phase <= PHASE_AUTO_PRE)
 }
@@ -15055,6 +15091,861 @@ mod tests {
         state
     }
 
+    /// One Monologue object (one Strength applied, Strength 3) beside Retain
+    /// Hand 2, acquired in either order, with one card in hand (#3434).
+    fn monologue_beside_retain_hand_state(retain_first: bool) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        let atom = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeSilent,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let (retain_uid, monologue_uid) = if retain_first { (0, 1) } else { (1, 0) };
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.player_phase = PHASE_ORDINARY_ACTIONS;
+        state.exact_piles = true;
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: 9,
+            atom,
+            flags: 0,
+        });
+        state.card_states.set_transient_retain(9);
+        state.fanouts.set_next_after_side_turn_end_power_uid(2);
+        assert!(
+            state
+                .fanouts
+                .set_monologue_instances(&[crate::hot::MonologueInstance {
+                    uid: monologue_uid,
+                    amount: 1,
+                    power: 1,
+                    strength_applied: 1,
+                }])
+        );
+        let retain = AfterSideTurnEndPowerEntry {
+            token: AfterSideTurnEndPowerToken::RetainHand,
+            uid: retain_uid,
+        };
+        let monologue = AfterSideTurnEndPowerEntry {
+            token: AfterSideTurnEndPowerToken::Monologue,
+            uid: monologue_uid,
+        };
+        let order = if retain_first {
+            [retain, monologue]
+        } else {
+            [monologue, retain]
+        };
+        assert!(state.fanouts.set_after_side_turn_end_power_order(&order));
+        assert!(state.fanouts.set_after_card_played_power_order(&[
+            crate::hot::AfterCardPlayedPowerEntry {
+                token: crate::hot::AfterCardPlayedPowerToken::Monologue,
+                uid: monologue_uid,
+            },
+        ]));
+        state.powers.set(PowerId::Monologue, SlotWire::Int, 1);
+        state.powers.set(PowerId::RetainHand, SlotWire::Int, 2);
+        state.powers.set(PowerId::Strength, SlotWire::Int, 3);
+        assert!(after_side_turn_end_power_order_is_exact(&state));
+        (state, catalog)
+    }
+
+    /// #3434: Retain Hand beside Monologue ends the turn. Each body runs once
+    /// from the acquisition-ordered ledger, in the recorded order.
+    #[test]
+    fn monologue_beside_retain_hand_ends_the_turn_in_acquisition_order() {
+        for retain_first in [true, false] {
+            let (mut state, catalog) = monologue_beside_retain_hand_state(retain_first);
+            let mut events = Vec::new();
+            end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+            assert_eq!(state.powers.value(PowerId::Monologue), 0);
+            assert_eq!(state.fanouts.monologue_instances().count(), 0);
+            assert_eq!(state.fanouts.monologue_strength_applied(), 0);
+            assert!(!state.fanouts.monologue_hooks_are_registered());
+            assert_eq!(state.powers.value(PowerId::Strength), 2);
+            assert_eq!(state.powers.value(PowerId::RetainHand), 1);
+            assert_eq!(state.piles.get(PileId::Hand).as_slice()[0].uid, 9);
+            assert_eq!(
+                state.fanouts.after_side_turn_end_power_order(),
+                [AfterSideTurnEndPowerEntry {
+                    token: AfterSideTurnEndPowerToken::RetainHand,
+                    uid: if retain_first { 0 } else { 1 },
+                }]
+            );
+            let position = |wanted: PowerId| {
+                events
+                    .iter()
+                    .position(|event| {
+                        matches!(
+                            event,
+                            Event::PowerChanged {
+                                subject: Subject::Player,
+                                power,
+                                ..
+                            } if *power == wanted
+                        )
+                    })
+                    .unwrap()
+            };
+            assert_eq!(
+                position(PowerId::RetainHand) < position(PowerId::Monologue),
+                retain_first
+            );
+        }
+    }
+
+    /// One Monologue object (one Strength applied, Strength 3, Dexterity 1)
+    /// beside one other side-end ledger member, acquired in either order
+    /// (#3613). `amount` goes to the peer's own carrier.
+    fn monologue_beside_peer_state(
+        peer: AfterSideTurnEndPowerToken,
+        amount: i32,
+        peer_first: bool,
+    ) -> (HotState, Catalog) {
+        let catalog = CatalogBuilder::new().build();
+        let (peer_uid, monologue_uid) = if peer_first { (0, 1) } else { (1, 0) };
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.player_phase = PHASE_ORDINARY_ACTIONS;
+        state.exact_piles = true;
+        state.fanouts.set_next_after_side_turn_end_power_uid(2);
+        assert!(
+            state
+                .fanouts
+                .set_monologue_instances(&[crate::hot::MonologueInstance {
+                    uid: monologue_uid,
+                    amount: 1,
+                    power: 1,
+                    strength_applied: 1,
+                }])
+        );
+        let peer_entry = AfterSideTurnEndPowerEntry {
+            token: peer,
+            uid: peer_uid,
+        };
+        let monologue = AfterSideTurnEndPowerEntry {
+            token: AfterSideTurnEndPowerToken::Monologue,
+            uid: monologue_uid,
+        };
+        let order = if peer_first {
+            [peer_entry, monologue]
+        } else {
+            [monologue, peer_entry]
+        };
+        assert!(state.fanouts.set_after_side_turn_end_power_order(&order));
+        assert!(state.fanouts.set_after_card_played_power_order(&[
+            crate::hot::AfterCardPlayedPowerEntry {
+                token: crate::hot::AfterCardPlayedPowerToken::Monologue,
+                uid: monologue_uid,
+            },
+        ]));
+        state.powers.set(PowerId::Monologue, SlotWire::Int, 1);
+        state.powers.set(PowerId::Strength, SlotWire::Int, 3);
+        state.powers.set(PowerId::Dexterity, SlotWire::Int, 1);
+        match peer {
+            AfterSideTurnEndPowerToken::TemporaryStrength => state.temp_strength = amount,
+            token => state.powers.set(
+                after_side_turn_end_scalar_power(token).expect("scalar peer"),
+                SlotWire::Int,
+                amount,
+            ),
+        }
+        assert!(after_side_turn_end_power_order_is_exact(&state));
+        (state, catalog)
+    }
+
+    /// The player's `PowerChanged` events, in emission order.
+    fn player_power_events(events: &[Event]) -> Vec<(PowerId, i32)> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                Event::PowerChanged {
+                    subject: Subject::Player,
+                    power,
+                    amount,
+                } => Some((*power, *amount)),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// End the turn with Monologue beside `peer` in both acquisition orders.
+    /// Monologue's half is the same every time: the object and its hooks go,
+    /// and Strength 3 loses the one it applied. `peer_events` is what the
+    /// peer's own body publishes; the two halves appear in ledger order.
+    /// Returns the two end states for the peer's own assertions.
+    fn end_turn_with_monologue_beside(
+        peer: AfterSideTurnEndPowerToken,
+        amount: i32,
+        peer_events: &[(PowerId, i32)],
+        peer_survives: bool,
+    ) -> [HotState; 2] {
+        let monologue_events = [(PowerId::Monologue, 0), (PowerId::Strength, 2)];
+        [true, false].map(|peer_first| {
+            let (mut state, catalog) = monologue_beside_peer_state(peer, amount, peer_first);
+            assert!(
+                !crate::steps::regent_uncommon::monologue_side_end_peer_is_unmodeled(&state),
+                "{peer:?}"
+            );
+            let mut events = Vec::new();
+            end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+            assert_eq!(state.powers.value(PowerId::Monologue), 0, "{peer:?}");
+            assert_eq!(state.fanouts.monologue_instances().count(), 0);
+            assert_eq!(state.fanouts.monologue_strength_applied(), 0);
+            assert!(!state.fanouts.monologue_hooks_are_registered());
+            assert!(state.fanouts.after_card_played_power_order().is_empty());
+            assert_eq!(state.powers.value(PowerId::Strength), 2, "{peer:?}");
+            assert_eq!(state.powers.value(PowerId::Dexterity), 1, "{peer:?}");
+            let survivors: &[AfterSideTurnEndPowerEntry] = if peer_survives {
+                &[AfterSideTurnEndPowerEntry {
+                    token: peer,
+                    uid: if peer_first { 0 } else { 1 },
+                }]
+            } else {
+                &[]
+            };
+            assert_eq!(
+                state.fanouts.after_side_turn_end_power_order(),
+                survivors,
+                "{peer:?}"
+            );
+            assert!(after_side_turn_end_power_order_is_exact(&state));
+            assert!(!state.history.over);
+
+            let expected: Vec<(PowerId, i32)> = if peer_first {
+                peer_events
+                    .iter()
+                    .chain(&monologue_events)
+                    .copied()
+                    .collect()
+            } else {
+                monologue_events
+                    .iter()
+                    .chain(peer_events)
+                    .copied()
+                    .collect()
+            };
+            assert_eq!(
+                player_power_events(&events),
+                expected,
+                "{peer:?} peer_first={peer_first}"
+            );
+            state
+        })
+    }
+
+    /// #3613: No Draw's body only removes itself
+    /// (`NoDrawPower/<AfterSideTurnEnd>d__5` RVA `0x33efbc`).
+    #[test]
+    fn monologue_beside_no_draw_ends_the_turn_in_acquisition_order() {
+        for state in end_turn_with_monologue_beside(
+            AfterSideTurnEndPowerToken::NoDraw,
+            1,
+            &[(PowerId::NoDraw, 0)],
+            false,
+        ) {
+            assert_eq!(state.powers.value(PowerId::NoDraw), 0);
+        }
+    }
+
+    /// #3613: Shadowmeld's body removes the whole power, whatever its Amount
+    /// (`ShadowmeldPower/<AfterSideTurnEnd>d__7` RVA `0x344114`).
+    #[test]
+    fn monologue_beside_shadowmeld_ends_the_turn_in_acquisition_order() {
+        for state in end_turn_with_monologue_beside(
+            AfterSideTurnEndPowerToken::Shadowmeld,
+            2,
+            &[(PowerId::Shadowmeld, 0)],
+            false,
+        ) {
+            assert_eq!(state.powers.value(PowerId::Shadowmeld), 0);
+        }
+    }
+
+    /// #3613: Double Damage's body decrements one
+    /// (`DoubleDamagePower/<AfterSideTurnEnd>d__5` RVA `0x33983c`): two stacks
+    /// leave one and its ledger row, one stack leaves neither.
+    #[test]
+    fn monologue_beside_double_damage_ends_the_turn_in_acquisition_order() {
+        for state in end_turn_with_monologue_beside(
+            AfterSideTurnEndPowerToken::DoubleDamage,
+            2,
+            &[(PowerId::DoubleDamage, 1)],
+            true,
+        ) {
+            assert_eq!(state.powers.value(PowerId::DoubleDamage), 1);
+        }
+        for state in end_turn_with_monologue_beside(
+            AfterSideTurnEndPowerToken::DoubleDamage,
+            1,
+            &[(PowerId::DoubleDamage, 0)],
+            false,
+        ) {
+            assert_eq!(state.powers.value(PowerId::DoubleDamage), 0);
+        }
+    }
+
+    /// #3613: Temporary Dexterity's body removes the wrapper and its part of
+    /// Dexterity (`TemporaryDexterityPower/<AfterSideTurnEnd>d__22` RVA
+    /// `0x348498`). Rust holds that part in the wrapper slot, so permanent
+    /// Dexterity and Strength are untouched by it.
+    #[test]
+    fn monologue_beside_temporary_dexterity_ends_the_turn_in_acquisition_order() {
+        for state in end_turn_with_monologue_beside(
+            AfterSideTurnEndPowerToken::TemporaryDexterity,
+            2,
+            &[(PowerId::TempDexterity, 0)],
+            false,
+        ) {
+            assert_eq!(state.powers.value(PowerId::TempDexterity), 0);
+        }
+    }
+
+    /// #3613: Temporary Strength and Monologue both subtract from Strength
+    /// (`TemporaryStrengthPower/<AfterSideTurnEnd>d__22` RVA `0x348ba8`).
+    /// Natively that is 3 + 2 down to 2 by either route. Rust clears the
+    /// wrapper carrier, which publishes nothing, and lowers the Strength slot
+    /// by Monologue's one.
+    #[test]
+    fn monologue_beside_temporary_strength_ends_the_turn_in_acquisition_order() {
+        for state in end_turn_with_monologue_beside(
+            AfterSideTurnEndPowerToken::TemporaryStrength,
+            2,
+            &[],
+            false,
+        ) {
+            assert_eq!(state.temp_strength, 0);
+        }
+    }
+
+    /// #3628: a Doom that does not trigger does nothing
+    /// (`DoomPower::ShouldDoomTrigger` RVA `0xa1a00` IL_0039-IL_0042: the
+    /// owner is not doomed), so Monologue's body is the whole side end.
+    #[test]
+    fn monologue_beside_a_doom_that_does_not_trigger_ends_the_turn_in_acquisition_order() {
+        for state in end_turn_with_monologue_beside(AfterSideTurnEndPowerToken::Doom, 49, &[], true)
+        {
+            assert_eq!(state.powers.value(PowerId::Doom), 49);
+            assert_eq!(state.hp, 50);
+        }
+    }
+
+    /// #3628: a lethal Doom kills the owner inside the walk, and native never
+    /// calls a listener of a player whose hooks are deactivated
+    /// (`CombatState/<IterateHookListeners>d__69` RVA `0x3f9720`
+    /// IL_02a3-IL_02ab). A Monologue acquired before Doom has already run; one
+    /// acquired after is not run at all, and stays on the corpse. Live engine:
+    /// Doom first records no Strength Apply, Monologue first records the
+    /// reversal and then the death. A living remote teammate changes nothing
+    /// Rust represents: the local owner's death ends the represented fight.
+    #[test]
+    fn monologue_beside_a_lethal_doom_runs_only_when_acquired_first() {
+        for remote in [false, true] {
+            for doom_first in [true, false] {
+                let (mut state, catalog) =
+                    monologue_beside_peer_state(AfterSideTurnEndPowerToken::Doom, 50, doom_first);
+                if remote {
+                    state.multiplayer_ally_key = 1;
+                    assert!(
+                        state
+                            .fanouts
+                            .set_multiplayer_ally(crate::hot::MultiplayerAllyState {
+                                key: 1,
+                                ..crate::hot::MultiplayerAllyState::default()
+                            })
+                    );
+                }
+                let entry_order = state.fanouts.after_side_turn_end_power_order().to_vec();
+                let what = format!("remote={remote} doom_first={doom_first}");
+                let mut events = Vec::new();
+                end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+                assert_eq!(state.hp, 0, "{what}");
+                assert!(state.history.over, "{what}");
+                assert!(state.fanouts.player_hooks_deactivated(), "{what}");
+                assert!(state.player_side_active, "{what}");
+                assert_eq!(state.powers.value(PowerId::Doom), 50, "{what}");
+                assert_eq!(state.powers.value(PowerId::Dexterity), 1, "{what}");
+                assert!(after_side_turn_end_power_order_is_exact(&state), "{what}");
+                assert!(
+                    crate::steps::regent_uncommon::monologue_private_state_is_exact(&state),
+                    "{what}"
+                );
+                if doom_first {
+                    // The Monologue row was never dispatched.
+                    assert_eq!(state.powers.value(PowerId::Monologue), 1, "{what}");
+                    assert_eq!(state.fanouts.monologue_instances().count(), 1);
+                    assert_eq!(state.fanouts.monologue_strength_applied(), 1);
+                    assert!(state.fanouts.monologue_hooks_are_registered());
+                    assert_eq!(state.fanouts.after_card_played_power_order().len(), 1);
+                    assert_eq!(state.powers.value(PowerId::Strength), 3, "{what}");
+                    assert_eq!(
+                        state.fanouts.after_side_turn_end_power_order(),
+                        entry_order,
+                        "{what}"
+                    );
+                    assert_eq!(
+                        events,
+                        [
+                            Event::TurnEnded { turn: 1 },
+                            Event::CombatOver { player_won: false },
+                        ],
+                        "{what}"
+                    );
+                } else {
+                    assert_eq!(state.powers.value(PowerId::Monologue), 0, "{what}");
+                    assert_eq!(state.fanouts.monologue_instances().count(), 0);
+                    assert_eq!(state.fanouts.monologue_strength_applied(), 0);
+                    assert!(!state.fanouts.monologue_hooks_are_registered());
+                    assert!(state.fanouts.after_card_played_power_order().is_empty());
+                    assert_eq!(state.powers.value(PowerId::Strength), 2, "{what}");
+                    assert_eq!(
+                        state.fanouts.after_side_turn_end_power_order(),
+                        [AfterSideTurnEndPowerEntry {
+                            token: AfterSideTurnEndPowerToken::Doom,
+                            uid: 1,
+                        }],
+                        "{what}"
+                    );
+                    assert_eq!(
+                        events,
+                        [
+                            Event::TurnEnded { turn: 1 },
+                            Event::PowerChanged {
+                                subject: Subject::Player,
+                                power: PowerId::Monologue,
+                                amount: 0,
+                            },
+                            Event::PowerChanged {
+                                subject: Subject::Player,
+                                power: PowerId::Strength,
+                                amount: 2,
+                            },
+                            Event::CombatOver { player_won: false },
+                        ],
+                        "{what}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// #3628: a prevented Doom kill (`Hook::ShouldDie` false at `0x3ebe90`
+    /// IL_0301-IL_030b, then `Hook::AfterPreventingDeath` IL_085d) leaves the
+    /// owner alive with active hooks, so Monologue's body runs whole in either
+    /// order and Doom stays. Fairy in a Bottle heals 30% of max HP, Lizard
+    /// Tail half. Live engine, both orders, both preventers: Monologue gone,
+    /// its Strength reversed, Doom kept, 22 and 37 of 75 HP.
+    #[test]
+    fn monologue_beside_a_prevented_doom_ends_the_turn_in_acquisition_order() {
+        for fairy in [true, false] {
+            for doom_first in [true, false] {
+                let (mut state, catalog) =
+                    monologue_beside_peer_state(AfterSideTurnEndPowerToken::Doom, 50, doom_first);
+                state.max_hp = 50;
+                if fairy {
+                    assert!(state.fanouts.set_potion_belt(
+                        vec![Some(crate::ids::PotionId::FairyInABottle)],
+                        false,
+                        false,
+                        false,
+                        false,
+                        true
+                    ));
+                } else {
+                    state
+                        .fanouts
+                        .set_batch_eight_deep_relic_ownership(false, false, false, true, false);
+                }
+                let what = format!("fairy={fairy} doom_first={doom_first}");
+                let mut events = Vec::new();
+                end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+                assert_eq!(state.hp, if fairy { 15 } else { 25 }, "{what}");
+                assert!(!state.history.over, "{what}");
+                assert!(!state.fanouts.player_hooks_deactivated(), "{what}");
+                assert_eq!(state.fanouts.lizard_tail_used(), !fairy, "{what}");
+                assert_eq!(
+                    state.fanouts.potion_slots().iter().flatten().count(),
+                    0,
+                    "{what}"
+                );
+                assert_eq!(state.powers.value(PowerId::Doom), 50, "{what}");
+                assert_eq!(state.powers.value(PowerId::Monologue), 0, "{what}");
+                assert_eq!(state.fanouts.monologue_instances().count(), 0);
+                assert_eq!(state.fanouts.monologue_strength_applied(), 0);
+                assert!(!state.fanouts.monologue_hooks_are_registered());
+                assert!(state.fanouts.after_card_played_power_order().is_empty());
+                assert_eq!(state.powers.value(PowerId::Strength), 2, "{what}");
+                assert_eq!(
+                    state.fanouts.after_side_turn_end_power_order(),
+                    [AfterSideTurnEndPowerEntry {
+                        token: AfterSideTurnEndPowerToken::Doom,
+                        uid: if doom_first { 0 } else { 1 },
+                    }],
+                    "{what}"
+                );
+                assert!(after_side_turn_end_power_order_is_exact(&state));
+                // Neither preventer publishes a player power; the two
+                // Monologue events are the walk's whole power output.
+                assert_eq!(
+                    player_power_events(&events),
+                    [(PowerId::Monologue, 0), (PowerId::Strength, 2)],
+                    "{what}"
+                );
+                assert!(
+                    !events
+                        .iter()
+                        .any(|event| matches!(event, Event::CombatOver { .. })),
+                    "{what}"
+                );
+            }
+        }
+    }
+
+    /// Monologue beside Consuming Shadow 1 with a Frost orb in front of a
+    /// `back` orb, and one Toadpole (#3628).
+    fn monologue_beside_consuming_shadow_state(
+        shadow_first: bool,
+        back: HotOrb,
+        toadpole_hp: i32,
+    ) -> (HotState, Catalog) {
+        let (mut state, _) = monologue_beside_peer_state(
+            AfterSideTurnEndPowerToken::ConsumingShadow,
+            1,
+            shadow_first,
+        );
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        state.max_hp = 50;
+        state.orbs.set_base_slots(3);
+        state.orbs.set_slots(3);
+        state
+            .orbs
+            .push(HotOrb::from_parts(OrbKind::Frost, None).unwrap());
+        state.orbs.push(back);
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, toadpole_hp));
+        (state, catalog)
+    }
+
+    /// #3628: an evoke that leaves the combat going shares nothing with
+    /// Monologue's body (`ConsumingShadowPower/<AfterSideTurnEnd>d__4` RVA
+    /// `0x3375a4` IL_0071-IL_0083 `OrbCmd::EvokeLast`). Both bodies run, in
+    /// ledger order. Live engine: a Frost evoke's Block lands before the
+    /// Strength reversal with Consuming Shadow first and after it with
+    /// Monologue first; a Dark evoke's damage likewise.
+    #[test]
+    fn monologue_beside_consuming_shadow_ends_the_turn_in_acquisition_order() {
+        for dark in [false, true] {
+            for shadow_first in [true, false] {
+                let back = if dark {
+                    HotOrb::from_parts(OrbKind::Dark, Some(6)).unwrap()
+                } else {
+                    HotOrb::from_parts(OrbKind::Frost, None).unwrap()
+                };
+                let (mut state, catalog) =
+                    monologue_beside_consuming_shadow_state(shadow_first, back, 400);
+                let what = format!("dark={dark} shadow_first={shadow_first}");
+                let mut events = Vec::new();
+                end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+                assert!(!state.history.over, "{what}");
+                assert_eq!(state.powers.value(PowerId::Monologue), 0, "{what}");
+                assert_eq!(state.fanouts.monologue_instances().count(), 0);
+                assert_eq!(state.fanouts.monologue_strength_applied(), 0);
+                assert!(!state.fanouts.monologue_hooks_are_registered());
+                assert_eq!(state.powers.value(PowerId::Strength), 2, "{what}");
+                assert_eq!(state.powers.value(PowerId::ConsumingShadow), 1, "{what}");
+                assert_eq!(
+                    state.fanouts.after_side_turn_end_power_order(),
+                    [AfterSideTurnEndPowerEntry {
+                        token: AfterSideTurnEndPowerToken::ConsumingShadow,
+                        uid: if shadow_first { 0 } else { 1 },
+                    }],
+                    "{what}"
+                );
+                // The back orb was evoked; the front Frost stays.
+                assert_eq!(state.orbs.as_slice().len(), 1, "{what}");
+                assert_eq!(state.orbs.as_slice()[0].kind(), OrbKind::Frost);
+                assert_eq!(state.orbs.next_consuming_shadow_side_end_auth_uid(), 1);
+
+                // The evoke is the last Block gain (Frost) or the only monster
+                // damage (Dark) before the enemy side acts.
+                let side_end = events
+                    .iter()
+                    .position(|event| matches!(event, Event::PlayerDamaged { .. }))
+                    .unwrap_or(events.len());
+                let evoke = if dark {
+                    events[..side_end]
+                        .iter()
+                        .position(|event| matches!(event, Event::MonsterDamaged { .. }))
+                } else {
+                    events[..side_end]
+                        .iter()
+                        .rposition(|event| matches!(event, Event::PlayerBlockGained { .. }))
+                }
+                .unwrap_or_else(|| panic!("{what}: no evoke event in {events:?}"));
+                let monologue = events
+                    .iter()
+                    .position(|event| {
+                        matches!(
+                            event,
+                            Event::PowerChanged {
+                                subject: Subject::Player,
+                                power: PowerId::Monologue,
+                                amount: 0,
+                            }
+                        )
+                    })
+                    .unwrap();
+                assert_eq!(
+                    events[monologue + 1],
+                    Event::PowerChanged {
+                        subject: Subject::Player,
+                        power: PowerId::Strength,
+                        amount: 2,
+                    },
+                    "{what}"
+                );
+                assert_eq!(evoke < monologue, shadow_first, "{what}: {events:?}");
+            }
+        }
+    }
+
+    /// #3628: an evoke that kills the last enemy ends the combat with the
+    /// owner's hooks still active, so a Monologue acquired later is still
+    /// called. Its `PowerCmd::Remove` has no combat gate
+    /// (`PowerCmd/<Remove>d__8` RVA `0x3f09bc` IL_0030) and its reversal stops
+    /// at `PowerCmd/<Apply>d__1`1` RVA `0x3ef988` IL_0020-IL_002a `IsEnding`:
+    /// Monologue goes and its Strength stays. The killing blow latches
+    /// `history.over` in the evoke, which is what the Monologue arm reads. A
+    /// Monologue acquired first has already reversed. Live engine: Strength 1
+    /// kept and Monologue gone with Consuming Shadow first, both gone with
+    /// Monologue first.
+    #[test]
+    fn monologue_beside_a_combat_ending_consuming_shadow_keeps_its_strength_when_acquired_later() {
+        for shadow_first in [true, false] {
+            let (mut state, catalog) = monologue_beside_consuming_shadow_state(
+                shadow_first,
+                HotOrb::from_parts(OrbKind::Dark, Some(6)).unwrap(),
+                5,
+            );
+            let what = format!("shadow_first={shadow_first}");
+            let mut events = Vec::new();
+            end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+            assert!(state.history.over, "{what}");
+            assert_eq!(state.hp, 50, "{what}");
+            assert!(!state.fanouts.player_hooks_deactivated(), "{what}");
+            assert!(state.monsters[0].hp <= 0, "{what}");
+            assert!(state.player_side_active, "{what}");
+            assert_eq!(state.powers.value(PowerId::Monologue), 0, "{what}");
+            assert_eq!(state.fanouts.monologue_instances().count(), 0);
+            assert_eq!(state.fanouts.monologue_strength_applied(), 0);
+            assert!(!state.fanouts.monologue_hooks_are_registered());
+            assert!(state.fanouts.after_card_played_power_order().is_empty());
+            assert_eq!(
+                state.powers.value(PowerId::Strength),
+                if shadow_first { 3 } else { 2 },
+                "{what}"
+            );
+            assert_eq!(state.powers.value(PowerId::ConsumingShadow), 1, "{what}");
+            assert_eq!(
+                state.fanouts.after_side_turn_end_power_order(),
+                [AfterSideTurnEndPowerEntry {
+                    token: AfterSideTurnEndPowerToken::ConsumingShadow,
+                    uid: if shadow_first { 0 } else { 1 },
+                }],
+                "{what}"
+            );
+            let combat_over = events
+                .iter()
+                .position(|event| *event == Event::CombatOver { player_won: true })
+                .unwrap_or_else(|| panic!("{what}: {events:?}"));
+            assert_eq!(
+                player_power_events(&events[..combat_over]),
+                if shadow_first {
+                    vec![]
+                } else {
+                    vec![(PowerId::Monologue, 0), (PowerId::Strength, 2)]
+                },
+                "{what}"
+            );
+            assert_eq!(
+                player_power_events(&events[combat_over..]),
+                if shadow_first {
+                    vec![(PowerId::Monologue, 0)]
+                } else {
+                    vec![]
+                },
+                "{what}"
+            );
+        }
+    }
+
+    /// #3628: no row of the side-end ledger is dispatched after the owner
+    /// died earlier in the walk. Each later row keeps its live fields and its
+    /// ledger entry, and nothing is published after the death. The same row
+    /// placed before the killer runs as it does in a live turn.
+    #[test]
+    fn side_end_rows_after_the_owners_death_are_not_dispatched() {
+        use AfterSideTurnEndPowerToken as Token;
+        let catalog = CatalogBuilder::new().build();
+        let scalar = [
+            Token::BorrowedTime,
+            Token::Burst,
+            Token::DoubleDamage,
+            Token::NoDraw,
+            Token::OneTwoPunch,
+            Token::RetainHand,
+            Token::Shadowmeld,
+            Token::Tangled,
+            Token::TemporaryDexterity,
+        ];
+        let carriers = scalar.into_iter().chain([
+            Token::TemporaryStrength,
+            Token::Duplication,
+            Token::NoEnergyGain,
+        ]);
+        for token in carriers {
+            for killer_first in [true, false] {
+                let mut state = HotState::at_defaults();
+                state.hp = 3;
+                state.max_hp = 3;
+                state.player_phase = PHASE_ORDINARY_ACTIONS;
+                state.powers.set(PowerId::Doom, SlotWire::Int, 3);
+                match token {
+                    Token::TemporaryStrength => state.temp_strength = 2,
+                    Token::Duplication => assert!(state.fanouts.set_duplication(2)),
+                    Token::NoEnergyGain => state.fanouts.set_no_energy_gain(true),
+                    token => state.powers.set(
+                        after_side_turn_end_scalar_power(token).unwrap(),
+                        SlotWire::Int,
+                        2,
+                    ),
+                }
+                let later = AfterSideTurnEndPowerEntry {
+                    token,
+                    uid: u32::from(killer_first),
+                };
+                let doom = AfterSideTurnEndPowerEntry {
+                    token: Token::Doom,
+                    uid: u32::from(!killer_first),
+                };
+                let order = if killer_first {
+                    [doom, later]
+                } else {
+                    [later, doom]
+                };
+                state.fanouts.set_next_after_side_turn_end_power_uid(2);
+                assert!(state.fanouts.set_after_side_turn_end_power_order(&order));
+                assert!(
+                    after_side_turn_end_power_order_is_exact(&state),
+                    "{token:?}"
+                );
+                let payload = current_after_side_turn_end_payload(&state, later).unwrap();
+                let what = format!("{token:?} killer_first={killer_first}");
+                let mut events = Vec::new();
+                end_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+                assert!(state.history.over, "{what}");
+                assert!(state.fanouts.player_hooks_deactivated(), "{what}");
+                assert_eq!(
+                    events.last(),
+                    Some(&Event::CombatOver { player_won: false }),
+                    "{what}"
+                );
+                let untouched = state
+                    .fanouts
+                    .after_side_turn_end_power_order()
+                    .contains(&later)
+                    && current_after_side_turn_end_payload(&state, later).unwrap() == payload;
+                assert_eq!(untouched, killer_first, "{what}");
+                if killer_first {
+                    assert_eq!(
+                        events,
+                        [
+                            Event::TurnEnded { turn: 1 },
+                            Event::CombatOver { player_won: false },
+                        ],
+                        "{what}"
+                    );
+                    assert_eq!(state.powers.value(PowerId::Strength), 0, "{what}");
+                    assert_eq!(state.powers.value(PowerId::Dexterity), 0, "{what}");
+                }
+            }
+        }
+    }
+
+    /// #3434, #3613, #3628: the two states still unread beside Monologue
+    /// refuse by a name that says so, and before any mutation.
+    #[test]
+    fn monologue_beside_an_unread_side_end_peer_refuses_by_name() {
+        use crate::steps::regent_uncommon::monologue_side_end_peer_is_unmodeled;
+
+        let (clean, catalog) = monologue_beside_retain_hand_state(true);
+        assert!(!monologue_side_end_peer_is_unmodeled(&clean));
+        let refuses_untouched = |state: &HotState, what: &str| {
+            assert!(monologue_side_end_peer_is_unmodeled(state), "{what}");
+            let mut state = state.clone();
+            let before = state.clone();
+            let mut events = Vec::new();
+            assert_eq!(
+                end_player_turn(&mut state, &catalog, &mut events),
+                Err(EngineRefusal::MalformedArgs(
+                    "monologue side-end peer power not modeled"
+                )),
+                "{what}"
+            );
+            assert_eq!(state, before, "{what}");
+            assert!(events.is_empty(), "{what}");
+        };
+
+        // Doom and Consuming Shadow are read beside Monologue (#3628).
+        for power in [PowerId::Doom, PowerId::ConsumingShadow] {
+            let mut state = clean.clone();
+            state.powers.set(power, SlotWire::Int, 1);
+            hydrate_after_side_turn_end_power_order_for_test(&mut state);
+            assert!(!monologue_side_end_peer_is_unmodeled(&state), "{power:?}");
+        }
+        // A pending Dark Embrace ethereal tally, with the power's ledger row.
+        let mut ethereal = clean.clone();
+        ethereal.powers.set(PowerId::DarkEmbrace, SlotWire::Int, 1);
+        hydrate_after_side_turn_end_power_order_for_test(&mut ethereal);
+        ethereal.fanouts.set_dark_embrace_ethereal(1);
+        refuses_untouched(&ethereal, "Dark Embrace ethereal tally");
+        // The player's TempStrength slot: no writer and no ledger row.
+        let mut slot = clean.clone();
+        slot.powers.set(PowerId::TempStrength, SlotWire::Int, 1);
+        refuses_untouched(&slot, "player TempStrength slot");
+    }
+
+    /// #3434: a malformed private quotient keeps its own name at turn entry,
+    /// with or without the admitted Retain Hand peer.
+    #[test]
+    fn monologue_malformed_private_state_keeps_its_name_at_turn_entry() {
+        let (mut state, catalog) = monologue_beside_retain_hand_state(true);
+        // An AfterPowerAmountChanged listener with no recorded acquisition.
+        state.powers.set(PowerId::Vicious, SlotWire::Int, 1);
+        let before = state.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            end_player_turn(&mut state, &catalog, &mut events),
+            Err(EngineRefusal::MalformedArgs(
+                "monologue side-end listener state"
+            ))
+        );
+        assert_eq!(state, before);
+        assert!(events.is_empty());
+    }
+
     #[test]
     fn monologue_side_end_removes_only_its_ledger_and_all_hooks() {
         let mut state = monologue_expiry_state(1, 2);
@@ -16623,7 +17514,7 @@ mod tests {
     }
 
     #[test]
-    fn lethal_player_doom_precedes_ringing_expiry_and_preserves_terminal_tails() {
+    fn lethal_player_doom_leaves_a_later_ringing_row_undispatched() {
         let mut builder = CatalogBuilder::new();
         let atom = builder
             .intern(CardIdentity {
@@ -16660,7 +17551,11 @@ mod tests {
         end_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
 
         assert!(state.history.over);
-        assert!(!state.ringing());
+        // #3628: Ringing was acquired after Doom, so its listener is never
+        // called once the owner's hooks deactivate (`0x3f9720`
+        // IL_02a3-IL_02ab); the corpse keeps the power and the card's flag.
+        assert!(state.ringing());
+        assert!(state.fanouts.player_hooks_deactivated());
         assert_eq!(
             state
                 .fanouts
@@ -16681,7 +17576,7 @@ mod tests {
         .flat_map(|pile| state.piles.get(pile).as_slice())
         .collect();
         assert_eq!(terminal_cards.len(), 1);
-        assert_eq!(terminal_cards[0].flags & crate::hot::CARD_FLAG_RINGING, 0);
+        assert_ne!(terminal_cards[0].flags & crate::hot::CARD_FLAG_RINGING, 0);
     }
 
     #[test]
@@ -20055,16 +20950,28 @@ mod tests {
     #[test]
     fn terminal_temporary_transfer_overflow_rolls_back_the_complete_public_turn() {
         let catalog = CatalogBuilder::new().build();
+        // The transfer belongs to a wrapper whose listener is still called
+        // while the combat is ending: the owner is alive and a Consuming
+        // Shadow evoke has killed the last enemy. After the owner's own death
+        // the row is not dispatched at all (#3628).
         let mut state = HotState::at_defaults();
-        state.hp = 1;
-        state.max_hp = 1;
-        state.powers.set(PowerId::Doom, SlotWire::Int, 1);
+        state.hp = 50;
+        state.max_hp = 50;
+        state.powers.set(PowerId::ConsumingShadow, SlotWire::Int, 1);
+        state.orbs.set_base_slots(1);
+        state.orbs.set_slots(1);
+        state
+            .orbs
+            .push(HotOrb::from_parts(OrbKind::Dark, Some(6)).unwrap());
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 5));
         state.powers.set(PowerId::Strength, SlotWire::Int, i32::MAX);
         state.temp_strength = 1;
         assert_eq!(
             state
                 .fanouts
-                .register_after_side_turn_end_power(AfterSideTurnEndPowerToken::Doom),
+                .register_after_side_turn_end_power(AfterSideTurnEndPowerToken::ConsumingShadow),
             Ok(0)
         );
         assert_eq!(
@@ -24733,10 +25640,18 @@ mod tests {
 
         assert_eq!(state.block, 5);
         assert_eq!(state.hp, 0);
-        assert_eq!(state.powers.value(PowerId::TempDexterity), 0);
-        assert_eq!(state.powers.value(PowerId::Dexterity), 2);
-        assert_eq!(state.powers.value(PowerId::Shadowmeld), 0);
+        // #3628: both later rows belong to the dead owner and are never
+        // dispatched (`0x3f9720` IL_02a3-IL_02ab), so neither the wrapper's
+        // ending transfer nor Shadowmeld's removal happens.
+        assert_eq!(state.powers.value(PowerId::TempDexterity), 2);
+        assert_eq!(state.powers.value(PowerId::Dexterity), 0);
+        assert_eq!(state.powers.value(PowerId::Shadowmeld), 3);
+        assert_eq!(state.fanouts.after_side_turn_end_power_order().len(), 3);
         assert!(state.history.over);
+        assert_eq!(
+            events.last(),
+            Some(&Event::CombatOver { player_won: false })
+        );
         assert!(
             !events
                 .iter()
@@ -26503,8 +27418,11 @@ mod tests {
         }
     }
 
+    /// #3628: Borrowed Time acquired before a lethal Doom or Constrict has
+    /// run; acquired after, native never calls it (the owner's hooks are
+    /// deactivated, `0x3f9720` IL_02a3-IL_02ab) and it stays on the corpse.
     #[test]
-    fn borrowed_time_callback_runs_on_both_sides_of_lethal_doom_and_constrict() {
+    fn borrowed_time_callback_runs_only_before_a_lethal_doom_or_constrict() {
         for constrict_kill in [false, true] {
             for borrowed_first in [true, false] {
                 let (mut state, catalog) = if constrict_kill {
@@ -26542,36 +27460,40 @@ mod tests {
                 end_player_turn(&mut state, &catalog, &mut events).unwrap();
 
                 assert!(state.history.over);
-                assert_eq!(state.powers.value(PowerId::BorrowedTime), 0);
-                assert!(
-                    !state
+                assert!(state.fanouts.player_hooks_deactivated());
+                assert_eq!(
+                    state.powers.value(PowerId::BorrowedTime),
+                    i32::from(!borrowed_first)
+                );
+                assert_eq!(
+                    state
                         .fanouts
                         .after_side_turn_end_power_order()
                         .iter()
-                        .any(|entry| entry.token == AfterSideTurnEndPowerToken::BorrowedTime)
+                        .any(|entry| entry.token == AfterSideTurnEndPowerToken::BorrowedTime),
+                    !borrowed_first
                 );
-                let borrowed_event = events
-                    .iter()
-                    .position(|event| {
-                        matches!(
-                            event,
-                            Event::PowerChanged {
-                                subject: Subject::Player,
-                                power: PowerId::BorrowedTime,
-                                amount: 0,
-                            }
-                        )
-                    })
-                    .unwrap();
+                let borrowed_event = events.iter().position(|event| {
+                    matches!(
+                        event,
+                        Event::PowerChanged {
+                            subject: Subject::Player,
+                            power: PowerId::BorrowedTime,
+                            amount: 0,
+                        }
+                    )
+                });
                 let combat_over = events
                     .iter()
                     .position(|event| matches!(event, Event::CombatOver { .. }))
                     .unwrap();
                 assert_eq!(
-                    borrowed_event < combat_over,
+                    borrowed_event.is_some(),
                     borrowed_first,
-                    "captured Borrowed Time still executes after an earlier lethal callback"
+                    "a row after the owner's death is never dispatched"
                 );
+                assert!(borrowed_event.is_none_or(|index| index < combat_over));
+                assert_eq!(combat_over, events.len() - 1);
             }
         }
     }
@@ -29643,7 +30565,7 @@ mod tests {
     }
 
     #[test]
-    fn tender_positive_consuming_executes_and_lethal_doom_still_clears_counter_atomically() {
+    fn tender_positive_consuming_executes_and_a_lethal_doom_leaves_the_counter() {
         let (mut consuming, catalog) = tender_turn_fixture(
             HUNTER_BITE_INDEX,
             &[HUNTER_GOOP_INDEX, HUNTER_BITE_INDEX],
@@ -29679,7 +30601,9 @@ mod tests {
         end_player_turn(&mut doomed, &catalog, &mut events).unwrap();
         assert!(doomed.history.over);
         assert_eq!(doomed.hp, 0);
-        assert_eq!(doomed.fanouts.tender_cards_played(), 0);
+        // #3628: Tender was acquired after Doom, so its listener is never
+        // called on the dead owner and the counter is not reset.
+        assert_eq!(doomed.fanouts.tender_cards_played(), 2);
         assert!(doomed.fanouts.tender_is_active());
         assert!(matches!(
             events.last(),

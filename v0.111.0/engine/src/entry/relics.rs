@@ -1,10 +1,11 @@
 //! Relic entry state: the inventory, its dispatch-order vouch, and the saved
 //! properties that persist across combats.
 //!
-//! Oracle: the relic loop of `live_coach.build_entry`, plus the three strict
-//! adapters `live_coach._strict_scoped_relic_property`,
-//! `live_coach._strict_joss_paper_properties` and
-//! `live_coach._strict_fur_coat_membership`.
+//! Oracle: the relic loop of `live_coach.build_entry`, plus the two strict
+//! adapters `live_coach._strict_scoped_relic_property` and
+//! `live_coach._strict_joss_paper_properties`. Fur Coat's membership is read
+//! from the game's IL instead (#2526): the oracle's adapter for it never
+//! answered on a save.
 //!
 //! # Fail-closed, not fail-quiet
 //!
@@ -33,7 +34,7 @@ use std::collections::BTreeMap;
 use crate::entry::canonical_model_id;
 use crate::entry::props::SavedProperties;
 use crate::entry::refusal::EntryRefusal;
-use crate::entry::save::{SerializedPlayer, SerializedRun};
+use crate::entry::save::{Coord, SerializedPlayer, SerializedRun};
 
 /// Which saved property each finite / Tea relic owns, and its group and type.
 ///
@@ -354,26 +355,189 @@ fn joss_paper_properties(props: &SavedProperties) -> Option<Map<String, Value>> 
     Some(values)
 }
 
-/// `_strict_fur_coat_membership`, as it behaves on a JSON run save.
+/// Whether `FurCoat`'s combat bodies fire in the room this save stands in, or
+/// `None` when the save cannot say (#2526).
 ///
-/// **Measured, not assumed:** the oracle's first gate is
-/// `isinstance(current_coord, list) and len(current_coord) == 2`, and it is
-/// handed `save["visited_map_coords"][-1]`. In a JSON run save every entry of
-/// that array is a `{"col", "row"}` **object** — 34,174 of 34,174 coordinates
-/// across the 3,092-save corpus — so the gate never opens and Fur Coat
-/// membership is *always* unprovable from a save. The list-shaped coordinate
-/// is the decoded-MCR form, which is a different adapter's input.
+/// IL read on the v0.111.0 DLL (sha256 `9cb4f1ad…`, `dump_il.py FurCoat`).
 ///
-/// This port reproduces that rather than repairing it: entry parity with the
-/// oracle is the acceptance contract, and a Rust builder that answered `true`
-/// here would change the entry facts of every Fur Coat fight. The repair is
-/// filed as #2526, and must move both engines in the same change.
-fn fur_coat_membership(run: &SerializedRun, _props: &SavedProperties) -> Option<bool> {
-    // The coordinate the oracle would receive. It is an object in every save,
-    // so the shape gate below is the whole function; the props validation is
-    // never reached in the oracle either, because it short-circuits first.
-    let _current = run.visited_map_coords.last()?;
-    None
+/// # The reader
+///
+/// Both combat bodies ask the same question. `<BeforeCombatStart>d__26`
+/// (RVA `0x325360`) calls `GetMarkedCoords` (`IL_0020`-`IL_0021`), leaves when
+/// it is null (`IL_0027`-`IL_0028`), and otherwise tests
+/// `List<MapCoord>::Contains(Owner.RunState.CurrentMapPoint.coord)`
+/// (`IL_002a`-`IL_0045`); `<AfterCreatureAddedToCombat>d__27` (`0x325238`)
+/// repeats it at `IL_0033`-`IL_0058` behind its enemy-side test. Neither reads
+/// `FurCoatActIndex` or `CurrentActIndex`: **the reader has no act test**, so
+/// a coordinate marked in one act also answers in a later one.
+///
+/// * `GetMarkedCoords` (`0x94204`) is null exactly when `FurCoatCoordsSet` is
+///   false (`IL_000c`-`IL_0015`); otherwise it pairs `FurCoatCoordCols[i]`
+///   with `FurCoatCoordRows[i]` for `i < FurCoatCoordCols.Length`
+///   (`IL_0020`-`IL_005a`), so a shorter `Rows` array throws and a longer one
+///   is silently truncated. Unequal lengths are unprovable here.
+/// * `RunState::get_CurrentMapPoint` (`0x4e1b4`) is
+///   `Map.GetPoint(CurrentMapCoord)`, and `get_CurrentMapCoord` (`0x4e180`) is
+///   `_visitedMapCoords.Last()` (`IL_0019`-`IL_0024`), null when the list is
+///   empty. `ActMap::GetPoint` (`0xf89ac`) answers the boss, second boss and
+///   starting points by coordinate and the grid otherwise, and can be null;
+///   the reader dereferences `.coord` unguarded (`IL_003b`), so a current
+///   coordinate the saved map does not hold is unprovable rather than
+///   "unmarked".
+/// * `MapCoord::Equals` (`0xf8dc2`) is `col == col && row == row`.
+///
+/// `visited_map_coords` is that `_visitedMapCoords` list: a JSON run save
+/// writes each entry as a `{"col", "row"}` object and a capture as a
+/// `[col, row]` pair, and both parse to [`Coord`], so the last entry is the
+/// coordinate the reader compares in either form. (The deleted Python adapter
+/// this function replaced demanded a two-element list of the JSON save and so
+/// never answered. Measured 2026-10-02 over `~/sts2-captures`: 27,530 of the
+/// 27,530 coordinates in its 3,400 JSON saves are objects, and 5,912 of 5,912
+/// in its 693 uploaded captures are pairs.)
+///
+/// # The writer, and why the relic's own act is checked harder
+///
+/// `AddMarkedRooms` (`0x93f38`) is the only writer, reached from
+/// `AfterObtained` (`0x93ef9`, which first sets `FurCoatActIndex` to the
+/// current act) and from `ModifyGeneratedMapLate` (`0x93f2d`) whenever a map
+/// is built. It returns at once when `CurrentActIndex != FurCoatActIndex`
+/// (`IL_0019`-`IL_0037`). In the relic's own act it **re-rolls** the marks
+/// when `GetMarkedCoords` is null or when any mark fails `<AddMarkedRooms>b__0`
+/// (`0x3251f9`: on the map, and `PointType` `Monster` (5) or `Elite` (6)) —
+/// `IL_0038`-`IL_005e` — taking `DynamicVars["Combats"]` fresh points and
+/// setting `FurCoatCoordsSet` (`IL_0063`-`IL_0151`).
+///
+/// So a save taken in the relic's own act whose marks that test would reject,
+/// or whose `FurCoatCoordsSet` is false, does not determine the fight: a map
+/// rebuilt between the save and the combat re-rolls them. Those are
+/// unprovable. In any other act nothing rewrites the latch and the saved
+/// values are the answer.
+///
+/// # Strictness
+///
+/// The complete native shape or nothing: exactly `FurCoatActIndex` (`ints`),
+/// `FurCoatCoordsSet` (`bools`, beside the two inherited flags at `false`) and
+/// the two coordinate arrays (`int_arrays`), each once, every number a 32-bit
+/// integer. Anything else is `None`, which `entry::opening` refuses; it is
+/// never read as "inactive".
+fn fur_coat_membership(run: &SerializedRun, props: &SavedProperties) -> Option<bool> {
+    let latch = FurCoatLatch::read(props)?;
+    let act = i64::try_from(run.current_act_index?).ok()?;
+    let map = run.acts.get(run.act_index())?.saved_map.as_ref()?;
+    let point_type = |coord: Coord| {
+        map.points
+            .iter()
+            .chain(map.boss.iter())
+            .chain(map.second_boss.iter())
+            .chain(map.start.iter())
+            .find(|point| point.coord == Some(coord))
+            .map(|point| {
+                point
+                    .point_type
+                    .as_deref()
+                    .unwrap_or_default()
+                    .to_lowercase()
+            })
+    };
+    if act == latch.act_index {
+        // The relic's own act: a rebuilt map re-rolls a latch `AddMarkedRooms`
+        // would reject, so only one it would keep is an answer.
+        if !latch.coords_set {
+            return None;
+        }
+        for mark in &latch.marks {
+            let kind = point_type(*mark)?;
+            if kind != "monster" && kind != "elite" {
+                return None;
+            }
+        }
+    }
+    if !latch.coords_set {
+        // `GetMarkedCoords` is null, and the reader leaves before it reads the
+        // current map point.
+        return Some(false);
+    }
+    let current = *run.visited_map_coords.last()?;
+    point_type(current)?;
+    Some(latch.marks.contains(&current))
+}
+
+/// Fur Coat's four saved properties, validated as one complete shape.
+struct FurCoatLatch {
+    act_index: i64,
+    coords_set: bool,
+    marks: Vec<Coord>,
+}
+
+impl FurCoatLatch {
+    fn read(props: &SavedProperties) -> Option<Self> {
+        if props
+            .group_names()
+            .iter()
+            .any(|group| !["ints", "bools", "int_arrays"].contains(group))
+        {
+            return None;
+        }
+        let int32 = |value: &Value| {
+            value
+                .as_i64()
+                .filter(|number| i32::try_from(*number).is_ok())
+        };
+        let [act] = props.group("ints") else {
+            return None;
+        };
+        if act.name != "FurCoatActIndex" {
+            return None;
+        }
+        let act_index = int32(&act.value)?;
+
+        let mut coords_set = None;
+        let mut inherited = std::collections::BTreeSet::new();
+        for row in props.group("bools") {
+            if row.name == "FurCoatCoordsSet" {
+                if coords_set.replace(row.value.as_bool()?).is_some() {
+                    return None;
+                }
+            } else if !INHERITED_FALSE_RELIC_PROPERTIES.contains(&row.name.as_str())
+                || row.value != Value::Bool(false)
+                || !inherited.insert(&row.name)
+            {
+                return None;
+            }
+        }
+        let coords_set = coords_set?;
+
+        let (mut cols, mut rows) = (None, None);
+        for row in props.group("int_arrays") {
+            let slot = match row.name.as_str() {
+                "FurCoatCoordCols" => &mut cols,
+                "FurCoatCoordRows" => &mut rows,
+                _ => return None,
+            };
+            let values = row
+                .value
+                .as_array()?
+                .iter()
+                .map(int32)
+                .collect::<Option<Vec<i64>>>()?;
+            if slot.replace(values).is_some() {
+                return None;
+            }
+        }
+        let (cols, rows) = (cols?, rows?);
+        if cols.len() != rows.len() {
+            return None;
+        }
+        Some(Self {
+            act_index,
+            coords_set,
+            marks: cols
+                .into_iter()
+                .zip(rows)
+                .map(|(col, row)| Coord { col, row })
+                .collect(),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -612,20 +776,199 @@ mod tests {
         );
     }
 
-    #[test]
-    fn fur_coat_membership_is_unprovable_from_any_json_save() {
-        // Pins the measured oracle behaviour this port reproduces: the save's
-        // coordinates are objects, and the oracle's gate wants a two-element
-        // list. See `fur_coat_membership`.
-        let entry = entry_of(
-            r#"[{"id": "RELIC.FUR_COAT",
-                 "props": {"ints": [{"name": "FurCoatActIndex", "value": 0}],
-                           "int_arrays": [{"name": "FurCoatCoordCols", "value": []},
-                                          {"name": "FurCoatCoordRows", "value": []}],
-                           "bools": [{"name": "FurCoatCoordsSet", "value": false}]}}]"#,
-        );
-        assert_eq!(entry.fur_coat_active, None);
+    /// A save standing on `(1, 2)` of act `act`, whose map holds monster
+    /// points at `(1, 2)`, `(3, 4)` and `(5, 6)`, an elite at `(0, 7)`, a rest
+    /// site at `(2, 5)` and a boss at `(3, 15)`.
+    fn fur_coat_run(act: usize, props: &serde_json::Value) -> serde_json::Value {
+        let map = serde_json::json!({
+            "points": [
+                {"coord": {"col": 1, "row": 2}, "type": "monster"},
+                {"coord": {"col": 3, "row": 4}, "type": "monster"},
+                {"coord": {"col": 5, "row": 6}, "type": "monster"},
+                {"coord": {"col": 0, "row": 7}, "type": "elite"},
+                {"coord": {"col": 2, "row": 5}, "type": "rest_site"}],
+            "boss": {"coord": {"col": 3, "row": 15}, "type": "boss"}});
+        serde_json::json!({
+            "schema_version": 20,
+            "current_act_index": act,
+            "acts": [{"saved_map": map}, {"saved_map": map}, {"saved_map": map}],
+            "visited_map_coords": [{"col": 3, "row": 0}, {"col": 1, "row": 2}],
+            "rng": {"seed": "S", "rngs": {}},
+            "players": [{"relics": [{"id": "RELIC.FUR_COAT", "props": props}]}]})
+    }
+
+    fn fur_coat_props(act: i64, set: bool, cols: &[i64], rows: &[i64]) -> serde_json::Value {
+        serde_json::json!({
+            "ints": [{"name": "FurCoatActIndex", "value": act}],
+            "int_arrays": [{"name": "FurCoatCoordCols", "value": cols},
+                           {"name": "FurCoatCoordRows", "value": rows}],
+            "bools": [{"name": "FurCoatCoordsSet", "value": set}]})
+    }
+
+    fn fur_coat_of(run: &serde_json::Value) -> Option<bool> {
+        let run = SerializedRun::parse(&run.to_string()).unwrap();
+        let player = run.single_player().unwrap().clone();
+        let entry = relic_entry(&run, &player).unwrap();
+        assert_eq!(entry.relics_entering, ["RELIC.FUR_COAT"]);
         assert!(entry.relic_counters.is_empty());
+        entry.fur_coat_active
+    }
+
+    #[test]
+    fn fur_coat_is_active_exactly_when_the_marks_hold_the_current_coordinate() {
+        // The save stands on (1, 2). Marked there: active.
+        let marked = fur_coat_props(2, true, &[3, 1, 0], &[4, 2, 7]);
+        assert_eq!(fur_coat_of(&fur_coat_run(2, &marked)), Some(true));
+        // Marked elsewhere: inactive. (The transposed (2, 1) and marks sharing
+        // one axis are in the other-act test, where a mark need not be a
+        // combat point of this map.)
+        let elsewhere = fur_coat_props(2, true, &[3, 0], &[4, 7]);
+        assert_eq!(fur_coat_of(&fur_coat_run(2, &elsewhere)), Some(false));
+        let empty = fur_coat_props(2, true, &[], &[]);
+        assert_eq!(fur_coat_of(&fur_coat_run(2, &empty)), Some(false));
+        // The inherited flags may ride along at false.
+        let mut flagged = marked.clone();
+        flagged["bools"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"name": "IsWax", "value": false}));
+        assert_eq!(fur_coat_of(&fur_coat_run(2, &flagged)), Some(true));
+    }
+
+    #[test]
+    fn fur_coat_in_another_act_answers_from_the_saved_marks_alone() {
+        // The reader has no act test, and outside the relic's own act nothing
+        // re-rolls the latch: the marks need not be combat points of this
+        // act's map, or on it at all.
+        let hit = fur_coat_props(0, true, &[6, 1, 2], &[13, 2, 5]);
+        assert_eq!(fur_coat_of(&fur_coat_run(1, &hit)), Some(true));
+        // Off the map, the transposed (2, 1), and one shared axis each way.
+        let miss = fur_coat_props(0, true, &[6, 2, 1, 5], &[13, 1, 5, 2]);
+        assert_eq!(fur_coat_of(&fur_coat_run(1, &miss)), Some(false));
+        // Never marked, and not in the act that would mark it on a rebuild.
+        let unset = fur_coat_props(-1, false, &[], &[]);
+        assert_eq!(fur_coat_of(&fur_coat_run(1, &unset)), Some(false));
+    }
+
+    #[test]
+    fn fur_coat_in_its_own_act_is_unprovable_when_a_rebuilt_map_would_re_roll_it() {
+        // Unset in the relic's own act: `AddMarkedRooms` rolls on a rebuild.
+        let unset = fur_coat_props(1, false, &[], &[]);
+        assert_eq!(fur_coat_of(&fur_coat_run(1, &unset)), None);
+        // A mark on a rest site, a boss, or no point at all fails
+        // `<AddMarkedRooms>b__0`, whether or not the current room is marked.
+        for (cols, rows) in [
+            ([1, 2], [2, 5]),
+            ([1, 3], [2, 15]),
+            ([1, 6], [2, 13]),
+            ([3, 2], [4, 5]),
+        ] {
+            let props = fur_coat_props(1, true, &cols, &rows);
+            assert_eq!(fur_coat_of(&fur_coat_run(1, &props)), None, "{cols:?}");
+        }
+    }
+
+    #[test]
+    fn fur_coat_is_unprovable_without_the_current_map_point() {
+        let props = fur_coat_props(0, true, &[1], &[2]);
+        // No current act index, no saved map, no visited coordinate, and a
+        // current coordinate the map does not hold.
+        let mut run = fur_coat_run(1, &props);
+        run.as_object_mut().unwrap().remove("current_act_index");
+        assert_eq!(fur_coat_of(&run), None);
+        let mut run = fur_coat_run(1, &props);
+        run["acts"][1] = serde_json::json!({});
+        assert_eq!(fur_coat_of(&run), None);
+        let mut run = fur_coat_run(1, &props);
+        run["visited_map_coords"] = serde_json::json!([]);
+        assert_eq!(fur_coat_of(&run), None);
+        let mut run = fur_coat_run(1, &props);
+        run["visited_map_coords"] = serde_json::json!([{"col": 6, "row": 13}]);
+        assert_eq!(fur_coat_of(&run), None);
+        // An unset latch outside its own act never reads the map point.
+        let unset = fur_coat_props(0, false, &[], &[]);
+        let mut run = fur_coat_run(1, &unset);
+        run["visited_map_coords"] = serde_json::json!([{"col": 6, "row": 13}]);
+        assert_eq!(fur_coat_of(&run), Some(false));
+    }
+
+    #[test]
+    fn fur_coat_malformed_properties_are_unprovable_never_inactive() {
+        use serde_json::json;
+        let good = fur_coat_props(0, true, &[3], &[4]);
+        assert_eq!(fur_coat_of(&fur_coat_run(1, &good)), Some(false));
+        let row = |name: &str, value: serde_json::Value| json!({"name": name, "value": value});
+        let mut cases = vec![json!(null), json!({})];
+        // A missing property, one at a time.
+        for (group, name) in [
+            ("ints", "FurCoatActIndex"),
+            ("bools", "FurCoatCoordsSet"),
+            ("int_arrays", "FurCoatCoordCols"),
+            ("int_arrays", "FurCoatCoordRows"),
+        ] {
+            let mut props = good.clone();
+            props[group]
+                .as_array_mut()
+                .unwrap()
+                .retain(|entry| entry["name"] != name);
+            cases.push(props);
+            let mut props = good.clone();
+            let rows = props[group].as_array_mut().unwrap();
+            let duplicate = rows.iter().find(|entry| entry["name"] == name).unwrap();
+            rows.push(duplicate.clone());
+            cases.push(props);
+        }
+        // Wrong types, out-of-range numbers, unequal lengths.
+        for (group, name, value) in [
+            ("ints", "FurCoatActIndex", json!("0")),
+            ("ints", "FurCoatActIndex", json!(true)),
+            ("ints", "FurCoatActIndex", json!(0.5)),
+            ("ints", "FurCoatActIndex", json!(1_i64 << 31)),
+            ("bools", "FurCoatCoordsSet", json!(1)),
+            ("bools", "FurCoatCoordsSet", json!(null)),
+            ("int_arrays", "FurCoatCoordCols", json!(3)),
+            ("int_arrays", "FurCoatCoordCols", json!([true])),
+            ("int_arrays", "FurCoatCoordCols", json!(["3"])),
+            ("int_arrays", "FurCoatCoordCols", json!([1_i64 << 31])),
+            ("int_arrays", "FurCoatCoordCols", json!([3, 1])),
+            ("int_arrays", "FurCoatCoordRows", json!([])),
+            ("int_arrays", "FurCoatCoordRows", json!([4, 2])),
+        ] {
+            let mut props = good.clone();
+            let rows = props[group].as_array_mut().unwrap();
+            let slot = rows.iter_mut().find(|entry| entry["name"] == name).unwrap();
+            slot["value"] = value;
+            cases.push(props);
+        }
+        // A stray row, a stray group, and an inherited flag that is not false.
+        for (group, extra) in [
+            ("ints", row("CombatsLeft", json!(1))),
+            ("bools", row("WasUsed", json!(false))),
+            ("bools", row("IsWax", json!(true))),
+            ("int_arrays", row("Other", json!([]))),
+        ] {
+            let mut props = good.clone();
+            props[group].as_array_mut().unwrap().push(extra);
+            cases.push(props);
+        }
+        let mut doubled_flag = good.clone();
+        for _ in 0..2 {
+            doubled_flag["bools"]
+                .as_array_mut()
+                .unwrap()
+                .push(row("IsWax", json!(false)));
+        }
+        cases.push(doubled_flag);
+        let mut stray_group = good.clone();
+        stray_group["strings"] = json!([]);
+        cases.push(stray_group);
+        for props in cases {
+            assert_eq!(fur_coat_of(&fur_coat_run(1, &props)), None, "{props}");
+        }
+        // No `props` key at all is the same unprovable.
+        let mut bare = fur_coat_run(1, &good);
+        bare["players"][0]["relics"] = json!([{"id": "RELIC.FUR_COAT"}]);
+        assert_eq!(fur_coat_of(&bare), None);
     }
 
     const MELTED: &str = r#"{"bools": [{"name": "IsWax", "value": true},

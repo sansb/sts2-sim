@@ -170,6 +170,9 @@
   "relics_entering_dispatch_ordered": true,
   "reward_card_pool": "Defect",
   "reward_card_rarity_odds": "EliteEncounter",
+  "session_bookkeeping": [
+   "self_return_uids"
+  ],
   "splash_unlock_epochs": [
    "ACT2_B_EPOCH",
    "ACT3_B_EPOCH",

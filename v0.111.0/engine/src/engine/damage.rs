@@ -24,6 +24,8 @@
 //! (`SOLVER_INVARIANTS.md` I7); every multiplier the slice reaches is exact in
 //! both.
 
+use std::cell::Cell;
+
 use crate::catalog::{CardIdentity, CardSpec, Catalog};
 use crate::decimal::DotNetDecimal;
 use crate::hot::{
@@ -221,6 +223,39 @@ pub(crate) fn write_monster_strength(
 /// Gated on [`crate::hot::HotFanouts::misery_attachment_upkeep`] like every
 /// other ledger write, so a fight that cannot reach `Misery` records nothing
 /// and projects byte-identically to the pre-#2693 engine.
+///
+/// **A monster that is dead for good is left alone (#3644).** Both death
+/// cleanups (`finish_monster_death_body`, `finish_secondary_death_cascade`)
+/// reset the dying monster's whole ledger and keep its `PowerId::Strength`
+/// scalar, so every corpse the engine itself projects is "a nonzero scalar
+/// with no row". Recording a row for it here made a hydrated corpse differ
+/// from the one the engine built: the document did not project back to
+/// itself, and a parked ActionReplay receipt whose predecessor held such a
+/// corpse refused on reload ("transcript does not reproduce the complete
+/// canonical state"; four census fights, among them `f4051bdad0c87668` step
+/// 9). A corpse's row has no reader: every admission rule over the ledger
+/// tests `hp > 0`, and `Misery` snapshots a living target. A downed monster
+/// still waiting to come back (`revive_stage != 0`: an illusion keeps its
+/// Strength through `REVIVE_MOVE`) is a living instance again later, so it
+/// keeps the row.
+///
+/// **The engine keeps that row as well (#3674).** An illusion's death used to
+/// reset its ledger like any other, so the session's downed and revived
+/// illusion held a Strength with no row while this pass gave the reloaded
+/// one an `unknown` row: 65 census projections of one Obscura fight did not
+/// project back to themselves. `finish_monster_death_body` now carries the
+/// illusion's Strength row through the death, as native keeps the instance
+/// (`IllusionPower::ShouldPowerBeRemovedOnDeath` `0xa3a80`), so a document
+/// the engine projects already holds the row and this pass has nothing to
+/// add to it. What is left for this pass on an illusion is a document
+/// written before that change.
+///
+/// `revive_stage` is not a revive marker on every kind (#3674). A Knowledge
+/// Demon keeps its curse counter there
+/// ([`HotMonster::knowledge_demon_curse_counter`]) and never revives, so a
+/// dead one is dead for good whatever the counter reads. Test Subject packs
+/// its respawn count and two latches into the same byte; its death cleanups
+/// wipe the Strength a row would describe, so it stays on the plain test.
 pub(crate) fn materialize_entering_strength_provenance(state: &mut HotState) {
     if !state.fanouts.misery_attachment_upkeep() {
         return;
@@ -232,7 +267,9 @@ pub(crate) fn materialize_entering_strength_provenance(state: &mut HotState) {
         .filter(|(_, monster)| {
             // The ledger holds no attachment in the determined case, so this
             // is exactly "a nonzero scalar with no row".
-            !super::monsters::strength_provenance_is_recorded(monster)
+            !(monster.hp <= 0
+                && (monster.revive_stage == 0 || monster.kind == MonsterKind::KnowledgeDemon))
+                && !super::monsters::strength_provenance_is_recorded(monster)
                 && super::monsters::entering_strength_position_is_determined(monster)
         })
         .map(|(index, monster)| (index, monster.powers.value(PowerId::Strength)))
@@ -427,7 +464,11 @@ fn abandon_monster_temp_strength_provenance(monster: &mut HotMonster) {
 ///   comes from `<AfterPowerAmountChanged>d__21::MoveNext` `0x348a88`
 ///   IL_004b-IL_007a, which runs at `ModifyAmount` IL_02eb — *after*
 ///   `SetAmount` IL_01d6. Writing Strength first is still correct there,
-///   because the wrapper's position does not move either way.
+///   because the wrapper keeps its place among the rows that survive either
+///   way. Its *index* is another matter (#3583): that nested Strength can
+///   land on exactly zero and be removed (the Strength instance's own
+///   `ModifyAmount` IL_034e-IL_035b), which closes the row in front of the
+///   wrapper, so the restack arm locates the wrapper again after the write.
 /// * **The lookup is by model, never by applier** — see
 ///   [`super::monsters::temp_strength_wrapper_attachment`].
 /// * **`SetAmount` clamps to +/-999999999** (`0x83f8c` IL_0013-IL_0022). The
@@ -494,10 +535,22 @@ pub(crate) fn write_monster_temp_strength_wrapper(
 
     if upkeep {
         match (recorded, stacked, existing) {
-            (true, Some(stacked), Some(index)) => {
-                let written = monster
-                    .misery_debuff_order
-                    .set_attachment_amount(index, stacked);
+            (true, Some(stacked), Some(_)) => {
+                // Located again, never reused from `existing` (#3583): the
+                // Strength write above can land Strength on exactly zero,
+                // which erases its row in place (`PowerCmd/<ModifyAmount>
+                // d__6::MoveNext` `0x3f032c` IL_034e `ShouldRemoveDueToAmount`
+                // -> IL_035b `PowerCmd::Remove` -> `Creature::
+                // RemovePowerInternal` `0x11db0b` IL_0015-IL_001c, a
+                // `List.Remove`). A wrapper behind that row then stands one
+                // position earlier, and the position read before the write
+                // names its successor, or nothing.
+                let written = super::monsters::temp_strength_wrapper_attachment(monster, model)
+                    .is_some_and(|index| {
+                        monster
+                            .misery_debuff_order
+                            .set_attachment_amount(index, stacked)
+                    });
                 debug_assert!(written, "a located nonzero attachment restacks");
             }
             (true, Some(_), None) => {
@@ -772,6 +825,235 @@ struct AttackPlan<'targets, 'results> {
     context_mode: AttackContextMode,
     result_sink: Option<&'results mut Vec<AttackDamageResult>>,
     dealer: AttackDealer,
+}
+
+thread_local! {
+    /// Native `VigorPower.Data.commandToModify`, scoped to one synchronous
+    /// Rust call stack: the source uid of the open player `AttackCommand` the
+    /// owner's Vigor is bound to (`Some(None)` for a command issued without a
+    /// physical uid). Deliberately not canonical state, and with no
+    /// persisted counterpart: it is sound only while no state is published
+    /// from inside a bound command and then resumed by its frames, which
+    /// [`VigorCommand::refuse_frame_owned_park`] enforces. See
+    /// [`VigorCommand`].
+    static VIGOR_BOUND_COMMAND: Cell<Option<Option<u32>>> = const { Cell::new(None) };
+}
+
+/// What `VigorPower` contributes to one powered player `AttackCommand`, and
+/// whether that command is the one the power is bound to (#2696).
+///
+/// Authority: archived v0.111.0 `sts2.dll`, SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// * `VigorPower::BeforeAttack` RVA `0xaa7ac` returns unless the command's
+///   `Attacker` is the owner (IL_000c-IL_0018) and it is a powered attack
+///   (IL_0020-IL_002b), returns when `Data.commandToModify` is already set
+///   (IL_0033-IL_0040), returns for a non-card `ModelSource` (IL_0048-IL_005b),
+///   and otherwise stores the command (IL_0076-IL_0078) and
+///   `Data.amountWhenAttackStarted = Amount` (IL_007d-IL_0084). So the first
+///   eligible command binds, and a command issued while one is bound does not
+///   rebind.
+/// * `VigorPower::ModifyDamageAdditive` RVA `0xaa83c` returns zero unless the
+///   dealer is the owner (IL_000c-IL_0014) and the damage is a powered attack
+///   (IL_001c-IL_0022); returns zero when a command is bound, the card source
+///   is non-null and it is not that command's `ModelSource`
+///   (IL_0031-IL_0051); returns zero when the bound command's `Attacker` is
+///   not the dealer (IL_0052-IL_006e); and otherwise returns the live
+///   `Amount` (IL_006f-IL_007a). `AttackCommand/<Execute>d__90::MoveNext` RVA
+///   `0x3f19c0` passes `ModelSource as CardModel` as that card source
+///   (IL_0732-IL_0738).
+/// * `VigorPower/<AfterAttack>d__8::MoveNext` RVA `0x34a824` leaves unless the
+///   finished command is the bound one (IL_0024-IL_0032), then
+///   `PowerCmd.ModifyAmount(-amountWhenAttackStarted)` (IL_0037-IL_004d). It
+///   never clears `commandToModify`: the subtraction takes the power to zero
+///   and `PowerCmd/<ModifyAmount>d__6::MoveNext` RVA `0x3f032c` removes it
+///   (IL_0348-IL_035b, `PowerModel::ShouldRemoveDueToAmount` RVA `0x83b0d`).
+///
+/// A command nests inside another only through a Draw that runs inside the
+/// outer command's `CreatureCmd.Damage` and `HellraiserPower/
+/// <AfterCardDrawnEarly>d__7::MoveNext` RVA `0x33c1a8`, which AutoPlays the
+/// drawn Strike-tagged card (IL_0043-IL_0049, IL_011e-IL_012e). The drawn card
+/// is a different `CardModel` from the one whose command is open, so its
+/// command reads no Vigor and its `AfterAttack` consumes none; the outer
+/// command keeps the power for its remaining hits and consumes it once.
+/// (Imitation Learning's replay of that card is a clone, another object.)
+///
+/// The amount cannot change while a command is bound. The only writers of a
+/// player's `VigorPower` are `Akabeko/<AfterSideTurnStart>d__6` RVA
+/// `0x31e418`, `PrepTimePower/<AfterSideTurnStart>d__4` RVA `0x341240`,
+/// `Patter/<OnPlay>d__7` RVA `0x3b1b94` and `Terraforming/<OnPlay>d__5` RVA
+/// `0x3c241c` (an xref of every method body in the DLL). A card body is
+/// entered only through `CardModel::OnPlayWrapper`, whose callers are
+/// `PlayCardAction/<ExecuteAction>d__25` and `CardCmd/<AutoPlay>d__0`. Inside
+/// an open command AutoPlay is reached by Hellraiser (a Strike-tagged card)
+/// and by `ImitationLearningPower/<AfterCardPlayed>d__16` RVA `0x33cea8` (a
+/// clone of the card just played). Its third route, the Sly play in
+/// `CardCmd/<DiscardAndDraw>d__4` RVA `0x3e0274` (IL_02fd), is reached only
+/// from card and potion bodies, none of them Strike-tagged, and two
+/// turn-start hooks. Neither Vigor card is Strike-tagged. So the live
+/// `Amount` each hit reads equals `amountWhenAttackStarted`, and the caller's
+/// snapshot with one whole-power removal at AfterAttack is the same
+/// computation.
+///
+/// The binding lives for the synchronous command only, and it has no
+/// canonical carrier. That is sound for the two ways a choice begins inside
+/// a command today. A receipt-owned park unwinds the whole action and
+/// re-executes it from its root (`engine::puzzle`), which rebuilds the
+/// binding. A Gremlin Horn choice is detached from the state and resumes
+/// after the enclosing action, hence after this command's AfterAttack
+/// (`engine::hook_action`), exactly as native resumes it in a queued hook
+/// action. A third way would not be sound: a choice left pending in the
+/// state for its frames to resume would run the rest of a nested card with
+/// the binding gone, and that card's next command would bind itself. No
+/// path does that, and [`VigorCommand::refuse_frame_owned_park`] refuses by
+/// name if one ever does. `play::ACTIVE_PLAYS` is not a precedent for this:
+/// its entries are re-entered on resume and have a persisted counterpart.
+///
+/// The release on drop matches native because a consumed Vigor is removed
+/// (`Creature::RemovePowerInternal` RVA `0x11db0b` IL_0015-IL_001c takes it
+/// out of `_powers`), so a later application finds no instance to stack on
+/// (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988`,
+/// `FindExistingInstanceForStacking` at IL_006c) and installs
+/// `PowerModel::ToMutable()` of the canonical model (IL_0084), whose
+/// `DeepCloneFields` RVA `0x8406d` assigns a fresh `InitInternalData()`
+/// (IL_001b-IL_0020): a null `commandToModify`.
+///
+/// A trap inside a bound command in the WASM build (`panic = "abort"`) runs
+/// no drop and would leave the thread-local set for that instance, the same
+/// hazard as the crate's other execution thread-locals.
+///
+/// Live engine (headless harness, build v0.111.0 `41cef1ea`, Ironclad against
+/// `TOADPOLES_WEAK` set to 5 and 100 HP, Akabeko's Vigor 8, Hellraiser,
+/// Gremlin Horn, one Strike left in the draw pile). Strike on the 5 HP
+/// Toadpole, seed `PROBE2696A`: the kill, the drawn Strike's own result of 6
+/// on the survivor, then one `PowerReceived VigorPower -8`; the survivor ends
+/// at 94. Whirlwind at X = 3, seed `PROBE2696B2`: 13 on the survivor, the
+/// drawn Strike's 6, then 13 and 13 for the remaining hits, one
+/// `PowerReceived VigorPower -8`; the survivor ends at 55.
+struct VigorCommand {
+    /// The additive term every hit of this command folds.
+    amount: i32,
+    /// Whether this command is the bound one, and so the one whose
+    /// AfterAttack consumes the power. Holds the binding open until dropped.
+    bound_here: Option<VigorBindingGuard>,
+}
+
+/// A choice left pending in the state by a callback of a Vigor-bound attack
+/// command. See [`VigorCommand::refuse_frame_owned_park`].
+pub(crate) const CHOICE_INSIDE_VIGOR_BOUND_COMMAND: &str =
+    "choice parked inside a Vigor-bound attack command";
+
+/// Releases [`VIGOR_BOUND_COMMAND`] on every success and refusal unwind.
+struct VigorBindingGuard {
+    /// The state's pending selection when the command bound (null for none).
+    pending_at_entry: *const crate::hot::PendingSelection,
+}
+
+impl Drop for VigorBindingGuard {
+    fn drop(&mut self) {
+        VIGOR_BOUND_COMMAND.with(|bound| bound.set(None));
+    }
+}
+
+impl VigorCommand {
+    /// `VigorPower.BeforeAttack` for one command, together with the answer
+    /// its `ModifyDamageAdditive` gives every hit of that command.
+    #[inline(always)]
+    fn before_attack(state: &HotState, plan: &AttackPlan<'_, '_>) -> Result<Self, EngineRefusal> {
+        // An Osty command has a different Attacker: it neither binds nor
+        // reads the owner's Vigor.
+        let live = if plan.dealer == AttackDealer::Player {
+            state.powers.value(PowerId::Vigor)
+        } else {
+            0
+        };
+        if live == 0 {
+            return Ok(Self {
+                amount: 0,
+                bound_here: None,
+            });
+        }
+        Self::bind_in(state, live, plan.source_uid)
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn bind_in(
+        state: &HotState,
+        live: i32,
+        source_uid: Option<u32>,
+    ) -> Result<Self, EngineRefusal> {
+        let mut command = Self::bind(live, source_uid)?;
+        if let Some(guard) = &mut command.bound_here {
+            guard.pending_at_entry = Self::pending_selection(state);
+        }
+        Ok(command)
+    }
+
+    fn pending_selection(state: &HotState) -> *const crate::hot::PendingSelection {
+        state
+            .pending
+            .as_ref()
+            .map_or(std::ptr::null(), std::sync::Arc::as_ptr)
+    }
+
+    /// Refuse a choice that a callback of this bound command left pending in
+    /// the state (#2696).
+    ///
+    /// The binding has no canonical carrier, so a frame-owned park created
+    /// inside the command would be resumed without it. The two admitted
+    /// shapes never reach this with a new pending selection: a receipt-owned
+    /// park has already unwound the command with its private refusal, and a
+    /// Gremlin Horn choice has been detached into the state's hook-action
+    /// queue. Evaluated once, by the binding command, before its
+    /// AfterAttack.
+    #[inline(always)]
+    fn refuse_frame_owned_park(&self, state: &HotState) -> Result<(), EngineRefusal> {
+        let Some(guard) = &self.bound_here else {
+            return Ok(());
+        };
+        let pending = Self::pending_selection(state);
+        if !pending.is_null() && pending != guard.pending_at_entry {
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                CHOICE_INSIDE_VIGOR_BOUND_COMMAND,
+            ));
+        }
+        Ok(())
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn bind(live: i32, source_uid: Option<u32>) -> Result<Self, EngineRefusal> {
+        match VIGOR_BOUND_COMMAND.with(Cell::get) {
+            None => {
+                VIGOR_BOUND_COMMAND.with(|bound| bound.set(Some(source_uid)));
+                Ok(Self {
+                    amount: live,
+                    bound_here: Some(VigorBindingGuard {
+                        pending_at_entry: std::ptr::null(),
+                    }),
+                })
+            }
+            // Nested inside the bound command. Native compares CardModel
+            // references; the physical uid is that identity here, and a
+            // command without one cannot be placed on either side.
+            Some(bound) => match (bound, source_uid) {
+                (Some(bound), Some(source)) if bound != source => Ok(Self {
+                    amount: 0,
+                    bound_here: None,
+                }),
+                // The bound card's own source: the live Amount, and no
+                // consumption by this command's AfterAttack.
+                (Some(_), Some(_)) => Ok(Self {
+                    amount: live,
+                    bound_here: None,
+                }),
+                _ => Err(EngineRefusal::MalformedArgs(
+                    "Vigor command binding source uid",
+                )),
+            },
+        }
+    }
 }
 
 fn frozen_card_target_identity(source_uid: u32, targets: &[usize]) -> Option<(i32, u32)> {
@@ -1212,6 +1494,25 @@ fn player_attack_inner(
             .monsters
             .iter()
             .any(|monster| monster.hp > 0 && monster.powers.value(PowerId::Thorns) > 0);
+    // Omnislice's spill runs after the primary result has committed
+    // ([`omnislice_spill`], #3612), and it has refusal sites the old
+    // per-target walk did not: a Thorns receiver's retaliation (an Imbalanced
+    // owner, a retained receiver), and the batch a spill over two or more
+    // receivers opens (roster authentication, the retained-object guards of
+    // its phases 2 and 3). Rehearse wherever one is reachable, so none can
+    // leak the primary result to a direct caller. A Stock respawn can add one
+    // receiver the entry roster does not show, hence two living enemies.
+    let omnislice_reachable = plan.context_mode == AttackContextMode::Omnislice
+        && (state
+            .monsters
+            .iter()
+            .any(|monster| monster.hp > 0 && monster.powers.value(PowerId::Thorns) > 0)
+            || state
+                .monsters
+                .iter()
+                .filter(|monster| monster.hp > 0)
+                .count()
+                > 1);
 
     // Osty attacks add command-scoped history and can publish Flatten's
     // physical-card rewrite after every damage/listener result. Rehearse the
@@ -1276,6 +1577,7 @@ fn player_attack_inner(
     }
     if hive_reachable
         || thorns_reachable
+        || omnislice_reachable
         || plan.dealer == AttackDealer::PlayerPet
         || knockdown_reachable
         || hex_reachable
@@ -1331,14 +1633,14 @@ fn player_attack_inner_apply(
     fixed_target_identities: Option<&[(i32, u32)]>,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    // VigorPower.BeforeAttack snapshots the complete live amount for this
-    // powered player AttackCommand. Every hit and target reads the snapshot;
-    // AfterAttack removes the whole power only when the command completes.
-    let vigor = if plan.dealer == AttackDealer::Player {
-        state.powers.value(PowerId::Vigor)
-    } else {
-        0
-    };
+    // VigorPower.BeforeAttack binds the first eligible powered player
+    // AttackCommand and snapshots the live amount for it. Every hit and
+    // target of that command reads the snapshot; its AfterAttack removes the
+    // whole power when the command completes. A command nested inside the
+    // bound one (a Hellraiser Strike drawn inside one of its hits) reads none
+    // and consumes none ([`VigorCommand`], #2696).
+    let vigor_command = VigorCommand::before_attack(state, &plan)?;
+    let vigor = vigor_command.amount;
     // GigantificationPower BeforeAttack/AfterAttack (RVA 0xa2e3c and
     // 0xa2f28; `<AfterAttack>d__8` 0x33b668) binds the first owner-card
     // AttackCommand issued by that player or their Osty, not an individual
@@ -1346,6 +1648,19 @@ fn player_attack_inner_apply(
     // (IL_005c-0073), and AfterAttack clears it and decrements (IL_0034-003c). The latch also prevents nested
     // commands from taking a second stack while this command is open. Python
     // `player_attack` keeps the owner CardModel for `PLAYER_PET` (frozen Python, deleted #2827); a non-Attack or absent source never enters this API.
+    //
+    // Paired review for #2696. A command nested in the bound one (a
+    // Hellraiser Strike drawn inside one of its hits) is a different
+    // CardModel: `ModifyDamageMultiplicative` RVA `0xa2ebc` answers it One
+    // (IL_0045-IL_0061), BeforeAttack does not rebind (IL_005c-IL_0070), and
+    // its AfterAttack is not the bound command's (`0x33b668`
+    // IL_0024-IL_0032). The latch gives exactly that: `gigantification` is
+    // false for the nested command, so no x3 and no decrement. Native's two
+    // other arms have no caller. The bound card's own source nested in its
+    // own command would read x3, but the open card is in the Play pile and
+    // cannot be drawn. An unbound non-Attack card source would read x3
+    // without taking a stack (IL_0045-IL_004b), but every card that issues an
+    // AttackCommand is Attack-typed.
     let gigantification = matches!(plan.dealer, AttackDealer::Player | AttackDealer::PlayerPet)
         && source.is_attack
         && state.fanouts.gigantification() > 0
@@ -1354,7 +1669,21 @@ fn player_attack_inner_apply(
         return Err(EngineRefusal::MalformedArgs("Gigantification bound state"));
     }
     let one_for_all = one_for_all_additive(state, source, &plan)?;
-    let lethality = lethality_multiplier(state, source, &plan)?;
+    // LethalityPower is read per receiver in the fold below, as native reads
+    // it (#3671). The entry call's answer is discarded: it only keeps a
+    // malformed amount, source or play context refusing before the command's
+    // first mutation, zero-hit commands included.
+    //
+    // The ownership test made here also serves the command's first damage
+    // instance, because nothing between this line and that receiver's fold
+    // runs a callback (target selection and the batch entry only). Every
+    // later instance re-reads it, so a single-hit single-target command pays
+    // one slot read, as it did before.
+    let mut lethality_owned = state.powers.value(PowerId::Lethality) != 0;
+    let mut lethality_ownership_is_fresh = true;
+    if lethality_owned {
+        lethality_multiplier(state, source, &plan)?;
+    }
     let strike_dummy = source.strike_tag
         && plan
             .catalog
@@ -1684,9 +2013,18 @@ fn player_attack_inner_apply(
             // outgoing 3/4 term; Shrink's 7/10 sits after target-side
             // Vulnerable and Tracking.  All factors remain exact decimal
             // values until the one shared floor below.
-            damage = damage
-                .checked_mul(lethality)
-                .map_err(|_| overflow("attack damage"))?;
+            // LethalityPower, live for this receiver: a card play that
+            // started inside this command since the last read (a Hellraiser
+            // Strike) is already counted ([`lethality_multiplier`], #3671).
+            if !lethality_ownership_is_fresh {
+                lethality_owned = state.powers.value(PowerId::Lethality) != 0;
+            }
+            lethality_ownership_is_fresh = false;
+            if lethality_owned {
+                damage = damage
+                    .checked_mul(lethality_multiplier(state, source, &plan)?)
+                    .map_err(|_| overflow("attack damage"))?;
+            }
             if state.powers.value(PowerId::DoubleDamage) > 0 {
                 // Current v0.111.0 `DoubleDamagePower::
                 // ModifyDamageMultiplicative` RVA 0xa1ca8: one x2 listener
@@ -1719,8 +2057,10 @@ fn player_attack_inner_apply(
             }
             if gigantification {
                 // GigantificationPower.ModifyDamageMultiplicative RVA
-                // 0xa2a34: x3 inside the shared multiplier fold, before the
-                // one final floor, for every target and hit of the command.
+                // `0xa2ebc` (IL_0062-IL_0068; the `0xa2a34` cited here before
+                // #2696 is not a method of the v0.111.0 archive): x3 inside
+                // the shared multiplier fold, before the one final floor, for
+                // every target and hit of the command.
                 damage = damage
                     .checked_mul(DotNetDecimal::from_i64(3))
                     .map_err(|_| overflow("attack damage"))?;
@@ -1864,7 +2204,31 @@ fn player_attack_inner_apply(
             }
 
             // (5) Thorns retaliation, before the hit lands.
-            if thorns > 0 {
+            //
+            // The retaliation is its own `CreatureCmd.Damage` whose one
+            // target is the incoming dealer (`ThornsPower/
+            // <BeforeDamageReceived>d__4::MoveNext` `0x349954` IL_0065-IL_0086,
+            // gated only on `target == Owner`, a non-null dealer and the
+            // props, IL_0020-IL_0058). That command skips a dead target at
+            // its own receiver entry (`0x3e96c8` IL_0167-IL_0172, before
+            // `Hook.ModifyDamage` at IL_01b2), so a dealer an earlier
+            // receiver's Thorns killed in this same batch takes no second
+            // result: no Block spent, no HP lost, no history row, no
+            // listener. The receiver still commits below (#3639). A reviver
+            // (Fairy in a Bottle, Lizard Tail) runs inside the first
+            // retaliation's own Kill, so by this test the dealer it saved is
+            // alive again and is hit as usual (the same probe with Lizard
+            // Tail logs both retaliations and ends at 35 of 80).
+            //
+            // Live engine (headless harness, build v0.111.0 `41cef1ea`, seed
+            // `PROBE3639`, Ironclad at 5 HP against `TOADPOLES_WEAK`, Thorns
+            // 5 on both, Thunderclap): one `DamageReceived` on the player (5,
+            // killed), player at 0, both Toadpoles down 4.
+            let dealer_alive = match plan.dealer {
+                AttackDealer::Player => state.hp > 0,
+                AttackDealer::PlayerPet => state.fanouts.pet().osty().is_some(),
+            };
+            if thorns > 0 && dealer_alive {
                 // The thorny monster is the DEALER of the retaliation
                 // (`0x349954` IL_0065–IL_0086 passes `Owner` as the dealer and
                 // the incoming dealer as the receiver), so its identity must
@@ -1885,25 +2249,36 @@ fn player_attack_inner_apply(
                 // neither shortcut exists at the native await return site.
                 // We retain roster identity; a removed/replaced original
                 // receiver needs a distinct object projection and refuses.
-                // The one admitted retained-dead shape commits native's zero
+                // The admitted retained-dead shapes commit native's zero
                 // result (see [`thorns_receiver_after_retaliation`]).
-                match thorns_receiver_after_retaliation(
+                let receiver = thorns_receiver_after_retaliation(
                     state,
                     target,
                     original_uid,
                     batched,
                     plan.dealer,
-                )? {
-                    ThornsReceiver::Live => {}
-                    ThornsReceiver::RetainedDeadAtCombatEnd => {
-                        commit_thorns_dead_receiver_zero_result(
-                            state,
-                            target,
-                            plan.result_sink.as_deref_mut(),
-                            events,
-                        );
-                        continue;
+                )?;
+                if receiver != ThornsReceiver::Live {
+                    // Only the corpse of a continuing combat joins
+                    // `CombatHistory` (`0x3e96c8` IL_072c-IL_0764).
+                    let recorded = receiver == ThornsReceiver::RemovedDeadWhileCombatContinues;
+                    let zero = commit_thorns_dead_receiver_zero_result(
+                        state,
+                        target,
+                        recorded,
+                        plan.source_uid,
+                        plan.result_sink.as_deref_mut(),
+                        events,
+                    )?;
+                    if batched {
+                        // Native keeps the zero result in the command list
+                        // (`0x3e96c8` IL_0a65-IL_0a71). Here the slot only
+                        // feeds the defensive phase-2 guards of
+                        // [`finish_powered_damage_batch`]; nothing observable
+                        // depends on it.
+                        committed.push(zero);
                     }
+                    continue;
                 }
             }
 
@@ -1993,29 +2368,16 @@ fn player_attack_inner_apply(
                 .total_damage
                 .checked_add(first.overkill_damage)
                 .ok_or_else(|| overflow("omnislice spill"))?;
-            for target in alive_targets(state) {
-                if target == *original || state.history.over {
-                    continue;
-                }
-                let spill_uid = state.monsters[target].uid;
-                let spill_realised = damage_monster_inner(
-                    state,
-                    target,
-                    DotNetDecimal::from_i64(i64::from(spill)),
-                    false,
-                    true,
-                    AttackObservation {
-                        source_uid: plan.source_uid,
-                        result_sink: Some(results),
-                        dealer: plan.dealer,
-                        catalog: plan.catalog,
-                    },
-                    events,
-                )?;
-                if skittish_present && spill_realised > 0 {
-                    damaged.push(spill_uid);
-                }
-            }
+            omnislice_spill(
+                state,
+                plan.catalog,
+                plan.source_uid,
+                (*original, first.receiver_uid),
+                spill,
+                results,
+                skittish_present.then_some(&mut damaged),
+                events,
+            )?;
         }
     }
     // SkittishPower.AfterAttack (RVA `0xa7ac4`): the command's whole damaged
@@ -2053,7 +2415,11 @@ fn player_attack_inner_apply(
             .mutate_pet(|pet| pet.record_attack())
             .map_err(|_| overflow("osty attacks this turn"))?;
     }
-    if vigor != 0 && !damage_combat_is_ending(state) && !state.fanouts.player_hooks_deactivated() {
+    vigor_command.refuse_frame_owned_park(state)?;
+    if vigor_command.bound_here.is_some()
+        && !damage_combat_is_ending(state)
+        && !state.fanouts.player_hooks_deactivated()
+    {
         state.powers.set(PowerId::Vigor, SlotWire::Int, 0);
         note_power(events, Subject::Player, PowerId::Vigor, 0);
     }
@@ -2120,6 +2486,203 @@ fn player_attack_inner_apply(
             // sees at least one Flatten, even when only one copy is live.
             state.exact_piles = true;
         }
+    }
+    Ok(())
+}
+
+/// Omnislice's spill: the second `CreatureCmd.Damage` of its `OnPlay`
+/// (#3612).
+///
+/// Authority: archived v0.111.0 `sts2.dll`, SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// `Omnislice/<OnPlay>d__3::MoveNext` RVA `0x3aff94` is not an
+/// `AttackCommand` hit loop. Inside one `AttackContext` (IL_0045-IL_0057
+/// `AttackCommand::CreateContextAsync`; `AttackContext/<CreateAsync>d__5`
+/// `0x3f2314` IL_0044 fires `Hook::BeforeAttack` and
+/// `AttackContext/<DisposeAsync>d__7` `0x3f2414` IL_0047 `Hook::AfterAttack`,
+/// the pair the caller's powered command already brackets) it issues:
+///
+/// 1. IL_00d8-IL_0101 `Damage(choiceContext, cardPlay.Target,
+///    Damage.BaseValue, props 8, this, cardPlay)`: `Move`, a powered hit on the
+///    chosen target. The caller's hit loop.
+/// 2. IL_0174-IL_017c takes the first result and skips the rest when there is
+///    none. IL_0181-IL_01cb builds
+///    `GetTeammatesOf(result.Receiver).Except([cardPlay.Target])
+///    .Where(IsHittable)` (`<OnPlay>b__3_0` `0x3aff8a`), and IL_01d2-IL_01d9
+///    skips an empty list. There is no amount gate: a zero spill is still sent.
+/// 3. IL_01ea-IL_0218 ONE `Damage(choiceContext, list, TotalDamage +
+///    OverkillDamage, props 12, Owner.Creature, this, cardPlay)`: `Move |
+///    Unpowered`, dealt by the owner, card source the Omnislice itself.
+///
+/// So the spill is one batch of `CreatureCmd/<Damage>d__12::MoveNext` RVA
+/// `0x3e96c8`, with the phases [`enter_powered_damage_batch`] cites: every
+/// receiver commits (loop closing IL_0aa4) before the first result dispatches
+/// (IL_0ad9) and before the one `Kill` (IL_0eb4). When the dealer is dead its
+/// entry returns one zero `DamageResult` per target with no hook
+/// (IL_0079-IL_00af), which Omnislice still passes to `AddHit`: a player the
+/// primary hit's own Thorns killed changes no creature. Rust pushes no row for
+/// those zero results; the sink is read only for the first result, so that is
+/// unobservable. Nothing in the command reads the combat's outcome.
+///
+/// The list excludes the chosen target by object identity, not by slot.
+/// `StockPower/<AfterDeath>d__4::MoveNext` RVA `0x346280` IL_004e-IL_0090
+/// adds a replacement Axebot (`CreatureCmd::Add` on the owner's side and
+/// `SlotName`) inside the primary `Damage`'s `Kill`, a different creature in
+/// the same slot, and it is a hittable teammate when the list is built. Live
+/// engine, lone Axebot at 3 HP with Stock 2: the primary result is 3 with
+/// overkill 5, then the replacement takes the spill's 8.
+///
+/// Inside phase 1 each receiver's `Hook.BeforeDamageReceived` (IL_0261)
+/// reaches `ThornsPower/<BeforeDamageReceived>d__4::MoveNext` RVA `0x349954`,
+/// which gates on `target == Owner` (IL_0020-IL_002c), a non-null dealer
+/// (IL_0033-IL_0039) and then `IsPoweredAttack(props) || cardSource is
+/// Omnislice` (IL_0040-IL_0058). The spill is unpowered, and the `isinst
+/// Omnislice` arm at IL_004d-IL_0058 is what makes every Thorns holder it
+/// enters retaliate anyway: [`thorns_retaliation`], once per receiver, in
+/// receiver order, before that receiver's own commit. The retaliation's
+/// `Damage` skips a dead target (IL_0167-IL_0172), so a receiver reached after
+/// the player died retaliates against nobody.
+///
+/// A receiver its own retaliation killed (the player's Inferno answering the
+/// Thorns HP loss) still takes the computed spill as native's all-zero result,
+/// exactly as a powered receiver does: the body has no second liveness test
+/// between IL_02b9 and IL_04bc. [`thorns_receiver_after_retaliation`] decides
+/// which of those shapes are admitted, by the same conditions and names as
+/// for a powered hit, and [`commit_thorns_dead_receiver_zero_result`] carries
+/// the result. The zero row is unpowered, so it advances no powered-result
+/// counter. Inside a multi-receiver spill that shape refuses: a Thorns owner
+/// native can put beside a living enemy is a Toadpole, and Toadpoles come in
+/// pairs, so the spill it can receive has one receiver.
+///
+/// One receiver takes the sequential walk: with a single frozen result,
+/// "commit all, dispatch all, drain all" is the same walk.
+///
+/// The live engine agrees (headless harness, build v0.111.0 `41cef1ea`, seed
+/// `PROBE3612`, Ironclad against `TOADPOLES_WEAK`, both Toadpoles at 20 HP,
+/// Omnislice on the second). Thorns 2 on the first: the target's 8 (`Move`),
+/// the player's 2 (dealer the first Toadpole), the first Toadpole's 8
+/// (`Unpowered, Move`). Thorns on both: 2, 8, 2, 8. With Inferno 6 on the
+/// player: 8, 2, Inferno's 6 and 6, then the spill's 8. With the first
+/// Toadpole at 3 HP as well: 8, 2, Inferno kills it, 6 on the target, then a
+/// zero `Unpowered, Move` result on the removed corpse. Against `SLIMES_WEAK`
+/// with Thorns 2 and 3 on the two bystanders and the first at 7 HP: 8, 2, 7
+/// (killed), 3, 8, both spill results recorded before the death.
+#[cold]
+#[inline(never)]
+#[allow(clippy::too_many_arguments)]
+fn omnislice_spill(
+    state: &mut HotState,
+    catalog: Option<&Catalog>,
+    source_uid: Option<u32>,
+    primary: (usize, u32),
+    spill: i32,
+    results: &mut Vec<AttackDamageResult>,
+    mut damaged: Option<&mut Vec<u32>>,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if state.hp <= 0 {
+        return Ok(());
+    }
+    // `Except([cardPlay.Target])` is by object: the primary's roster entry
+    // while it still holds the primary's uid. A Stock respawn reuses that
+    // entry under a fresh uid and is a receiver.
+    let (original, primary_uid) = primary;
+    let mut targets = alive_targets(state);
+    targets.retain(|target| *target != original || state.monsters[*target].uid != primary_uid);
+    if targets.is_empty() {
+        return Ok(());
+    }
+    let amount = DotNetDecimal::from_i64(i64::from(spill));
+    let batched = targets.len() > 1;
+    let frame_depth = state.frames.len();
+    let mut committed = Vec::new();
+    if batched {
+        // The same roster authentication as the powered batch: the pending
+        // death receipt authenticates retained corpse reads in phases 2 and 3.
+        enter_powered_damage_batch(state)?;
+        committed.reserve(targets.len());
+    }
+    for target in targets {
+        // `0x3e96c8` IL_0167-IL_0172: a receiver an earlier receiver's
+        // retaliation killed is skipped at its own entry.
+        let monster = &state.monsters[target];
+        if monster.hp <= 0 {
+            continue;
+        }
+        let uid = monster.uid;
+        let thorns = monster.powers.value(PowerId::Thorns);
+        if thorns > 0 && state.hp > 0 {
+            thorns_retaliation(state, catalog, thorns, uid, events)?;
+            let receiver = thorns_receiver_after_retaliation(
+                state,
+                target,
+                uid,
+                batched,
+                AttackDealer::Player,
+            )?;
+            if receiver != ThornsReceiver::Live {
+                if batched {
+                    return Err(EngineRefusal::PowerOrderNotModeled(
+                        "Thorns retained dead receiver inside a damage batch",
+                    ));
+                }
+                // Unpowered: no powered-result counter to advance.
+                commit_thorns_dead_receiver_zero_result(
+                    state,
+                    target,
+                    false,
+                    source_uid,
+                    Some(results),
+                    events,
+                )?;
+                continue;
+            }
+        }
+        let observation = AttackObservation {
+            source_uid,
+            result_sink: Some(results),
+            dealer: AttackDealer::Player,
+            catalog,
+        };
+        let hp_lost = if batched {
+            // Defensive: the receiver was alive at the test above and, when it
+            // retaliated, classified `Live`, so the commit returns a result.
+            let Some(result) =
+                commit_monster_damage(state, target, amount, false, true, observation, events)?
+            else {
+                continue;
+            };
+            if result.hp_after <= 0 {
+                state.fanouts.register_batch_death(result.uid);
+            }
+            committed.push(result);
+            result.hp_lost_int
+        } else {
+            damage_monster_inner(state, target, amount, false, true, observation, events)?
+        };
+        if hp_lost > 0
+            && let Some(damaged) = damaged.as_deref_mut()
+        {
+            damaged.push(uid);
+        }
+    }
+    if batched {
+        // A receiver that survived its own commit and was then killed by a
+        // LATER receiver's retaliation (Inferno) reaches phase 2 as a frozen
+        // non-lethal result on a corpse. Native walks `AfterDamageGiven` and
+        // `AfterDamageReceived` (IL_0d27 false, IL_0d86) for a creature its
+        // nested Kill already removed and stripped; the shared dispatch would
+        // read the corpse's own powers instead. Not modeled: refused.
+        if committed
+            .iter()
+            .any(|result| result.hp_after > 0 && state.monsters[result.target].hp <= 0)
+        {
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                "Omnislice spill receiver killed after its commit",
+            ));
+        }
+        finish_unpowered_damage_batch(state, catalog, frame_depth, committed, events)?;
     }
     Ok(())
 }
@@ -2217,6 +2780,32 @@ fn finish_powered_damage_batch(
             return Err(EngineRefusal::PowerOrderNotModeled(
                 "attack Damage retained receiver replacement",
             ));
+        }
+        if result.zero_on_corpse {
+            // The zero result of a Thorns receiver its own retaliation killed
+            // (#2655). Its phase-2 walk is inert, which is what admitted it in
+            // phase 1 ([`thorns_dead_receiver_while_combat_continues`]).
+            //
+            // DEFENSIVE, not native: native re-tests nothing at this slot
+            // (IL_0d27 reads the frozen `WasTargetKilled`). These two guards
+            // fail closed if a later receiver's commit ever changed what made
+            // the walk inert: `MonarchsGazePower/<AfterDamageGiven>d__4::
+            // MoveNext` `0x33e544` IL_001d-IL_0061 has no result-amount gate,
+            // and a corpse standing again would own `AfterDamageReceived`
+            // listeners (IL_0d86). No command reaches either today, so they
+            // are driven with a forged result, like the retained-object
+            // guards beside them.
+            if state.monsters[result.target].hp > 0 {
+                return Err(EngineRefusal::PowerOrderNotModeled(
+                    "Thorns retained dead receiver restored inside a damage batch",
+                ));
+            }
+            if state.powers.value(PowerId::MonarchsGaze) != 0 {
+                return Err(EngineRefusal::PowerOrderNotModeled(
+                    "Thorns retained dead receiver under Monarch's Gaze",
+                ));
+            }
+            continue;
         }
         if dispatch_monster_damage_result(state, catalog, result, events)? {
             killed.push(result);
@@ -2365,17 +2954,76 @@ fn miniature_cannon_source_is_upgraded(
     Ok(live.identity.upgrade > 0)
 }
 
-/// Freeze LethalityPower's exact command-scoped multiplier before the first
-/// hit. Native requires a non-null owned CardModel source, but deliberately
-/// does not gate on dealer or Card.Type. A Play source qualifies only at
-/// authenticated native `CardPlay.CurrentPlayIndex == 0` **and** while no
-/// prior same-owner Attack play has started; its current Attack body makes the
-/// owner-filtered count one. A direct non-Play source contributes no current
-/// Play entry and therefore qualifies only while that count is zero. The two
-/// gates are independent because a non-Attack physical source may itself issue
-/// a powered attack on every replay. Current v0.111.0/41cef1ea IL:
-/// `LethalityPower.ModifyDamageMultiplicative` (`0xa4634`), active-play index
-/// gate IL_0042-IL_005e and owner-filtered history threshold IL_0066-IL_00c0.
+/// LethalityPower's multiplier for ONE damage instance: one receiver of one
+/// hit (#3671).
+///
+/// Authority: archived v0.111.0 `sts2.dll`, SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// `LethalityPower::ModifyDamageMultiplicative` RVA `0xa4634` caches nothing.
+/// Every call:
+/// - IL_000c-IL_0019 returns One unless the props are a powered attack;
+///   IL_001a-IL_0023 unless the card source is non-null; IL_0024-IL_003d
+///   unless `cardSource.Owner.Creature` is the power's owner. There is no
+///   dealer gate (an Osty command with the owner's card qualifies) and no
+///   `Card.Type` gate on the source.
+/// - IL_003e-IL_0065 returns One for a source in the Play pile
+///   (`CardPile.Type == 5`) whose `CurrentPlayIndex > 0`: a replay.
+/// - IL_0066-IL_0086 counts `CombatHistory.CardPlaysStarted` through
+///   `<ModifyDamageMultiplicative>b__4_0` RVA `0xa470a`: `HappenedThisTurn`
+///   (IL_0001-IL_000d), `CardPlay.Card.Type == Attack` (IL_000f-IL_0020) and
+///   `CardPlay.Player == Owner.Player` (IL_0022-IL_003a). No `IsAutoPlay` or
+///   `PlayIndex` test: an AutoPlayed card and each replay are rows like any
+///   other.
+/// - IL_0087-IL_00ab returns One when that count exceeds 1 for a source in
+///   the Play pile (its own row is in the count), 0 for any other source.
+/// - IL_00ac-IL_00cd otherwise returns `1 + Amount / 100`, with the live
+///   Amount.
+///
+/// The row it counts is written by `CardModel/<OnPlayWrapper>d__339::MoveNext`
+/// RVA `0x31b8d0` at IL_0626 (`CombatHistory::CardPlayStarted`), once per play
+/// index, after `Hook::BeforeCardPlayed` (IL_05a1) and before `OnPlay`
+/// (IL_0659). Both of that method's callers reach it: a manual
+/// `PlayCardAction` and `CardCmd::AutoPlay`.
+///
+/// When it is asked: `CreatureCmd/<Damage>d__12::MoveNext` RVA `0x3e96c8`
+/// calls `Hook::ModifyDamage` at IL_01b2 inside its receiver walk, once per
+/// living receiver, and that receiver's `Hook::BeforeDamageReceived` (IL_0261,
+/// where Thorns retaliates) runs before the next receiver's IL_01b2.
+/// `AttackCommand/<Execute>d__90::MoveNext` RVA `0x3f19c0` issues one such
+/// `Damage` per hit (IL_0724-IL_0743). So the rule is: receiver r of hit h of
+/// a command gets the multiplier iff, at that receiver's own IL_01b2, the
+/// owner has started no other Attack play this turn and the source is not on
+/// a replay.
+///
+/// A play that starts inside the command therefore changes the answer for
+/// every damage instance after it. Hellraiser AutoPlays a drawn Strike-tagged
+/// card (`HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` RVA
+/// `0x33c1a8` IL_012e) from Gremlin Horn's Draw in a death between two hits,
+/// or from Centennial Puzzle's Draw behind a receiver's Thorns; the latter
+/// sits after the triggering receiver's own read, so that receiver keeps the
+/// multiplier and the next receiver of the same hit has lost it.
+///
+/// Live engine (headless harness, build v0.111.0 `41cef1ea`, Ironclad against
+/// `TOADPOLES_WEAK`, Lethality 50). Seed `PROBE2696B2`, Gremlin Horn,
+/// Whirlwind at X = 3 killing a 5 HP Toadpole: 5 (killed), 7, the nested
+/// Strike's 6, 5, 5. Seed `B3671XK`, Centennial Puzzle and Thorns 2 on the
+/// first Toadpole, Whirlwind at X = 3: the nested Strike's 6, then 7 and 5
+/// (the two receivers of the first hit), 5 and 5, 5 and 5.
+///
+/// `history.owner_attack_plays_started_this_turn` is exactly that count: it
+/// is advanced where each play index records its `CardPlayStarted` row and
+/// reset with the turn, so nothing here walks history. The source's pile is
+/// re-read as native re-reads `cardSource.Pile`, by UID, and must be the same
+/// card apart from its upgrade level: native never reads the upgrade here,
+/// and a death inside the command can restore a Dampened source's
+/// ([`miniature_cannon_source_is_upgraded`], #3245).
+///
+/// Cold and out of line: the caller tests the live Amount first, so a state
+/// without Lethality pays one slot read per damage instance and never
+/// reaches this function.
+#[cold]
+#[inline(never)]
 fn lethality_multiplier(
     state: &HotState,
     source: &CardSpec,
@@ -2394,13 +3042,35 @@ fn lethality_multiplier(
     let catalog = plan.catalog.ok_or(EngineRefusal::MalformedArgs(
         "Lethality physical card source",
     ))?;
-    let pile = live_card_source_pile(
-        state,
-        catalog,
-        source,
-        source_uid,
-        "Lethality physical card source",
-    )?;
+    let mut matches = PileId::ALL
+        .into_iter()
+        .flat_map(|pile| {
+            state
+                .piles
+                .get(pile)
+                .as_slice()
+                .iter()
+                .map(move |card| (pile, card))
+        })
+        .filter(|(_, card)| card.uid == source_uid);
+    let first = matches.next();
+    let count = usize::from(first.is_some()) + matches.count();
+    let Some((pile, card)) = first.filter(|_| count == 1) else {
+        return Err(EngineRefusal::ActiveCardNotUnique {
+            uid: source_uid,
+            matches: count,
+        });
+    };
+    if !catalog.spec(card.atom).is_some_and(|live| {
+        CardIdentity {
+            upgrade: source.identity.upgrade,
+            ..live.identity
+        } == source.identity
+    }) {
+        return Err(EngineRefusal::MalformedArgs(
+            "Lethality physical card source",
+        ));
+    }
     let eligible = if pile == PileId::Play {
         let play_index = super::play::active_card_play_index(source_uid).ok_or(
             EngineRefusal::MalformedArgs("Lethality active play context"),
@@ -2919,6 +3589,21 @@ fn damage_monsters_with_optional_catalog(
             results.push(result);
         }
     }
+    finish_unpowered_damage_batch(state, catalog, frame_depth, results, events)
+}
+
+/// Run phases 2 and 3 of one unpowered `CreatureCmd.Damage` batch and close
+/// it: the frozen results dispatch in commit order (`0x3e96c8`
+/// IL_0ad9-IL_0e84), then the one `Kill` drains the queued receivers
+/// (IL_0eb4). Shared by [`damage_monsters_with_optional_catalog`] and
+/// [`omnislice_spill`], whose phase 1 differs.
+fn finish_unpowered_damage_batch(
+    state: &mut HotState,
+    catalog: Option<&Catalog>,
+    frame_depth: usize,
+    results: Vec<FrozenMonsterDamage>,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
     let mut killed = Vec::new();
     for result in results {
         if state
@@ -3285,6 +3970,7 @@ fn commit_monster_damage(
         powered,
         source_uid: observation.source_uid,
         dealer: observation.dealer,
+        zero_on_corpse: false,
     }))
 }
 
@@ -3301,6 +3987,11 @@ struct FrozenMonsterDamage {
     powered: bool,
     source_uid: Option<u32>,
     dealer: AttackDealer,
+    /// The all-zero result native commits onto a Thorns receiver that its own
+    /// retaliation killed ([`commit_thorns_dead_receiver_zero_result`]). It
+    /// holds a phase-2 slot of a powered batch and dispatches nothing; the
+    /// slot exists only for that phase's defensive guards.
+    zero_on_corpse: bool,
 }
 
 fn dispatch_monster_damage_result(
@@ -3320,6 +4011,7 @@ fn dispatch_monster_damage_result(
         powered,
         source_uid,
         dealer,
+        zero_on_corpse: _,
     } = result;
     // Native CreatureCmd.<Damage>d__12::MoveNext 0x3e96c8 dispatches
     // AfterBlockBroken (IL_0b53) before AfterDamageGiven (IL_0cc4).
@@ -3975,6 +4667,10 @@ enum ThornsReceiver {
     /// caused, and that kill ended the combat (#2655, witness KD13JGCDPB3U
     /// fight 0: Thorns 2 -> Inferno 6 over the last Toadpole at 1 HP).
     RetainedDeadAtCombatEnd,
+    /// The same creature, killed and removed from combat by a nested command
+    /// the retaliation caused, while other enemies keep the combat going
+    /// (#2655): [`thorns_dead_receiver_while_combat_continues`].
+    RemovedDeadWhileCombatContinues,
 }
 
 /// Classify the receiver after [`thorns_retaliation`] returns (#2655).
@@ -3993,14 +4689,13 @@ enum ThornsReceiver {
 /// - **Replaced receiver** (roster slot gone or holding another uid): the
 ///   native object is the retained original creature, a distinct projection
 ///   this roster cannot carry. Refused.
-/// - **Inside a powered batch** (`batched`): the zero result would enter the
-///   phase-2 result walk beside live receivers. Refused.
+/// - **Inside a powered batch at combat end** (`batched` with `history.over`,
+///   or any batched pet attack): not a shape the batch can produce, since the
+///   outcome latches only when the batch leaves. Refused.
 /// - **Pet dealer**: Osty-dealt results reach SicEm/Reaper Form/Underworld
 ///   dealer-side gates this walk does not audit. Refused.
-/// - **Combat continues** (`!history.over`): native records
-///   `CombatHistory.DamageReceived` for the zero result (IL_072c-IL_0764 is
-///   gated only on `IsInProgress && !IsEnding`) and per-turn result readers
-///   would see it. Refused.
+/// - **Combat continues** (`!history.over`): a second admitted shape with its
+///   own conditions, [`thorns_dead_receiver_while_combat_continues`].
 /// - **Player dead**: a different terminal shape. Refused.
 /// - **Retained Block**: `DamageBlockInternal` RVA `0x11d568` IL_001f-IL_002b
 ///   would absorb `min(Block, amount)` into a dead creature and reach the
@@ -4032,12 +4727,13 @@ fn thorns_receiver_after_retaliation(
     if monster.hp > 0 {
         return Ok(ThornsReceiver::Live);
     }
+    if dealer == AttackDealer::Player && !state.history.over {
+        return thorns_dead_receiver_while_combat_continues(state, monster, batched);
+    }
     let refusal = if batched {
         "Thorns retained dead receiver inside a damage batch"
     } else if dealer != AttackDealer::Player {
         "Thorns retained dead receiver of a pet attack"
-    } else if !state.history.over {
-        "Thorns retained dead receiver while combat continues"
     } else if state.hp <= 0 {
         "Thorns retained dead receiver after player death"
     } else if monster.block != 0 {
@@ -4052,9 +4748,138 @@ fn thorns_receiver_after_retaliation(
     Err(EngineRefusal::PowerOrderNotModeled(refusal))
 }
 
+/// The owner-dealt arm of [`thorns_receiver_after_retaliation`] for a combat
+/// that goes on (#2655): the receiver is the same creature, a nested command
+/// of its own Thorns retaliation killed it, and other enemies still stand.
+///
+/// Authority: archived v0.111.0 `sts2.dll`, SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// Native commits the same all-zero result as at a combat end
+/// ([`commit_thorns_dead_receiver_zero_result`] carries the `LoseHpInternal`
+/// arithmetic, which reads nothing but the corpse's HP and Block). Two things
+/// differ while the combat continues, and they are what this arm decides:
+///
+/// 1. **The result is recorded.** `CreatureCmd.<Damage>d__12::MoveNext` RVA
+///    `0x3e96c8` IL_072c-IL_0742 tests `IsInProgress && !IsEnding`, and
+///    IL_0744-IL_0764 then calls `CombatHistory.DamageReceived` (`0x1387e8`,
+///    IL_0027 `newobj DamageReceivedEntry`) for the zero result. The DLL has
+///    five readers of that entry type (`OfType<DamageReceivedEntry>` census):
+///    EmotionChip `0x930d5` and TearAsunder `0x3c20f6` match the owner's own
+///    creature as receiver, Spite `0x3bdfae` the creature it is asked about
+///    with `UnblockedDamage > 0`, and BeatIntoShape `0x38be64` and GangUp
+///    `0x3a0c9c` the card's chosen target with no amount gate. The last two
+///    are the per-receiver powered-result counters, so the commit advances
+///    the owner counter exactly as a live hit does.
+/// 2. **The hooks are live.** `Hook.AfterDamageGiven` (IL_0cc4) and
+///    `Hook.AfterDamageReceived` (IL_0d86, reached because IL_0d27
+///    `WasTargetKilled` is false) were already not ending gated, so the
+///    listener census in [`commit_thorns_dead_receiver_zero_result`] covers
+///    them here too. What it leans on is that the corpse owns no listener,
+///    which at a combat end followed from the combat being over and here has
+///    to be established per receiver.
+///
+/// Admitted only for a receiver that native removed from combat and stripped:
+///
+/// - **A Toadpole.** A Thorns owner can die beside a living enemy only in
+///   `ToadpolesWeak`, whose `GenerateMonsters` (`0xd5854` IL_000c, IL_0023)
+///   builds two Toadpoles. `Monster<SpinyToad>` is built only by
+///   `SpinyToadNormal::GenerateMonsters` (`0xd550f` IL_0001), alone, so a
+///   Spiny Toad dying while another enemy lives is not a native state and
+///   keeps the refusal. `Apply<ThornsPower>` has four monster call
+///   sites in the DLL (MethodSpec census): `Toadpole/<SpikeSpitMove>d__25`
+///   `0x371a78` IL_0043, `Toadpole/<SpikenMove>d__27` `0x371c20` IL_00ac,
+///   `SpinyToad/<SpikesMove>d__23` `0x36cc1c` IL_00bd and
+///   `SpinyToad/<ExplosionMove>d__24` `0x36c918` IL_00e7; the other four
+///   (BronzeScales, LiquidBronze, Abrasive, Caltrops) are the player's own.
+///   Neither monster type overrides any hook (their method tables hold only
+///   moves, HP and animation members). Neither is given one of the six
+///   shipped powers that keep a dead creature in combat
+///   (`ShouldCreatureBeRemovedFromCombatAfterDeath` overrides: Adaptable
+///   `0x9f608`, DieForYou `0xa1861`, Illusion `0xa3b33`, PainfulStabs
+///   `0xa5564`, Reattach `0xa665b`, SteamEruption `0xa85fe`; the seventh,
+///   `0xab4a2`, is a test mock). So
+///   `KillWithoutCheckingWinCondition` `0x3ebe90` takes the removal arm for
+///   them: IL_0330 `ShouldCreatureBeRemovedFromCombatAfterDeath` is true,
+///   IL_04d5 `ICombatState.RemoveCreature` drops the creature from the
+///   listener walk, and IL_04f1 `RemoveAllPowersAfterDeath` strips it. An
+///   Illusion holder on the roster would veto that strip
+///   ([`illusion_removal_veto_in_combat`]). Any other kind carrying Thorns,
+///   or a Thorns owner beside an Illusion holder, is a document native cannot
+///   produce, and its death shape (a retained Test Subject, Illusion, segment
+///   or Giant) is not audited here. Refused, under the name this guard always
+///   had.
+/// - **On the player's side turn.** IL_04c1-IL_04c6 skips `RemoveCreature`
+///   while `MonsterModel.IsPerformingMove`, which is only inside the enemy
+///   side's own move. `player_side_active` is the `CurrentSide` marker.
+/// - **Its Kill has run.** A receiver whose lethal HP is still a pending
+///   batch receipt, or whose death body is still open, has not reached
+///   IL_04d5 yet and still owns its powers. Refused. Outside this command's
+///   own batch an open synchronous Damage is refused too: that is the callback
+///   wall #2651 set and this issue keeps, not something this arm proves.
+/// - **Not ending.** With no living primary enemy and no veto
+///   ([`damage_combat_is_ending`], `IsCombatEnding` `0x135854`) IL_0742 skips
+///   the history row. The ending-but-not-over window is refused rather than
+///   given a third result shape.
+/// - **Omnislice is not an exception** (#3612). Its spill is a second
+///   `CreatureCmd.Damage` over the target's teammates built from this result
+///   (`Omnislice/<OnPlay>d__3::MoveNext` `0x3aff94` IL_0174-IL_0218): the
+///   zero result is a non-null first result (IL_017c), so a zero spill is
+///   sent whenever a teammate is hittable, and each Thorns holder it enters
+///   retaliates. [`omnislice_spill`] models that command, and its own
+///   receivers come back through this function.
+/// - Player dead, retained Block and Monarch's Gaze refuse for the reasons
+///   [`thorns_receiver_after_retaliation`] gives.
+///
+/// Inside a powered batch (`batched`) the zero result additionally keeps its
+/// slot in the phase-2 walk, where [`finish_powered_damage_batch`] tests two
+/// live facts. That slot is a defensive guard, not modeled native behaviour:
+/// native re-tests nothing there, and no command can change either fact
+/// between phase 1 and the slot, so removing it changes no reachable result.
+///
+/// The live engine agrees. On the headless harness (`python/harness`, build
+/// v0.111.0 `41cef1ea`, seed `PROBE2655`, Ironclad against `TOADPOLES_WEAK`
+/// with Inferno 6 applied, the first Toadpole at 3 HP with Thorns 2, the
+/// second at 20 HP), Strike, Twin Strike and Thunderclap each log, in order:
+/// the Thorns result on the player (2), Inferno's two results (the receiver
+/// killed), then `DamageReceived` for the receiver with `UnblockedDamage` 0,
+/// `WasTargetKilled` false and props `Move`. The receiver's `CombatState` is
+/// null and its power list empty by then. Twin Strike logs that row once and
+/// costs 2 HP, and Thunderclap's next row is the second Toadpole's own 4.
+fn thorns_dead_receiver_while_combat_continues(
+    state: &HotState,
+    monster: &HotMonster,
+    batched: bool,
+) -> Result<ThornsReceiver, EngineRefusal> {
+    let refusal = if state.fanouts.monster_death_is_pending(monster.uid)
+        || state.fanouts.monster_death_cleanup_is_active(monster.uid)
+    {
+        "Thorns retained dead receiver before its Kill"
+    } else if !batched && state.fanouts.synchronous_damage_is_active() {
+        "Thorns retained dead receiver inside a Damage callback"
+    } else if state.hp <= 0 {
+        "Thorns retained dead receiver after player death"
+    } else if monster.block != 0 {
+        "Thorns retained dead receiver with Block"
+    } else if state.powers.value(PowerId::MonarchsGaze) != 0 {
+        "Thorns retained dead receiver under Monarch's Gaze"
+    } else if damage_combat_is_ending(state) {
+        "Thorns retained dead receiver while combat is ending"
+    } else if !state.player_side_active
+        || monster.kind != MonsterKind::Toadpole
+        || illusion_removal_veto_in_combat(state)
+    {
+        "Thorns retained dead receiver while combat continues"
+    } else {
+        return Ok(ThornsReceiver::RemovedDeadWhileCombatContinues);
+    };
+    Err(EngineRefusal::PowerOrderNotModeled(refusal))
+}
+
 /// Native's commit of an already computed powered hit onto a receiver that a
-/// nested kill during Thorns retaliation removed while ending the combat
-/// (#2655). Admitted only by [`thorns_receiver_after_retaliation`].
+/// nested kill during Thorns retaliation removed (#2655). Admitted only by
+/// [`thorns_receiver_after_retaliation`]: at a combat end (`recorded` false),
+/// or onto a removed corpse while the combat continues (`recorded` true).
 ///
 /// `Creature.LoseHpInternal` RVA `0x11d5b8`: IL_000c-IL_0029 latches
 /// `wasKilled = CurrentHp > 0 && amount >= CurrentHp`, false at 0 HP;
@@ -4074,9 +4899,12 @@ fn thorns_receiver_after_retaliation(
 /// `ModifyUnblockedDamageTarget`'s one override, DieForYou `0xa181c`
 /// IL_0001-IL_001c, redirects only its pet owner's creature.
 ///
-/// Result phase, with the combat already ending:
-/// - `CombatHistory.DamageReceived` is skipped (IL_0731-IL_0742
-///   `IsInProgress && !IsEnding`), so no per-turn result counter moves.
+/// Result phase:
+/// - `CombatHistory.DamageReceived` is gated on IL_0731-IL_0742
+///   `IsInProgress && !IsEnding`. At a combat end it is skipped and no
+///   per-turn result counter moves. While the combat continues IL_0764 records
+///   the zero result, and `recorded` advances the receiver's owner counter as
+///   [`commit_monster_damage`] does for a live hit.
 /// - IL_0b2f `WasBlockBroken` false; IL_0bb6-IL_0bbc `UnblockedDamage <= 0`
 ///   skips only `AfterCurrentHpChanged`. The branch lands on IL_0c41, the
 ///   player `DamageDealt += UnblockedDamage` block, which adds 0 (no
@@ -4101,20 +4929,38 @@ fn thorns_receiver_after_retaliation(
 ///   owns none of them after death. Lagavulin Matriarch is refused above.
 /// - IL_0eb4 `Kill` receives an empty killed list.
 ///
-/// The result still joins the command's `_results` (IL_0a6c), so the sink
-/// gets a zero, unkilled row; Echoing Slash counts no kill from it.
+/// The result still joins the command's `_results` (IL_0a6c, then
+/// `AttackCommand.<Execute>d__90::MoveNext` `0x3f19c0` IL_07a5
+/// `AddResultsInternal`), so the sink gets a zero, unkilled row; Echoing Slash
+/// counts no kill from it. The command's next hit then finds the receiver dead
+/// (IL_0168-IL_0196 rebuilds `validTargets` from `IsAlive`).
+///
+/// Returns the frozen result, which a powered batch keeps in its phase-2 walk.
 fn commit_thorns_dead_receiver_zero_result(
-    state: &HotState,
+    state: &mut HotState,
     target: usize,
+    recorded: bool,
+    source_uid: Option<u32>,
     result_sink: Option<&mut Vec<AttackDamageResult>>,
     events: &mut Vec<Event>,
-) {
-    let uid = state.monsters[target].uid;
+) -> Result<FrozenMonsterDamage, EngineRefusal> {
+    if recorded {
+        // The admitted dealer is the owner (`AttackDealer::Player`), whose
+        // results count on the owner side of the Gang Up quotient. Only this
+        // arm borrows the roster mutably: the combat-end commit writes nothing.
+        let count = state.monsters[target]
+            .owner_powered_damage_results_this_turn
+            .checked_add(1)
+            .ok_or_else(|| overflow("owner_powered_damage_results_this_turn"))?;
+        state.monsters_mut()[target].owner_powered_damage_results_this_turn = count;
+    }
+    let monster = &state.monsters[target];
+    let (uid, kind, hp_after) = (monster.uid, monster.kind, monster.hp);
     events.push(Event::MonsterDamaged {
         uid,
         blocked: 0,
         unblocked: 0,
-        hp: state.monsters[target].hp,
+        hp: hp_after,
     });
     if let Some(results) = result_sink {
         results.push(AttackDamageResult {
@@ -4125,6 +4971,19 @@ fn commit_thorns_dead_receiver_zero_result(
             was_target_killed: false,
         });
     }
+    Ok(FrozenMonsterDamage {
+        target,
+        uid,
+        kind,
+        hp_after,
+        block_broken: false,
+        blocked_int: 0,
+        hp_lost_int: 0,
+        powered: true,
+        source_uid,
+        dealer: AttackDealer::Player,
+        zero_on_corpse: true,
+    })
 }
 
 /// `ThornsPower/<BeforeDamageReceived>d__4::MoveNext` RVA `0x349954`,
@@ -4772,7 +5631,42 @@ fn finish_monster_death_body(
             // only the restored scalar survives this call.
             unwind_monster_temp_strength_wrappers(monster, upkeep)?;
         }
+        // An illusion's `StrengthPower` instance outlives its death, so its
+        // ledger row does too (#3674). `Creature::RemoveAllPowersAfterDeath`
+        // `0x11dbac` keeps every power its filter `0x3dad34` selects, and
+        // that filter keeps a power `Hook::ShouldPowerBeRemovedOnDeath`
+        // (IL_000a) vetoes. `IllusionPower::ShouldPowerBeRemovedOnDeath`
+        // `0xa3a80` vetoes every power whose `get_Type` is not 2
+        // (IL_0002-IL_0008, IL_0017), and `StrengthPower::get_Type` `0xa8943`
+        // is the constant 1 at any amount: this hook reads `Type`, not
+        // `TypeForCurrentAmount`, so a negative Strength is kept as well.
+        // `RemoveAllPowersInternalExcept` `0x11db40` removes the others one
+        // `RemoveInternal` at a time (IL_0039), an in-place `List.Remove`, so
+        // the kept instance is the same object: its applier is the one
+        // `set_Applier` wrote, and it now precedes everything applied later.
+        // `IllusionPower/<ReviveMove>d__22` heals and applies no Strength.
+        //
+        // Resetting the whole ledger here left the downed illusion, and the
+        // revived one after it, with a Strength no row described. The next
+        // Strength write then gave up ([`write_monster_strength`]), while a
+        // reload gave the same monster an `unknown` row
+        // ([`materialize_entering_strength_provenance`]): the session's
+        // document did not project back to itself (65 census projections in
+        // `f6706a4e38f307ca`).
+        //
+        // Only the Strength row is carried. The acquisition tokens are all
+        // non-temporary debuffs, which the hook does not veto. A temporary
+        // wrapper is kept natively too (`ITemporaryPower`, IL_000b-IL_0014)
+        // and this keeps its scalar, but its rows stay dropped as before: an
+        // unrecorded wrapper refuses wherever it is read
+        // ([`misery_scalar_state_is_exact`]).
+        let kept_strength = illusion
+            .then(|| super::monsters::strength_attachment_record(monster))
+            .flatten();
         monster.misery_debuff_order = Default::default();
+        if let Some(record) = kept_strength {
+            monster.misery_debuff_order.push_attachment(record);
+        }
         monster.powers.set(PowerId::Doom, SlotWire::Int, 0);
         monster.powers.set(PowerId::Demise, SlotWire::Int, 0);
         monster.powers.set(PowerId::Shrink, SlotWire::Int, 0);
@@ -6714,8 +7608,10 @@ fn damage_player_unpowered_owner_with(
     match rupture_batch {
         None => rupture_after_owner_hp_loss(state, hp_lost, events)?,
         Some(batch) => {
+            // The batching arm sits behind the same side gate as the
+            // immediate one (see [`rupture_after_owner_hp_loss`], #3632).
             let rupture = state.powers.value(PowerId::Rupture);
-            if hp_lost > 0 && rupture > 0 {
+            if hp_lost > 0 && rupture > 0 && state.player_side_active {
                 *batch = rupture;
             }
         }
@@ -6889,13 +7785,33 @@ pub(crate) fn damage_player_from_power_with_catalog(
 /// registered active card's own loss batches instead; see
 /// [`damage_player_from_card_batching_rupture`] and
 /// `play::card_body_hp_loss` (#3298).
+///
+/// The side gate is tested here, not left to the callers (#3632). v0.111.0
+/// DLL 9cb4f1ad, `0x342fec`: after `target == Owner` (IL_0020-IL_002c) and
+/// `result.UnblockedDamage > 0` (IL_0033-IL_003f), IL_0046-IL_005c compares
+/// `CombatState.CurrentSide` with `Owner.Side` and leaves at IL_005e when
+/// they differ. Both arms come after it: the immediate Strength
+/// (IL_0063-IL_00a2) and the registered-card batch (IL_00fc-IL_0122), so
+/// [`damage_player_unpowered_owner_with`]'s batching arm tests the same
+/// marker. [`HotState::player_side_active`] is `CurrentSide`, as for Inferno
+/// in [`inferno_after_player_hp_loss`], whose doc gives the enemy-side path
+/// that reaches both listeners: a Strike that Hellraiser AutoPlays out of
+/// Centennial Puzzle's Draw during a monster's attack, entering a Thorns
+/// holder. The retaliation's `cardSource` is null
+/// (`ThornsPower/<BeforeDamageReceived>d__4::MoveNext` `0x349954`
+/// IL_0065-IL_0086), so it is the immediate arm that the gate silences
+/// there.
+///
+/// Three hook bodies in the DLL read `CurrentSide` from `AfterDamageReceived`
+/// (`get_CurrentSide` call census): this one, Inferno `0x33d084` and Demon
+/// Tongue `0x322adc`. No `AfterCurrentHpChanged` body reads it.
 fn rupture_after_owner_hp_loss(
     state: &mut HotState,
     hp_lost: i32,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     let rupture = state.powers.value(PowerId::Rupture);
-    if hp_lost > 0 && rupture > 0 {
+    if hp_lost > 0 && rupture > 0 && state.player_side_active {
         apply_owner_strength(state, rupture, events)?;
     }
     Ok(())
@@ -6931,7 +7847,37 @@ fn rupture_after_owner_hp_loss(
 /// leaves. That is the same position the per-enemy walk had: batching changes
 /// only what happens inside Inferno's command.
 ///
-/// Lethal player damage and enemy-turn damage never fire it.
+/// The side gate is tested here, not left to the callers (#3622). IL_0046-
+/// IL_0061 compares `Owner.CombatState.CurrentSide` with `Owner.Side` and
+/// leaves at IL_0063 when they differ, so the owner's HP loss on the enemy
+/// side damages nobody. `CurrentSide` has three writes in the DLL
+/// (`set_CurrentSide` call census): `CombatManager::SwitchSides` RVA
+/// `0x136b08` IL_0053-IL_005a (Enemy) and IL_0061-IL_0068 (Player), and
+/// `CombatState::.ctor` RVA `0x136f30` IL_0057 (Player).
+/// [`HotState::player_side_active`] is that marker, as for Demon Tongue in
+/// [`after_owner_damage_received_relics`].
+///
+/// The owner's own turn issues most of what reaches this listener: turn
+/// ticks, turn-end hand cards, side-end powers, potions, played cards.
+/// [`lose_player_max_hp_apply`] passes its own side flag for Paper Cuts. But a
+/// card can also be played on the enemy side. A monster's hit arms Centennial
+/// Puzzle (`after_owner_damage_received_relics`), whose Draw runs inside that
+/// attack; `HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` RVA
+/// `0x33c1a8` AutoPlays a drawn Strike with no side test of its own
+/// (IL_0043-IL_0049 the Strike tag, IL_012e `CardCmd::AutoPlay`); and that
+/// Strike entering a Thorns holder costs the owner HP through
+/// [`thorns_retaliation`] while `CurrentSide` is still Enemy. Before the gate
+/// that loss fanned Inferno over every enemy.
+///
+/// The live engine agrees both ways (headless harness, build v0.111.0
+/// `41cef1ea`, Ironclad against `TOADPOLES_WEAK`, Inferno 6 and Hellraiser
+/// applied, Centennial Puzzle owned, both Toadpoles with Thorns 2): each
+/// Strike the Puzzle draws during the Toadpole's attack logs the Thorns
+/// result on the player and the Strike's own result and nothing else, while
+/// each Strike of the next hand draw, on the player side, logs the Thorns
+/// result, then Inferno's 6 on both Toadpoles, then the Strike's result.
+///
+/// Lethal player damage never fires it either.
 fn inferno_after_player_hp_loss(
     state: &mut HotState,
     catalog: Option<&Catalog>,
@@ -6939,7 +7885,7 @@ fn inferno_after_player_hp_loss(
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     let amount = state.powers.value(PowerId::Inferno);
-    if hp_lost <= 0 || amount <= 0 || state.history.over {
+    if hp_lost <= 0 || amount <= 0 || state.history.over || !state.player_side_active {
         return Ok(());
     }
     let targets = alive_targets(state);
@@ -12413,6 +13359,77 @@ mod tests {
         assert!(events.is_empty());
     }
 
+    /// #3671: the per-receiver read finds the source by UID and accepts a
+    /// live row that differs only in its upgrade (a Dampened source restored
+    /// by a death inside the command, #3245); native reads only the card's
+    /// pile and play index. Any other card under that UID still refuses.
+    #[test]
+    fn lethality_source_is_matched_by_uid_apart_from_its_upgrade() {
+        let strike = |upgrade| CardIdentity {
+            id: CardId::StrikeIronclad,
+            upgrade,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let dampened = builder.intern(strike(0)).unwrap();
+        let restored = builder.intern(strike(1)).unwrap();
+        let other = builder
+            .intern(CardIdentity {
+                id: CardId::DefendIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let source = *catalog.spec(dampened).unwrap();
+        let case = |atom| {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 200));
+            state.powers.set(PowerId::Lethality, SlotWire::Int, 50);
+            state.history.owner_attack_plays_started_this_turn = 1;
+            state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+                uid: 9,
+                atom,
+                flags: 0,
+            });
+            state
+        };
+        let active = crate::engine::play::ActivePlayGuard::enter(9).unwrap();
+        active.set_play_index(0).unwrap();
+
+        let mut state = case(restored);
+        player_attack_from_card(
+            &mut state,
+            (&catalog, &source, 9),
+            &[0],
+            6,
+            2,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(state.monsters[0].hp, 182, "9 and 9");
+
+        let mut state = case(other);
+        let before = state.clone();
+        assert_eq!(
+            player_attack_from_card(
+                &mut state,
+                (&catalog, &source, 9),
+                &[0],
+                6,
+                2,
+                &mut Vec::new(),
+            ),
+            Err(EngineRefusal::MalformedArgs(
+                "Lethality physical card source"
+            ))
+        );
+        assert_eq!(state, before);
+    }
+
     #[test]
     fn lethality_play_source_refuses_missing_or_wrong_active_context_atomically() {
         let identity = CardIdentity {
@@ -14372,6 +15389,143 @@ mod tests {
         assert_eq!(state.monsters[0].hp, 20);
     }
 
+    /// #3622: `InfernoPower/<AfterDamageReceived>d__8::MoveNext` `0x33d084`
+    /// IL_0046-IL_0063 leaves unless `CurrentSide == Owner.Side`. Every caller
+    /// of the listener is driven on both sides: the owner loses the same HP
+    /// either way, and only the owner's own side fans Inferno over the
+    /// enemies.
+    #[test]
+    fn inferno_answers_an_owner_hp_loss_only_on_the_owners_side() {
+        let (catalog, _) = source_catalog(CardId::StrikeIronclad);
+        type Loss = fn(&mut HotState, &Catalog, &mut Vec<Event>);
+        let losses: [(&str, Loss); 4] = [
+            ("card or power owner damage", |state, _, events| {
+                assert!(damage_player_from_card(state, 2, false, events).unwrap());
+            }),
+            ("active card owner damage", |state, catalog, events| {
+                assert_eq!(
+                    damage_player_from_active_card_even_if_ending(
+                        state, catalog, 0, 2, false, events
+                    ),
+                    Ok((true, 2))
+                );
+            }),
+            ("Thorns retaliation", |state, catalog, events| {
+                thorns_retaliation(state, Some(catalog), 2, 1, events).unwrap();
+            }),
+            ("card-sourced max HP loss", |state, catalog, events| {
+                state.max_hp = state.hp;
+                lose_player_max_hp_apply(state, Some(catalog), 2, true, "test", events).unwrap();
+            }),
+        ];
+        for (name, lose) in losses {
+            for owner_side in [true, false] {
+                // The max-HP command carries its own side flag
+                // (`current_side_is_owner`), which already kept the enemy-side
+                // Paper Cuts form away from the listener; its enemy-side row
+                // here is the listener's gate under an owner-side flag.
+                let mut state = HotState::at_defaults();
+                state.hp = 20;
+                state.player_side_active = owner_side;
+                for uid in [1, 2] {
+                    let mut monster = HotMonster::new(MonsterKind::Toadpole, 20);
+                    monster.uid = uid;
+                    state.monsters_mut().push(monster);
+                }
+                state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+                let mut events = Vec::new();
+
+                lose(&mut state, &catalog, &mut events);
+
+                assert_eq!(state.hp, 18, "{name} owner_side={owner_side}");
+                let expected = if owner_side { 14 } else { 20 };
+                assert_eq!(
+                    state
+                        .monsters
+                        .iter()
+                        .map(|monster| monster.hp)
+                        .collect::<Vec<_>>(),
+                    [expected, expected],
+                    "{name} owner_side={owner_side}"
+                );
+                assert_eq!(
+                    events
+                        .iter()
+                        .filter(|event| matches!(event, Event::MonsterDamaged { .. }))
+                        .count(),
+                    if owner_side { 2 } else { 0 },
+                    "{name} owner_side={owner_side}"
+                );
+            }
+        }
+    }
+
+    /// #3632: `RupturePower/<AfterDamageReceived>d__9::MoveNext` `0x342fec`
+    /// IL_0046-IL_005e leaves unless `CurrentSide == Owner.Side`, before both
+    /// of its arms. Every caller of the listener is driven on both sides: the
+    /// owner loses the same HP either way, and only the owner's own side
+    /// grants Strength (immediate arm) or reports an amount for the played
+    /// card's entry (batching arm).
+    #[test]
+    fn rupture_answers_an_owner_hp_loss_only_on_the_owners_side() {
+        let (catalog, _) = source_catalog(CardId::StrikeIronclad);
+        // Each returns the amount the batching arm reported, if it is one.
+        type Loss = fn(&mut HotState, &Catalog, &mut Vec<Event>) -> Option<i32>;
+        let losses: [(&str, Loss); 4] = [
+            ("card or power owner damage", |state, _, events| {
+                assert!(damage_player_from_card(state, 2, false, events).unwrap());
+                None
+            }),
+            ("registered card owner damage", |state, catalog, events| {
+                Some(
+                    damage_player_from_card_batching_rupture(state, catalog, 2, false, events)
+                        .unwrap(),
+                )
+            }),
+            ("Thorns retaliation", |state, catalog, events| {
+                thorns_retaliation(state, Some(catalog), 2, 1, events).unwrap();
+                None
+            }),
+            ("card-sourced max HP loss", |state, catalog, events| {
+                state.max_hp = state.hp;
+                lose_player_max_hp_apply(state, Some(catalog), 2, true, "test", events).unwrap();
+                None
+            }),
+        ];
+        for (name, lose) in losses {
+            for owner_side in [true, false] {
+                // As in the Inferno test above: the max-HP command's own flag
+                // is true on both rows, so its enemy-side row is the
+                // listener's gate.
+                let mut state = HotState::at_defaults();
+                state.hp = 20;
+                state.player_side_active = owner_side;
+                let mut monster = HotMonster::new(MonsterKind::Toadpole, 20);
+                monster.uid = 1;
+                state.monsters_mut().push(monster);
+                state.powers.set(PowerId::Rupture, SlotWire::Int, 3);
+                let mut events = Vec::new();
+
+                let batch = lose(&mut state, &catalog, &mut events);
+
+                assert_eq!(state.hp, 18, "{name} owner_side={owner_side}");
+                let granted = if owner_side { 3 } else { 0 };
+                match batch {
+                    // The batching arm never applies Strength itself.
+                    Some(batch) => {
+                        assert_eq!(batch, granted, "{name} owner_side={owner_side}");
+                        assert_eq!(state.powers.value(PowerId::Strength), 0, "{name}");
+                    }
+                    None => assert_eq!(
+                        state.powers.value(PowerId::Strength),
+                        granted,
+                        "{name} owner_side={owner_side}"
+                    ),
+                }
+            }
+        }
+    }
+
     /// #3274 witness and control. `InfernoPower/<AfterDamageReceived>d__8`
     /// (`0x33d084`) awaits ONE `CreatureCmd::Damage` over `HittableEnemies`
     /// (IL_00be-IL_00e1); `<Damage>d__12` (`0x3e96c8`) commits every HP loss
@@ -14854,6 +16008,220 @@ mod tests {
         assert_eq!(state.powers.value(PowerId::Vigor), 0);
     }
 
+    /// #2696: `VigorPower.BeforeAttack` RVA `0xaa7ac` binds the first command
+    /// (IL_0076-IL_0078) and returns for every command issued while one is
+    /// bound (IL_0033-IL_0040); `ModifyDamageAdditive` RVA `0xaa83c` then
+    /// answers a different card with zero (IL_0031-IL_0051) and the bound
+    /// card with the live Amount (IL_006f-IL_007a). Only the binder holds the
+    /// guard, so only its drop releases the binding.
+    #[test]
+    fn vigor_binds_the_first_command_and_answers_nested_commands_by_source() {
+        let outer = VigorCommand::bind(5, Some(7)).unwrap();
+        assert_eq!(outer.amount, 5);
+        assert!(outer.bound_here.is_some());
+
+        let other_card = VigorCommand::bind(5, Some(8)).unwrap();
+        assert_eq!(other_card.amount, 0);
+        assert!(other_card.bound_here.is_none());
+
+        let same_card = VigorCommand::bind(5, Some(7)).unwrap();
+        assert_eq!(same_card.amount, 5);
+        assert!(same_card.bound_here.is_none());
+
+        assert!(matches!(
+            VigorCommand::bind(5, None),
+            Err(EngineRefusal::MalformedArgs(
+                "Vigor command binding source uid"
+            ))
+        ));
+
+        // A nested command ending releases nothing.
+        drop(other_card);
+        drop(same_card);
+        assert_eq!(VigorCommand::bind(5, Some(9)).unwrap().amount, 0);
+
+        drop(outer);
+        let next = VigorCommand::bind(5, Some(9)).unwrap();
+        assert_eq!(next.amount, 5);
+        assert!(next.bound_here.is_some());
+        drop(next);
+
+        // A command without a physical uid binds, but nothing can be placed
+        // inside it.
+        let uidless = VigorCommand::bind(5, None).unwrap();
+        assert!(uidless.bound_here.is_some());
+        assert!(matches!(
+            VigorCommand::bind(5, Some(7)),
+            Err(EngineRefusal::MalformedArgs(
+                "Vigor command binding source uid"
+            ))
+        ));
+        drop(uidless);
+        assert_eq!(VIGOR_BOUND_COMMAND.with(Cell::get), None);
+    }
+
+    /// #2696, through the command itself. Inside a command bound to card 7,
+    /// a different card's command folds no Vigor and its AfterAttack leaves
+    /// the power alone; the bound card's own command folds it and also
+    /// leaves it (`VigorPower/<AfterAttack>d__8::MoveNext` RVA `0x34a824`
+    /// IL_0024-IL_0032 compares the command, not the card). The bound
+    /// command, issued with no binding open, folds it and consumes it.
+    #[test]
+    fn a_command_nested_in_a_vigor_bound_command_never_consumes() {
+        let mut builder = CatalogBuilder::new();
+        let atom = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let source = *catalog.spec(atom).unwrap();
+        let attack = |state: &mut HotState, uid: u32| {
+            player_attack_from_card(state, (&catalog, &source, uid), &[0], 6, 1, &mut Vec::new())
+        };
+        let mut state = HotState::at_defaults();
+        state.hp = 100;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+
+        let outer = VigorCommand::bind(3, Some(7)).unwrap();
+        attack(&mut state, 8).unwrap();
+        assert_eq!(state.monsters[0].hp, 94, "a different card: 6");
+        assert_eq!(state.powers.value(PowerId::Vigor), 3);
+        attack(&mut state, 7).unwrap();
+        assert_eq!(state.monsters[0].hp, 85, "the bound card: 6 + 3");
+        assert_eq!(state.powers.value(PowerId::Vigor), 3);
+        drop(outer);
+
+        attack(&mut state, 8).unwrap();
+        assert_eq!(state.monsters[0].hp, 76, "the first command: 6 + 3");
+        assert_eq!(state.powers.value(PowerId::Vigor), 0);
+        assert_eq!(VIGOR_BOUND_COMMAND.with(Cell::get), None);
+    }
+
+    /// #2696: a refusal inside a Vigor-bound command releases the binding
+    /// and leaves the caller's state untouched. The target's Thorns arms
+    /// Centennial Puzzle's Draw, which a catalog-less command cannot run, so
+    /// the command refuses after it bound. The same state then runs an
+    /// ordinary first command.
+    #[test]
+    fn a_refused_vigor_bound_command_releases_its_binding() {
+        let mut state = HotState::at_defaults();
+        state.hp = 100;
+        let mut thorny = HotMonster::new(MonsterKind::Toadpole, 100);
+        thorny.powers.set(PowerId::Thorns, SlotWire::Int, 2);
+        state.monsters_mut().push(thorny);
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.monsters_mut()[1].uid = 1;
+        state.monsters_mut()[1].slot = 1;
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+        state.fanouts.set_puzzle_armed(true);
+        let entry = state.clone();
+        let source = source_spec(CardId::StrikeIronclad);
+
+        assert_eq!(
+            player_attack(&mut state, &source, &[0], 6, 1, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "Centennial Puzzle damage requires catalog"
+            ))
+        );
+        assert_eq!(state, entry);
+        assert_eq!(VIGOR_BOUND_COMMAND.with(Cell::get), None);
+
+        player_attack(&mut state, &source, &[1], 6, 1, &mut Vec::new()).unwrap();
+        assert_eq!(state.monsters[1].hp, 91);
+        assert_eq!(state.powers.value(PowerId::Vigor), 0);
+    }
+
+    /// #2696: the binding has no canonical carrier, so a choice a callback
+    /// leaves pending in the state inside the bound command refuses by name.
+    /// Forged here: the selection is planted between the command's
+    /// BeforeAttack and its tail. A selection that was already pending when
+    /// the command bound is not this command's, and a nested command is not
+    /// the one that checks.
+    #[test]
+    fn a_choice_left_pending_inside_a_vigor_bound_command_refuses() {
+        let forged = || {
+            Some(std::sync::Arc::new(
+                crate::hot::PendingSelection::relic_selection(),
+            ))
+        };
+        let plan = |uid| AttackPlan {
+            targeting: AttackTargeting::Fixed(&[0]),
+            base: 6,
+            decimal_base: None,
+            hits: 1,
+            source_uid: Some(uid),
+            frozen_target_identity: None,
+            catalog: None,
+            context_mode: AttackContextMode::Ordinary,
+            result_sink: None,
+            dealer: AttackDealer::Player,
+        };
+        let mut state = HotState::at_defaults();
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+
+        let command = VigorCommand::before_attack(&state, &plan(7)).unwrap();
+        assert_eq!(command.refuse_frame_owned_park(&state), Ok(()));
+        let nested = VigorCommand::before_attack(&state, &plan(8)).unwrap();
+        state.pending = forged();
+        assert_eq!(nested.refuse_frame_owned_park(&state), Ok(()));
+        assert_eq!(
+            command.refuse_frame_owned_park(&state),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                CHOICE_INSIDE_VIGOR_BOUND_COMMAND
+            ))
+        );
+        drop(nested);
+        drop(command);
+
+        // Already pending at BeforeAttack: not created inside the command.
+        let command = VigorCommand::before_attack(&state, &plan(7)).unwrap();
+        assert_eq!(command.refuse_frame_owned_park(&state), Ok(()));
+        // Replaced inside the command: refused.
+        state.pending = forged();
+        assert!(command.refuse_frame_owned_park(&state).is_err());
+        drop(command);
+        assert_eq!(VIGOR_BOUND_COMMAND.with(Cell::get), None);
+    }
+
+    /// #2696: Osty's command has a different Attacker, so it neither binds
+    /// nor reads the owner's Vigor (`BeforeAttack` RVA `0xaa7ac`
+    /// IL_000c-IL_0018, `ModifyDamageAdditive` RVA `0xaa83c`
+    /// IL_000c-IL_0014). A command issued inside it would be the first
+    /// eligible one. Unchanged from `main`.
+    #[test]
+    fn an_osty_command_neither_binds_nor_reads_the_owners_vigor() {
+        let (catalog, source, _) = pet_attack_catalog();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.fanouts.set_osty(Some((5, 5))).unwrap();
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 3);
+
+        player_pet_attack_from_card(
+            &mut state,
+            (&catalog, &source, 7),
+            &[0],
+            10,
+            1,
+            &mut Vec::new(),
+        )
+        .unwrap();
+
+        assert_eq!(state.monsters[0].hp, 90);
+        assert_eq!(state.powers.value(PowerId::Vigor), 3);
+        assert_eq!(VIGOR_BOUND_COMMAND.with(Cell::get), None);
+    }
+
     /// #3483: a player `AttackCommand` issued while the combat is ending or
     /// over returns at entry (`AttackCommand/<Execute>d__90::MoveNext` RVA
     /// `0x3f19c0` IL_0067-008a), before BeforeAttack (IL_00d8). Vigor and
@@ -15122,33 +16490,176 @@ mod tests {
         );
     }
 
-    #[test]
-    fn thorns_dead_receiver_while_combat_continues_refuses_atomically() {
+    /// [`thorns_inferno_last_receiver_state`] with a second, plain Toadpole
+    /// that survives Inferno, so the receiver's death leaves the combat going.
+    fn thorns_inferno_receiver_and_survivor_state() -> HotState {
         let mut state = thorns_inferno_last_receiver_state();
+        let mut survivor = HotMonster::new(MonsterKind::Toadpole, 50);
+        survivor.uid = 1;
+        survivor.slot = 1;
+        state.monsters_mut().push(survivor);
         state
-            .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 50));
-        let source = source_spec(CardId::StrikeIronclad);
-        let mut events = Vec::new();
+    }
 
-        let before = state.clone();
-        assert_eq!(
-            player_attack(&mut state, &source, &[0], 1, 1, &mut events),
-            Err(EngineRefusal::PowerOrderNotModeled(
-                "Thorns retained dead receiver while combat continues"
-            ))
-        );
-        assert_eq!(state, before);
-        assert!(events.is_empty());
+    /// #2655: the receiver's own Thorns retaliation fires Inferno, which kills
+    /// it while another enemy lives. `0x3e96c8` has no liveness test between
+    /// IL_02b9 and `LoseHpInternal` (IL_04bc), so the hit commits a zero
+    /// result onto the corpse, and IL_0764 records it in `CombatHistory`
+    /// because the combat is not ending.
+    #[test]
+    fn thorns_inferno_killing_a_receiver_while_combat_continues_records_a_zero_result() {
+        // One hit, then two: the second hit finds no live fixed target and
+        // leaves (`0x3f19c0` IL_0168-IL_01b3), so both commands end alike.
+        for hits in [1, 2] {
+            let mut state = thorns_inferno_receiver_and_survivor_state();
+            let source = source_spec(CardId::StrikeIronclad);
+            let mut events = Vec::new();
+
+            player_attack(&mut state, &source, &[0], 1, hits, &mut events).unwrap();
+
+            assert_eq!(state.hp, 9, "one retaliation only");
+            assert!(!state.history.over);
+            assert_eq!(state.monsters[0].hp, 0);
+            assert_eq!(state.monsters[1].hp, 48, "Inferno 2, and no powered hit");
+            assert_eq!(state.monsters[0].owner_powered_damage_results_this_turn, 1);
+            assert_eq!(state.monsters[1].owner_powered_damage_results_this_turn, 0);
+            assert!(!state.fanouts.synchronous_damage_is_active());
+            // AfterAttack still runs in a live combat and spends Vigor.
+            assert_eq!(state.powers.value(PowerId::Vigor), 0);
+            assert_eq!(
+                events
+                    .iter()
+                    .filter(|event| matches!(event, Event::MonsterDied { .. }))
+                    .collect::<Vec<_>>(),
+                [&Event::MonsterDied { uid: 0 }]
+            );
+            let died = events
+                .iter()
+                .position(|event| matches!(event, Event::MonsterDied { .. }))
+                .unwrap();
+            assert_eq!(
+                events[died + 1],
+                Event::MonsterDamaged {
+                    uid: 0,
+                    blocked: 0,
+                    unblocked: 0,
+                    hp: 0
+                },
+                "the in-flight hit commits after the nested Kill"
+            );
+            assert!(
+                !events[died + 2..]
+                    .iter()
+                    .any(|event| matches!(event, Event::MonsterDamaged { .. })),
+                "{events:?}"
+            );
+        }
     }
 
     #[test]
-    fn thorns_dead_receiver_inside_a_powered_batch_refuses_atomically() {
+    fn thorns_dead_receiver_of_a_continuing_combat_joins_the_results_unkilled() {
+        let (catalog, atom) = source_catalog(CardId::StrikeIronclad);
+        let spec = *catalog.spec(atom).unwrap();
+        let mut state = thorns_inferno_receiver_and_survivor_state();
+        state.monsters_mut()[0].uid = 41;
+        state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+            uid: 9,
+            atom,
+            flags: 0,
+        });
+
+        let results = player_attack_results_from_card(
+            &mut state,
+            (&catalog, &spec, 9),
+            &[0],
+            6,
+            1,
+            &mut Vec::new(),
+        )
+        .unwrap();
+
+        assert!(!state.history.over);
+        assert_eq!(
+            results,
+            [AttackDamageResult {
+                target: 0,
+                receiver_uid: 41,
+                total_damage: 0,
+                overkill_damage: 0,
+                was_target_killed: false,
+            }],
+            "Inferno's kill is not this command's: a Fatal reader sees no kill"
+        );
+        assert_eq!(state.monsters[0].owner_powered_damage_results_this_turn, 1);
+    }
+
+    /// The same receiver inside a powered batch: its zero result is committed
+    /// in phase 1 and the later receiver still takes its own hit, with its
+    /// modifiers rebuilt on the post-Inferno state (`0x3e96c8` IL_0a99-IL_0aa4
+    /// advances the receiver loop; nothing re-tests the dealer or the batch).
+    #[test]
+    fn thorns_dead_receiver_inside_a_powered_batch_commits_zero_and_the_batch_goes_on() {
+        for survivor_thorns in [0, 1] {
+            let mut state = thorns_inferno_receiver_and_survivor_state();
+            state.monsters_mut()[1]
+                .powers
+                .set(PowerId::Thorns, SlotWire::Int, survivor_thorns);
+            let source = source_spec(CardId::StrikeIronclad);
+            let mut events = Vec::new();
+
+            player_attack(&mut state, &source, &[0, 1], 1, 1, &mut events).unwrap();
+
+            // Each retaliation costs 1 HP and fires Inferno 2 over the living.
+            assert_eq!(state.hp, 9 - survivor_thorns);
+            assert!(!state.history.over);
+            assert_eq!(state.monsters[0].hp, 0);
+            // 50 - Inferno 2 [- Inferno 2] - (1 + Vigor 3).
+            assert_eq!(state.monsters[1].hp, 44 - 2 * survivor_thorns);
+            assert_eq!(state.monsters[0].owner_powered_damage_results_this_turn, 1);
+            assert_eq!(state.monsters[1].owner_powered_damage_results_this_turn, 1);
+            assert!(!state.fanouts.synchronous_damage_is_active());
+            assert_eq!(state.powers.value(PowerId::Vigor), 0);
+            let zero = events
+                .iter()
+                .position(|event| {
+                    *event
+                        == Event::MonsterDamaged {
+                            uid: 0,
+                            blocked: 0,
+                            unblocked: 0,
+                            hp: 0,
+                        }
+                })
+                .expect("zero result");
+            assert_eq!(events[zero - 1], Event::MonsterDied { uid: 0 });
+            assert_eq!(
+                events
+                    .iter()
+                    .rfind(|event| matches!(event, Event::MonsterDamaged { .. })),
+                Some(&Event::MonsterDamaged {
+                    uid: 1,
+                    blocked: 0,
+                    unblocked: 4,
+                    hp: 44 - 2 * survivor_thorns,
+                }),
+                "the later receiver's own hit lands after the zero commit"
+            );
+        }
+    }
+
+    /// An earlier receiver of the same batch already holds a lethal commit, so
+    /// once Inferno kills the thorny one no primary enemy lives: native
+    /// `IsEnding` skips the history row (`0x3e96c8` IL_0742) while the outcome
+    /// has not latched. That window stays a named, atomic refusal.
+    #[test]
+    fn thorns_dead_receiver_in_an_ending_batch_refuses_atomically() {
         let mut state = thorns_inferno_last_receiver_state();
-        state
-            .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 50));
-        state.monsters_mut()[1].uid = 1;
+        state.monsters_mut()[0].uid = 1;
+        state.monsters_mut()[0].slot = 1;
+        let mut first = HotMonster::new(MonsterKind::Toadpole, 3);
+        first.uid = 0;
+        first.slot = 0;
+        state.monsters_mut().insert(0, first);
         let source = source_spec(CardId::StrikeIronclad);
         let mut events = Vec::new();
 
@@ -15156,11 +16667,963 @@ mod tests {
         assert_eq!(
             player_attack(&mut state, &source, &[0, 1], 1, 1, &mut events),
             Err(EngineRefusal::PowerOrderNotModeled(
-                "Thorns retained dead receiver inside a damage batch"
+                "Thorns retained dead receiver while combat is ending"
             ))
         );
         assert_eq!(state, before);
         assert!(events.is_empty());
+    }
+
+    /// #3612 fixture: Omnislice in Play (uid 9) against Toadpoles given as
+    /// `(hp, thorns)`, uid and slot equal to the roster index.
+    fn omnislice_state(monsters: &[(i32, i32)]) -> (crate::catalog::Catalog, CardSpec, HotState) {
+        let (catalog, atom) = source_catalog(CardId::Omnislice);
+        let spec = *catalog.spec(atom).unwrap();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+            uid: 9,
+            atom,
+            flags: 0,
+        });
+        for (index, (hp, thorns)) in monsters.iter().copied().enumerate() {
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, hp);
+            monster.uid = index as u32;
+            monster.slot = index as i32;
+            if thorns != 0 {
+                monster.powers.set(PowerId::Thorns, SlotWire::Int, thorns);
+            }
+            state.monsters_mut().push(monster);
+        }
+        (catalog, spec, state)
+    }
+
+    fn play_omnislice(
+        state: &mut HotState,
+        catalog: &crate::catalog::Catalog,
+        spec: &CardSpec,
+        target: usize,
+        base: i64,
+        events: &mut Vec<Event>,
+    ) -> Result<(), EngineRefusal> {
+        player_attack_context_from_card(
+            state,
+            (catalog, spec, 9),
+            &[target],
+            base,
+            AttackContextMode::Omnislice,
+            events,
+        )
+    }
+
+    /// The command's damage rows, in order: `Err(hp_lost)` for the player,
+    /// `Ok((uid, unblocked, hp))` for a monster.
+    fn damage_rows(events: &[Event]) -> Vec<Result<(u32, i32, i32), i32>> {
+        events
+            .iter()
+            .filter_map(|event| match *event {
+                Event::PlayerDamaged { hp_lost, .. } => Some(Err(hp_lost)),
+                Event::MonsterDamaged {
+                    uid, unblocked, hp, ..
+                } => Some(Ok((uid, unblocked, hp))),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// #3612: `ThornsPower/<BeforeDamageReceived>d__4::MoveNext` `0x349954`
+    /// IL_004d-IL_0058 retaliates for an Omnislice card source although the
+    /// spill is unpowered. One retaliation per Thorns holder the command
+    /// enters, each before that receiver's own commit. Rows as the live
+    /// engine logs them (`TOADPOLES_WEAK`, both at 20 HP, Omnislice on the
+    /// second).
+    #[test]
+    fn omnislice_spill_draws_one_thorns_retaliation_per_receiver() {
+        // Thorns on the bystander only: 8, 2, 8.
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (20, 0)]);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 48);
+        assert_eq!(
+            damage_rows(&events),
+            [Ok((1, 8, 12)), Err(2), Ok((0, 8, 12))]
+        );
+        // The spill is unpowered: only the primary result is a powered row.
+        assert_eq!(state.monsters[0].owner_powered_damage_results_this_turn, 0);
+        assert_eq!(state.monsters[1].owner_powered_damage_results_this_turn, 1);
+
+        // Thorns on both: 2, 8, 2, 8.
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (20, 2)]);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 46);
+        assert_eq!(
+            damage_rows(&events),
+            [Err(2), Ok((1, 8, 12)), Err(2), Ok((0, 8, 12))]
+        );
+
+        // No Thorns: unchanged, no player row.
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 0), (20, 0)]);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 50);
+        assert_eq!(damage_rows(&events), [Ok((1, 8, 12)), Ok((0, 8, 12))]);
+    }
+
+    /// #3612: the spill is ONE `CreatureCmd.Damage` over the teammates
+    /// (`0x3aff94` IL_01ea-IL_0218), so every receiver retaliates and commits
+    /// in order before the first death drains (`0x3e96c8` IL_0aa4, IL_0eb4).
+    /// The live engine against `SLIMES_WEAK` (Thorns 2 and 3 on the
+    /// bystanders, the first at 7 HP) logs 8, 2, 7 killed, 3, 8.
+    #[test]
+    fn omnislice_spill_onto_two_thorns_receivers_is_one_batch() {
+        let (catalog, spec, mut state) = omnislice_state(&[(7, 2), (20, 3), (20, 0)]);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 2, 8, &mut events).unwrap();
+
+        assert_eq!(state.hp, 45, "2 and 3");
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Ok((2, 8, 12)),
+                Err(2),
+                Ok((0, 8, -1)),
+                Err(3),
+                Ok((1, 8, 12)),
+            ]
+        );
+        let last_commit = events
+            .iter()
+            .rposition(|event| matches!(event, Event::MonsterDamaged { .. }))
+            .unwrap();
+        let death = events
+            .iter()
+            .position(|event| matches!(event, Event::MonsterDied { uid: 0 }))
+            .unwrap();
+        assert!(last_commit < death, "{events:?}");
+        assert!(!state.fanouts.synchronous_damage_is_active());
+        assert!(!state.history.over);
+    }
+
+    /// #3612: a spill that kills two receivers commits both before either
+    /// death (the per-target walk killed the first before the second took its
+    /// HP loss), and ends the combat once when it leaves.
+    #[test]
+    fn omnislice_spill_killing_two_receivers_drains_both_after_both_commit() {
+        for (target_hp, over) in [(20, false), (8, true)] {
+            let (catalog, spec, mut state) = omnislice_state(&[(5, 0), (5, 0), (target_hp, 0)]);
+            let mut events = Vec::new();
+            play_omnislice(&mut state, &catalog, &spec, 2, 8, &mut events).unwrap();
+
+            let kinds: Vec<_> = events
+                .iter()
+                .filter_map(|event| match *event {
+                    Event::MonsterDamaged { uid, .. } => Some(('d', uid)),
+                    Event::MonsterDied { uid } => Some(('k', uid)),
+                    _ => None,
+                })
+                .collect();
+            if over {
+                // The primary kill drains at once (its own single command);
+                // the spill's two commits still precede its two deaths.
+                assert_eq!(
+                    kinds,
+                    [('d', 2), ('k', 2), ('d', 0), ('d', 1), ('k', 0), ('k', 1)]
+                );
+            } else {
+                assert_eq!(kinds, [('d', 2), ('d', 0), ('d', 1), ('k', 0), ('k', 1)]);
+            }
+            assert_eq!(state.history.over, over);
+            assert_eq!(
+                events
+                    .iter()
+                    .filter(|event| matches!(event, Event::CombatOver { .. }))
+                    .count(),
+                usize::from(over)
+            );
+            assert!(!state.fanouts.synchronous_damage_is_active());
+        }
+    }
+
+    /// #3612: there is no amount gate on the spill (`0x3aff94`
+    /// IL_01d2-IL_01d9 tests only the list), and Thorns' gate reads the card
+    /// source, not the amount. A zero spill still retaliates.
+    #[test]
+    fn a_zero_omnislice_spill_still_retaliates() {
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (20, 0)]);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 0, &mut events).unwrap();
+        assert_eq!(state.hp, 48);
+        assert_eq!(
+            damage_rows(&events),
+            [Ok((1, 0, 20)), Err(2), Ok((0, 0, 20))]
+        );
+    }
+
+    /// #3612 with Inferno: the retaliation's HP loss fans Inferno over both
+    /// Toadpoles before the spill receiver's own commit. Live engine: 8, 2,
+    /// 6 and 6, then the spill's 8.
+    #[test]
+    fn omnislice_spill_retaliation_fires_inferno_before_the_receiver_commits() {
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (20, 0)]);
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 48);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Ok((1, 8, 12)),
+                Err(2),
+                Ok((0, 6, 14)),
+                Ok((1, 6, 6)),
+                Ok((0, 8, 6)),
+            ]
+        );
+    }
+
+    /// #3612 over #2655: a spill receiver its own retaliation killed takes
+    /// native's zero result (`0x3e96c8` has no liveness test between IL_02b9
+    /// and IL_04bc). Live engine, first Toadpole at 3 HP with Thorns 2,
+    /// Inferno 6: 8, 2, Inferno kills it, 6 on the target, then a zero
+    /// `Unpowered, Move` row on the removed corpse. The row is unpowered, so
+    /// no powered-result counter moves.
+    #[test]
+    fn an_inferno_killed_omnislice_spill_receiver_takes_a_zero_result() {
+        let (catalog, spec, mut state) = omnislice_state(&[(3, 2), (20, 0)]);
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+
+        assert_eq!(state.hp, 48);
+        assert!(!state.history.over);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Ok((1, 8, 12)),
+                Err(2),
+                Ok((0, 6, -3)),
+                Ok((1, 6, 6)),
+                Ok((0, 0, -3)),
+            ]
+        );
+        let death = events
+            .iter()
+            .position(|event| matches!(event, Event::MonsterDied { uid: 0 }))
+            .unwrap();
+        assert!(
+            matches!(
+                events[death + 1],
+                Event::MonsterDamaged {
+                    uid: 0,
+                    unblocked: 0,
+                    ..
+                }
+            ),
+            "the zero row follows the nested Kill: {events:?}"
+        );
+        assert_eq!(state.monsters[0].owner_powered_damage_results_this_turn, 0);
+        assert!(!state.fanouts.synchronous_damage_is_active());
+
+        // The same kill ending the combat: the #2989 shape, still a zero row.
+        let (catalog, spec, mut state) = omnislice_state(&[(3, 2), (14, 0)]);
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert!(state.history.over);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Ok((1, 8, 6)),
+                Err(2),
+                Ok((0, 6, -3)),
+                Ok((1, 6, 0)),
+                Ok((0, 0, -3)),
+            ]
+        );
+    }
+
+    /// #3612 over #2655, the overlap #3616 refused as "Thorns retained dead
+    /// Omnislice receiver": the PRIMARY target dies to its own retaliation.
+    /// Its zero result is still Omnislice's first result (`0x3aff94`
+    /// IL_0174-IL_017c tests only for null), so a zero spill is sent to the
+    /// teammates and a Thorns holder among them retaliates. Live engine,
+    /// target at 3 HP with Thorns 2, Inferno 6: with a thorny bystander 2,
+    /// 6, target killed, zero `Move` row, 2, 6, zero `Unpowered, Move` row
+    /// (player 80 -> 76, bystander 20 -> 8); with a plain bystander 2, 6,
+    /// killed, zero, zero (80 -> 78, 20 -> 14).
+    #[test]
+    fn an_inferno_killed_omnislice_target_still_sends_a_zero_spill() {
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (3, 2)]);
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 46);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Err(2),
+                Ok((0, 6, 14)),
+                Ok((1, 6, -3)),
+                Ok((1, 0, -3)),
+                Err(2),
+                Ok((0, 6, 8)),
+                Ok((0, 0, 8)),
+            ]
+        );
+        // The primary zero row is a recorded powered result on the corpse;
+        // the spill row is unpowered.
+        assert_eq!(state.monsters[1].owner_powered_damage_results_this_turn, 1);
+        assert_eq!(state.monsters[0].owner_powered_damage_results_this_turn, 0);
+        assert!(!state.history.over);
+
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 0), (3, 2)]);
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 48);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Err(2),
+                Ok((0, 6, 14)),
+                Ok((1, 6, -3)),
+                Ok((1, 0, -3)),
+                Ok((0, 0, 14)),
+            ]
+        );
+    }
+
+    /// #3612: the command is rehearsed on a clone whenever Omnislice meets a
+    /// living Thorns holder or two or more living enemies, which covers every
+    /// refusal site the spill adds after the primary result has committed.
+    /// Four of them, each leaving the state untouched: a retained dead
+    /// receiver inside a multi-receiver spill (no native roster builds one);
+    /// an Imbalanced Thorns owner; a receiver killed by a LATER receiver's
+    /// retaliation after its own non-lethal commit; and, with no Thorns
+    /// anywhere, the batch's own roster authentication.
+    #[test]
+    fn omnislice_spill_refusals_are_atomic() {
+        let (catalog, spec, mut batch) = omnislice_state(&[(3, 2), (20, 0), (20, 0)]);
+        batch.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let (_, _, mut imbalanced) = omnislice_state(&[(20, 2), (20, 0)]);
+        imbalanced.monsters_mut()[0].kind = MonsterKind::BowlbugRock;
+        // Receiver 0 (plain, 12 HP) commits 8 and lives at 4; receiver 1's
+        // Thorns then fires Inferno 6, which kills it.
+        let (_, _, mut late) = omnislice_state(&[(12, 0), (20, 2), (20, 0)]);
+        late.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        // A Queen roster that fails its own authentication, and no Thorns.
+        let (_, _, mut queen) = omnislice_state(&[(20, 0), (20, 0), (20, 0)]);
+        queen.monsters_mut()[0].kind = MonsterKind::Queen;
+        assert!(!crate::engine::monsters::queen_roster_state_is_valid(
+            &queen
+        ));
+        for (mut state, target, refusal) in [
+            (
+                batch,
+                2,
+                EngineRefusal::PowerOrderNotModeled(
+                    "Thorns retained dead receiver inside a damage batch",
+                ),
+            ),
+            (
+                imbalanced,
+                1,
+                EngineRefusal::PowerOrderNotModeled("Imbalanced owner outside its own attack"),
+            ),
+            (
+                late,
+                2,
+                EngineRefusal::PowerOrderNotModeled(
+                    "Omnislice spill receiver killed after its commit",
+                ),
+            ),
+            (
+                queen,
+                2,
+                EngineRefusal::MalformedArgs("Queen/Amalgam attack batch"),
+            ),
+        ] {
+            let before = state.clone();
+            let mut events = Vec::new();
+            assert_eq!(
+                play_omnislice(&mut state, &catalog, &spec, target, 8, &mut events),
+                Err(refusal.clone())
+            );
+            assert_eq!(state, before, "{refusal:?}");
+            assert!(events.is_empty(), "{refusal:?}");
+        }
+    }
+
+    /// #3612: a receiver an EARLIER receiver's retaliation killed is skipped
+    /// at its own entry (`0x3e96c8` IL_0167-IL_0172) and gets no row.
+    /// Receiver 0's Thorns fires Inferno 6, which kills receiver 1 (6 HP)
+    /// inside its own nested batch; receiver 0 then takes the spill.
+    #[test]
+    fn omnislice_spill_skips_a_receiver_an_earlier_retaliation_killed() {
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (6, 0), (30, 0)]);
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 2, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 48);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Ok((2, 8, 22)),
+                Err(2),
+                Ok((0, 6, 14)),
+                Ok((1, 6, 0)),
+                Ok((2, 6, 16)),
+                Ok((0, 8, 6)),
+            ]
+        );
+        assert!(!state.fanouts.synchronous_damage_is_active());
+        assert!(!state.history.over);
+    }
+
+    /// #3612: the spill list excludes the chosen target by object
+    /// (`0x3aff94` IL_0192-IL_01a2), and `StockPower/<AfterDeath>d__4`
+    /// (`0x346280` IL_004e-IL_0090) adds the replacement Axebot inside the
+    /// primary `Damage`'s Kill. So the replacement, a different creature in
+    /// the same slot, takes the spill. Live engine, lone Axebot at 3 HP with
+    /// Stock 2: (3, overkill 5, killed), then the replacement's 8.
+    #[test]
+    fn omnislice_spills_onto_the_stock_replacement_of_its_own_target() {
+        let (catalog, spec, mut state) = omnislice_state(&[]);
+        let mut axebot = HotMonster::new(MonsterKind::Axebot, 3);
+        axebot.max_hp = 76;
+        axebot.powers.set(PowerId::Stock, SlotWire::Int, 2);
+        state.monsters_mut().push(axebot);
+        let lone = state.clone();
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 0, 8, &mut events).unwrap();
+
+        let replacement = &state.monsters[0];
+        assert_ne!(replacement.uid, 0);
+        assert_eq!(replacement.powers.value(PowerId::Stock), 1);
+        assert_eq!(
+            damage_rows(&events),
+            [
+                Ok((0, 8, -5)),
+                Ok((replacement.uid, 8, replacement.max_hp - 8))
+            ],
+            "the spill is TotalDamage 3 + OverkillDamage 5"
+        );
+        assert!(!state.history.over);
+
+        // Beside a second enemy the respawn itself is the existing wall (the
+        // modeled Axebot fights alone, as `AxebotsNormal` builds it), and the
+        // refusal leaves the primary hit unpublished.
+        let mut pair = lone;
+        let mut other = HotMonster::new(MonsterKind::Toadpole, 20);
+        other.uid = 1;
+        other.slot = 1;
+        pair.monsters_mut().push(other);
+        let before = pair.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            play_omnislice(&mut pair, &catalog, &spec, 0, 8, &mut events),
+            Err(EngineRefusal::MalformedArgs("Axebot Stock lifecycle"))
+        );
+        assert_eq!(pair, before);
+        assert!(events.is_empty());
+    }
+
+    /// #3612: `SkittishPower.AfterAttack` walks the command's damaged set,
+    /// and a spill receiver that lost HP is in it, on the sequential arm and
+    /// on the batch arm.
+    #[test]
+    fn omnislice_spill_receivers_join_the_skittish_damaged_set() {
+        for monsters in [&[(20, 0), (20, 0)][..], &[(20, 0), (20, 0), (20, 0)][..]] {
+            let (catalog, spec, mut state) = omnislice_state(monsters);
+            let target = monsters.len() - 1;
+            for monster in state.monsters_mut().iter_mut() {
+                monster.powers.set(PowerId::Skittish, SlotWire::Int, 3);
+            }
+            let mut events = Vec::new();
+            play_omnislice(&mut state, &catalog, &spec, target, 8, &mut events).unwrap();
+            for monster in state.monsters.iter() {
+                assert_eq!(monster.hp, 12);
+                assert_eq!(monster.block, 3, "receivers={}", monsters.len() - 1);
+                assert!(monster.skittish_used());
+            }
+        }
+    }
+
+    /// #3612: the dealer-liveness gate of the spill is at `Damage` entry
+    /// (`0x3e96c8` IL_0079-IL_00af), never per receiver. A player the primary
+    /// target's Thorns killed spills nothing. A player a spill receiver's
+    /// Thorns killed still lands that receiver's spill and the later ones,
+    /// and a later Thorns holder retaliates against nobody (the
+    /// retaliation's own `Damage` skips a dead target, IL_0167-IL_0172).
+    #[test]
+    fn omnislice_spill_after_the_dealer_dies() {
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 0), (20, 5)]);
+        state.hp = 5;
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 0);
+        assert!(state.history.over);
+        assert_eq!(damage_rows(&events), [Err(5), Ok((1, 8, 12))]);
+        assert_eq!(state.monsters[0].hp, 20, "no spill from a dead dealer");
+
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 2), (20, 5), (20, 0)]);
+        state.hp = 2;
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 2, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 0, "one retaliation, never below zero");
+        assert!(state.history.over);
+        assert_eq!(
+            damage_rows(&events),
+            [Ok((2, 8, 12)), Err(2), Ok((0, 8, 12)), Ok((1, 8, 12))]
+        );
+
+        // The one-receiver walk: the receiver whose Thorns killed the player
+        // still takes the spill it was already computed for.
+        let (catalog, spec, mut state) = omnislice_state(&[(20, 5), (20, 0)]);
+        state.hp = 5;
+        let mut events = Vec::new();
+        play_omnislice(&mut state, &catalog, &spec, 1, 8, &mut events).unwrap();
+        assert_eq!(state.hp, 0);
+        assert!(state.history.over);
+        assert_eq!(
+            damage_rows(&events),
+            [Ok((1, 8, 12)), Err(5), Ok((0, 8, 12))]
+        );
+    }
+
+    /// Two Thorns receivers of one powered batch, the player at `hp`.
+    fn two_thorns_receivers_state(hp: i32, thorns: i32) -> HotState {
+        let mut state = HotState::at_defaults();
+        state.hp = hp;
+        state.max_hp = 80;
+        for uid in [0, 1] {
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, 20);
+            monster.uid = uid;
+            monster.slot = uid as i32;
+            monster.powers.set(PowerId::Thorns, SlotWire::Int, thorns);
+            state.monsters_mut().push(monster);
+        }
+        state
+    }
+
+    /// #3639: a Thorns retaliation is its own `CreatureCmd.Damage` at the
+    /// incoming dealer (`0x349954` IL_0065-IL_0086), and that command skips a
+    /// dead target at its receiver entry (`0x3e96c8` IL_0167-IL_0172). So the
+    /// second Thorns receiver of a powered batch whose first retaliation
+    /// killed the player retaliates against nobody: HP stays at its death
+    /// value and the player takes exactly one result. Both receivers still
+    /// commit, because the batch's own dealer-liveness gate is at entry only
+    /// (IL_0079-IL_00af). Rows as the live engine leaves them (Ironclad at 5
+    /// HP, `TOADPOLES_WEAK` with Thorns 5 on both, Thunderclap: one
+    /// `DamageReceived` on the player, both Toadpoles down 4).
+    #[test]
+    fn a_powered_batch_does_not_retaliate_against_a_player_it_already_killed() {
+        for hits in [1, 2] {
+            let mut state = two_thorns_receivers_state(5, 5);
+            let source = source_spec(CardId::StrikeIronclad);
+            let mut events = Vec::new();
+
+            player_attack(&mut state, &source, &[0, 1], 4, hits, &mut events).unwrap();
+
+            assert_eq!(state.hp, 0, "hits={hits}: never below the death value");
+            assert!(state.history.over);
+            // One retaliation, then both receivers' commits. A dead attacker
+            // issues no second hit (`0x3f19c0` IL_0156-IL_0161).
+            assert_eq!(
+                damage_rows(&events),
+                [Err(5), Ok((0, 4, 16)), Ok((1, 4, 16))],
+                "hits={hits}"
+            );
+            assert_eq!(
+                events
+                    .iter()
+                    .filter(|event| matches!(event, Event::CombatOver { .. }))
+                    .collect::<Vec<_>>(),
+                [&Event::CombatOver { player_won: false }]
+            );
+            assert!(!state.fanouts.synchronous_damage_is_active());
+        }
+    }
+
+    /// The control: a player who survives the first retaliation takes the
+    /// second, each before its own receiver's commit.
+    #[test]
+    fn a_powered_batch_retaliates_once_per_thorns_receiver_while_the_player_lives() {
+        let mut state = two_thorns_receivers_state(50, 5);
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut events = Vec::new();
+
+        player_attack(&mut state, &source, &[0, 1], 4, 1, &mut events).unwrap();
+
+        assert_eq!(state.hp, 40);
+        assert!(!state.history.over);
+        assert_eq!(
+            damage_rows(&events),
+            [Err(5), Ok((0, 4, 16)), Err(5), Ok((1, 4, 16))]
+        );
+    }
+
+    /// The test is the dealer's liveness when the receiver is reached, not
+    /// whether an earlier retaliation was lethal: Lizard Tail revives inside
+    /// the first retaliation's own Kill, so the second receiver's Thorns
+    /// finds a living target and hits it. Live engine, the same Thunderclap
+    /// with Lizard Tail owned and the player at 5 of 80 HP: 5 on the player
+    /// (killed), the first Toadpole's 4, 5 on the player again, the second
+    /// Toadpole's 4, and the player ends at 35.
+    #[test]
+    fn a_powered_batch_retaliates_against_a_player_a_reviver_saved() {
+        let mut state = two_thorns_receivers_state(5, 5);
+        state.max_hp = 20;
+        state
+            .fanouts
+            .set_batch_eight_deep_relic_ownership(false, false, false, true, false);
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut events = Vec::new();
+
+        player_attack(&mut state, &source, &[0, 1], 4, 1, &mut events).unwrap();
+
+        assert!(state.fanouts.lizard_tail_used());
+        assert_eq!(state.hp, 5, "revived to 10, then the second 5");
+        assert!(!state.history.over);
+        assert_eq!(
+            damage_rows(&events),
+            [Err(5), Ok((0, 4, 16)), Err(5), Ok((1, 4, 16))]
+        );
+    }
+
+    /// No retaliation command is issued at a dead dealer, so nothing that
+    /// command would do happens: a later Thorns owner whose own retaliation
+    /// refuses by name (an Imbalanced carrier, #2647) is simply hit. The
+    /// same holds for a dead Osty (`AttackDealer::PlayerPet`), whose
+    /// retaliation would otherwise have nothing left to take.
+    #[test]
+    fn no_retaliation_command_reaches_a_dead_dealer() {
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut state = two_thorns_receivers_state(5, 5);
+        state.monsters_mut()[1].kind = MonsterKind::BowlbugRock;
+        let mut alive = state.clone();
+        alive.hp = 50;
+        assert_eq!(
+            player_attack(&mut alive, &source, &[0, 1], 4, 1, &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                "Imbalanced owner outside its own attack"
+            )),
+            "a living dealer is retaliated against"
+        );
+        let mut events = Vec::new();
+        player_attack(&mut state, &source, &[0, 1], 4, 1, &mut events).unwrap();
+        assert_eq!(state.hp, 0);
+        assert_eq!(
+            damage_rows(&events),
+            [Err(5), Ok((0, 4, 16)), Ok((1, 4, 16))]
+        );
+
+        let (catalog, source, _) = pet_attack_catalog();
+        let mut state = two_thorns_receivers_state(50, 5);
+        state.monsters_mut()[1].kind = MonsterKind::BowlbugRock;
+        state.fanouts.set_osty(Some((2, 8))).unwrap();
+        let mut events = Vec::new();
+        player_pet_attack_all_from_card(&mut state, (&catalog, &source, 7), 4, 1, &mut events)
+            .unwrap();
+        assert!(state.fanouts.pet().osty().is_none(), "Thorns killed Osty");
+        assert_eq!((state.hp, state.block), (50, 0));
+        assert!(!state.history.over, "a pet's death ends nothing");
+        assert_eq!(
+            [state.monsters[0].hp, state.monsters[1].hp],
+            [16, 16],
+            "both receivers of the batch commit"
+        );
+    }
+
+    /// The phase-2 slot of a batched zero result: it dispatches nothing, and
+    /// the two live facts its native walk would read refuse by name.
+    #[test]
+    fn a_batched_zero_result_dispatches_nothing_and_retests_its_slot() {
+        let mut state = HotState::at_defaults();
+        state.hp = 9;
+        let mut corpse = HotMonster::new(MonsterKind::Toadpole, 2);
+        corpse.hp = 0;
+        corpse.uid = 5;
+        state.monsters_mut().push(corpse);
+        let mut survivor = HotMonster::new(MonsterKind::Toadpole, 50);
+        survivor.uid = 6;
+        survivor.slot = 1;
+        state.monsters_mut().push(survivor);
+        state.fanouts.enter_damage_batch();
+        let mut probe = state.clone();
+        let zero = commit_thorns_dead_receiver_zero_result(
+            &mut probe,
+            0,
+            false,
+            None,
+            None,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(probe, state, "an unrecorded zero commit writes no state");
+        assert!(zero.zero_on_corpse);
+        let depth = state.frames.len();
+
+        let mut inert = state.clone();
+        let mut events = Vec::new();
+        finish_powered_damage_batch(&mut inert, None, depth, &[zero], &mut events).unwrap();
+        assert!(events.is_empty());
+        let mut closed = state.clone();
+        assert!(closed.fanouts.leave_damage_batch());
+        assert_eq!(inert, closed, "only the batch receipt closes");
+
+        let mut restored = state.clone();
+        restored.monsters_mut()[0].hp = 1;
+        assert_eq!(
+            finish_powered_damage_batch(&mut restored, None, depth, &[zero], &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                "Thorns retained dead receiver restored inside a damage batch"
+            ))
+        );
+
+        let mut gaze = state.clone();
+        gaze.powers.set(PowerId::MonarchsGaze, SlotWire::Int, 1);
+        assert_eq!(
+            finish_powered_damage_batch(&mut gaze, None, depth, &[zero], &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                "Thorns retained dead receiver under Monarch's Gaze"
+            ))
+        );
+    }
+
+    #[test]
+    fn thorns_receiver_of_a_continuing_combat_names_every_unadmitted_shape() {
+        let refusal = |name| Err(EngineRefusal::PowerOrderNotModeled(name));
+        let classify = |state: &HotState, batched| {
+            thorns_receiver_after_retaliation(state, 0, 0, batched, AttackDealer::Player)
+        };
+        let mut removed = thorns_inferno_receiver_and_survivor_state();
+        removed.monsters_mut()[0].hp = 0;
+        for batched in [false, true] {
+            assert_eq!(
+                classify(&removed, batched),
+                Ok(ThornsReceiver::RemovedDeadWhileCombatContinues)
+            );
+        }
+
+        // The lethal HP is still a pending receipt of an open batch.
+        let mut pending = removed.clone();
+        pending.fanouts.enter_damage_batch();
+        pending.fanouts.register_batch_death(0);
+        // The death body is open: the receipt moved to the cleanup stack.
+        let mut cleaning = pending.clone();
+        cleaning.fanouts.begin_batch_death_cleanup(0);
+        assert!(!cleaning.fanouts.monster_death_is_pending(0));
+        for (state, batched) in [(&pending, false), (&pending, true), (&cleaning, true)] {
+            assert_eq!(
+                classify(state, batched),
+                refusal("Thorns retained dead receiver before its Kill")
+            );
+        }
+
+        // An enclosing synchronous Damage that is not this command's batch.
+        let mut callback = removed.clone();
+        callback.fanouts.enter_damage_batch();
+        assert_eq!(
+            classify(&callback, false),
+            refusal("Thorns retained dead receiver inside a Damage callback")
+        );
+        assert_eq!(
+            classify(&callback, true),
+            Ok(ThornsReceiver::RemovedDeadWhileCombatContinues),
+            "the command's own batch is the open receipt"
+        );
+
+        let mut player_dead = removed.clone();
+        player_dead.hp = 0;
+        assert_eq!(
+            classify(&player_dead, false),
+            refusal("Thorns retained dead receiver after player death")
+        );
+
+        let mut blocked = removed.clone();
+        blocked.monsters_mut()[0].block = 3;
+        assert_eq!(
+            classify(&blocked, false),
+            refusal("Thorns retained dead receiver with Block")
+        );
+
+        let mut gaze = removed.clone();
+        gaze.powers.set(PowerId::MonarchsGaze, SlotWire::Int, 1);
+        assert_eq!(
+            classify(&gaze, false),
+            refusal("Thorns retained dead receiver under Monarch's Gaze")
+        );
+
+        // No living primary and no veto, with the outcome not yet latched.
+        let mut ending = removed.clone();
+        ending.monsters_mut()[1].hp = 0;
+        assert!(damage_combat_is_ending(&ending) && !ending.history.over);
+        assert_eq!(
+            classify(&ending, false),
+            refusal("Thorns retained dead receiver while combat is ending")
+        );
+
+        // The residual: shapes native cannot produce, or whose corpse is not
+        // proven removed and stripped.
+        let mut enemy_side = removed.clone();
+        enemy_side.player_side_active = false;
+        let mut foreign = removed.clone();
+        foreign.monsters_mut()[0].kind = MonsterKind::Nibbit;
+        // Spiny Toad owns Thorns natively but always fights alone
+        // (`SpinyToadNormal::GenerateMonsters` `0xd550f`).
+        let mut spiny = removed.clone();
+        spiny.monsters_mut()[0].kind = MonsterKind::SpinyToad;
+        let mut matriarch = removed.clone();
+        matriarch.monsters_mut()[0].kind = MonsterKind::LagavulinMatriarch;
+        let mut illusion = removed.clone();
+        illusion.monsters_mut()[1].kind = MonsterKind::Parafright;
+        illusion
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+        for state in [&enemy_side, &foreign, &spiny, &matriarch, &illusion] {
+            assert!(!damage_combat_is_ending(state));
+            assert_eq!(
+                classify(state, false),
+                refusal("Thorns retained dead receiver while combat continues")
+            );
+        }
+    }
+
+    /// The residual of the continuing arm through the public command: a
+    /// Thorns owner native never builds beside a living enemy (any other
+    /// kind, and the always-solo Spiny Toad) refuses atomically.
+    #[test]
+    fn thorns_dead_receiver_of_a_non_native_owner_refuses_atomically() {
+        for kind in [MonsterKind::Nibbit, MonsterKind::SpinyToad] {
+            let mut state = thorns_inferno_receiver_and_survivor_state();
+            state.monsters_mut()[0].kind = kind;
+            let source = source_spec(CardId::StrikeIronclad);
+            let mut events = Vec::new();
+
+            let before = state.clone();
+            assert_eq!(
+                player_attack(&mut state, &source, &[0], 1, 1, &mut events),
+                Err(EngineRefusal::PowerOrderNotModeled(
+                    "Thorns retained dead receiver while combat continues"
+                )),
+                "{kind:?}"
+            );
+            assert_eq!(state, before);
+            assert!(events.is_empty());
+        }
+    }
+
+    /// Monarch's Gaze applies its debuff for any owner-dealt powered result
+    /// (`0x33e544` IL_001d-IL_0061, no amount gate), so the zero result onto a
+    /// corpse refuses, unbatched and batched, through the public command.
+    #[test]
+    fn thorns_dead_receiver_under_monarchs_gaze_refuses_atomically() {
+        for targets in [&[0_usize][..], &[0, 1]] {
+            let mut state = thorns_inferno_receiver_and_survivor_state();
+            state.powers.set(PowerId::MonarchsGaze, SlotWire::Int, 1);
+            let source = source_spec(CardId::StrikeIronclad);
+            let mut events = Vec::new();
+
+            let before = state.clone();
+            assert_eq!(
+                player_attack(&mut state, &source, targets, 1, 1, &mut events),
+                Err(EngineRefusal::PowerOrderNotModeled(
+                    "Thorns retained dead receiver under Monarch's Gaze"
+                ))
+            );
+            assert_eq!(state, before);
+            assert!(events.is_empty());
+        }
+    }
+
+    /// The recorded commit's counter is checked: a saturated ledger refuses
+    /// atomically instead of wrapping.
+    #[test]
+    fn thorns_dead_receiver_with_a_saturated_result_counter_refuses_atomically() {
+        let mut state = thorns_inferno_receiver_and_survivor_state();
+        state.monsters_mut()[0].owner_powered_damage_results_this_turn = i32::MAX;
+        let source = source_spec(CardId::StrikeIronclad);
+        let mut events = Vec::new();
+
+        let before = state.clone();
+        assert_eq!(
+            player_attack(&mut state, &source, &[0], 1, 1, &mut events),
+            Err(EngineRefusal::CounterOverflow(
+                "owner_powered_damage_results_this_turn"
+            ))
+        );
+        assert_eq!(state, before);
+        assert!(events.is_empty());
+    }
+
+    /// Echoing Slash earns one more wave per result with `WasTargetKilled`
+    /// (`EchoingSlash/<OnPlay>d__3::MoveNext` `0x39b0bc` IL_01a1 counts
+    /// `<OnPlay>b__3_0` `0x39b0b2`, which returns that flag). The receiver
+    /// Inferno killed holds a zero, unkilled row, so it earns none: the one
+    /// wave leaves the survivor hit exactly once.
+    #[test]
+    fn an_inferno_killed_thorns_receiver_earns_echoing_slash_no_wave() {
+        let (catalog, atom) = source_catalog(CardId::EchoingSlash);
+        let spec = *catalog.spec(atom).unwrap();
+        let mut state = thorns_inferno_receiver_and_survivor_state();
+        state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+            uid: 3,
+            atom,
+            flags: 0,
+        });
+        let mut events = Vec::new();
+
+        player_attack_context_from_card(
+            &mut state,
+            (&catalog, &spec, 3),
+            &[],
+            10,
+            AttackContextMode::EchoingSlash,
+            &mut events,
+        )
+        .unwrap();
+
+        assert_eq!(state.hp, 9, "one wave, one retaliation");
+        assert!(!state.history.over);
+        assert_eq!(state.monsters[0].hp, 0);
+        // 50 - Inferno 2 - one wave of (10 + Vigor 3).
+        assert_eq!(state.monsters[1].hp, 35);
+        assert_eq!(state.monsters[1].owner_powered_damage_results_this_turn, 1);
+    }
+
+    /// #2655, Pen Nib's per-receiver gate. `Hook.ModifyDamage` runs inside the
+    /// receiver loop (`0x3e96c8` IL_017a-IL_01b7), and a relic is a listener
+    /// only while its owner `IsActiveForHooks` (`0x3f9720` IL_00bb-IL_00c2).
+    /// The first receiver's amount is computed before its Thorns kills the
+    /// owner, so it keeps `PenNib::ModifyDamageMultiplicative` (`0x9917c`
+    /// IL_0082-IL_008d); the second is computed after `DeactivateHooks` and
+    /// takes the undoubled hit.
+    #[test]
+    fn pen_nib_doubles_each_batch_receiver_only_while_the_owner_is_hook_active() {
+        let source = source_spec(CardId::StrikeIronclad);
+        for (player_hp, expected) in [(50, [18, 18]), (1, [18, 24])] {
+            let mut state = HotState::at_defaults();
+            state.hp = player_hp;
+            for (uid, thorns) in [(0_u32, 1), (1, 0)] {
+                let mut monster = HotMonster::new(MonsterKind::Toadpole, 30);
+                monster.uid = uid;
+                monster.slot = uid as i32;
+                monster.powers.set(PowerId::Thorns, SlotWire::Int, thorns);
+                state.monsters_mut().push(monster);
+            }
+            crate::engine::play::with_test_active_play_pen_double(7, true, || {
+                player_attack(&mut state, &source, &[0, 1], 6, 1, &mut Vec::new()).unwrap();
+            });
+            assert_eq!(state.hp, player_hp - 1);
+            assert_eq!(
+                [state.monsters[0].hp, state.monsters[1].hp],
+                expected,
+                "owner at {player_hp} HP"
+            );
+        }
     }
 
     #[test]
@@ -15204,11 +17667,17 @@ mod tests {
             refusal("Thorns retained dead receiver of a pet attack")
         );
 
+        // A pet attack refuses whether or not the combat goes on; the owner's
+        // continuing arm has its own test.
         let mut continuing = dead.clone();
         continuing.history.over = false;
         assert_eq!(
-            classify(&continuing, 0, false, AttackDealer::Player),
-            refusal("Thorns retained dead receiver while combat continues")
+            classify(&continuing, 0, false, AttackDealer::PlayerPet),
+            refusal("Thorns retained dead receiver of a pet attack")
+        );
+        assert_eq!(
+            classify(&continuing, 0, true, AttackDealer::PlayerPet),
+            refusal("Thorns retained dead receiver inside a damage batch")
         );
 
         let mut player_dead = dead.clone();
@@ -17195,6 +19664,51 @@ mod tests {
         }
     }
 
+    /// #3660: the one read of the ledger bit that is not bookkeeping. The
+    /// same roster, the same prior wrapper, the same lethal application:
+    /// without the ledger the wrapper's existence is unknown and the nested
+    /// death refuses; with a ledger kept from the wrapper's first
+    /// application it is known, and the result is exact. A kept ledger can
+    /// turn this refusal into an exact result; it cannot change a result.
+    #[test]
+    fn a_kept_ledger_turns_the_unknown_wrapper_refusal_into_the_exact_result() {
+        for producer in PLAYER_PRODUCERS {
+            let mut without = sleight_retained_roster(MonsterKind::Parafright, 9, false);
+            with_prior_wrapper(&mut without, producer.model(), 2, false);
+            let before = without.clone();
+            assert_eq!(
+                producer.apply(&mut without, 3, &mut Vec::new()),
+                Err(sleight_retained_refusal()),
+                "{producer:?}"
+            );
+
+            let mut with = sleight_retained_roster(MonsterKind::Parafright, 9, true);
+            with_prior_wrapper(&mut with, producer.model(), 2, true);
+            // The two rosters are one game state under two ledgers.
+            assert_eq!(with.monsters[0].powers, before.monsters[0].powers);
+            assert_eq!(with.monsters[0].hp, before.monsters[0].hp);
+            assert_eq!(wrapper_rows(&with.monsters[0]).len(), 1);
+            assert!(wrapper_rows(&before.monsters[0]).is_empty());
+            producer.apply(&mut with, 3, &mut Vec::new()).unwrap();
+            let corpse = &with.monsters[0];
+            assert_eq!(corpse.revive_stage, 1, "{producer:?}");
+            assert_eq!(corpse.powers.value(PowerId::TempStrength), -5);
+            assert_eq!(corpse.powers.value(PowerId::Strength), -5);
+
+            // A ledger that was NOT kept from the wrapper's first
+            // application is not read: the bit alone, over a wrapper it
+            // never recorded, still refuses.
+            let mut late = sleight_retained_roster(MonsterKind::Parafright, 9, false);
+            with_prior_wrapper(&mut late, producer.model(), 2, false);
+            late.fanouts.set_misery_attachment_upkeep(true);
+            assert_eq!(
+                producer.apply(&mut late, 3, &mut Vec::new()),
+                Err(sleight_retained_refusal()),
+                "{producer:?}"
+            );
+        }
+    }
+
     #[test]
     fn wrapper_producers_unknown_wrapper_existence_refuses_only_on_a_nested_death() {
         for producer in PLAYER_PRODUCERS {
@@ -19012,6 +21526,197 @@ mod tests {
         assert_eq!(illusion.powers.value(PowerId::Vuln), 0);
         assert!(!state.history.over);
         assert_eq!(events, [Event::MonsterDied { uid: 1 }]);
+    }
+
+    /// A summoner and its illusion, in a fight that keeps the Misery ledger.
+    /// The illusion holds `strength` applied by the summoner, behind a Weak
+    /// it acquired first.
+    fn illusion_roster(illusion: MonsterKind, strength: i32) -> HotState {
+        let summoner = match illusion {
+            MonsterKind::Parafright => MonsterKind::TheObscura,
+            _ => MonsterKind::Fogmog,
+        };
+        let mut state = HotState::at_defaults();
+        state.fanouts.set_misery_attachment_upkeep(true);
+        let mut primary = HotMonster::new(summoner, 70);
+        primary.uid = 0;
+        primary.slot = 1;
+        let mut body = HotMonster::new(illusion, 21);
+        body.max_hp = 21;
+        body.uid = 1;
+        body.powers.set(PowerId::Weak, SlotWire::Int, 2);
+        body.misery_debuff_order.push(MiseryToken::Weak);
+        write_monster_strength(&mut body, strength, crate::hot::Applier::Monster(0), true);
+        state.monsters_mut().extend([body, primary]);
+        state
+    }
+
+    fn summoner_strength_row(
+        position: usize,
+        amount: i32,
+    ) -> Vec<(usize, crate::hot::AttachmentRecord)> {
+        vec![(
+            position,
+            crate::hot::AttachmentRecord {
+                power: crate::hot::AttachedPowerModel::Strength,
+                applier: crate::hot::Applier::Monster(0),
+                amount,
+            },
+        )]
+    }
+
+    /// What a reload makes of a state: hydration's ledger pass.
+    fn hydrated(state: &HotState) -> HotState {
+        let mut reloaded = state.clone();
+        materialize_entering_strength_provenance(&mut reloaded);
+        reloaded
+    }
+
+    /// #3674. `IllusionPower::ShouldPowerBeRemovedOnDeath` `0xa3a80` vetoes
+    /// the removal of every power whose `get_Type` is not 2, and
+    /// `StrengthPower::get_Type` `0xa8943` is 1 at any amount, so the
+    /// illusion's instance (its applier, and its place ahead of everything
+    /// applied later) outlives the death. The Weak ahead of it is a
+    /// non-temporary debuff and goes.
+    ///
+    /// Each stage is also what a reload must find: hydration changes none of
+    /// them.
+    #[test]
+    fn an_illusion_keeps_its_strength_row_through_death_and_revival() {
+        for kind in [MonsterKind::Parafright, MonsterKind::EyeWithTeeth] {
+            for strength in [3, -2] {
+                // Alive: the row sits behind the Weak token.
+                let mut state = illusion_roster(kind, strength);
+                assert_eq!(
+                    state.monsters[0].misery_debuff_order.placed_attachments(),
+                    summoner_strength_row(1, strength),
+                    "{kind:?} {strength}"
+                );
+                assert_eq!(hydrated(&state), state);
+
+                // Downed, waiting to revive: the token is gone, the row stays.
+                state.monsters_mut()[0].hp = 0;
+                finish_monster_death(&mut state, 0, &mut Vec::new()).unwrap();
+                let downed = &state.monsters[0];
+                assert_eq!(downed.revive_stage, 1);
+                assert!(downed.misery_debuff_order.as_slice().is_empty());
+                assert_eq!(downed.powers.value(PowerId::Weak), 0);
+                assert_eq!(downed.powers.value(PowerId::Strength), strength);
+                assert_eq!(
+                    downed.misery_debuff_order.placed_attachments(),
+                    summoner_strength_row(0, strength),
+                    "{kind:?} {strength}"
+                );
+                assert_eq!(hydrated(&state), state);
+
+                // Revived (`IllusionPower.ReviveMove` heals and applies
+                // nothing): the same instance, still recorded, so `Misery`
+                // can read it at either sign.
+                {
+                    let monster = &mut state.monsters_mut()[0];
+                    monster.hp = monster.max_hp;
+                    monster.revive_stage = 0;
+                }
+                let revived = &state.monsters[0];
+                assert!(super::super::monsters::strength_provenance_is_recorded(
+                    revived
+                ));
+                assert_eq!(misery_scalar_state_is_exact(revived), Ok(()));
+                assert_eq!(hydrated(&state), state);
+
+                // The summoner's next buff restacks that instance in place.
+                // Before #3674 the row was gone, this write gave up, and the
+                // revived illusion held a Strength no row described.
+                write_monster_strength(
+                    &mut state.monsters_mut()[0],
+                    strength + 3,
+                    crate::hot::Applier::Monster(0),
+                    true,
+                );
+                assert_eq!(
+                    state.monsters[0].misery_debuff_order.placed_attachments(),
+                    summoner_strength_row(0, strength + 3),
+                    "{kind:?} {strength}"
+                );
+                assert_eq!(hydrated(&state), state);
+            }
+        }
+    }
+
+    /// An illusion with no Strength keeps no row, and one in a fight that
+    /// keeps no ledger keeps none either (#3674).
+    #[test]
+    fn an_illusion_without_a_strength_row_dies_with_an_empty_ledger() {
+        let mut bare = illusion_roster(MonsterKind::Parafright, 0);
+        bare.monsters_mut()[0].hp = 0;
+        finish_monster_death(&mut bare, 0, &mut Vec::new()).unwrap();
+        assert_eq!(bare.monsters[0].revive_stage, 1);
+        assert_eq!(
+            bare.monsters[0].misery_debuff_order,
+            crate::hot::MiseryOrder::new()
+        );
+
+        let mut unkept = HotState::at_defaults();
+        let mut primary = HotMonster::new(MonsterKind::TheObscura, 70);
+        primary.slot = 1;
+        let mut body = HotMonster::new(MonsterKind::Parafright, 0);
+        body.uid = 1;
+        write_monster_strength(&mut body, 3, crate::hot::Applier::Monster(0), false);
+        unkept.monsters_mut().extend([body, primary]);
+        finish_monster_death(&mut unkept, 0, &mut Vec::new()).unwrap();
+        assert_eq!(unkept.monsters[0].powers.value(PowerId::Strength), 3);
+        assert_eq!(
+            unkept.monsters[0].misery_debuff_order,
+            crate::hot::MiseryOrder::new()
+        );
+        assert_eq!(hydrated(&unkept), unkept);
+    }
+
+    /// The other deaths keep resetting the whole ledger (#3644): an illusion
+    /// killed for good by its summoner's death, the summoner itself, and an
+    /// ordinary monster. Each is a corpse hydration leaves alone, so each
+    /// still reloads as the engine built it.
+    #[test]
+    fn a_death_for_good_still_resets_the_strength_row() {
+        let mut state = illusion_roster(MonsterKind::Parafright, 3);
+        write_monster_strength(
+            &mut state.monsters_mut()[1],
+            3,
+            crate::hot::Applier::Monster(0),
+            true,
+        );
+        state.monsters_mut()[1].hp = 0;
+        finish_monster_death(&mut state, 1, &mut Vec::new()).unwrap();
+        assert!(state.history.over);
+        for monster in state.monsters.iter() {
+            assert!(monster.hp <= 0, "{:?}", monster.kind);
+            assert_eq!(monster.revive_stage, 0, "{:?}", monster.kind);
+            assert_eq!(monster.powers.value(PowerId::Strength), 3);
+            assert!(
+                monster.misery_debuff_order.placed_attachments().is_empty(),
+                "{:?}",
+                monster.kind
+            );
+        }
+        assert_eq!(hydrated(&state), state);
+
+        let mut ordinary = HotState::at_defaults();
+        ordinary.fanouts.set_misery_attachment_upkeep(true);
+        let mut first = HotMonster::new(MonsterKind::Toadpole, 0);
+        write_monster_strength(&mut first, 2, crate::hot::Applier::Monster(0), true);
+        let mut second = HotMonster::new(MonsterKind::Toadpole, 20);
+        second.uid = 1;
+        second.slot = 1;
+        ordinary.monsters_mut().extend([first, second]);
+        finish_monster_death(&mut ordinary, 0, &mut Vec::new()).unwrap();
+        assert_eq!(ordinary.monsters[0].powers.value(PowerId::Strength), 2);
+        assert!(
+            ordinary.monsters[0]
+                .misery_debuff_order
+                .placed_attachments()
+                .is_empty()
+        );
+        assert_eq!(hydrated(&ordinary), ordinary);
     }
 
     fn decimillipede_roster(front_hp: i32, peer_hp: i32) -> HotState {
@@ -21281,6 +23986,103 @@ mod tests {
         assert_eq!(monster.powers.value(PowerId::TempStrength), -34);
     }
 
+    /// A restack whose nested Strength lands on exactly zero (#3583).
+    ///
+    /// Native order inside the wrapper's `PowerCmd/<ModifyAmount>d__6::
+    /// MoveNext` `0x3f032c`: `SetAmount` at IL_01d6, then
+    /// `Hook::AfterPowerAmountChanged` at IL_02eb, where
+    /// `TemporaryStrengthPower/<AfterPowerAmountChanged>d__21::MoveNext`
+    /// `0x348a88` IL_004b-IL_007a applies the Strength. That nested
+    /// application is `StrengthPower`'s own `ModifyAmount`, which at
+    /// `ShouldRemoveDueToAmount` `0x83b0d` IL_0012-IL_0023 (`AllowNegative`,
+    /// amount exactly zero) reaches `PowerCmd::Remove` at IL_035b and
+    /// `Creature::RemovePowerInternal` `0x11db0b` IL_0015-IL_001c, a
+    /// `List.Remove`. The wrapper is the same instance throughout: it keeps
+    /// its stacked amount and moves up one place.
+    ///
+    /// The first shape is the one eval fixture `fc66b15822d20bd5` reaches at
+    /// step 29 (Monarch's Gaze on a monster whose Strength row leads the
+    /// wrapper). It used to trip the restack assertion in the dev profile and
+    /// leave the wrapper row stale in release. The second shape is the one
+    /// nothing reported: with another row behind the wrapper, the stale
+    /// position named that row and overwrote its amount.
+    #[test]
+    fn a_restack_that_zeroes_strength_still_restacks_the_wrapper_it_shifts() {
+        use crate::hot::AttachedPowerModel as Model;
+        let rows = |monster: &HotMonster| {
+            monster
+                .misery_debuff_order
+                .attachments()
+                .map(|record| (record.power, record.amount))
+                .collect::<Vec<_>>()
+        };
+        let mut monster = wrapper_carrier(3);
+        write_monster_strength(&mut monster, 2, crate::hot::Applier::Monster(3), true);
+        write_monster_temp_strength_wrapper(
+            &mut monster,
+            Model::MonarchsGazeStrengthDown,
+            1,
+            crate::hot::Applier::Player,
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            rows(&monster),
+            vec![(Model::Strength, 1), (Model::MonarchsGazeStrengthDown, 1)],
+        );
+
+        let (temp, strength) = write_monster_temp_strength_wrapper(
+            &mut monster,
+            Model::MonarchsGazeStrengthDown,
+            1,
+            crate::hot::Applier::Player,
+            true,
+        )
+        .unwrap();
+        assert_eq!((temp, strength), (-2, 0));
+        assert_eq!(
+            rows(&monster),
+            vec![(Model::MonarchsGazeStrengthDown, 2)],
+            "the Strength row closes and the wrapper carries the stacked amount",
+        );
+        assert!(crate::engine::monsters::temp_strength_provenance_is_recorded(&monster));
+        assert!(crate::engine::monsters::strength_provenance_is_recorded(
+            &monster
+        ));
+
+        // A second wrapper behind the first: the restack must reach the
+        // model it was asked for, not the row that slid into its old index.
+        let mut pair = wrapper_carrier(4);
+        write_monster_strength(&mut pair, 9, crate::hot::Applier::Monster(4), true);
+        for (model, amount) in [(Model::Mangle, 3), (Model::DarkShackles, 4)] {
+            write_monster_temp_strength_wrapper(
+                &mut pair,
+                model,
+                amount,
+                crate::hot::Applier::Player,
+                true,
+            )
+            .unwrap();
+        }
+        assert_eq!(pair.powers.value(PowerId::Strength), 2);
+        write_monster_temp_strength_wrapper(
+            &mut pair,
+            Model::Mangle,
+            2,
+            crate::hot::Applier::Player,
+            true,
+        )
+        .unwrap();
+        assert_eq!(pair.powers.value(PowerId::Strength), 0);
+        assert_eq!(pair.powers.value(PowerId::TempStrength), -9);
+        assert_eq!(
+            rows(&pair),
+            vec![(Model::Mangle, 5), (Model::DarkShackles, 4)],
+            "Mangle stacks; Dark Shackles, now at Mangle's old index, is untouched",
+        );
+        assert!(crate::engine::monsters::temp_strength_provenance_is_recorded(&pair));
+    }
+
     /// A wrapper applied while Strength is already live leaves that row where
     /// it is; applied while Strength is absent it creates the row **first**.
     #[test]
@@ -21843,6 +24645,110 @@ mod tests {
                 .misery_debuff_order
                 .attachments()
                 .is_empty()
+        );
+    }
+
+    /// #3644 — hydration records no row for a monster that is dead for good,
+    /// because the engine's own death cleanup leaves none.
+    ///
+    /// The first half is the engine's side: a monster killed while it holds a
+    /// recorded Strength keeps the scalar and loses the whole ledger. The
+    /// second half is hydration's: the same corpse, entering a root, stays
+    /// that way, while a living monster and a downed illusion waiting on
+    /// `REVIVE_MOVE` still get their row.
+    #[test]
+    fn entering_strength_provenance_skips_a_monster_that_is_dead_for_good() {
+        fn roster(upkeep: bool) -> HotState {
+            let mut state = HotState::at_defaults();
+            state.hp = 60;
+            state.max_hp = 60;
+            state.fanouts.set_misery_attachment_upkeep(upkeep);
+            let mut dying = HotMonster::new(MonsterKind::Toadpole, 0);
+            dying.max_hp = 20;
+            dying.uid = 0;
+            let mut peer = HotMonster::new(MonsterKind::Toadpole, 20);
+            peer.uid = 1;
+            peer.slot = 1;
+            state.monsters_mut().extend([dying, peer]);
+            state
+        }
+        let rows = |state: &HotState, index: usize| {
+            state.monsters[index]
+                .misery_debuff_order
+                .attachments()
+                .copied()
+                .collect::<Vec<_>>()
+        };
+
+        // The engine's corpse: scalar kept, ledger reset.
+        let mut warm = roster(true);
+        write_monster_strength(
+            &mut warm.monsters_mut()[0],
+            3,
+            crate::hot::Applier::Monster(0),
+            true,
+        );
+        assert_eq!(rows(&warm, 0).len(), 1);
+        finish_monster_death(&mut warm, 0, &mut Vec::new()).unwrap();
+        assert_eq!(warm.monsters[0].powers.value(PowerId::Strength), 3);
+        assert_eq!(warm.monsters[0].revive_stage, 0);
+        assert!(rows(&warm, 0).is_empty());
+
+        // Hydration leaves exactly that corpse alone...
+        let mut hydrated = warm.clone();
+        materialize_entering_strength_provenance(&mut hydrated);
+        assert_eq!(hydrated.monsters, warm.monsters);
+
+        // ...and still records the living peer's entering Strength.
+        hydrated.monsters_mut()[1]
+            .powers
+            .set(PowerId::Strength, SlotWire::Int, 2);
+        materialize_entering_strength_provenance(&mut hydrated);
+        assert!(rows(&hydrated, 0).is_empty());
+        assert_eq!(
+            rows(&hydrated, 1),
+            [crate::hot::AttachmentRecord {
+                power: crate::hot::AttachedPowerModel::Strength,
+                applier: crate::hot::Applier::Unknown,
+                amount: 2,
+            }],
+        );
+
+        // A dead Knowledge Demon keeps its curse counter in `revive_stage`
+        // (#3674). It does not revive, so it is skipped like any corpse.
+        let mut demon = roster(true);
+        {
+            let corpse = &mut demon.monsters_mut()[0];
+            corpse.kind = MonsterKind::KnowledgeDemon;
+            assert!(corpse.set_knowledge_demon_curse_counter(2));
+            corpse.powers.set(PowerId::Strength, SlotWire::Int, 4);
+        }
+        assert_eq!(demon.monsters[0].revive_stage, 2);
+        let before = demon.monsters.clone();
+        materialize_entering_strength_provenance(&mut demon);
+        assert_eq!(demon.monsters, before);
+        // Alive, the same Demon is recorded.
+        demon.monsters_mut()[0].hp = 5;
+        materialize_entering_strength_provenance(&mut demon);
+        assert_eq!(rows(&demon, 0).len(), 1);
+
+        // A downed illusion keeps its Strength for its revive, so its row is
+        // still recorded.
+        let mut parked = roster(true);
+        {
+            let illusion = &mut parked.monsters_mut()[0];
+            illusion.kind = MonsterKind::Parafright;
+            illusion.revive_stage = 1;
+            illusion.powers.set(PowerId::Strength, SlotWire::Int, 7);
+        }
+        materialize_entering_strength_provenance(&mut parked);
+        assert_eq!(
+            rows(&parked, 0),
+            [crate::hot::AttachmentRecord {
+                power: crate::hot::AttachedPowerModel::Strength,
+                applier: crate::hot::Applier::Unknown,
+                amount: 7,
+            }],
         );
     }
 
@@ -22853,6 +25759,7 @@ mod tests {
                 powered: true,
                 source_uid: None,
                 dealer: AttackDealer::Player,
+                zero_on_corpse: false,
             }
         }
         let mut state = HotState::at_defaults();

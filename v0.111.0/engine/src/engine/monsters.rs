@@ -113,21 +113,58 @@ fn native_hp_band(state: &HotState, kind: MonsterKind) -> Result<(i32, i32), Eng
         .map_err(|_| EngineRefusal::MalformedArgs("spawned creature HP band"))
 }
 
+/// `kind`'s `MONSTER_MODELS` HP tiers `(MinInitialHp, MaxInitialHp)`, resolved
+/// during constant evaluation (#2852).
+///
+/// The constants below are built from this, so the generated table is their
+/// only source and no table lookup runs in a validator or a transition: the
+/// row is indexed once, by the compiler. A row the generator refuses fails
+/// the build here by name instead of leaving a stale hand-read number behind.
+const fn model_hp_tiers(kind: MonsterKind) -> (AscensionTier, AscensionTier) {
+    let model = &crate::content_tables::MONSTER_MODELS[kind as usize];
+    match (model.min_initial_hp, model.max_initial_hp) {
+        (Some(low), Some(high)) => (low, high),
+        _ => panic!("MONSTER_MODELS refuses a row engine::monsters reads"),
+    }
+}
+
+/// `kind`'s spawn-time `Apply<XPower>` amount tier for `power`, from
+/// `MONSTER_MODELS`, resolved during constant evaluation like
+/// [`model_hp_tiers`] (#2852). A row without that power fails the build.
+const fn model_initial_power_tier(kind: MonsterKind, power: &str) -> AscensionTier {
+    let powers = crate::content_tables::MONSTER_MODELS[kind as usize].initial_powers;
+    let wanted = power.as_bytes();
+    let mut index = 0;
+    while index < powers.len() {
+        let name = powers[index].0.as_bytes();
+        let mut same = name.len() == wanted.len();
+        let mut byte = 0;
+        while same && byte < name.len() {
+            same = name[byte] == wanted[byte];
+            byte += 1;
+        }
+        if same {
+            return powers[index].1;
+        }
+        index += 1;
+    }
+    panic!("MONSTER_MODELS row lacks an initial power engine::monsters reads")
+}
+
+/// Axebot's HP band before any respawn, read from its `MONSTER_MODELS` row
+/// (#2852; the row has been read since #2534). Natively
 /// `Axebot::get_MinInitialHp` (RVA `0xaed95`) and `get_MaxInitialHp`
-/// (`0xaeda8`), IL_0001-IL_0011: `GetValueIfAscension(8, 76, 70)` and
+/// (`0xaeda8`), IL_0001-IL_0011, are `GetValueIfAscension(8, 76, 70)` and
 /// `(8, 86, 78)`, each **plus** `get_RespawnMaxHpBonus` (`0xaedbb`,
-/// `RespawnCount * 10`). The addend is why `MONSTER_MODELS` refuses the row,
-/// so the two tiers are read here (#2539).
-const AXEBOT_MIN_HP: AscensionTier = AscensionTier {
-    gate: Some(8),
-    at_or_above: 76,
-    below: 70,
-};
-const AXEBOT_MAX_HP: AscensionTier = AscensionTier {
-    gate: Some(8),
-    at_or_above: 86,
-    below: 78,
-};
+/// `RespawnCount * 10`). The generated row carries the two tiers at
+/// `RespawnCount` zero; the addend for a body created at a lower Stock is not
+/// a model fact, so [`AXEBOT_RESPAWN_HP_BONUS`] stays here.
+const AXEBOT_MIN_HP: AscensionTier = model_hp_tiers(MonsterKind::Axebot).0;
+const AXEBOT_MAX_HP: AscensionTier = model_hp_tiers(MonsterKind::Axebot).1;
+/// `Axebot::get_RespawnMaxHpBonus` (RVA `0xaedbb`): `RespawnCount * 10`, the
+/// per-respawn addend to both ends of the band. `MONSTER_MODELS` has no
+/// column for it, so it is read here.
+const AXEBOT_RESPAWN_HP_BONUS: i32 = 10;
 /// `ToughEgg::get_MinInitialHp` (`0xc303a`) / `get_MaxInitialHp` (`0xc3046`):
 /// `GetValueIfAscension(8, 15, 14)` / `(8, 19, 18)`; the hatchling's
 /// `get_HatchlingMinHp` (`0xc3052`) / `get_HatchlingMaxHp` (`0xc305e`):
@@ -155,21 +192,22 @@ const TOUGH_EGG_HATCHLING_MAX_HP: AscensionTier = AscensionTier {
     below: 22,
 };
 
-/// Test Subject's three form HPs and its spawn-time Enrage (#2539), read here
-/// because `MONSTER_MODELS` refuses the row: `get_MinInitialHp` (`0xc0136`)
-/// delegates to `get_FirstFormHp`. v0.111.0 `sts2.dll` `9cb4f1ad…`:
-/// `get_FirstFormHp` `0xc0146` `GetValueIfAscension(8, 111, 100)`,
-/// `get_SecondFormHp` `0xc0152` `(8, 212, 200)`, `get_ThirdFormHp` `0xc0164`
-/// `(8, 313, 300)` (the RESPAWN body `<RespawnMove>d__74` `0x36de44` revives
-/// at the latter two, IL_021d / IL_02fc), and `get_EnrageAmount` `0xc0176`
-/// `(9, 3, 2)`, applied by `<AfterAddedToRoom>d__68::MoveNext` `0x36d628`
-/// IL_0106-IL_0118 as `Apply<EnragePower>`.
+/// Test Subject's three form HPs and its spawn-time Enrage (#2539).
+///
+/// The first form and the Enrage amount are read from the `MONSTER_MODELS`
+/// row (#2852; read since #2534): `get_MinInitialHp` (`0xc0136`) delegates to
+/// `get_FirstFormHp` `0xc0146` `GetValueIfAscension(8, 111, 100)`, and
+/// `get_EnrageAmount` `0xc0176` `(9, 3, 2)` is applied by
+/// `<AfterAddedToRoom>d__68::MoveNext` `0x36d628` IL_0106-IL_0118 as
+/// `Apply<EnragePower>`, the row's `EnragePower` initial power.
+///
+/// The second and third forms are not model facts — the row has one HP band,
+/// the spawn's — so they stay hand-read here: v0.111.0 `sts2.dll`
+/// `9cb4f1ad…` `get_SecondFormHp` `0xc0152` `(8, 212, 200)` and
+/// `get_ThirdFormHp` `0xc0164` `(8, 313, 300)`, which the RESPAWN body
+/// `<RespawnMove>d__74` `0x36de44` revives at (IL_021d / IL_02fc).
 pub(crate) const TEST_SUBJECT_FORM_HP: [AscensionTier; 3] = [
-    AscensionTier {
-        gate: Some(8),
-        at_or_above: 111,
-        below: 100,
-    },
+    model_hp_tiers(MonsterKind::TestSubject).1,
     AscensionTier {
         gate: Some(8),
         at_or_above: 212,
@@ -181,11 +219,8 @@ pub(crate) const TEST_SUBJECT_FORM_HP: [AscensionTier; 3] = [
         below: 300,
     },
 ];
-pub(crate) const TEST_SUBJECT_ENRAGE_AMOUNT: AscensionTier = AscensionTier {
-    gate: Some(9),
-    at_or_above: 3,
-    below: 2,
-};
+pub(crate) const TEST_SUBJECT_ENRAGE_AMOUNT: AscensionTier =
+    model_initial_power_tier(MonsterKind::TestSubject, "EnragePower");
 
 /// Test Subject's max HP in `form` (0..=2) at this fight's ascension.
 pub(crate) fn test_subject_form_hp(state: &HotState, form: usize) -> Option<i32> {
@@ -2448,19 +2483,20 @@ pub(crate) fn wake_beetle(monster: &mut HotMonster, events: &mut Vec<Event>) {
 }
 
 /// `SewerClam/<AfterAddedToRoom>d__9::MoveNext` (RVA `0x368f9c`) IL_007f-IL_00a2
-/// applies `PlatingPower(GetValueIfAscension(8, 9, 8))` inline — no getter,
-/// which is why `MONSTER_MODELS` refuses the row (#2539).
-const SEWER_CLAM_PLATING: AscensionTier = AscensionTier {
-    gate: Some(8),
-    at_or_above: 9,
-    below: 8,
-};
+/// applies `PlatingPower(GetValueIfAscension(8, 9, 8))` inline, with no
+/// getter. The generator reads that inline-local spelling (#2534), so the
+/// amount is the Sewer Clam `MONSTER_MODELS` row's `PlatingPower` (#2852).
+/// Resolved during constant evaluation ([`model_initial_power_tier`]), so the
+/// Plating cap costs no table scan where it is checked.
+const SEWER_CLAM_PLATING: AscensionTier =
+    model_initial_power_tier(MonsterKind::SewerClam, "PlatingPower");
 
 /// Each Plating owner's entry amount at this fight's ascension — the ceiling
 /// its Plating decrements from (#2539). Frog Knight (8, 19, 15), Slumbering
-/// Beetle (8, 18, 15) and Mysterious Knight (untiered 6) are `MONSTER_MODELS`
-/// rows; Sewer Clam is [`SEWER_CLAM_PLATING`]; Lagavulin Matriarch's 12 is a
-/// plain `ldc.i4.s 12` in `<Sleep>d__40::MoveNext` `0x3613b8` IL_00ab.
+/// Beetle (8, 18, 15), Sewer Clam (8, 9, 8) and Mysterious Knight (untiered
+/// 6) are all `MONSTER_MODELS` rows, Sewer Clam's through
+/// [`SEWER_CLAM_PLATING`]; Lagavulin Matriarch's 12 is a plain
+/// `ldc.i4.s 12` in `<Sleep>d__40::MoveNext` `0x3613b8` IL_00ab.
 pub(crate) fn monster_plating_cap(state: &HotState, kind: MonsterKind) -> Option<i32> {
     match kind {
         MonsterKind::FrogKnight | MonsterKind::SlumberingBeetle | MonsterKind::MysteriousKnight => {
@@ -2798,8 +2834,9 @@ pub(crate) fn axebot_state_is_valid(state: &HotState) -> bool {
     let respawn_count = AXEBOT_STOCK - stock;
     // `get_Min/MaxInitialHp` at the fight's tier plus the respawn bonus (#2539).
     let ascension = state.fanouts.ascension();
-    let low = crate::encounters::tier(AXEBOT_MIN_HP, ascension) as i32 + 10 * respawn_count;
-    let high = crate::encounters::tier(AXEBOT_MAX_HP, ascension) as i32 + 10 * respawn_count;
+    let bonus = AXEBOT_RESPAWN_HP_BONUS * respawn_count;
+    let low = crate::encounters::tier(AXEBOT_MIN_HP, ascension) as i32 + bonus;
+    let high = crate::encounters::tier(AXEBOT_MAX_HP, ascension) as i32 + bonus;
     owner.kind == MonsterKind::Axebot
         && owner.slot == 0
         && axebot_expected_uid(state, respawn_count) == Some(owner.uid)
@@ -3986,10 +4023,9 @@ pub(crate) fn require_axebot_respawn(
     let respawn_count = AXEBOT_STOCK - stock;
     // The band this body was rolled from, at the fight's tier (#2539).
     let ascension = state.fanouts.ascension();
-    let expected_low =
-        crate::encounters::tier(AXEBOT_MIN_HP, ascension) as i32 + 10 * respawn_count;
-    let expected_high =
-        crate::encounters::tier(AXEBOT_MAX_HP, ascension) as i32 + 10 * respawn_count;
+    let bonus = AXEBOT_RESPAWN_HP_BONUS * respawn_count;
+    let expected_low = crate::encounters::tier(AXEBOT_MIN_HP, ascension) as i32 + bonus;
+    let expected_high = crate::encounters::tier(AXEBOT_MAX_HP, ascension) as i32 + bonus;
     if owner.kind != MonsterKind::Axebot
         || owner.uid != owner_uid
         || owner.slot != 0
@@ -4020,7 +4056,7 @@ pub(crate) fn respawn_axebot(
     let stock = owner.powers.value(PowerId::Stock);
     let new_stock = stock - 1;
     let respawn_count = AXEBOT_STOCK - new_stock;
-    let hp_bonus = 10_i32
+    let hp_bonus = AXEBOT_RESPAWN_HP_BONUS
         .checked_mul(respawn_count)
         .ok_or(EngineRefusal::CounterOverflow("Axebot respawn HP"))?;
     let ascension = state.fanouts.ascension();
@@ -7094,6 +7130,109 @@ mod tests {
         );
     }
 
+    /// #2852: the Axebot, Sewer Clam and Test Subject numbers this file used to
+    /// carry by hand are now read from `MONSTER_MODELS`. The literals below
+    /// are those former constants; the routed values must equal them at every
+    /// ascension, so the reroute is pinned as behaviour-neutral rather than
+    /// asserted. A generator change that moves a row fails here.
+    #[test]
+    fn model_routed_numbers_equal_the_former_hand_read_constants() {
+        use crate::encounters::{fixed_hp, hp_band, initial_power, tier};
+        const fn former(gate: u8, at_or_above: i64, below: i64) -> AscensionTier {
+            AscensionTier {
+                gate: Some(gate),
+                at_or_above,
+                below,
+            }
+        }
+        let axebot_min = former(8, 76, 70);
+        let axebot_max = former(8, 86, 78);
+        let sewer_clam_plating = former(8, 9, 8);
+        let test_subject_forms = [
+            former(8, 111, 100),
+            former(8, 212, 200),
+            former(8, 313, 300),
+        ];
+        let test_subject_enrage_amount = former(9, 3, 2);
+
+        // The engine distinguishes ascensions only through `tier`'s gate
+        // comparison, so the whole `u8` domain is swept: both sides of every
+        // gate, and everything past the top of the ladder. This compares the
+        // tier-selected values the engine consumes, through the constants.
+        for ascension in 0..=u8::MAX {
+            let at = |value: AscensionTier| tier(value, ascension) as i32;
+            assert_eq!(
+                (at(AXEBOT_MIN_HP), at(AXEBOT_MAX_HP)),
+                (at(axebot_min), at(axebot_max)),
+                "A{ascension}"
+            );
+            assert_eq!(
+                hp_band(MonsterKind::Axebot, ascension).unwrap(),
+                (at(axebot_min), at(axebot_max)),
+                "A{ascension}"
+            );
+            assert_eq!(
+                at(SEWER_CLAM_PLATING),
+                at(sewer_clam_plating),
+                "A{ascension}"
+            );
+            assert_eq!(
+                initial_power(MonsterKind::SewerClam, "PlatingPower", ascension).unwrap(),
+                i64::from(at(sewer_clam_plating)),
+                "A{ascension}"
+            );
+            for (form, former_hp) in test_subject_forms.iter().enumerate() {
+                assert_eq!(
+                    at(TEST_SUBJECT_FORM_HP[form]),
+                    at(*former_hp),
+                    "A{ascension} form {form}"
+                );
+            }
+            assert_eq!(
+                fixed_hp(MonsterKind::TestSubject, ascension),
+                Some(at(test_subject_forms[0])),
+                "A{ascension}: the row's band is the single first-form HP"
+            );
+            assert_eq!(
+                at(TEST_SUBJECT_ENRAGE_AMOUNT),
+                at(test_subject_enrage_amount),
+                "A{ascension}"
+            );
+            assert_eq!(
+                initial_power(MonsterKind::TestSubject, "EnragePower", ascension).unwrap(),
+                i64::from(at(test_subject_enrage_amount)),
+                "A{ascension}"
+            );
+        }
+
+        // The same through the accessors the validators and transitions call,
+        // at each ascension a fight can be set to, on either side of both
+        // gates (8 for HP and Plating, 9 for Enrage).
+        for ascension in [0, 7, 8, 9, 10] {
+            let state = at_ascension(ascension);
+            let at = |value: AscensionTier| tier(value, ascension) as i32;
+            assert_eq!(
+                monster_plating_cap(&state, MonsterKind::SewerClam),
+                Some(at(sewer_clam_plating)),
+                "A{ascension}"
+            );
+            for (form, former_hp) in test_subject_forms.iter().enumerate() {
+                assert_eq!(
+                    test_subject_form_hp(&state, form),
+                    Some(at(*former_hp)),
+                    "A{ascension} form {form}"
+                );
+            }
+            assert_eq!(
+                test_subject_enrage(&state),
+                at(test_subject_enrage_amount),
+                "A{ascension}"
+            );
+        }
+        assert_eq!(AXEBOT_RESPAWN_HP_BONUS, 10);
+        assert_eq!(test_subject_form_hp(&HotState::at_defaults(), 3), None);
+    }
+
     /// Soul Fysh, the issue's own example (`GetValueIfAscension(8, 221, 211)`),
     /// and the other fixed singletons: each pin admits exactly its tier.
     #[test]
@@ -7227,7 +7366,7 @@ mod tests {
 
     /// Each Plating owner's ceiling is its entry amount at the fight's tier:
     /// Frog Knight `(8, 19, 15)`, Slumbering Beetle `(8, 18, 15)`, Sewer Clam
-    /// `(8, 9, 8)` (IL-read), and the untiered Lagavulin 12 / Mysterious 6.
+    /// `(8, 9, 8)` (its model row, #2852), and the untiered Lagavulin 12 / Mysterious 6.
     #[test]
     fn plating_caps_and_the_frog_knights_countdown_follow_the_tier() {
         let below = at_ascension(7);

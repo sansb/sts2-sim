@@ -14750,13 +14750,14 @@ mod tests {
         assert!(events.is_empty());
     }
 
+    /// Bottled Potential's shuffle leaves Status Slimed above Uncommon Rage,
+    /// and Stratagem's no-choice arm keeps that live order (#3621): the
+    /// selector view would have put Rage first.
     #[test]
-    fn bottled_stratagem_no_choice_uses_native_option_order() {
+    fn bottled_stratagem_no_choice_takes_the_shuffled_pile_in_live_order() {
         let mut builder = CatalogBuilder::new();
         let rage = builder.intern(plain_identity(CardId::Rage, 0)).unwrap();
-        let thunderclap = builder
-            .intern(plain_identity(CardId::Thunderclap, 0))
-            .unwrap();
+        let slimed = builder.intern(plain_identity(CardId::Slimed, 0)).unwrap();
         let catalog = builder.build();
         let mut state = HotState::at_defaults();
         state.hp = 50;
@@ -14773,7 +14774,7 @@ mod tests {
             },
             HotCard {
                 uid: 2,
-                atom: thunderclap,
+                atom: slimed,
                 flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
             },
         ]);
@@ -14806,7 +14807,7 @@ mod tests {
                 .iter()
                 .map(|card| catalog.spec(card.atom).unwrap().identity.id)
                 .collect::<Vec<_>>(),
-            [CardId::Thunderclap, CardId::Rage]
+            [CardId::Slimed, CardId::Rage]
         );
         assert_eq!(completed.cards_drawn_combat, 0);
         assert_eq!(completed.rng.get(crate::hot::RngStream::Rng).counter, 1);
@@ -18483,7 +18484,8 @@ mod tests {
             .push(HotCard {
                 uid: 1,
                 atom: blade,
-                flags: CARD_FLAG_SOVEREIGN_BLADE_STATE,
+                // BaseReplayCount lives in slot 7 (#3629).
+                flags: CARD_FLAG_SOVEREIGN_BLADE_STATE | CARD_FLAG_DEFAULT_PHYSICAL_STATE,
             });
         let mut replayed = state.card_states.get(1);
         replayed.set_base_replay_count(Some(255)).unwrap();
@@ -20425,6 +20427,10 @@ mod tests {
         let reservation_probe = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
         let reservation_catalog = HotBoundary::catalog_from_canonical(&reservation_probe).unwrap();
         let potion_generation_headroom = reservation_for(&reservation_catalog);
+        // The hand-built catalog stands in for a session's: keep what the
+        // document's own closure keeps (#3660).
+        let catalog =
+            catalog.with_session_bookkeeping_for_test(reservation_catalog.session_bookkeeping());
         state.rng.set(
             crate::hot::RngStream::PotionGeneration,
             crate::hot::RngStreamState {

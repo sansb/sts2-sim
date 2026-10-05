@@ -135,7 +135,46 @@ check(refusalCode(() => engine.loadSave('{"schema_version": 3}')) === 'unsupport
 check(refusalCode(() => engine.loadSave(saveText, { build: 'v0.110.1' })) === 'unadmitted_build',
   'an unadmitted build is refused by name');
 
+// The player's recorded line, from a capture's bytes (#3578). Two committed
+// captures pair with an eval fixture.
+const testdata = join(here, '..', '..', '..', 'python', 'testdata');
+let recorded = 0;
+for (const [capture, id] of [
+  ['6P96T755CNZ3_mawler_win.mcr', 'f04442cd475cdc72'],
+  ['YLVVPKPH1MTW_f33_the_insatiable.mcr', 'fc78829c88941121'],
+]) {
+  const mcr = readFileSync(join(testdata, capture));
+  const dir = join(evalDir, 'fights', id);
+  const expected = JSON.parse(readFileSync(join(dir, 'human_line.json'), 'utf8'));
+  const line = engine.recordedLine(readFileSync(join(dir, 'entry.canonical.json'), 'utf8'), mcr,
+    { maxSelectionAnswers: 2048 });
+  // Compared as values: the fixture and the engine order an action's keys differently.
+  const canon = (value) => (Array.isArray(value) ? value.map(canon)
+    : value && typeof value === 'object'
+      ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canon(value[key])]))
+      : value);
+  for (const key of ['actions', 'step_digests', 'terminal']) {
+    check(JSON.stringify(canon(line[key])) === JSON.stringify(canon(expected[key])), `${capture}: recorded ${key}`);
+  }
+  const about = engine.captureSummary(mcr);
+  check(about.version === 'v0.111.0' && Number.isInteger(about.history_depth) && about.monsters.length > 0,
+    `${capture}: capture summary`);
+  recorded += 1;
+}
+check(refusalCode(() => engine.captureSummary(readFileSync(join(testdata, 'latest.mcr'))))
+  === 'unsupported_replay_build', 'another build\'s capture is refused by name');
+check(refusalCode(() => engine.recordedLine('{}', new Uint8Array(0))) === 'malformed_entry',
+  'a malformed entry is refused before the capture is read');
+
+// Which cards a selection picked (the review's wording): a non-select names none.
+{
+  const probe = engine.load(fixtures[0].entry).state;
+  check(engine.selectedUids(probe, { kind: 'end' }) === null, 'a non-select names no selection');
+  engine.drop(probe);
+}
+
 const summary = {
+  recorded,
   fixtures: fixtures.length,
   steps,
   replay_ms: Math.round(replayMs),

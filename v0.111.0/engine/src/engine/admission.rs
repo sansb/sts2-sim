@@ -704,7 +704,14 @@ pub const IMPLEMENTED_PLAYER_POWERS: [PowerId; 164] = [
     PowerId::WraithForm,
 ];
 
-const LOCAL_GENERATED_POWER_READERS: [PowerId; 4] = [
+/// The scalar player powers that answer `AfterCardGeneratedForCombat`, in
+/// the order of `fanouts.local_generated_power_order`: the walk
+/// (`engine::cards::after_local_card_generated_inner`) runs them in
+/// acquisition order, the boundary writes that order as
+/// `player.local_generated_power_order`, and its loader accepts exactly this
+/// family. Their relative order is observable: Smokestack can end the combat
+/// ahead of the others, and Trash to Treasure draws `CombatOrbGeneration`.
+pub(crate) const LOCAL_GENERATED_POWER_READERS: [PowerId; 4] = [
     PowerId::Arsenal,
     PowerId::PillarOfCreation,
     PowerId::Smokestack,
@@ -1380,6 +1387,11 @@ const MOVE_KINDS_WRITING_MONSTER_STRENGTH: [MoveKind; 17] = [
     MoveKind::Wriggle,
 ];
 
+/// The unvouched Game Piece refusal for a peer a nested Hellraiser play reads
+/// (#2909).
+const GAME_PIECE_NESTED_PLAY_ORDER: &str =
+    "Game Piece AfterCardPlayed order with a nested Hellraiser play";
+
 fn hellraiser_can_be_live(state: &HotState, catalog: &Catalog) -> bool {
     state.powers.value(PowerId::Hellraiser) > 0
         || catalog.stampede_closure().hellraiser_source_reachable
@@ -1437,46 +1449,6 @@ impl StampedeClosureFacts {
 fn spec_carries_registry_row(spec: &CardSpec) -> bool {
     crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
         .is_some_and(|row| std::ptr::eq(row, spec.row) || row == spec.row)
-}
-
-/// History Course's CreateDupe and Juggling/Adaptive Strike clones preserve
-/// IsDupe (CardModel.AfterCloned RVA 0x7d31c). A later Hellraiser Draw needs
-/// retained removed-object callbacks; the codec alone does not model them.
-fn dupe_strike_draw_can_be_reachable(state: &HotState, catalog: &Catalog) -> bool {
-    let live = PileId::ALL.into_iter().any(|pile| {
-        state.piles.get(pile).as_slice().iter().any(|card| {
-            card.flags & crate::hot::CARD_FLAG_DUPE != 0
-                && catalog
-                    .spec(card.atom)
-                    .is_some_and(|spec| spec.strike_tag && spec.is_attack)
-        })
-    });
-    live || (catalog.hooks().owns(RelicId::RelicHistoryCourse)
-        && (catalog
-            .reachable_specs()
-            .any(|spec| spec.identity.id == CardId::AdaptiveStrike)
-            || [
-                state.fanouts.history_course_attack_current_turn(),
-                state.fanouts.history_course_attack_previous_turn(),
-            ]
-            .into_iter()
-            .flatten()
-            .any(|entry| {
-                catalog
-                    .spec(entry.card.atom)
-                    .is_some_and(|spec| spec.identity.id == CardId::AdaptiveStrike)
-            })
-            || juggling_can_be_live(state, catalog)))
-}
-
-fn juggling_can_be_live(state: &HotState, catalog: &Catalog) -> bool {
-    state.powers.value(PowerId::Juggling) > 0
-        || catalog.reachable_specs().any(|spec| {
-            catalog
-                .steps(spec)
-                .iter()
-                .any(|step| step.kind == StepKind::JugglingExact)
-        })
 }
 
 pub(crate) fn hellraiser_synchronous_strike_closure_is_exact(catalog: &Catalog) -> bool {
@@ -2789,26 +2761,17 @@ pub fn admit(
         ));
     }
     let whispering_earring = catalog.hooks().owns(RelicId::RelicWhisperingEarring);
-    if hellraiser_can_be_live(state, catalog) && dupe_strike_draw_can_be_reachable(state, catalog) {
-        // #3136 retired the Scrape and "unowned Draw source" walls: every
-        // result reader now resolves a removed DUPE Strike through
-        // `draw::drawn_object_card`. Scrape prices it from its local rows and
-        // counts its discard without a move (`discard_scrape_occurrences`);
-        // Escape Plan reads its static type (BigBang 0x38c648 and Impatience
-        // 0x3a6e24 never read their Draw's result; Unrelenting 0x3c5a00 has
-        // no Draw); Expertise writes Retain to the retained instance.
-        //
-        // Confused's own resumable listener position is not represented (#2690).
-        // Retaining its target must not expose the existing zero/repeated
-        // roll shortcut; ordinary non-retained coverage remains unchanged.
-        if catalog.hooks().owns(RelicId::RelicSneckoEye)
-            || catalog.hooks().owns(RelicId::RelicFakeSneckoEye)
-        {
-            missing.insert(MissingCapability::ArgumentShape(
-                "DUPE Strike Confused Draw listener",
-            ));
-        }
-    }
+    // A Hellraiser Draw of a DUPE Strike has no wall of its own left. #3136
+    // retired the Scrape and "unowned Draw source" walls: every result reader
+    // resolves a removed DUPE Strike through `draw::drawn_object_card`. Scrape
+    // prices it from its local rows and counts its discard without a move
+    // (`discard_scrape_occurrences`); Escape Plan reads its static type
+    // (BigBang 0x38c648 and Impatience 0x3a6e24 never read their Draw's
+    // result; Unrelenting 0x3c5a00 has no Draw); Expertise writes Retain to
+    // the retained instance. #2690 retired the last one, "DUPE Strike Confused
+    // Draw listener": Confused now rolls exactly once per drawn card at its
+    // native position (`draw::confused_after_card_drawn`), on the retained
+    // object when the Strike was removed.
     if whispering_earring && state.multiplayer_ally_key != 0 {
         missing.insert(MissingCapability::ArgumentShape(
             "Whispering Earring solo target universe",
@@ -2818,7 +2781,10 @@ pub fn admit(
     // `turn::whispering_earring_loop_is_ahead`), so a root past it owes this
     // wall nothing. Ahead of it, a selecting child resolves inline under the
     // pushed VakuuCardSelector when its CardSelectCmd path was read
-    // (`selection::VakuuSelectorScope`): Glimmer and Cosmic Indifference.
+    // (`selection::VakuuSelectorScope`): Glimmer, Cosmic Indifference,
+    // Thinking Ahead (#3433) and Secret Weapon (#3608). Beside a reachable
+    // Stratagem, a child that suspends only through the plain `Draw` step
+    // is resolved too when Hellraiser cannot be live (#3637).
     if whispering_earring
         && crate::engine::turn::whispering_earring_loop_is_ahead(state)
         && catalog.reachable_specs().any(|spec| {
@@ -9811,6 +9777,172 @@ pub fn admit(
         missing.insert(MissingCapability::ArgumentShape(
             "Lost Wisp + Permafrost order with Juggernaut",
         ));
+    }
+    // #2909: the AfterCardPlayed pairs whose order is observable and that no
+    // refusal above names. v0.111.0 (DLL `9cb4f1ad…`): the Hook
+    // (`Hook/<AfterCardPlayed>d__16` `0x3ccbf4`) awaits each relic in
+    // `Player.Relics` order, and a vouched inventory runs every body at its
+    // recorded position (`relics::after_card_played_hand`, which carries the
+    // IL), so each pair is exact there in either order. An unvouched inventory
+    // runs this engine's fixed order, which is native for one of the two
+    // acquisition orders at most.
+    if !hooks.dispatch_ordered() {
+        let nested_play = hellraiser_can_be_live(state, catalog);
+        for (left, right, reachable, name) in [
+            // `MusicBox/<AfterCardPlayed>d__13` `0x32ae04` clones the played
+            // card as it stands (`CreateClone`, IL_0046);
+            // `RazorTooth::AfterCardPlayed` `0x9a1b8` upgrades that card
+            // (IL_0060). The clone is upgraded only if Razor Tooth ran first.
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicRazorTooth,
+                true,
+                "Music Box + Razor Tooth AfterCardPlayed order",
+            ),
+            // `Kusarigama/<AfterCardPlayed>d__19` `0x327fe0` damages at
+            // IL_00f6. After a lethal hit the clone is still generated
+            // (`CardPileCmd/<AddGeneratedCardsToCombat>d__6` `0x3e2f0c` gates
+            // on `IsInProgress`, IL_003e, records `CardGenerated`, IL_0120,
+            // and raises `AfterCardGeneratedForCombat`, IL_01d8), but
+            // `CardPileCmd/<Add>d__10` `0x3e1ba4` returns at its `IsEnding`
+            // check (IL_0053) without inserting it. Before the hit, the clone
+            // is in the Hand.
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicKusarigama,
+                true,
+                "Music Box + Kusarigama AfterCardPlayed order",
+            ),
+            // The same, with Juggernaut's nested hit as the lethal one
+            // (`JuggernautPower/<AfterBlockGained>d__4` `0x33dab4`).
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicDaughterOfTheWind,
+                juggernaut_reachable,
+                "Music Box + AfterCardPlayed block relic order with Juggernaut",
+            ),
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicOrnamentalFan,
+                juggernaut_reachable,
+                "Music Box + AfterCardPlayed block relic order with Juggernaut",
+            ),
+            // Both add a card to the Hand (the clone; `IronClub`'s
+            // fourth-card draw), so their order is the Hand order.
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicIronClub,
+                true,
+                "Music Box + Iron Club AfterCardPlayed order",
+            ),
+            // Juggernaut's hit and Kusarigama's hit each roll `CombatTargets`
+            // (IL_0050-IL_007e; IL_00be), so the order assigns the rolls.
+            (
+                RelicId::RelicOrnamentalFan,
+                RelicId::RelicKusarigama,
+                juggernaut_reachable,
+                "Ornamental Fan and Kusarigama order with Juggernaut",
+            ),
+            // `MummifiedHand::AfterCardPlayed` `0x97148` picks from the Hand
+            // as it stands (IL_0061-IL_010e); Game Piece draws into it.
+            (
+                RelicId::RelicMummifiedHand,
+                RelicId::RelicGamePiece,
+                true,
+                "Mummified Hand + Game Piece AfterCardPlayed order",
+            ),
+            // The pick against enemy damage on the same Power play: Lost
+            // Wisp's AoE, or Permafrost's block through Juggernaut. The pick
+            // itself is not gated on the kill (#3247), but nothing here
+            // establishes that no death listener changes the Hand or a cost
+            // it reads, so the unrecorded order refuses.
+            (
+                RelicId::RelicMummifiedHand,
+                RelicId::RelicLostWisp,
+                true,
+                "Mummified Hand + Lost Wisp AfterCardPlayed order",
+            ),
+            (
+                RelicId::RelicMummifiedHand,
+                RelicId::RelicPermafrost,
+                juggernaut_reachable,
+                "Mummified Hand + Permafrost order with Juggernaut",
+            ),
+            // Game Piece and Iron Club draw (`CardPileCmd::Draw`, IL_0089 and
+            // IL_0095), and a live Hellraiser AutoPlays a drawn Strike inside
+            // that draw. The nested powered play reads the Strength and
+            // Dexterity Rainbow Ring applies, so the fixed order (Rainbow
+            // Ring first) is wrong when Game Piece was acquired first. For
+            // Permafrost's block and for the block latches Vambrace and
+            // Pael's Legion hold for the outer card, nothing read here
+            // establishes that a nested play leaves them alone, so those
+            // refuse too. The pairs with Mummified Hand, Ivory Tile, Lost
+            // Wisp and (for Iron Club) every other peer already refuse.
+            (
+                RelicId::RelicGamePiece,
+                RelicId::RelicRainbowRing,
+                nested_play,
+                GAME_PIECE_NESTED_PLAY_ORDER,
+            ),
+            (
+                RelicId::RelicGamePiece,
+                RelicId::RelicPermafrost,
+                nested_play,
+                GAME_PIECE_NESTED_PLAY_ORDER,
+            ),
+            (
+                RelicId::RelicGamePiece,
+                RelicId::RelicVambrace,
+                nested_play,
+                GAME_PIECE_NESTED_PLAY_ORDER,
+            ),
+            (
+                RelicId::RelicGamePiece,
+                RelicId::RelicPaelsLegion,
+                nested_play,
+                GAME_PIECE_NESTED_PLAY_ORDER,
+            ),
+            (
+                RelicId::RelicIronClub,
+                RelicId::RelicPaelsLegion,
+                nested_play,
+                "Iron Club + Pael's Legion AfterCardPlayed order with a nested Hellraiser play",
+            ),
+        ] {
+            if hooks.owns(left) && hooks.owns(right) && reachable {
+                missing.insert(MissingCapability::ArgumentShape(name));
+            }
+        }
+    }
+    // #2909: Game Piece's draw is the same command as Iron Club's, and it can
+    // nest a Hellraiser AutoPlay, so it does not commute with an out-of-walk
+    // peer that counts plays (`relics::COUNTER_OUT_OF_WALK_PEERS`): this
+    // engine runs those before the walk whatever the inventory says. Recorded
+    // after the peer, the engine's order is native. Recorded before it, or on
+    // an unvouched inventory, it refuses, as a counter relic does below.
+    if hooks.owns(RelicId::RelicGamePiece) {
+        let relics = hooks.relics();
+        let position = relics
+            .iter()
+            .position(|relic| *relic == RelicId::RelicGamePiece);
+        let peer_not_before = super::relics::COUNTER_OUT_OF_WALK_PEERS
+            .into_iter()
+            .filter(|peer| {
+                hooks.owns(*peer)
+                    && !super::relics::counter_precedes_out_of_walk_peer_commutes(
+                        RelicId::RelicGamePiece,
+                        *peer,
+                    )
+            })
+            .any(|peer| {
+                !hooks.dispatch_ordered()
+                    || position.is_none_or(|position| relics[position + 1..].contains(&peer))
+            });
+        if peer_not_before {
+            missing.insert(MissingCapability::ArgumentShape(
+                "Game Piece recorded before a non-commuting out-of-walk AfterCardPlayed peer",
+            ));
+        }
     }
     let counter_relics = [RelicId::RelicIronClub, RelicId::RelicTuningFork];
     let counter_owned = counter_relics
@@ -35716,6 +35848,208 @@ mod tests {
         }
     }
 
+    /// #2909: the order-sensitive AfterCardPlayed pairs are admitted in either
+    /// order on a vouched inventory (the engine runs every body at its
+    /// recorded position) and refused by name on an unvouched one. The
+    /// Juggernaut-conditioned ones refuse only with Juggernaut reachable.
+    #[test]
+    fn after_card_played_relic_pairs_refuse_only_an_unvouched_inventory() {
+        use crate::powers::SlotWire;
+        let (_, base_state, base) = parts();
+        let block = "Music Box + AfterCardPlayed block relic order with Juggernaut";
+        let pairs = [
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicRazorTooth,
+                false,
+                "Music Box + Razor Tooth AfterCardPlayed order",
+            ),
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicKusarigama,
+                false,
+                "Music Box + Kusarigama AfterCardPlayed order",
+            ),
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicDaughterOfTheWind,
+                true,
+                block,
+            ),
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicOrnamentalFan,
+                true,
+                block,
+            ),
+            (
+                RelicId::RelicMusicBox,
+                RelicId::RelicIronClub,
+                false,
+                "Music Box + Iron Club AfterCardPlayed order",
+            ),
+            (
+                RelicId::RelicOrnamentalFan,
+                RelicId::RelicKusarigama,
+                true,
+                "Ornamental Fan and Kusarigama order with Juggernaut",
+            ),
+            (
+                RelicId::RelicMummifiedHand,
+                RelicId::RelicGamePiece,
+                false,
+                "Mummified Hand + Game Piece AfterCardPlayed order",
+            ),
+            (
+                RelicId::RelicMummifiedHand,
+                RelicId::RelicLostWisp,
+                false,
+                "Mummified Hand + Lost Wisp AfterCardPlayed order",
+            ),
+            (
+                RelicId::RelicMummifiedHand,
+                RelicId::RelicPermafrost,
+                true,
+                "Mummified Hand + Permafrost order with Juggernaut",
+            ),
+        ];
+        for (left, right, needs_juggernaut, name) in pairs {
+            let capability = MissingCapability::ArgumentShape(name);
+            for order in [[left, right], [right, left]] {
+                for vouched in [true, false] {
+                    for juggernaut in [true, false] {
+                        let mut builder = CatalogBuilder::new();
+                        for spec in base.specs() {
+                            builder.intern(spec.identity).unwrap();
+                        }
+                        builder.set_relics_ordered(&order, vouched).unwrap();
+                        let catalog = builder.build();
+                        let mut state = base_state.clone();
+                        if juggernaut {
+                            state.powers.set(PowerId::Juggernaut, SlotWire::Int, 5);
+                            assert!(
+                                state
+                                    .fanouts
+                                    .set_after_block_gained_order(&[PowerId::Juggernaut])
+                            );
+                        }
+                        let document = HotBoundary::to_canonical(&state, &catalog);
+                        let refused = admit(&document, &state, &catalog)
+                            .err()
+                            .is_some_and(|r| r.contains(capability));
+                        assert_eq!(
+                            refused,
+                            !vouched && (juggernaut || !needs_juggernaut),
+                            "{name}: {order:?} vouched={vouched} juggernaut={juggernaut}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// Whether a root holding `order` refuses `name`. The ownership caches
+    /// the boundary checks are set as a hydrated root has them.
+    fn relic_pair_refusal(
+        order: &[RelicId],
+        vouched: bool,
+        live_power: Option<PowerId>,
+        name: &'static str,
+    ) -> bool {
+        let (_, mut state, base) = parts();
+        let mut builder = CatalogBuilder::new();
+        for spec in base.specs() {
+            builder.intern(spec.identity).unwrap();
+        }
+        builder.set_relics_ordered(order, vouched).unwrap();
+        let catalog = builder.build();
+        if let Some(power) = live_power {
+            state.powers.set(power, crate::powers::SlotWire::Int, 1);
+        }
+        let owns = |relic| catalog.hooks().owns(relic);
+        state.fanouts.set_batch_eight_deep_relic_ownership(
+            false,
+            owns(RelicId::RelicBrilliantScarf),
+            false,
+            false,
+            false,
+        );
+        if owns(RelicId::RelicPaelsLegion) {
+            assert!(state.fanouts.set_paels_legion_cooldown(0));
+        }
+        let document = HotBoundary::to_canonical(&state, &catalog);
+        admit(&document, &state, &catalog)
+            .err()
+            .is_some_and(|r| r.contains(MissingCapability::ArgumentShape(name)))
+    }
+
+    /// #2909: Game Piece's draw can nest a Hellraiser AutoPlay, which the
+    /// play-counting out-of-walk peers see. The engine runs those peers
+    /// before the walk, so Game Piece recorded before one refuses, as does an
+    /// unvouched inventory; recorded after it, the engine's order is native.
+    /// The three peers `counter_precedes_out_of_walk_peer_commutes` clears
+    /// for a Power-only body never refuse.
+    #[test]
+    fn game_piece_before_a_play_counting_out_of_walk_peer_refuses() {
+        let name = "Game Piece recorded before a non-commuting out-of-walk AfterCardPlayed peer";
+        let piece = RelicId::RelicGamePiece;
+        for (peer, commutes) in [
+            (RelicId::RelicBrilliantScarf, false),
+            (RelicId::RelicUnsettlingLamp, false),
+            (RelicId::RelicVelvetChoker, false),
+            (RelicId::RelicPenNib, true),
+            (RelicId::RelicPocketwatch, true),
+            (RelicId::RelicRippleBasin, true),
+        ] {
+            for (order, vouched, refused) in [
+                ([piece, peer], true, !commutes),
+                ([peer, piece], true, false),
+                ([piece, peer], false, !commutes),
+                ([peer, piece], false, !commutes),
+            ] {
+                assert_eq!(
+                    relic_pair_refusal(&order, vouched, None, name),
+                    refused,
+                    "{order:?} vouched={vouched}"
+                );
+            }
+        }
+        assert!(!relic_pair_refusal(&[piece], true, None, name));
+    }
+
+    /// #2909: on an unvouched inventory, a drawing body beside a peer a
+    /// nested Hellraiser play reads refuses once Hellraiser can be live. A
+    /// vouched inventory runs the pair in recorded order.
+    #[test]
+    fn drawing_relic_pairs_refuse_unvouched_once_a_nested_play_is_reachable() {
+        let piece = "Game Piece AfterCardPlayed order with a nested Hellraiser play";
+        let club = "Iron Club + Pael's Legion AfterCardPlayed order with a nested Hellraiser play";
+        for (left, right, name) in [
+            (RelicId::RelicGamePiece, RelicId::RelicRainbowRing, piece),
+            (RelicId::RelicGamePiece, RelicId::RelicPermafrost, piece),
+            (RelicId::RelicGamePiece, RelicId::RelicVambrace, piece),
+            (RelicId::RelicGamePiece, RelicId::RelicPaelsLegion, piece),
+            (RelicId::RelicIronClub, RelicId::RelicPaelsLegion, club),
+        ] {
+            for order in [[left, right], [right, left]] {
+                for vouched in [true, false] {
+                    for hellraiser in [true, false] {
+                        assert_eq!(
+                            relic_pair_refusal(
+                                &order,
+                                vouched,
+                                hellraiser.then_some(PowerId::Hellraiser),
+                                name
+                            ),
+                            hellraiser && !vouched,
+                            "{order:?} vouched={vouched} hellraiser={hellraiser}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     /// The word rules are position-addressed, and a classed position that does
     /// not resolve is a refusal rather than a fallback (I5).
     #[test]
@@ -36391,8 +36725,10 @@ mod tests {
                 .unwrap_or_else(|error| panic!("{name} state failed: {error:?}"));
             admit(document, &state, &catalog)
                 .unwrap_or_else(|error| panic!("{name} admission failed: {error:?}"));
-            let projected = HotBoundary::try_to_canonical(&state, &catalog)
+            let mut projected = HotBoundary::try_to_canonical(&state, &catalog)
                 .unwrap_or_else(|error| panic!("{name} roundtrip failed: {error:?}"));
+            // Rust-only (#3660): Python never emits the bookkeeping record.
+            projected.player.remove("session_bookkeeping");
             assert_eq!(projected, *document, "{relic:?} Python projection drift");
         }
         // Dragon Fruit is census-inert in the generated registry, so it is not

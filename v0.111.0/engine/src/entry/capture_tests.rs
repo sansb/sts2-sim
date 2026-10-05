@@ -365,6 +365,32 @@ fn group(bag: &Map<String, Value>, name: &str) -> Vec<(String, Value)> {
         .collect()
 }
 
+/// Fur Coat membership from a capture (#2526): the capture writes
+/// `visited_map_coords` as `[col, row]` pairs, its props flat and its point
+/// types in PascalCase, and all three reach `entry/relics.rs` in the save's
+/// own typed shape. `minimal()` stands on the elite at `[4, 2]` of act 0.
+#[test]
+fn fur_coat_membership_reads_a_capture_like_a_save() {
+    let membership = |cols: &str, rows: &str| {
+        let mut value = minimal();
+        value["players"][0]["relics"][0]["id"] = json!("FUR_COAT");
+        value["players"][0]["relics"][0]["props"] = json!("__PROPS__");
+        let props = format!(
+            r#"{{"FurCoatActIndex":0,"FurCoatCoordCols":{cols},
+                "FurCoatCoordRows":{rows},"FurCoatCoordsSet":true}}"#
+        );
+        let run = parse(&text(&value).replace("\"__PROPS__\"", &props)).unwrap();
+        let player = run.single_player().unwrap().clone();
+        crate::entry::relics::relic_entry(&run, &player)
+            .unwrap()
+            .fur_coat_active
+    };
+    assert_eq!(membership("[3,4]", "[1,2]"), Some(true));
+    assert_eq!(membership("[3]", "[1]"), Some(false));
+    // The rest site at [4, 3] is not a point `AddMarkedRooms` keeps.
+    assert_eq!(membership("[4,4]", "[2,3]"), None);
+}
+
 #[test]
 fn property_groups_come_from_the_declared_type() {
     let card = r#"{"id":"BASH","upgrade_level":1,"enchantment":null,"props":null,"floor_added_to_deck":3}"#;

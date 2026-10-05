@@ -362,6 +362,11 @@
   "reward_card_pool": "Ironclad",
   "reward_card_rarity_odds": "EliteEncounter",
   "ruined_helmet": true,
+  "session_bookkeeping": [
+   "misery_ledger",
+   "normality_count",
+   "self_return_uids"
+  ],
   "splash_unlock_epochs": [
    "ACT2_B_EPOCH",
    "ACT3_B_EPOCH",

@@ -18,7 +18,59 @@ pick out the hard fights.
 All manifests record selection policy, game build, search seeds and budgets.
 Results retain every best action witness, root/final digests, improvement
 history, playout counts, node counts, cutoffs, failures and binary hash.
-`replay-validation.json` records separate-process Rust replay checks.
+`replay-validation.json` records the separate-process Rust replay checks made
+on the day: all 293 retained witnesses replayed to their recorded digests.
+
+### Which reports still replay
+
+None of the five result files is held to the current engine. They record what
+the 2026-09-17 engine found, and
+[`historical-reports.json`](historical-reports.json) lists each one with its
+sha256 and the reason. `verify_search_suite.py` with no arguments checks the
+committed reports: a listed report must still be the frozen file, and is not
+replayed; a report that is not listed is replayed and must verify.
+
+```sh
+python3 sim/v0.111.0/engine/tools/verify_search_suite.py                       # exit 0
+python3 sim/v0.111.0/engine/tools/verify_search_suite.py --include-historical  # replays them anyway
+```
+
+The second command fails for 291 of the 293 witnesses, one line per run with
+the reason. Measured on 2026-10-04 (#3683):
+
+| What the tool reports | Runs | Cause |
+|---|---|---|
+| `entry_missing` | 154 | the fight is one of the 112 fixtures the #2915 re-seed removed |
+| `entry_changed` | 121 | the fixture survived the re-seed (55 fights) but its entry was rebuilt from the Rust census, and the document has gained fields since (`player.after_energy_reset_order` in all 55) |
+| `final_digest_differs` | 11 | `stress-v1`: the frozen synthetic entry loads and the line replays to the recorded HP, but the final document differs |
+| `line_does_not_replay` | 5 | `stress-v1`: an engine fix changed the fight earlier in the line, so a later action is no longer legal |
+| verifies | 2 | `stress-v1`, two 33-HP random searches |
+
+Replaying the same 293 lines on the current engine from the **original**
+entries, which the current engine still loads, separates the engine's part
+from the fixture tree's:
+
+| On the current engine, from the original entry | Lines |
+|---|---|
+| reaches the recorded final digest | 192 |
+| same fight at every step on HP, block, energy, piles, monster HP and intent, and RNG; the document differs elsewhere | 82 |
+| a different fight after an engine fix, replayed to a different final state | 10 |
+| a different fight after an engine fix, and a later action is no longer legal | 9 |
+
+Of the 82, 60 differ only in fields the document has gained or dropped, and
+22 in a recorded value (the remaining turns of an enemy-applied Frail,
+Vulnerable or Weak, for most). Three of the 10 end at a different HP. Every
+one of the 19 changed fights traces to a named correction of the engine
+against the game. No fight here is one the engine now refuses: every original
+entry still loads, and the nine stops are illegal actions, not refusals.
+
+So the numbers above are a record of that engine, not a claim about this one.
+A search suite that should stay reproducible is a new manifest over the
+current fixture tree, run with `--playouts` so that the work is fixed, and
+left out of `historical-reports.json`. The `rust port` lane runs that round
+trip on two fixtures on every engine change
+(`engine/tools/test_verify_search_suite.py`): search, then replay every
+retained witness in a fresh process.
 
 - `pilot-v1.json`: eight fights selected before running the matrix: the
   longest available recorded death for each character where present,
@@ -129,6 +181,14 @@ python3 sim/v0.111.0/engine/tools/search_suite.py --manifest sim/v0.111.0/eval/s
 python3 sim/v0.111.0/engine/tools/verify_search_suite.py /tmp/pilot.json /tmp/equal-playouts.json /tmp/challenge.json /tmp/stress.json --out /tmp/validation.json
 ```
 
+Only `stress-v1.json` runs in full on the current tree: the other three
+manifests name fixtures the re-seed removed (see the note at the top), and
+those searches are reported as `refused_or_failed`.
+`search_suite.py --engine PATH/TO/sts-sim` runs the same search through the
+`sts-sim search` subcommand, so the `search_experiment` example does not have
+to be built. The verifier gives every run its own verdict, lists each failure
+with its reason and exits 1 if there is any.
+
 Three tools behind the committed data were retired by #2999 (under #2827),
 because each rooted or replayed through the Python simulator that #2827 item
 F deletes. Their outputs stay as frozen data, sha256-pinned by
@@ -140,8 +200,9 @@ history before #2999:
 * `search_experiment.py prepare` rooted the Insatiable fight in Python and
   wrote `../../engine/benchmarks/2026-09-17-insatiable-search/`'s `entry.json`,
   `human-replay.json` and `native-validation.json`. Its Rust-only `verify`
-  now lives in `verify_search_suite.py`, and it returns the same result on
-  every committed witness;
+  now lives in `verify_search_suite.py`. The move changed no verdict, but by
+  then 109 of the committed witnesses already no longer reached their
+  recorded digest (see "Which reports still replay");
 * `replay_throughput.py` wrote `throughput-insatiable.json`, a
   Python-vs-Rust transition timing.
 

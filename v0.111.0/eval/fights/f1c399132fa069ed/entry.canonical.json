@@ -202,6 +202,9 @@
   "relics_entering_dispatch_ordered": true,
   "reward_card_pool": "Ironclad",
   "reward_card_rarity_odds": "EliteEncounter",
+  "session_bookkeeping": [
+   "normality_count"
+  ],
   "splash_unlock_epochs": [
    "ACT2_B_EPOCH",
    "ACT3_B_EPOCH",

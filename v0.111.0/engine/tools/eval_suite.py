@@ -19,17 +19,25 @@ Nothing here imports the Python simulator (`combat_sim`, `solve_fight`, the
 content tree). The recorded-input resolution is the production review's own
 (`python/rust_replay.py`, #2988): one resolver, reused, so the census and the
 review cannot disagree about what a recorded input means.
+
+Every fixture stores the capture pair it was built from, gzipped, beside its
+documents (#3592): `capture.mcr.gz` and `entry.save.gz`, each the exact file
+`provenance.json` names by sha256. `census --fixtures` and `verify` read those,
+so the certification against the game's own checksums runs from a clone.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
+import gzip
 import hashlib
 import json
 import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -192,6 +200,121 @@ def sha256_file(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+# ---------------------------------------------------------------------------
+# The stored capture pair (#3592)
+# ---------------------------------------------------------------------------
+
+#: A fixture's raw inputs, gzipped beside its documents: (file name, the
+#: provenance key holding the sha256 of the UNCOMPRESSED bytes, the corpus
+#: file-name tag, the corpus suffix). The capture is the game's `.mcr` replay
+#: and the save is the entry save `sts-sim entry` roots the fight from.
+CAPTURE_FILE = "capture.mcr.gz"
+SAVE_FILE = "entry.save.gz"
+STORED_PAIR = (
+    (CAPTURE_FILE, "capture_sha256", "mcr", ".mcr"),
+    (SAVE_FILE, "save_sha256", "save", ".save"),
+)
+#: `provenance.entry_input` for a save that is an imported upload's capture
+#: run (`entry_input`, #2915). A game save records nothing.
+CAPTURE_RUN_INPUT = "--capture-run"
+
+
+def stored_pair_names(provenance: Dict[str, Any]) -> List[str]:
+    """The pair files a fixture with this provenance stores."""
+    return [name for name, key, _tag, _suffix in STORED_PAIR
+            if provenance.get(key)]
+
+
+def write_stored(path: pathlib.Path, data: bytes) -> None:
+    """Gzip `data` to `path`, with no timestamp or file name in the header.
+
+    A rewrite on the same Python is byte-stable. Another zlib may compress
+    differently, which is fine: the recorded sha256 is of the uncompressed
+    bytes.
+    """
+    with path.open("wb") as raw:
+        with gzip.GzipFile(filename="", mode="wb", fileobj=raw,
+                           compresslevel=9, mtime=0) as packed:
+            packed.write(data)
+
+
+def read_stored(path: pathlib.Path, digest: str) -> bytes:
+    """A stored file's bytes, refused unless they are the file `digest` names."""
+    try:
+        data = gzip.decompress(path.read_bytes())
+    except (OSError, EOFError, ValueError) as exc:
+        raise EvalRefusal(f"{path.name} is unreadable "
+                          f"({type(exc).__name__})") from exc
+    found = hashlib.sha256(data).hexdigest()
+    if found != digest:
+        raise EvalRefusal(
+            f"{path.name} is sha256 {found}, provenance.json records {digest}")
+    return data
+
+
+def stored_pair_problems(eval_dir: pathlib.Path) -> List[str]:
+    """Every stored capture file that is missing, extra, or the wrong bytes.
+
+    Needs no engine: this is the hash half of `verify`, and what
+    `test_eval_suite.py` pins on every checkout.
+    """
+    problems: List[str] = []
+    manifest = json.loads((eval_dir / "manifest.json").read_text())
+    for entry in manifest["fights"]:
+        directory = eval_dir / "fights" / entry["id"]
+        provenance = json.loads((directory / "provenance.json").read_text())
+        for name, key, _tag, _suffix in STORED_PAIR:
+            path = directory / name
+            if not provenance.get(key):
+                if path.exists():
+                    problems.append(f"{entry['id']}: {name} is stored but "
+                                    f"provenance.json records no {key}")
+                continue
+            if not path.is_file():
+                problems.append(f"{entry['id']}: {name} is missing")
+                continue
+            try:
+                read_stored(path, provenance[key])
+            except EvalRefusal as exc:
+                problems.append(f"{entry['id']}: {exc}")
+    return problems
+
+
+def materialize_pair(directory: pathlib.Path, provenance: Dict[str, Any],
+                     scratch: pathlib.Path,
+                     ) -> Tuple[pathlib.Path, Optional[pathlib.Path]]:
+    """Unpack one fixture's stored pair into `scratch`, in corpus shape.
+
+    The files get the watcher's names (`<id>_mcr_<sha>.mcr`,
+    `<id>_save_<sha>.save`), and an upload's capture run gets its
+    `_upload_` sidecar back, so the rest of the tool reads a stored pair
+    exactly as it reads a corpus one. Raises `EvalRefusal` for a missing file
+    or bytes that are not what `provenance.json` names.
+    """
+    if not provenance.get("capture_sha256"):
+        raise EvalRefusal("provenance.json records no capture_sha256")
+    out = scratch / directory.name
+    out.mkdir(parents=True, exist_ok=True)
+    paths: Dict[str, pathlib.Path] = {}
+    for name, key, tag, suffix in STORED_PAIR:
+        digest = provenance.get(key)
+        if not digest:
+            continue
+        if not (directory / name).is_file():
+            raise EvalRefusal(f"{name} is missing")
+        target = out / f"{directory.name}_{tag}_{digest[:12]}{suffix}"
+        target.write_bytes(read_stored(directory / name, digest))
+        paths[key] = target
+    save_path = paths.get("save_sha256")
+    if save_path is not None and (
+            provenance.get("entry_input") == CAPTURE_RUN_INPUT):
+        upload_sidecar_path(save_path).write_text(json.dumps({
+            "encounter": provenance.get("encounter"),
+            "node_type": provenance.get("node_type"),
+            "entry_input": CAPTURE_RUN_INPUT}) + "\n", encoding="utf-8")
+    return paths["capture_sha256"], save_path
+
+
 CANONICAL_SCHEMA = "sts-sim-canonical-v2"
 #: The one root source (#2999). The frozen-Python `python` source and the
 #: Rust-entry/Python-opening `rust` source were retired with the simulator;
@@ -215,10 +338,11 @@ ROOT_SOURCES = ("rust_opening",)
 #: `sim/v0.111.0/engine/src/boundary.rs` says so in its own words, and
 #: `derive_rust_only_slots` re-derives the set from that file so the two can
 #: never drift apart silently (the #1432 *new-reader-invalidates-old-shortcut*
-#: class). Today the set is `power_attachments` (#2693 S1-S3) and Scroll of
-#: Biting's repeated-CHEW latch `scroll_chew_repeated` (#3026).
+#: class). Today the set is `power_attachments` (#2693 S1-S3), Scroll of
+#: Biting's repeated-CHEW latch `scroll_chew_repeated` (#3026), and the
+#: session's bookkeeping record `session_bookkeeping` (#3660).
 RUST_ONLY_PROVENANCE_SLOTS: Tuple[str, ...] = (
-    "power_attachments", "scroll_chew_repeated")
+    "power_attachments", "scroll_chew_repeated", "session_bookkeeping")
 
 BOUNDARY_RS = RUST_DIR / "src" / "boundary.rs"
 #: `boundary.rs` marks such a slot with a `// Rust-only:` comment directly
@@ -1647,8 +1771,16 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
                state: Dict[str, Any], session: EngineSession,
                binary: pathlib.Path,
                encounter_override: Optional[Tuple[str, str]] = None,
-               powers_verdict: bool = POWERS_VERDICT_DEFAULT) -> Dict[str, Any]:
+               powers_verdict: bool = POWERS_VERDICT_DEFAULT,
+               encounter_recorded: Optional[Tuple[str, str]] = None,
+               ) -> Dict[str, Any]:
     """One fight, walked from capture to certification verdict.
+
+    `encounter_recorded` is a fixture's own `provenance.json` encounter and
+    node type (#3592). It is used only where the entry save cannot name the
+    fight: an event-room combat's encounter is recorded by a LATER save at
+    the same node, and a stored pair carries the entry save alone. Unlike
+    `encounter_override` it never replaces an encounter the save derives.
 
     Stages, in pipeline order: capture pairing (`unpaired`, `no_encounter`),
     Rust's entry (`entry_refused`, `entry_error`), Rust's opening
@@ -1672,12 +1804,16 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
         "potions": sum(1 for p in player.get("potions", []) if p.get("id")),
         "relics": len(player.get("relics", [])),
         "capture_sha256": sha256_file(capture),
+        "_capture_path": capture,
     }
     spath = state["first_save"].get(key)
     if spath is None:
         row["stage"] = "unpaired"
         return with_unusable_capture(row, replay)
     row["save_sha256"] = sha256_file(spath)
+    row["_save_path"] = spath
+    if entry_input(spath) == CAPTURE_RUN_INPUT:
+        row["entry_input"] = CAPTURE_RUN_INPUT
     save = json.loads(spath.read_text())
     try:
         inferred = derive_encounter(save, key, spath, state["run_saves"])
@@ -1686,6 +1822,8 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
         encounter, kind = encounter_override or inferred
         if encounter_override:
             row["encounter_source"] = "explicit_capture_pair"
+        elif not encounter and encounter_recorded and encounter_recorded[0]:
+            encounter, kind = encounter_recorded
     except Exception as exc:  # noqa: BLE001
         row.update(stage="no_encounter", detail=f"{type(exc).__name__}: {exc}"[:160])
         return with_unusable_capture(row, replay)
@@ -2299,9 +2437,9 @@ def refusal_facet(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 def fixture_documents(row: Dict[str, Any], kind: str) -> Dict[str, Any]:
     """The files one fixture owns, keyed by file name.
 
-    No raw `.mcr` or `.save` bytes are ever written: a fixture carries the
-    canonical entry, the sha256 provenance of the pair it came from, and the
-    recorded line.
+    These are the JSON documents: the canonical entry, the sha256 provenance
+    of the pair it came from, and the recorded line. The pair itself is
+    written beside them by `write_fixture` (`STORED_PAIR`, #3592).
     """
     provenance = {
         "schema": PROVENANCE_SCHEMA,
@@ -2321,6 +2459,9 @@ def fixture_documents(row: Dict[str, Any], kind: str) -> Dict[str, Any]:
     }
     if row.get("encounter_source"):
         provenance["encounter_source"] = row["encounter_source"]
+    if row.get("entry_input"):
+        # The save is an upload's capture run, rooted with `--capture-run`.
+        provenance["entry_input"] = row["entry_input"]
     files: Dict[str, Any] = {"provenance.json": provenance}
     if row.get("human") == "truncated":
         raise EvalRefusal(
@@ -2361,7 +2502,7 @@ def manifest_entry(row: Dict[str, Any], kind: str,
         "id": row["id"],
         "kind": kind,
         "categories": categories_for(row, kind),
-        "files": sorted(files),
+        "files": sorted(list(files) + stored_pair_names(row)),
         "seed": row["seed"],
         "node": row["node"],
         "encounter": row.get("encounter"),
@@ -2391,19 +2532,25 @@ def write_fixture(row: Dict[str, Any], kind: str,
     """Write one fixture directory and return its manifest entry.
 
     Refuses (I5) rather than writing a partial fixture: `fixture_documents`
-    raises before anything is created.
+    raises before anything is created. The capture pair the row was built
+    from is stored beside the documents (#3592).
     """
     files = fixture_documents(row, kind)
     entry = manifest_entry(row, kind, files)
+    pair = {name: row[source].read_bytes() for name, source in (
+        (CAPTURE_FILE, "_capture_path"), (SAVE_FILE, "_save_path"))
+        if name in entry["files"]}
     directory = eval_dir / "fights" / row["id"]
     directory.mkdir(parents=True, exist_ok=True)
-    for name in sorted(directory.glob("*.json")):
-        if name.name not in files:
+    for name in sorted(directory.iterdir()):
+        if name.name not in entry["files"]:
             name.unlink()
     for name, document in files.items():
         (directory / name).write_text(
             json.dumps(document, indent=1, sort_keys=False) + "\n",
             encoding="utf-8")
+    for name, data in pair.items():
+        write_stored(directory / name, data)
     return entry
 
 
@@ -2418,9 +2565,9 @@ def write_manifest(entries: List[Dict[str, Any]], summary: Dict[str, Any],
         "build": BUILD_ID,
         "generated_by": "sim/v0.111.0/engine/tools/eval_suite.py",
         "consent": (
-            "Captures contributed by Sean and consenting friends (#2048, "
-            "2026-09-05). Fixtures carry opaque ids and sha256 provenance; "
-            "no usernames, file names, or raw capture bytes."),
+            "Sean's own fights, published with their raw capture pairs "
+            "(#3592). Fixtures carry opaque ids; each capture.mcr.gz and "
+            "entry.save.gz is the file its provenance sha256 names."),
         "census": summary,
         "categories": {name: sorted(ids)
                        for name, ids in sorted(categories.items())},
@@ -2842,12 +2989,199 @@ def import_uploads(archive: pathlib.Path, history: pathlib.Path,
             "skipped": dict(sorted(skipped.items()))}
 
 
-def verify_fixtures(eval_dir: pathlib.Path, captures: pathlib.Path,
+@contextlib.contextmanager
+def fixture_pairs(eval_dir: pathlib.Path,
+                  captures: Optional[pathlib.Path] = None):
+    """Yield `locate(fixture id, provenance) -> (capture, entry save | None)`.
+
+    With no `captures` the pair is the one stored beside the fixture,
+    unpacked into a scratch directory that lives as long as the context
+    (#3592). With a corpus directory it is found there by sha256, as it was
+    before the pairs were stored. Either way `locate` raises `EvalRefusal`
+    naming what is missing or wrong, and an unpaired-capture fixture, which
+    records no `save_sha256`, has no save.
+    """
+    if captures is None:
+        with tempfile.TemporaryDirectory(prefix="sts-eval-pairs-") as scratch:
+            yield lambda fixture, provenance: materialize_pair(
+                eval_dir / "fights" / fixture, provenance,
+                pathlib.Path(scratch))
+        return
+    by_sha = index_by_sha(captures)
+
+    def locate(_fixture: str, provenance: Dict[str, Any]):
+        capture = by_sha.get(provenance.get("capture_sha256") or "")
+        if capture is None:
+            raise EvalRefusal(f"capture not in {captures}")
+        save_path = None
+        if provenance.get("save_sha256"):
+            save_path = by_sha.get(provenance["save_sha256"])
+            if save_path is None:
+                raise EvalRefusal(f"entry save not in {captures}")
+        return capture, save_path
+
+    yield locate
+
+
+def _recorded_encounter(provenance: Dict[str, Any], explicit: bool,
+                        ) -> Optional[Tuple[str, str]]:
+    """A fixture's recorded (encounter, node type), for one of two readers.
+
+    `explicit` asks for the `add --encounter` override, present only on a
+    fixture that was added with one. Otherwise it is the fallback a stored
+    pair needs when its save cannot name the fight (`census_row`).
+    """
+    is_explicit = provenance.get("encounter_source") == "explicit_capture_pair"
+    if explicit != is_explicit or not provenance.get("encounter"):
+        return None
+    return provenance["encounter"], provenance.get("node_type")
+
+
+def run_fixture_census(eval_dir: pathlib.Path, binary: pathlib.Path,
+                       progress: bool = False,
+                       powers_verdict: bool = POWERS_VERDICT_DEFAULT,
+                       ) -> Dict[str, Any]:
+    """The census over the fixtures' own stored capture pairs (#3592).
+
+    Each fixture's `capture.mcr.gz` and `entry.save.gz` are checked against
+    the sha256 pair in its `provenance.json`, then walked through
+    `census_row`, the same code the corpus census runs: Rust's entry and
+    opening, the recorded line, and every native checkpoint the capture
+    carries. Nothing is read from the fixture's `entry.canonical.json` or
+    `human_line.json`, so the verdict is the game's checksums against the
+    engine, not the engine against its own stored output.
+
+    `fixture_check` compares the result with the manifest: every fixture
+    must reach the `lockstep` verdict the manifest records, and a stored
+    file that is missing or the wrong bytes is a problem, never a skip.
+    """
+    manifest = json.loads((eval_dir / "manifest.json").read_text())
+    rows: List[Dict[str, Any]] = []
+    problems: List[str] = []
+    saves = 0
+    started = time.time()
+    session = EngineSession(binary)
+    try:
+        with fixture_pairs(eval_dir) as locate:
+            for index, entry in enumerate(manifest["fights"]):
+                provenance = json.loads((eval_dir / "fights" / entry["id"]
+                                         / "provenance.json").read_text())
+                try:
+                    capture, save_path = locate(entry["id"], provenance)
+                    row, _kind = pair_row(
+                        capture, save_path, binary, session,
+                        encounter_override=_recorded_encounter(provenance, True),
+                        encounter_recorded=_recorded_encounter(provenance, False),
+                        run_saves=[], powers_verdict=powers_verdict)
+                except EvalRefusal as exc:
+                    problems.append(f"{entry['id']}: {exc}")
+                    continue
+                saves += save_path is not None
+                rows.append(row)
+                if row["id"] != entry["id"]:
+                    problems.append(f"{entry['id']}: the stored capture is "
+                                    f"fight {row['id']}")
+                elif row.get("lockstep") != entry.get("lockstep"):
+                    problems.append(
+                        f"{entry['id']}: lockstep {row.get('lockstep')}, "
+                        f"the manifest records {entry.get('lockstep')}")
+                if progress and (index + 1) % 50 == 0:
+                    print(f"  {index + 1}/{len(manifest['fights'])} "
+                          f"({time.time() - started:.0f}s)", file=sys.stderr,
+                          flush=True)
+    finally:
+        session.close()
+    summary = census_summary(rows)
+    return {
+        "captures": "stored fixture pairs",
+        "build": BUILD_ID,
+        "root_with": "rust_opening",
+        "powers_verdict": powers_verdict,
+        "saves_scanned": saves,
+        "captures_skipped": {},
+        "seconds": round(time.time() - started, 1),
+        "rows": rows,
+        "summary": summary,
+        "fixture_check": {
+            "fixtures": len(manifest["fights"]),
+            "manifest_certified": sum(
+                1 for entry in manifest["fights"]
+                if entry.get("lockstep") == "lockstep_ok"),
+            "certified": summary["certified"],
+            "problems": problems,
+        },
+    }
+
+
+def fixture_check_line(check: Dict[str, Any]) -> str:
+    """One line: the stored-pair census against the manifest."""
+    verdict = ("reproduced" if not check["problems"]
+               else f"NOT reproduced, {len(check['problems'])} problem(s)")
+    return (f"stored pairs: {check['certified']} certified of "
+            f"{check['fixtures']} fixtures; the manifest records "
+            f"{check['manifest_certified']} certified: {verdict}")
+
+
+def store_captures(eval_dir: pathlib.Path,
+                   captures: pathlib.Path) -> Dict[str, Any]:
+    """Store every fixture's capture pair from a corpus, found by sha256.
+
+    The backfill for a tree written before #3592, and the repair for a
+    fixture whose stored pair `verify` reports: `add` and `seed` store the
+    pair themselves. It also records `entry_input` for a save that is an
+    upload's capture run (its `_upload_` sidecar is beside it in the corpus)
+    and lists the pair in the manifest entry's `files`. A fixture whose files
+    are not in the corpus is reported by id and left as it was.
+    """
+    manifest_path = eval_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    by_sha = index_by_sha(captures, ("**/*.mcr", "**/*.save"))
+    stored: List[str] = []
+    missing: List[str] = []
+    raw = compressed = 0
+    for entry in manifest["fights"]:
+        directory = eval_dir / "fights" / entry["id"]
+        provenance_path = directory / "provenance.json"
+        provenance = json.loads(provenance_path.read_text())
+        sources = {name: by_sha.get(provenance[key])
+                   for name, key, _tag, _suffix in STORED_PAIR
+                   if provenance.get(key)}
+        absent = sorted(name for name, path in sources.items() if path is None)
+        if absent:
+            missing.append(f"{entry['id']}: no corpus file for "
+                           f"{', '.join(absent)}")
+            continue
+        for name, source in sources.items():
+            data = source.read_bytes()
+            write_stored(directory / name, data)
+            raw += len(data)
+            compressed += (directory / name).stat().st_size
+        save_source = sources.get(SAVE_FILE)
+        provenance.pop("entry_input", None)
+        if save_source is not None and (
+                entry_input(save_source) == CAPTURE_RUN_INPUT):
+            provenance["entry_input"] = CAPTURE_RUN_INPUT
+        provenance_path.write_text(
+            json.dumps(provenance, indent=1, sort_keys=False) + "\n",
+            encoding="utf-8")
+        entry["files"] = sorted(
+            {name for name in entry["files"] if name.endswith(".json")}
+            | set(sources))
+        stored.append(entry["id"])
+    manifest_path.write_text(json.dumps(manifest, indent=1) + "\n",
+                             encoding="utf-8")
+    return {"fixtures": len(manifest["fights"]), "stored": len(stored),
+            "raw_bytes": raw, "compressed_bytes": compressed,
+            "missing": missing}
+
+
+def verify_fixtures(eval_dir: pathlib.Path, captures: Optional[pathlib.Path],
                     binary: pathlib.Path) -> Dict[str, Any]:
     """Re-derive every rooted fixture from its provenance through Rust.
 
-    The capture and entry save are located by the sha256 pair the fixture
-    records — no file name, no player, nothing but the hashes — and walked
+    The capture and entry save are the pair stored beside the fixture, each
+    checked against the sha256 its provenance records (`captures=None`), or
+    are located in a corpus directory by that sha256 pair. They are walked
     through exactly the calls the census makes: Rust's opening, then the
     recorded line through Rust. A fixture whose canonical root, action line,
     step digests or terminal no longer reproduce is reported, never repaired.
@@ -2858,27 +3192,25 @@ def verify_fixtures(eval_dir: pathlib.Path, captures: pathlib.Path,
     what this check must flag rather than excuse.
     """
     manifest = json.loads((eval_dir / "manifest.json").read_text())
-    by_sha = index_by_sha(captures)
 
     checked = 0
     lines_checked = 0
     problems: List[str] = []
     session = EngineSession(binary)
+    pairs = contextlib.ExitStack()
     try:
+        locate = pairs.enter_context(fixture_pairs(eval_dir, captures))
         for entry in manifest["fights"]:
             directory = eval_dir / "fights" / entry["id"]
             provenance = json.loads((directory / "provenance.json").read_text())
-            capture = by_sha.get(provenance["capture_sha256"])
-            if capture is None:
-                problems.append(f"{entry['id']}: capture not in {captures}")
+            try:
+                capture, save_path = locate(entry["id"], provenance)
+            except EvalRefusal as exc:
+                problems.append(f"{entry['id']}: {exc}")
                 continue
-            save_path = by_sha.get(provenance.get("save_sha256") or "")
             if save_path is None:
                 # An unpaired-capture fixture records exactly that: there is
                 # no entry save at its node, which is the refusal it pins.
-                if provenance.get("save_sha256"):
-                    problems.append(
-                        f"{entry['id']}: entry save not in {captures}")
                 continue
             if not (directory / "entry.canonical.json").is_file():
                 continue
@@ -2922,6 +3254,7 @@ def verify_fixtures(eval_dir: pathlib.Path, captures: pathlib.Path,
                 problems.append(f"{entry['id']}: recorded terminal state changed")
     finally:
         session.close()
+        pairs.close()
     return {"fixtures": len(manifest["fights"]), "rooted_checked": checked,
             "lines_checked": lines_checked, "problems": problems}
 
@@ -3000,7 +3333,7 @@ def label_differences(entry: Dict[str, Any], files: Dict[str, Any],
     return out
 
 
-def verify_labels(eval_dir: pathlib.Path, captures: pathlib.Path,
+def verify_labels(eval_dir: pathlib.Path, captures: Optional[pathlib.Path],
                   binary: pathlib.Path) -> Dict[str, Any]:
     """Compare every fixture with what `add` writes from the census (#3270).
 
@@ -3009,38 +3342,34 @@ def verify_labels(eval_dir: pathlib.Path, captures: pathlib.Path,
     encounter, as `add --encounter` did), refusal fixtures with no
     `entry.canonical.json`, and unpaired captures. A difference is reported
     by fixture and field, never repaired: refresh with `add`.
+
+    `captures=None` reads each fixture's stored pair (#3592). An event-room
+    fight's encounter then comes from the fixture's own provenance, since the
+    later save a corpus derives it from is not part of the pair; with a
+    corpus directory it is derived from that save, as before.
     """
     manifest = json.loads((eval_dir / "manifest.json").read_text())
-    by_sha = index_by_sha(captures)
-    run_saves = scan_saves(captures)
+    run_saves = scan_saves(captures) if captures is not None else []
     checked = 0
     differences: List[str] = []
     session = EngineSession(binary)
+    pairs = contextlib.ExitStack()
     try:
+        locate = pairs.enter_context(fixture_pairs(eval_dir, captures))
         for entry in manifest["fights"]:
             directory = eval_dir / "fights" / entry["id"]
             files = {path.name: json.loads(path.read_text())
                      for path in sorted(directory.glob("*.json"))}
             provenance = files.get("provenance.json") or {}
-            capture = by_sha.get(provenance.get("capture_sha256") or "")
-            if capture is None:
-                differences.append(f"{entry['id']}: capture not in {captures}")
-                continue
-            save_path = None
-            if provenance.get("save_sha256"):
-                save_path = by_sha.get(provenance["save_sha256"])
-                if save_path is None:
-                    differences.append(
-                        f"{entry['id']}: entry save not in {captures}")
-                    continue
-            override = None
-            if provenance.get("encounter_source") == "explicit_capture_pair":
-                override = (provenance.get("encounter"),
-                            provenance.get("node_type"))
             try:
-                row, kind = pair_row(capture, save_path, binary, session,
-                                     encounter_override=override,
-                                     run_saves=run_saves)
+                capture, save_path = locate(entry["id"], provenance)
+                row, kind = pair_row(
+                    capture, save_path, binary, session,
+                    encounter_override=_recorded_encounter(provenance, True),
+                    encounter_recorded=(
+                        _recorded_encounter(provenance, False)
+                        if captures is None else None),
+                    run_saves=run_saves)
             except EvalRefusal as exc:
                 differences.append(f"{entry['id']}: {exc}")
                 continue
@@ -3049,6 +3378,7 @@ def verify_labels(eval_dir: pathlib.Path, captures: pathlib.Path,
                                label_differences(entry, files, row, kind))
     finally:
         session.close()
+        pairs.close()
     return {"fixtures": len(manifest["fights"]), "labels_checked": checked,
             "label_differences": differences}
 
@@ -3064,6 +3394,8 @@ def pair_row(capture: pathlib.Path, entry_save: Optional[pathlib.Path],
              binary: pathlib.Path, session: EngineSession, *,
              encounter_override: Optional[Tuple[str, str]] = None,
              run_saves: Optional[List[Dict[str, Any]]] = None,
+             encounter_recorded: Optional[Tuple[str, str]] = None,
+             powers_verdict: bool = POWERS_VERDICT_DEFAULT,
              ) -> Tuple[Dict[str, Any], str]:
     """The census row and fixture kind `add` writes for one capture pair.
 
@@ -3101,7 +3433,9 @@ def pair_row(capture: pathlib.Path, entry_save: Optional[pathlib.Path],
             if (item["seed"], item["start_time"]) == (key[0], key[1])]},
     }
     row = census_row(key, capture, replay, state, session, binary,
-                     encounter_override=encounter_override)
+                     encounter_override=encounter_override,
+                     powers_verdict=powers_verdict,
+                     encounter_recorded=encounter_recorded)
     return row, ("line" if row.get("_line") else "refusal")
 
 
@@ -3984,16 +4318,28 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
     parser.add_argument(
         "command", nargs="?",
-        choices=["census", "add", "seed", "verify", "import-uploads"],
-        help="census: walk the capture corpus end to end (#2048); "
+        choices=["census", "add", "seed", "verify", "import-uploads",
+                 "store-captures"],
+        help="census: walk a capture corpus end to end (#2048), or with "
+             "--fixtures the capture pairs stored in the fixture tree; "
              "add: write one fixture from an --mcr/--save pair; "
              "import-uploads: write the mod uploader's archived fights "
              "into the corpus (#2915); "
              "seed: rebuild the fixture tree from a census; "
-             "verify: re-derive every fixture from its provenance, and "
-             "compare its labels with what `add` writes from the census.")
-    parser.add_argument("--captures", type=str, default=str(CAPTURES_DEFAULT),
-                        help="Capture corpus directory for census/seed")
+             "verify: check every stored capture pair against its recorded "
+             "sha256, re-derive every fixture from it, and compare its "
+             "labels with what `add` writes from the census; "
+             "store-captures: store every fixture's pair from a corpus.")
+    parser.add_argument("--captures", type=str,
+                        help="Capture corpus directory (census, seed, "
+                             "import-uploads, store-captures: default "
+                             f"{CAPTURES_DEFAULT}). verify: locate each "
+                             "pair here by sha256 instead of reading the "
+                             "stored pair")
+    parser.add_argument("--fixtures", action="store_true",
+                        help="census: run over the capture pairs stored in "
+                             "the fixture tree, and compare the verdicts "
+                             "with the manifest (#3592)")
     parser.add_argument("--eval-dir", type=str, default=str(EVAL_DIR),
                         help="Fixture tree written by add/seed")
     parser.add_argument("--census-json", type=str,
@@ -4030,12 +4376,27 @@ def main():
         return
     if args.command is None:
         parser.error("name a command (census, add, seed, verify, "
-                     "import-uploads) or --self-test")
+                     "import-uploads, store-captures) or --self-test")
 
-    if args.command == "import-uploads":
-        captures = pathlib.Path(args.captures).expanduser().resolve()
+    def corpus(required: bool = True) -> Optional[pathlib.Path]:
+        if args.captures is None and not required:
+            return None
+        captures = pathlib.Path(
+            args.captures or CAPTURES_DEFAULT).expanduser().resolve()
         if not captures.is_dir():
             sys.exit(f"capture corpus not found: {captures}")
+        return captures
+
+    if args.fixtures and (args.command != "census" or args.captures):
+        parser.error("--fixtures is `census --fixtures`, without --captures")
+
+    if args.command == "store-captures":
+        report = store_captures(pathlib.Path(args.eval_dir).resolve(), corpus())
+        print(json.dumps(report, indent=1))
+        sys.exit(1 if report["missing"] else 0)
+
+    if args.command == "import-uploads":
+        captures = corpus()
         report = import_uploads(
             pathlib.Path(args.upload_archive).expanduser(),
             pathlib.Path(args.run_history).expanduser(), captures)
@@ -4045,11 +4406,13 @@ def main():
     binary = find_engine_binary(args.binary)
 
     if args.command in ("census", "seed"):
-        captures = pathlib.Path(args.captures).expanduser().resolve()
-        if not captures.is_dir():
-            sys.exit(f"capture corpus not found: {captures}")
-        census = run_census(captures, binary, progress=args.progress,
-                            powers_verdict=args.powers_verdict)
+        if args.fixtures:
+            census = run_fixture_census(
+                pathlib.Path(args.eval_dir).resolve(), binary,
+                progress=args.progress, powers_verdict=args.powers_verdict)
+        else:
+            census = run_census(corpus(), binary, progress=args.progress,
+                                powers_verdict=args.powers_verdict)
         if args.census_json:
             pathlib.Path(args.census_json).write_text(
                 json.dumps(census_json(census), indent=1) + "\n",
@@ -4063,19 +4426,27 @@ def main():
             print(census_markdown(census))
         if args.json:
             print(json.dumps(census_json(census), indent=1))
+        check = census.get("fixture_check")
+        if check:
+            # stderr, so `--json` stays one document on stdout.
+            print(fixture_check_line(check), file=sys.stderr)
+            for problem in check["problems"]:
+                print(f"  {problem}", file=sys.stderr)
+            sys.exit(1 if check["problems"] else 0)
         return
 
     if args.command == "verify":
-        captures = pathlib.Path(args.captures).expanduser().resolve()
-        if not captures.is_dir():
-            sys.exit(f"capture corpus not found: {captures}")
+        captures = corpus(required=False)
         eval_dir = pathlib.Path(args.eval_dir).resolve()
-        report = verify_fixtures(eval_dir, captures, binary)
+        report: Dict[str, Any] = {
+            "pairs": str(captures) if captures else "stored",
+            "stored_pair_problems": stored_pair_problems(eval_dir)}
+        report.update(verify_fixtures(eval_dir, captures, binary))
         if args.labels:
             report.update(verify_labels(eval_dir, captures, binary))
         print(json.dumps(report, indent=1))
-        sys.exit(1 if report["problems"] or report.get("label_differences")
-                 else 0)
+        sys.exit(1 if report["stored_pair_problems"] or report["problems"]
+                 or report.get("label_differences") else 0)
 
     if args.command == "add":
         if not args.mcr or not args.entry_save:

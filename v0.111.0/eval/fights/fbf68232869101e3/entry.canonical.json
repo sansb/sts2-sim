@@ -385,6 +385,9 @@
   "reward_card_pool": "Ironclad",
   "reward_card_rarity_odds": "RegularEncounter",
   "self_forming_clay": true,
+  "session_bookkeeping": [
+   "misery_ledger"
+  ],
   "splash_unlock_epochs": [
    "ACT2_B_EPOCH",
    "ACT3_B_EPOCH",

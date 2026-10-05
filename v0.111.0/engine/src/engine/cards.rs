@@ -405,6 +405,26 @@ fn aeonglass_owner_state_is_exact(
         && !state.ringing()
 }
 
+/// Regalite does not make an Aeonglass state inexact (#3297). Until then this
+/// predicate refused the relic outright, because its awaited `GainBlock` could
+/// suspend a generated-card transaction. Both native Wither writers pass a null
+/// creator (v0.111.0 `sts2.dll` SHA-256 `9cb4f1ad…`):
+/// `Aeonglass/<IncreasingIntensityMove>d__36::MoveNext` RVA `0x3529ec`
+/// IL_013d-IL_014c is `AddToCombatAndPreview<Wither>(targets, Discard,
+/// WitherAmount, null, Bottom)` (`ldnull` at IL_014a), and
+/// `WitheringPresencePower/<AfterCardPlayed>d__14::MoveNext` RVA `0x34af14`
+/// IL_00ed-IL_0105 is `(owner, Hand, 1, null, Bottom)` (`ldnull` at IL_0103).
+/// `CardPileCmd/<AddToCombatAndPreview>d__27` RVA `0x3e334c` IL_00c4-IL_00d5
+/// forwards that creator to one singular `AddGeneratedCardToCombat` per card.
+/// `Regalite/<AfterCardGeneratedForCombat>d__8::MoveNext` RVA `0x32f988`
+/// leaves on a null creator at IL_0020-IL_0026 (`brfalse.s` to the `leave` at
+/// IL_0036), before `set_UsedThisTurn` (IL_0048) and before its only await
+/// (`GainBlock`, IL_006d). Its two other hooks, `BeforeSideTurnStart` (RVA
+/// `0x9a497`) and `AfterCombatEnd` (RVA `0x9a4be`), never read a Wither.
+///
+/// The other pairing, an owner-created Wither that an unused Regalite
+/// answers, is ordered by the listener walk read on
+/// [`after_local_card_generated_inner`] (#3606).
 fn aeonglass_state_is_exact_inner(
     state: &HotState,
     catalog: &Catalog,
@@ -417,10 +437,6 @@ fn aeonglass_state_is_exact_inner(
         enchantment: None,
     };
     aeonglass_owner_state_is_exact(state, allow_intensity_gap, allow_countdown_zero, false)
-        && !catalog
-            .hooks()
-            .relics()
-            .contains(&crate::ids::RelicId::RelicRegalite)
         && catalog.is_reachable(wither_identity)
         && catalog
             .atom(&wither_identity)
@@ -468,12 +484,30 @@ pub(crate) struct FrozenPhysicalCardMove {
 /// the successful command preserves physical object identity and result order.
 ///
 /// Every member is authenticated before the first removal. The current-build
-/// `AfterCardChangedPiles` census contains only Bing Bong, Darkstone Periapt,
-/// and Lucky Fysh. Those three exact subscribers remain refused by R2
-/// admission; admitted Unsettling Lamp is not a subscriber. Therefore ordered
-/// `CardResolved` publication is the complete admitted observable move
-/// boundary. Any future admitted listener invalidates that source-derived
-/// assumption before this helper may remain reachable.
+/// `AfterCardChangedPiles` census is six overrides outside the two `Mock*`
+/// test powers (#3606; an earlier revision of this doc named only three):
+///
+/// - Bing Bong (`<AfterCardChangedPiles>d__5` RVA `0x31fbf0` IL_0021-IL_003f),
+///   Darkstone Periapt (`d__4` RVA `0x322664` IL_0021-IL_003f) and Lucky Fysh
+///   (`d__7` RVA `0x329f6c` IL_0021-IL_003f) leave unless the card's pile is
+///   the Deck (`PileType` 6). None is in `IMPLEMENTED_RELICS`.
+/// - Book of Five Rings (`d__19` RVA `0x320238`) leaves on a dead owner
+///   (IL_0021-IL_0030), a foreign card owner (IL_003d-IL_0048) and any pile
+///   but the Deck (IL_0055-IL_006c). It is admitted, and it stays inert here.
+/// - Hoarder, a run modifier (`d__1` RVA `0x3777f4` IL_002e-IL_0045), has the
+///   same Deck gate.
+/// - `SovereignBlade::AfterCardChangedPiles` RVA `0xec068` returns unless the
+///   moved card is itself (IL_0001-IL_0003). Its body is presentation only:
+///   `ForgeCmd::PlayCombatRoomForgeVfx` (IL_0021) and
+///   `RemoveSovereignBladeNode` (IL_0035) for the Exhaust pile.
+///
+/// `AfterCardChangedPilesLate` has one override, `SoulFysh` RVA `0xbed1c`,
+/// which sets a music parameter. Admitted Unsettling Lamp is not a subscriber.
+/// This helper's destinations are combat piles, never the Deck, so no
+/// subscriber changes combat state and ordered `CardResolved` publication is
+/// the complete observable move boundary. An override that answers a combat
+/// pile in a later build invalidates that before this helper may remain
+/// reachable.
 pub(crate) fn move_frozen_physical_cards_to_bottom(
     state: &mut HotState,
     catalog: &Catalog,
@@ -3667,10 +3701,34 @@ pub(crate) fn withering_after_card_played(
     apply(state, catalog, true, events)
 }
 
-/// Validate a fixed generated-card batch without publishing any transaction.
-/// Multi-command monster moves use this wall so the second command cannot
-/// discover a deterministic capacity failure after the first card entered.
-pub(crate) fn preflight_generated_card_batch(
+/// Validate a fixed null-creator generated-card batch without publishing any
+/// transaction. Multi-command monster moves use this wall so the second
+/// command cannot discover a deterministic capacity failure after the first
+/// card entered.
+///
+/// It checks exactly what [`inject_generated_null_random`] and
+/// [`inject_generated_null_bottom`] write: the generated-listener epoch, the
+/// card uid, and the Strike count. It checks no owner history and no Arsenal or
+/// Pillar of Creation arithmetic (#3297), because a null-creator card reaches
+/// neither (v0.111.0 `sts2.dll` SHA-256 `9cb4f1ad…`):
+///
+/// - `CardPileCmd/<AddGeneratedCardsToCombat>d__6::MoveNext` RVA `0x3e2f0c`
+///   records `CombatHistory::CardGenerated` with the command's creator
+///   (IL_011b-IL_0120) and passes the same field to
+///   `Hook::AfterCardGeneratedForCombat` (IL_01d3-IL_01d8). Owner-generated
+///   history is the `Creator == Owner` filter (`Supermassive`,
+///   `<>c__DisplayClass2_0::<get_CanonicalVars>b__1` RVA `0x3c0aa8`), which a
+///   null creator never passes.
+/// - `ArsenalPower/<AfterCardGeneratedForCombat>d__6::MoveNext` RVA `0x334ec8`
+///   IL_001d-IL_0023 and `PillarOfCreationPower/<…>d__6::MoveNext` RVA
+///   `0x340488` IL_001d-IL_0023 leave on a null creator (`brfalse.s` to the
+///   `leave` at IL_0038), before `Apply<StrengthPower>` (IL_0061) and
+///   `GainBlock` (IL_0057).
+///
+/// Until #3297 this preflight also refused at the owner-history ceiling and at
+/// the Strength and Block ceilings those two powers would have reached, which
+/// refused states the null commands themselves accept.
+pub(crate) fn preflight_generated_null_card_batch(
     state: &HotState,
     catalog: &Catalog,
     identity: CardIdentity,
@@ -3683,18 +3741,10 @@ pub(crate) fn preflight_generated_card_batch(
     if state.history.over {
         return Ok(());
     }
-    preflight_generated_power_batch(state, count, false)?;
     let count_u32 =
         u32::try_from(count).map_err(|_| EngineRefusal::CounterOverflow("generated card batch"))?;
     let count_i32 =
         i32::try_from(count).map_err(|_| EngineRefusal::CounterOverflow("generated card batch"))?;
-    state
-        .history
-        .owner_generated_cards_combat
-        .checked_add(count_i32)
-        .ok_or(EngineRefusal::CounterOverflow(
-            "owner_generated_cards_combat",
-        ))?;
     state
         .next_generated_hook_uid
         .checked_add(count_i32)
@@ -3901,6 +3951,47 @@ fn inject_generated_record_before_ending_bottom_impl(
 /// ordinary descending Fisher-Yates walk, one bounded Generation-stream draw
 /// for every `n = len..2`; a 50-row pool therefore costs 49 draws and the
 /// current Largesse pool costs 61, independent of the retained prefix length.
+///
+/// # The unmodeled test override (#3157)
+///
+/// Before any of that, `GetDistinctForCombat` IL_0019 calls
+/// `TestRngInjector::ConsumeCombatCardGenerationOverride` (RVA `0x12374`) and
+/// returns its list unshuffled when it is non-null (IL_0020-IL_0023), drawing
+/// nothing. No generator here models that arm, and none needs to: the storage
+/// can never hold a list in a fight this crate admits.
+///
+/// The storage is the private static
+/// `MegaCrit.Sts2.Core.TestSupport.TestRngInjector::_combatCardGenerationOverride`
+/// (Field rid 312). A token scan of all 50,816 method bodies in the DLL finds
+/// four references to it and no others:
+///
+/// * `SetCombatCardGenerationOverride` RVA `0x1236a` IL_0002 `stsfld` — the
+///   only writer of a non-null value. It is public static and has **no
+///   caller**: no `call`/`callvirt`/`ldftn`/`newobj` operand anywhere resolves
+///   to it, directly or through a MethodSpec.
+/// * `ConsumeCombatCardGenerationOverride` RVA `0x12374` IL_000c `ldsfld`, then
+///   IL_0013 `stsfld` of `ldnull` — the read-and-clear `GetDistinctForCombat`
+///   calls.
+/// * `Cleanup` RVA `0x123b2` IL_0019 `stsfld` of `ldnull`; it has no caller
+///   either.
+///
+/// No card, relic, potion, power, monster move, enchantment, modifier, event or
+/// dev-console command is a writer, so there is no owner to refuse at
+/// admission. The names occur nowhere as UTF-16 string literals (no reflection
+/// by name), and no other file in the archived build names `TestRngInjector`
+/// except the XML doc, which describes the setter as forcing cards "for
+/// CardFactory.GetDistinctForCombat" in tests. The sibling relic and
+/// initial-shuffle overrides on the same type have the same shape: a setter
+/// with no caller.
+///
+/// The finding is a fact about one DLL, so it is bound to the build rather than
+/// to an admitted id set: `combat_card_generation_override_audit_covers_every_admitted_build`
+/// fails when a second build is admitted, and the re-audit is
+/// `tools/scan_calls.py SetCombatCardGenerationOverride` in the per-build
+/// Python layer (no output means no caller; the same scan over
+/// `ConsumeCombatCardGenerationOverride` must print `GetDistinctForCombat`,
+/// which proves the scan sees cross-type callers). A mod could call the public
+/// setter; modded runs are outside what this crate certifies.
 pub fn shuffle_generation_pool<const N: usize>(
     state: &mut HotState,
     pool: &[CardId; N],
@@ -4770,6 +4861,11 @@ fn after_local_card_generated(
                 "Aeonglass generated Wither entry",
             ));
         }
+        // #3606: an owner-created Wither (a clone) is answered by the owner's
+        // listeners and by Aeonglass's in one walk, in the order read on
+        // `after_local_card_generated_inner`. #3297 refused the Regalite
+        // pairing here because that order was unread; it is read now and the
+        // refusal is gone.
         let generated_uid =
             state
                 .next_card_uid
@@ -4854,6 +4950,59 @@ struct GeneratedCardListenerPlan<'a> {
     record_test_trace: bool,
 }
 
+/// One `Hook.AfterCardGeneratedForCombat` walk, in native listener order.
+///
+/// v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4` (#3606).
+///
+/// **Order.** `CombatState/<IterateHookListeners>d__69::MoveNext` RVA
+/// `0x3f9720` builds one list before the first listener runs. It walks the
+/// creatures, allies then enemies (IL_0056-IL_008d, loop bound IL_01f4-IL_020d),
+/// and for each appends its `Powers` (IL_008f-IL_0097), then either its
+/// `Monster` model (IL_00a9-IL_00b1) or, for a player active for hooks
+/// (IL_00bb-IL_00c2), the relics that are not melted (IL_00c7-IL_0103), the
+/// potions (IL_0105-IL_013c), the orbs (IL_014a-IL_015c) and every card of
+/// every pile with its affliction and enchantment (IL_0161-IL_01ec). So for an
+/// owner-created card the owner's powers answer first in `Powers` order
+/// (Arsenal, Pillar of Creation, Smokestack, Trash to Treasure), then
+/// Regalite, then the owner's Rocket Punch cards, and only then an enemy's
+/// powers and the enemy model: `Aeonglass::AfterCardGeneratedForCombat` RVA
+/// `0xaea80` is last. This function runs them in that order.
+///
+/// **Serial.** `Hook/<AfterCardGeneratedForCombat>d__14::MoveNext` RVA
+/// `0x3ccaa4` calls each listener (IL_0046-IL_0058) and awaits it to
+/// completion (IL_005d-IL_00ad) before `MoveNext` (IL_00c4-IL_00cf). A kill
+/// inside Smokestack's `CreatureCmd.Damage`, a Juggernaut answering Pillar of
+/// Creation's or Regalite's `GainBlock`, or an orb evoked by Trash to
+/// Treasure's `OrbCmd.Channel` is therefore complete, death hooks included,
+/// before the next listener is asked.
+///
+/// **Liveness.** `Hook/<IterateCombatHookListeners>d__0::MoveNext` RVA
+/// `0x3d3bc0` tests `IsOverOrEnding` once, before the list is built
+/// (IL_0028-IL_003e); nothing re-tests it between listeners. The only
+/// per-listener test is `CombatState::Contains` as each model is yielded
+/// (`0x3f9720` IL_02a3-IL_02ab), which for a monster is
+/// `Creature.CombatState != null` (RVA `0x137564` IL_01b2-IL_01c1).
+/// `CreatureCmd/<KillWithoutCheckingWinCondition>d__15::MoveNext` RVA
+/// `0x3ebe90` clears that for a dead enemy through
+/// `ICombatState::RemoveCreature(creature, true)` (IL_04c8-IL_04d5;
+/// `CombatState::RemoveCreature` RVA `0x1371d0` IL_009a-IL_009f) unless a
+/// `ShouldCreatureBeRemovedFromCombatAfterDeath` listener vetoes (IL_0330,
+/// IL_0469-IL_046f) or the monster `IsPerformingMove` (IL_04bf-IL_04c6). All
+/// six real vetoes (Adaptable `0x9f608`, Die For You `0xa1861`, Illusion
+/// `0xa3b33`, Painful Stabs `0xa5564`, Reattach `0xa665b`, Steam Eruption
+/// `0xa85fe`) are powers that veto only their own owner, and Aeonglass holds
+/// none of them. So an Aeonglass killed by an owner listener in this walk is
+/// not asked: the Wither gets no `MatchWitherToUpgradeCount`.
+///
+/// After such a kill native still calls the owner's remaining listeners.
+/// Their commands return at the ending test (`CreatureCmd/<GainBlock>d__18`
+/// RVA `0x3eaec0` IL_0032, `PowerCmd/<Apply>d__1`/`d__2` RVA `0x3ef988`/
+/// `0x3efbac` IL_0025/IL_003e,
+/// `OrbCmd/<Channel>d__3` RVA `0x3ed69c` IL_002e), so what survives the
+/// combat is only Trash to Treasure's ungated `GetRandomOrb` draws, which the
+/// power loop below keeps. Regalite's `UsedThisTurn` and Rocket Punch's cost
+/// are per-turn and per-card state of a finished combat and are not written.
 fn after_local_card_generated_inner(
     state: &mut HotState,
     catalog: &Catalog,
@@ -4870,9 +5019,25 @@ fn after_local_card_generated_inner(
     #[cfg(not(test))]
     let _ = record_test_trace;
     let order = state.fanouts.local_generated_power_order().to_vec();
+    // The walk's one ending test is at its start; a kill inside it does not
+    // stop the listeners that follow (cited above).
+    let over_at_walk_start = state.history.over;
     for power in order {
-        if state.history.over {
+        if over_at_walk_start {
             break;
+        }
+        // Ended by an earlier listener of this walk. Arsenal's `Apply`
+        // (`PowerCmd/<Apply>d__1`/`d__2` RVA `0x3ef988`/`0x3efbac`
+        // IL_0025/IL_003e `IsEnding`), Pillar of Creation's `GainBlock` and
+        // Smokestack's `Damage` over no hittable enemy are no-ops there.
+        // Trash to Treasure is not: it draws
+        // `CombatOrbGeneration` once per stack (`0x349f90` IL_0066-IL_007f)
+        // before each `OrbCmd.Channel`, and only the Channel returns at
+        // `IsOverOrEnding` (`OrbCmd/<Channel>d__3` RVA `0x3ed69c` IL_002e).
+        // `channel_random_loop` models exactly that split.
+        let ended_in_walk = state.history.over;
+        if ended_in_walk && power != PowerId::TrashToTreasure {
+            continue;
         }
         let amount = state.powers.value(power);
         if amount <= 0 {
@@ -5000,6 +5165,23 @@ fn after_local_card_generated_inner(
         let boss = state.monsters.first().ok_or(EngineRefusal::MalformedArgs(
             "Aeonglass generated listener owner",
         ))?;
+        // An owner listener earlier in this walk killed the boss (#3606).
+        // The walk yields a monster only while `Creature.CombatState` is set,
+        // and the kill clears it unless the monster is performing a move
+        // (cited on this function), so on the player's side the listener is
+        // skipped and the Wither keeps the growth it entered with. Monster
+        // moves run only on the enemy side (`MonsterModel/<PerformMove>d__105`
+        // RVA `0x31d794` IL_00b5 and IL_01ad, reached from `TakeTurn`); no
+        // owner-created generation is known to run there, so that side
+        // refuses by name instead of guessing whether a move is in flight.
+        if boss.kind == MonsterKind::Aeonglass && boss.uid == frozen.boss_uid && boss.hp <= 0 {
+            if state.player_side_active {
+                return Ok(());
+            }
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                "Aeonglass killed inside an owner-created Wither walk on the enemy side",
+            ));
+        }
         if boss.kind != MonsterKind::Aeonglass
             || boss.uid != frozen.boss_uid
             || boss.aeonglass_wither_upgrade_count() != frozen.upgrade_count
@@ -5599,6 +5781,21 @@ mod tests {
     use crate::ids::{CardId, EnchantmentId, MonsterKind};
     use crate::powers::SlotWire;
 
+    /// #3157: the claim that `GetDistinctForCombat`'s test override (IL_0019)
+    /// is never set was read from the v0.111.0 DLL only — see
+    /// [`shuffle_generation_pool`]. A newly admitted build owes the same scan
+    /// before any generator may keep ignoring that arm.
+    #[test]
+    fn combat_card_generation_override_audit_covers_every_admitted_build() {
+        use crate::catalog::GameBuild;
+        const AUDITED: [GameBuild; 1] = [GameBuild::V0_111_0];
+        assert_eq!(
+            GameBuild::ALL,
+            AUDITED,
+            "re-run the SetCombatCardGenerationOverride caller scan on the new build's DLL"
+        );
+    }
+
     fn uid_cards(uids: impl IntoIterator<Item = u32>) -> Vec<HotCard> {
         uids.into_iter()
             .map(|uid| HotCard {
@@ -5891,6 +6088,269 @@ mod tests {
             CardId::Wither
         );
         assert!(aeonglass_state_is_exact(&state, &catalog));
+    }
+
+    /// The #3606 fixture: the Aeonglass Wither fixture with the boss's fake
+    /// upgrade counter at 2 (so its listener adds 6 to a new Wither), the
+    /// given relics, and the catalog's own Wither atom in Hand.
+    fn owner_created_wither_fixture(relics: &[RelicId]) -> (HotState, Catalog, HotCard) {
+        let (mut state, plain_catalog, source, _) = aeonglass_wither_fixture();
+        let mut builder = CatalogBuilder::new();
+        builder.intern_aeonglass_smoke_foundation().unwrap();
+        builder.set_relics(relics).unwrap();
+        let catalog = builder.build();
+        let source = HotCard {
+            atom: catalog
+                .atom(&plain_catalog.spec(source.atom).unwrap().identity)
+                .unwrap(),
+            ..source
+        };
+        state.piles.get_mut(PileId::Hand).make_mut()[0] = source;
+        assert!(state.monsters_mut()[0].set_aeonglass_wither_upgrade_count(2));
+        assert!(state.monsters_mut()[0].set_aeonglass_additional_strength(2));
+        assert!(aeonglass_state_is_exact(&state, &catalog));
+        (state, catalog, source)
+    }
+
+    fn clone_wither(state: &mut HotState, catalog: &Catalog, source: HotCard) -> HotCard {
+        inject_generated_clones_bottom(state, catalog, source, 1, PileId::Discard, &mut Vec::new())
+            .unwrap();
+        *state.piles.get(PileId::Discard).as_slice().last().unwrap()
+    }
+
+    /// #3606: an owner-created Wither while Aeonglass lives. The owner's
+    /// listeners answer before the boss's (`CombatState/<IterateHookListeners>
+    /// d__69` RVA `0x3f9720`: powers IL_008f-IL_0097, relics IL_00c7-IL_0103,
+    /// the enemy's model last), each awaited whole (`Hook/
+    /// <AfterCardGeneratedForCombat>d__14` RVA `0x3ccaa4` IL_005d-IL_00ad).
+    /// With the boss alive after them, its listener then adds the fake
+    /// upgrades on top of the growth the clone copied.
+    #[test]
+    fn owner_created_wither_is_answered_by_owner_listeners_then_aeonglass() {
+        let (mut state, catalog, source) = owner_created_wither_fixture(&[RelicId::RelicRegalite]);
+        let order = [
+            PowerId::Smokestack,
+            PowerId::PillarOfCreation,
+            PowerId::TrashToTreasure,
+        ];
+        state.powers.set(PowerId::Smokestack, SlotWire::Int, 5);
+        state
+            .powers
+            .set(PowerId::PillarOfCreation, SlotWire::Int, 2);
+        state.powers.set(PowerId::TrashToTreasure, SlotWire::Int, 1);
+        assert!(state.fanouts.set_local_generated_power_order(&order));
+        state.powers.set(PowerId::Juggernaut, SlotWire::Int, 4);
+        assert!(
+            state
+                .fanouts
+                .set_after_block_gained_order(&[PowerId::Juggernaut])
+        );
+        let hp = state.monsters[0].hp;
+        let orb_draws = state.rng.get(RngStream::CombatOrbs).counter;
+
+        let copied = clone_wither(&mut state, &catalog, source);
+
+        assert!(!state.history.over);
+        // Smokestack 5, then Juggernaut 4 on Pillar's Block and 4 on
+        // Regalite's. Trash to Treasure channels into an empty slot.
+        assert_eq!(state.monsters[0].hp, hp - 5 - 4 - 4);
+        assert_eq!(state.block, 2 + i32::from(state.regalite_block_amount));
+        assert!(state.fanouts.regalite_used_this_turn());
+        assert_eq!(state.rng.get(RngStream::CombatOrbs).counter, orb_draws + 1);
+        // The clone copied 6, and the live boss's listener added 2 * 3.
+        assert_eq!(state.card_states.get(copied.uid).damage_growth, 12);
+        assert_eq!(state.card_states.get(source.uid).damage_growth, 6);
+        assert!(aeonglass_state_is_exact(&state, &catalog));
+    }
+
+    /// #3606: the boss dies inside the walk. Native yields a monster only
+    /// while `Creature.CombatState` is set (`CombatState::Contains` RVA
+    /// `0x137564` IL_01b2-IL_01c1), and the kill clears it for a monster that
+    /// is not performing a move (`CreatureCmd/<KillWithoutCheckingWinCondition>
+    /// d__15` RVA `0x3ebe90` IL_04bf-IL_04d5), so Aeonglass's listener is not
+    /// asked and the clone keeps only the growth it copied. One arm per owner
+    /// listener that can make the kill; the last is the Regalite pairing
+    /// #3297 kept refused.
+    #[test]
+    fn aeonglass_killed_inside_the_walk_is_not_asked_about_the_wither() {
+        type Arm = (&'static str, &'static [RelicId], fn(&mut HotState));
+        let arms: [Arm; 4] = [
+            ("Smokestack", &[], |state| {
+                state.powers.set(PowerId::Smokestack, SlotWire::Int, 9);
+                assert!(
+                    state
+                        .fanouts
+                        .set_local_generated_power_order(&[PowerId::Smokestack])
+                );
+            }),
+            ("Pillar of Creation with Juggernaut", &[], |state| {
+                state
+                    .powers
+                    .set(PowerId::PillarOfCreation, SlotWire::Int, 2);
+                assert!(
+                    state
+                        .fanouts
+                        .set_local_generated_power_order(&[PowerId::PillarOfCreation])
+                );
+                state.powers.set(PowerId::Juggernaut, SlotWire::Int, 9);
+                assert!(
+                    state
+                        .fanouts
+                        .set_after_block_gained_order(&[PowerId::Juggernaut])
+                );
+            }),
+            ("Trash to Treasure evoking Lightning", &[], |state| {
+                state.powers.set(PowerId::TrashToTreasure, SlotWire::Int, 1);
+                assert!(
+                    state
+                        .fanouts
+                        .set_local_generated_power_order(&[PowerId::TrashToTreasure])
+                );
+                state.orbs.set_slots(1);
+                state.orbs.push(
+                    crate::hot::HotOrb::from_parts(crate::hot::OrbKind::Lightning, None).unwrap(),
+                );
+            }),
+            (
+                "Regalite with Juggernaut",
+                &[RelicId::RelicRegalite],
+                |state| {
+                    state.powers.set(PowerId::Juggernaut, SlotWire::Int, 9);
+                    assert!(
+                        state
+                            .fanouts
+                            .set_after_block_gained_order(&[PowerId::Juggernaut])
+                    );
+                },
+            ),
+        ];
+        for (name, relics, arm) in arms {
+            let (mut state, catalog, source) = owner_created_wither_fixture(relics);
+            state.monsters_mut()[0].hp = 3;
+            arm(&mut state);
+            let copied = clone_wither(&mut state, &catalog, source);
+            assert!(state.history.over, "{name}");
+            assert!(state.monsters[0].hp <= 0, "{name}");
+            assert_eq!(
+                state.card_states.get(copied.uid).damage_growth,
+                6,
+                "{name}: a dead Aeonglass must not fake-upgrade the clone"
+            );
+
+            // The same walk against a boss that survives it does grow.
+            let (mut alive, catalog, source) = owner_created_wither_fixture(relics);
+            arm(&mut alive);
+            let copied = clone_wither(&mut alive, &catalog, source);
+            assert!(!alive.history.over, "{name}");
+            assert_eq!(
+                alive.card_states.get(copied.uid).damage_growth,
+                12,
+                "{name}"
+            );
+        }
+    }
+
+    /// #3606: the walk tests `IsOverOrEnding` once, at its start (`Hook/
+    /// <IterateCombatHookListeners>d__0` RVA `0x3d3bc0` IL_0028-IL_003e), so a
+    /// Smokestack kill does not stop the listeners after it. Trash to Treasure
+    /// still draws one `CombatOrbGeneration` value per stack (`0x349f90`
+    /// IL_0066-IL_007f) while its Channel, Pillar of Creation's Block and
+    /// Regalite's Block return at the ending test.
+    #[test]
+    fn listeners_after_a_kill_inside_the_walk_keep_only_trash_to_treasures_draws() {
+        let (mut state, catalog, source) = owner_created_wither_fixture(&[RelicId::RelicRegalite]);
+        state.monsters_mut()[0].hp = 3;
+        let order = [
+            PowerId::Smokestack,
+            PowerId::PillarOfCreation,
+            PowerId::TrashToTreasure,
+        ];
+        state.powers.set(PowerId::Smokestack, SlotWire::Int, 9);
+        state
+            .powers
+            .set(PowerId::PillarOfCreation, SlotWire::Int, 2);
+        state.powers.set(PowerId::TrashToTreasure, SlotWire::Int, 3);
+        assert!(state.fanouts.set_local_generated_power_order(&order));
+        let orb_draws = state.rng.get(RngStream::CombatOrbs).counter;
+
+        let copied = clone_wither(&mut state, &catalog, source);
+
+        assert!(state.history.over);
+        assert_eq!(state.rng.get(RngStream::CombatOrbs).counter, orb_draws + 3);
+        assert!(state.orbs.as_slice().is_empty());
+        assert_eq!(state.block, 0);
+        assert!(!state.fanouts.regalite_used_this_turn());
+        assert_eq!(state.card_states.get(copied.uid).damage_growth, 6);
+
+        // A walk that starts in a finished combat asks nobody.
+        let (mut finished, catalog, source) = owner_created_wither_fixture(&[]);
+        finished
+            .powers
+            .set(PowerId::TrashToTreasure, SlotWire::Int, 3);
+        assert!(
+            finished
+                .fanouts
+                .set_local_generated_power_order(&[PowerId::TrashToTreasure])
+        );
+        finished.history.over = true;
+        let wither = catalog.spec(source.atom).unwrap();
+        let before = finished.clone();
+        after_owner_card_generated(&mut finished, &catalog, wither, &mut Vec::new()).unwrap();
+        assert_eq!(finished, before);
+    }
+
+    /// #3606: the one shape the read does not settle. A monster that is
+    /// performing its move stays in combat when it dies (`0x3ebe90`
+    /// IL_04bf-IL_04c6) and would still be asked. Moves run only on the enemy
+    /// side, so a boss killed inside this walk there refuses by name, and
+    /// atomically, instead of guessing.
+    #[test]
+    fn aeonglass_killed_inside_the_walk_on_the_enemy_side_refuses_by_name() {
+        let (mut state, catalog, source) = owner_created_wither_fixture(&[]);
+        state.monsters_mut()[0].hp = 3;
+        state.powers.set(PowerId::Smokestack, SlotWire::Int, 9);
+        assert!(
+            state
+                .fanouts
+                .set_local_generated_power_order(&[PowerId::Smokestack])
+        );
+        state.player_side_active = false;
+        let refusal = Err(EngineRefusal::PowerOrderNotModeled(
+            "Aeonglass killed inside an owner-created Wither walk on the enemy side",
+        ));
+        // A fresh owner-created Wither through a rehearsed injector: atomic.
+        let before = state.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            inject_generated_record_before_ending_bottom(
+                &mut state,
+                &catalog,
+                catalog.spec(source.atom).unwrap().identity,
+                1,
+                PileId::Discard,
+                &mut events,
+            ),
+            refusal
+        );
+        assert_eq!(state, before);
+        assert!(events.is_empty());
+        // The clone command reaches the same refusal.
+        assert_eq!(
+            inject_generated_clones_bottom(
+                &mut state.clone(),
+                &catalog,
+                source,
+                1,
+                PileId::Discard,
+                &mut Vec::new(),
+            ),
+            refusal
+        );
+
+        // A boss that survives the same walk on the enemy side is admitted.
+        state.monsters_mut()[0].hp = 30;
+        let copied = clone_wither(&mut state, &catalog, source);
+        assert_eq!(state.card_states.get(copied.uid).damage_growth, 12);
     }
 
     #[test]
@@ -7596,6 +8056,9 @@ mod tests {
         }));
     }
 
+    /// The three unadmitted Deck-gated subscribers. Book of Five Rings is
+    /// admitted and has the same Deck gate, so it is not pinned here (#3606;
+    /// the full census is on `move_frozen_physical_cards_to_bottom`).
     #[test]
     fn existing_card_pile_moves_have_no_admitted_changed_piles_listener() {
         use crate::engine::admission::IMPLEMENTED_RELICS;

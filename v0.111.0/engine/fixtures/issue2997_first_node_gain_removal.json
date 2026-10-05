@@ -1,0 +1,741 @@
+{
+ "captured_shuffle_counters": {
+  "0": 0,
+  "1": 21,
+  "2": 34,
+  "3": 61
+ },
+ "captured_start_save_decks": {
+  "0": [
+   "CARD.STRIKE_NECROBINDER",
+   "CARD.STRIKE_NECROBINDER",
+   "CARD.STRIKE_NECROBINDER",
+   "CARD.STRIKE_NECROBINDER",
+   "CARD.DEFEND_NECROBINDER",
+   "CARD.DEFEND_NECROBINDER",
+   "CARD.DEFEND_NECROBINDER",
+   "CARD.DEFEND_NECROBINDER",
+   "CARD.BODYGUARD",
+   "CARD.UNLEASH",
+   "CARD.ASCENDERS_BANE",
+   "CARD.FLICK_FLACK",
+   "CARD.SUNDER"
+  ]
+ },
+ "history": {
+  "fights": [
+   {
+    "deck_entering": [
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 1
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.BODYGUARD",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.UNLEASH",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.SUNDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.ASCENDERS_BANE",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.FLICK_FLACK",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     }
+    ],
+    "encounter_id": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+    "monster_ids": [
+     "MONSTER.SLUDGE_SPINNER"
+    ],
+    "node_index": 1,
+    "potions_used": [
+     "POTION.FRUIT_JUICE"
+    ],
+    "relics_entering": [
+     "RELIC.BOUND_PHYLACTERY",
+     "RELIC.KALEIDOSCOPE"
+    ],
+    "turns_taken": 4
+   },
+   {
+    "deck_entering": [
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 1
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": true,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.BODYGUARD",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.UNLEASH",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.SUNDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.ASCENDERS_BANE",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.FLICK_FLACK",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEATHS_DOOR",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     }
+    ],
+    "encounter_id": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+    "monster_ids": [
+     "MONSTER.CORPSE_SLUG",
+     "MONSTER.CORPSE_SLUG"
+    ],
+    "node_index": 2,
+    "potions_used": [],
+    "relics_entering": [
+     "RELIC.BOUND_PHYLACTERY",
+     "RELIC.KALEIDOSCOPE"
+    ],
+    "turns_taken": 2
+   },
+   {
+    "deck_entering": [
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 1
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.BODYGUARD",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.UNLEASH",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 1
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.SUNDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.ASCENDERS_BANE",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.FLICK_FLACK",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEATHS_DOOR",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.RIGHT_HAND_HAND",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     }
+    ],
+    "encounter_id": "ENCOUNTER.SEAPUNK_WEAK",
+    "monster_ids": [
+     "MONSTER.SEAPUNK"
+    ],
+    "node_index": 4,
+    "potions_used": [],
+    "relics_entering": [
+     "RELIC.BOUND_PHYLACTERY",
+     "RELIC.KALEIDOSCOPE"
+    ],
+    "turns_taken": 5
+   },
+   {
+    "deck_entering": [
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.STRIKE_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 1
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEFEND_NECROBINDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.BODYGUARD",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.UNLEASH",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 1
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.SUNDER",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.ASCENDERS_BANE",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.FLICK_FLACK",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.DEATHS_DOOR",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.RIGHT_HAND_HAND",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.NEGATIVE_PULSE",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.WISP",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     },
+     {
+      "enchantment": null,
+      "id": "CARD.SCULPTING_STRIKE",
+      "upgrade_ambiguous": false,
+      "upgrade_level": 0
+     }
+    ],
+    "encounter_id": "ENCOUNTER.TERROR_EEL_ELITE",
+    "monster_ids": [
+     "MONSTER.TERROR_EEL"
+    ],
+    "node_index": 6,
+    "potions_used": [
+     "POTION.MAZALETHS_GIFT"
+    ],
+    "relics_entering": [
+     "RELIC.BOUND_PHYLACTERY",
+     "RELIC.KALEIDOSCOPE"
+    ],
+    "turns_taken": 6
+   }
+  ],
+  "run": {
+   "build_id": "v0.111.0",
+   "map_point_history": [
+    [
+     {
+      "map_point_type": "ancient",
+      "player_stats": [
+       {
+        "cards_gained": [
+         {
+          "id": "CARD.FLICK_FLACK"
+         },
+         {
+          "id": "CARD.SUNDER"
+         }
+        ]
+       }
+      ],
+      "rooms": [
+       {
+        "model_id": "EVENT.NEOW",
+        "room_type": "event",
+        "turns_taken": 0
+       }
+      ]
+     },
+     {
+      "map_point_type": "monster",
+      "player_stats": [
+       {}
+      ],
+      "rooms": [
+       {
+        "model_id": "ENCOUNTER.SLUDGE_SPINNER_WEAK",
+        "monster_ids": [
+         "MONSTER.SLUDGE_SPINNER"
+        ],
+        "room_type": "monster",
+        "turns_taken": 4
+       }
+      ]
+     },
+     {
+      "map_point_type": "monster",
+      "player_stats": [
+       {}
+      ],
+      "rooms": [
+       {
+        "model_id": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+        "monster_ids": [
+         "MONSTER.CORPSE_SLUG",
+         "MONSTER.CORPSE_SLUG"
+        ],
+        "room_type": "monster",
+        "turns_taken": 2
+       }
+      ]
+     },
+     {
+      "map_point_type": "unknown",
+      "player_stats": [
+       {}
+      ],
+      "rooms": [
+       {
+        "model_id": "EVENT.DOORS_OF_LIGHT_AND_DARK",
+        "room_type": "event",
+        "turns_taken": 0
+       }
+      ]
+     },
+     {
+      "map_point_type": "monster",
+      "player_stats": [
+       {}
+      ],
+      "rooms": [
+       {
+        "model_id": "ENCOUNTER.SEAPUNK_WEAK",
+        "monster_ids": [
+         "MONSTER.SEAPUNK"
+        ],
+        "room_type": "monster",
+        "turns_taken": 5
+       }
+      ]
+     },
+     {
+      "map_point_type": "unknown",
+      "player_stats": [
+       {}
+      ],
+      "rooms": [
+       {
+        "model_id": "EVENT.ROOM_FULL_OF_CHEESE",
+        "room_type": "event",
+        "turns_taken": 0
+       }
+      ]
+     },
+     {
+      "map_point_type": "elite",
+      "player_stats": [
+       {}
+      ],
+      "rooms": [
+       {
+        "model_id": "ENCOUNTER.TERROR_EEL_ELITE",
+        "monster_ids": [
+         "MONSTER.TERROR_EEL"
+        ],
+        "room_type": "elite",
+        "turns_taken": 6
+       }
+      ]
+     },
+     {
+      "map_point_type": "unknown",
+      "player_stats": [
+       {
+        "cards_removed": [
+         {
+          "floor_added_to_deck": 1,
+          "id": "CARD.STRIKE_NECROBINDER"
+         }
+        ]
+       }
+      ],
+      "rooms": []
+     },
+     {
+      "map_point_type": "unknown",
+      "player_stats": [
+       {
+        "cards_removed": [
+         {
+          "floor_added_to_deck": 1,
+          "id": "CARD.SUNDER"
+         }
+        ]
+       }
+      ],
+      "rooms": []
+     }
+    ]
+   ],
+   "modifiers": [],
+   "players": [
+    {
+     "deck": [
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.STRIKE_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.STRIKE_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.STRIKE_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.DEFEND_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.DEFEND_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.DEFEND_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.DEFEND_NECROBINDER"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.BODYGUARD"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.UNLEASH"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.ASCENDERS_BANE"
+      },
+      {
+       "floor_added_to_deck": 1,
+       "id": "CARD.FLICK_FLACK"
+      },
+      {
+       "floor_added_to_deck": 2,
+       "id": "CARD.DEATHS_DOOR"
+      },
+      {
+       "floor_added_to_deck": 3,
+       "id": "CARD.RIGHT_HAND_HAND"
+      },
+      {
+       "floor_added_to_deck": 5,
+       "id": "CARD.NEGATIVE_PULSE"
+      },
+      {
+       "floor_added_to_deck": 6,
+       "id": "CARD.WISP"
+      },
+      {
+       "floor_added_to_deck": 6,
+       "id": "CARD.SCULPTING_STRIKE"
+      },
+      {
+       "floor_added_to_deck": 7,
+       "id": "CARD.NEGATIVE_PULSE"
+      },
+      {
+       "floor_added_to_deck": 8,
+       "id": "CARD.SCOURGE"
+      },
+      {
+       "floor_added_to_deck": 12,
+       "id": "CARD.COUNTDOWN"
+      },
+      {
+       "floor_added_to_deck": 13,
+       "id": "CARD.HIDDEN_GEM"
+      },
+      {
+       "floor_added_to_deck": 15,
+       "id": "CARD.AFTERLIFE"
+      },
+      {
+       "floor_added_to_deck": 17,
+       "id": "CARD.EIDOLON"
+      },
+      {
+       "floor_added_to_deck": 18,
+       "id": "CARD.CURSE_OF_THE_BELL"
+      },
+      {
+       "floor_added_to_deck": 19,
+       "id": "CARD.SOW"
+      },
+      {
+       "floor_added_to_deck": 20,
+       "id": "CARD.SUNDER"
+      },
+      {
+       "floor_added_to_deck": 20,
+       "id": "CARD.SPUR"
+      },
+      {
+       "floor_added_to_deck": 23,
+       "id": "CARD.FASTEN"
+      },
+      {
+       "floor_added_to_deck": 27,
+       "id": "CARD.DEFY"
+      },
+      {
+       "floor_added_to_deck": 28,
+       "id": "CARD.DEFY"
+      },
+      {
+       "floor_added_to_deck": 30,
+       "id": "CARD.SLEIGHT_OF_FLESH"
+      },
+      {
+       "floor_added_to_deck": 30,
+       "id": "CARD.NEGATIVE_PULSE"
+      },
+      {
+       "floor_added_to_deck": 31,
+       "id": "CARD.DRAIN_POWER"
+      }
+     ]
+    }
+   ],
+   "seed": "0G2YX1QL2GE1"
+  },
+  "schema": "sts-sim-run-history-v1"
+ },
+ "source": "local run 1787438922 (v0.111.0, Necrobinder), trimmed to the fields run_counters reads; nodes after the fourth fight are kept only where they log a removal",
+ "why": "#2997: a Thieving Hopper stole the Neow-granted Sunder at a later node; the removal row is a floor-1 card that sits AFTER Ascender's Bane"
+}

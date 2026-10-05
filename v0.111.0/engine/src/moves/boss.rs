@@ -31,7 +31,7 @@ use crate::content_tables::{Arg, Repeats};
 use crate::decimal::DotNetDecimal;
 use crate::engine::cards::{
     inject_generated_null_bottom, inject_generated_null_random, inject_legacy_bottom,
-    preflight_generated_card_batch,
+    preflight_generated_null_card_batch,
 };
 use crate::engine::damage::{
     apply_owner_strength, apply_player_duration_affliction,
@@ -165,8 +165,62 @@ const OWNED: [MoveKind; 27] = [
 /// fake-upgrade counter, awaits two singular discard-bottom generated-card
 /// commands, gains `4 + old_additional` Strength while live, and increments
 /// additional Strength even after terminal work. The complete transaction is
-/// rehearsed so a first-child terminal suffix or later refusal cannot publish
-/// only one generated child.
+/// rehearsed so a later refusal cannot publish only one generated child.
+///
+/// # No Wither child is terminal, and Regalite is inert (#3297)
+///
+/// The Withers' creator is null: `<IncreasingIntensityMove>d__36::MoveNext`
+/// RVA `0x3529ec` IL_013d-IL_014c calls `AddToCombatAndPreview<Wither>(targets,
+/// Discard, WitherAmount, null, Bottom)` (`ldnull` at IL_014a), and
+/// `CardPileCmd/<AddToCombatAndPreview>d__27::MoveNext` RVA `0x3e334c`
+/// IL_00c4-IL_00d5 forwards it to one awaited singular
+/// `AddGeneratedCardToCombat` per card. That command raises three hooks
+/// (`<AddGeneratedCardsToCombat>d__6` RVA `0x3e2f0c` IL_0155 and IL_01d8,
+/// `<Add>d__10` RVA `0x3e1ba4` IL_0659 and IL_0887). This is every override of
+/// each in the v0.111.0 DLL, read for a null-creator Status entering Discard:
+///
+/// - `AfterCardGeneratedForCombat`, eight overrides. Six leave on a null
+///   creator before any mutation or await: Regalite RVA `0x32f988`
+///   IL_0020-IL_0026, Arsenal `0x334ec8` IL_001d-IL_0023, Pillar of Creation
+///   `0x340488` IL_001d-IL_0023, Smokestack `0x3455e8` IL_0033-IL_0039,
+///   Soulbound `0x345824` IL_0020-IL_0026 and Trash to Treasure `0x349f90`
+///   IL_0033-IL_0039. `RocketPunch::AfterCardGeneratedForCombat` RVA `0xe9d44`
+///   returns unless `creator == Owner` (IL_000c-IL_0013). The eighth is
+///   Aeonglass's own, RVA `0xaea80`: a synchronous `MatchWitherToUpgradeCount`
+///   (IL_001c-IL_001e), modeled as the fake-upgrade growth.
+/// - `AfterCardEnteredCombat`, fifteen overrides, none of which deals damage or
+///   ends combat: Ghost Seed, Phantom Blades and Hexed touch keywords or
+///   afflictions; Galvanic, Hex, Ringing, Smoggy, Tangled and Vital Spark
+///   afflict the entering card; Sword Sage, Banshee's Cry, Flatten, Midnight,
+///   Pinpoint and Stomp rewrite that card's own replay count or cost.
+/// - `AfterCardChangedPiles`, six overrides outside the two `Mock*` test
+///   powers. Bing Bong (`0x31fbf0`
+///   IL_0021-IL_003f), Book of Five Rings (`0x320238` IL_0050-IL_006e),
+///   Darkstone Periapt (`0x322664` IL_0021-IL_003f), Lucky Fysh (`0x329f6c`
+///   IL_0021-IL_003f) and Hoarder (`0x3777f4` IL_0029-IL_0047) leave unless the
+///   card's pile is the Deck (`PileType` 6), and
+///   `SovereignBlade::AfterCardChangedPiles` (`0xec068`) returns unless the
+///   card is itself. `AfterCardChangedPilesLate` has one override,
+///   `SoulFysh` (`0xbed1c`), a monster this one-boss fight never holds.
+///
+/// So no first child can end combat or kill the boss, and the crate agrees:
+/// `inject_aeonglass_wither` writes no creature HP and never sets
+/// `history.over`. The "Aeonglass terminal first generated child" refusal that
+/// stood after each child was unreachable and is gone. The "Aeonglass
+/// suspendable generated listener" refusal of Regalite is gone with it:
+/// Regalite's only await (`GainBlock`, IL_006d) lies behind the null-creator
+/// gate.
+///
+/// # An owner-created Wither (#3606)
+///
+/// A Wither the player creates (a clone) is a different relation: the
+/// owner-gated listeners above pass their creator gate and answer it in the
+/// same walk as Aeonglass's listener. `CombatState/<IterateHookListeners>d__69`
+/// RVA `0x3f9720` lists the owner's powers, relics and cards before any
+/// enemy's powers and model, so Aeonglass is asked last, and only while it is
+/// still in combat (`CombatState::Contains` RVA `0x137564` IL_01b2-IL_01c1).
+/// `engine::cards::after_local_card_generated_inner` carries the full read
+/// and runs that order; the Regalite pairing #3297 kept refused is admitted.
 pub(crate) fn aeonglass_intensity(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     fn apply(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
         let [CompiledArg::I(strength), CompiledArg::I(withers)] = ctx.args else {
@@ -189,20 +243,6 @@ pub(crate) fn aeonglass_intensity(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRef
                 "Aeonglass Increasing Intensity owner/state",
             ));
         }
-        // The current-build plural helper is two awaited singular commands.
-        // Until the terminal-first-child suffix is captured, admit only the
-        // synchronous closure that cannot kill the sole boss mid-batch.
-        if ctx
-            .catalog
-            .hooks()
-            .relics()
-            .contains(&crate::ids::RelicId::RelicRegalite)
-        {
-            return Err(EngineRefusal::PowerOrderNotModeled(
-                "Aeonglass suspendable generated listener",
-            ));
-        }
-
         let old_additional = ctx.state.monsters[0].aeonglass_additional_strength();
         let old_upgrades = ctx.state.monsters[0].aeonglass_wither_upgrade_count();
         let next_upgrades = old_upgrades
@@ -273,20 +313,16 @@ pub(crate) fn aeonglass_intensity(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRef
         ctx.state.exact_piles = true;
         let stored = ctx.state.monsters_mut()[0].set_aeonglass_wither_upgrade_count(next_upgrades);
         debug_assert!(stored);
-        // One singular command per Wither; a terminal child before the last
-        // one is the uncaptured suffix, exactly as at A9's two children.
-        for child in 0..children {
+        // One singular null-creator command per Wither. No child can end
+        // combat or kill the boss (the listener census above), so every child
+        // enters and the Strength gain below always runs on a live boss.
+        for _ in 0..children {
             crate::engine::cards::inject_aeonglass_wither(
                 ctx.state,
                 ctx.catalog,
                 PileId::Discard,
                 ctx.events,
             )?;
-            if child + 1 < children && (ctx.state.history.over || ctx.state.monsters[0].hp <= 0) {
-                return Err(EngineRefusal::PowerOrderNotModeled(
-                    "Aeonglass terminal first generated child",
-                ));
-            }
         }
         if !ctx.state.history.over && ctx.state.monsters[0].hp > 0 {
             let upkeep = ctx.state.fanouts.misery_attachment_upkeep();
@@ -333,9 +369,9 @@ pub(crate) fn aeonglass_intensity(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRef
 /// (IL_0132-IL_0137, `(card, Discard, null, Bottom)`). So it records no
 /// owner-created history (`Supermassive`'s filter `<>c__DisplayClass2_0::
 /// <get_CanonicalVars>b__1` RVA `0x3c0aa8` counts only `Creator == Owner`)
-/// and no owner-gated generated listener answers. [`preflight_generated_card_batch`]
-/// stays as the uid/epoch wall; its owner-history and power arithmetic checks
-/// only add refusals at counter ceilings.
+/// and no owner-gated generated listener answers.
+/// [`preflight_generated_null_card_batch`] is the uid/epoch wall, and since
+/// #3297 it checks no owner history and no Arsenal or Pillar arithmetic.
 pub(crate) fn attack_beckon(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(damage), CompiledArg::I(1), CompiledArg::I(1)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("attack_beckon"));
@@ -354,7 +390,7 @@ pub(crate) fn attack_beckon(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> 
     };
     monster_attack_player_with_catalog(ctx.state, ctx.catalog, ctx.actor, damage, 1, ctx.events)?;
     if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
-        preflight_generated_card_batch(ctx.state, ctx.catalog, identity, 1)?;
+        preflight_generated_null_card_batch(ctx.state, ctx.catalog, identity, 1)?;
         inject_generated_null_bottom(ctx.state, ctx.catalog, identity, 1, ctx.events)?;
     }
     Ok(())
@@ -468,7 +504,9 @@ pub(crate) fn beast_stamp(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
 /// Both creators are null (#3256): `SoulFysh/<BeckonMove>d__37::MoveNext` RVA
 /// `0x36b4b8` passes `ldnull` to `AddGeneratedCardToCombat` for the Draw/Random
 /// card (IL_0213-IL_0218) and the Discard/Bottom card (IL_02ab-IL_02b0). No
-/// owner-created history advances and no owner-gated listener answers.
+/// owner-created history advances and no owner-gated listener answers, so the
+/// two-card preflight checks only the uid, epoch and Strike counters the two
+/// null commands write (#3297, [`preflight_generated_null_card_batch`]).
 pub(crate) fn beckon(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(2)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("beckon"));
@@ -481,7 +519,7 @@ pub(crate) fn beckon(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
         upgrade: 0,
         enchantment: None,
     };
-    preflight_generated_card_batch(ctx.state, ctx.catalog, identity, 2)?;
+    preflight_generated_null_card_batch(ctx.state, ctx.catalog, identity, 2)?;
     inject_generated_null_random(ctx.state, ctx.catalog, identity, PileId::Draw, ctx.events)?;
     if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
         inject_generated_null_bottom(ctx.state, ctx.catalog, identity, 1, ctx.events)?;
@@ -2578,8 +2616,8 @@ mod tests {
         // #3256: Aeonglass's Withers are null-creator cards, and Smokestack
         // leaves on a null creator (`SmokestackPower/<AfterCardGenerated
         // ForCombat>d__4` RVA `0x3455e8` IL_0033-IL_004e). A 5-HP boss
-        // survives both children; the terminal-first-child refusal is no
-        // longer reachable through an admitted local listener.
+        // survives both children. #3297 removed the terminal-first-child
+        // refusal this state could never reach.
         let (catalog, mut state) = aeonglass_fixture(2, 0);
         state.monsters_mut()[0].hp = 5;
         state.powers.set(PowerId::Smokestack, SlotWire::Int, 6);
@@ -2605,6 +2643,132 @@ mod tests {
         assert!(!state.history.over);
         assert_eq!(state.monsters[0].hp, 5);
         assert_eq!(state.piles.get(PileId::Discard).as_slice().len(), 2);
+    }
+
+    fn aeonglass_regalite_fixture(
+        loop_pos: i32,
+        counter: i32,
+    ) -> (crate::catalog::Catalog, HotState) {
+        let (_, state) = aeonglass_fixture(loop_pos, counter);
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::Aeonglass).unwrap();
+        builder
+            .intern_reachable(CardIdentity {
+                id: CardId::Wither,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder
+            .set_relics(&[crate::ids::RelicId::RelicRegalite])
+            .unwrap();
+        (builder.build(), state)
+    }
+
+    fn run_aeonglass_intensity(catalog: &crate::catalog::Catalog, state: &mut HotState) {
+        let row = catalog
+            .moves(MonsterKind::Aeonglass)
+            .iter()
+            .find(|row| row.kind == MoveKind::AeonglassIntensity)
+            .copied()
+            .unwrap();
+        aeonglass_intensity(&mut MoveCtx {
+            state,
+            catalog,
+            actor: 0,
+            args: catalog.args(row.args),
+            events: &mut Vec::new(),
+        })
+        .unwrap();
+    }
+
+    /// #3297 item 2: Regalite beside Aeonglass. Both Wither writers pass a
+    /// null creator (Intensity `0x3529ec` IL_014a, Withering Presence
+    /// `0x34af14` IL_0103) and `Regalite/<AfterCardGeneratedForCombat>d__8`
+    /// RVA `0x32f988` leaves on it at IL_0020-IL_0026, before
+    /// `set_UsedThisTurn` and `GainBlock`. Until #3297 both paths refused.
+    #[test]
+    fn aeonglass_withers_are_admitted_with_regalite_and_never_fire_it() {
+        let (catalog, mut state) = aeonglass_regalite_fixture(2, 0);
+        assert!(crate::engine::cards::aeonglass_state_is_exact(
+            &state, &catalog
+        ));
+        run_aeonglass_intensity(&catalog, &mut state);
+        assert!(!state.piles.get(PileId::Discard).is_empty());
+        assert_eq!(
+            state.piles.get(PileId::Discard).len(),
+            usize::try_from(state.next_generated_hook_uid).unwrap()
+        );
+        assert_eq!(state.block, 0);
+        assert!(!state.fanouts.regalite_used_this_turn());
+        assert_eq!(state.monsters[0].aeonglass_additional_strength(), 1);
+        assert!(crate::engine::cards::aeonglass_state_is_exact(
+            &state, &catalog
+        ));
+
+        let (catalog, mut state) = aeonglass_regalite_fixture(0, 2);
+        state.fanouts.set_withering_cards_left(1);
+        crate::engine::cards::withering_after_card_played(
+            &mut state,
+            &catalog,
+            true,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+        assert_eq!(
+            state
+                .card_states
+                .get(state.piles.get(PileId::Hand).as_slice()[0].uid)
+                .damage_growth,
+            6
+        );
+        assert_eq!(state.fanouts.withering_cards_left(), 6);
+        assert_eq!(state.block, 0);
+        assert!(!state.fanouts.regalite_used_this_turn());
+        assert!(crate::engine::cards::aeonglass_state_is_exact(
+            &state, &catalog
+        ));
+    }
+
+    /// #3297 item 1: no Wither child is terminal. With every admitted
+    /// generated-card listener armed at once (Smokestack far above the boss's
+    /// 1 HP, Arsenal, Pillar of Creation, Trash to Treasure, and Regalite),
+    /// each null-creator child still enters and none of them answers, so the
+    /// removed "terminal first generated child" branch had no state to reach.
+    #[test]
+    fn aeonglass_wither_children_are_never_terminal_under_every_generated_listener() {
+        let (catalog, mut state) = aeonglass_regalite_fixture(2, 0);
+        state.monsters_mut()[0].hp = 1;
+        let order = [
+            PowerId::Smokestack,
+            PowerId::Arsenal,
+            PowerId::PillarOfCreation,
+            PowerId::TrashToTreasure,
+        ];
+        for power in order {
+            state.powers.set(power, SlotWire::Int, 99);
+        }
+        assert!(state.fanouts.set_local_generated_power_order(&order));
+        let before = state.clone();
+        run_aeonglass_intensity(&catalog, &mut state);
+        assert!(!state.history.over);
+        assert_eq!(state.monsters[0].hp, 1);
+        assert!(state.next_generated_hook_uid > before.next_generated_hook_uid);
+        assert_eq!(
+            state.piles.get(PileId::Discard).len(),
+            usize::try_from(state.next_generated_hook_uid - before.next_generated_hook_uid)
+                .unwrap()
+        );
+        // No owner-gated listener answered a null creator.
+        assert_eq!(state.powers.value(PowerId::Strength), 0);
+        assert_eq!(state.block, 0);
+        assert_eq!(state.rng, before.rng);
+        assert!(!state.fanouts.regalite_used_this_turn());
+        assert_eq!(state.history.owner_generated_cards_combat, 0);
+        // The move's own suffix ran on the live boss.
+        assert!(state.monsters[0].powers.value(PowerId::Strength) > 0);
+        assert_eq!(state.monsters[0].aeonglass_additional_strength(), 1);
     }
 
     #[test]
@@ -3269,6 +3433,107 @@ mod tests {
         );
         assert_eq!(overflow, before);
         assert!(overflow_events.is_empty());
+    }
+
+    /// #3297 item 3: the Beckon preflight is null-specific. Owner history at
+    /// its ceiling, Arsenal at the Strength ceiling and Pillar of Creation at
+    /// the Block ceiling all refused before, though no null-creator Beckon
+    /// reaches any of them (`ArsenalPower/<…>d__6` RVA `0x334ec8` and
+    /// `PillarOfCreationPower/<…>d__6` RVA `0x340488` leave at
+    /// IL_001d-IL_0023). The counters the null commands do write still refuse
+    /// by name, and Beckon's two-card batch refuses atomically.
+    #[test]
+    fn beckon_preflight_checks_only_what_a_null_creator_card_writes() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::SoulFysh).unwrap();
+        let catalog = builder.build();
+        let moves = catalog.moves(MonsterKind::SoulFysh);
+
+        for (index, loop_pos) in [(0usize, 0), (2, 2)] {
+            let body = if index == 0 { beckon } else { attack_beckon };
+            let cards: u32 = if index == 0 { 2 } else { 1 };
+
+            let mut history = soul_fysh_state(loop_pos, 0);
+            history.history.owner_generated_cards_combat = i32::MAX;
+            body(&mut MoveCtx {
+                state: &mut history,
+                catalog: &catalog,
+                actor: 0,
+                args: catalog.args(moves[index].args),
+                events: &mut Vec::new(),
+            })
+            .unwrap();
+            assert_eq!(history.history.owner_generated_cards_combat, i32::MAX);
+            assert_eq!(history.next_card_uid, cards, "move {index}");
+
+            let mut arsenal = soul_fysh_state(loop_pos, 0);
+            arsenal.powers.set(PowerId::Arsenal, SlotWire::Int, 1);
+            arsenal
+                .powers
+                .set(PowerId::Strength, SlotWire::Int, i32::MAX);
+            assert!(
+                arsenal
+                    .fanouts
+                    .set_local_generated_power_order(&[PowerId::Arsenal])
+            );
+            body(&mut MoveCtx {
+                state: &mut arsenal,
+                catalog: &catalog,
+                actor: 0,
+                args: catalog.args(moves[index].args),
+                events: &mut Vec::new(),
+            })
+            .unwrap();
+            assert_eq!(arsenal.powers.value(PowerId::Strength), i32::MAX);
+            assert_eq!(arsenal.next_card_uid, cards, "move {index}");
+
+            let mut epoch = soul_fysh_state(loop_pos, 0);
+            epoch.next_generated_hook_uid = i32::MAX - i32::try_from(cards).unwrap() + 1;
+            let mut uid = soul_fysh_state(loop_pos, 0);
+            uid.next_card_uid = u32::MAX - cards + 1;
+            for (name, mut state) in [("next_generated_hook_uid", epoch), ("next_card_uid", uid)] {
+                let before = state.clone();
+                let mut events = Vec::new();
+                assert_eq!(
+                    body(&mut MoveCtx {
+                        state: &mut state,
+                        catalog: &catalog,
+                        actor: 0,
+                        args: catalog.args(moves[index].args),
+                        events: &mut events,
+                    }),
+                    Err(EngineRefusal::CounterOverflow(name)),
+                    "move {index}"
+                );
+                // Gaze's attack lands before its Beckon is preflighted, so
+                // only Beckon's own two-card batch is all-or-nothing here.
+                if index == 0 {
+                    assert_eq!(state, before);
+                    assert!(events.is_empty());
+                }
+            }
+        }
+
+        let mut pillar = soul_fysh_state(0, 0);
+        pillar.block = 999_999_999;
+        pillar
+            .powers
+            .set(PowerId::PillarOfCreation, SlotWire::Int, 1);
+        assert!(
+            pillar
+                .fanouts
+                .set_local_generated_power_order(&[PowerId::PillarOfCreation])
+        );
+        beckon(&mut MoveCtx {
+            state: &mut pillar,
+            catalog: &catalog,
+            actor: 0,
+            args: catalog.args(moves[0].args),
+            events: &mut Vec::new(),
+        })
+        .unwrap();
+        assert_eq!(pillar.block, 999_999_999);
+        assert_eq!(pillar.next_card_uid, 2);
     }
 
     /// #3256: both Soul Fysh Beckon moves pass a null creator

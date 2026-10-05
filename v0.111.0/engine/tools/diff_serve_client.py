@@ -74,3 +74,6 @@ class DiffServe:
             except Exception:  # noqa: BLE001 — closing must not mask a result
                 self.process.kill()
         self.process.wait(timeout=30)
+        for pipe in (self.process.stdin, self.process.stdout):
+            if pipe is not None:
+                pipe.close()

@@ -3263,22 +3263,21 @@ fn potion_selection_candidates(
     };
     let mut candidates = state.piles.get(pile).as_slice().to_vec();
     if potion == PotionId::DropletOfPrecognition {
-        candidates.sort_by_key(|card| {
-            let spec = catalog.spec(card.atom).expect("live card atom is interned");
-            let rarity = match spec.row.rarity {
-                crate::content_tables::CardRarity::Basic => 1,
-                crate::content_tables::CardRarity::Common => 2,
-                crate::content_tables::CardRarity::Uncommon => 3,
-                crate::content_tables::CardRarity::Rare => 4,
-                crate::content_tables::CardRarity::Ancient => 5,
-                crate::content_tables::CardRarity::Event => 6,
-                crate::content_tables::CardRarity::Status => 7,
-                crate::content_tables::CardRarity::Token => 8,
-                crate::content_tables::CardRarity::Quest => 9,
-                crate::content_tables::CardRarity::Curse => 10,
-            };
-            (rarity, spec.identity.id.as_str())
-        });
+        // `DropletOfPrecognition/<OnUse>d__6::MoveNext` RVA `0x34cfd4` awaits
+        // `CardSelectCmd::FromCombatPile` over `PileType.Draw` (`ldc.i4.1`
+        // IL_0041, call IL_0055) with `CardSelectorPrefs(prompt, 1)`
+        // (IL_004f-IL_0050). The option list keeps that command's selector
+        // view of the Draw pile, by the native `CardRarity` values (#3621:
+        // this copy had Status/Token and Quest/Curse swapped). An option
+        // index is a position in this list (`potion_selection_at`); a
+        // recorded answer is matched to it by uid.
+        if let Some(card) = candidates
+            .iter()
+            .find(|card| catalog.spec(card.atom).is_none())
+        {
+            return Err(EngineRefusal::UnknownAtom(card.atom));
+        }
+        super::selection::sort_native_draw_view(catalog, &mut candidates);
     }
     if potion == PotionId::TouchOfInsanity {
         candidates.retain(|card| {
@@ -3907,6 +3906,21 @@ fn apply_selected_card(
             .card_states
             .set_to_free_this_turn(frozen.uid, spec.cost)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
+        // The rows just appended live in the card's slot-7 payload, which the
+        // boundary emits only for a card carrying this bit
+        // (`HotBoundary::card_to_canonical_with_instance`). Without it they
+        // were live here and dropped from the canonical root, so a reloaded
+        // root charged the returned card's full cost (#3180, the #3176
+        // class). Set before the `history.over` return below: the rows are
+        // written on that path too. Touch of Insanity's arm does the same.
+        let live = state
+            .piles
+            .get_mut(source)
+            .make_mut()
+            .get_mut(index)
+            .ok_or(EngineRefusal::ContinuationNotModeled)?;
+        live.flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        state.exact_piles = true;
     }
     if potion == PotionId::TouchOfInsanity {
         let spec = catalog
@@ -6067,5 +6081,165 @@ mod generation_pool_facts_tests {
             computed.clone().generation_pools(),
             computed.generation_pools()
         );
+    }
+}
+
+#[cfg(test)]
+mod issue3180_liquid_memories_tests {
+    use super::*;
+    use crate::boundary::HotBoundary;
+    use crate::catalog::CatalogBuilder;
+    use crate::engine::{Action, SelectionAnswer, apply_action};
+    use crate::hot::HotCard;
+
+    /// #3180: Liquid Memories' `SetToFreeThisTurn` rows live in the returned
+    /// card's slot-7 payload. A plain deck Bash carries no slot-7 bit, so
+    /// before the fix the rows were live in the engine and absent from the
+    /// canonical document, and a reloaded root charged Bash's full 2 (the
+    /// #3176 class). The Touch of Insanity arm beside it always set the bit.
+    #[test]
+    fn liquid_memories_card_stays_free_through_the_canonical_root() {
+        let mut builder = CatalogBuilder::new();
+        let bash = builder
+            .intern(CardIdentity {
+                id: CardId::Bash,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.next_card_uid = 2;
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .push(HotCard {
+                uid: 1,
+                atom: bash,
+                flags: 0,
+            });
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(PotionId::LiquidMemories)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+
+        let mut used = apply_action(
+            &state,
+            &catalog,
+            &Action::UsePotion {
+                slot: 0,
+                target: None,
+            },
+        )
+        .unwrap()
+        .state;
+        if used.pending.is_some() {
+            used = apply_action(
+                &used,
+                &catalog,
+                &Action::Select {
+                    answer: SelectionAnswer::OptionIndex(0),
+                },
+            )
+            .unwrap()
+            .state;
+        }
+
+        let live = used.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(live.uid, 1);
+        assert_eq!(
+            crate::engine::play::resolved_local_energy_cost(
+                &used,
+                live,
+                catalog.spec(live.atom).unwrap()
+            ),
+            0
+        );
+
+        let document = HotBoundary::try_to_canonical(&used, &catalog).unwrap();
+        let rebuilt = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let loaded = HotBoundary::from_canonical(&document, &rebuilt).unwrap();
+        let reloaded = loaded.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(reloaded.uid, 1);
+        assert_eq!(
+            crate::engine::play::resolved_local_energy_cost(
+                &loaded,
+                reloaded,
+                rebuilt.spec(reloaded.atom).unwrap()
+            ),
+            0,
+            "the returned Bash is still free on the reloaded root"
+        );
+        assert_eq!(
+            loaded
+                .card_states
+                .get(1)
+                .free_star_cost_this_turn_or_played_rows,
+            1
+        );
+        assert_ne!(live.flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE, 0);
+        assert!(used.exact_piles);
+    }
+}
+
+#[cfg(test)]
+mod droplet_draw_view_tests {
+    use super::*;
+    use crate::catalog::CatalogBuilder;
+    use crate::hot::{CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotCard};
+
+    /// Droplet of Precognition's option list is the Draw pile by the native
+    /// `CardRarity` values (#3621): Common, Token, Status, Curse, Quest. The
+    /// values this copy used gave Common, Status, Token, Quest, Curse
+    /// (`[5, 2, 4, 1, 3]`), so option 1 named Slimed where it now names Shiv.
+    #[test]
+    fn droplet_options_order_token_before_status_and_curse_before_quest() {
+        let mut builder = CatalogBuilder::new();
+        let mut state = HotState::at_defaults();
+        for (uid, id) in [
+            (1, CardId::SpoilsMap),
+            (2, CardId::Slimed),
+            (3, CardId::AscendersBane),
+            (4, CardId::Shiv),
+            (5, CardId::Thunderclap),
+        ] {
+            let atom = builder
+                .intern(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                uid,
+                atom,
+                flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            });
+        }
+        let catalog = builder.build();
+
+        let options =
+            potion_selection_candidates(&state, &catalog, PotionId::DropletOfPrecognition).unwrap();
+
+        assert_eq!(
+            options.iter().map(|card| card.uid).collect::<Vec<_>>(),
+            [5, 4, 2, 3, 1]
+        );
+        let second = potion_selection_at(
+            &state,
+            &catalog,
+            PotionId::DropletOfPrecognition,
+            &options,
+            1,
+        )
+        .unwrap();
+        assert_eq!(second[0].uid, 4);
     }
 }

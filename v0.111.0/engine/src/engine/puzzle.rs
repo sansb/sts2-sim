@@ -95,6 +95,38 @@ use super::{Action, EngineRefusal, Event, SelectionAnswer, SelectionRef};
 /// published: [`CarrierGuard::settle`] converts it or refuses.
 pub(crate) const PARK_SITE: &str = "receipt-owned Draw parked";
 
+/// A receipt-owned Draw suspended on a player choice inside Whispering
+/// Earring's turn-one loop (#3666).
+///
+/// Native never offers that choice. `CardSelectCmd::PushSelector` RVA
+/// `0x131900` pushes onto one static stack that `get_Selector` RVA
+/// `0x131889` peeks, and
+/// `WhisperingEarring/<AfterAutoPrePlayPhaseEnteredLate>d__8::MoveNext` RVA
+/// `0x333fcc` (v0.111.0, SHA-256 `9cb4f1ad…`) holds its `VakuuCardSelector`
+/// on it from IL_0065-IL_0071 to the `finally` at IL_0264-IL_0276, across
+/// every `CardCmd.AutoPlay` of the loop. A set selector answers every combat
+/// `CardSelectCmd` entry point without a prompt, whoever called it:
+/// `<FromHand>d__28` RVA `0x3e7568` (IL_007c, then IL_0192-IL_01b8) and
+/// `<FromCombatPile>d__20` RVA `0x3e5e84` (IL_0077, then IL_0181-IL_01ff).
+/// That covers a card AutoPlayed from inside a child, such as the Sculpting
+/// Strike or Seeker Strike that
+/// `HellraiserPower/<AfterCardDrawnEarly>d__7` RVA `0x33c1a8` plays out of a
+/// Draw (IL_011e-IL_012e).
+///
+/// So under [`super::selection::VakuuSelectorScope`] a suspended selection
+/// is one whose selector answer this crate has not read. It is refused by
+/// this name: it is neither parked nor answered from a tape.
+pub(crate) const VAKUU_SELECTOR_CHOICE: &str = "player choice inside Whispering Earring's selector";
+
+/// Refuse a suspended choice under the Earring's selector
+/// ([`VAKUU_SELECTOR_CHOICE`]).
+fn refuse_choice_under_vakuu_selector() -> Result<(), EngineRefusal> {
+    if super::selection::vakuu_selector_active() {
+        return Err(EngineRefusal::MalformedArgs(VAKUU_SELECTOR_CHOICE));
+    }
+    Ok(())
+}
+
 thread_local! {
     /// Whether a public transaction is open to receive a park snapshot.
     static CARRIER_OPEN: Cell<bool> = const { Cell::new(false) };
@@ -324,6 +356,8 @@ impl Drop for CarrierGuard {
 }
 
 fn park(state: &HotState) -> Result<(), EngineRefusal> {
+    // #3666: the Earring's selector answers every selection of its loop.
+    refuse_choice_under_vakuu_selector()?;
     // #3386: native runs later deferred-choice listeners before this choice.
     if let Some(wall) = deferred_choice_wall() {
         return Err(EngineRefusal::PowerOrderNotModeled(wall));
@@ -421,7 +455,13 @@ pub(crate) fn tape_is_installed() -> bool {
 
 /// The answer at `state`'s lineage cursor, advancing that cursor, and whether
 /// it was the tape's last.
+///
+/// Both receipt-owned sites read it for a suspended choice before they park,
+/// so under the Earring's selector it refuses first (#3666): a parked
+/// document forged from inside the loop cannot be answered from a tape
+/// either.
 fn take_answer(state: &mut HotState) -> Result<Option<(ActionReplayAnswer, bool)>, EngineRefusal> {
+    refuse_choice_under_vakuu_selector()?;
     TAPE.with(|tape| {
         let tape = tape.borrow();
         let Some(tape) = tape.as_ref() else {
@@ -3183,6 +3223,130 @@ mod tests {
         }
     }
 
+    /// #3666: under Whispering Earring's selector no receipt-owned site
+    /// parks or reads a tape. Each forged state below suspends on a
+    /// selecting Hellraiser Seeker Strike; the scope is entered by hand,
+    /// because the only Rust site that holds it is the Earring's loop.
+    ///
+    /// - A Swift Draw: without the scope the Play parks and its Select
+    ///   resumes; with it, the Play and the Select on the already parked
+    ///   state both refuse by name.
+    /// - History Course's dupe: the same through its own answer loop.
+    /// - `park` itself refuses before it looks for an open carrier.
+    #[test]
+    fn vakuu_selector_scope_refuses_every_receipt_owned_choice_by_name() {
+        use crate::engine::selection::VakuuSelectorScope;
+        let refused = EngineRefusal::MalformedArgs(super::VAKUU_SELECTOR_CHOICE);
+
+        let mut fixture = fixture_with(
+            &[
+                swift_defend(),
+                plain(CardId::SeekerStrike),
+                plain(CardId::DefendIronclad),
+            ],
+            &[],
+            2,
+        );
+        let atoms = fixture.atoms.clone();
+        fixture
+            .state
+            .powers
+            .set(PowerId::Hellraiser, SlotWire::Int, 1);
+        crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut fixture.state);
+        fixture
+            .state
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(card(1, atoms[0]));
+        fixture
+            .state
+            .piles
+            .get_mut(PileId::Draw)
+            .make_mut()
+            .extend([
+                card(2, atoms[1]),
+                card(3, atoms[2]),
+                card(4, atoms[2]),
+                card(5, atoms[2]),
+            ]);
+        let (state, catalog) = rooted(&fixture);
+        let play = Action::Play {
+            uid: 1,
+            target: None,
+            selection: SelectionRef::NONE,
+        };
+        let parked = apply_action(&state, &catalog, &play).unwrap().state;
+        assert!(parked.pending.is_some() && parked_draw_depth(&parked).is_some());
+        let answers = legal_actions(&parked, &catalog);
+        assert!(!answers.is_empty());
+        for answer in &answers {
+            assert!(
+                apply_action(&parked, &catalog, answer).is_ok(),
+                "{answer:?}"
+            );
+        }
+        {
+            let _vakuu = VakuuSelectorScope::enter();
+            assert_eq!(
+                apply_action(&state, &catalog, &play).map(|next| next.state),
+                Err(refused.clone())
+            );
+            for answer in &answers {
+                assert_eq!(
+                    apply_action(&parked, &catalog, answer).map(|next| next.state),
+                    Err(refused.clone()),
+                    "{answer:?}"
+                );
+            }
+            assert_eq!(super::park(&parked), Err(refused.clone()));
+        }
+        assert_eq!(
+            super::park(&parked),
+            Err(EngineRefusal::ContinuationNotModeled),
+            "outside the scope, no carrier is open"
+        );
+
+        let mut fixture = history_course(
+            &[
+                CardId::PhotonCut,
+                CardId::DefendIronclad,
+                CardId::SeekerStrike,
+            ],
+            &[],
+        );
+        let (photon, defend, seeker) = (fixture.atoms[0], fixture.atoms[1], fixture.atoms[2]);
+        fixture
+            .state
+            .powers
+            .set(PowerId::Hellraiser, SlotWire::Int, 1);
+        crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut fixture.state);
+        retain(&mut fixture, 1, photon);
+        let draw = fixture.state.piles.get_mut(PileId::Draw).make_mut();
+        draw.extend((2..7).map(|uid| card(uid, defend)));
+        draw.push(card(7, seeker));
+        draw.extend((8..12).map(|uid| card(uid, defend)));
+        let (state, catalog) = rooted(&fixture);
+        let parked = apply_action(&state, &catalog, &Action::EndTurn)
+            .unwrap()
+            .state;
+        parked_history_course(&parked);
+        let answers = legal_actions(&parked, &catalog);
+        assert!(!answers.is_empty());
+        let _vakuu = VakuuSelectorScope::enter();
+        assert_eq!(
+            apply_action(&state, &catalog, &Action::EndTurn).map(|next| next.state),
+            Err(refused.clone())
+        );
+        for answer in &answers {
+            assert_eq!(
+                apply_action(&parked, &catalog, answer).map(|next| next.state),
+                Err(refused.clone()),
+                "{answer:?}"
+            );
+        }
+    }
+
     /// #3309 witness, two parks in one dupe: Photon Cut's Draw 1 reaches a
     /// selecting Hellraiser Seeker Strike (first park); after that answer the
     /// dupe itself parks on its Hand selection (second park). The second
@@ -3902,5 +4066,247 @@ mod tests {
             end_turn_refusal(&state, &catalog),
             EngineRefusal::PowerOrderNotModeled(super::JOSS_SIDE_END_WALL)
         );
+    }
+
+    /// Drive every legal answer from `parked` twice at each parked state:
+    /// warm (the engine's own state) and cold (canonical round trip plus
+    /// admission). Both must reach the same successor and the same digest, so
+    /// a cold reload at any park continues exactly as the warm path does.
+    /// Returns the terminals and the number of parked states visited.
+    fn warm_and_cold_agree(parked: &HotState, catalog: &Catalog) -> (Vec<HotState>, usize) {
+        let mut work = vec![parked.clone()];
+        let mut terminals = Vec::new();
+        let mut parks = 0;
+        while let Some(state) = work.pop() {
+            parks += 1;
+            assert!(parks < 10_000, "unbounded answer tree");
+            let (loaded, loaded_catalog) = cold(&state, catalog);
+            assert_eq!(loaded, state);
+            let actions = legal_actions(&state, catalog);
+            assert!(!actions.is_empty());
+            assert_eq!(legal_actions(&loaded, &loaded_catalog), actions);
+            for action in actions {
+                let warm = apply_action(&state, catalog, &action)
+                    .unwrap_or_else(|error| panic!("warm {action:?}: {error:?}"))
+                    .state;
+                let next = apply_action(&loaded, &loaded_catalog, &action)
+                    .unwrap_or_else(|error| panic!("cold {action:?}: {error:?}"))
+                    .state;
+                assert_eq!(next, warm, "{action:?}");
+                assert_eq!(
+                    HotBoundary::try_to_canonical(&next, &loaded_catalog)
+                        .unwrap()
+                        .differential_digest(),
+                    HotBoundary::try_to_canonical(&warm, catalog)
+                        .unwrap()
+                        .differential_digest(),
+                    "{action:?}"
+                );
+                if next.pending.is_some() {
+                    work.push(next);
+                } else {
+                    assert!(next.frames.is_empty());
+                    cold(&next, catalog);
+                    terminals.push(next);
+                }
+            }
+        }
+        (terminals, parks)
+    }
+
+    /// The caller of the Draw frame directly under a top CardPlay, when the
+    /// parked stack is exactly `[ActionReplay, Draw, CardPlay]`.
+    fn direct_child_draw_caller(state: &HotState) -> Option<crate::hot::DrawCaller> {
+        let [
+            crate::frame::Frame::ActionReplay { .. },
+            crate::frame::Frame::Draw { record },
+            crate::frame::Frame::CardPlay { .. },
+        ] = state.frames.as_slice()
+        else {
+            return None;
+        };
+        state.frames.draw(*record).map(|draw| draw.caller)
+    }
+
+    /// Hellraiser 1 over a Toadpole that does not attack (loop 2).
+    fn turn_start_hellraiser(cards: &[CardId], relics: &[RelicId]) -> Fixture {
+        let identities = cards.iter().map(|id| plain(*id)).collect::<Vec<_>>();
+        let mut fixture = fixture_with(&identities, relics, 2);
+        fixture
+            .state
+            .powers
+            .set(PowerId::Hellraiser, SlotWire::Int, 1);
+        crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut fixture.state);
+        fixture
+    }
+
+    /// #3164 witness: the turn-start Hand Draw AutoPlays a selecting
+    /// Hellraiser Strike DIRECTLY, so the Seeker's CardPlay sits on the
+    /// `turn_start` Draw frame under the EndTurn receipt. Two Seekers on top
+    /// make the one Hand Draw park twice. Every parked state loads cold and
+    /// continues to the warm path's state.
+    #[test]
+    fn hellraiser_seeker_directly_under_the_turn_start_hand_draw_loads_cold() {
+        let mut fixture =
+            turn_start_hellraiser(&[CardId::SeekerStrike, CardId::DefendIronclad], &[]);
+        let (seeker, defend) = (fixture.atoms[0], fixture.atoms[1]);
+        let draw = fixture.state.piles.get_mut(PileId::Draw).make_mut();
+        draw.extend((1..3).map(|uid| card(uid, seeker)));
+        draw.extend((3..12).map(|uid| card(uid, defend)));
+        let (state, catalog) = rooted(&fixture);
+        let parked = apply_action(&state, &catalog, &Action::EndTurn)
+            .unwrap()
+            .state;
+        assert!(parked.pending.is_some());
+        assert_eq!(
+            direct_child_draw_caller(&parked),
+            Some(crate::hot::DrawCaller::TurnStart),
+            "{:#?}",
+            parked.frames
+        );
+        let (terminals, parks) = warm_and_cold_agree(&parked, &catalog);
+        assert!(parks > 1, "the Hand Draw parks once per Seeker");
+        assert!(!terminals.is_empty());
+        for terminal in &terminals {
+            assert!(terminal.turn > state.turn);
+            assert_eq!(terminal.player_phase, PHASE_ORDINARY_ACTIONS);
+            assert_eq!(terminal.history.card_plays_finished_combat, 2);
+            // Five drawn, both Seekers played, each fetching one card.
+            assert_eq!(terminal.piles.get(PileId::Hand).len(), 5);
+        }
+    }
+
+    /// #3164 witness: `CombatManager.CheckForEmptyHand`'s turn-start Unceasing
+    /// Top Draw AutoPlays a selecting Hellraiser Strike directly, so the
+    /// Seeker sits on the `unceasing_top_turn_start` Draw frame. The Hand Draw
+    /// draws five plain Strikes, which Hellraiser plays out of the Hand; the
+    /// Top then draws the Seeker.
+    #[test]
+    fn hellraiser_seeker_directly_under_the_turn_start_unceasing_top_draw_loads_cold() {
+        let mut fixture = turn_start_hellraiser(
+            &[
+                CardId::StrikeIronclad,
+                CardId::SeekerStrike,
+                CardId::DefendIronclad,
+            ],
+            &[RelicId::RelicUnceasingTop],
+        );
+        let atoms = fixture.atoms.clone();
+        assert!(fixture.state.fanouts.set_potion_belt(
+            vec![None],
+            false,
+            false,
+            false,
+            false,
+            true
+        ));
+        fixture.state.fanouts.set_unceasing_top(true);
+        let draw = fixture.state.piles.get_mut(PileId::Draw).make_mut();
+        draw.extend((1..6).map(|uid| card(uid, atoms[0])));
+        draw.push(card(6, atoms[1]));
+        draw.extend((7..12).map(|uid| card(uid, atoms[2])));
+        let (state, catalog) = rooted(&fixture);
+        let parked = apply_action(&state, &catalog, &Action::EndTurn)
+            .unwrap()
+            .state;
+        assert!(parked.pending.is_some());
+        assert_eq!(
+            direct_child_draw_caller(&parked),
+            Some(crate::hot::DrawCaller::UnceasingTopTurnStart),
+            "{:#?}",
+            parked.frames
+        );
+        let (terminals, parks) = warm_and_cold_agree(&parked, &catalog);
+        assert_eq!(parks, 1);
+        assert!(!terminals.is_empty());
+        for terminal in &terminals {
+            assert!(terminal.turn > state.turn);
+            assert_eq!(terminal.player_phase, PHASE_ORDINARY_ACTIONS);
+            assert_eq!(terminal.history.card_plays_finished_combat, 6);
+            assert_eq!(terminal.piles.get(PileId::Hand).len(), 1);
+        }
+    }
+
+    /// #3164 witness: admitting the two turn-start callers to the restricted
+    /// automatic-selection gate admits nothing the EndTurn receipt does not
+    /// reproduce. Each forgery of the parked `[ActionReplay, Draw, CardPlay]`
+    /// document refuses to load, by name: no receipt, another caller on the
+    /// Hand Draw's frame, the Top's caller with the Top's own `from_hand_draw`
+    /// (the one forgery that passes the gate this issue widened, so the
+    /// receipt's replay is what refuses it), a Hand Draw that requested a
+    /// different count, and player state the EndTurn does not reproduce.
+    #[test]
+    fn forged_turn_start_seeker_documents_do_not_load() {
+        let mut fixture =
+            turn_start_hellraiser(&[CardId::SeekerStrike, CardId::DefendIronclad], &[]);
+        let (seeker, defend) = (fixture.atoms[0], fixture.atoms[1]);
+        let draw = fixture.state.piles.get_mut(PileId::Draw).make_mut();
+        draw.extend((1..3).map(|uid| card(uid, seeker)));
+        draw.extend((3..12).map(|uid| card(uid, defend)));
+        let (state, catalog) = rooted(&fixture);
+        let parked = apply_action(&state, &catalog, &Action::EndTurn)
+            .unwrap()
+            .state;
+        assert_eq!(
+            direct_child_draw_caller(&parked),
+            Some(crate::hot::DrawCaller::TurnStart)
+        );
+        let wire = HotBoundary::try_to_canonical(&parked, &catalog).unwrap();
+        let loaded_catalog = HotBoundary::catalog_from_canonical(&wire).unwrap();
+        assert!(HotBoundary::from_canonical(&wire, &loaded_catalog).is_ok());
+        assert_eq!(
+            wire.continuations[1].fields.get("caller"),
+            Some(&serde_json::json!("turn_start"))
+        );
+        let refusal = |forged: &crate::canonical::CanonicalStateV2| {
+            let error = HotBoundary::catalog_from_canonical(forged)
+                .and_then(|catalog| HotBoundary::from_canonical(forged, &catalog))
+                .unwrap_err();
+            format!("{error:?}")
+        };
+        // The Draw decode binds either turn-start caller to an EndTurn
+        // receipt directly below it; the receipt's replay binds the rest.
+        const PARENT: &str = "Draw caller does not match its parent";
+        const REPLAY: &str =
+            "ActionReplay transcript does not reproduce the complete canonical state";
+        let refuses = |forged: &crate::canonical::CanonicalStateV2, name: &str, by: &str| {
+            let error = refusal(forged);
+            assert!(error.contains(by), "{name}: {error}");
+        };
+
+        let mut rootless = wire.clone();
+        rootless.continuations.remove(0);
+        refuses(&rootless, "no receipt", PARENT);
+
+        for caller in ["unceasing_top_turn_start", "none", "dark_embrace_side_end"] {
+            let mut recaller = wire.clone();
+            recaller.continuations[1]
+                .fields
+                .insert("caller".to_owned(), serde_json::json!(caller));
+            refuses(&recaller, caller, PARENT);
+        }
+
+        let mut top = wire.clone();
+        top.continuations[1].fields.insert(
+            "caller".to_owned(),
+            serde_json::json!("unceasing_top_turn_start"),
+        );
+        top.continuations[1]
+            .fields
+            .insert("from_hand_draw".to_owned(), serde_json::json!(false));
+        refuses(&top, "the Top's caller on the Hand Draw's receipt", REPLAY);
+
+        let mut widened = wire.clone();
+        widened.continuations[1]
+            .fields
+            .insert("requested".to_owned(), serde_json::json!(6));
+        refuses(&widened, "widened Hand Draw", REPLAY);
+
+        let mut healed = wire.clone();
+        assert_eq!(healed.player.get("hp"), Some(&serde_json::json!(parked.hp)));
+        healed
+            .player
+            .insert("hp".to_owned(), serde_json::json!(parked.hp + 1));
+        refuses(&healed, "state the receipt does not reproduce", REPLAY);
     }
 }

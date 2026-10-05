@@ -1,0 +1,18 @@
+{
+ "schema": "mcr-decode-pins-v1",
+ "note": "sha256 of each fixture's decoded document as sts-sim mcr-decode prints it (sorted keys, no spaces). Written by tools/mcr_parity.py --write-pins after the Rust and Python decoders agreed.",
+ "game_version": "v0.111.0",
+ "fixtures": {
+  "6P96T755CNZ3_mawler_win.mcr": "a6a0f31b4cb99b265a7715529ca287ebaa2b611bd4bde8562a23d9699f348b81",
+  "LYE3ZK9FYKKV_f04_nibbits.mcr": "a4264280e65bc0fddd7aeaeda75642a3abe57df63e18385bd26c8c8ad2383015",
+  "LYE3ZK9FYKKV_f21_bowlbugs.mcr": "9dd680a9b6b35c06606e726246e710f286c366794ddbb6ee2d1e5bced1a9e344",
+  "LYE3ZK9FYKKV_f43_soul_nexus.mcr": "cab08c660b52e0ca650faef4a18c77016e0482df598229ee1cd93f654193e457",
+  "YLVVPKPH1MTW_f05_sludge_spinner.mcr": "e590239cc78156ebbfdaa4ffa23a267a705fdb77cf790f04b308c4d5421e6ec2",
+  "YLVVPKPH1MTW_f09_cultists.mcr": "841ed29f7095c679cb7dab9c0282946412dcab8a8c48cefe1a7a5cabc79a30b2",
+  "YLVVPKPH1MTW_f17_lagavulin.mcr": "5632c83c9536a8a45ac95815ac5c97edc7243746feb43ba83eb6451fce7123fa",
+  "YLVVPKPH1MTW_f20_thieving_hopper.mcr": "87e256b3df80fc2413f352a0780800ada238fe97dd6810312504a0d34e071eed",
+  "YLVVPKPH1MTW_f25_decimillipede.mcr": "637e0982ae663d92719456ef1c6ef46d0521a444cee2f73682f98c35b7f90fbc",
+  "YLVVPKPH1MTW_f31_infested_prisms.mcr": "ed9c51799cf1ae1fa2068d67dc7bb63a0ce61a24b2c7ffeec4b246249152b2b4",
+  "YLVVPKPH1MTW_f33_the_insatiable.mcr": "249042ad839c6011c7d5cab29ffddad910c272fcd0a228a4b2dcbb790f354c9a"
+ }
+}

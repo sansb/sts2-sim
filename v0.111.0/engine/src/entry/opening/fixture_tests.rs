@@ -103,7 +103,21 @@ fn oracle_pet_digest(
     document.differential_digest()
 }
 
+/// The opening as the frozen oracle documents record it.
+///
+/// The oracle never carried the AfterEnergyReset ledger: its review root
+/// stamped `after_energy_reset_order` onto the document afterwards (frozen
+/// Python `rust_review._replay_opening`, deleted #2827). The opening emits
+/// the ledger itself since #3687, so every oracle digest and document here
+/// compares without it. [`open_with_reset_ledger`] is the unstripped opening,
+/// and the tests that use it pin the ledger.
 fn open(case: &Value) -> Result<Opening, OpeningRefusal> {
+    let mut opening = open_with_reset_ledger(case)?;
+    opening.document.player.remove("after_energy_reset_order");
+    Ok(opening)
+}
+
+fn open_with_reset_ledger(case: &Value) -> Result<Opening, OpeningRefusal> {
     build_opening(&entry_facts(case), &OpeningOptions::default())
 }
 
@@ -193,9 +207,20 @@ fn every_player_field_the_opening_writes_agrees_with_the_oracle() {
             "player.{name} differs from the oracle"
         );
     }
+    // The one field the opening writes that the oracle document never held:
+    // the AfterEnergyReset ledger's known-empty witness (#3687), which the
+    // oracle's review root stamped on afterwards. Pinned by value instead.
+    const RUST_ONLY: &str = "after_energy_reset_order";
+    assert!(!oracle_player.contains_key(RUST_ONLY));
+    assert_eq!(
+        built.document.player.get(RUST_ONLY),
+        Some(&Value::Array(Vec::new()))
+    );
     for name in built.document.player.keys() {
         assert!(
-            oracle_player.contains_key(name) || POST_DEAL.contains(&name.as_str()),
+            oracle_player.contains_key(name)
+                || POST_DEAL.contains(&name.as_str())
+                || name == RUST_ONLY,
             "player.{name} is written by the opening and absent from the oracle"
         );
     }
@@ -308,7 +333,10 @@ fn the_empty_belt_variant_opens_end_to_end_and_matches_the_oracle() {
     // The control. Without it the three pins below could pass for the wrong
     // reason — a shared upstream divergence that happens to cancel.
     let opening = open(&empty_belt_case()).expect("the empty-belt variant opens");
-    assert_eq!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_eq!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
 }
 
 /// Gold Plated Cables opens (#3381): it has no body on a hook the opening
@@ -389,12 +417,15 @@ fn a_saved_genetic_algorithm_copy_carries_its_growth_and_deck_row() {
         Some(&serde_json::json!([[0, 3]])),
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "160e0f48b211596818cc4fe9eaf2972f4ccc926345a40dcbe8d73c9bd818f63e"
     );
     // And it is a different document from the control, so the assertion above
     // is measuring the state rather than an elision that happens to match.
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
 }
 
 #[test]
@@ -1417,7 +1448,7 @@ fn every_physical_cost_card_but_the_scythe_opens_with_the_oracles_default_payloa
         let expected: Value = serde_json::from_str(witness.cards).expect("oracle rows parse");
         assert_eq!(Value::Array(cards), expected, "{} card rows", witness.id);
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             witness.digest,
             "{} digest",
             witness.id
@@ -1613,7 +1644,7 @@ fn a_saved_scythe_copy_carries_its_growth_and_deck_row_and_opens() {
         );
         let opening = open(&case).unwrap_or_else(|refusal| panic!("{refusal}"));
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             witness.oracle_digest
         );
     }
@@ -1699,7 +1730,7 @@ fn an_ember_tea_charge_of_three_grants_strength_and_decrements() {
         "and the persistent charge decrements after the awaited Apply"
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "84b44de1edd2b904a6332259fd5679f30b2a26449772571aeeaefc4e57178b52"
     );
 }
@@ -1734,7 +1765,7 @@ fn ruined_helmet_doubles_the_ember_tea_grant_and_latches() {
         Some(&Value::from(2))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "29007eefe4749faa069fa16d55762ad4c7f45d5738df7be2d434c3ac5ce671cd"
     );
 
@@ -1851,10 +1882,13 @@ fn a_vajra_save_grants_one_strength_and_matches_the_oracle() {
         Some(&Value::from(1))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "bf8a03fd050b8a4fac7bbe4330fe33a431a6d29b669eb9e0766b2054e99b224d"
     );
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
 }
 
 /// Vajra's grant goes through the engine's owner-Strength command, so Ruined
@@ -1880,7 +1914,7 @@ fn vajra_stacks_with_ember_tea_and_ruined_helmet_like_the_oracle() {
         Some(&Value::Bool(true))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "4b88dbad70231f66142957b5d8f8185018c5ffa7f5be9a5eeb1e37847ac1b763"
     );
 
@@ -1896,7 +1930,7 @@ fn vajra_stacks_with_ember_tea_and_ruined_helmet_like_the_oracle() {
         Some(&Value::from(2))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "6033267eb985270870ebe8e5694d94bb1d3a543f30eb137190ac29e964dc4c04"
     );
 
@@ -1936,7 +1970,7 @@ fn a_cracked_core_save_channels_one_lightning_and_matches_the_oracle() {
         Some(&Value::from(1))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "868c397417e08b33563774e92f1a127fc35d0e61160ef21155f48c7f9d72a4da"
     );
 
@@ -1947,7 +1981,7 @@ fn a_cracked_core_save_channels_one_lightning_and_matches_the_oracle() {
     );
     let opening = open(&with_metronome).expect("Cracked Core with Metronome opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "f78c8a8496185dcf6b326df32d2b9ea411f2ac2f0380aa3f6556658c38c0d3c5"
     );
 }
@@ -2023,11 +2057,69 @@ fn a_voltaic_deck_opens_with_its_lightning_count_and_admits() {
 /// The frozen oracle's opening digests predate #3389: it seeded the count
 /// only for a deck Voltaic. A deck-only opening is otherwise unchanged, so
 /// stripping the one field recovers the oracle's document.
+/// #3660: the opening writes the bookkeeping record itself, and the oracle
+/// digests above are compared with it removed, so the record is pinned here:
+/// present, with exactly the bits its deck's closure keeps, and absent for a
+/// deck that keeps none.
+#[test]
+fn the_opening_records_exactly_the_bookkeeping_its_deck_keeps() {
+    for (cards, expected) in [
+        (&[][..], None),
+        (&["MISERY"][..], Some(serde_json::json!(["misery_ledger"]))),
+        (
+            &["NORMALITY"][..],
+            Some(serde_json::json!(["normality_count"])),
+        ),
+        (
+            &["THRUMMING_HATCHET"][..],
+            Some(serde_json::json!(["self_return_uids"])),
+        ),
+        (
+            &["MISERY", "NORMALITY", "THRUMMING_HATCHET"][..],
+            Some(serde_json::json!([
+                "misery_ledger",
+                "normality_count",
+                "self_return_uids"
+            ])),
+        ),
+    ] {
+        let opening = open(&owner_deck_with("CHARACTER.IRONCLAD", cards))
+            .unwrap_or_else(|refusal| panic!("{cards:?} opens: {refusal}"));
+        assert_eq!(
+            opening.document.player.get("session_bookkeeping"),
+            expected.as_ref(),
+            "{cards:?}"
+        );
+        // The record is the opening catalog's own: loading the document
+        // without it derives the same bits.
+        let mut without = opening.document.clone();
+        without.player.remove("session_bookkeeping");
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&without).unwrap();
+        let state = crate::boundary::HotBoundary::from_canonical(&without, &catalog).unwrap();
+        assert_eq!(
+            crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap(),
+            opening.document,
+            "{cards:?}"
+        );
+    }
+}
+
+/// The document as the frozen Python oracle would have written it: without
+/// the Rust-only bookkeeping record (#3660, `catalog::SessionBookkeeping`).
+/// The oracle digests below were taken before the record existed.
+fn python_view(
+    document: &crate::canonical::CanonicalStateV2,
+) -> crate::canonical::CanonicalStateV2 {
+    let mut document = document.clone();
+    document.player.remove("session_bookkeeping");
+    document
+}
+
 fn without_generated_voltaic_seed(
     document: &crate::canonical::CanonicalStateV2,
     seeded: bool,
 ) -> crate::canonical::CanonicalStateV2 {
-    let mut document = document.clone();
+    let mut document = python_view(document);
     let seed = document.player.remove("lightning_channeled");
     assert_eq!(seed, seeded.then(|| Value::from(0)), "the #3389 seed");
     document
@@ -2262,7 +2354,7 @@ fn a_festive_popper_save_hits_every_enemy_for_nine_and_matches_the_oracle() {
         vec![Value::from(17), Value::from(16)]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "9dc55be92c755d89d197a512e3aab3bfd88cd4999b9fd4c738e8787fe5e7d8cc"
     );
 
@@ -2273,7 +2365,7 @@ fn a_festive_popper_save_hits_every_enemy_for_nine_and_matches_the_oracle() {
     );
     let opening = open(&with_chip).expect("Festive Popper with Emotion Chip opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "192b054863495269f5e1afa31f23df0848a758f98adc21eebdccbd01f5e5fd76"
     );
 }
@@ -2304,7 +2396,7 @@ fn a_bellows_save_upgrades_the_opening_hand_once_and_matches_the_oracle() {
         hand_levels(&opening.document)
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "4bb9769633a4223996a11d951020c7416582805400f7ec11ff7e3a59a5c5f401"
     );
 
@@ -2337,7 +2429,7 @@ fn a_bellows_save_upgrades_the_opening_hand_once_and_matches_the_oracle() {
         .map(|(id, level)| (id.to_string(), level))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "8eb0e135b12cbcca84d97f48358650af884b8255cf4ce37715b1a6229f9973cf"
     );
 
@@ -2348,7 +2440,7 @@ fn a_bellows_save_upgrades_the_opening_hand_once_and_matches_the_oracle() {
     );
     let opening = open(&with_popper).expect("Bellows with Festive Popper opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "f36be49df65cbdae0749bf8c6404995bf24c615c3b1662074021a886c4bd4b5b"
     );
 }
@@ -2389,7 +2481,7 @@ fn bellows_beside_each_oracle_admitted_peer_matches_the_oracle() {
         );
         let opening = open(&case).unwrap_or_else(|refusal| panic!("Bellows + {peer}: {refusal}"));
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "Bellows + {peer}"
         );
@@ -2905,7 +2997,11 @@ fn ghost_seed_ethereal_survives_the_bellows_upgrade_and_matches_the_oracle() {
                 card.id
             );
         }
-        assert_eq!(opening.document.differential_digest(), digest, "{relics:?}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{relics:?}"
+        );
     }
 }
 
@@ -3057,7 +3153,7 @@ fn bellows_and_popper_beside_the_parallel_lanes_relics_match_the_oracle() {
         ) {
             oracle_pet_digest(&opening.document, 3)
         } else {
-            opening.document.differential_digest()
+            python_view(&opening.document).differential_digest()
         };
         assert_eq!(actual, digest, "{owner} + {peer}");
     }
@@ -3117,11 +3213,14 @@ fn a_girya_save_grants_its_lift_count_as_strength_and_matches_the_oracle() {
             "TimesLifted {lifts}"
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "TimesLifted {lifts}"
         );
-        assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+        assert_ne!(
+            python_view(&opening.document).differential_digest(),
+            EMPTY_BELT_DIGEST
+        );
     }
 }
 
@@ -3206,7 +3305,11 @@ fn girya_stacks_with_the_other_room_entry_strength_sources_like_the_oracle() {
             tea_left.map(Value::from).as_ref(),
             "{name}"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{name}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{name}"
+        );
     }
 
     // Oracle: `RUINED_HELMET with distinct AfterRoomEntered Strength sources
@@ -3283,7 +3386,10 @@ fn the_full_profile_control_opens_and_matches_the_oracle() {
         opening.document.player.get("potion_slots"),
         Some(&serde_json::json!([null, null]))
     );
-    assert_eq!(opening.document.differential_digest(), FULL_PROFILE_DIGEST);
+    assert_eq!(
+        python_view(&opening.document).differential_digest(),
+        FULL_PROFILE_DIGEST
+    );
 }
 
 /// #3347, end to end through Rust's own opening: a save whose profile hides
@@ -3371,40 +3477,205 @@ fn a_petrified_toad_save_procures_a_shaped_rock_and_matches_the_oracle() {
             Some(&slots),
             "{name}"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{name}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{name}"
+        );
         assert_ne!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             FULL_PROFILE_DIGEST,
             "{name}"
         );
     }
 }
 
-/// Sozu's veto of the rock is **not** reachable from the opening today, and
-/// that is a refusal rather than a wrong document.
+fn sozu_row() -> Value {
+    serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.SOZU"})
+}
+
+/// [`full_profile_case`] owning Sozu: the control for the Sozu witnesses.
+fn sozu_case() -> Value {
+    let mut case = full_profile_case();
+    relic(&mut case, sozu_row());
+    case
+}
+
+/// The player fields of `opening` that differ from `control`'s, by name.
+fn player_fields_differing(opening: &Opening, control: &Opening) -> Vec<String> {
+    let (a, b) = (&opening.document.player, &control.document.player);
+    let names: std::collections::BTreeSet<&String> = a
+        .keys()
+        .chain(b.keys())
+        .filter(|key| a.get(*key) != b.get(*key))
+        .collect();
+    names.into_iter().cloned().collect()
+}
+
+/// A Sozu save opens, carrying the veto and the extra energy (#2890).
 ///
-/// The oracle opens Toad + Sozu with an empty belt (`potion_slots` `[null,
-/// null]`, digest `1d654bed…`, printed with the same recipe). This crate
-/// refuses every Sozu fight at the boundary, Toad or not, because the
-/// opening does not write the `sozu` carrier the boundary requires of an
-/// owned Sozu (filed as #2890). The veto branch itself is
-/// `potions::procure_potion`'s and is witnessed by the engine's own
-/// `belt_buckle_procurement_inserts_before_unlatching_and_failures_are_inert`.
+/// `Sozu` (v0.111.0) is `ShouldProcurePotion` (RVA `0x9bbf3`, false for its
+/// owner) and `ModifyMaxEnergy` (`0x9bc01`, `+ EnergyVar(1)`), with no window
+/// hook and no per-fight state; `pre_hook_document` carries the IL. So against
+/// the same save without it, the opened document differs in the relic lists,
+/// the `sozu` carrier and turn one's energy, and in nothing else: the belt,
+/// every pile, every monster and every stream are the control's. Before the
+/// seed this save refused as `boundary_unrepresentable`.
 #[test]
-fn a_petrified_toad_save_with_sozu_refuses_like_every_sozu_save() {
-    let sozu = serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.SOZU"});
-    let mut without_toad = full_profile_case();
-    relic(&mut without_toad, sozu.clone());
-    let mut with_toad = full_profile_case();
-    relic(
-        &mut with_toad,
-        serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.PETRIFIED_TOAD"}),
+fn a_sozu_save_opens_with_the_veto_carrier_and_one_more_energy() {
+    let control = open(&full_profile_case()).expect("the control opens");
+    let opening = open(&sozu_case()).expect("a Sozu save opens");
+
+    assert_eq!(control.document.player.get("sozu"), None);
+    assert_eq!(
+        opening.document.player.get("sozu"),
+        Some(&Value::Bool(true))
     );
-    relic(&mut with_toad, sozu);
-    let control = open(&without_toad).expect_err("a Sozu save refuses at the boundary");
-    let refusal = open(&with_toad).expect_err("so does Toad + Sozu");
-    assert_eq!(refusal.class(), "boundary_unrepresentable");
-    assert_eq!(refusal.to_string(), control.to_string());
+    assert_eq!(
+        opening.document.player.get("potion_slots"),
+        Some(&serde_json::json!([null, null]))
+    );
+    // The control's 3 is the field default and so elided.
+    assert_eq!(control.document.player.get("energy"), None);
+    assert_eq!(opening.document.player.get("energy"), Some(&Value::from(4)));
+    assert_eq!(
+        player_fields_differing(&opening, &control),
+        ["energy", "relics_entering", "sozu", "template_relics"]
+    );
+    assert_eq!(opening.document.piles, control.document.piles);
+    assert_eq!(opening.document.monsters, control.document.monsters);
+    assert_eq!(opening.document.rng, control.document.rng);
+
+    // The empty-topology belt (capacity 0) takes the carrier too: the veto is
+    // a fact about the owner, not about a slot, and the boundary accepts it
+    // with the relic.
+    let opening = open(&with_relic("RELIC.SOZU")).expect("a Sozu save without a belt opens");
+    assert_eq!(
+        opening.document.player.get("sozu"),
+        Some(&Value::Bool(true))
+    );
+    assert_eq!(opening.document.player.get("potion_slots"), None);
+}
+
+/// Sozu vetoes Petrified Toad's rock: the belt stays as it was (#2890).
+///
+/// `PetrifiedToad/<BeforeCombatStartLate>d__4::MoveNext` (`0x32dd04`) calls
+/// `PotionCmd::TryToProcure<PotionShapedRock>` unconditionally, and
+/// `<TryToProcure>d__1::MoveNext` (`0x3ef588`) returns a failed result at
+/// `IL_0052`-`IL_0072` when `Hook::ShouldProcurePotion` (`IL_004b`) is false,
+/// before `AddPotionInternal` (`IL_008b`). So Toad + Sozu is the Sozu save
+/// with one more relic row: no rock in an empty belt, a held potion kept and
+/// its neighbour left empty, and no stream moved. Without Sozu the same saves
+/// take the rock
+/// (`a_petrified_toad_save_procures_a_shaped_rock_and_matches_the_oracle`).
+///
+/// The digest is the deleted Python oracle's for the empty-belt save, as
+/// #2890 recorded it before the deletion. It cannot be regenerated, so it is
+/// corroboration of the IL read above and not the authority for it.
+#[test]
+fn a_petrified_toad_save_with_sozu_opens_with_the_rock_vetoed() {
+    let toad = serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.PETRIFIED_TOAD"});
+    let sozu_only = open(&sozu_case()).expect("the Sozu control opens");
+
+    for (name, potions, slots) in [
+        ("empty belt", vec![], serde_json::json!([null, null])),
+        (
+            "slot 1 held",
+            vec![potion_row("POTION.FIRE_POTION", 1)],
+            serde_json::json!([null, "FIRE_POTION"]),
+        ),
+    ] {
+        let mut case = full_profile_case();
+        relic(&mut case, toad.clone());
+        relic(&mut case, sozu_row());
+        let empty = potions.is_empty();
+        case["save"]["players"][0]["potions"] = Value::Array(potions);
+        let opening = open(&case).unwrap_or_else(|refusal| panic!("{name}: {refusal}"));
+        assert_eq!(
+            opening.document.player.get("potion_slots"),
+            Some(&slots),
+            "{name}"
+        );
+        assert_eq!(
+            opening.document.player.get("sozu"),
+            Some(&Value::Bool(true)),
+            "{name}"
+        );
+        assert_eq!(opening.document.rng, sozu_only.document.rng, "{name}");
+        assert_eq!(opening.document.piles, sozu_only.document.piles, "{name}");
+        if empty {
+            assert_eq!(
+                python_view(&opening.document).differential_digest(),
+                "1d654bed3c3ec4e2745d216d67da23e6dc7dfb9a2cd7514caa4da6f3ef34d208",
+                "{name}"
+            );
+        }
+    }
+
+    // Acquisition order does not matter: the veto is a `Should` hook over
+    // every listener, not a same-hook race with the Toad.
+    let mut case = sozu_case();
+    relic(&mut case, toad);
+    let opening = open(&case).expect("Sozu before the Toad opens");
+    assert_eq!(
+        opening.document.player.get("potion_slots"),
+        Some(&serde_json::json!([null, null]))
+    );
+}
+
+/// Sozu vetoes Delicate Frond's fill after one generated potion (#2890).
+///
+/// `DelicateFrond/<BeforeCombatStart>d__2::MoveNext` (`0x3229bc`) enters its
+/// loop on an open slot, generates one potion (`IL_0044`, two
+/// `CombatPotionGeneration` draws) and leaves on the failed procurement
+/// (`IL_00b7`-`IL_00bc`). So the belt stays empty and the stream moves two
+/// draws, not two per open slot; a full belt never enters the loop.
+#[test]
+fn a_delicate_frond_save_with_sozu_spends_one_generation_and_fills_nothing() {
+    let control = open(&sozu_case()).expect("the Sozu control opens");
+    let base = potion_generation_counter(&control);
+
+    let mut case = frond_case(vec![]);
+    relic(&mut case, sozu_row());
+    let opening = open(&case).expect("Frond + Sozu opens");
+    assert_eq!(
+        opening.document.player.get("potion_slots"),
+        Some(&serde_json::json!([null, null]))
+    );
+    assert_eq!(potion_generation_counter(&opening), base + 2);
+
+    let mut full = frond_case(vec![
+        potion_row("POTION.FIRE_POTION", 0),
+        potion_row("POTION.BLOCK_POTION", 1),
+    ]);
+    relic(&mut full, sozu_row());
+    let opening = open(&full).expect("a full belt opens");
+    assert_eq!(potion_generation_counter(&opening), base);
+}
+
+/// What stays refused under Sozu, each by its own name (#2890).
+///
+/// The seed admits the carrier; it widens no other gate. A procuring relic
+/// still needs the exact belt capacity (its guard reads the slots before Sozu
+/// is asked), and Belt Buckle, whose latch a procurement clears, is still
+/// refused by the room-entry gate exactly as it is without Sozu.
+#[test]
+fn a_sozu_save_keeps_the_procuring_relics_own_refusals() {
+    for procurer in ["RELIC.PETRIFIED_TOAD", "RELIC.DELICATE_FROND"] {
+        let refusal = open(&with_relics(procurer, "RELIC.SOZU")).expect_err("capacity 0 refuses");
+        assert_eq!(refusal.class(), "potion_belt_not_exact", "{procurer}");
+        assert!(refusal.to_string().contains(procurer), "{refusal}");
+    }
+    let buckle = serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.BELT_BUCKLE"});
+    let mut without = full_profile_case();
+    relic(&mut without, buckle.clone());
+    let without = open(&without).expect_err("Belt Buckle refuses without Sozu");
+    let mut with = sozu_case();
+    relic(&mut with, buckle);
+    let with = open(&with).expect_err("and with it");
+    assert_eq!(with.class(), without.class());
+    assert_eq!(with.to_string(), without.to_string());
+    assert_ne!(with.class(), "boundary_unrepresentable");
 }
 
 /// A Petrified Toad fight without an exact positive belt capacity refuses,
@@ -4061,9 +4332,15 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // Still 5 after #3533 retired `RELIC.DELICATE_FROND`: it had no Rust
     // body site while gated, and its manifest row flipped by hand with the
     // port (`engine::potions::delicate_frond_before_combat_start`).
+    // 4 since #2758 retired `RELIC.RING_OF_THE_DRAKE`: its body site WAS its
+    // window body (the `turn <= 3` `ModifyHandDraw` row), with fixture
+    // witnesses at the end of this file. The four left are Fake Snecko Eye,
+    // Snecko Eye, Fur Coat and Philosopher's Stone, each named from a body
+    // root for a hook other than the one that keeps it gated (the audit above
+    // `OPENING_WINDOW_RELIC_BODIES` says which).
     assert_eq!(
         gated_with_a_body.len(),
-        5,
+        4,
         "a five-hook gate entry gained or lost a Rust body site — check whether \
          the body is for its WINDOW hook, and if it is, retire the entry with \
          a parity witness instead of adjusting this number: {gated_with_a_body:?}"
@@ -4184,10 +4461,13 @@ fn a_very_hot_cocoa_save_opens_with_its_template_relics_field_and_matches_the_or
     );
     assert_eq!(opening.document.player.get("energy"), Some(&Value::from(7)));
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "5cf0008c562e813dc6d97dfa647eef77c38d746c900d50f372ba0054c0882a83"
     );
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
 }
 
 /// A Regent save under a **fully-unlocked** profile opens with its
@@ -4255,7 +4535,7 @@ fn a_regent_save_under_a_full_profile_writes_its_spectrum_shift_pool_and_matches
         Some(&Value::from(3))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "0bc879479ec11e27d15608625b53532793245a8cf2d1e5c26e84e107227886a4"
     );
 }
@@ -4356,7 +4636,7 @@ fn a_regent_save_without_a_profile_writes_no_spectrum_shift_pool() {
         None
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "45ecbbe7e9da5fae6be7b3d0f532c69e46d59e0fbe7e2aab6879898f297a388f"
     );
 }
@@ -4417,7 +4697,7 @@ fn a_brimstone_save_still_opens_with_its_strength_rows() {
         .collect();
     assert_eq!(monster_strength, vec![Some(1), Some(1)]);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "cd63aaa2d02acdfa4eb5000d2d578f10795d6fd55155150675fac8667622b265"
     );
 }
@@ -4477,11 +4757,14 @@ fn a_bag_of_preparation_save_draws_two_extra_cards_on_turn_one() {
         "five dealt plus the bag's two"
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "d73d6f982193ed80c2495cb1bf45b9daeba3dbd10d1b72106540a350950ef818"
     );
     // Not the control: the two cards really moved out of the draw pile.
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
 }
 
 /// `RELIC.RING_OF_THE_SNAKE` draws two extra cards on the first player turn
@@ -4509,13 +4792,13 @@ fn a_ring_of_the_snake_save_draws_two_extra_cards_on_turn_one() {
         "five dealt plus the ring's two"
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "5399443dd900944cef7becfb935360734a38de2769acf63dcc42f082684ef783"
     );
     let bag = open(&with_relic("RELIC.BAG_OF_PREPARATION")).expect("Bag of Preparation opens");
     assert_eq!(opening.document.piles, bag.document.piles);
     assert_ne!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         bag.document.differential_digest()
     );
 }
@@ -4545,7 +4828,7 @@ fn ring_of_the_snake_and_bag_of_preparation_sum_to_four_extra_cards() {
     );
     assert_eq!(hand_size(&opening.document), 9);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "1819320bafc571556fb0c5143024b9b1d7d13959474200a23c00f0fed426aa40"
     );
 }
@@ -4578,7 +4861,7 @@ fn a_silent_starter_save_with_ring_of_the_snake_matches_the_oracle() {
     assert_eq!(hand_size(&opening.document), 7);
     assert_eq!(opening.document.player.get("hp"), Some(&Value::from(70)));
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "f1d2d82685572cde20e42071ab26a965a1873012be353591d74bc2e1b6ebf872"
     );
 }
@@ -4600,10 +4883,13 @@ fn a_letter_opener_save_opens_with_the_oracles_document() {
         Some(&Value::from(true))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "5f1f3b70e0ab4ab729c4f1f41c5d6b94d9c224f5c09ddfa01f3971e30c2d581f"
     );
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
     assert_eq!(opening.document.piles, control.document.piles);
     assert_eq!(opening.document.rng, control.document.rng);
     assert_eq!(opening.document.monsters, control.document.monsters);
@@ -4630,10 +4916,13 @@ fn a_paels_flesh_save_opens_with_the_oracles_document_and_no_turn_one_energy() {
         control.document.player.get("energy")
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "61df26872521d3d72525ee1859f7c0d564212ae1af85c724484e590acf86b4fc"
     );
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
     assert_eq!(opening.document.piles, control.document.piles);
     assert_eq!(opening.document.rng, control.document.rng);
 }
@@ -4651,7 +4940,7 @@ fn letter_opener_and_paels_flesh_open_together_with_the_oracles_document() {
     );
     let opening = open(&case).expect("Letter Opener and Pael's Flesh open");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "2f2fbb06d3f093dd19c9a9b4c1cfb3c28ebc3affaea2de0dbaaffe1a1b523f12"
     );
 }
@@ -4671,10 +4960,13 @@ fn a_meal_ticket_save_opens_because_its_heal_is_merchant_room_only() {
     let control = open(&empty_belt_case()).expect("the control opens");
     let opening = open(&with_relic("RELIC.MEAL_TICKET")).expect("Meal Ticket opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "4d7c17672d952b978bd5209bad807c40c711033a069835286429a220097c3887"
     );
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
     // No heal, and nothing else moved either: the relic row is the whole diff.
     assert_eq!(
         opening.document.player.get("hp"),
@@ -4724,11 +5016,14 @@ fn a_pendulum_save_advances_its_counter_and_grants_on_the_wrap() {
         );
         assert_eq!(hand_size(&opening.document), hand, "TurnsSeen {seen}");
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "TurnsSeen {seen}"
         );
-        assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+        assert_ne!(
+            python_view(&opening.document).differential_digest(),
+            EMPTY_BELT_DIGEST
+        );
     }
 }
 
@@ -4753,7 +5048,7 @@ fn the_turn_one_draw_relics_stack_on_one_save() {
     let opening = open(&case).expect("both draw relics open");
     assert_eq!(hand_size(&opening.document), 8, "five plus two plus one");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "140e13ad0c90c89a12de8135e8efd9be0ad04e5ddfa406d8be5b0b47287c1a09"
     );
 
@@ -4768,7 +5063,7 @@ fn the_turn_one_draw_relics_stack_on_one_save() {
     let opening = open(&case).expect("all three open");
     assert_eq!(hand_size(&opening.document), 8, "Meal Ticket adds nothing");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "9ac4703ab664a6d990578988e5dc7ab8c2466da463513aa36890e860fefbfdab"
     );
 }
@@ -5116,7 +5411,7 @@ fn the_four_seeded_per_fight_flags_match_the_oracle_one_relic_at_a_time() {
             "{relic} must seed {field}"
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "{relic} must match the oracle"
         );
@@ -5150,7 +5445,7 @@ fn the_four_seeded_per_fight_flags_stack_on_one_save() {
     ];
     let opening = open(&at_hp(68, &four)).expect("all four open together");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "1fd6ecc72af1a23d318fc3b8fff78511a99ac78849e855f580e8443a7dba7352"
     );
     let mut five = four.to_vec();
@@ -5160,7 +5455,7 @@ fn the_four_seeded_per_fight_flags_stack_on_one_save() {
         assert_eq!(flag(&opening.document, field), Some(Value::Bool(true)));
     }
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "34dcc93004c0320f4695a7dc48fed7d8f58dcde3584a0d54b841516a4dca01a2"
     );
 }
@@ -5180,7 +5475,7 @@ fn a_blood_vial_save_heals_two_at_the_first_player_turn_start_late() {
     );
     assert_eq!(flag(&opening.document, "hp"), Some(Value::from(70)));
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "e78241839d6144038af0c46017dbceedb09080bfa4fc8702c26a840372eedf52"
     );
 }
@@ -5292,7 +5587,7 @@ fn a_red_mask_save_applies_weak_to_every_enemy_and_records_its_token() {
         vec![serde_json::json!(["weak"]), serde_json::json!(["weak"])]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "1fada8ea2c0f842ff2913e4c88ee7f235bde6a18af34e320693607ce53c47ce2"
     );
 }
@@ -5317,7 +5612,7 @@ fn a_bag_of_marbles_save_applies_vulnerable_to_every_enemy() {
         vec![serde_json::json!(["vuln"]), serde_json::json!(["vuln"])]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "2058ca5e5fa45eff0f5005a2ea99f54fe4ec5ddbc87cad31620db8e3576c27eb"
     );
 }
@@ -5346,7 +5641,7 @@ fn the_two_all_enemy_debuff_relics_record_their_tokens_in_the_oracles_order() {
         ]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "90dea6c213c0d130a987f01576cf4c47a52cc23b0e20f0ff5618ff31ee105965"
     );
 }
@@ -5366,7 +5661,7 @@ fn a_lantern_save_gains_one_energy_on_the_first_turn() {
         "the default 3 plus Lantern's EnergyVar(1)"
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "7276d40b102c5a29751d0b162d31cd8c326a389d972d4512b3de61ea918c632b"
     );
 }
@@ -5392,7 +5687,7 @@ fn red_mask_and_lantern_together_still_match_the_oracle() {
         vec![Value::from(1), Value::from(1)]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "747158793815a0b4811be9ed8583e00c878971fad6821e595bfb94a1200181df"
     );
 }
@@ -5468,7 +5763,7 @@ fn an_entering_artifact_eats_the_turn_one_debuffs_instead_of_stacking_under_them
             vec![Value::Null],
             "and no acquisition token, with {relics:?}"
         );
-        assert_eq!(opening.document.differential_digest(), digest);
+        assert_eq!(python_view(&opening.document).differential_digest(), digest);
     }
 }
 
@@ -5607,7 +5902,7 @@ fn a_rust_opened_root_records_the_brimstone_strength_behind_red_masks_weak_token
         // (#2747's decision record: strip registered slots from the advisory
         // comparison). Nothing else may differ, so the stripped document's
         // digest is compared rather than a field-by-field diff.
-        let mut stripped = opening.document.clone();
+        let mut stripped = python_view(&opening.document);
         for monster in &mut stripped.monsters {
             monster.remove("power_attachments");
         }
@@ -5618,7 +5913,7 @@ fn a_rust_opened_root_records_the_brimstone_strength_behind_red_masks_weak_token
              {relics:?}"
         );
         assert_ne!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             python_digest,
             "and the row really is in the unstripped document, with {relics:?}"
         );
@@ -5725,7 +6020,7 @@ fn a_mysterious_knight_opens_with_its_round_one_plating_block_and_strength_row()
             "the entering-Strength row exists exactly when Misery is reachable"
         );
 
-        let mut stripped = opening.document.clone();
+        let mut stripped = python_view(&opening.document);
         for monster in &mut stripped.monsters {
             monster.remove("power_attachments");
             monster.remove("block");
@@ -5737,7 +6032,7 @@ fn a_mysterious_knight_opens_with_its_round_one_plating_block_and_strength_row()
              slot, misery {misery}"
         );
         assert_ne!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             python_digest,
             "and the Block really is in the unstripped document, misery {misery}"
         );
@@ -6006,7 +6301,7 @@ fn belt_case(rows: &[(&str, i64)]) -> Value {
 fn a_proven_pool_opens_an_empty_materialised_belt() {
     let opening = open(&belt_case(&[])).expect("the proven-pool empty belt opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "573d5e9486dc47d8a8ff0e6a44f0ed054447c2d90802c86e54856cf30c8c8ba5"
     );
     assert_eq!(
@@ -6020,7 +6315,10 @@ fn a_proven_pool_opens_an_empty_materialised_belt() {
     // The dense mirror is absent, not empty: `State.potions` defaults to `()`
     // and an at-default field is elided.
     assert_eq!(flag(&opening.document, "potions"), None);
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
 }
 
 /// A held identity opens digest-equal to Python, and the **bare** name is what
@@ -6058,7 +6356,7 @@ fn a_held_potion_identity_opens_digest_equal_to_the_oracle() {
         let opening = open(&belt_case(rows))
             .unwrap_or_else(|refusal| panic!("the belt {rows:?} opens, got {refusal}"));
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "belt {rows:?} must be Python's document"
         );
@@ -6108,7 +6406,7 @@ fn the_opened_belt_round_trips_through_the_boundary() {
     );
     assert_eq!(
         reprojected.differential_digest(),
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "the cold reload must be the state the engine built"
     );
 }
@@ -6197,7 +6495,7 @@ fn the_opening_rolls_the_saves_ascension_tier_digest_equal_to_the_oracle() {
             .collect();
         assert_eq!(rolled, hps, "A{ascension}");
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "A{ascension}"
         );
@@ -6346,10 +6644,13 @@ fn an_eternal_feather_save_opens_because_its_heal_is_rest_site_only() {
     let control = open(&empty_belt_case()).expect("the control opens");
     let opening = open(&with_relic("RELIC.ETERNAL_FEATHER")).expect("Eternal Feather opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "ff6f32b73e331b9752ed2229c64ff3f46ba12feb57240bc8103d69c0f39fd0a8"
     );
-    assert_ne!(opening.document.differential_digest(), EMPTY_BELT_DIGEST);
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
     assert_eq!(
         opening.document.player.get("hp"),
         control.document.player.get("hp")
@@ -6372,7 +6673,7 @@ fn a_ghost_seed_save_marks_every_basic_strike_and_defend_ethereal() {
     let control = open(&empty_belt_case()).expect("the control opens");
     let opening = open(&with_relic("RELIC.GHOST_SEED")).expect("Ghost Seed opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "b9b46ba806931ff5e78ff8140791ee7b0c4a64660f5c60e623ecde2122ce1c53"
     );
     let marked = ethereal_basics(&opening.document);
@@ -6420,7 +6721,11 @@ fn ghost_seed_opens_beside_eternal_feather_and_vajra() {
             serde_json::json!({"floor_added_to_deck": 1, "id": relics[1]}),
         );
         let opening = open(&case).unwrap_or_else(|err| panic!("{relics:?} opens: {err}"));
-        assert_eq!(opening.document.differential_digest(), digest, "{relics:?}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{relics:?}"
+        );
         assert!(
             ethereal_basics(&opening.document)
                 .iter()
@@ -6447,7 +6752,7 @@ fn ghost_seed_marks_an_upgraded_strike() {
     );
     let opening = open(&case).expect("an upgraded-Strike Ghost Seed save opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "011fa969c47d6cf8a2f84d3e27af055998bdc2213fd57efc502098dce7e3b3fe"
     );
     let upgraded: Vec<&crate::canonical::CanonicalCardV2> = opening
@@ -6514,7 +6819,7 @@ fn ghost_seed_marks_an_enchanted_strike_in_a_mixed_payload_group() {
             "Ghost Seed {with_seed}"
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             oracle,
             "Ghost Seed {with_seed}"
         );
@@ -6677,7 +6982,11 @@ fn exact_piles_follows_the_oracles_deck_group_rule() {
             exact.then_some(&Value::Bool(true)),
             "{name}"
         );
-        assert_eq!(opening.document.differential_digest(), oracle, "{name}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            oracle,
+            "{name}"
+        );
     }
 }
 
@@ -6747,7 +7056,7 @@ fn mutable_enchantments_enter_with_their_zero_slot_five_state() {
         ]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "5037c5b859b94cb89f72767f7de2ce3863c7623d2f80793f8621a6b8f76bcff7"
     );
 }
@@ -6901,7 +7210,11 @@ fn a_thieving_hopper_fight_opens_with_the_oracles_master_deck() {
         assert_eq!(uids, (0..deck_len as u64).collect::<Vec<_>>(), "{name}");
 
         let opening = open(&case).unwrap_or_else(|refusal| panic!("{name}: {refusal}"));
-        assert_eq!(opening.document.differential_digest(), digest, "{name}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{name}"
+        );
     }
 }
 
@@ -6944,7 +7257,7 @@ fn a_stone_cracker_hopper_fight_keeps_its_master_rows_unupgraded_and_opens() {
         .clone();
     assert!(master.iter().all(|row| row[1][1] == 0), "{master:?}");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "c20bc3c3c0cbdf994c83ab5054982ba3d7dad7d4db7197180697c9adf41a4c34"
     );
 }
@@ -7033,7 +7346,7 @@ fn a_pollinous_core_save_advances_its_counter_and_grants_on_the_fourth_turn() {
         );
         assert_eq!(hand_size(&opening.document), hand, "TurnsSeen {seen}");
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "TurnsSeen {seen}"
         );
@@ -7089,7 +7402,7 @@ fn a_fake_happy_flower_save_seeds_its_counter_modulo_five() {
             "TurnsSeen {seen} advances to {after}"
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "TurnsSeen {seen}"
         );
@@ -7151,7 +7464,7 @@ fn a_symbiotic_virus_save_channels_one_dark_orb_and_matches_the_oracle() {
         Some(&Value::from(1))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "e4dc26f0e2a549000d17f552e89335b84563272e235d6bd076be71eeb61771e5"
     );
 
@@ -7181,7 +7494,11 @@ fn a_symbiotic_virus_save_channels_one_dark_orb_and_matches_the_oracle() {
             Some(&serde_json::json!([["DARK", 6]])),
             "{peer}"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{peer}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{peer}"
+        );
     }
 }
 
@@ -7276,7 +7593,7 @@ fn a_vambrace_save_arms_its_block_doubling_and_matches_the_oracle() {
     );
     assert_eq!(flag(&opening.document, "vambrace_trigger_uid"), None);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "a32283db076573a0076654a9f3178a76cecebc763e8545dbd6bedca97fe5e930"
     );
     let control = open(&empty_belt_case()).expect("the control opens");
@@ -7310,7 +7627,7 @@ fn pollinous_core_symbiotic_virus_and_vambrace_stack_on_one_save() {
         Some(Value::Bool(true))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "c1612978430b14d41fc1574e86c90c25172ad90cf6148d63b9e30ba175b99c6f"
     );
 }
@@ -7353,7 +7670,7 @@ fn a_kusarigama_save_opens_with_a_zero_counter_and_matches_the_oracle() {
         Some(&Value::from(0))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "b7968c7a831959a2ff48a55d02fde2b78c82ff9e827497c9682d3a132a2ac279"
     );
 }
@@ -7502,7 +7819,7 @@ fn a_blessed_antler_save_shuffles_three_dazed_into_draw_and_matches_the_oracle()
     );
     assert_eq!(control.document.player.get("exact_piles"), None);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "8f558403d121b917d3aea8192d239982a47a4fdfedd3b8f51d4ae0c09d3fbf9e"
     );
 }
@@ -7671,7 +7988,7 @@ fn a_charged_venerable_tea_set_grants_two_energy_and_is_spent() {
     assert_eq!(player.get("energy"), Some(&Value::from(5)));
     assert_eq!(player.get("tea_set"), None, "the charge is spent on turn 1");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "31437103f09bf0a8b1778c5e155280014a618342f0c4d33988c9e42d9c20a079",
         "the oracle's document with `tea_set` removed"
     );
@@ -7692,7 +8009,7 @@ fn an_uncharged_venerable_tea_set_is_inert() {
     let opening = open(&with_tea_set("RELIC.VENERABLE_TEA_SET", Some(false)))
         .expect("an uncharged Tea Set opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "9fdc34eb611e6b2b8ed67db166afce63380f703ce93e950080a5566d6468a3a5"
     );
 }
@@ -7709,7 +8026,7 @@ fn a_charged_fake_tea_set_grants_one_energy_and_matches_the_oracle() {
     assert_eq!(opening.document.player.get("energy"), Some(&Value::from(4)));
     assert_eq!(opening.document.player.get("fake_tea_set_charged"), None);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "2daf4b79b9ff02977736a6da185c38c8822ae524957288bbe38c78664ca00359"
     );
     let uncharged = open(&with_tea_set("RELIC.FAKE_VENERABLE_TEA_SET", Some(false)))
@@ -7779,7 +8096,7 @@ fn saved_lizard_tail_and_pumpkin_candle_state_is_seeded_from_the_save() {
         );
         let opening = open(&case).unwrap_or_else(|refusal| panic!("{id} {props}: {refusal}"));
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "{id} {props}"
         );
@@ -7874,7 +8191,7 @@ fn a_hello_world_deck_writes_its_profile_exact_owner_pool() {
         ]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "708939275b33807ab1e3beda6e85ed850eae80431bd6b7317a3099963a56cf49"
     );
     // The control: the same Defect save without the card writes no pool.
@@ -7923,7 +8240,7 @@ fn a_creative_ai_deck_writes_its_profile_exact_power_pool() {
         ]
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "69f3c842aecd761d45e475879150c5c256ca036376cb28e9d99fb7582cc236f9"
     );
     let both = open(&with_orb_stream(defect_with(
@@ -8021,7 +8338,7 @@ fn a_call_of_the_void_deck_writes_its_owner_pool_and_refuses_by_name() {
     assert_eq!(written.first().map(String::as_str), Some("BLIGHT_STRIKE"));
     assert_eq!(written.last().map(String::as_str), Some("WISP"));
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "0e2d491dde41d9ed6247bc96b2c366c2d3997241c0ebf15ce369bac8f75fd5b8"
     );
     let plain = open(&necrobinder_with(&[], &EPOCHS)).expect("the plain Necrobinder opens");
@@ -8106,8 +8423,8 @@ fn a_listener_card_owned_by_any_character_writes_its_owners_pool() {
         for (card, field, power) in cards {
             let mut case = with_orb_stream(defect_with(&[card], &TWO_DEFECT_EPOCHS));
             case["save"]["players"][0]["character_id"] = Value::from(character);
-            let opening =
-                open(&case).unwrap_or_else(|refusal| panic!("{character} {card} opens: {refusal}"));
+            let opening = open_with_reset_ledger(&case)
+                .unwrap_or_else(|refusal| panic!("{character} {card} opens: {refusal}"));
             assert_eq!(
                 opening.document.player["reward_card_pool"],
                 Value::from(owner.as_str()),
@@ -8181,18 +8498,11 @@ fn a_listener_card_owned_by_any_character_writes_its_owners_pool() {
             ("CHARACTER.REGENT", "CREATIVE_AI", 13),
         ]
     );
-    // The Regent's two orb-reaching listeners still refuse in the engine, by
-    // name, on the pre-existing star/orb `AfterEnergyReset` ordering gate —
-    // unrelated to the pool owner, and not widened here.
-    assert_eq!(
-        engine_refusals,
-        [
-            "CHARACTER.REGENT CALL_OF_THE_VOID: entry needs argument shape at terminal \
-             star/orb AfterEnergyReset order",
-            "CHARACTER.REGENT CREATIVE_AI: entry needs argument shape at terminal \
-             star/orb AfterEnergyReset order",
-        ]
-    );
+    // Until #3687 the Regent's two orb-reaching listeners refused here by
+    // name, on the star/orb `AfterEnergyReset` ordering gate: the opened root
+    // dropped the ledger, so it reloaded legacy-unknown. The opening now
+    // emits the known-empty witness and all fifteen admit.
+    assert_eq!(engine_refusals, Vec::<String>::new());
 }
 
 /// A saved Bone Tea charge reaches the opening (#2884, reached by #2827's
@@ -8263,7 +8573,11 @@ fn a_saved_bone_tea_charge_upgrades_the_turn_one_hand_like_the_oracle() {
             Some(&Value::from(0)),
             "{label}: the charge is spent (or was already)"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{label}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{label}"
+        );
     }
     // The oracle refuses all three: `BONE_TEA persistent counter is not an
     // exact integer in 0..1`.
@@ -8314,7 +8628,7 @@ fn a_kaiser_crab_opening_seeds_the_surrounded_facing_like_the_oracle() {
             Some(&Value::from(0))
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "{node_type:?}"
         );
@@ -8373,7 +8687,7 @@ fn an_innate_card_the_shuffle_left_mid_pile_is_numbered_after_the_fixup() {
     assert_eq!(built.document.piles["draw"][0].id, "WRITHE");
     let opening = open(&case).expect("an Innate deck opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "35b8e3b326a401c793c597e3366d77858307a582a289a879c04d33eb2ad28338"
     );
     assert_eq!(
@@ -8393,7 +8707,7 @@ fn two_innate_cards_are_numbered_in_the_fixups_reversed_order() {
     let case = with_deck_front(&[deck_card("WRITHE"), deck_card("BACKSTAB")]);
     let opening = open(&case).expect("a two-Innate deck opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "1d1470d86efd71ca12e674fbb230a78f876ce66a8bb0b4b06f78f2d4467c856d"
     );
     assert_eq!(
@@ -8469,7 +8783,7 @@ fn a_ghost_seed_owner_keeps_the_shuffled_numbering_through_the_fixup() {
     );
     let opening = open(&case).expect("Ghost Seed with an Innate deck opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "448397019649c5445dc4ef7b015117cd60231d053dae3ec6474f15468396884c"
     );
     assert_eq!(
@@ -8594,7 +8908,10 @@ fn an_imbued_deck_card_is_auto_played_on_turn_one() {
     };
     let recorded = build_opening(&entry_facts(&case), &recording)
         .unwrap_or_else(|refusal| panic!("opens: {refusal}"));
-    assert_eq!(recorded.document, opening.document);
+    assert_eq!(
+        recorded.document,
+        open_with_reset_ledger(&case).expect("opens").document
+    );
     assert!(opening.native_checkpoints.is_none(), "recording is opt-in");
     let checkpoints = recorded.native_checkpoints.expect("recorded");
     assert_eq!(checkpoints.len(), 1);
@@ -8696,7 +9013,11 @@ fn necrobinder_owner_pool_generators_open_and_match_the_oracle() {
     ] {
         let opening = open(&owner_deck_with("CHARACTER.NECROBINDER", cards))
             .unwrap_or_else(|refusal| panic!("{cards:?} opens: {refusal}"));
-        assert_eq!(opening.document.differential_digest(), digest, "{cards:?}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{cards:?}"
+        );
         assert_eq!(
             opening.document.player.get("reward_card_pool"),
             Some(&Value::from("Necrobinder")),
@@ -8818,7 +9139,11 @@ fn necrobinder_jack_and_calamity_open_and_match_the_oracle() {
     ] {
         let opening = open(&owner_deck_with("CHARACTER.NECROBINDER", &[card]))
             .unwrap_or_else(|refusal| panic!("{card} opens: {refusal}"));
-        assert_eq!(opening.document.differential_digest(), digest, "{card}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{card}"
+        );
         let catalog =
             crate::boundary::HotBoundary::catalog_from_canonical(&opening.document).unwrap();
         let state =
@@ -8876,7 +9201,7 @@ fn the_advanced_monster_ai_stream_alone_moves_no_intent() {
     let opening = open(&case).expect("the counter-1 control opens");
     assert_eq!(ai_counter(&opening.document), 1);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "7346cb679572842c93b859cba940df98a81d4360e734dc04fde60fee407bb459"
     );
 }
@@ -8971,7 +9296,7 @@ fn each_initial_random_ai_kind_rolls_its_turn_one_intent_like_the_oracle() {
             "{encounter}"
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "{encounter} (advanced {advanced})"
         );
@@ -9178,7 +9503,7 @@ fn stone_cracker_upgrades_two_of_a_distinct_pool_like_the_oracle() {
     let control = open(&stone_case(stone_distinct_deck(), false)).expect("the control opens");
     let opening = open(&stone_case(stone_distinct_deck(), true)).expect("Stone Cracker opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "e33d737fed5be369292f42f67c1a39777a0ba9f87fc6569ab55191e75413adad"
     );
     assert_eq!(sel_counter(&control.document), 0);
@@ -9246,7 +9571,7 @@ fn stone_cracker_skips_maxed_and_unupgradable_cards_like_the_oracle() {
     deck.push(stone_row("ANGER", 0, None));
     let opening = open(&stone_case(deck, true)).expect("a mixed deck opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "a60ae01d980118fe8b2544fc81279bc07364576dce12875e98bac1ce006abc2a"
     );
     assert_eq!(sel_counter(&opening.document), 1);
@@ -9328,7 +9653,11 @@ fn a_stone_cracker_upgrade_that_merges_distinguishable_copies_sets_exact_piles()
             Some(&Value::Bool(true)),
             "{label}"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{label}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{label}"
+        );
     }
 }
 
@@ -9351,7 +9680,7 @@ fn a_stone_cracker_upgrade_that_grants_innate_is_dealt_first() {
         Some(&Value::from(1))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "cf4af12545ac9a1f0dbb9eb49bda007030e192939dd9e0e1716676d119c0a31d"
     );
 }
@@ -9368,7 +9697,7 @@ fn stone_cracker_with_ghost_seed_matches_the_oracle() {
     );
     let opening = open(&case).expect("Stone Cracker with Ghost Seed opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "c7a769ab3bf8d7182a65163f3855d64f33829f1d40e8a5acb93ad7c744f69ffd"
     );
 }
@@ -9407,11 +9736,11 @@ fn stone_cracker_upgrades_the_chosen_copy_not_the_first_equal_one() {
     assert_eq!(built.stone_cracker_upgraded, vec![6, 3]);
     let opening = open(&case).expect("the starter deck opens");
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "c9783371b0bde500f0d075c1aba701cf278b8f6338162e9915ce15dd452d9315"
     );
     assert_ne!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "f8397d7a3241408e73c5928da519ea68cacafc299d2c6e1281d69a3ed171e7ed",
         "the oracle's first-equal-copy document"
     );
@@ -9471,7 +9800,7 @@ fn zero_gold_and_zero_strikes_are_elided_like_the_oracle() {
     let opening = open(&broke).expect("a broke player opens");
     assert_eq!(opening.document.player.get("gold"), None);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "125dc8096e96d6efa24e31dc8b68a4a930ec2222b47feb31621d55a9a7c87fb9"
     );
 
@@ -9483,7 +9812,7 @@ fn zero_gold_and_zero_strikes_are_elided_like_the_oracle() {
     let opening = open(&strikeless).expect("a Strike-less deck opens");
     assert_eq!(opening.document.player.get("ps_strikes"), None);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "200b62afee2ad7bf466b62eaf34a7abaf9bd02cc5c6c903fdfdfb28f7d7d373f"
     );
 
@@ -9549,7 +9878,11 @@ fn a_saved_joss_paper_counter_is_seeded_like_the_oracle() {
             None,
             "{label}: the entry EtherealCount is the elided 0"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{label}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{label}"
+        );
     }
     // The oracle refuses all three: `JOSS_PAPER requires exact saved
     // CardsExhausted 0..4 and entry EtherealCount 0`.
@@ -9757,7 +10090,11 @@ fn an_aeonglass_opens_with_withering_presence_like_the_oracle() {
             vec![Value::from(hp)],
             "{label}"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{label}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{label}"
+        );
     }
 }
 
@@ -9822,7 +10159,7 @@ fn a_vexing_puzzlebox_opens_for_its_owner_like_the_oracle() {
             "{character}"
         );
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "{character}"
         );
@@ -9979,7 +10316,7 @@ fn crossbow_draws_the_owner_attack_pool_and_names_the_rest() {
         Some(&("TEAR_ASUNDER".to_string(), Some(10)))
     );
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         "1f70a8e5d2af5fd26aa40e2a786bd4039d1522cfaddad42342e1a1893984576d"
     );
     admits(&opening, "full Ironclad Crossbow");
@@ -9997,7 +10334,7 @@ fn crossbow_draws_the_owner_attack_pool_and_names_the_rest() {
             Some(card),
             "{character}"
         );
-        let got = opening.document.differential_digest();
+        let got = python_view(&opening.document).differential_digest();
         assert!(got.starts_with(digest), "{character}: {got}");
         admits(&opening, character);
     }
@@ -10036,7 +10373,7 @@ fn crossbow_draws_the_owner_attack_pool_and_names_the_rest() {
         let opening = open(&big_hat("CHARACTER.IRONCLAD", orbs))
             .unwrap_or_else(|refusal| panic!("an Ironclad Big Hat opens ({orbs}): {refusal}"));
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             "85ee82a27b059e95d97a8e7d3f9b1982724d2c443fde1e76183f2d82cfba7e0e",
             "{orbs}"
         );
@@ -10538,7 +10875,7 @@ fn sling_of_courage_opens_and_matches_the_oracle() {
             .and_then(Value::as_i64);
         assert_eq!(hero_strength, strength, "{relics:?} at {node_type}");
         assert_eq!(
-            opening.document.differential_digest(),
+            python_view(&opening.document).differential_digest(),
             digest,
             "{relics:?} at {node_type}"
         );
@@ -10678,7 +11015,11 @@ fn meat_on_the_bone_and_pocketwatch_open_and_match_the_oracle() {
         let opening = open(&coach_case(None, relics, &[], false, false))
             .unwrap_or_else(|err| panic!("{relics:?} opens: {err}"));
         assert_eq!(hand_size(&opening.document), hand, "{relics:?}");
-        assert_eq!(opening.document.differential_digest(), digest, "{relics:?}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{relics:?}"
+        );
     }
 }
 
@@ -10758,7 +11099,11 @@ fn a_clone_enchantment_is_kept_only_where_it_is_observable() {
             })
             .count();
         assert_eq!(clones > 0, kept, "{name}");
-        assert_eq!(opening.document.differential_digest(), digest, "{name}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{name}"
+        );
     }
 }
 
@@ -10791,7 +11136,11 @@ fn unsettling_lamp_opens_armed_and_matches_the_oracle() {
             Some(&Value::Bool(true)),
             "{relics:?}"
         );
-        assert_eq!(opening.document.differential_digest(), digest, "{relics:?}");
+        assert_eq!(
+            python_view(&opening.document).differential_digest(),
+            digest,
+            "{relics:?}"
+        );
     }
 }
 
@@ -10853,7 +11202,7 @@ fn a_fencing_manual_save_forges_a_twenty_damage_blade_into_the_hand() {
     // The Forge draws no stream.
     assert_eq!(opening.document.rng, control.document.rng);
     assert_eq!(
-        opening.document.differential_digest(),
+        python_view(&opening.document).differential_digest(),
         FENCING_MANUAL_DIGEST,
         "Rust change-detector, not an oracle value"
     );
@@ -12217,6 +12566,58 @@ fn entropic_brew_admits_on_a_recorded_partial_profile() {
     );
     assert!(catalog.splash_unlock_epochs().is_some());
     crate::engine::admit(&document, &state, &catalog).unwrap_or_else(|refusal| panic!("{refusal}"));
+}
+
+/// The opening hands its root the AfterEnergyReset ledger (#3687).
+///
+/// The reported fight is a fully-unlocked Silent holding Entropic Brew
+/// (seanb/J8JL0SC7A2JX floor 31). Entropic Brew can procure Colorless Potion,
+/// whose pool reaches Entropy, whose five-class transform closure reaches
+/// Black Hole, the Regent Star writers and an energy-next-turn peer: the
+/// three legs of admission's `terminal star/orb AfterEnergyReset order` gate,
+/// all from the catalog, with no listener live.
+///
+/// The opened root admits because it records the entry's empty acquisition
+/// order. The same root without the field is the pre-#3687 production root,
+/// and it still refuses by name: an arbitrary checkpoint that does not say
+/// its order is not an entry.
+#[test]
+fn the_opened_root_carries_the_after_energy_reset_ledger() {
+    const ORDER: &str = "after_energy_reset_order";
+    let mut case = owner_deck_with("CHARACTER.SILENT", &[]);
+    case["save"]["players"][0]["potions"] =
+        Value::Array(vec![potion_row("POTION.ENTROPIC_BREW", 0)]);
+    let pre_hook = pre_hook(&case).expect("the pre-hook opening builds");
+    assert_eq!(
+        pre_hook.document.player.get(ORDER),
+        Some(&Value::Array(Vec::new()))
+    );
+    let opening = open_with_reset_ledger(&case).expect("opens");
+    let document = &opening.document;
+    assert_eq!(document.player.get(ORDER), Some(&Value::Array(Vec::new())));
+    let catalog = crate::boundary::HotBoundary::catalog_from_canonical(document).unwrap();
+    let state = crate::boundary::HotBoundary::from_canonical(document, &catalog).unwrap();
+    assert_eq!(state.fanouts.after_energy_reset_order(), Some(&[][..]));
+    assert!(state.fanouts.after_energy_reset_order_is_explicit());
+    crate::engine::admit(document, &state, &catalog)
+        .unwrap_or_else(|refusal| panic!("the opened root admits: {refusal}"));
+    assert_eq!(
+        &crate::boundary::HotBoundary::to_canonical(&state, &catalog),
+        document
+    );
+
+    let mut legacy = document.clone();
+    assert!(legacy.player.remove(ORDER).is_some());
+    let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&legacy).unwrap();
+    let state = crate::boundary::HotBoundary::from_canonical(&legacy, &catalog).unwrap();
+    assert_eq!(state.fanouts.after_energy_reset_order(), None);
+    let refusal = crate::engine::admit(&legacy, &state, &catalog).expect_err("no recorded order");
+    assert!(
+        refusal.contains(crate::engine::admission::MissingCapability::ArgumentShape(
+            "terminal star/orb AfterEnergyReset order"
+        )),
+        "{refusal}"
+    );
 }
 
 /// Abundance offers the recorded profile's owner-Power pool (#3285), on both
@@ -13594,4 +13995,249 @@ fn whispering_earring_allocation_check_refuses_what_the_loop_cannot_produce() {
         Err(OpeningRefusal::CardIdentityAllocationDiverged { detail })
             if detail.contains("twice")
     ));
+}
+
+// ---------------------------------------------------------------------------
+// Ring of the Drake (#2758)
+// ---------------------------------------------------------------------------
+//
+// Left `OPENING_WINDOW_RELIC_BODIES` on 2026-10-02. No frozen-oracle digest
+// exists for it (the Python simulator was deleted before this retirement) and
+// the capture corpus holds no fight that owns it, so these witnesses assert
+// the opened document and the engine's next three hand draws directly against
+// the IL.
+
+/// The player turn and Hand size the engine reaches on each of the next
+/// `turns` player turns, ending the turn from the opened document each time.
+fn hand_sizes_after_end_turns(opening: &Opening, turns: usize) -> Vec<(i64, usize)> {
+    let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+        .expect("the opened document builds its catalog");
+    let mut state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+        .expect("the opened document decodes");
+    let mut dealt = Vec::new();
+    for _ in 0..turns {
+        state = crate::engine::apply_action(&state, &catalog, &crate::engine::Action::EndTurn)
+            .expect("the turn ends and the next hand is dealt")
+            .state;
+        let document = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog)
+            .expect("the next turn projects");
+        dealt.push((i64::from(state.turn), hand_size(&document)));
+    }
+    dealt
+}
+
+/// `RingOfTheDrake::ModifyHandDraw` (v0.111.0 RVA `0x9a6d0`) adds
+/// `DynamicVars.Cards` (`CardsVar(2)`, `get_CanonicalVars` `0x9a6a6`
+/// `IL_0009`-`IL_000a`) unless `TurnNumber > DynamicVars["Turns"]` (`3`,
+/// `IL_0012`-`IL_0018`; the compare is `op_GreaterThan` at `IL_0041`). It
+/// declares no other hook and no saved property, so the ten-card starter deck
+/// deals seven on turns one to three and five on turn four.
+///
+/// The deal is the control's, two cards longer: same shuffle, same RNG
+/// position, and the two extra cards are the next two the control would draw.
+#[test]
+fn a_ring_of_the_drake_save_draws_two_extra_cards_on_turns_one_to_three() {
+    let control = open(&empty_belt_case()).expect("the control opens");
+    let opening = open(&with_relic("RELIC.RING_OF_THE_DRAKE")).expect("Ring of the Drake opens");
+    assert_eq!(hand_size(&control.document), 5);
+    assert_eq!(hand_size(&opening.document), 7);
+    assert_eq!(
+        pile_ids_and_uids(&opening.document, "hand")[..5],
+        pile_ids_and_uids(&control.document, "hand")[..]
+    );
+    // One prefix deal of the same shuffled order: the ring's two extra cards
+    // and its draw pile are, together, the control's draw pile.
+    let mut ring_cards = pile_ids_and_uids(&opening.document, "hand")[5..].to_vec();
+    ring_cards.extend(pile_ids_and_uids(&opening.document, "draw"));
+    ring_cards.sort();
+    let mut control_cards = pile_ids_and_uids(&control.document, "draw");
+    control_cards.sort();
+    assert_eq!(ring_cards, control_cards);
+    assert_eq!(opening.document.rng, control.document.rng);
+    assert_eq!(
+        opening.document.player.get("ring_of_the_drake"),
+        Some(&Value::from(true))
+    );
+    assert_ne!(
+        python_view(&opening.document).differential_digest(),
+        EMPTY_BELT_DIGEST
+    );
+
+    assert_eq!(
+        hand_sizes_after_end_turns(&opening, 3),
+        [(2, 7), (3, 7), (4, 5)],
+        "+2 while TurnNumber <= 3, then the base five"
+    );
+    assert_eq!(
+        hand_sizes_after_end_turns(&control, 3),
+        [(2, 5), (3, 5), (4, 5)]
+    );
+    admits_as_loaded(&opening.document).expect("the Ring of the Drake root admits");
+}
+
+/// Ring of the Drake beside the other `ModifyHandDraw` rows the opening
+/// admits: each listener returns `draw ± its own CanonicalVar`, so they sum
+/// in any order. A fold that made one row exclusive (the #2755 guarded-arm
+/// shape) fails every line here.
+#[test]
+fn ring_of_the_drake_sums_with_every_other_hand_draw_row() {
+    // (peer, turn-1 Hand, then turns two to four)
+    for (peer, first, later) in [
+        // Big Mushroom: -2 on turn one only.
+        ("RELIC.BIG_MUSHROOM", 5, [7, 7, 5]),
+        // The two bag relics: +2 on turn one only.
+        ("RELIC.BAG_OF_PREPARATION", 9, [7, 7, 5]),
+        ("RELIC.RING_OF_THE_SNAKE", 9, [7, 7, 5]),
+    ] {
+        for case in [
+            with_relics("RELIC.RING_OF_THE_DRAKE", peer),
+            with_relics(peer, "RELIC.RING_OF_THE_DRAKE"),
+        ] {
+            let opening = open(&case).unwrap_or_else(|err| panic!("{peer} opens: {err}"));
+            assert_eq!(hand_size(&opening.document), first, "{peer}");
+            let dealt: Vec<usize> = hand_sizes_after_end_turns(&opening, 3)
+                .into_iter()
+                .map(|(_, hand)| hand)
+                .collect();
+            assert_eq!(dealt, later, "{peer}");
+        }
+    }
+}
+
+/// Every relic still in the body gate refuses by its own name beside Ring of
+/// the Drake, in either save order: retiring the ring opens none of them.
+#[test]
+fn ring_of_the_drake_beside_a_still_gated_relic_refuses_by_the_peers_name() {
+    for peer in super::OPENING_WINDOW_RELIC_BODIES {
+        for case in [
+            with_relics("RELIC.RING_OF_THE_DRAKE", peer),
+            with_relics(peer, "RELIC.RING_OF_THE_DRAKE"),
+        ] {
+            match open(&case) {
+                Err(OpeningRefusal::RoomEntryRelicNotModeled { relic }) => {
+                    assert_eq!(relic, peer);
+                }
+                other => panic!("{peer}: {:?}", other.err()),
+            }
+        }
+    }
+    assert!(!super::OPENING_WINDOW_RELIC_BODIES.contains(&"RELIC.RING_OF_THE_DRAKE"));
+}
+
+// ---------------------------------------------------------------------------
+// Fur Coat (#2526)
+// ---------------------------------------------------------------------------
+//
+// The entry now proves whether the current room is one of Fur Coat's marks
+// (`entry::relics::fur_coat_membership`). An unmarked room passes the body
+// gate, because both of the relic's combat hooks leave before any write; a
+// marked room and an unprovable one still refuse. The fixture save stands on
+// the monster point `(3, 1)` of act 0, the only point its saved map holds. No
+// capture in the corpus owns the relic, so these witnesses assert the opened
+// document against the control's.
+
+fn with_fur_coat(act: i64, set: bool, cols: &[i64], rows: &[i64]) -> Value {
+    let mut case = empty_belt_case();
+    relic(
+        &mut case,
+        serde_json::json!({
+            "floor_added_to_deck": 1, "id": "RELIC.FUR_COAT",
+            "props": {
+                "ints": [{"name": "FurCoatActIndex", "value": act}],
+                "int_arrays": [{"name": "FurCoatCoordCols", "value": cols},
+                               {"name": "FurCoatCoordRows", "value": rows}],
+                "bools": [{"name": "FurCoatCoordsSet", "value": set}]}}),
+    );
+    case
+}
+
+fn refuses_fur_coat(case: &Value) {
+    match open(case) {
+        Err(OpeningRefusal::RoomEntryRelicNotModeled { relic }) => {
+            assert_eq!(relic, "RELIC.FUR_COAT");
+        }
+        other => panic!("expected the Fur Coat refusal, got {:?}", other.err()),
+    }
+}
+
+/// `FurCoat/<BeforeCombatStart>d__26::MoveNext` (v0.111.0 RVA `0x325360`)
+/// leaves at `IL_0047` when `GetMarkedCoords` does not hold the current map
+/// point, before its `SetCurrentHp` loop (`IL_00c0`-`IL_00c7`), so an
+/// unmarked room's opening is the control's with one more relic in the
+/// inventory: same roster HP, same piles, same RNG, and the engine's
+/// `fur_coat_active` flag left clear so the mid-fight half stays off too.
+#[test]
+fn a_fur_coat_save_in_an_unmarked_room_opens_as_the_fight_without_it() {
+    let control = open(&empty_belt_case()).expect("the control opens");
+    for case in [
+        // Its own act, marks kept by `AddMarkedRooms`, none of them here.
+        with_fur_coat(0, true, &[], &[]),
+        // Another act's marks: no act test in the reader, and none match.
+        with_fur_coat(2, true, &[1, 3, 0], &[3, 9, 1]),
+        // Never marked, outside the act that would mark it.
+        with_fur_coat(-1, false, &[], &[]),
+    ] {
+        assert_eq!(entry_facts(&case).relic_entry.fur_coat_active, Some(false));
+        let opening = open(&case).expect("an unmarked Fur Coat room opens");
+        let document = &opening.document;
+        assert!(!document.monsters.is_empty());
+        assert_eq!(document.monsters, control.document.monsters);
+        assert_eq!(document.piles, control.document.piles);
+        assert_eq!(document.rng, control.document.rng);
+        assert_eq!(document.continuations, control.document.continuations);
+        assert_ne!(
+            document.player.get("fur_coat_active"),
+            Some(&Value::from(true))
+        );
+        assert_ne!(document.differential_digest(), EMPTY_BELT_DIGEST);
+        admits_as_loaded(document).expect("the unmarked Fur Coat root admits");
+    }
+}
+
+/// A marked room keeps refusing: the opening has no body for the initial
+/// roster (#3634). The reader has no act test, so another act's mark on this
+/// coordinate is a marked room too.
+#[test]
+fn a_fur_coat_save_in_a_marked_room_still_refuses() {
+    for case in [
+        with_fur_coat(0, true, &[3], &[1]),
+        with_fur_coat(2, true, &[6, 3], &[11, 1]),
+    ] {
+        assert_eq!(entry_facts(&case).relic_entry.fur_coat_active, Some(true));
+        refuses_fur_coat(&case);
+    }
+}
+
+/// Unprovable membership is never read as "unmarked".
+#[test]
+fn a_fur_coat_save_with_unprovable_membership_refuses() {
+    let mut partial = with_fur_coat(2, true, &[1], &[3]);
+    partial["save"]["players"][0]["relics"]
+        .as_array_mut()
+        .unwrap()
+        .last_mut()
+        .unwrap()["props"]
+        .as_object_mut()
+        .unwrap()
+        .remove("ints");
+    let mut off_map = with_fur_coat(2, true, &[1], &[3]);
+    off_map["save"]["visited_map_coords"] =
+        serde_json::json!([{"col": 3, "row": 0}, {"col": 5, "row": 1}]);
+    for case in [
+        // No saved properties at all.
+        with_relic("RELIC.FUR_COAT"),
+        partial,
+        // Its own act with no marks set, or with a mark that is not one of
+        // this map's combat points: a rebuilt map re-rolls both.
+        with_fur_coat(0, false, &[], &[]),
+        with_fur_coat(0, true, &[1], &[3]),
+        with_fur_coat(0, true, &[3, 1], &[1, 3]),
+        // Unequal coordinate arrays.
+        with_fur_coat(2, true, &[1, 3], &[3]),
+        // A current coordinate the saved map does not hold.
+        off_map,
+    ] {
+        assert_eq!(entry_facts(&case).relic_entry.fur_coat_active, None);
+        refuses_fur_coat(&case);
+    }
 }

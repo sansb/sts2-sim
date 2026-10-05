@@ -1,14 +1,15 @@
 """The eval fixture set: manifest integrity, provenance, and Rust lockstep.
 
-The fixtures under `sim/v0.111.0/eval/` are real captured fights (#2048;
-consent recorded there on 2026-09-05). They carry an opaque id, the canonical
-entry, sha256 provenance of the capture pair, and — for a fight whose recorded
-human line replays exactly in Python — that line in canonical wire form with a
-`differential_digest` pinned after every single action.
+The fixtures under `sim/v0.111.0/eval/` are real captured fights (#2048).
+They carry an opaque id, the canonical entry, sha256 provenance of the capture
+pair, the pair itself (`capture.mcr.gz`, `entry.save.gz`; #3592), and — for a
+fight whose recorded human line replays exactly — that line in canonical wire
+form with a `differential_digest` pinned after every single action.
 
 What runs everywhere: the manifest and the fixture files have to agree, every
-recorded root digest has to reproduce from the stored canonical entry, and
-every category the seed set claims has to be populated.
+stored capture file has to be the bytes its provenance names, every recorded
+root digest has to reproduce from the stored canonical entry, and every
+category the seed set claims has to be populated.
 
 What is deliberately opt-in:
 
@@ -18,16 +19,18 @@ What is deliberately opt-in:
   excludes (#1276). Binding the solver suite to whatever binary happens to be
   in a shared checkout would report divergences that are really staleness, so
   the evidence is produced on demand and recorded in the PR.
-* `STS2_EVAL_REDERIVE=1` re-derives every fixture from its provenance through
-  the tool's own `verify` path. It needs the local capture corpus
-  (`~/sts2-captures`, or `STS2_CAPTURES`), which exists on no CI checkout.
+* `STS2_EVAL_REDERIVE=1` re-derives every fixture from its stored capture
+  pair through the tool's own `verify`, runs `census --fixtures` against the
+  manifest, and re-`add`s one fixture. Each needs the same release binary.
 """
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -74,12 +77,10 @@ KNOWN_LINE_GAPS: dict = {}
 # root still refused at load on that head (f16bbb885e652607, Mecha Knight
 # at A8) is below A9, so it cannot be a fixture.
 REQUIRED_REFUSAL_SURFACES: tuple = ()
-# A fixture is provenance and projections, never a player: no capture file
-# names, no home directories, no wall-clock run identity.
-FORBIDDEN_SUBSTRINGS = (
-    "/Users/", "sts2-captures", "start_time", "steamid", "76561198",
-    ".mcr", ".save", "username",
-)
+# The fixture documents name nothing on the machine that wrote them: no home
+# directory and no capture corpus path. The raw capture pair is published
+# beside them (#3592), pinned by the stored-pair tests below.
+FORBIDDEN_SUBSTRINGS = ("/Users/", "sts2-captures")
 
 
 def _manifest() -> dict:
@@ -110,12 +111,14 @@ def test_manifest_and_fixture_directories_agree():
         assert "provenance.json" in on_disk, fight["id"]
         assert fight["kind"] in ("line", "refusal"), fight["id"]
         if fight["kind"] == "line":
-            assert {"entry.canonical.json", "human_line.json"} <= set(on_disk)
+            assert {"entry.canonical.json", "human_line.json",
+                    eval_suite.CAPTURE_FILE, eval_suite.SAVE_FILE
+                    } <= set(on_disk), fight["id"]
         else:
             assert "refusal.json" in on_disk, fight["id"]
 
 
-def test_provenance_is_complete_and_carries_no_identity():
+def test_provenance_is_complete_and_names_no_local_path():
     manifest = _manifest()
     for fight in manifest["fights"]:
         provenance = _fixture(fight["id"], "provenance.json")
@@ -128,18 +131,189 @@ def test_provenance_is_complete_and_carries_no_identity():
         assert len(provenance["capture_sha256"]) == 64
         if provenance.get("save_sha256") is not None:
             assert len(provenance["save_sha256"]) == 64
-        # The id is opaque: it is derived from the capture identity, and
-        # nothing about the fixture reveals who played it.
+        # The id is opaque: it is derived from the capture identity.
         assert fight["id"].startswith("f") and len(fight["id"]) == 16
 
     # Every stored fixture document, plus the manifest's own per-fight rows.
-    # (The manifest's consent note deliberately says the word "usernames".)
     payloads = [(path.name, path.read_text(encoding="utf-8"))
                 for path in sorted(FIGHTS_DIR.rglob("*.json"))]
     payloads.append(("manifest.json:fights", json.dumps(manifest["fights"])))
     for name, text in payloads:
         for forbidden in FORBIDDEN_SUBSTRINGS:
             assert forbidden not in text, (name, forbidden)
+
+
+def _stored(fight_id: str, name: str) -> bytes:
+    return gzip.decompress((FIGHTS_DIR / fight_id / name).read_bytes())
+
+
+def test_every_fixture_stores_the_capture_pair_its_provenance_names():
+    """The contract that replaced "no raw bytes" (#3592): every line fixture
+    has its `.mcr` capture and its entry save, and each stored file is the
+    bytes `provenance.json` records the sha256 of. A refusal fixture stores
+    what it has: an unpaired capture has no save, and records none."""
+    manifest = _manifest()
+    assert eval_suite.stored_pair_problems(EVAL_DIR) == []
+    for fight in manifest["fights"]:
+        provenance = _fixture(fight["id"], "provenance.json")
+        assert eval_suite.sha256_file  # the tool's own hash, below
+        for name, key, _tag, _suffix in eval_suite.STORED_PAIR:
+            if fight["kind"] == "line":
+                assert provenance.get(key), (fight["id"], key)
+            assert (name in fight["files"]) == bool(provenance.get(key)), (
+                fight["id"], name)
+            if provenance.get(key):
+                digest = eval_suite.hashlib.sha256(
+                    _stored(fight["id"], name)).hexdigest()
+                assert digest == provenance[key], (fight["id"], name)
+    lines = [f for f in manifest["fights"] if f["kind"] == "line"]
+    assert lines and all(
+        {eval_suite.CAPTURE_FILE, eval_suite.SAVE_FILE} <= set(f["files"])
+        for f in lines)
+
+
+def _one_fixture_tree(tmp_path: pathlib.Path) -> tuple:
+    """A scratch eval tree holding one committed line fixture."""
+    fight = next(f for f in _manifest()["fights"] if f["kind"] == "line")
+    shutil.copytree(FIGHTS_DIR / fight["id"],
+                    tmp_path / "fights" / fight["id"])
+    (tmp_path / "manifest.json").write_text(json.dumps({"fights": [fight]}))
+    return fight, tmp_path / "fights" / fight["id"]
+
+
+def test_a_stored_capture_with_the_wrong_bytes_is_a_problem(tmp_path):
+    """`verify`'s hash pass and the reader every other pass unpacks a pair
+    with both refuse a stored file that is not the one provenance names."""
+    fight, directory = _one_fixture_tree(tmp_path)
+    assert eval_suite.stored_pair_problems(tmp_path) == []
+    provenance = _fixture(fight["id"], "provenance.json")
+    for name in (eval_suite.CAPTURE_FILE, eval_suite.SAVE_FILE):
+        original = (directory / name).read_bytes()
+        eval_suite.write_stored(
+            directory / name, gzip.decompress(original) + b"\x00")
+        problems = eval_suite.stored_pair_problems(tmp_path)
+        assert len(problems) == 1 and problems[0].startswith(
+            f"{fight['id']}: {name} is sha256 "), problems
+        with pytest.raises(eval_suite.EvalRefusal, match="provenance.json"):
+            eval_suite.materialize_pair(
+                directory, provenance, tmp_path / "scratch")
+        # Bytes that are not gzip at all are named too, not raised.
+        (directory / name).write_bytes(b"not gzip")
+        assert eval_suite.stored_pair_problems(tmp_path) == [
+            f"{fight['id']}: {name} is unreadable (BadGzipFile)"]
+        (directory / name).write_bytes(original)
+    assert eval_suite.stored_pair_problems(tmp_path) == []
+
+
+def test_a_fixture_missing_its_pair_is_a_problem(tmp_path):
+    fight, directory = _one_fixture_tree(tmp_path)
+    provenance = _fixture(fight["id"], "provenance.json")
+    (directory / eval_suite.SAVE_FILE).unlink()
+    assert eval_suite.stored_pair_problems(tmp_path) == [
+        f"{fight['id']}: {eval_suite.SAVE_FILE} is missing"]
+    with pytest.raises(eval_suite.EvalRefusal, match="is missing"):
+        eval_suite.materialize_pair(directory, provenance, tmp_path / "scratch")
+    (directory / eval_suite.CAPTURE_FILE).unlink()
+    assert eval_suite.stored_pair_problems(tmp_path) == [
+        f"{fight['id']}: {eval_suite.CAPTURE_FILE} is missing",
+        f"{fight['id']}: {eval_suite.SAVE_FILE} is missing"]
+
+
+def test_a_stored_file_provenance_does_not_name_is_a_problem(tmp_path):
+    """An unpaired capture records no save, so it may not store one."""
+    fight, directory = _one_fixture_tree(tmp_path)
+    provenance = _fixture(fight["id"], "provenance.json")
+    provenance["save_sha256"] = None
+    (directory / "provenance.json").write_text(json.dumps(provenance))
+    assert eval_suite.stored_pair_problems(tmp_path) == [
+        f"{fight['id']}: {eval_suite.SAVE_FILE} is stored but "
+        "provenance.json records no save_sha256"]
+
+
+def test_a_stored_pair_unpacks_in_corpus_shape(tmp_path):
+    """The scratch copy is named as the watcher names a capture, and an
+    upload's capture run gets its sidecar back, so `entry_input` and
+    `derive_encounter` read a stored pair as they read a corpus one."""
+    manifest = _manifest()
+    seen = set()
+    for fight in manifest["fights"]:
+        provenance = _fixture(fight["id"], "provenance.json")
+        upload = provenance.get("entry_input")
+        if not provenance.get("save_sha256") or upload in seen:
+            continue
+        seen.add(upload)
+        capture, save = eval_suite.materialize_pair(
+            FIGHTS_DIR / fight["id"], provenance, tmp_path)
+        assert eval_suite.sha256_file(capture) == provenance["capture_sha256"]
+        assert eval_suite.sha256_file(save) == provenance["save_sha256"]
+        assert capture.name.endswith(".mcr") and "_mcr_" in capture.name
+        assert save.name.endswith(".save") and "_save_" in save.name
+        if upload:
+            assert upload == eval_suite.CAPTURE_RUN_INPUT
+            assert eval_suite.entry_input(save) == "--capture-run"
+            assert eval_suite.derive_encounter({}, None, save, {}) == (
+                provenance["encounter"], provenance["node_type"])
+        else:
+            assert eval_suite.entry_input(save) == "--save"
+    assert seen == {None, eval_suite.CAPTURE_RUN_INPUT}
+
+
+def test_writing_a_fixture_stores_its_pair(tmp_path):
+    """`add` and `seed` both write through `write_fixture`: the pair the row
+    was built from lands beside the documents, listed in the manifest entry,
+    and a file the fixture no longer owns is removed."""
+    capture = tmp_path / "x_mcr_1.mcr"
+    save = tmp_path / "x_save_1.save"
+    capture.write_bytes(b"capture bytes")
+    save.write_bytes(b"{}")
+    row = eval_suite._certified_row(
+        capture_sha256=eval_suite.sha256_file(capture),
+        save_sha256=eval_suite.sha256_file(save),
+        _capture_path=capture, _save_path=save,
+        entry_input=eval_suite.CAPTURE_RUN_INPUT)
+    eval_dir = tmp_path / "eval"
+    stale = eval_dir / "fights" / row["id"] / "refusal.json"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("{}")
+    entry = eval_suite.write_fixture(row, "line", eval_dir)
+    directory = eval_dir / "fights" / row["id"]
+    assert sorted(p.name for p in directory.iterdir()) == entry["files"] == [
+        "capture.mcr.gz", "entry.canonical.json", "entry.save.gz",
+        "human_line.json", "provenance.json"]
+    assert gzip.decompress(
+        (directory / "capture.mcr.gz").read_bytes()) == b"capture bytes"
+    assert gzip.decompress((directory / "entry.save.gz").read_bytes()) == b"{}"
+    provenance = json.loads((directory / "provenance.json").read_text())
+    assert provenance["entry_input"] == "--capture-run"
+    eval_suite.write_manifest([entry], {}, eval_dir)
+    assert eval_suite.stored_pair_problems(eval_dir) == []
+    # Byte-stable: a rewrite of the same pair changes nothing.
+    before = (directory / "capture.mcr.gz").read_bytes()
+    eval_suite.write_fixture(row, "line", eval_dir)
+    assert (directory / "capture.mcr.gz").read_bytes() == before
+
+    # An unpaired capture (a capture-pairing refusal) stores the capture only.
+    unpaired = eval_suite._label_row(
+        id="f000000000000002", stage="unpaired", save_sha256=None,
+        capture_sha256=eval_suite.sha256_file(capture), _capture_path=capture)
+    entry = eval_suite.write_fixture(unpaired, "refusal", eval_dir)
+    assert entry["files"] == ["capture.mcr.gz", "provenance.json",
+                              "refusal.json"]
+
+
+def test_a_recorded_encounter_only_fills_what_the_save_cannot_name():
+    """A stored pair has no later save to name an event-room fight, so the
+    fixture's own provenance does; an explicit `add --encounter` pair is a
+    different reader of the same two fields."""
+    event = {"encounter": "ENCOUNTER.X", "node_type": "monster"}
+    explicit = dict(event, encounter_source="explicit_capture_pair")
+    assert eval_suite._recorded_encounter(event, False) == (
+        "ENCOUNTER.X", "monster")
+    assert eval_suite._recorded_encounter(event, True) is None
+    assert eval_suite._recorded_encounter(explicit, True) == (
+        "ENCOUNTER.X", "monster")
+    assert eval_suite._recorded_encounter(explicit, False) is None
+    assert eval_suite._recorded_encounter({"encounter": None}, False) is None
 
 
 def test_every_root_digest_reproduces_from_its_canonical_entry():
@@ -578,7 +752,7 @@ def test_the_registry_names_the_slot_the_gate_exempts():
     lane's trigger set deliberately does not watch.
     """
     assert eval_suite.RUST_ONLY_PROVENANCE_SLOTS == (
-        "power_attachments", "scroll_chew_repeated")
+        "power_attachments", "scroll_chew_repeated", "session_bookkeeping")
     # The exemption is registry-driven, so a differently-named ledger is NOT
     # exempt. This is the behaviour half of the #1432 concern and needs no
     # crate read at all.
@@ -1242,24 +1416,84 @@ def test_uncertified_roots_still_refuse_for_the_recorded_reason():
         rust.close()
 
 
-@pytest.mark.skipif(
-    os.environ.get("STS2_EVAL_REDERIVE") != "1",
-    reason="set STS2_EVAL_REDERIVE=1 with the local capture corpus present")
-def test_every_fixture_re_derives_from_its_provenance():
-    """The tool's `verify`: locate the capture pair by sha256 and rebuild."""
-    captures = pathlib.Path(
-        os.environ.get("STS2_CAPTURES")
-        or (pathlib.Path.home() / "sts2-captures")).expanduser()
-    if not captures.is_dir():
-        pytest.skip(f"no capture corpus at {captures}")
-    result = subprocess.run(
-        [sys.executable, str(EVAL_TOOL), "verify",
-         "--captures", str(captures)],
+rederive_optin = pytest.mark.skipif(
+    os.environ.get("STS2_EVAL_REDERIVE") != "1"
+    or not ENGINE_BINARY.is_file(),
+    reason="set STS2_EVAL_REDERIVE=1 with a built "
+           "sim/v0.111.0/engine/target/release/sts-sim")
+
+
+def _tool(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(EVAL_TOOL), "--binary", str(ENGINE_BINARY), *args],
         capture_output=True, text=True, check=False)
+
+
+@rederive_optin
+def test_every_fixture_re_derives_from_its_stored_pair():
+    """The tool's `verify`: unpack each stored pair and rebuild from it."""
+    result = _tool("verify")
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(result.stdout)
+    assert report["pairs"] == "stored"
+    assert report["stored_pair_problems"] == []
     assert report["problems"] == []
+    assert report["label_differences"] == []
     assert report["rooted_checked"] >= 27
+
+
+@rederive_optin
+def test_the_census_over_the_stored_pairs_reproduces_the_manifest():
+    """`census --fixtures`: every fixture reaches, from the game's own
+    checksums, the lockstep verdict the manifest records."""
+    result = _tool("census", "--fixtures", "--json")
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr
+    census = json.loads(result.stdout)
+    manifest = _manifest()
+    assert census["fixture_check"]["problems"] == []
+    assert census["summary"]["fights"] == len(manifest["fights"])
+    assert census["summary"]["certified"] == len(
+        manifest["categories"]["certified"])
+
+
+@rederive_optin
+def test_verify_fails_on_a_stored_capture_with_the_wrong_bytes(tmp_path):
+    fight, directory = _one_fixture_tree(tmp_path)
+    assert _tool("verify", "--eval-dir", str(tmp_path),
+                 "--no-labels").returncode == 0
+    stored = directory / eval_suite.CAPTURE_FILE
+    eval_suite.write_stored(stored, gzip.decompress(stored.read_bytes())[:-1])
+    result = _tool("verify", "--eval-dir", str(tmp_path), "--no-labels")
+    assert result.returncode == 1, result.stdout + result.stderr
+    report = json.loads(result.stdout)
+    assert len(report["stored_pair_problems"]) == 1
+    assert eval_suite.CAPTURE_FILE in report["stored_pair_problems"][0]
+    assert report["problems"] and report["rooted_checked"] == 0
+
+
+@rederive_optin
+def test_add_writes_the_fixture_with_its_pair(tmp_path):
+    """`add` on a committed fixture's own pair rewrites that fixture: the
+    documents byte for byte, and the same pair (compared unpacked, since two
+    zlib builds may compress the same bytes differently)."""
+    fight = next(f for f in _manifest()["fights"] if f["kind"] == "line"
+                 and "entry_input" not in _fixture(f["id"], "provenance.json")
+                 and _fixture(f["id"], "provenance.json")["node_type"]
+                 in ("monster", "elite"))
+    provenance = _fixture(fight["id"], "provenance.json")
+    capture, save = eval_suite.materialize_pair(
+        FIGHTS_DIR / fight["id"], provenance, tmp_path / "corpus")
+    eval_dir = tmp_path / "eval"
+    result = _tool("add", "--mcr", str(capture), "--entry-save", str(save),
+                   "--eval-dir", str(eval_dir))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout) == fight
+    written = eval_dir / "fights" / fight["id"]
+    assert sorted(p.name for p in written.iterdir()) == fight["files"]
+    for name in fight["files"]:
+        unpack = gzip.decompress if name.endswith(".gz") else bytes
+        assert unpack((written / name).read_bytes()) == unpack(
+            (FIGHTS_DIR / fight["id"] / name).read_bytes()), name
 
 
 class _ResolvingSession:

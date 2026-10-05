@@ -409,6 +409,7 @@ pub enum PlayerSlot {
     ScytheDeckGrowth,
     SelfReturnFinishedUidsCurrentTurn,
     SelfReturnFinishedUidsPreviousTurn,
+    SessionBookkeeping,
     ShivPlaysFinishedThisTurn,
     Shuriken,
     SkillPlaysFinishedThisTurn,
@@ -548,7 +549,7 @@ pub struct FieldSpec<S: 'static> {
 // (deleted #2999; `PROJECTION_PARITY_CENSUS.md` is its frozen last run).
 const _: () = assert!(crate::encounters::MODELED_ASCENSION == 10);
 
-pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 216] = [
+pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
     spec(
         "after_block_gained_power_order",
         PlayerSlot::AfterBlockGainedPowerOrder,
@@ -1347,6 +1348,16 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 216] = [
         PlayerSlot::SelfReturnFinishedUidsPreviousTurn,
         FieldDefault::EmptyList,
     ),
+    // Rust-only (#3660): the frozen Python `State` has no counterpart, so
+    // Python never emits this key. `EmptyList` plus zero-default elision
+    // keeps every document of a fight that keeps none of the three
+    // bookkeeping bits byte-identical to what it was before the slot existed.
+    // See `catalog::SessionBookkeeping`.
+    spec(
+        "session_bookkeeping",
+        PlayerSlot::SessionBookkeeping,
+        FieldDefault::EmptyList,
+    ),
     spec(
         "shiv_plays_finished_this_turn",
         PlayerSlot::ShivPlaysFinishedThisTurn,
@@ -2118,10 +2129,13 @@ pub(crate) fn batch_nine_relic_state_is_exact(state: &HotState, catalog: &Catalo
         && (owns(RelicId::RelicMusicBox)
             || !state.fanouts.music_box_used_this_turn()
                 && state.fanouts.music_box_card_uid().is_none())
-        && state
-            .fanouts
-            .music_box_card_uid()
-            .is_none_or(|uid| owns(RelicId::RelicMusicBox) && uid < state.next_card_uid)
+        // The clone sets `WasUsedThisTurn` and clears `CardBeingPlayed`
+        // together, and Before never latches once used (#3640).
+        && state.fanouts.music_box_card_uid().is_none_or(|uid| {
+            owns(RelicId::RelicMusicBox)
+                && uid < state.next_card_uid
+                && !state.fanouts.music_box_used_this_turn()
+        })
         && (owns(RelicId::RelicJossPaper) == (state.fanouts.joss_paper_cards_exhausted() >= 0))
         && (owns(RelicId::RelicJossPaper) || state.fanouts.joss_paper_ethereal_count() == 0)
         && (owns(RelicId::RelicPumpkinCandle) == (state.fanouts.pumpkin_candle_kindle_count() >= 0))
@@ -4468,7 +4482,57 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::LocalGeneratedPowerOrder => {
             local_generated_power_order_value(state.fanouts.local_generated_power_order())
         }
+        // #3660: the catalog's, not the state's. A state-only projection (no
+        // catalog) records nothing.
+        PlayerSlot::SessionBookkeeping => session_bookkeeping_value(
+            catalog.map_or_else(Default::default, Catalog::session_bookkeeping),
+        ),
     }
+}
+
+/// `player.session_bookkeeping`: the names of the bits kept, ascending. Empty
+/// is the default and is elided, so a fight that keeps none of the three
+/// projects exactly the document it did before the field existed.
+fn session_bookkeeping_value(kept: crate::catalog::SessionBookkeeping) -> Value {
+    Value::Array(
+        crate::catalog::SessionBookkeeping::NAMES
+            .into_iter()
+            .zip(kept.bits())
+            .filter(|(_, bit)| *bit)
+            .map(|(name, _)| Value::from(name))
+            .collect(),
+    )
+}
+
+/// The inverse: a strictly ascending list of known names, or a refusal.
+fn parse_session_bookkeeping(
+    value: &Value,
+) -> Result<crate::catalog::SessionBookkeeping, BoundaryRefusal> {
+    let field = "session_bookkeeping";
+    let rows = value
+        .as_array()
+        .ok_or_else(|| unrepresentable(Entity::Player, field, "expected a list"))?;
+    let mut bits = [false; 3];
+    let mut previous = None;
+    for row in rows {
+        let name = row
+            .as_str()
+            .ok_or_else(|| unrepresentable(Entity::Player, field, "names must be text"))?;
+        let index = crate::catalog::SessionBookkeeping::NAMES
+            .iter()
+            .position(|known| *known == name)
+            .ok_or_else(|| unrepresentable(Entity::Player, field, "unknown bookkeeping name"))?;
+        if previous.is_some_and(|previous| previous >= index) {
+            return Err(unrepresentable(
+                Entity::Player,
+                field,
+                "names must be strictly ascending",
+            ));
+        }
+        previous = Some(index);
+        bits[index] = true;
+    }
+    Ok(crate::catalog::SessionBookkeeping::from_bits(bits))
 }
 
 fn player_write(
@@ -5310,9 +5374,11 @@ fn player_write(
         }
         PlayerSlot::OstyCorpse => {
             let corpse = as_flag(entity, name, value)?;
+            // A decode, never a creation: the document's own
+            // `next_creature_uid` already counts the retained corpse (#3674).
             state
                 .fanouts
-                .mutate_pet(|pet| pet.set_corpse(corpse))
+                .set_osty_corpse(corpse)
                 .map_err(|_| unrepresentable(entity, name, "Osty cannot be live and a corpse"))?;
         }
         PlayerSlot::OstyAttacksThisTurn => {
@@ -5445,6 +5511,11 @@ fn player_write(
                 ));
             }
         }
+        // Validated here; `catalog_from_canonical` is what reads it, and
+        // `from_canonical` holds it against the catalog in hand.
+        PlayerSlot::SessionBookkeeping => {
+            parse_session_bookkeeping(value)?;
+        }
         PlayerSlot::SplashUnlockEpochs => {
             if intern_splash_unlock_epochs(value).is_none() {
                 return Err(unrepresentable(
@@ -5489,14 +5560,13 @@ fn player_write(
             ));
         }
         PlayerSlot::LocalGeneratedPowerOrder => {
+            // The family is the one `engine::admission` holds the order
+            // against, shared so a listener added to the writer cannot be
+            // projected and then refused here (#3662: Trash to Treasure was).
             let order = parse_local_generated_power_order(
                 name,
                 value,
-                &[
-                    PowerId::Arsenal,
-                    PowerId::PillarOfCreation,
-                    PowerId::Smokestack,
-                ],
+                &crate::engine::admission::LOCAL_GENERATED_POWER_READERS,
             )?;
             if !state.fanouts.set_local_generated_power_order(&order) {
                 return Err(unrepresentable(entity, name, "too many listeners"));
@@ -7902,6 +7972,122 @@ fn physical_state(
         physical.push(Value::from(base_replay_count));
     }
     Value::Array(physical)
+}
+
+/// The instance state [`HotBoundary::card_to_canonical_with_instance`] would
+/// not write for a pile card carrying `flags`, as the document field that
+/// should have carried it and the reason (#3629).
+///
+/// The projection gates three carriers on a `HotCard` flag rather than on the
+/// state itself:
+///
+/// - slot 7 (`physical_state`) is written only under
+///   [`CARD_FLAG_DEFAULT_PHYSICAL_STATE`]. It is the sole carrier of the
+///   ordered local Energy-cost rows, every local Star-cost row,
+///   `BaseReplayCount`, and damage growth in both its Int32 and exact Decimal
+///   forms;
+/// - slot 6 (`sovereign_blade`) is written only under
+///   [`CARD_FLAG_SOVEREIGN_BLADE_STATE`], and then carries the Int32
+///   `damage_growth` in slot 7's place, with slot 7's growth written as zero.
+///   The exact Decimal form has no slot-6 spelling;
+/// - the `GENETIC_ALGORITHM_STATE` tail row is written only under
+///   [`CARD_FLAG_GENETIC_ALGORITHM_STATE`].
+///
+/// Everything else in [`CardInstanceState`] is written from the state alone:
+/// `enchantment_state` (slot 5, or the spent marker in slot 2), local
+/// Ethereal/Retain/Sly (slot 3) and turn-scoped Retain/Sly (slot 4). So a
+/// keyword writer such as Ghost Seed's `set_local_ethereal` needs no flag.
+///
+/// A writer that fills a gated field without setting its flag leaves the
+/// value live in `HotState` and absent from the document: the #3176 / #3180
+/// class, four writers so far, each masked by unit tests that pre-set the
+/// bit. `None` means the document carries every field of `instance`.
+fn instance_state_without_carrier(
+    flags: u16,
+    instance: &CardInstanceState,
+) -> Option<(&'static str, &'static str)> {
+    let slot_seven = flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE != 0;
+    let slot_six = flags & CARD_FLAG_SOVEREIGN_BLADE_STATE != 0;
+    if !slot_seven {
+        if !instance.local_cost_modifiers.is_empty() {
+            return Some((
+                "physical_state",
+                "local Energy-cost rows on a card without CARD_FLAG_DEFAULT_PHYSICAL_STATE",
+            ));
+        }
+        if instance
+            .local_cost_modifiers
+            .star_cost_expirations(instance.free_star_cost_this_turn_or_played_rows)
+            .next()
+            .is_some()
+        {
+            return Some((
+                "physical_state",
+                "local Star-cost rows on a card without CARD_FLAG_DEFAULT_PHYSICAL_STATE",
+            ));
+        }
+        if instance.base_replay_count().is_some() {
+            return Some((
+                "physical_state",
+                "BaseReplayCount on a card without CARD_FLAG_DEFAULT_PHYSICAL_STATE",
+            ));
+        }
+        if !slot_six && instance.damage_growth != 0 {
+            return Some((
+                "physical_state",
+                "damage growth on a card without CARD_FLAG_DEFAULT_PHYSICAL_STATE",
+            ));
+        }
+    }
+    if (!slot_seven || slot_six) && instance.has_exact_damage_growth_aux() {
+        return Some((
+            "physical_state",
+            "exact Decimal damage growth on a card whose slot 7 does not carry it",
+        ));
+    }
+    if flags & CARD_FLAG_GENETIC_ALGORITHM_STATE == 0
+        && instance.genetic_algorithm != GeneticAlgorithmState::default()
+    {
+        return Some((
+            "extra",
+            "Genetic Algorithm state on a card without CARD_FLAG_GENETIC_ALGORITHM_STATE",
+        ));
+    }
+    None
+}
+
+/// The first pile card whose instance state the document would drop, with
+/// the field and reason [`instance_state_without_carrier`] names (#3629).
+///
+/// A legacy tuple has no physical identity and projects a default instance,
+/// so an entry under its placeholder uid is dropped whole.
+///
+/// One pass over the piles. An empty side table returns before it; a card
+/// holding every gated carrier is skipped on its flags; any other costs one
+/// binary search, and only a card that has an entry is inspected.
+fn pile_card_losing_instance_state(state: &HotState) -> Option<(u32, &'static str, &'static str)> {
+    const EVERY_CARRIER: u16 = CARD_FLAG_DEFAULT_PHYSICAL_STATE | CARD_FLAG_GENETIC_ALGORITHM_STATE;
+    const INSPECTED: u16 = EVERY_CARRIER | CARD_FLAG_SOVEREIGN_BLADE_STATE | CARD_FLAG_LEGACY;
+    if state.card_states.as_slice().is_empty() {
+        return None;
+    }
+    PileId::ALL.into_iter().find_map(|pile| {
+        state.piles.get(pile).as_slice().iter().find_map(|card| {
+            if card.flags & INSPECTED == EVERY_CARRIER {
+                return None;
+            }
+            let instance = state.card_states.get_ref(card.uid)?;
+            if card.flags & CARD_FLAG_LEGACY != 0 {
+                return Some((
+                    card.uid,
+                    "uid",
+                    "instance state under a legacy card's placeholder uid",
+                ));
+            }
+            instance_state_without_carrier(card.flags, instance)
+                .map(|(field, detail)| (card.uid, field, detail))
+        })
+    })
 }
 
 /// Refuse every card slot the hot representation does not model yet, and
@@ -10858,6 +11044,176 @@ fn action_replay_to_canonical(
     Ok(())
 }
 
+/// Replay one receipt from its predecessor under `replay_catalog`: hydrate
+/// and admit the predecessor, apply the root action and the typed answers
+/// through the replay-aware path, and project the parked result.
+///
+/// `Ok` is a transcript that ran to a parked state, with the document it
+/// projects; the caller compares it. Every failure is a refusal by name.
+#[cold]
+#[inline(never)]
+fn replay_action_replay_transcript(
+    predecessor: &CanonicalStateV2,
+    replay: &crate::hot::ActionReplayRecord,
+    replay_catalog: &Catalog,
+) -> Result<(HotState, CanonicalStateV2), BoundaryRefusal> {
+    use crate::engine::{Action, SelectionAnswer, SelectionRef};
+    use crate::hot::{ActionReplayAnswer, ActionReplayRootAction};
+
+    let predecessor_state = HotBoundary::from_canonical(predecessor, replay_catalog)?;
+    let root_action = match replay.action {
+        ActionReplayRootAction::Play {
+            uid,
+            target,
+            selection_uid,
+        } => Action::Play {
+            uid,
+            target,
+            selection: SelectionRef::new(selection_uid),
+        },
+        ActionReplayRootAction::EndTurn => Action::EndTurn,
+        ActionReplayRootAction::UsePotion { slot, target } => Action::UsePotion { slot, target },
+    };
+    crate::engine::admit(predecessor, &predecessor_state, replay_catalog).map_err(|error| {
+        unrepresentable(
+            Entity::Player,
+            "pending",
+            &format!("ActionReplay predecessor is not admitted: {error}"),
+        )
+    })?;
+    // Modulo the hand dedupe, exactly as the minter and the public path test
+    // it (#3249): the receipt carries the uid the recorded play named, which
+    // may be a non-representative copy of an identical group.
+    if !crate::engine::action_is_legal_modulo_hand_dedupe(
+        &predecessor_state,
+        replay_catalog,
+        &root_action,
+    ) {
+        return Err(unrepresentable(
+            Entity::Player,
+            "pending",
+            "ActionReplay root action is not exactly legal",
+        ));
+    }
+    let mut events = Vec::new();
+    let mut replayed = crate::engine::apply_action_with_replay_witness(
+        &predecessor_state,
+        replay_catalog,
+        &root_action,
+        &mut events,
+    )
+    .map_err(|_| {
+        unrepresentable(
+            Entity::Player,
+            "pending",
+            "ActionReplay root action refused",
+        )
+    })?;
+    for answer in replay.answers.iter().copied() {
+        let action = Action::Select {
+            answer: match answer {
+                ActionReplayAnswer::CardUid(uid) => SelectionAnswer::CardUid(uid),
+                ActionReplayAnswer::OptionIndex(index) => SelectionAnswer::OptionIndex(index),
+            },
+        };
+        // An Ashwater/Gambler's Brew ordered answer is accepted exactly where
+        // a legal one is, though collapsed out of the legal list (#2524).
+        if !crate::engine::is_ordered_extension_select(&replayed, replay_catalog, &action)
+            && !crate::engine::legal_actions(&replayed, replay_catalog).contains(&action)
+        {
+            return Err(unrepresentable(
+                Entity::Player,
+                "pending",
+                "ActionReplay typed answer is not exactly legal",
+            ));
+        }
+        replayed = crate::engine::apply_action_with_replay_witness(
+            &replayed,
+            replay_catalog,
+            &action,
+            &mut events,
+        )
+        .map_err(|_| {
+            unrepresentable(
+                Entity::Player,
+                "pending",
+                "ActionReplay typed answer refused",
+            )
+        })?;
+    }
+    if replayed.pending.is_none() {
+        return Err(unrepresentable(
+            Entity::Player,
+            "pending",
+            "ActionReplay transcript does not end exactly parked",
+        ));
+    }
+    let replayed_document = HotBoundary::try_to_canonical(&replayed, replay_catalog)?;
+    Ok((replayed, replayed_document))
+}
+
+/// The authenticator's equality: the same value and the same bytes.
+fn transcript_reproduces(replayed: &CanonicalStateV2, document: &CanonicalStateV2) -> bool {
+    replayed == document && replayed.canonical_json() == document.canonical_json()
+}
+
+/// Whether two documents are one game state under two continuation stores:
+/// every field but `continuations` is equal, `player.pending` included.
+fn same_state_under_another_continuation_store(
+    left: &CanonicalStateV2,
+    right: &CanonicalStateV2,
+) -> bool {
+    let strip = |document: &CanonicalStateV2| {
+        let mut stripped = document.clone();
+        stripped.continuations.clear();
+        stripped
+    };
+    transcript_reproduces(&strip(left), &strip(right))
+}
+
+/// Whether a transcript that parked under the predecessor's own catalog and
+/// projected another document earns the rooted replay (#3660).
+///
+/// The first operand is what is tested. The second is true for every catalog
+/// `catalog_from_canonical` builds for a document that carries a receipt
+/// (`with_action_replay_required`), which is every production loader; it is
+/// kept so that the rooted frames this path publishes are never handed to a
+/// caller-supplied catalog that would run them without the bit.
+pub(crate) fn rooted_replay_is_eligible(catalog: &Catalog, predecessor_catalog: &Catalog) -> bool {
+    !predecessor_catalog.requires_action_replay() && catalog.requires_action_replay()
+}
+
+/// Decide the rooted replay (#3660): accept its state only when it reproduces
+/// `document` exactly AND is the predecessor-catalog transcript's game state
+/// under another continuation store. Anything else, a refusal of the rooted
+/// replay included, keeps the first transcript's verdict, a mismatch.
+fn accept_rooted_transcript(
+    document: &CanonicalStateV2,
+    predecessor_transcript: &CanonicalStateV2,
+    rooted: Result<(HotState, CanonicalStateV2), BoundaryRefusal>,
+) -> Result<HotState, BoundaryRefusal> {
+    match rooted {
+        Ok((state, rooted_document))
+            if transcript_reproduces(&rooted_document, document)
+                && same_state_under_another_continuation_store(
+                    &rooted_document,
+                    predecessor_transcript,
+                ) =>
+        {
+            Ok(state)
+        }
+        _ => Err(action_replay_transcript_mismatch()),
+    }
+}
+
+fn action_replay_transcript_mismatch() -> BoundaryRefusal {
+    unrepresentable(
+        Entity::Player,
+        "pending",
+        "ActionReplay transcript does not reproduce the complete canonical state",
+    )
+}
+
 #[cold]
 #[inline(never)]
 fn authenticate_action_replay(
@@ -10865,9 +11221,6 @@ fn authenticate_action_replay(
     state: &mut HotState,
     catalog: &Catalog,
 ) -> Result<(), BoundaryRefusal> {
-    use crate::engine::{Action, SelectionAnswer, SelectionRef};
-    use crate::hot::{ActionReplayAnswer, ActionReplayRootAction};
-
     let Some(Frame::ActionReplay { record }) = state.frames.as_slice().first().copied() else {
         return Ok(());
     };
@@ -10890,106 +11243,42 @@ fn authenticate_action_replay(
             "ActionReplay predecessor catalog differs from the current catalog",
         ));
     }
-    let predecessor_state = HotBoundary::from_canonical(&predecessor, &predecessor_catalog)?;
-    let root_action = match replay.action {
-        ActionReplayRootAction::Play {
-            uid,
-            target,
-            selection_uid,
-        } => Action::Play {
-            uid,
-            target,
-            selection: SelectionRef::new(selection_uid),
-        },
-        ActionReplayRootAction::EndTurn => Action::EndTurn,
-        ActionReplayRootAction::UsePotion { slot, target } => Action::UsePotion { slot, target },
+    let (replayed, replayed_document) =
+        replay_action_replay_transcript(&predecessor, &replay, &predecessor_catalog)?;
+    let replayed = if transcript_reproduces(&replayed_document, document) {
+        replayed
+    } else if rooted_replay_is_eligible(catalog, &predecessor_catalog) {
+        // #3660. A session keeps the catalog of its entry document, whose
+        // closure is wider than the predecessor's own, and
+        // `requires_action_replay` decides how a park is stored: a lone
+        // turn-start hand choice is rootless without it and rooted with it
+        // (`play::persisted_card_play_stack_is_exact_inner`). The transcript
+        // above is the rootless one.
+        //
+        // The bit is NOT evidence about the session that minted the receipt:
+        // a session without it also mints receipts (the ordinary path roots
+        // a parked CardPlay, enemy phase or potion; a resumable hand draw or
+        // potion takes the replay path), and every loaded catalog has the
+        // bit set by the receipt's mere presence. Nor is the bit neutral
+        // everywhere it is read (#3679). So this accepts nothing on the
+        // bit's say-so. The game state stays authenticated by the transcript
+        // above, under the predecessor's own catalog, exactly as before; the
+        // rooted replay may only supply another continuation store for that
+        // same state. One (predecessor, action, answers) therefore
+        // authenticates at most two documents, equal in everything but
+        // `continuations`.
+        //
+        // The rooted catalog is built here, not taken from the caller: it
+        // differs from the predecessor's in this one bit and nothing else.
+        let rooted_catalog = predecessor_catalog.clone().with_action_replay_required();
+        accept_rooted_transcript(
+            document,
+            &replayed_document,
+            replay_action_replay_transcript(&predecessor, &replay, &rooted_catalog),
+        )?
+    } else {
+        return Err(action_replay_transcript_mismatch());
     };
-    crate::engine::admit(&predecessor, &predecessor_state, &predecessor_catalog).map_err(
-        |error| {
-            unrepresentable(
-                Entity::Player,
-                "pending",
-                &format!("ActionReplay predecessor is not admitted: {error}"),
-            )
-        },
-    )?;
-    // Modulo the hand dedupe, exactly as the minter and the public path test
-    // it (#3249): the receipt carries the uid the recorded play named, which
-    // may be a non-representative copy of an identical group.
-    if !crate::engine::action_is_legal_modulo_hand_dedupe(
-        &predecessor_state,
-        &predecessor_catalog,
-        &root_action,
-    ) {
-        return Err(unrepresentable(
-            Entity::Player,
-            "pending",
-            "ActionReplay root action is not exactly legal",
-        ));
-    }
-    let mut events = Vec::new();
-    let mut replayed = crate::engine::apply_action_with_replay_witness(
-        &predecessor_state,
-        &predecessor_catalog,
-        &root_action,
-        &mut events,
-    )
-    .map_err(|_| {
-        unrepresentable(
-            Entity::Player,
-            "pending",
-            "ActionReplay root action refused",
-        )
-    })?;
-    for answer in replay.answers {
-        let action = Action::Select {
-            answer: match answer {
-                ActionReplayAnswer::CardUid(uid) => SelectionAnswer::CardUid(uid),
-                ActionReplayAnswer::OptionIndex(index) => SelectionAnswer::OptionIndex(index),
-            },
-        };
-        // An Ashwater/Gambler's Brew ordered answer is accepted exactly where
-        // a legal one is, though collapsed out of the legal list (#2524).
-        if !crate::engine::is_ordered_extension_select(&replayed, &predecessor_catalog, &action)
-            && !crate::engine::legal_actions(&replayed, &predecessor_catalog).contains(&action)
-        {
-            return Err(unrepresentable(
-                Entity::Player,
-                "pending",
-                "ActionReplay typed answer is not exactly legal",
-            ));
-        }
-        replayed = crate::engine::apply_action_with_replay_witness(
-            &replayed,
-            &predecessor_catalog,
-            &action,
-            &mut events,
-        )
-        .map_err(|_| {
-            unrepresentable(
-                Entity::Player,
-                "pending",
-                "ActionReplay typed answer refused",
-            )
-        })?;
-    }
-    if replayed.pending.is_none() {
-        return Err(unrepresentable(
-            Entity::Player,
-            "pending",
-            "ActionReplay transcript does not end exactly parked",
-        ));
-    }
-    let replayed_document = HotBoundary::try_to_canonical(&replayed, &predecessor_catalog)?;
-    if replayed_document != *document
-        || replayed_document.canonical_json() != document.canonical_json()
-    {
-        return Err(unrepresentable(
-            Entity::Player,
-            "pending",
-            "ActionReplay transcript does not reproduce the complete canonical state",
-        ));
-    }
     // Canonical CardPlay omits execution-only nonpending locals. The
     // independently replayed predecessor/transcript is their sole authority;
     // publish its authenticated continuation store so Storm's frozen Hand
@@ -12565,6 +12854,16 @@ impl HotBoundary {
                 "ascension",
                 "expected a v0.111.0 AscensionLevel in 0..=10",
             ));
+        }
+        // #3660: a mid-fight document's closure is narrower than its
+        // session's, so the bookkeeping bits the session kept are recorded
+        // and kept here. An absent field derives them from the closure alone:
+        // a document written before the field existed, a document written by
+        // hand, or one whose session kept none of the three. (The Rust
+        // opening records them too, so an entry it writes carries the field
+        // whenever its closure derives a bit.)
+        if let Some(recorded) = document.player.get("session_bookkeeping") {
+            builder.mark_session_bookkeeping(parse_session_bookkeeping(recorded)?);
         }
         if let Some(epochs) = document.player.get("splash_unlock_epochs") {
             let profile = intern_splash_unlock_epochs(epochs).ok_or_else(|| {
@@ -14366,6 +14665,42 @@ impl HotBoundary {
                 "splash_unlock_epochs",
                 "document unlock provenance differs from its immutable catalog",
             ));
+        }
+        // #3660: bookkeeping the document says its session kept must be kept
+        // by the catalog it is loaded with. The converse is ordinary: a
+        // document that predates the record carries none, and its catalog
+        // derives the bits from the closure.
+        if let Some(recorded) = document.player.get("session_bookkeeping") {
+            let recorded = parse_session_bookkeeping(recorded)?;
+            if !recorded.is_kept_by(catalog.session_bookkeeping()) {
+                return Err(unrepresentable(
+                    Entity::Player,
+                    "session_bookkeeping",
+                    "document records bookkeeping its catalog does not keep",
+                ));
+            }
+            // `self_return_uids` decides WHEN a placeholder card (one with no
+            // uid) is numbered: at turn entry with it
+            // (`engine::cards::freeze_self_return_before_hand_draw`), at the
+            // later draw-time calls without it. Anything that allocates a
+            // uid in between would number the cards differently, and a
+            // record cannot be told from a forged one. A session that kept
+            // the bit numbers every placeholder at its first turn entry, so
+            // the two only meet in the first turn of a document rooted with
+            // placeholders, which no Rust opening writes. Refused by name.
+            if recorded.self_return_uids
+                && document
+                    .piles
+                    .values()
+                    .flatten()
+                    .any(|card| card.uid.is_none())
+            {
+                return Err(unrepresentable(
+                    Entity::Player,
+                    "session_bookkeeping",
+                    "self_return_uids is recorded beside a card without a uid",
+                ));
+            }
         }
         // The catalog's move rows are compiled at one tier (#2828); a state at
         // another level would run them with the wrong constants.
@@ -16355,6 +16690,34 @@ impl HotBoundary {
                                                 // base and checked by
                                                 // `play::gremlin_horn_draw_stack_is_exact`.
                                                 | "gremlin_horn"
+                                                // #3164: the two turn-start
+                                                // Draws, a load-side fix with
+                                                // no new native claim. The
+                                                // engine already publishes a
+                                                // Hellraiser AutoPlay child
+                                                // directly above the Hand Draw
+                                                // (cited at `draw::DrawSource`)
+                                                // and above the turn-start
+                                                // Unceasing Top Draw
+                                                // (`turn::resume_player_turn_start_after_relics`);
+                                                // the AutoPlay itself is cited
+                                                // at `puzzle::DeferredChoiceListener`.
+                                                // The Draw decode admits
+                                                // either caller only directly
+                                                // on an EndTurn ActionReplay
+                                                // root, and a present root is
+                                                // authenticated right here in
+                                                // `from_canonical` by
+                                                // `authenticate_action_replay`:
+                                                // the EndTurn and its answers
+                                                // are re-executed from the
+                                                // admitted predecessor and must
+                                                // reproduce this whole document.
+                                                // Admission repeats that and
+                                                // checks the stack with
+                                                // `play::replay_rooted_turn_start_draw_stack_is_exact`.
+                                                | "turn_start"
+                                                | "unceasing_top_turn_start"
                                         )
                                     })
                             || document.continuations[..index]
@@ -18518,6 +18881,10 @@ impl HotBoundary {
                 "extra",
                 "DUPE projection requires an exact physical Attack",
             ));
+        }
+        // #3629: a gated carrier whose flag is missing would drop live state.
+        if let Some((uid, field, detail)) = pile_card_losing_instance_state(state) {
+            return Err(unrepresentable(Entity::Card(uid), field, detail));
         }
         if !crate::engine::draw::removed_draw_objects_are_exact(state, catalog) {
             return Err(unrepresentable(
@@ -22216,6 +22583,13 @@ mod tests {
         assert_eq!(private.previous_turn, [5]);
         assert!(private.before_hand_draw.is_empty());
         let projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        // Thrumming Hatchet is interned, so the projection records the
+        // self-return bookkeeping (#3660).
+        let document = recorded(&document, &catalog);
+        assert_eq!(
+            document.player["session_bookkeeping"],
+            json!(["self_return_uids"])
+        );
         assert_eq!(projected, document);
         assert_eq!(projected.canonical_json(), document.canonical_json());
 
@@ -27978,7 +28352,7 @@ mod tests {
         assert!(rebuilt_state.card_states.get(12).local_ethereal());
         assert_eq!(
             HotBoundary::to_canonical(&rebuilt_state, &rebuilt),
-            document
+            recorded(&document, &rebuilt)
         );
         assert!(
             crate::engine::cards::call_local_ethereal_provenance_is_exact(&rebuilt_state, &rebuilt,)
@@ -31561,7 +31935,7 @@ mod tests {
         let mut playable_state = HotBoundary::from_canonical(&playable, &playable_catalog).unwrap();
         assert_eq!(
             HotBoundary::to_canonical(&playable_state, &playable_catalog),
-            playable
+            recorded(&playable, &playable_catalog)
         );
         let before = playable_state.clone();
         assert_eq!(playable_catalog.colorless_generation_pool(), exact);
@@ -34202,6 +34576,21 @@ mod tests {
         ));
     }
 
+    /// `document` as a projection under `catalog` writes it: with the
+    /// catalog's bookkeeping recorded (#3660). A document that predates the
+    /// record, or an entry written by hand, loads without it and projects
+    /// with it.
+    fn recorded(document: &CanonicalStateV2, catalog: &Catalog) -> CanonicalStateV2 {
+        let mut document = document.clone();
+        let kept = session_bookkeeping_value(catalog.session_bookkeeping());
+        if kept.as_array().is_some_and(|names| !names.is_empty()) {
+            document
+                .player
+                .insert("session_bookkeeping".to_owned(), kept);
+        }
+        document
+    }
+
     #[test]
     fn local_generated_power_order_round_trips_and_refuses_bad_tokens() {
         let mut document = fixture();
@@ -34238,6 +34627,125 @@ mod tests {
                 .player
                 .insert("local_generated_power_order".to_owned(), order);
             assert!(HotBoundary::from_canonical(&malformed, &catalog).is_err());
+        }
+    }
+
+    /// #3662: the loader accepts every order the engine can project. The
+    /// family is `engine::admission::LOCAL_GENERATED_POWER_READERS`; each
+    /// ordered subset of it loads, is admitted, and projects back to itself,
+    /// so Trash to Treasure reloads alone and on either side of each peer.
+    #[test]
+    fn every_local_generated_power_order_the_engine_projects_reloads() {
+        let family = crate::engine::admission::LOCAL_GENERATED_POWER_READERS;
+        assert!(family.contains(&PowerId::TrashToTreasure));
+        fn orders(family: &[PowerId], prefix: &mut Vec<PowerId>, out: &mut Vec<Vec<PowerId>>) {
+            out.push(prefix.clone());
+            for power in family {
+                if !prefix.contains(power) {
+                    prefix.push(*power);
+                    orders(family, prefix, out);
+                    prefix.pop();
+                }
+            }
+        }
+        let mut all = Vec::new();
+        orders(&family, &mut Vec::new(), &mut all);
+        // 1 + 4 + 12 + 24 + 24 ordered subsets of four listeners.
+        assert_eq!(all.len(), 65);
+        let mut trash_beside_a_peer = 0;
+        for order in all {
+            let mut document = fixture();
+            for (stacks, power) in order.iter().enumerate() {
+                document
+                    .player
+                    .insert(power.as_str().to_owned(), json!(stacks + 1));
+            }
+            if !order.is_empty() {
+                document.player.insert(
+                    "local_generated_power_order".to_owned(),
+                    local_generated_power_order_value(&order),
+                );
+            }
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let hot = HotBoundary::from_canonical(&document, &catalog)
+                .unwrap_or_else(|error| panic!("{order:?}: {error}"));
+            assert_eq!(hot.fanouts.local_generated_power_order(), order);
+            assert_eq!(
+                crate::engine::admit(&document, &hot, &catalog),
+                Ok(()),
+                "{order:?}"
+            );
+            assert_eq!(
+                HotBoundary::try_to_canonical(&hot, &catalog).unwrap(),
+                document,
+                "{order:?}"
+            );
+            if order.len() == 2 && order.contains(&PowerId::TrashToTreasure) {
+                trash_beside_a_peer += 1;
+            }
+        }
+        // Each of the three peers, in both acquisition orders.
+        assert_eq!(trash_beside_a_peer, 6);
+    }
+
+    /// #3662: a repeat, a listener outside the family and a malformed token
+    /// still refuse, by name, with Trash to Treasure in the order.
+    #[test]
+    fn malformed_local_generated_power_orders_refuse_beside_trash_to_treasure() {
+        let mut document = fixture();
+        document
+            .player
+            .insert("trash_to_treasure".to_owned(), json!(1));
+        document.player.insert("smokestack".to_owned(), json!(5));
+        document.player.insert(
+            "local_generated_power_order".to_owned(),
+            json!([["trash_to_treasure"], ["smokestack"]]),
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        HotBoundary::from_canonical(&document, &catalog).unwrap();
+        for (order, reason) in [
+            (
+                json!([["trash_to_treasure"], ["trash_to_treasure"]]),
+                "listener is outside this hook family or repeats",
+            ),
+            (
+                json!([["trash_to_treasure"], ["smokestack"], ["trash_to_treasure"]]),
+                "listener is outside this hook family or repeats",
+            ),
+            // A real power that does not answer this hook.
+            (
+                json!([["trash_to_treasure"], ["juggernaut"]]),
+                "listener is outside this hook family or repeats",
+            ),
+            (
+                json!([["trash_to_treasure"], ["soulbound"]]),
+                "unknown listener name",
+            ),
+            (
+                json!(["trash_to_treasure"]),
+                "listener tokens must be tuples",
+            ),
+            (
+                json!([["trash_to_treasure", "identity_tail"]]),
+                "scalar listener tokens must contain one name",
+            ),
+            (json!("trash_to_treasure"), "expected a list"),
+        ] {
+            let mut malformed = document.clone();
+            malformed
+                .player
+                .insert("local_generated_power_order".to_owned(), order.clone());
+            match HotBoundary::from_canonical(&malformed, &catalog) {
+                Err(BoundaryRefusal::UnrepresentableValue {
+                    entity: Entity::Player,
+                    field,
+                    detail: actual,
+                }) => {
+                    assert_eq!(field, "local_generated_power_order", "{order}");
+                    assert_eq!(actual, reason, "{order}");
+                }
+                other => panic!("{order}: {other:?}"),
+            }
         }
     }
 
@@ -35691,7 +36199,10 @@ mod tests {
 
         let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
         let hot = HotBoundary::from_canonical(&document, &catalog).unwrap();
-        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), document);
+        assert_eq!(
+            HotBoundary::to_canonical(&hot, &catalog),
+            recorded(&document, &catalog)
+        );
 
         let mut missing = document.clone();
         missing.player.remove("lantern");
@@ -36914,6 +37425,1374 @@ mod earlier_copy_reader_tests {
         assert_eq!(
             seen, [true; 4],
             "first copy, last copy only, lone copy, no reader"
+        );
+    }
+}
+
+/// #3629: `try_to_canonical` refuses a pile card whose instance state the
+/// document would drop, and the predicate is exactly the projection's drop
+/// set.
+#[cfg(test)]
+mod issue3629_instance_state_guard_tests {
+    use super::*;
+    use crate::catalog::CatalogBuilder;
+
+    const FIXTURE: &str = include_str!("../fixtures/canonical_state_v2_ironclad_toadpoles.json");
+
+    /// The Ironclad starter fixture, hydrated. Hand uid 1 is a plain Strike
+    /// carrying no flag and no instance state.
+    fn loaded() -> (HotState, Catalog) {
+        let document: CanonicalStateV2 = serde_json::from_str(FIXTURE).unwrap();
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        let strike = state.piles.get(PileId::Hand).as_slice()[1];
+        assert_eq!((strike.uid, strike.flags), (1, 0));
+        assert!(state.card_states.get_ref(1).is_none());
+        (state, catalog)
+    }
+
+    fn free_this_turn_row() -> LocalCostModifier {
+        LocalCostModifier {
+            kind: LocalCostModifierKind::Set,
+            amount: 0,
+            expiration: LocalCostExpiration::ThisTurnOrPlayed,
+            reduce_only: false,
+        }
+    }
+
+    fn refusal(state: &HotState, catalog: &Catalog) -> (Entity, String, String) {
+        match HotBoundary::try_to_canonical(state, catalog) {
+            Err(BoundaryRefusal::UnrepresentableValue {
+                entity,
+                field,
+                detail,
+            }) => (entity, field, detail),
+            other => panic!("expected the #3629 refusal, got {other:?}"),
+        }
+    }
+
+    fn pile_cards(state: &HotState) -> Vec<(u32, u16, CardInstanceState)> {
+        PileId::ALL
+            .into_iter()
+            .flat_map(|pile| state.piles.get(pile).as_slice())
+            .map(|card| (card.uid, card.flags, state.card_states.get(card.uid)))
+            .collect()
+    }
+
+    /// The flags and instance state of every pile card after a reload through
+    /// the canonical document.
+    fn reloaded_pile_cards(
+        state: &HotState,
+        catalog: &Catalog,
+    ) -> Vec<(u32, u16, CardInstanceState)> {
+        let document = HotBoundary::try_to_canonical(state, catalog).expect("the state projects");
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let loaded = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        pile_cards(&loaded)
+    }
+
+    /// One forged state per slot-7 arm. Each refuses by name without the bit,
+    /// and with the bit projects and reloads to the same instance state.
+    #[test]
+    fn slot_seven_state_without_the_bit_refuses_by_name() {
+        type Forge = fn(&mut CardInstanceState);
+        let arms: [(&str, Forge); 6] = [
+            ("local Energy-cost rows", |instance| {
+                instance.local_cost_modifiers.push(free_this_turn_row());
+            }),
+            ("local Star-cost rows", |instance| {
+                instance.free_star_cost_this_turn_or_played_rows = 1;
+            }),
+            ("local Star-cost rows", |instance| {
+                instance
+                    .local_cost_modifiers
+                    .set_star_cost_expirations(&[LocalCostExpiration::ThisCombat])
+                    .unwrap();
+            }),
+            ("BaseReplayCount", |instance| {
+                instance.set_base_replay_count(Some(0)).unwrap();
+            }),
+            ("damage growth", |instance| instance.damage_growth = 4),
+            ("exact Decimal damage growth", |instance| {
+                instance
+                    .set_fraction_damage_growth(DotNetDecimal::from_i64(4))
+                    .unwrap();
+            }),
+        ];
+        for (index, (name, forge)) in arms.into_iter().enumerate() {
+            let (mut state, catalog) = loaded();
+            let mut instance = CardInstanceState::default();
+            forge(&mut instance);
+            state.card_states.set(1, instance.clone());
+
+            let (entity, field, detail) = refusal(&state, &catalog);
+            assert_eq!(entity, Entity::Card(1), "arm {index}");
+            assert_eq!(field, "physical_state", "arm {index}");
+            assert!(detail.starts_with(name), "arm {index}: {detail}");
+
+            state.piles.get_mut(PileId::Hand).make_mut()[1].flags =
+                CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+            if instance.has_exact_damage_growth_aux() {
+                // Only Thrash may carry the Decimal form, so the reload of a
+                // Strike refuses by its own name rather than dropping it.
+                let document = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+                assert!(matches!(
+                    HotBoundary::from_canonical(&document, &catalog),
+                    Err(BoundaryRefusal::UnrepresentableValue { field, .. })
+                        if field.as_str().eq("physical_state")
+                ));
+                continue;
+            }
+            assert!(
+                reloaded_pile_cards(&state, &catalog).contains(&(
+                    1,
+                    CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                    instance
+                )),
+                "arm {index}"
+            );
+        }
+    }
+
+    /// Slot 6 carries Sovereign Blade's Int32 damage in slot 7's place, and
+    /// has no spelling for the exact Decimal form.
+    #[test]
+    fn exact_decimal_growth_beside_slot_six_refuses_by_name() {
+        let (mut state, catalog) = loaded();
+        let mut instance = CardInstanceState::default();
+        instance
+            .set_fraction_damage_growth(DotNetDecimal::from_i64(4))
+            .unwrap();
+        state.card_states.set(1, instance);
+        state.piles.get_mut(PileId::Hand).make_mut()[1].flags =
+            CARD_FLAG_DEFAULT_PHYSICAL_STATE | CARD_FLAG_SOVEREIGN_BLADE_STATE;
+        let (entity, field, detail) = refusal(&state, &catalog);
+        assert_eq!(entity, Entity::Card(1));
+        assert_eq!(field, "physical_state");
+        assert!(
+            detail.starts_with("exact Decimal damage growth"),
+            "{detail}"
+        );
+    }
+
+    #[test]
+    fn genetic_algorithm_state_without_its_flag_refuses_by_name() {
+        let (mut state, catalog) = loaded();
+        state.card_states.set(
+            1,
+            CardInstanceState {
+                genetic_algorithm: GeneticAlgorithmState::from_parts(3, None).unwrap(),
+                ..CardInstanceState::default()
+            },
+        );
+        // The slot-7 bit is not this field's carrier.
+        for flags in [0, CARD_FLAG_DEFAULT_PHYSICAL_STATE] {
+            state.piles.get_mut(PileId::Hand).make_mut()[1].flags = flags;
+            let (entity, field, detail) = refusal(&state, &catalog);
+            assert_eq!(entity, Entity::Card(1));
+            assert_eq!(field, "extra");
+            assert!(detail.starts_with("Genetic Algorithm state"), "{detail}");
+        }
+    }
+
+    #[test]
+    fn instance_state_under_a_legacy_placeholder_uid_refuses_by_name() {
+        let (mut state, catalog) = loaded();
+        let strike = state.piles.get(PileId::Hand).as_slice()[1];
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .push(HotCard {
+                uid: LEGACY_CARD_UID,
+                atom: strike.atom,
+                flags: CARD_FLAG_LEGACY,
+            });
+        assert!(HotBoundary::try_to_canonical(&state, &catalog).is_ok());
+        state.card_states.set_local_retain(LEGACY_CARD_UID);
+        let (entity, field, detail) = refusal(&state, &catalog);
+        assert_eq!(entity, Entity::Card(LEGACY_CARD_UID));
+        assert_eq!(field, "uid");
+        assert!(detail.contains("legacy card"), "{detail}");
+    }
+
+    /// The question #3603 left open: local and turn-scoped keywords project
+    /// from the state alone, so their writers need no flag.
+    #[test]
+    fn keywords_survive_the_root_without_any_flag() {
+        let (mut state, catalog) = loaded();
+        let mut instance = CardInstanceState {
+            local_retain: true,
+            local_sly: true,
+            transient_retain: true,
+            ..CardInstanceState::default()
+        };
+        instance.set_local_ethereal(true);
+        instance.set_transient_sly(true);
+        state.card_states.set(1, instance.clone());
+        assert!(reloaded_pile_cards(&state, &catalog).contains(&(1, 0, instance)));
+    }
+
+    /// One card through the projection and its inverse.
+    fn through_the_document(
+        catalog: &Catalog,
+        card: HotCard,
+        instance: &CardInstanceState,
+    ) -> Result<(u16, CardInstanceState), BoundaryRefusal> {
+        let canonical =
+            HotBoundary::card_to_canonical_with_instance(catalog, card, instance.clone());
+        let entity = Entity::Card(card.uid);
+        let flags = reject_unmodeled_card_slots(entity, &canonical)?;
+        let identity = card_identity(entity, &canonical)?;
+        let (instance, _) = card_instance_state_with_scythe_row(entity, &canonical, &identity)?;
+        Ok((flags, instance))
+    }
+
+    /// The predicate is the projection's drop set, derived rather than
+    /// asserted: over every combination of the gated and ungated fields and
+    /// the three carrier flags, on the four identities whose import admits
+    /// them, a card the guard passes reloads to the same flags and instance
+    /// state or is refused by the inverse, and a card the guard names never
+    /// reloads equal.
+    ///
+    /// Left out, because the projection panics on them instead of dropping:
+    /// `enchantment_state` on an unenchanted identity, and Int32 beside exact
+    /// Decimal growth, which no setter can produce.
+    #[test]
+    fn the_guard_is_exactly_the_projection_drop_set() {
+        const FIELDS: u32 = 12;
+        let identities = [
+            CardId::StrikeIronclad,
+            CardId::Thrash,
+            CardId::SovereignBlade,
+            CardId::GeneticAlgorithm,
+        ];
+        let mut passed_and_reloaded = 0_u32;
+        let mut passed_and_refused = 0_u32;
+        let mut named_and_dropped = 0_u32;
+        let mut named = std::collections::BTreeSet::new();
+        for id in identities {
+            let mut builder = CatalogBuilder::new();
+            let atom = builder
+                .intern(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            let catalog = builder.build();
+            for carriers in 0..8_u16 {
+                let flags = [
+                    CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                    CARD_FLAG_SOVEREIGN_BLADE_STATE,
+                    CARD_FLAG_GENETIC_ALGORITHM_STATE,
+                ]
+                .into_iter()
+                .enumerate()
+                .filter(|(bit, _)| carriers & (1 << bit) != 0)
+                .fold(0, |flags, (_, flag)| flags | flag);
+                for fields in 0..(1_u32 << FIELDS) {
+                    let has = |bit: u32| fields & (1 << bit) != 0;
+                    if has(4) && has(5) {
+                        continue;
+                    }
+                    let mut instance = CardInstanceState {
+                        local_retain: has(8),
+                        local_sly: has(9),
+                        transient_retain: has(10),
+                        ..CardInstanceState::default()
+                    };
+                    if has(0) {
+                        instance.local_cost_modifiers.push(free_this_turn_row());
+                    }
+                    if has(1) {
+                        instance.free_star_cost_this_turn_or_played_rows = 2;
+                    }
+                    if has(2) {
+                        instance
+                            .local_cost_modifiers
+                            .set_free_star_cost_this_combat()
+                            .unwrap();
+                    }
+                    if has(3) {
+                        instance.set_base_replay_count(Some(0)).unwrap();
+                    }
+                    if has(4) {
+                        instance.damage_growth = 4;
+                    }
+                    if has(5) {
+                        instance
+                            .set_fraction_damage_growth(DotNetDecimal::from_i64(4))
+                            .unwrap();
+                    }
+                    if has(6) {
+                        instance.genetic_algorithm =
+                            GeneticAlgorithmState::from_parts(3, None).unwrap();
+                    }
+                    if has(7) {
+                        instance.set_local_ethereal(true);
+                    }
+                    if has(11) {
+                        instance.set_transient_sly(true);
+                    }
+                    let card = HotCard {
+                        uid: 1,
+                        atom,
+                        flags,
+                    };
+                    let guard = instance_state_without_carrier(flags, &instance);
+                    let reloaded = through_the_document(&catalog, card, &instance);
+                    match (guard, reloaded) {
+                        (None, Ok(reloaded)) => {
+                            assert_eq!(
+                                reloaded,
+                                (flags, instance),
+                                "{id:?} flags {flags:#x} fields {fields:#x}: \
+                                 the guard passed a card the document changes"
+                            );
+                            passed_and_reloaded += 1;
+                        }
+                        (None, Err(_)) => passed_and_refused += 1,
+                        (Some((_, detail)), Ok((_, reloaded))) => {
+                            assert_ne!(
+                                reloaded, instance,
+                                "{id:?} flags {flags:#x} fields {fields:#x}: \
+                                 the guard named a card the document preserves"
+                            );
+                            named.insert(detail);
+                            named_and_dropped += 1;
+                        }
+                        (Some(_), Err(_)) => {}
+                    }
+                }
+            }
+        }
+        assert!(passed_and_reloaded > 0 && passed_and_refused > 0);
+        assert!(named_and_dropped > 0);
+        // Every arm was witnessed dropping state silently on some identity.
+        assert_eq!(named.len(), 6, "{named:?}");
+    }
+}
+
+/// #3629: the slot-7 writers of #3603's sweep table, each driven through the
+/// public action surface from cards that entered combat the way production
+/// enters them, with every published state reloaded and compared.
+#[cfg(test)]
+mod issue3629_writer_round_trip_tests {
+    use super::*;
+    use crate::catalog::CatalogBuilder;
+    use crate::engine::{Action, apply_action, legal_actions};
+
+    #[derive(Clone, Copy)]
+    enum First {
+        /// Play hand uid 1 at the first target the engine offers.
+        Play,
+        /// Drink belt slot 0.
+        Potion(PotionId),
+        EndTurn,
+    }
+
+    struct Case {
+        writer: &'static str,
+        hand: &'static [CardId],
+        draw: &'static [CardId],
+        discard: &'static [CardId],
+        relics: &'static [RelicId],
+        /// An enchantment on the first Draw card.
+        draw_enchantment: Option<EnchantmentId>,
+        first: First,
+    }
+
+    const fn case(writer: &'static str, hand: &'static [CardId]) -> Case {
+        Case {
+            writer,
+            hand,
+            draw: &[],
+            discard: &[],
+            relics: &[],
+            draw_enchantment: None,
+            first: First::Play,
+        }
+    }
+
+    fn pile_cards(state: &HotState) -> Vec<(PileId, u32, u16, CardInstanceState)> {
+        PileId::ALL
+            .into_iter()
+            .flat_map(|pile| {
+                state
+                    .piles
+                    .get(pile)
+                    .as_slice()
+                    .iter()
+                    .map(move |card| (pile, *card))
+            })
+            .map(|(pile, card)| (pile, card.uid, card.flags, state.card_states.get(card.uid)))
+            .collect()
+    }
+
+    /// Reload `state` through its canonical document and require every pile
+    /// card's flags and instance state to survive. Returns how many cards
+    /// carried slot-7 state the document had to spell.
+    fn survives_the_root(writer: &str, state: &HotState, catalog: &Catalog) -> usize {
+        let document = HotBoundary::try_to_canonical(state, catalog)
+            .unwrap_or_else(|refusal| panic!("{writer}: {refusal}"));
+        let reloaded_catalog = HotBoundary::catalog_from_canonical(&document)
+            .unwrap_or_else(|refusal| panic!("{writer}: {refusal}"));
+        let reloaded = HotBoundary::from_canonical(&document, &reloaded_catalog)
+            .unwrap_or_else(|refusal| panic!("{writer}: {refusal}"));
+        let live = pile_cards(state);
+        assert_eq!(live, pile_cards(&reloaded), "{writer}");
+        live.iter()
+            .filter(|(_, _, _, instance)| {
+                instance_state_without_carrier(0, instance)
+                    .is_some_and(|(field, _)| field.eq("physical_state"))
+            })
+            .count()
+    }
+
+    fn drive(case: &Case) -> Result<usize, String> {
+        let plain = |id| CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let mut identities = Vec::new();
+        for (pile, ids) in [
+            (PileId::Hand, case.hand),
+            (PileId::Draw, case.draw),
+            (PileId::Discard, case.discard),
+        ] {
+            for (index, id) in ids.iter().enumerate() {
+                let mut identity = plain(*id);
+                if pile == PileId::Draw && index == 0 {
+                    identity.enchantment = case
+                        .draw_enchantment
+                        .map(|id| CardEnchantment { id, amount: 1 });
+                }
+                builder
+                    .intern_reachable(identity)
+                    .map_err(|refusal| format!("{refusal:?}"))?;
+                identities.push((pile, identity));
+            }
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder
+            .set_relics(case.relics)
+            .map_err(|refusal| format!("{refusal:?}"))?;
+        let catalog = builder.build();
+
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 9;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        let mut monster = HotMonster::new(MonsterKind::Toadpole, 100);
+        monster.max_hp = 100;
+        monster.slot = 0;
+        monster.uid = 100;
+        state.monsters_mut().push(monster);
+        for stream in RngStream::ALL {
+            let seeded = Xoshiro256StarStar::from_seed(7 + stream as u64);
+            state.rng.set(
+                stream,
+                RngStreamState {
+                    words: seeded.words,
+                    counter: 0,
+                },
+            );
+        }
+        for (index, (pile, identity)) in identities.into_iter().enumerate() {
+            let atom = catalog.atom(&identity).unwrap();
+            let mut card = HotCard {
+                uid: index as u32 + 1,
+                atom,
+                flags: 0,
+            };
+            // What a fresh card carries the moment it enters combat.
+            crate::engine::cards::initialize_fresh_physical_card_state(
+                catalog.spec(atom).unwrap(),
+                &mut card,
+            );
+            state.piles.get_mut(pile).make_mut().push(card);
+            state.next_card_uid = card.uid + 1;
+        }
+        if let First::Potion(potion) = case.first {
+            assert!(state.fanouts.set_potion_belt(
+                vec![Some(potion)],
+                false,
+                false,
+                false,
+                false,
+                true,
+            ));
+        }
+
+        let mut written = survives_the_root(case.writer, &state, &catalog);
+        assert_eq!(written, 0, "{}: the root already carries rows", case.writer);
+        let legal = legal_actions(&state, &catalog);
+        let first = legal
+            .iter()
+            .copied()
+            .find(|action| {
+                matches!(
+                    (case.first, action),
+                    (First::Play, Action::Play { uid: 1, .. })
+                        | (First::Potion(_), Action::UsePotion { slot: 0, .. })
+                        | (First::EndTurn, Action::EndTurn)
+                )
+            })
+            .ok_or_else(|| format!("first action is not legal among {legal:?}"))?;
+        let mut action = first;
+        for _ in 0..6 {
+            state = apply_action(&state, &catalog, &action)
+                .map_err(|refusal| format!("{refusal:?}"))?
+                .state;
+            written = written.max(survives_the_root(case.writer, &state, &catalog));
+            if state.pending.is_none() {
+                break;
+            }
+            action = *legal_actions(&state, &catalog)
+                .first()
+                .ok_or_else(|| "a pending selection offers no answer".to_owned())?;
+        }
+        Ok(written)
+    }
+
+    /// Every row plays, drinks or ends the turn through `apply_action` from a
+    /// root whose cards carry only what combat entry gives them, answers any
+    /// selection with the first legal answer, and reloads each state it
+    /// passes through. A row counts only if some card then carried slot-7
+    /// state, so a writer that stopped writing fails here instead of passing
+    /// vacuously.
+    ///
+    /// Not driven from this root, and so covered only by the guard and by
+    /// their own modules' tests: Jeweled Mask, the on-entry writers
+    /// (Banshee's Cry, Midnight, Pinpoint, Stomp, Flatten), Flatten after an
+    /// Osty attack, Banshee's Cry after an Ethereal play, the Midnight
+    /// snapshot, the Rocket Punch and Wither generated listeners, Aeonglass,
+    /// Melancholy after a death, and The Ball.
+    #[test]
+    fn slot_seven_writers_survive_the_root_through_public_actions() {
+        use CardId::*;
+        let cases = [
+            case("Bullet Time", &[BulletTime, StrikeSilent, DefendSilent]),
+            case("Enlightenment", &[Enlightenment, Bash]),
+            case("Transfigure", &[Transfigure, StrikeIronclad]),
+            case("Frantic Escape", &[FranticEscape]),
+            case("Momentum Strike", &[MomentumStrike]),
+            case("Modded", &[Modded]),
+            Case {
+                draw: &[Claw],
+                ..case("Claw", &[Claw, Claw])
+            },
+            case("Rampage", &[Rampage]),
+            case("Maul", &[Maul]),
+            case("Thrash", &[Thrash, StrikeIronclad]),
+            case("Up My Sleeve", &[UpMySleeve]),
+            case("Stomp before a play", &[StrikeIronclad, Stomp]),
+            case("Pinpoint after a play", &[DefendIronclad, Pinpoint]),
+            Case {
+                draw: &[KinglyKick],
+                ..case("Kingly Kick", &[PommelStrike])
+            },
+            Case {
+                draw: &[KinglyPunch],
+                ..case("Kingly Punch", &[PommelStrike])
+            },
+            Case {
+                draw: &[StrikeIronclad],
+                relics: &[RelicId::RelicSneckoEye],
+                ..case("Confused", &[PommelStrike])
+            },
+            Case {
+                draw: &[StrikeIronclad],
+                draw_enchantment: Some(EnchantmentId::Slither),
+                ..case("Slither", &[PommelStrike])
+            },
+            Case {
+                relics: &[RelicId::RelicMummifiedHand],
+                ..case("Mummified Hand", &[DemonForm, DefendIronclad])
+            },
+            Case {
+                relics: &[RelicId::RelicBookmark],
+                first: First::EndTurn,
+                ..case("Bookmark", &[StrikeIronclad])
+            },
+            Case {
+                first: First::Potion(PotionId::TouchOfInsanity),
+                ..case("Touch of Insanity", &[Bash])
+            },
+            Case {
+                discard: &[Bash],
+                first: First::Potion(PotionId::LiquidMemories),
+                ..case("Liquid Memories", &[])
+            },
+            Case {
+                draw: &[StrikeIronclad, Bash, DefendIronclad, StrikeIronclad, Bash],
+                first: First::Potion(PotionId::SneckoOil),
+                ..case("Snecko Oil", &[])
+            },
+            Case {
+                first: First::Potion(PotionId::SoldiersStew),
+                ..case("Soldier's Stew", &[StrikeIronclad])
+            },
+        ];
+        assert_eq!(cases.len(), 23);
+        for case in &cases {
+            let written =
+                drive(case).unwrap_or_else(|refusal| panic!("{}: {refusal}", case.writer));
+            assert!(written > 0, "{}: no slot-7 state was written", case.writer);
+        }
+    }
+}
+
+#[cfg(test)]
+mod issue3660_rooted_replay_tests {
+    //! #3660: the rooted replay's decision, arm by arm.
+    use super::*;
+    use crate::engine::{Action, SelectionRef};
+    use serde_json::json;
+
+    const MISMATCH: &str =
+        "ActionReplay transcript does not reproduce the complete canonical state";
+
+    fn play(uid: u32, target: Option<u8>) -> Action {
+        Action::Play {
+            uid,
+            target,
+            selection: SelectionRef::new(None),
+        }
+    }
+
+    fn apply(state: &HotState, catalog: &Catalog, action: &Action) -> HotState {
+        crate::engine::apply_action(state, catalog, action)
+            .unwrap()
+            .state
+    }
+
+    /// `tests/replay_catalog_narrowing.rs`'s public root: the session parks
+    /// a Tools of the Trade choice rooted after its Glam Hologram, the only
+    /// selector, exhausted itself. Returns the session catalog, the receipt's
+    /// predecessor and the rooted park.
+    fn rooted_tools_park() -> (Catalog, CanonicalStateV2, CanonicalStateV2) {
+        let mut entry: CanonicalStateV2 = serde_json::from_str(include_str!(
+            "../fixtures/canonical_state_v2_ironclad_toadpoles.json"
+        ))
+        .unwrap();
+        for monster in &mut entry.monsters {
+            monster.insert("hp".to_owned(), json!(60));
+            monster.insert("max_hp".to_owned(), json!(60));
+        }
+        let mut piles = serde_json::to_value(&entry.piles).unwrap();
+        piles["hand"] = json!([
+            {"id": "TOOLS_OF_THE_TRADE", "uid": 0, "upgrade": 0},
+            {"id": "POMMEL_STRIKE", "uid": 1, "upgrade": 0},
+            {"id": "HOLOGRAM", "uid": 2, "upgrade": 0, "enchantment": ["GLAM", 1]},
+        ]);
+        piles["draw"] = json!(
+            (3..12)
+                .map(|uid| json!({"id": "DEFEND_IRONCLAD", "uid": uid, "upgrade": 0}))
+                .collect::<Vec<_>>()
+        );
+        piles["discard"] = json!([]);
+        piles.as_object_mut().unwrap().remove("exhaust");
+        entry.piles = serde_json::from_value(piles).unwrap();
+        entry.player.insert("next_card_uid".to_owned(), json!(12));
+
+        let catalog = HotBoundary::catalog_from_canonical(&entry).unwrap();
+        let state = HotBoundary::from_canonical(&entry, &catalog).unwrap();
+        let mut warm = apply(&state, &catalog, &play(0, None));
+        warm = apply(&warm, &catalog, &play(1, Some(0)));
+        warm = apply(&warm, &catalog, &play(2, None));
+        while warm.pending.is_some() {
+            let answer = crate::engine::legal_actions(&warm, &catalog)[0];
+            warm = apply(&warm, &catalog, &answer);
+        }
+        let predecessor = HotBoundary::try_to_canonical(&warm, &catalog).unwrap();
+        let parked = apply(&warm, &catalog, &Action::EndTurn);
+        let parked_document = HotBoundary::try_to_canonical(&parked, &catalog).unwrap();
+        assert_eq!(parked_document.continuations.len(), 1);
+        (catalog, predecessor, parked_document)
+    }
+
+    fn refusal_detail(result: Result<HotState, BoundaryRefusal>) -> String {
+        match result {
+            Err(BoundaryRefusal::UnrepresentableValue {
+                entity: Entity::Player,
+                field,
+                detail,
+            }) if matches!(field.as_str(), "pending") => detail,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    /// The session had the bit and the predecessor's own closure does not:
+    /// the rooted replay is eligible, and it is the arm that accepts.
+    #[test]
+    fn the_tools_park_takes_the_rooted_arm() {
+        let (session, predecessor, parked) = rooted_tools_park();
+        assert!(session.requires_action_replay());
+        let predecessor_catalog = HotBoundary::catalog_from_canonical(&predecessor).unwrap();
+        let loaded = HotBoundary::catalog_from_canonical(&parked).unwrap();
+        assert!(!predecessor_catalog.requires_action_replay());
+        assert!(loaded.requires_action_replay());
+        assert!(rooted_replay_is_eligible(&loaded, &predecessor_catalog));
+
+        // The first transcript parks and projects another document: the
+        // rootless one, equal in everything but the continuation store.
+        let Some(Frame::ActionReplay { record }) = HotBoundary::from_canonical(&parked, &loaded)
+            .unwrap()
+            .frames
+            .as_slice()
+            .first()
+            .copied()
+        else {
+            panic!("the loaded state keeps its receipt")
+        };
+        let state = HotBoundary::from_canonical(&parked, &loaded).unwrap();
+        let replay = state.frames.action_replay(record).unwrap();
+        let (_, rootless) =
+            replay_action_replay_transcript(&predecessor, &replay, &predecessor_catalog).unwrap();
+        assert!(!transcript_reproduces(&rootless, &parked));
+        assert!(rootless.continuations.is_empty());
+        assert!(same_state_under_another_continuation_store(
+            &rootless, &parked
+        ));
+
+        // A caller whose catalog lacks the bit does not get the rooted
+        // frames: the load refuses as it did before.
+        assert!(!rooted_replay_is_eligible(
+            &predecessor_catalog,
+            &predecessor_catalog
+        ));
+        assert_eq!(
+            refusal_detail(HotBoundary::from_canonical(&parked, &predecessor_catalog)),
+            MISMATCH
+        );
+    }
+
+    /// The rooted catalog is built from the predecessor's, never taken from
+    /// the caller: a caller catalog that also differs in the other bit
+    /// `same_content_ignoring_replay_root` ignores loads the same state.
+    #[test]
+    fn a_caller_catalog_differing_in_the_draw_hook_bit_loads_the_same_state() {
+        let (_, _, parked) = rooted_tools_park();
+        let loaded = HotBoundary::catalog_from_canonical(&parked).unwrap();
+        let flipped = loaded
+            .clone()
+            .with_cardplay_draw_hook_can_suspend_for_test(!loaded.cardplay_draw_hook_can_suspend());
+        assert_ne!(flipped, loaded);
+        assert!(flipped.same_content_ignoring_replay_root(&loaded));
+        assert_eq!(
+            HotBoundary::from_canonical(&parked, &flipped).unwrap(),
+            HotBoundary::from_canonical(&parked, &loaded).unwrap(),
+        );
+    }
+
+    /// The two `has_normality` fixtures. Their predecessor's own catalog has
+    /// `requires_action_replay`, so no rooted replay is ever tried for them;
+    /// what narrowed was the bookkeeping bit. The session's documents record
+    /// it (`player.session_bookkeeping`, the predecessor inside the receipt
+    /// included), so the first transcript runs under the session's bits and
+    /// reproduces the document. The same receipt as an engine before the
+    /// record wrote it still refuses, by the same name as before.
+    #[test]
+    fn the_normality_fixtures_reload_on_the_first_transcript() {
+        for (fixture, parked_index) in [("fae227072bbaa5c9", 9), ("f5dab8732a800775", 21)] {
+            let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../eval/fights")
+                .join(fixture);
+            let entry: CanonicalStateV2 =
+                serde_json::from_slice(&std::fs::read(dir.join("entry.canonical.json")).unwrap())
+                    .unwrap();
+            let line: Value =
+                serde_json::from_slice(&std::fs::read(dir.join("human_line.json")).unwrap())
+                    .unwrap();
+            let catalog = HotBoundary::catalog_from_canonical(&entry).unwrap();
+            let mut state = HotBoundary::from_canonical(&entry, &catalog).unwrap();
+            for action in line["actions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .take(parked_index + 1)
+            {
+                let wire: crate::exact_solve_v1::ExactSolveActionV1 =
+                    serde_json::from_value(action.clone()).unwrap();
+                state = apply(&state, &catalog, &Action::try_from(wire).unwrap());
+            }
+            let parked = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+            let predecessor: CanonicalStateV2 =
+                serde_json::from_value(parked.continuations[0].fields["predecessor"].clone())
+                    .unwrap();
+            assert!(catalog.has_normality(), "{fixture}");
+            assert!(
+                predecessor.player["session_bookkeeping"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&json!("normality_count")),
+                "{fixture}: the predecessor records the session's bit"
+            );
+            let predecessor_catalog = HotBoundary::catalog_from_canonical(&predecessor).unwrap();
+            let loaded = HotBoundary::catalog_from_canonical(&parked).unwrap();
+            assert!(predecessor_catalog.requires_action_replay(), "{fixture}");
+            assert!(
+                !rooted_replay_is_eligible(&loaded, &predecessor_catalog),
+                "{fixture}"
+            );
+            assert!(predecessor_catalog.has_normality(), "{fixture}");
+            assert_eq!(
+                HotBoundary::try_to_canonical(
+                    &HotBoundary::from_canonical(&parked, &loaded).unwrap(),
+                    &loaded
+                )
+                .unwrap(),
+                parked,
+                "{fixture}"
+            );
+
+            // As an engine before the record wrote it: the closure alone no
+            // longer holds Normality, and the load refuses as it did.
+            let mut old = parked.clone();
+            old.player.remove("session_bookkeeping");
+            let mut old_predecessor = predecessor.clone();
+            old_predecessor.player.remove("session_bookkeeping");
+            old.continuations[0].fields.insert(
+                "predecessor".to_owned(),
+                serde_json::to_value(&old_predecessor).unwrap(),
+            );
+            let old_predecessor_catalog =
+                HotBoundary::catalog_from_canonical(&old_predecessor).unwrap();
+            assert!(!old_predecessor_catalog.has_normality(), "{fixture}");
+            let old_loaded = HotBoundary::catalog_from_canonical(&old).unwrap();
+            assert_eq!(
+                refusal_detail(HotBoundary::from_canonical(&old, &old_loaded)),
+                MISMATCH,
+                "{fixture}"
+            );
+        }
+    }
+
+    /// `accept_rooted_transcript`, each outcome of the rooted replay.
+    #[test]
+    fn the_rooted_transcript_is_accepted_only_as_another_continuation_store() {
+        let (_, predecessor, parked) = rooted_tools_park();
+        let mut rootless = parked.clone();
+        rootless.continuations.clear();
+        let state = HotState::at_defaults();
+
+        // It reproduces the document and is the first transcript's game
+        // state: accepted.
+        assert!(
+            accept_rooted_transcript(&parked, &rootless, Ok((state.clone(), parked.clone())))
+                .is_ok()
+        );
+
+        // The rooted replay refuses (here: by a name of its own). The
+        // verdict is the first transcript's mismatch, not that name.
+        let refused = Err(unrepresentable(
+            Entity::Player,
+            "pending",
+            "ActionReplay root action refused",
+        ));
+        assert_eq!(
+            refusal_detail(accept_rooted_transcript(&parked, &rootless, refused)),
+            MISMATCH
+        );
+
+        // The rooted replay parks on another document.
+        assert_eq!(
+            refusal_detail(accept_rooted_transcript(
+                &parked,
+                &rootless,
+                Ok((state.clone(), predecessor.clone()))
+            )),
+            MISMATCH
+        );
+
+        // The rooted replay reproduces the document, and the document is
+        // NOT the first transcript's game state (one more Block). This is
+        // the arm that keeps a non-neutral read of the bit (#3679) from
+        // authenticating a second game state.
+        let mut other_state = rootless.clone();
+        let block = other_state
+            .player
+            .get("block")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        other_state
+            .player
+            .insert("block".to_owned(), json!(block + 1));
+        assert!(!same_state_under_another_continuation_store(
+            &parked,
+            &other_state
+        ));
+        assert_eq!(
+            refusal_detail(accept_rooted_transcript(
+                &parked,
+                &other_state,
+                Ok((state, parked.clone()))
+            )),
+            MISMATCH
+        );
+    }
+}
+
+#[cfg(test)]
+mod issue3660_session_bookkeeping_tests {
+    //! #3660: `player.session_bookkeeping`, the record of the bookkeeping a
+    //! session keeps (`catalog::SessionBookkeeping`).
+    use super::*;
+    use crate::catalog::SessionBookkeeping;
+    use serde_json::json;
+
+    fn root() -> CanonicalStateV2 {
+        serde_json::from_str(include_str!(
+            "../fixtures/canonical_state_v2_ironclad_toadpoles.json"
+        ))
+        .unwrap()
+    }
+
+    fn load(document: &CanonicalStateV2) -> Result<(Catalog, HotState), BoundaryRefusal> {
+        let catalog = HotBoundary::catalog_from_canonical(document)?;
+        let state = HotBoundary::from_canonical(document, &catalog)?;
+        Ok((catalog, state))
+    }
+
+    fn subsets() -> Vec<SessionBookkeeping> {
+        (0..8u8)
+            .map(|mask| {
+                SessionBookkeeping::from_bits([mask & 1 != 0, mask & 2 != 0, mask & 4 != 0])
+            })
+            .collect()
+    }
+
+    /// Every combination of the three bits round-trips: the rebuilt catalog
+    /// keeps exactly what the document records (this root's own closure
+    /// derives none), and the projection writes the record back. Nothing
+    /// recorded is the absent field, and projects no field.
+    #[test]
+    fn every_combination_of_the_bits_round_trips() {
+        let plain = root();
+        let (plain_catalog, _) = load(&plain).unwrap();
+        assert_eq!(
+            plain_catalog.session_bookkeeping(),
+            SessionBookkeeping::default()
+        );
+        for kept in subsets() {
+            let mut document = plain.clone();
+            let value = session_bookkeeping_value(kept);
+            let names = value.as_array().unwrap().len();
+            assert_eq!(names, kept.bits().iter().filter(|bit| **bit).count());
+            if names > 0 {
+                document
+                    .player
+                    .insert("session_bookkeeping".to_owned(), value.clone());
+            }
+            assert_eq!(parse_session_bookkeeping(&value).unwrap(), kept);
+            let (catalog, state) =
+                load(&document).unwrap_or_else(|error| panic!("{kept:?}: {error}"));
+            assert_eq!(catalog.session_bookkeeping(), kept);
+            assert_eq!(catalog.has_normality(), kept.normality_count);
+            assert_eq!(catalog.misery_is_reachable(), kept.misery_ledger);
+            assert_eq!(catalog.has_batch139_self_return(), kept.self_return_uids);
+            assert_eq!(state.fanouts.misery_attachment_upkeep(), kept.misery_ledger);
+            crate::engine::admit(&document, &state, &catalog)
+                .unwrap_or_else(|error| panic!("{kept:?}: {error}"));
+            let projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+            assert_eq!(projected, document, "{kept:?}");
+            assert_eq!(projected.canonical_json(), document.canonical_json());
+            assert_eq!(
+                projected.player.contains_key("session_bookkeeping"),
+                names > 0
+            );
+        }
+    }
+
+    /// A document with no record derives the bits from its closure, as
+    /// before the field existed: here a Normality and a Thrumming Hatchet in
+    /// the Draw pile and a Misery in Hand. The projection then records them,
+    /// and the recorded document loads to the same catalog and state.
+    #[test]
+    fn a_document_without_the_record_derives_the_bits_from_its_closure() {
+        let mut document = root();
+        let mut piles = serde_json::to_value(&document.piles).unwrap();
+        let hand = piles["hand"].as_array_mut().unwrap();
+        hand.push(json!({"id": "MISERY", "uid": 90, "upgrade": 0}));
+        let draw = piles["draw"].as_array_mut().unwrap();
+        draw.push(json!({"id": "NORMALITY", "uid": 91, "upgrade": 0}));
+        draw.push(json!({"id": "THRUMMING_HATCHET", "uid": 92, "upgrade": 0}));
+        document.piles = serde_json::from_value(piles).unwrap();
+        document
+            .player
+            .insert("next_card_uid".to_owned(), json!(93));
+        assert!(!document.player.contains_key("session_bookkeeping"));
+
+        let (catalog, state) = load(&document).unwrap();
+        assert_eq!(
+            catalog.session_bookkeeping(),
+            SessionBookkeeping::from_bits([true, true, true])
+        );
+        let projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(
+            projected.player["session_bookkeeping"],
+            json!(["misery_ledger", "normality_count", "self_return_uids"])
+        );
+        let mut without = projected.clone();
+        without.player.remove("session_bookkeeping");
+        assert_eq!(without, document, "the record is the only thing added");
+        let (recorded_catalog, recorded_state) = load(&projected).unwrap();
+        assert_eq!(recorded_catalog, catalog);
+        assert_eq!(recorded_state, state);
+    }
+
+    /// A malformed record refuses by name, at the catalog and at the state.
+    #[test]
+    fn a_malformed_record_refuses_by_name() {
+        for (value, reason) in [
+            (json!("normality_count"), "expected a list"),
+            (json!([1]), "names must be text"),
+            (json!(["has_normality"]), "unknown bookkeeping name"),
+            (
+                json!(["normality_count", "misery_ledger"]),
+                "names must be strictly ascending",
+            ),
+            (
+                json!(["misery_ledger", "misery_ledger"]),
+                "names must be strictly ascending",
+            ),
+        ] {
+            let mut document = root();
+            document
+                .player
+                .insert("session_bookkeeping".to_owned(), value.clone());
+            match HotBoundary::catalog_from_canonical(&document) {
+                Err(BoundaryRefusal::UnrepresentableValue {
+                    entity: Entity::Player,
+                    field,
+                    detail,
+                }) => {
+                    assert!(matches!(field.as_str(), "session_bookkeeping"), "{value}");
+                    assert_eq!(detail, reason, "{value}");
+                }
+                other => panic!("{value}: {other:?}"),
+            }
+            // A caller that brings its own catalog meets the same refusal.
+            let catalog = HotBoundary::catalog_from_canonical(&root()).unwrap();
+            assert!(
+                HotBoundary::from_canonical(&document, &catalog).is_err(),
+                "{value}"
+            );
+        }
+        // The empty list is the default, and a present default is refused as
+        // every other one is.
+        let mut document = root();
+        document
+            .player
+            .insert("session_bookkeeping".to_owned(), json!([]));
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        assert!(matches!(
+            HotBoundary::from_canonical(&document, &catalog),
+            Err(BoundaryRefusal::NonCanonicalDefault { .. })
+        ));
+    }
+
+    /// A document that records bookkeeping refuses a caller catalog that
+    /// does not keep it; a catalog that keeps more is the ordinary case (an
+    /// entry document records nothing and its catalog derives the bits).
+    #[test]
+    fn a_catalog_that_does_not_keep_the_recorded_bookkeeping_refuses() {
+        let plain = root();
+        let (plain_catalog, _) = load(&plain).unwrap();
+        let mut recorded = plain.clone();
+        recorded
+            .player
+            .insert("session_bookkeeping".to_owned(), json!(["normality_count"]));
+        match HotBoundary::from_canonical(&recorded, &plain_catalog) {
+            Err(BoundaryRefusal::UnrepresentableValue { field, detail, .. }) => {
+                assert!(matches!(field.as_str(), "session_bookkeeping"));
+                assert_eq!(
+                    detail,
+                    "document records bookkeeping its catalog does not keep"
+                );
+            }
+            other => panic!("{other:?}"),
+        }
+        let (keeping, _) = load(&recorded).unwrap();
+        assert!(HotBoundary::from_canonical(&plain, &keeping).is_ok());
+    }
+
+    /// A forged record: every bit set on a root whose closure reaches none
+    /// of the three cards. It is accepted. What it can and cannot do:
+    ///
+    /// * it adds bookkeeping: the monsters' ledger rows and the started-play
+    ///   count, both asserted below;
+    /// * it can move a refusal, in two places, each with its own test:
+    ///   `engine::damage::tests::a_kept_ledger_turns_the_unknown_wrapper_refusal_into_the_exact_result`
+    ///   (a kept ledger makes one refusal an exact result) and
+    ///   `tests/replay_catalog_narrowing.rs::a_forged_normality_count_refuses_an_enemy_side_card_body`
+    ///   (a kept count makes one exact result a refusal);
+    /// * it does not change an admitted outcome: two sessions, one from the
+    ///   plain root and one from the forged one, offer the same legal
+    ///   actions at every step and reach documents equal outside the
+    ///   bookkeeping itself.
+    ///
+    /// Every card of this root has a uid, so `self_return_uids` writes
+    /// nothing here; beside a placeholder card it refuses (next test).
+    #[test]
+    fn a_forged_record_adds_bookkeeping_and_changes_no_outcome() {
+        let mut plain = root();
+        // A monster that enters with Strength, so the ledger has a row to
+        // keep from the first document on.
+        plain.monsters[0].insert("strength".to_owned(), json!(3));
+        let mut forged = plain.clone();
+        forged.player.insert(
+            "session_bookkeeping".to_owned(),
+            json!(["misery_ledger", "normality_count", "self_return_uids"]),
+        );
+        let (plain_catalog, mut plain_state) = load(&plain).unwrap();
+        let (forged_catalog, mut forged_state) = load(&forged).unwrap();
+        crate::engine::admit(&plain, &plain_state, &plain_catalog).unwrap();
+        crate::engine::admit(&forged, &forged_state, &forged_catalog).unwrap();
+
+        let game = |document: &CanonicalStateV2| {
+            let mut document = document.clone();
+            document.player.remove("session_bookkeeping");
+            document
+                .player
+                .remove("normality_card_plays_started_this_turn");
+            for monster in &mut document.monsters {
+                monster.remove("power_attachments");
+            }
+            document
+        };
+        // The forged root already keeps a ledger row the plain one does not.
+        let forged_root = HotBoundary::try_to_canonical(&forged_state, &forged_catalog).unwrap();
+        assert_eq!(
+            forged_root.monsters[0]["power_attachments"],
+            json!([["strength", "unknown", 0, 3, 0]])
+        );
+        let plain_root = HotBoundary::try_to_canonical(&plain_state, &plain_catalog).unwrap();
+        assert!(!plain_root.monsters[0].contains_key("power_attachments"));
+        assert_eq!(game(&forged_root), plain_root);
+
+        let mut steps = 0;
+        let (mut counted, mut ledgered) = (0, 0);
+        while !plain_state.history.over && steps < 40 {
+            let legal = crate::engine::legal_actions(&plain_state, &plain_catalog);
+            assert_eq!(
+                crate::engine::legal_actions(&forged_state, &forged_catalog),
+                legal,
+                "step {steps}"
+            );
+            // Play out the hand, then end the turn.
+            let action = legal[0];
+            plain_state = crate::engine::apply_action(&plain_state, &plain_catalog, &action)
+                .unwrap()
+                .state;
+            forged_state = crate::engine::apply_action(&forged_state, &forged_catalog, &action)
+                .unwrap()
+                .state;
+            let plain_document =
+                HotBoundary::try_to_canonical(&plain_state, &plain_catalog).unwrap();
+            let forged_document =
+                HotBoundary::try_to_canonical(&forged_state, &forged_catalog).unwrap();
+            assert_eq!(game(&forged_document), plain_document, "step {steps}");
+            assert!(
+                !plain_document
+                    .player
+                    .contains_key("normality_card_plays_started_this_turn")
+            );
+            assert!(
+                plain_document
+                    .monsters
+                    .iter()
+                    .all(|monster| !monster.contains_key("power_attachments"))
+            );
+            counted += usize::from(
+                forged_document
+                    .player
+                    .contains_key("normality_card_plays_started_this_turn"),
+            );
+            ledgered += usize::from(
+                forged_document
+                    .monsters
+                    .iter()
+                    .any(|monster| monster.contains_key("power_attachments")),
+            );
+            steps += 1;
+        }
+        assert!(steps >= 10, "{steps}");
+        assert!(
+            counted > 0,
+            "the forged session kept the started-play count"
+        );
+        assert!(ledgered > 0, "the forged session kept a ledger row");
+    }
+
+    /// `self_return_uids` beside a placeholder card (one with no uid)
+    /// refuses by name, recorded truthfully or forged: with the bit a
+    /// placeholder is numbered at turn entry, without it at a later draw-time
+    /// call, and a uid allocated in between would number the cards
+    /// differently. The same document without the record loads, and so does
+    /// the record beside cards that all have uids.
+    #[test]
+    fn self_return_uids_beside_a_placeholder_card_refuses_by_name() {
+        let mut placeholders = root();
+        let mut piles = serde_json::to_value(&placeholders.piles).unwrap();
+        for card in piles["draw"].as_array_mut().unwrap() {
+            card.as_object_mut().unwrap().remove("uid");
+        }
+        placeholders.piles = serde_json::from_value(piles).unwrap();
+        placeholders.player.remove("exact_piles");
+        let (catalog, state) = load(&placeholders)
+            .unwrap_or_else(|error| panic!("a document with placeholder cards loads: {error}"));
+        assert!(
+            state
+                .piles
+                .get(PileId::Draw)
+                .as_slice()
+                .iter()
+                .all(|card| card.flags & CARD_FLAG_LEGACY != 0)
+        );
+        assert!(!catalog.has_batch139_self_return());
+
+        for names in [
+            json!(["self_return_uids"]),
+            json!(["misery_ledger", "normality_count", "self_return_uids"]),
+        ] {
+            let mut recorded = placeholders.clone();
+            recorded
+                .player
+                .insert("session_bookkeeping".to_owned(), names.clone());
+            match load(&recorded) {
+                Err(BoundaryRefusal::UnrepresentableValue { field, detail, .. }) => {
+                    assert!(matches!(field.as_str(), "session_bookkeeping"), "{names}");
+                    assert_eq!(
+                        detail, "self_return_uids is recorded beside a card without a uid",
+                        "{names}"
+                    );
+                }
+                other => panic!("{names}: {other:?}"),
+            }
+        }
+        // The other two bits are no question of numbering.
+        let mut others = placeholders.clone();
+        others.player.insert(
+            "session_bookkeeping".to_owned(),
+            json!(["misery_ledger", "normality_count"]),
+        );
+        load(&others).unwrap();
+        // And with uids on every card the record loads.
+        let mut numbered = root();
+        numbered.player.insert(
+            "session_bookkeeping".to_owned(),
+            json!(["self_return_uids"]),
+        );
+        load(&numbered).unwrap();
+    }
+
+    /// A receipt document's catalog is built from its predecessor alone, so
+    /// the two records must agree. An outer record that names more than the
+    /// predecessor's refuses as bookkeeping the catalog does not keep; one
+    /// that names less refuses as a transcript mismatch, because the replay
+    /// projects the predecessor's.
+    #[test]
+    fn a_receipt_whose_two_records_disagree_refuses_by_name() {
+        // `tests/replay_catalog_narrowing.rs`'s rooted Tools of the Trade
+        // park; neither document records anything.
+        let mut entry = root();
+        for monster in &mut entry.monsters {
+            monster.insert("hp".to_owned(), json!(60));
+            monster.insert("max_hp".to_owned(), json!(60));
+        }
+        let mut piles = serde_json::to_value(&entry.piles).unwrap();
+        piles["hand"] = json!([
+            {"id": "TOOLS_OF_THE_TRADE", "uid": 0, "upgrade": 0},
+            {"id": "POMMEL_STRIKE", "uid": 1, "upgrade": 0},
+            {"id": "HOLOGRAM", "uid": 2, "upgrade": 0, "enchantment": ["GLAM", 1]},
+        ]);
+        piles["draw"] = json!(
+            (3..12)
+                .map(|uid| json!({"id": "DEFEND_IRONCLAD", "uid": uid, "upgrade": 0}))
+                .collect::<Vec<_>>()
+        );
+        piles["discard"] = json!([]);
+        piles.as_object_mut().unwrap().remove("exhaust");
+        entry.piles = serde_json::from_value(piles).unwrap();
+        entry.player.insert("next_card_uid".to_owned(), json!(12));
+        let (catalog, state) = load(&entry).unwrap();
+        let play = |state: &HotState, uid: u32, target: Option<u8>| {
+            crate::engine::apply_action(
+                state,
+                &catalog,
+                &crate::engine::Action::Play {
+                    uid,
+                    target,
+                    selection: crate::engine::SelectionRef::new(None),
+                },
+            )
+            .unwrap()
+            .state
+        };
+        let mut warm = play(&state, 0, None);
+        warm = play(&warm, 1, Some(0));
+        warm = play(&warm, 2, None);
+        while warm.pending.is_some() {
+            let answer = crate::engine::legal_actions(&warm, &catalog)[0];
+            warm = crate::engine::apply_action(&warm, &catalog, &answer)
+                .unwrap()
+                .state;
+        }
+        let parked = crate::engine::apply_action(&warm, &catalog, &crate::engine::Action::EndTurn)
+            .unwrap()
+            .state;
+        let parked = HotBoundary::try_to_canonical(&parked, &catalog).unwrap();
+        assert_eq!(parked.continuations.len(), 1);
+        assert!(!parked.player.contains_key("session_bookkeeping"));
+        load(&parked).unwrap();
+        let detail = |document: &CanonicalStateV2| match load(document) {
+            Err(BoundaryRefusal::UnrepresentableValue { field, detail, .. }) => (field, detail),
+            other => panic!("{other:?}"),
+        };
+
+        // Outer wider than the predecessor's.
+        let mut wider = parked.clone();
+        wider
+            .player
+            .insert("session_bookkeeping".to_owned(), json!(["normality_count"]));
+        assert_eq!(
+            detail(&wider),
+            (
+                "session_bookkeeping".to_owned(),
+                "document records bookkeeping its catalog does not keep".to_owned()
+            )
+        );
+
+        // Outer narrower than the predecessor's.
+        let mut narrower = parked.clone();
+        narrower.continuations[0]
+            .fields
+            .get_mut("predecessor")
+            .unwrap()["player"]["session_bookkeeping"] = json!(["normality_count"]);
+        assert_eq!(
+            detail(&narrower),
+            (
+                "pending".to_owned(),
+                "ActionReplay transcript does not reproduce the complete canonical state"
+                    .to_owned()
+            )
+        );
+
+        // Both, in agreement: the document a session keeping the count
+        // projects for this EndTurn. It loads and projects back to itself.
+        let mut both = narrower.clone();
+        both.player
+            .insert("session_bookkeeping".to_owned(), json!(["normality_count"]));
+        let (both_catalog, both_state) = load(&both).unwrap();
+        assert_eq!(
+            HotBoundary::try_to_canonical(&both_state, &both_catalog).unwrap(),
+            both
         );
     }
 }

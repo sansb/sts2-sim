@@ -52,6 +52,13 @@ export class Engine {
     return this.#read(fn(...leading, ptr, bytes.length));
   }
 
+  /** Copy bytes into a request buffer the next call takes ownership of. */
+  #alloc(bytes) {
+    const ptr = this.x.sts_alloc(bytes.length);
+    new Uint8Array(this.x.memory.buffer, ptr, bytes.length).set(bytes);
+    return ptr;
+  }
+
   static #ok(text) {
     const value = JSON.parse(text);
     if (value.refusal) throw new EngineRefusal(value.refusal);
@@ -73,6 +80,14 @@ export class Engine {
   apply(state, action) {
     const text = typeof action === 'string' ? action : JSON.stringify(action);
     return Engine.#ok(this.#send(this.x.sts_apply, text, state));
+  }
+
+  /** The physical cards a `select` action names in a state, in pick order,
+   *  or null when the choice names none (a generated card, a monster's modal)
+   *  or the action is not a select. Read-only. */
+  selectedUids(state, action) {
+    const text = typeof action === 'string' ? action : JSON.stringify(action);
+    return Engine.#ok(this.#send(this.x.sts_selected_uids, text, state)).uids;
   }
 
   /** The canonical document as text, to pass to load() or a solve entry. */
@@ -119,11 +134,43 @@ export class Engine {
    *  `maxTurns`. Returns the report `sts-sim search` prints, parsed. Its
    *  `best` is an achieved line (null when no playout ended), never an
    *  optimum. */
-  searchState(state, { mode, seed, seconds, maxTurns, maxPlayouts } = {}) {
+  searchState(state, { mode, seed, seconds, maxTurns, maxPlayouts, maxPotions, holdSlots } = {}) {
     const options = { mode, seed, seconds, max_turns: maxTurns };
     if (maxPlayouts !== undefined) options.max_playouts = maxPlayouts;
+    // The potion holdback: at most `maxPotions` drinks, and never the entry
+    // belt's potion in a slot of `holdSlots`.
+    if (Number.isInteger(maxPotions)) options.max_potions = maxPotions;
+    if (Array.isArray(holdSlots) && holdSlots.length) options.hold_slots = holdSlots;
     const head = JSON.stringify(options).slice(0, -1);
     return Engine.#ok(this.#send(this.x.sts_search, `${head},"entry":${this.projectText(state)}}`));
+  }
+
+  /** What one capture (`.mcr` bytes) says about which fight it records
+   *  (#3578): { version, seed, start_time, players, history_depth,
+   *  history_depth_issue, selected_encounter: { monster, elite, boss },
+   *  monsters, events }. Throws EngineRefusal for a capture that does not
+   *  decode (another build's, or damaged). */
+  captureSummary(mcrBytes) {
+    const ptr = this.#alloc(mcrBytes);
+    return Engine.#ok(this.#read(this.x.sts_capture_summary(ptr, mcrBytes.length)));
+  }
+
+  /** The player's own line (#3578): resolve every input the capture records
+   *  to an engine action from the root (`entryText`, passed as text) and
+   *  apply it. Returns { actions, step_digests, terminal,
+   *  nonrepresentative_uids }. Throws EngineRefusal whose `code` is the
+   *  divergence class; `refusal.step` and `refusal.turn` say where.
+   *  `maxSelectionAnswers` bounds one selection's offered answers (0: none). */
+  recordedLine(entryText, mcrBytes, { maxSelectionAnswers = 0 } = {}) {
+    const entry = encoder.encode(entryText);
+    // Both buffers are allocated before either is filled: growing memory for
+    // the second would detach a view taken for the first.
+    const entryPtr = this.x.sts_alloc(entry.length);
+    const mcrPtr = this.x.sts_alloc(mcrBytes.length);
+    new Uint8Array(this.x.memory.buffer, entryPtr, entry.length).set(entry);
+    new Uint8Array(this.x.memory.buffer, mcrPtr, mcrBytes.length).set(mcrBytes);
+    return Engine.#ok(this.#read(this.x.sts_recorded_line(
+      entryPtr, entry.length, mcrPtr, mcrBytes.length, maxSelectionAnswers)));
   }
 
   /** Build a fight from a save (#3471). `request` fields: build (e.g.

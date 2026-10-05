@@ -24,17 +24,21 @@ def main():
     p.add_argument("--manifest", type=Path, default=RUST.parent / "eval/search/pilot-v1.json")
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--binary", type=Path, default=RUST / "target/release/examples/search_experiment")
+    p.add_argument("--engine", type=Path,
+                   help="an `sts-sim` binary to run as `sts-sim search` instead of --binary; "
+                        "the same search, so one build serves this tool and verify_search_suite.py")
     p.add_argument("--playouts", type=int, help="optional equal-playout cap in addition to wall time")
     a = p.parse_args()
     manifest = json.loads(a.manifest.read_text())
-    report = {"manifest": manifest, "binary_sha256": hashlib.sha256(a.binary.read_bytes()).hexdigest(),
+    search = [str(a.engine), "search"] if a.engine else [str(a.binary)]
+    report = {"manifest": manifest, "binary_sha256": hashlib.sha256(Path(search[0]).read_bytes()).hexdigest(),
               "playout_cap": a.playouts, "runs": []}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     for fight in manifest["fights"]:
         entry = entry_path(fight)
         for seed in manifest["seeds"]:
             for method in manifest["methods"]:
-                command = [str(a.binary), str(entry), method, str(seed), str(manifest["seconds_per_search"])]
+                command = search + [str(entry), method, str(seed), str(manifest["seconds_per_search"])]
                 if a.playouts is not None:
                     command += ["1.414", "0.05", str(a.playouts)]
                 try:

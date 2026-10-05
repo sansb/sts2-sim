@@ -62,12 +62,61 @@ fights/<opaque-id>/provenance.json  seed, node, encounter, character, ascension,
 fights/<opaque-id>/entry.canonical.json   the sts-sim-canonical-v2 root
 fights/<opaque-id>/human_line.json  canonical wire actions + a digest after each + terminal state
 fights/<opaque-id>/refusal.json     for a refusal fixture: surface, class, verbatim detail, full blocker set
+fights/<opaque-id>/capture.mcr.gz   the game's own replay of the fight, gzipped
+fights/<opaque-id>/entry.save.gz    the save the fight is rooted from, gzipped
 ```
 
-**Consent and privacy.** The captures were contributed by Sean and consenting
-friends (recorded on #2048, 2026-09-05). A fixture carries an opaque id and
-sha256 provenance — never a username, a capture file name, or raw `.mcr` /
-`.save` bytes. `test_eval_suite.py` pins that.
+**The raw captures are published (#3592).** Every fixture stores the pair it
+was built from: `capture.mcr.gz` is the game's `.mcr` replay, with the game's
+checksum after every action, and `entry.save.gz` is the entry save. Each is
+the exact file `provenance.json` names by sha256 (`capture_sha256`,
+`save_sha256`, both of the uncompressed bytes), so `gunzip -c capture.mcr.gz |
+shasum -a 256` prints the recorded hash. All 597 fixtures are Sean's own
+fights. A fixture is still keyed by an opaque id rather than a file name.
+`test_eval_suite.py` pins the contract: every line fixture has its pair, and
+every stored file matches its recorded hash.
+
+A save whose provenance carries `"entry_input": "--capture-run"` is an
+imported upload's capture run (see `import-uploads` below), which the engine
+roots with `--capture-run` instead of `--save`. An unpaired-capture refusal
+has no entry save, so it stores the capture alone.
+
+The 597 pairs are 75.1 MB raw and 14.1 MB gzipped.
+
+## Re-checking against the game
+
+```bash
+cargo build --locked --release --manifest-path sim/v0.111.0/engine/Cargo.toml --bin sts-sim
+python3 sim/v0.111.0/engine/tools/eval_suite.py census --fixtures
+```
+
+`census --fixtures` checks each stored file against its recorded hash, then
+runs the census over the stored pairs: Rust's own entry and opening from the
+save, the recorded line from the capture, and every native checkpoint the
+capture carries. It reads nothing from `entry.canonical.json` or
+`human_line.json`, so the result is the engine against the game's checksums,
+not the engine against its own stored output. It prints the usual census
+table, then one line comparing the result with the manifest, and exits
+non-zero if any fixture misses the `lockstep` verdict the manifest records or
+any stored file is missing or the wrong bytes:
+
+```
+stored pairs: 594 certified of 597 fixtures; the manifest records 594 certified: reproduced
+```
+
+The run takes about six and a half minutes, five of them in one Knights
+fight (`f88b91747240e7af`, #3581); `--progress` reports every 50 fixtures.
+
+That is the number a clone can reproduce. The manifest's own `census` block
+(1,196 of 1,201 eligible, 1,206 fights) is the measurement over Sean's full
+local corpus, which the fixtures were selected from and which is not
+published. The 19 fixtures of run `ZXJ7WX1JHA04` were `add`ed afterwards from
+an `import-uploads` of that run alone, so that block does not count them.
+
+One thing the pair alone cannot say: an event-room fight's encounter is
+recorded by a later save at the same node. For those fixtures (19 today) the
+census takes the encounter from the fixture's `provenance.json`. A save that
+can name its own encounter always does.
 
 ## Kinds and categories
 
@@ -213,14 +262,29 @@ python3 sim/v0.111.0/engine/tools/eval_suite.py seed --captures ~/sts2-captures
 python3 sim/v0.111.0/engine/tools/eval_suite.py add \
     --mcr PATH.mcr --entry-save PATH.save
 
-# re-derive every fixture from its provenance (locates the pair by sha256),
-# and check every fixture's labels against the current census (#3270)
-python3 sim/v0.111.0/engine/tools/eval_suite.py verify --captures ~/sts2-captures
+# check every stored pair against its recorded sha256, re-derive every
+# fixture from it, and check every fixture's labels against the current
+# census (#3270)
+python3 sim/v0.111.0/engine/tools/eval_suite.py verify
+
+# store every fixture's pair from a corpus, found by sha256 (the #3592
+# backfill; `add` and `seed` store the pair themselves)
+python3 sim/v0.111.0/engine/tools/eval_suite.py store-captures --captures ~/sts2-captures
 ```
 
-`verify` makes two passes, and any finding from either exits non-zero.
+`add` and `seed` write `capture.mcr.gz` and `entry.save.gz` with the
+fixture's documents.
 
-1. **Digests.** It re-derives each rooted fixture's root, recorded line,
+`verify` makes three passes, and any finding from any of them exits non-zero.
+It reads the stored pairs; `--captures DIR` locates each pair in a corpus by
+sha256 instead, which also derives an event-room encounter from the corpus's
+later save rather than from provenance.
+
+0. **Stored pairs (#3592).** Every stored file must exist and be the bytes
+   `provenance.json` records the sha256 of; a file provenance does not name
+   is a finding too. Listed under `stored_pair_problems`. This pass needs no
+   engine, and `test_eval_suite.py` runs it on every checkout.
+1. **Digests. It re-derives each rooted fixture's root, recorded line,
    step digests and terminal state. This pass skips any fixture with no
    `entry.canonical.json`, so on its own it cannot see a stale label.
 2. **Labels (#3270).** It rebuilds each fixture's census row through the
@@ -242,10 +306,11 @@ whose checkpoints disagree stays a `rust-lockstep` refusal while the census
 still names that refusal. Once it certifies, the refusal label is a
 difference.
 
-Both passes together take under a minute on the 532-fixture tree.
-`--no-labels` runs only the digest pass. Like every command here, `verify`
-needs the local corpus, so CI cannot run it. Run it with your head's release
-binary before opening any PR that can move a verdict.
+`--no-labels` skips the label pass. `verify` needs a built engine, so the
+fast gate does not run it: run it with your head's release binary before
+opening any PR that can move a verdict. `STS2_EVAL_REDERIVE=1` runs it, the
+`census --fixtures` comparison and an `add` round trip from
+`test_eval_suite.py`.
 
 Every command needs a built engine
 (`cargo build --locked --release --bin sts-sim`; pass `--binary` to name
@@ -284,6 +349,12 @@ validation, and a Rust/Python transition-throughput comparison. See
 [`search/README.md`](search/README.md) for commands, selection policy, and
 limits. Insatiable fixture `f143c7e6993ed27c` is now included.
 
+The result files there are **historical**: they record what the 2026-09-17
+engine found and are not regenerated, so their witnesses no longer replay on
+the current engine. `search/historical-reports.json` lists them, and
+`../engine/tools/verify_search_suite.py` checks that each is still the frozen
+file instead of replaying it.
+
 **Terminology correction:** in the tree seeded before #2999 the `certified`
 category and `provenance.checksummed` boolean do **not** establish complete
 native checksum agreement. The former records Rust/Python digest lockstep;
@@ -298,5 +369,6 @@ a passing human line do not guarantee coverage of every counterfactual path.
 For a save missing the map's room kind, `add` accepts a paired, explicit
 `--encounter ENCOUNTER.THE_INSATIABLE_BOSS --node-type boss`. Supply both from
 capture/run evidence. The override is recorded in provenance and refuses a
-conflicting encounter that can already be derived. Verification locates
-capture pairs by content hash, including descriptively named files.
+conflicting encounter that can already be derived. With `--captures`,
+verification locates capture pairs by content hash, including descriptively
+named files.

@@ -28,12 +28,28 @@ class RustReplay:
             if self.read().get('protocol') != 'diff-serve-v1':
                 raise ValueError('unknown Rust replay protocol')
             from rust_exact_solve import canonical_document
-            if self.ask({'cmd': 'load', 'entry': self.entry})['digest'] != canonical_document.differential_digest(self.entry):
+            if (self.ask({'cmd': 'load', 'entry': self.entry})['digest'] != canonical_document.differential_digest(self.entry)
+                    and not self._root_is_the_entry_plus_its_bookkeeping_record(canonical_document)):
                 raise ValueError('Rust replay root mismatch')
             return self
         except Exception:
             self.__exit__(None, None, None)
             raise
+
+    def _root_is_the_entry_plus_its_bookkeeping_record(self, canonical_document):
+        """An entry written before `player.session_bookkeeping` existed (#3660).
+
+        Rust loads it without the record, derives the bookkeeping from the
+        entry's own closure exactly as it did then, and projects the root WITH
+        the record. That one added key is the only difference this accepts: an
+        entry that carries a record must round-trip as it stands.
+        """
+        if 'session_bookkeeping' in self.entry.get('player', {}):
+            return False
+        root = self.ask({'cmd': 'project'})['state']
+        if root.get('player', {}).pop('session_bookkeeping', None) is None:
+            return False
+        return canonical_document.differential_digest(root) == canonical_document.differential_digest(self.entry)
 
     def read(self):
         while b'\n' not in self.buffer:

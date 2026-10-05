@@ -210,6 +210,13 @@ fn every_registry_is_its_frozen_solve_fight_original() {
             .collect();
         let mut rust: Vec<String> = rust.iter().map(|s| (*s).to_owned()).collect();
         assert!(!python.is_empty(), "{name}");
+        // The frozen file stays what `solve_fight.py` said. A row the port
+        // has added since is named here, so each departure is deliberate.
+        for (registry, added) in ADDED_SINCE_THE_FREEZE {
+            if *registry == name {
+                python.extend(added.iter().map(|s| (*s).to_owned()));
+            }
+        }
         if name == "MONSTERAI_CONSUMERS" {
             // A tuple: order is part of nothing, but keep it identical anyway.
             assert_eq!(rust, python, "{name}");
@@ -220,12 +227,23 @@ fn every_registry_is_its_frozen_solve_fight_original() {
     }
 }
 
+/// Rows the Rust registries hold that the frozen `solve_fight.py` registries
+/// did not. #2997: the whole-DLL `Niche` census found Distinguished Cape's
+/// `AfterObtained` draw, which the Python registry had missed.
+const ADDED_SINCE_THE_FREEZE: &[(&str, &[&str])] =
+    &[("NICHE_ONOBTAIN_RELICS", &["RELIC.DISTINGUISHED_CAPE"])];
+
+/// Spawners the census added after the frozen four (#2997), each at the
+/// conservative threshold 0.
+const SPAWNERS_ADDED_SINCE_THE_FREEZE: [&str; 4] =
+    ["OVICOPTER", "FOGMOG", "THE_OBSCURA", "FABRICATOR"];
+
 #[test]
-fn the_niche_spawner_registry_is_its_frozen_solve_fight_original() {
+fn the_niche_spawner_registry_extends_its_frozen_solve_fight_original() {
     let frozen = frozen_registries();
     // `NICHE_MIDFIGHT_SPAWNERS` in the dict's insertion order, as
     // `[monster id, fewest turns before a creation]`.
-    let python: Vec<(String, i64)> = frozen["niche_midfight_spawners"]
+    let mut expected: Vec<(String, i64)> = frozen["niche_midfight_spawners"]
         .as_array()
         .unwrap()
         .iter()
@@ -236,11 +254,549 @@ fn the_niche_spawner_registry_is_its_frozen_solve_fight_original() {
             )
         })
         .collect();
+    assert_eq!(expected.len(), 4, "the frozen original");
+    expected.extend(
+        SPAWNERS_ADDED_SINCE_THE_FREEZE
+            .iter()
+            .map(|mid| ((*mid).to_owned(), 0)),
+    );
     let rust: Vec<(String, i64)> = super::streams::registries::NICHE_SPAWNERS
         .iter()
         .map(|(mid, min_turns, _)| ((*mid).to_owned(), *min_turns))
         .collect();
-    assert_eq!(rust, python);
+    assert_eq!(rust, expected);
+}
+
+// ---------------------------------------------------------------------------
+// #2997: the whole-DLL Niche census, and what each consumer does to a claim.
+// ---------------------------------------------------------------------------
+
+/// `tools/niche_consumer_census.py`'s scan of the archived DLL.
+fn niche_census() -> Value {
+    serde_json::from_str(include_str!("../../fixtures/niche_consumer_census_v1.json")).unwrap()
+}
+
+/// The census keys of one class, sorted and deduplicated.
+fn census_keys(census: &Value, class: &str) -> Vec<String> {
+    let mut keys: Vec<String> = census["sites"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|site| site["class"] == class)
+        .map(|site| site["key"].as_str().unwrap().to_owned())
+        .collect();
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
+fn sorted(items: impl IntoIterator<Item = impl ToString>) -> Vec<String> {
+    let mut out: Vec<String> = items.into_iter().map(|s| s.to_string()).collect();
+    out.sort();
+    out
+}
+
+#[test]
+fn the_niche_registries_cover_the_whole_dll_census() {
+    use super::streams::registries;
+    let census = niche_census();
+    let sites = census["sites"].as_array().unwrap();
+
+    // Every site has a class this test knows what to do with. A new build's
+    // extra caller is unclassified in the tool, and a new class is refused
+    // here.
+    let known = [
+        "setup",
+        "midfight",
+        "midfight_recorded",
+        "layout_event",
+        "relic",
+        "modifier",
+        "player_side",
+        "test_only",
+    ];
+    for site in sites {
+        let class = site["class"].as_str().unwrap();
+        assert!(known.contains(&class), "unknown census class {class}");
+    }
+    // The known-positive control from the issue: Ovicopter's egg laying.
+    assert!(
+        sites.iter().any(|site| {
+            site["type"] == "Ovicopter/<LayEggsMove>d__26"
+                && site["rva"] == "0x3651e8"
+                && site["il"] == "IL_00e7"
+                && site["class"] == "midfight"
+                && site["key"] == "OVICOPTER"
+        }),
+        "the census lost its known-positive control"
+    );
+    // Exactly one site is encounter setup, the roster `monster_ids` counts.
+    let setup: Vec<&Value> = sites.iter().filter(|s| s["class"] == "setup").collect();
+    assert_eq!(setup.len(), 1);
+    assert_eq!(setup[0]["type"], "CombatRoom/<StartCombat>d__46");
+
+    // Mid-fight spawners: the registry is exactly the census.
+    assert_eq!(
+        sorted(registries::NICHE_SPAWNERS.iter().map(|(mid, _, _)| *mid)),
+        census_keys(&census, "midfight")
+    );
+    // The one mid-fight creator the roster counts exactly has no row (the
+    // doc comment on the registry carries the IL): both of its sites are the
+    // Gremlin Merc's death.
+    assert_eq!(census_keys(&census, "midfight_recorded"), ["GREMLIN_MERC"]);
+    assert_eq!(
+        sites
+            .iter()
+            .filter(|s| s["class"] == "midfight_recorded")
+            .map(|s| (s["type"].as_str().unwrap(), s["il"].as_str().unwrap()))
+            .collect::<Vec<_>>(),
+        [
+            ("SurprisePower/<AfterDeath>d__4", "IL_0063"),
+            ("SurprisePower/<AfterDeath>d__4", "IL_0198"),
+        ]
+    );
+    // Relics: every census relic is registered. The registry's one extra row
+    // is the frozen original's Sere Talon, which has no site in this build.
+    let mut relics = census_keys(&census, "relic");
+    assert_eq!(relics.len(), 15);
+    relics.push("RELIC.SERE_TALON".to_owned());
+    assert_eq!(sorted(registries::NICHE_ONOBTAIN_RELICS), sorted(relics));
+    // Modifiers and combat-layout events.
+    assert_eq!(
+        sorted(registries::NICHE_MODIFIERS),
+        census_keys(&census, "modifier")
+    );
+    assert_eq!(
+        sites
+            .iter()
+            .filter(|s| s["class"] == "layout_event")
+            .count(),
+        1
+    );
+    assert_eq!(
+        sorted(registries::NICHE_COMBAT_LAYOUT_EVENTS),
+        sorted(
+            census["combat_layout_events"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| row["id"].as_str().unwrap())
+        )
+    );
+    // The spawning powers are keyed by the one monster that applies each.
+    for (power, owner) in [
+        ("InfestedPower", "PhrogParasite/"),
+        ("StockPower", "Axebot/"),
+        ("SurprisePower", "GremlinMerc/"),
+    ] {
+        let rows = census["spawning_power_appliers"][power].as_array().unwrap();
+        assert!(!rows.is_empty(), "{power}");
+        for row in rows {
+            assert!(row["type"].as_str().unwrap().starts_with(owner), "{power}");
+        }
+    }
+}
+
+/// `clean_prefix` with its first fight replaced: two Nibbits become `monsters`.
+fn after_a_fight_against(monsters: &[&str], turns: i64) -> Value {
+    let mut history = case("clean_prefix")["history"].clone();
+    history["fights"][0]["monster_ids"] = json!(monsters);
+    history["fights"][0]["turns_taken"] = json!(turns);
+    history["run"]["map_point_history"][0][1]["rooms"][0]["monster_ids"] = json!(monsters);
+    history["run"]["map_point_history"][0][1]["rooms"][0]["turns_taken"] = json!(turns);
+    history
+}
+
+fn niche(history: &Value, fight: usize) -> Value {
+    answer(history, fight).unwrap()["counters"]["niche"].clone()
+}
+
+#[test]
+fn a_fight_with_no_niche_consumer_keeps_the_counter_exact() {
+    let history = case("clean_prefix")["history"].clone();
+    let got = niche(&history, 1);
+    assert_eq!(got["value"], 2);
+    assert_eq!(got["status"], "exact");
+}
+
+#[test]
+fn an_ovicopter_fight_makes_every_later_niche_counter_a_baseline() {
+    // Run 1787331639, fight 9: the roster records the egg id once, the
+    // captured saves show seven draws for it. The count is unrecoverable.
+    let history = after_a_fight_against(&["MONSTER.OVICOPTER", "MONSTER.TOUGH_EGG"], 5);
+    let got = niche(&history, 1);
+    assert_eq!(got["value"], 2);
+    assert_eq!(got["status"], "baseline");
+    let caveats = got["caveats"].as_array().unwrap();
+    assert_eq!(caveats.len(), 1);
+    assert!(
+        caveats[0]
+            .as_str()
+            .unwrap()
+            .starts_with("fight 0 (ENCOUNTER.NIBBITS_WEAK): Ovicopter may have laid Tough Eggs"),
+        "{caveats:?}"
+    );
+    // Even an Ovicopter killed before it acted: the threshold is 0.
+    let history = after_a_fight_against(&["MONSTER.OVICOPTER"], 0);
+    assert_eq!(niche(&history, 1)["status"], "baseline");
+    // The fight's own entering counter is untouched by what happens in it.
+    assert_eq!(niche(&history, 0)["status"], "exact");
+}
+
+#[test]
+fn every_spawner_the_census_added_makes_the_niche_counter_a_baseline() {
+    for (monster, needle) in [
+        ("MONSTER.FOGMOG", "Fogmog may have summoned Eyes With Teeth"),
+        (
+            "MONSTER.THE_OBSCURA",
+            "The Obscura may have summoned Parafrights",
+        ),
+        ("MONSTER.FABRICATOR", "Fabricator may have built bots"),
+    ] {
+        let history = after_a_fight_against(&[monster], 0);
+        let got = niche(&history, 1);
+        assert_eq!(got["value"], 1, "{monster}");
+        assert_eq!(got["status"], "baseline", "{monster}");
+        assert!(
+            got["caveats"][0].as_str().unwrap().contains(needle),
+            "{monster}: {got}"
+        );
+    }
+}
+
+#[test]
+fn a_gremlin_merc_fight_is_counted_exactly_from_its_roster() {
+    // The Merc's death creates one Fat and one Sneaky Gremlin, both recorded.
+    let history = after_a_fight_against(
+        &[
+            "MONSTER.GREMLIN_MERC",
+            "MONSTER.FAT_GREMLIN",
+            "MONSTER.SNEAKY_GREMLIN",
+        ],
+        4,
+    );
+    let got = niche(&history, 1);
+    assert_eq!(got["value"], 3);
+    assert_eq!(got["status"], "exact");
+}
+
+#[test]
+fn an_unfought_combat_layout_event_makes_the_niche_counter_a_baseline() {
+    let event = |id: &str| json!({"model_id": id, "room_type": "event", "turns_taken": 0});
+    for id in [
+        "EVENT.PUNCH_OFF",
+        "EVENT.THE_ARCHITECT",
+        "EVENT.THE_LANTERN_KEY",
+    ] {
+        // Entered at node 0 and not fought there.
+        let mut history = case("clean_prefix")["history"].clone();
+        history["run"]["map_point_history"][0][0]["rooms"] = json!([event(id)]);
+        let got = niche(&history, 1);
+        assert_eq!(got["value"], 2, "{id}");
+        assert_eq!(got["status"], "baseline", "{id}");
+        assert!(
+            got["caveats"][0]
+                .as_str()
+                .unwrap()
+                .starts_with(&format!("node 0 ({id}): a combat-layout event")),
+            "{got}"
+        );
+        // Fought: the node is a recorded fight, so its roster is counted.
+        let mut history = case("clean_prefix")["history"].clone();
+        history["run"]["map_point_history"][0][1]["rooms"]
+            .as_array_mut()
+            .unwrap()
+            .insert(0, event(id));
+        assert_eq!(niche(&history, 1)["status"], "exact", "{id}");
+        // At the target's own node: not a prior node.
+        let mut history = case("clean_prefix")["history"].clone();
+        history["run"]["map_point_history"][0][2]["rooms"]
+            .as_array_mut()
+            .unwrap()
+            .insert(0, event(id));
+        assert_eq!(niche(&history, 1)["status"], "exact", "{id}");
+    }
+    // Any other event is not a consumer.
+    let mut history = case("clean_prefix")["history"].clone();
+    history["run"]["map_point_history"][0][0]["rooms"] = json!([event("EVENT.FAKE_MERCHANT")]);
+    assert_eq!(niche(&history, 1)["status"], "exact");
+}
+
+#[test]
+fn the_cursed_run_modifier_makes_every_niche_counter_a_baseline() {
+    let mut history = case("clean_prefix")["history"].clone();
+    history["run"]["modifiers"] =
+        json!([{"id": "MODIFIER.HOARDER"}, {"id": "MODIFIER.CURSED_RUN"}]);
+    for fight in [0, 1] {
+        let got = niche(&history, fight);
+        assert_eq!(got["status"], "baseline", "fight {fight}");
+        assert!(
+            got["caveats"][0]
+                .as_str()
+                .unwrap()
+                .starts_with("MODIFIER.CURSED_RUN draws Niche on every act entry"),
+            "{got}"
+        );
+    }
+    history["run"]["modifiers"] = json!([{"id": "MODIFIER.HOARDER"}]);
+    assert_eq!(niche(&history, 1)["status"], "exact");
+}
+
+#[test]
+fn distinguished_cape_is_a_niche_consuming_relic() {
+    let mut history = case("clean_prefix")["history"].clone();
+    history["fights"][1]["relics_entering"] = json!(["RELIC.DISTINGUISHED_CAPE"]);
+    let got = niche(&history, 1);
+    assert_eq!(got["status"], "baseline");
+    assert_eq!(
+        got["caveats"],
+        json!(["Niche-consuming on-obtain relics owned: {'RELIC.DISTINGUISHED_CAPE'}"])
+    );
+}
+
+// ---------------------------------------------------------------------------
+// #2997: a floor-1 removal row that was gained at the first node.
+// ---------------------------------------------------------------------------
+
+fn first_node_gain_fixture() -> Value {
+    serde_json::from_str(include_str!(
+        "../../fixtures/issue2997_first_node_gain_removal.json"
+    ))
+    .unwrap()
+}
+
+#[test]
+fn a_stolen_neow_card_is_rebuilt_after_the_bane_and_the_shuffle_counter_matches_the_saves() {
+    let fixture = first_node_gain_fixture();
+    let history = &fixture["history"];
+    // The rebuilt entry deck is the captured start save's, card for card.
+    let saved: Vec<String> = fixture["captured_start_save_decks"]["0"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c.as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(
+        super::shuffle::test_support::entry_deck_ids(&history["run"], 2),
+        saved
+    );
+    assert!(super::shuffle::test_support::entry_deck_unplaceable(&history["run"], 2).is_empty());
+    // And every counter the saves recorded is predicted. The first three are
+    // exact claims; before the fix fights 1 and 2 claimed exact 20 and 33.
+    for (fight, status) in [(0, "exact"), (1, "exact"), (2, "exact"), (3, "baseline")] {
+        let got = answer(history, fight).unwrap()["counters"]["shuffle"].clone();
+        assert_eq!(
+            got["value"],
+            fixture["captured_shuffle_counters"][fight.to_string()],
+            "fight {fight}"
+        );
+        assert_eq!(got["status"], status, "fight {fight}");
+    }
+    // Without the first node's record of the gain, the row is taken for a
+    // starter card and lands in the Bane's slot: the old answer.
+    let mut blind = history.clone();
+    blind["run"]["map_point_history"][0][0]["player_stats"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("cards_gained");
+    let ids = super::shuffle::test_support::entry_deck_ids(&blind["run"], 2);
+    let at = |id: &str| ids.iter().position(|c| c == id).unwrap();
+    assert!(at("CARD.SUNDER") < at("CARD.ASCENDERS_BANE"));
+    assert_eq!(
+        answer(&blind, 1).unwrap()["counters"]["shuffle"]["value"],
+        20
+    );
+}
+
+/// A run whose first node is `first_node` and whose node 3 logs `removal`,
+/// with two fights before it. The deck holds the Bane between `before` and
+/// `after`, all floor 1.
+fn bane_history(before: &[&str], after: &[&str], first_node: Value, removal: Value) -> Value {
+    let card = |id: &str| json!({"id": format!("CARD.{id}"), "floor_added_to_deck": 1});
+    let deck: Vec<Value> = before
+        .iter()
+        .copied()
+        .chain(["ASCENDERS_BANE"])
+        .chain(after.iter().copied())
+        .map(card)
+        .collect();
+    let fight_node = |encounter: &str| {
+        json!({
+            "map_point_type": "monster",
+            "player_stats": [{}],
+            "rooms": [{"model_id": encounter, "room_type": "monster", "turns_taken": 3}],
+        })
+    };
+    let fight_row = |node: i64, encounter: &str| {
+        json!({
+            "node_index": node,
+            "encounter_id": encounter,
+            "monster_ids": ["MONSTER.NIBBIT"],
+            "turns_taken": 3,
+            "relics_entering": [],
+            "potions_used": [],
+            "deck_entering": [],
+        })
+    };
+    json!({
+        "schema": "sts-sim-run-history-v1",
+        "run": {
+            "build_id": "v0.111.0",
+            "seed": "ISSUE2997BANE",
+            "players": [{"deck": deck}],
+            "map_point_history": [[
+                {
+                    "map_point_type": "ancient",
+                    "player_stats": [first_node],
+                    "rooms": [{"model_id": "EVENT.NEOW", "room_type": "event", "turns_taken": 0}],
+                },
+                fight_node("ENCOUNTER.NIBBITS_WEAK"),
+                fight_node("ENCOUNTER.SHRINKER_BEETLE_WEAK"),
+                {"map_point_type": "shop", "player_stats": [removal], "rooms": []},
+            ]],
+        },
+        "fights": [
+            fight_row(1, "ENCOUNTER.NIBBITS_WEAK"),
+            fight_row(2, "ENCOUNTER.SHRINKER_BEETLE_WEAK"),
+        ],
+    })
+}
+
+fn short_ids(history: &Value, floor: i64) -> Vec<String> {
+    super::shuffle::test_support::entry_deck_ids(&history["run"], floor)
+        .iter()
+        .map(|id| id.trim_start_matches("CARD.").to_owned())
+        .collect()
+}
+
+#[test]
+fn a_first_node_transform_result_is_rebuilt_after_the_bane() {
+    // Neow transformed a Strike into Feel No Pain (appended after the Bane,
+    // as the captured saves of run 1786835938 show), and a shop removed it.
+    let history = bane_history(
+        &["STRIKE_IRONCLAD", "BASH"],
+        &["INFLAME"],
+        json!({"cards_transformed": [{
+            "original_card": {"id": "CARD.STRIKE_IRONCLAD", "floor_added_to_deck": 1},
+            "final_card": {"id": "CARD.FEEL_NO_PAIN", "floor_added_to_deck": 1},
+        }]}),
+        json!({"cards_removed": [{"id": "CARD.FEEL_NO_PAIN", "floor_added_to_deck": 1}]}),
+    );
+    assert_eq!(
+        short_ids(&history, 2),
+        [
+            "STRIKE_IRONCLAD",
+            "BASH",
+            "ASCENDERS_BANE",
+            "INFLAME",
+            "FEEL_NO_PAIN"
+        ]
+    );
+    assert!(super::shuffle::test_support::entry_deck_unplaceable(&history["run"], 2).is_empty());
+    // The same removal of a card the first node did not add is a starter
+    // card: the Bane's slot, as before.
+    let history = bane_history(
+        &["STRIKE_IRONCLAD", "BASH"],
+        &["INFLAME"],
+        json!({}),
+        json!({"cards_removed": [{"id": "CARD.FEEL_NO_PAIN", "floor_added_to_deck": 1}]}),
+    );
+    assert_eq!(
+        short_ids(&history, 2),
+        [
+            "STRIKE_IRONCLAD",
+            "BASH",
+            "FEEL_NO_PAIN",
+            "ASCENDERS_BANE",
+            "INFLAME"
+        ]
+    );
+}
+
+#[test]
+fn a_removed_card_that_is_both_starter_and_first_node_gain_makes_shuffle_a_baseline() {
+    // Run 1787114128: Large Capsule added a Strike after the Bane, and an
+    // event later transformed one of the five floor-1 Strikes. The run does
+    // not say which side of the Bane it came from (the captured save says
+    // the starter side; the sibling rule rebuilds the other).
+    let history = bane_history(
+        &["STRIKE_IRONCLAD", "BASH"],
+        &["STRIKE_IRONCLAD"],
+        json!({"cards_gained": [{"id": "CARD.STRIKE_IRONCLAD"}]}),
+        json!({"cards_transformed": [{
+            "original_card": {"id": "CARD.STRIKE_IRONCLAD", "floor_added_to_deck": 1},
+            "final_card": {"id": "CARD.FIEND_FIRE", "floor_added_to_deck": 4},
+        }]}),
+    );
+    assert_eq!(
+        super::shuffle::test_support::entry_deck_unplaceable(&history["run"], 2),
+        ["CARD.STRIKE_IRONCLAD"]
+    );
+    let got = answer(&history, 1).unwrap()["counters"]["shuffle"].clone();
+    assert_eq!(got["status"], "baseline");
+    let caveat = got["caveats"][0].as_str().unwrap();
+    assert!(
+        caveat.starts_with(
+            "fight 0 (ENCOUNTER.NIBBITS_WEAK): a floor-1 copy of STRIKE_IRONCLAD was removed later"
+        ),
+        "{caveat}"
+    );
+    // Entering the first fight nothing has been replayed, so nothing is
+    // claimed about that deck.
+    assert_eq!(
+        answer(&history, 0).unwrap()["counters"]["shuffle"]["status"],
+        "exact"
+    );
+    // With no Bane the order carries no information: nothing to caveat.
+    let mut history = history;
+    history["run"]["players"][0]["deck"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|c| c["id"] != "CARD.ASCENDERS_BANE");
+    assert!(super::shuffle::test_support::entry_deck_unplaceable(&history["run"], 2).is_empty());
+}
+
+#[test]
+fn malformed_first_node_gain_rows_refuse_by_path() {
+    type Mutation = Box<dyn Fn(&mut Value)>;
+    let cases: Vec<(&str, Mutation)> = vec![
+        (
+            "$.run.nodes[0].cards_gained",
+            Box::new(|stats| stats["cards_gained"] = json!({})),
+        ),
+        (
+            "$.run.nodes[0].cards_gained[0].id",
+            Box::new(|stats| stats["cards_gained"] = json!([{"id": 7}])),
+        ),
+        (
+            "$.run.nodes[0].cards_transformed[0].final_card",
+            Box::new(|stats| {
+                stats["cards_transformed"] =
+                    json!([{"original_card": {"id": "CARD.BASH", "floor_added_to_deck": 1}}]);
+            }),
+        ),
+        (
+            "$.run.nodes[0].cards_transformed[0].final_card.id",
+            Box::new(|stats| {
+                stats["cards_transformed"] = json!([{
+                    "original_card": {"id": "CARD.BASH", "floor_added_to_deck": 1},
+                    "final_card": {},
+                }]);
+            }),
+        ),
+    ];
+    for (path, mutate) in cases {
+        let mut history = base();
+        mutate(&mut history["run"]["map_point_history"][0][0]["player_stats"][0]);
+        match refusal(&history, 1) {
+            RunCountersRefusal::MalformedHistory { path: got, .. } => assert_eq!(got, path),
+            other => panic!("{path}: {other:?}"),
+        }
+    }
+    // A null `cards_gained` is an absent one.
+    let mut history = base();
+    history["run"]["map_point_history"][0][0]["player_stats"][0]["cards_gained"] = json!(null);
+    assert!(answer(&history, 1).is_ok());
 }
 
 // ---------------------------------------------------------------------------

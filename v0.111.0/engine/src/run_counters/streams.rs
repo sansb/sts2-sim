@@ -5,9 +5,15 @@
 //! `combat_targets_counter_entering`, `energy_costs_counter_entering`,
 //! `combat_card_generation_counter_entering` and
 //! `combat_orb_generation_counter_entering`. Every registry is transcribed
-//! element for element; `test_rust_run_counters.py` pins each one equal to its
-//! Python original while that exists. The consumer censuses behind them are
-//! the IL reads recorded in `STREAM_CONSUMERS.md`.
+//! element for element and pinned to the frozen copy of its Python original
+//! (`fixtures/frozen_python_run_counter_registries_v1.json`). The consumer
+//! censuses behind them are the IL reads recorded in `STREAM_CONSUMERS.md`.
+//!
+//! The `Niche` registries have grown past that original. It kept a hand-made
+//! spawner list, which missed an Ovicopter's eggs among others (#2997); they
+//! are now held to a whole-DLL census, `fixtures/niche_consumer_census_v1.json`,
+//! written by `tools/niche_consumer_census.py`, and the tests name every row
+//! added since the freeze.
 //!
 //! The rule every stream follows: a counter is proved only by a prefix of
 //! fights that held no consumer (or, for Stone Cracker, a consumer whose draw
@@ -23,14 +29,26 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::OnceLock;
 
+use serde_json::Value;
+
 use super::history::Fight;
 use crate::content_tables::card_row;
 use crate::ids::CardId;
 
-/// `NICHE_ONOBTAIN_RELICS`: Relics whose on-obtain effect consumes `Niche` (`STREAM_CONSUMERS.md`).
+/// `NICHE_ONOBTAIN_RELICS`: relics whose own hooks draw `Niche`.
+///
+/// The whole-DLL census (`fixtures/niche_consumer_census_v1.json`, #2997)
+/// finds fifteen relic methods that call `RunRngSet::get_Niche` (`0x4ddeb`)
+/// directly: fourteen of the frozen `solve_fight` registry's rows, plus
+/// Distinguished Cape, which that registry missed
+/// (`DistinguishedCape/<AfterObtained>d__9::MoveNext`, `0x322e20`, `IL_00cb`:
+/// one `NextItem` per curse it adds). `RELIC.SERE_TALON` is the frozen
+/// registry's fifteenth row and has no `get_Niche` site in this build; it
+/// stays, because an extra row can only turn an exact claim into a baseline.
 const NICHE_ONOBTAIN_RELICS: &[&str] = &[
     "RELIC.ASTROLABE",
     "RELIC.BEAUTIFUL_BRACELET",
+    "RELIC.DISTINGUISHED_CAPE",
     "RELIC.FISHING_ROD",
     "RELIC.FRAGRANT_MUSHROOM",
     "RELIC.KALEIDOSCOPE",
@@ -406,12 +424,68 @@ const ENERGY_COSTS_CONSUMER_RELICS: &[&str] = &["RELIC.FAKE_SNECKO_EYE", "RELIC.
 /// `ENERGY_COSTS_CONSUMER_POTIONS`: and Snecko Oil.
 const ENERGY_COSTS_CONSUMER_POTIONS: &[&str] = &["POTION.SNECKO_OIL"];
 
-/// `NICHE_MIDFIGHT_SPAWNERS`, in the dict's insertion order: monsters whose
-/// moves or death triggers create creatures mid-fight (one
-/// `SetUniqueMonsterHpValue` `Niche` draw each) that the end-of-combat
-/// `monster_ids` roster can under-count. The number is the fewest turns
-/// needed before a creation is possible.
-const NICHE_MIDFIGHT_SPAWNERS: [(&str, i64, &str); 4] = [
+/// `NICHE_MIDFIGHT_SPAWNERS`: monsters whose fights create creatures after
+/// the encounter is set up, keyed by a substring of the recorded monster id.
+/// The number is the fewest turns before a creation is possible.
+///
+/// # Which call draws `Niche`
+///
+/// `CombatState::CreateCreature` (`0x137074`) draws once per **enemy-side**
+/// creature: `IL_003f`-`IL_0041` skips to `IL_007c` unless `side == 2`, and
+/// `IL_0050`-`IL_0055` passes `RunRngSet::get_Niche` to
+/// `Creature::SetUniqueMonsterHpValue` (`0x11d3ec`), which makes exactly one
+/// draw (`NextItem` at `IL_0089`, or `NextInt` at `IL_0094` when every HP
+/// value is taken). One more site draws inside a fight without creating
+/// anything: `ToughEgg/<Hatch>d__36::MoveNext` (`0x3726d4`, `IL_0094`-`IL_00a7`)
+/// rolls the hatchling's HP.
+///
+/// # What `monster_ids` records
+///
+/// `CombatRoom/<StartCombat>d__46::MoveNext` (`0x310bf0`, `IL_0130`) appends
+/// every set-up monster's id. A creature added later goes through
+/// `CreatureCmd/<Add>d__2::MoveNext` (`0x3e9234`), which appends its id only
+/// when the list does not hold it yet (`IL_01a7`-`IL_01da`). So the roster is
+/// the set-up monsters plus one row per *new* id, and a fight that created
+/// creatures mid-combat can be short by any amount.
+///
+/// # The census (#2997)
+///
+/// `fixtures/niche_consumer_census_v1.json` lists every caller, in the
+/// archived DLL, of `get_Niche`, of `CreateCreature`, of the two creating
+/// `CreatureCmd::Add` overloads (`0x132154`, `0x1321a0`) and of
+/// `ToughEgg::Hatch`. The mid-fight ones, all gated here:
+///
+/// * `LivingFog/<BloatMove>d__26` (`0x3620c0`, `IL_00ed`): `Add<GasBomb>`;
+/// * `TwoTailedRat/<CallForBackup>d__41` (`0x373d98`, `IL_0183`):
+///   `Add<TwoTailedRat>`;
+/// * `InfestedPower/<AfterDeath>d__4` (`0x33d3ec`, `IL_008b`): the Wrigglers,
+///   the power applied only by `PhrogParasite/<AfterAddedToRoom>d__10`
+///   (`0x3667dc`, `IL_0098`);
+/// * `StockPower/<AfterDeath>d__4` (`0x346280`, `IL_0090`), applied only by
+///   `Axebot/<AfterAddedToRoom>d__34` (`0x352dcc`, `IL_003f`);
+/// * `Ovicopter/<LayEggsMove>d__26` (`0x3651e8`, `IL_00e7`): `Add<ToughEgg>`
+///   once per free slot, and each egg's `Hatch` (above) draws again;
+/// * `Fogmog/<IllusionMove>d__15` (`0x35bef4`, `IL_00b5`): `Add<EyeWithTeeth>`;
+/// * `TheObscura/<IllusionMove>d__25` (`0x370830`, `IL_00b5`):
+///   `Add<Parafright>`;
+/// * `Fabricator/<SpawnBot>d__25` (`0x35a80c`, `IL_0092`).
+///
+/// The first four rows are the frozen `solve_fight` registry, unchanged. The
+/// rest were missing from it; their counts are not a function of anything the
+/// `.run` records, so each takes the conservative threshold 0 and makes the
+/// counter a baseline for every later fight.
+///
+/// One mid-fight creator is deliberately **not** a row, because the roster
+/// already counts it exactly. `SurprisePower/<AfterDeath>d__4` (`0x347044`)
+/// runs its body once, for its own owner's unprevented death
+/// (`IL_002c`-`IL_0047`), and creates exactly one Fat Gremlin (`IL_0063`) and
+/// one Sneaky Gremlin (`IL_0198`). Only
+/// `GremlinMerc/<AfterAddedToRoom>d__21` (`0x35d898`, `IL_009f`) applies the
+/// power, and `GremlinMercNormal::GenerateMonsters` (`0xd3e94`) sets up the
+/// Merc alone, so both ids are new to the roster and each is recorded once:
+/// two draws, two rows. The fifteen exact claims the captured saves hold
+/// after a Gremlin Merc fight all match.
+const NICHE_MIDFIGHT_SPAWNERS: &[(&str, i64, &str)] = &[
     (
         "LIVING_FOG",
         2,
@@ -433,7 +507,56 @@ const NICHE_MIDFIGHT_SPAWNERS: [(&str, i64, &str); 4] = [
         "Stock may have replaced Axebot one or two times (one unrecorded Niche draw per \
          replacement)",
     ),
+    (
+        "OVICOPTER",
+        0,
+        "Ovicopter may have laid Tough Eggs (one Niche draw per egg and one more per hatch)",
+    ),
+    (
+        "FOGMOG",
+        0,
+        "Fogmog may have summoned Eyes With Teeth (one Niche draw each)",
+    ),
+    (
+        "THE_OBSCURA",
+        0,
+        "The Obscura may have summoned Parafrights (one Niche draw each)",
+    ),
+    (
+        "FABRICATOR",
+        0,
+        "Fabricator may have built bots (one Niche draw each)",
+    ),
 ];
+
+/// Events with the combat layout, whose encounter is created when the event
+/// is *entered*, whether or not it is ever fought.
+///
+/// `EventRoom/<EnterInternal>d__18::MoveNext` (`0x3110f8`, `IL_0164`) calls
+/// `EventSynchronizer::GenerateInternalCombatStateIfNecessary` (`0x6e70c`),
+/// and `EventCombatSynchronizer::InitializeForEvent` (`0x6d0ec`) creates every
+/// monster of `CanonicalEncounter` on the enemy side (`IL_010b`-`IL_010e`) when
+/// `LayoutType == 1` (`IL_0019`-`IL_001f`). Exactly three events override
+/// `get_LayoutType` to 1: `PunchOff` (`0xcc0bb`), `TheArchitect` (`0xcf2ef`)
+/// and `TheLanternKey` (`0xd0231`). When the fight happens,
+/// `EventCombatSynchronizer::EnterCombat` (`0x6d3d8`, `IL_021b`-`IL_0232`)
+/// hands that combat state to the room and sets `ShouldCreateCombat` from the
+/// layout, `CombatRoom/<StartCombat>d__46` skips the creation
+/// (`IL_00ea`-`IL_00ef`) and still records the roster (`IL_0130`), so the
+/// count is right: run `1787331639` fought The Lantern Key's knight and the
+/// saved counter rose by its one monster. When the fight does not happen the
+/// draws are in no roster: run `1786850545` left Punch Off unfought and the
+/// saved counter rose by 2 across the node.
+const NICHE_COMBAT_LAYOUT_EVENTS: &[&str] = &[
+    "EVENT.PUNCH_OFF",
+    "EVENT.THE_ARCHITECT",
+    "EVENT.THE_LANTERN_KEY",
+];
+
+/// Run modifiers that draw `Niche`: `CursedRun/<AfterActEntered>d__0::MoveNext`
+/// (`0x377420`, `IL_005b`-`IL_00a9`) draws one `NextItem` per player on every
+/// act entry.
+const NICHE_MODIFIERS: &[&str] = &["MODIFIER.CURSED_RUN"];
 
 /// Python's `repr` of a list of plain identifiers: `['A', 'B']`.
 fn list_repr(items: &[String]) -> String {
@@ -574,16 +697,75 @@ pub fn monsterai_caveats(fights: &[Fight], fight_index: usize) -> Vec<String> {
         .collect()
 }
 
+/// Every node before `before_node` that entered a combat-layout event
+/// ([`NICHE_COMBAT_LAYOUT_EVENTS`]) and recorded no fight, as
+/// `(node index, event id)`. `load_combats` has already refused a run whose
+/// `map_point_history` or `rooms` has the wrong shape.
+fn unfought_layout_events(run: &Value, fights: &[Fight], before_node: i64) -> Vec<(i64, String)> {
+    let nodes = run
+        .get("map_point_history")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_array)
+        .flatten();
+    let mut out = Vec::new();
+    for (node, point) in (0_i64..).zip(nodes) {
+        if node >= before_node {
+            break;
+        }
+        if fights.iter().any(|f| f.node_index == node) {
+            continue;
+        }
+        let rooms = point
+            .get("rooms")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten();
+        for room in rooms {
+            let id = room.get("model_id").and_then(Value::as_str);
+            if let Some(id) = id.filter(|id| NICHE_COMBAT_LAYOUT_EVENTS.contains(id)) {
+                out.push((node, id.to_owned()));
+            }
+        }
+    }
+    out
+}
+
+/// The run's modifiers that are in [`NICHE_MODIFIERS`], sorted.
+fn niche_modifiers(run: &Value) -> Vec<String> {
+    run.get("modifiers")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|row| row.get("id").and_then(Value::as_str))
+        .filter(|id| NICHE_MODIFIERS.contains(id))
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
 /// `solve_fight.niche_counter_entering`: one `Niche` draw per creature a prior
 /// combat created (`CombatState::CreateCreature` ->
-/// `SetUniqueMonsterHpValue`), counted from the end-of-combat roster.
-pub fn niche_counter_entering(fights: &[Fight], fight_index: usize) -> (u64, Vec<String>) {
+/// `SetUniqueMonsterHpValue`), counted from the recorded roster.
+///
+/// Every other `Niche` consumer the census finds makes the count a baseline
+/// (see [`NICHE_MIDFIGHT_SPAWNERS`]). Two of them are not in the Python
+/// original: an unfought combat-layout event and the Cursed Run modifier.
+/// Their caveats come after the per-fight ones, so the frozen oracle
+/// documents keep their order.
+pub fn niche_counter_entering(
+    run: &Value,
+    fights: &[Fight],
+    fight_index: usize,
+) -> (u64, Vec<String>) {
     let mut counter = 0_u64;
     let mut caveats = Vec::new();
     for (k, f) in fights.iter().enumerate().take(fight_index) {
         counter += f.monster_ids.len() as u64;
         for (mid, min_turns, what) in NICHE_MIDFIGHT_SPAWNERS {
-            if f.monster_ids.iter().any(|m| m.contains(mid)) && f.turns_taken >= min_turns {
+            if f.monster_ids.iter().any(|m| m.contains(mid)) && f.turns_taken >= *min_turns {
                 caveats.push(format!(
                     "fight {k} ({}): {what} — monster_ids is the end-of-combat roster and \
                      under-counts mid-fight creature creations; the predicted Niche counter is \
@@ -592,6 +774,19 @@ pub fn niche_counter_entering(fights: &[Fight], fight_index: usize) -> (u64, Vec
                 ));
             }
         }
+    }
+    for (node, event) in unfought_layout_events(run, fights, fights[fight_index].node_index) {
+        caveats.push(format!(
+            "node {node} ({event}): a combat-layout event creates its encounter's monsters on \
+             entry (one Niche draw each) and no fight was recorded there; the predicted Niche \
+             counter is a baseline, not exact"
+        ));
+    }
+    for modifier in niche_modifiers(run) {
+        caveats.push(format!(
+            "{modifier} draws Niche on every act entry; the predicted Niche counter is a \
+             baseline, not exact"
+        ));
     }
     let bad = owned_in(&fights[fight_index].relics_entering, NICHE_ONOBTAIN_RELICS);
     if !bad.is_empty() {
@@ -931,7 +1126,10 @@ pub(super) mod registries {
         ),
     ];
 
-    pub const NICHE_SPAWNERS: [(&str, i64, &str); 4] = super::NICHE_MIDFIGHT_SPAWNERS;
+    pub const NICHE_SPAWNERS: &[(&str, i64, &str)] = super::NICHE_MIDFIGHT_SPAWNERS;
+    pub const NICHE_ONOBTAIN_RELICS: &[&str] = super::NICHE_ONOBTAIN_RELICS;
+    pub const NICHE_COMBAT_LAYOUT_EVENTS: &[&str] = super::NICHE_COMBAT_LAYOUT_EVENTS;
+    pub const NICHE_MODIFIERS: &[&str] = super::NICHE_MODIFIERS;
 
     pub fn max_upgrade(bare_id: &str) -> Option<i64> {
         super::max_upgrade(bare_id)

@@ -636,10 +636,19 @@ fn facing_and_rage_are_keyed_state_that_survives_a_cold_reload() {
 fn the_captured_floor33_root_admits_and_round_trips() {
     let doc = floor33();
     let (catalog, state) = load(&doc);
+    // The root was captured before `player.session_bookkeeping` existed
+    // (#3660): it loads without the record and projects with it, and the
+    // record is the only difference.
+    let mut projected = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
     assert_eq!(
-        HotBoundary::try_to_canonical(&state, &catalog).unwrap(),
-        doc
+        projected.player.remove("session_bookkeeping"),
+        Some(serde_json::json!([
+            "misery_ledger",
+            "normality_count",
+            "self_return_uids"
+        ]))
     );
+    assert_eq!(projected, doc);
     assert_eq!(player_int(&doc, "kaiser_facing", -1), 0);
     assert_eq!(monster_int(&doc, 0, "max_hp", 0), CRUSHER_HP);
     assert_eq!(monster_int(&doc, 1, "max_hp", 0), ROCKET_HP);

@@ -40,8 +40,9 @@
 //!   Tea Set flags name only owned relics, with the value shapes
 //!   `entry/relics.rs` produces (an integer, Lizard Tail's or Maw Bank's
 //!   boolean, or an object of integers);
-//! * `fur_coat_active` is null and `entry_ambiguous` false, because a save
-//!   never proves either (#2526);
+//! * `fur_coat_active` is set only beside an owned `RELIC.FUR_COAT`, the one
+//!   fight the save path answers it for (#2526), and `entry_ambiguous` is
+//!   false, because a save never proves it;
 //! * the epoch set is normalized exactly as `unlocks::card_pool_unlocked_epochs`
 //!   normalizes it;
 //! * stream names are `RunRngType` members, the six required combat streams
@@ -538,19 +539,14 @@ fn relics(entry: &Map<String, Value>) -> Result<RelicEntry, EntryRefusal> {
         "fake_tea_set_charged",
         "RELIC.FAKE_VENERABLE_TEA_SET",
     )?;
-    if optional_bool(&entry["fur_coat_active"], "entry.fur_coat_active")?.is_some() {
-        return Err(inconsistent(
-            "entry.fur_coat_active",
-            "is set; a save never proves Fur Coat membership (#2526), so the save \
-             path always writes null",
-        ));
-    }
+    // Null beside an owner is "unprovable", which the opening refuses (#2526).
+    let fur_coat_active = tea("entry.fur_coat_active", "fur_coat_active", "RELIC.FUR_COAT")?;
     Ok(RelicEntry {
         relics_entering,
         relic_counters,
         tea_set_charged,
         fake_tea_set_charged,
-        fur_coat_active: None,
+        fur_coat_active,
         dispatch_ordered: boolean(
             &entry["relics_entering_dispatch_ordered"],
             "entry.relics_entering_dispatch_ordered",

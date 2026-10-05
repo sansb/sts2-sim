@@ -361,7 +361,10 @@ pub(crate) fn apply_temp_strength_enemy(
 /// Python: `player_attack` (frozen, deleted #2827).
 /// Echoing Slash refreshes the live all-enemy wave and adds one pending wave
 /// per killed result; Omnislice spills the first result's total plus overkill
-/// as blockable unpowered damage before the shared AfterAttack close.
+/// as blockable unpowered damage before the shared AfterAttack close. The
+/// spill is one `CreatureCmd.Damage` batch whose card source is the Omnislice,
+/// so each Thorns holder it enters retaliates (#3612,
+/// `engine::damage::omnislice_spill` carries the IL).
 pub(crate) fn attack_context_result_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (mode, damage) = match (
         ctx.spec.identity.id,

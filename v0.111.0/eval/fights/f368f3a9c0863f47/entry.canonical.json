@@ -179,6 +179,9 @@
   "relics_entering_dispatch_ordered": true,
   "reward_card_pool": "Silent",
   "reward_card_rarity_odds": "RegularEncounter",
+  "session_bookkeeping": [
+   "normality_count"
+  ],
   "splash_unlock_epochs": [
    "ACT2_B_EPOCH",
    "ACT3_B_EPOCH",
