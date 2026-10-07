@@ -3379,9 +3379,15 @@ fn full_shuffle_after_frozen_hand(
         if bottled && park_stratagem_on_bottled(state, catalog, events)? {
             return Ok(true);
         }
-        // Reboot's and Bottled Potential's full shuffle: not read under
-        // Whispering Earring's selector (#3637).
-        stratagem_after_shuffle_on(state, catalog, StratagemRoute::Unowned, events)?;
+        // Reboot's `CardPileCmd.Shuffle` is answered by Whispering Earring's
+        // selector (#3665, [`StratagemRoute::Reboot`]). Bottled Potential is
+        // a potion, which no one uses inside the Earring's loop.
+        let route = if bottled {
+            StratagemRoute::Unowned
+        } else {
+            StratagemRoute::Reboot
+        };
+        stratagem_after_shuffle_on(state, catalog, route, events)?;
         Ok(false)
     }
 
@@ -4000,12 +4006,13 @@ fn park_stratagem_on_bottled(
 /// deferred. `super::selection::VakuuSelectorScope` is that selector, held
 /// across the Earring's loop by `turn::finish_auto_pre_relic_tail`.
 ///
-/// Only the resumable Draw frame's shuffle takes this arm
-/// ([`StratagemRoute::ResumableDraw`]): a card-owned, Swift, Joss Paper,
-/// Centennial Puzzle or Gremlin Horn Draw while Stratagem is live. The
-/// synchronous Draw command, the Draw-pile AutoPlay gather and Reboot's full
-/// shuffle keep the `stratagem selection` refusal under the selector
-/// ([`StratagemRoute::Unowned`]).
+/// Two shuffles take this arm: the resumable Draw frame's
+/// ([`StratagemRoute::ResumableDraw`]: a card-owned, Swift, Joss Paper,
+/// Centennial Puzzle or Gremlin Horn Draw while Stratagem is live) and
+/// Reboot's own full shuffle ([`StratagemRoute::Reboot`], #3665). The
+/// synchronous Draw command, the Draw-pile AutoPlay gather and Bottled
+/// Potential's full shuffle keep the `stratagem selection` refusal under the
+/// selector ([`StratagemRoute::Unowned`]).
 ///
 /// Foregone Conclusion's `FromCombatPile` is not reached under the selector:
 /// it is `ForegoneConclusionPower/<BeforeHandDraw>d__4::MoveNext` RVA
@@ -4032,10 +4039,28 @@ enum StratagemRoute {
     /// Stratagem choice. Under Whispering Earring's selector the pick is
     /// resolved there.
     ResumableDraw,
+    /// Reboot's own full `CardPileCmd.Shuffle` (#3665).
+    ///
+    /// `Reboot/<OnPlay>d__5::MoveNext` RVA `0x3b6134` (v0.111.0, SHA-256
+    /// `9cb4f1ad…`) adds each Hand card to the Draw pile
+    /// (`CardPileCmd::Add`, IL_00e3, over the `ToList` snapshot of IL_00bc),
+    /// awaits `CardPileCmd::Shuffle` (IL_017e-IL_01d6) and only then awaits
+    /// `CardPileCmd::Draw` of its `Cards` var (IL_01e2-IL_024d).
+    /// `CardPileCmd/<Shuffle>d__22::MoveNext` RVA `0x3e4b74` awaits
+    /// `Hook::AfterShuffle` as its last command (IL_04a7-IL_04fc), so
+    /// Stratagem's pick is in Hand before Reboot's Draw starts. That Draw is
+    /// an ordinary command: it draws nothing into a full Hand
+    /// (`<DrawInternal>d__21` RVA `0x3e3a70`, IL_0162-IL_0195).
+    ///
+    /// Under Whispering Earring's selector the pick is resolved here as it
+    /// is on the Draw frame. Without the selector a pile larger than Amount
+    /// still refuses by `stratagem selection`: this shuffle has no persisted
+    /// owner for a player's choice.
+    Reboot,
     /// Every other shuffle: the synchronous Draw command, the Draw-pile
-    /// AutoPlay gather, and Reboot's and Bottled Potential's full shuffle.
-    /// A pile larger than Amount refuses by `stratagem selection`, selector
-    /// or not: none of these was read or witnessed under the selector.
+    /// AutoPlay gather, and Bottled Potential's full shuffle. A pile larger
+    /// than Amount refuses by `stratagem selection`, selector or not: none
+    /// of these was read or witnessed under the selector.
     Unowned,
 }
 
@@ -4062,8 +4087,7 @@ fn stratagem_after_shuffle_on(
                 .map_err(|_| EngineRefusal::CounterOverflow("stratagem amount"))?;
             let selector_picks = state.piles.get(PileId::Draw).len() > amount;
             if selector_picks
-                && !(route == StratagemRoute::ResumableDraw
-                    && super::selection::vakuu_selector_active())
+                && !(route != StratagemRoute::Unowned && super::selection::vakuu_selector_active())
             {
                 return Err(EngineRefusal::MalformedArgs("stratagem selection"));
             }
@@ -9374,8 +9398,41 @@ mod tests {
     /// [`turn_zero`] for any Draw pile: the turn-one hand draw takes its top
     /// five cards and leaves the rest.
     fn turn_zero_deck(draw: &[CardIdentity], relics: &[RelicId]) -> (HotState, Catalog) {
+        turn_zero_piles(draw, &[], relics)
+    }
+
+    /// [`turn_zero_deck`] with `discard` already in the Discard pile (uid =
+    /// position + 21).
+    fn turn_zero_piles(
+        draw: &[CardIdentity],
+        discard: &[CardIdentity],
+        relics: &[RelicId],
+    ) -> (HotState, Catalog) {
+        let (mut state, catalog) = turn_zero_draw(&[draw, discard].concat(), draw.len(), relics);
+        for (index, identity) in discard.iter().enumerate() {
+            state
+                .piles
+                .get_mut(PileId::Discard)
+                .make_mut()
+                .push(HotCard {
+                    uid: u32::try_from(index).unwrap() + 21,
+                    atom: catalog.atom(identity).unwrap(),
+                    flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                });
+        }
+        (state, catalog)
+    }
+
+    /// The first `in_draw` of `cards` as the Draw pile, every one of them
+    /// reachable.
+    fn turn_zero_draw(
+        cards: &[CardIdentity],
+        in_draw: usize,
+        relics: &[RelicId],
+    ) -> (HotState, Catalog) {
+        let draw = &cards[..in_draw];
         let mut builder = CatalogBuilder::new();
-        for identity in draw {
+        for identity in cards {
             builder.intern_reachable(*identity).unwrap();
         }
         builder.intern_monster(MonsterKind::Toadpole).unwrap();
@@ -9658,42 +9715,33 @@ mod tests {
         assert_eq!(next.energy, 0);
     }
 
-    /// What #3637 leaves refused, by the names it already had. With a
+    /// What stays refused beside Hellraiser (#3637, #3665). With a
     /// Hellraiser card reachable a Draw can also AutoPlay a selecting
-    /// Strike, which the selector's answer was not read for: the root is
-    /// refused at admission, and the loop refuses the drawing child. A
-    /// fused Draw kind (Big Bang) beside a live Stratagem stays behind the
-    /// same wall.
+    /// Strike, which the selector's answer was not read for. The root is
+    /// refused at admission and the loop refuses the child: a plain-Draw
+    /// child, a fused Draw kind (Big Bang), a result Draw (Pillage), and
+    /// the selecting children the selector does resolve when no Draw hook is
+    /// live (Glimmer, Cosmic Indifference).
     #[test]
-    fn whispering_earring_draw_child_stays_refused_beside_hellraiser_or_a_fused_draw() {
-        for draw in [
-            [
-                identity(CardId::Stratagem),
-                identity(CardId::Claw),
-                identity(CardId::BeamCell),
-                identity(CardId::FlashOfSteel),
-                identity(CardId::Hellraiser),
-            ],
-            [
-                identity(CardId::Stratagem),
-                identity(CardId::Claw),
-                identity(CardId::BeamCell),
-                identity(CardId::BigBang),
-                identity(CardId::Thunderclap),
-            ],
-        ] {
+    fn whispering_earring_draw_child_stays_refused_beside_hellraiser() {
+        use CardId::{
+            BeamCell, BigBang, Claw, CosmicIndifference, FlashOfSteel, Glimmer, Hellraiser,
+            Pillage, Stratagem,
+        };
+        for child in [FlashOfSteel, BigBang, Pillage, Glimmer, CosmicIndifference] {
+            let draw = [Stratagem, Claw, BeamCell, child, Hellraiser].map(identity);
             let (state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
             assert!(
                 root_admission(&state, &catalog)
                     .is_err_and(|refusal| refusal.contains(EARRING_LOOP_WALL)),
-                "{draw:?}"
+                "{child:?}"
             );
             assert_eq!(
                 end_turn_zero(&state, &catalog),
                 Err(EngineRefusal::MalformedArgs(
                     "Whispering Earring playable child"
                 )),
-                "{draw:?}"
+                "{child:?}"
             );
         }
     }
@@ -9785,22 +9833,21 @@ mod tests {
         assert_eq!(next.energy, 0);
     }
 
-    /// The shuffles #3637 leaves refused under the selector, by the name
-    /// they had: only the resumable Draw frame resolves the pick
-    /// ([`StratagemRoute`]).
+    /// The shuffles left refused under the selector (#3637, #3665), by the
+    /// name they had ([`StratagemRoute::Unowned`]).
     ///
     /// - The synchronous Draw command. Brightest Flame's Draw has no
     ///   persisted owner: admission refuses its root by `stratagem
     ///   selection`, and so does the loop.
-    /// - Reboot's full shuffle. The Earring's wall does not stop Reboot, so
-    ///   its root is admitted and the loop refuses when it gets there.
     /// - `reshuffle` itself (the Draw-pile AutoPlay gather's entry), called
     ///   under the selector.
     ///
-    /// A pile within Amount is still taken on all three.
+    /// A pile within Amount is still taken on both. Reboot's own shuffle is
+    /// no longer one of these
+    /// (`whispering_earring_reboot_shuffle_resolves_stratagem_through_the_selector`).
     #[test]
     fn whispering_earring_unowned_shuffles_keep_the_stratagem_refusal() {
-        use CardId::{BrightestFlame, Claw, IronWave, Reboot, Stratagem, StrikeIronclad};
+        use CardId::{BrightestFlame, Claw, IronWave, Stratagem, StrikeIronclad};
         let refused = Err(EngineRefusal::MalformedArgs("stratagem selection"));
         let wall =
             crate::engine::admission::MissingCapability::ArgumentShape("stratagem selection");
@@ -9809,11 +9856,6 @@ mod tests {
         let draw = [Stratagem, IronWave, StrikeIronclad, Claw, BrightestFlame].map(identity);
         let (state, catalog) = turn_zero(&draw, &earring);
         assert!(root_admission(&state, &catalog).is_err_and(|refusal| refusal.contains(wall)));
-        assert_eq!(end_turn_zero(&state, &catalog), refused);
-
-        let draw = [Stratagem, IronWave, StrikeIronclad, Claw, Reboot].map(identity);
-        let (state, catalog) = turn_zero(&draw, &earring);
-        assert_eq!(root_admission(&state, &catalog), Ok(()));
         assert_eq!(end_turn_zero(&state, &catalog), refused);
 
         let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
@@ -10021,6 +10063,739 @@ mod tests {
         // Hand cards the loop still affords.
         assert!(pile_uids(&next, PileId::Discard).contains(&6));
         assert!(next.piles.get(PileId::Draw).is_empty());
+    }
+
+    /// What turn one leaves behind that a later action can read: every pile
+    /// by uid, the player's vitals, Energy and Stratagem, each monster's HP,
+    /// Block and Vulnerable, and the Draw and CardPlay counters.
+    fn observable(state: &HotState) -> impl PartialEq + std::fmt::Debug {
+        (
+            PileId::ALL.map(|pile| pile_uids(state, pile)),
+            state.hp,
+            state.block,
+            state.energy,
+            state.powers.value(PowerId::Stratagem),
+            state
+                .monsters
+                .iter()
+                .map(|monster| {
+                    (
+                        monster.hp,
+                        monster.block,
+                        monster.powers.value(PowerId::Vulnerable),
+                    )
+                })
+                .collect::<Vec<_>>(),
+            state.cards_drawn_combat,
+            state.history.card_plays_finished_combat,
+        )
+    }
+
+    /// The selector view of the #3665 witnesses, written out here and not
+    /// read through this crate's own sort: every card those witnesses
+    /// reshuffle, in `FromCombatPile`'s order for a Draw pile, with the two
+    /// keys beside it. The first key is the native `CardRarity` value
+    /// (Basic 1, Common 2, Uncommon 3, Rare 4), the second the ordinal id.
+    /// [`selector_view_table_is_in_native_order`] pins the rows.
+    const SELECTOR_VIEW: [(CardId, u8, &str); 14] = [
+        (CardId::Bash, 1, "BASH"),
+        (CardId::DefendIronclad, 1, "DEFEND_IRONCLAD"),
+        (CardId::StrikeIronclad, 1, "STRIKE_IRONCLAD"),
+        (CardId::Zap, 1, "ZAP"),
+        (CardId::BeamCell, 2, "BEAM_CELL"),
+        (CardId::Claw, 2, "CLAW"),
+        (CardId::IronWave, 2, "IRON_WAVE"),
+        (CardId::Thunderclap, 2, "THUNDERCLAP"),
+        (CardId::TwinStrike, 2, "TWIN_STRIKE"),
+        (CardId::Bludgeon, 3, "BLUDGEON"),
+        (CardId::Inflame, 3, "INFLAME"),
+        (CardId::Stratagem, 3, "STRATAGEM"),
+        (CardId::Uppercut, 3, "UPPERCUT"),
+        (CardId::Reboot, 4, "REBOOT"),
+    ];
+
+    /// `pile` (uid and id, distinct ids) in [`SELECTOR_VIEW`] order.
+    fn expected_view(pile: &[(u32, CardId)]) -> Vec<u32> {
+        let view: Vec<u32> = SELECTOR_VIEW
+            .iter()
+            .filter_map(|(id, _, _)| {
+                pile.iter()
+                    .find(|(_, held)| held == id)
+                    .map(|(uid, _)| *uid)
+            })
+            .collect();
+        assert_eq!(
+            view.len(),
+            pile.len(),
+            "every reshuffled card is in the table"
+        );
+        view
+    }
+
+    /// [`SELECTOR_VIEW`] against the content tables: each row's rarity and
+    /// id are the card's own, and the rows ascend by (rarity value, id) under
+    /// plain tuple comparison.
+    #[test]
+    fn selector_view_table_is_in_native_order() {
+        use crate::content_tables::CardRarity;
+        for (id, value, name) in SELECTOR_VIEW {
+            let row = crate::content_tables::card_row(id, 0).unwrap();
+            let rarity = match value {
+                1 => CardRarity::Basic,
+                2 => CardRarity::Common,
+                3 => CardRarity::Uncommon,
+                4 => CardRarity::Rare,
+                _ => unreachable!(),
+            };
+            assert_eq!(row.rarity, rarity, "{id:?}");
+            assert_eq!(id.as_str(), name, "{id:?}");
+        }
+        assert!(
+            SELECTOR_VIEW
+                .windows(2)
+                .all(|pair| (pair[0].1, pair[0].2.as_bytes()) < (pair[1].1, pair[1].2.as_bytes()))
+        );
+    }
+
+    /// The first reshuffle of one transition, read from its events: how
+    /// many cards it moved, the cards an `AfterShuffle` listener then put in
+    /// Hand (before anything was drawn), and the cards drawn after that,
+    /// until the next card is played.
+    fn first_reshuffle(events: &[Event]) -> (u16, Vec<u32>, Vec<u32>) {
+        let start = events
+            .iter()
+            .position(|event| matches!(event, Event::Reshuffled { .. }))
+            .expect("a reshuffle");
+        let Event::Reshuffled { cards } = events[start] else {
+            unreachable!()
+        };
+        let (mut picks, mut drawn) = (Vec::new(), Vec::new());
+        for event in &events[start + 1..] {
+            match *event {
+                Event::CardResolved {
+                    uid,
+                    pile: PileId::Hand,
+                } if drawn.is_empty() => picks.push(uid),
+                Event::CardDrawn { uid } => drawn.push(uid),
+                Event::CardPlayed { .. } | Event::Reshuffled { .. } => break,
+                _ => {}
+            }
+        }
+        (cards, picks, drawn)
+    }
+
+    /// Turn zero's EndTurn with its events.
+    fn end_turn_zero_with_events(state: &HotState, catalog: &Catalog) -> (HotState, Vec<Event>) {
+        let mut events = Vec::new();
+        let next = crate::engine::apply_action_into(state, catalog, &Action::EndTurn, &mut events)
+            .unwrap();
+        assert_eq!(Ok(&next), end_turn_zero(state, catalog).as_ref());
+        (next, events)
+    }
+
+    /// What a hand-played turn one saw at its one Stratagem choice.
+    struct ByHand {
+        state: HotState,
+        /// The Draw pile as the shuffle left it, top first, at the park.
+        parked_draw: Vec<u32>,
+        /// The cards drawn once the choice was answered, until the next play.
+        drawn: Vec<u32>,
+        choices: usize,
+    }
+
+    /// Turn one played by hand under the Earring's rule: Hand's first
+    /// playable card at the first living enemy, up to thirteen times. The
+    /// Stratagem choice is answered with exactly `picks`, in that order,
+    /// which the caller derives without this crate's sort.
+    fn play_turn_one_like_the_earring(
+        mut state: HotState,
+        catalog: &Catalog,
+        picks: &[u32],
+    ) -> ByHand {
+        let (mut parked_draw, mut drawn, mut choices) = (Vec::new(), Vec::new(), 0);
+        for _ in 0..13 {
+            let plays = crate::engine::legal_actions(&state, catalog);
+            let Some(play) = pile_uids(&state, PileId::Hand).into_iter().find_map(|uid| {
+                plays.iter().copied().find(
+                    |action| matches!(action, Action::Play { uid: played, .. } if *played == uid),
+                )
+            }) else {
+                break;
+            };
+            state = apply_action(&state, catalog, &play).unwrap().state;
+            while state.pending.is_some() {
+                assert_eq!(choices, 0, "one choice per run");
+                parked_draw = pile_uids(&state, PileId::Draw);
+                let count = stratagem_selection_action_count(&state, catalog).unwrap();
+                let ordinal = (0..count)
+                    .find(|ordinal| {
+                        stratagem_selection_at(&state, catalog, *ordinal)
+                            .unwrap()
+                            .iter()
+                            .map(|card| card.uid)
+                            .eq(picks.iter().copied())
+                    })
+                    .expect("the expected cards are an offered answer");
+                let answer = Action::Select {
+                    answer: crate::engine::SelectionAnswer::OptionIndex(ordinal),
+                };
+                let mut events = Vec::new();
+                state = crate::engine::apply_action_into(&state, catalog, &answer, &mut events)
+                    .unwrap();
+                drawn = events
+                    .iter()
+                    .take_while(|event| !matches!(event, Event::CardPlayed { .. }))
+                    .filter_map(|event| match event {
+                        Event::CardDrawn { uid } => Some(*uid),
+                        _ => None,
+                    })
+                    .collect();
+                choices += 1;
+            }
+        }
+        ByHand {
+            state,
+            parked_draw,
+            drawn,
+            choices,
+        }
+    }
+
+    /// #3665: the drawing children the Earring's wall admits beside a live
+    /// Stratagem, on every route their Draw takes to the resumable frame, at
+    /// Amount one and two.
+    ///
+    /// Stratagem is played first (one more is live at the root for Amount
+    /// two). The child then draws from an empty Draw pile and reshuffles the
+    /// four cards already in Discard with the ones the loop has played. The
+    /// expected pick is the first Amount cards of [`SELECTOR_VIEW`] among
+    /// those, worked out here: Bash, then Strike (both Basic, in id order),
+    /// before any Common. Under the Earring nobody is asked, and the events
+    /// show that reshuffle, exactly those cards added to Hand in that order,
+    /// and then the child's draws.
+    ///
+    /// The second run has no Earring. Turn one is played by hand under the
+    /// Earring's rule, the child's Draw parks on Stratagem's choice with the
+    /// shuffled Draw pile in view, and the answer is the same cards by uid.
+    /// The Earring's draws are then the top of that parked pile once the
+    /// picks are out, as many as the by-hand run drew, and both runs end in
+    /// the same piles, vitals, Energy and counters.
+    ///
+    /// Routes: the plain `Draw` step (Flash of Steel), a fused no-result
+    /// kind (Impatience, Spoils of Battle, Drum of Battle, FTL, Compile
+    /// Driver), an owned tail (Big Bang), an owned result (Escape Plan,
+    /// Expertise), and the card-result callers (Pillage; Restlessness, whose
+    /// draws are separate commands). Each child runs at both levels. The
+    /// last row is a Glam Escape Plan, whose body runs twice: the first
+    /// body's Draw reshuffles and the second draws again.
+    #[test]
+    fn whispering_earring_drawing_children_match_a_player_taking_the_selectors_pick() {
+        use CardId::{
+            Bash, BeamCell, BigBang, Claw, CompileDriver, DefendIronclad, DrumOfBattle, EscapePlan,
+            Expertise, FlashOfSteel, Ftl, Impatience, IronWave, Pillage, Restlessness,
+            SpoilsOfBattle, Stratagem, StrikeIronclad, Thunderclap, Uppercut, Zap,
+        };
+        #[derive(Copy, Clone, PartialEq)]
+        enum Shape {
+            Fourth,
+            Second,
+            Last,
+            AfterZap,
+        }
+        let glam = |id| CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: Some(crate::catalog::CardEnchantment {
+                id: EnchantmentId::Glam,
+                amount: 1,
+            }),
+        };
+        let mut rows: Vec<(CardIdentity, Shape, Option<usize>)> = Vec::new();
+        for (child, shape, draws) in [
+            (FlashOfSteel, Shape::Fourth, [Some(1), Some(1)]),
+            (Impatience, Shape::Fourth, [Some(2), Some(3)]),
+            (SpoilsOfBattle, Shape::Fourth, [Some(2), Some(2)]),
+            (DrumOfBattle, Shape::Fourth, [Some(2), Some(2)]),
+            (Ftl, Shape::Second, [Some(1), Some(1)]),
+            (CompileDriver, Shape::AfterZap, [Some(1), Some(1)]),
+            (BigBang, Shape::Fourth, [Some(1), Some(1)]),
+            (EscapePlan, Shape::Fourth, [Some(1), Some(1)]),
+            (Expertise, Shape::Fourth, [Some(2), Some(3)]),
+            (Pillage, Shape::Fourth, [None, None]),
+            (Restlessness, Shape::Last, [Some(2), Some(3)]),
+        ] {
+            for upgrade in [0, 1] {
+                rows.push((
+                    identity_at(child, upgrade),
+                    shape,
+                    draws[usize::from(upgrade)],
+                ));
+            }
+        }
+        rows.push((glam(EscapePlan), Shape::Fourth, Some(2)));
+
+        let mut runs = 0;
+        for (child, shape, draws) in rows {
+            for amount in [1usize, 2] {
+                let label = (child, amount);
+                let others = |ids: [CardId; 4]| ids.map(identity);
+                // `played` is what the loop has put in Discard by the time
+                // the child draws, as (uid, id).
+                let (deck, played): (Vec<CardIdentity>, Vec<(u32, CardId)>) = match shape {
+                    Shape::Fourth => {
+                        let [a, b, c, d] = others([Stratagem, Claw, BeamCell, DefendIronclad]);
+                        (vec![a, b, c, child, d], vec![(2, Claw), (3, BeamCell)])
+                    }
+                    Shape::Second => {
+                        let [a, b, c, d] = others([Stratagem, Claw, BeamCell, DefendIronclad]);
+                        (vec![a, child, b, c, d], vec![])
+                    }
+                    Shape::Last => {
+                        let [a, b, c, d] = others([Stratagem, Claw, BeamCell, Thunderclap]);
+                        (
+                            vec![a, b, c, d, child],
+                            vec![(2, Claw), (3, BeamCell), (4, Thunderclap)],
+                        )
+                    }
+                    Shape::AfterZap => {
+                        let [a, b, c, d] = others([Stratagem, Zap, Claw, DefendIronclad]);
+                        (vec![a, b, c, child, d], vec![(2, Zap), (3, Claw)])
+                    }
+                };
+                let discard = [IronWave, StrikeIronclad, Bash, Uppercut];
+                let mut pile: Vec<(u32, CardId)> = vec![
+                    (21, IronWave),
+                    (22, StrikeIronclad),
+                    (23, Bash),
+                    (24, Uppercut),
+                ];
+                pile.extend(played);
+                let reshuffled = pile.len();
+                let picks = &[23u32, 22][..amount];
+                assert_eq!(expected_view(&pile)[..amount], *picks, "{label:?}");
+
+                let build = |relics: &[RelicId]| {
+                    let (mut state, catalog) =
+                        turn_zero_piles(&deck, &discard.map(identity), relics);
+                    if amount == 2 {
+                        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+                    }
+                    if shape == Shape::AfterZap {
+                        state.orbs.set_base_slots(3);
+                        state.orbs.set_slots(3);
+                    }
+                    (state, catalog)
+                };
+
+                let (state, catalog) = build(&[RelicId::RelicWhisperingEarring]);
+                assert_eq!(root_admission(&state, &catalog), Ok(()), "{label:?}");
+                let (earring, events) = end_turn_zero_with_events(&state, &catalog);
+                assert!(
+                    earring.pending.is_none() && earring.frames.is_empty(),
+                    "{label:?}"
+                );
+                assert_eq!(
+                    earring.player_phase,
+                    crate::engine::admission::PHASE_ORDINARY_ACTIONS,
+                    "{label:?}"
+                );
+                let (moved, picked, drawn) = first_reshuffle(&events);
+                assert_eq!(usize::from(moved), reshuffled, "{label:?}");
+                assert_eq!(
+                    picked, picks,
+                    "{label:?}: the selector's cards, in view order"
+                );
+
+                let (state, catalog) = build(&[]);
+                let mut by_hand = end_turn_zero(&state, &catalog).unwrap();
+                // The Earring's own Energy (`ModifyMaxEnergy`).
+                by_hand.energy += 1;
+                let by_hand = play_turn_one_like_the_earring(by_hand, &catalog, picks);
+                assert_eq!(by_hand.choices, 1, "{label:?}: the reshuffle is a choice");
+                assert_eq!(by_hand.parked_draw.len(), reshuffled, "{label:?}");
+                let top_after_the_picks: Vec<u32> = by_hand
+                    .parked_draw
+                    .iter()
+                    .copied()
+                    .filter(|uid| !picks.contains(uid))
+                    .take(drawn.len())
+                    .collect();
+                assert_eq!(
+                    drawn, top_after_the_picks,
+                    "{label:?}: the Draw takes the top"
+                );
+                assert_eq!(drawn, by_hand.drawn, "{label:?}");
+                if let Some(draws) = draws {
+                    assert_eq!(drawn.len(), draws, "{label:?}");
+                }
+                assert!(!drawn.is_empty(), "{label:?}");
+                assert!(
+                    observable(&earring) == observable(&by_hand.state),
+                    "{label:?}: {:?} / {:?}",
+                    observable(&earring),
+                    observable(&by_hand.state)
+                );
+                runs += 1;
+            }
+        }
+        assert_eq!(runs, 46);
+    }
+
+    /// #3665 against the live engine. Each row is one opening the headless
+    /// harness (the game's own `sts2.dll`, v0.111.0 / 41cef1ea) ran for an
+    /// Ironclad holding exactly these five cards and the Earring: the Hand
+    /// as dealt, then the Hand, Draw, Discard and Exhaust piles, the Energy
+    /// left, and the number of selections the game logged, once the opening
+    /// reached Play. No choice was outstanding in any of them.
+    ///
+    /// In every row the child reshuffles more cards than Stratagem's Amount
+    /// of one (for Cosmic Indifference and Secret Weapon, the row only shows
+    /// the child played beside a live Stratagem). Glimmer and Thinking Ahead
+    /// log two selections: Stratagem's pick, then their own put-back, which
+    /// is Hand's first card as the Draw left it. Reboot's rows are its own
+    /// full shuffle.
+    ///
+    /// The rows are the ones whose outcome this engine reproduces card for
+    /// card. Of the 177 distinct openings probed, 139 match exactly and 38
+    /// differ only in which reshuffled card was on top: the harness seeds
+    /// its Shuffle stream from the run seed, which these states do not
+    /// carry.
+    #[test]
+    fn whispering_earring_lifted_children_match_the_live_engine() {
+        use CardId::*;
+        type Row = (
+            &'static str,
+            [CardId; 5],
+            &'static [&'static str],
+            &'static [&'static str],
+            &'static [&'static str],
+            &'static [&'static str],
+            i16,
+            i32,
+            usize,
+        );
+        #[rustfmt::skip]
+        const LIVE: &[Row] = &[
+            ("I3665SCR2", [BeamCell, Stratagem, Scrawl, Claw, StrikeIronclad], &[], &[], &["CLAW", "STRIKE_IRONCLAD", "BEAM_CELL"], &["SCRAWL"], 1, 0, 1),
+            ("I3665SCR10", [StrikeIronclad, BeamCell, Stratagem, Scrawl, Claw], &[], &[], &["CLAW", "STRIKE_IRONCLAD", "BEAM_CELL"], &["SCRAWL"], 0, 0, 1),
+            ("I3665PIL2", [Claw, Stratagem, StrikeIronclad, Pillage, BeamCell], &[], &[], &["PILLAGE", "BEAM_CELL", "STRIKE_IRONCLAD", "CLAW"], &[], 0, 0, 1),
+            ("I3665PIL5", [Claw, StrikeIronclad, Stratagem, BeamCell, Pillage], &[], &[], &["PILLAGE", "STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &[], 0, 0, 1),
+            ("I3665GLI0", [Stratagem, StrikeIronclad, Claw, Glimmer, BeamCell], &[], &["BEAM_CELL"], &["GLIMMER", "STRIKE_IRONCLAD", "CLAW"], &[], 0, 0, 2),
+            ("I3665GLI3", [StrikeIronclad, Stratagem, Glimmer, BeamCell, Claw], &[], &["BEAM_CELL"], &["GLIMMER", "CLAW", "STRIKE_IRONCLAD"], &[], 0, 0, 2),
+            ("I3665THI1", [Claw, Stratagem, ThinkingAhead, StrikeIronclad, BeamCell], &[], &["STRIKE_IRONCLAD"], &["BEAM_CELL", "CLAW"], &["THINKING_AHEAD"], 3, 0, 2),
+            ("I3665THI3", [Stratagem, BeamCell, StrikeIronclad, ThinkingAhead, Claw], &[], &["CLAW"], &["STRIKE_IRONCLAD", "BEAM_CELL"], &["THINKING_AHEAD"], 1, 0, 2),
+            ("I3665BIG2", [StrikeIronclad, BeamCell, Stratagem, Claw, BigBang], &[], &["BEAM_CELL"], &["STRIKE_IRONCLAD", "CLAW", "SOVEREIGN_BLADE"], &["BIG_BANG"], 0, 0, 1),
+            ("I3665BIG6", [Stratagem, StrikeIronclad, BigBang, Claw, BeamCell], &[], &[], &["CLAW", "BEAM_CELL", "STRIKE_IRONCLAD", "SOVEREIGN_BLADE"], &["BIG_BANG"], 0, 0, 1),
+            ("I3665REB8", [BeamCell, Stratagem, Reboot, Claw, StrikeIronclad], &[], &[], &["STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &["REBOOT"], 2, 0, 1),
+            ("I3665REB10", [StrikeIronclad, Stratagem, Reboot, BeamCell, Claw], &[], &[], &["STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &["REBOOT"], 1, 0, 1),
+            ("I3665ESC1", [BeamCell, Claw, Stratagem, EscapePlan, StrikeIronclad], &[], &[], &["ESCAPE_PLAN", "STRIKE_IRONCLAD", "BEAM_CELL", "CLAW"], &[], 2, 0, 1),
+            ("I3665ESC2", [StrikeIronclad, Stratagem, Claw, BeamCell, EscapePlan], &[], &["BEAM_CELL"], &["ESCAPE_PLAN", "STRIKE_IRONCLAD", "CLAW"], &[], 1, 0, 1),
+            ("I3665EXP2", [Claw, BeamCell, Stratagem, StrikeIronclad, Expertise], &[], &[], &["EXPERTISE", "STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &[], 0, 0, 1),
+            ("I3665EXP5", [Claw, Stratagem, StrikeIronclad, Expertise, BeamCell], &[], &[], &["EXPERTISE", "BEAM_CELL", "STRIKE_IRONCLAD", "CLAW"], &[], 0, 0, 1),
+            ("I3665DRU7", [BeamCell, Stratagem, StrikeIronclad, Claw, DrumOfBattle], &[], &[], &["DRUM_OF_BATTLE", "STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &[], 0, 0, 1),
+            ("I3665DRU9", [StrikeIronclad, Stratagem, BeamCell, DrumOfBattle, Claw], &[], &[], &["DRUM_OF_BATTLE", "CLAW", "STRIKE_IRONCLAD", "BEAM_CELL"], &[], 0, 0, 1),
+            ("I3665IMP0", [BeamCell, Stratagem, StrikeIronclad, Claw, Impatience], &[], &[], &["IMPATIENCE", "STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &[], 1, 0, 1),
+            ("I3665IMP2", [StrikeIronclad, Claw, BeamCell, Stratagem, Impatience], &[], &[], &["IMPATIENCE", "STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &[], 1, 0, 1),
+            ("I3665SPO0", [BeamCell, Claw, StrikeIronclad, Stratagem, SpoilsOfBattle], &["SOVEREIGN_BLADE"], &[], &["SPOILS_OF_BATTLE", "STRIKE_IRONCLAD", "CLAW", "BEAM_CELL"], &[], 0, 0, 1),
+            ("I3665SPO7", [BeamCell, Stratagem, Claw, SpoilsOfBattle, StrikeIronclad], &["SOVEREIGN_BLADE"], &[], &["SPOILS_OF_BATTLE", "STRIKE_IRONCLAD", "BEAM_CELL", "CLAW"], &[], 1, 0, 1),
+            ("I3665COS2", [StrikeIronclad, Stratagem, CosmicIndifference, BeamCell, Claw], &[], &["STRIKE_IRONCLAD"], &["COSMIC_INDIFFERENCE", "BEAM_CELL", "CLAW"], &[], 1, 6, 1),
+            ("I3665SEC2", [Stratagem, SecretWeapon, Claw, StrikeIronclad, BeamCell], &[], &[], &["CLAW", "STRIKE_IRONCLAD", "BEAM_CELL"], &["SECRET_WEAPON"], 2, 0, 1),
+        ];
+        assert_eq!(LIVE.len(), 24);
+        for (seed, opening, hand, draw, discard, exhaust, energy, block, _selections) in LIVE {
+            let stratagem = opening.iter().position(|id| *id == Stratagem).unwrap();
+            assert!(
+                stratagem < 4,
+                "{seed}: Stratagem is played before the last card"
+            );
+            let deck = opening.map(identity);
+            let (state, catalog) = turn_zero_deck(&deck, &[RelicId::RelicWhisperingEarring]);
+            assert_eq!(root_admission(&state, &catalog), Ok(()), "{seed}");
+            let next = end_turn_zero(&state, &catalog).unwrap();
+            assert!(next.pending.is_none() && next.frames.is_empty(), "{seed}");
+            let names = |pile: PileId| -> Vec<&'static str> {
+                next.piles
+                    .get(pile)
+                    .as_slice()
+                    .iter()
+                    .map(|card| catalog.spec(card.atom).unwrap().identity.id.as_str())
+                    .collect()
+            };
+            assert_eq!(names(PileId::Hand), *hand, "{seed} Hand");
+            assert_eq!(names(PileId::Draw), *draw, "{seed} Draw");
+            assert_eq!(names(PileId::Discard), *discard, "{seed} Discard");
+            assert_eq!(names(PileId::Exhaust), *exhaust, "{seed} Exhaust");
+            assert_eq!(next.energy, *energy, "{seed} Energy");
+            assert_eq!(next.block, *block, "{seed} Block");
+        }
+    }
+
+    /// Reboot's own full shuffle under the Earring's selector (#3665,
+    /// [`StratagemRoute::Reboot`]), at Amount one and two and both levels.
+    /// Stratagem is played first. Reboot then puts the three Hand cards on
+    /// the Draw pile and shuffles it with the four in Discard: seven cards.
+    /// By [`SELECTOR_VIEW`] the first two are Bash and Defend (Basic, in id
+    /// order; Strike is third). The events show the seven-card shuffle,
+    /// exactly those picks added to Hand in that order, and then Reboot's
+    /// Draw of four (six at level one, which is every card left) from the
+    /// rest. Before, the root was admitted and the loop refused here by
+    /// `stratagem selection`.
+    ///
+    /// Without the selector the same shuffle is a player's choice with no
+    /// persisted owner, and still refuses by that name.
+    #[test]
+    fn whispering_earring_reboot_shuffle_resolves_stratagem_through_the_selector() {
+        use CardId::{
+            Bash, BeamCell, Claw, DefendIronclad, IronWave, Reboot, Stratagem, StrikeIronclad,
+            Uppercut,
+        };
+        let pile = [
+            (3, Claw),
+            (4, BeamCell),
+            (5, DefendIronclad),
+            (21, IronWave),
+            (22, StrikeIronclad),
+            (23, Bash),
+            (24, Uppercut),
+        ];
+        assert_eq!(expected_view(&pile)[..3], [23, 5, 22]);
+        for upgrade in [0u8, 1] {
+            for amount in [1usize, 2] {
+                let deck = [
+                    identity(Stratagem),
+                    identity_at(Reboot, upgrade),
+                    identity(Claw),
+                    identity(BeamCell),
+                    identity(DefendIronclad),
+                ];
+                let discard = [IronWave, StrikeIronclad, Bash, Uppercut].map(identity);
+                let build = |relics: &[RelicId]| {
+                    let (mut state, catalog) = turn_zero_piles(&deck, &discard, relics);
+                    if amount == 2 {
+                        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+                    }
+                    (state, catalog)
+                };
+                let (state, catalog) = build(&[RelicId::RelicWhisperingEarring]);
+                assert_eq!(root_admission(&state, &catalog), Ok(()));
+
+                let (next, events) = end_turn_zero_with_events(&state, &catalog);
+
+                assert!(next.pending.is_none() && next.frames.is_empty());
+                assert_eq!(
+                    next.player_phase,
+                    crate::engine::admission::PHASE_ORDINARY_ACTIONS
+                );
+                let picks = &[23u32, 5][..amount];
+                let (moved, picked, drawn) = first_reshuffle(&events);
+                assert_eq!(moved, 7);
+                assert_eq!(picked, picks, "the selector's cards, in view order");
+                let requested = if upgrade == 0 { 4 } else { 6 };
+                let draws = requested.min(7 - amount);
+                assert_eq!(drawn.len(), draws, "level {upgrade}, Amount {amount}");
+                let mut distinct = drawn.clone();
+                distinct.sort_unstable();
+                distinct.dedup();
+                assert_eq!(distinct.len(), draws);
+                assert!(drawn.iter().all(|uid| {
+                    !picks.contains(uid) && pile.iter().any(|(held, _)| held == uid)
+                }));
+                // The hand draw's five and Reboot's Draw; no later card draws.
+                assert_eq!(
+                    next.cards_drawn_combat,
+                    5 + i32::try_from(draws).unwrap(),
+                    "level {upgrade}, Amount {amount}"
+                );
+                assert_eq!(pile_uids(&next, PileId::Exhaust), [2]);
+                assert_eq!(next.piles.get(PileId::Draw).len(), 7 - amount - draws);
+                assert_eq!(
+                    next.piles.get(PileId::Draw).len()
+                        + next.piles.get(PileId::Hand).len()
+                        + next.piles.get(PileId::Discard).len(),
+                    7
+                );
+
+                let (state, catalog) = build(&[]);
+                assert_eq!(root_admission(&state, &catalog), Ok(()));
+                let by_hand = end_turn_zero(&state, &catalog).unwrap();
+                let play = |state: &HotState, uid| {
+                    apply_action(
+                        state,
+                        &catalog,
+                        &Action::Play {
+                            uid,
+                            target: None,
+                            selection: SelectionRef::NONE,
+                        },
+                    )
+                    .map(|next| next.state)
+                };
+                let by_hand = play(&by_hand, 1).unwrap();
+                assert_eq!(
+                    play(&by_hand, 2),
+                    Err(EngineRefusal::MalformedArgs("stratagem selection"))
+                );
+            }
+        }
+    }
+
+    /// Reboot's shuffle with the pile at or under Amount (#3665). No
+    /// selector is read there (`<FromCombatPile>d__20` RVA `0x3e5e84`
+    /// IL_015a-IL_017c returns the pile in live order), so the Earring's
+    /// selector changes nothing: the same shuffle under the scope and
+    /// outside it leaves the same state, with the whole pile in Hand in the
+    /// shuffled order and not in the selector view's.
+    #[test]
+    fn reboot_shuffle_within_stratagem_amount_takes_the_pile_in_live_order() {
+        for amount in [6, 9] {
+            let (mut state, catalog) = stratagem_selector_draw();
+            state.hp = 50;
+            let draw = std::mem::take(state.piles.get_mut(PileId::Draw).make_mut());
+            state.piles.get_mut(PileId::Discard).make_mut().extend(draw);
+            state.powers.set(PowerId::Stratagem, SlotWire::Int, amount);
+            let mut scoped = state.clone();
+            {
+                let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
+                reboot_shuffle(&mut scoped, &catalog, &[], &mut Vec::new()).unwrap();
+            }
+            reboot_shuffle(&mut state, &catalog, &[], &mut Vec::new()).unwrap();
+            assert!(scoped == state, "Amount {amount}");
+            let hand = pile_uids(&scoped, PileId::Hand);
+            assert_eq!(hand.len(), 6);
+            assert!(scoped.piles.get(PileId::Draw).is_empty());
+            // Strike (6), Anger (4), Claw (3, 5), Thunderclap (1), Shiv (2).
+            assert_ne!(hand, [6, 4, 3, 5, 1, 2], "not the selector view");
+        }
+    }
+
+    /// A selector pick that fills the Hand ends the Draw that follows it
+    /// (#3665), on both routes the selector answers. The picks are the
+    /// first Amount cards of [`SELECTOR_VIEW`] among the reshuffled ones.
+    ///
+    /// - **Reboot.** Stratagem 10 is live at the root. Reboot is played
+    ///   first: it shuffles its four Hand cards with Discard's eight, the
+    ///   selector takes ten, the Hand is full, and Reboot's Draw of four
+    ///   draws nothing (`<DrawInternal>d__21` RVA `0x3e3a70`
+    ///   IL_0162-IL_0195). Stratagem and Uppercut, the last two Uncommons by
+    ///   id, stay in the Draw pile.
+    /// - **Scrawl**, on the resumable Draw frame. Stratagem 6 is live.
+    ///   Scrawl is played first with four cards in Hand, so it asks for six.
+    ///   Its reshuffle of eight gives the selector six: the Hand is full and
+    ///   the Draw stops with nothing drawn (IL_025f-IL_0274). Inflame and
+    ///   Uppercut stay in the Draw pile.
+    #[test]
+    fn whispering_earring_picks_that_fill_the_hand_stop_the_draw() {
+        use CardId::{
+            Bash, BeamCell, Bludgeon, Claw, DefendIronclad, Inflame, IronWave, Reboot, Scrawl,
+            Stratagem, StrikeIronclad, Thunderclap, TwinStrike, Uppercut,
+        };
+        // Eight cards that neither draw nor generate a card, uids 21 to 28.
+        let fillers = [
+            IronWave,
+            StrikeIronclad,
+            Bash,
+            Uppercut,
+            Thunderclap,
+            TwinStrike,
+            Bludgeon,
+            Inflame,
+        ];
+        let discard: Vec<(u32, CardId)> = (21u32..).zip(fillers).collect();
+        let hand = [
+            (2, Claw),
+            (3, BeamCell),
+            (4, DefendIronclad),
+            (5, Stratagem),
+        ];
+
+        let deck = [Reboot, Claw, BeamCell, DefendIronclad, Stratagem].map(identity);
+        let (mut state, catalog) = turn_zero_piles(
+            &deck,
+            &fillers.map(identity),
+            &[RelicId::RelicWhisperingEarring],
+        );
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 10);
+        let (next, events) = end_turn_zero_with_events(&state, &catalog);
+        let pile = [&hand[..], &discard[..]].concat();
+        let picks = [23, 4, 22, 3, 2, 21, 25, 26, 27, 28];
+        assert_eq!(expected_view(&pile)[..10], picks);
+        let (moved, picked, drawn) = first_reshuffle(&events);
+        assert_eq!(moved, 12);
+        assert_eq!(picked, picks);
+        assert!(drawn.is_empty(), "Reboot's Draw drew nothing");
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(next.cards_drawn_combat, 5);
+        assert_eq!(pile_uids(&next, PileId::Exhaust), [1]);
+        let mut left = pile_uids(&next, PileId::Draw);
+        left.sort_unstable();
+        assert_eq!(left, [5, 24]);
+
+        let deck = [Scrawl, Claw, BeamCell, DefendIronclad, Stratagem].map(identity);
+        let (mut state, catalog) = turn_zero_piles(
+            &deck,
+            &fillers.map(identity),
+            &[RelicId::RelicWhisperingEarring],
+        );
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 6);
+        let (next, events) = end_turn_zero_with_events(&state, &catalog);
+        let picks = [23, 22, 21, 25, 26, 27];
+        assert_eq!(expected_view(&discard)[..6], picks);
+        let (moved, picked, drawn) = first_reshuffle(&events);
+        assert_eq!(moved, 8);
+        assert_eq!(picked, picks);
+        assert!(drawn.is_empty(), "Scrawl's Draw drew nothing");
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(next.cards_drawn_combat, 5);
+        assert_eq!(pile_uids(&next, PileId::Exhaust), [1]);
+        let mut left = pile_uids(&next, PileId::Draw);
+        left.sort_unstable();
+        assert_eq!(left, [24, 28]);
+    }
+
+    /// What #3665 leaves refused under the Earring beside a live Stratagem,
+    /// by `Whispering Earring bounded live Hand loop` at admission and
+    /// `Whispering Earring playable child` in the loop:
+    ///
+    /// - a child with a selection the selector was not read for: Burning
+    ///   Pact (it selects before it draws), Acrobatics, Headbutt;
+    /// - a child whose discard can AutoPlay a Sly card
+    ///   (`admission::autoplay_parent_program_can_spawn_child`): Scrape,
+    ///   Calculated Gamble;
+    ///
+    /// Fetch stays refused too (`selection::drawing_child_meets_only_stratagem`
+    /// excludes it by name), here with Osty alive.
+    #[test]
+    fn whispering_earring_children_still_refused_beside_a_live_stratagem() {
+        use CardId::{
+            Acrobatics, BeamCell, BurningPact, CalculatedGamble, Claw, DefendIronclad, Headbutt,
+            Scrape, Stratagem,
+        };
+        for child in [
+            BurningPact,
+            Acrobatics,
+            Headbutt,
+            Scrape,
+            CalculatedGamble,
+            CardId::Fetch,
+        ] {
+            let deck = [Stratagem, Claw, BeamCell, child, DefendIronclad].map(identity);
+            let (mut state, catalog) = turn_zero_deck(&deck, &[RelicId::RelicWhisperingEarring]);
+            if child == CardId::Fetch {
+                state.fanouts.set_osty(Some((5, 5))).unwrap();
+            }
+            assert!(
+                root_admission(&state, &catalog)
+                    .is_err_and(|refusal| refusal.contains(EARRING_LOOP_WALL)),
+                "{child:?}"
+            );
+            assert_eq!(
+                end_turn_zero(&state, &catalog),
+                Err(EngineRefusal::MalformedArgs(
+                    "Whispering Earring playable child"
+                )),
+                "{child:?}"
+            );
+        }
     }
 
     /// An enchanted plain-Draw child (#3637). Sharp leaves the body exact,

@@ -51,7 +51,8 @@ thread_local! {
 /// Only the selections whose `CardSelectCmd` path was read resolve through
 /// the scope: the selector programs above ([`vakuu_program_order`], Glimmer)
 /// and Stratagem's `AfterShuffle` pick after a Draw command's shuffle
-/// (#3637, `draw::stratagem_after_shuffle`). Every other selection still
+/// (#3637) or Reboot's own (#3665; `draw::stratagem_after_shuffle`,
+/// `draw::StratagemRoute`). Every other selection still
 /// suspends, and no suspension leaves the scope as a player choice (#3666):
 ///
 /// - the Earring's child wall keeps a fight that could reach one out of the
@@ -272,21 +273,38 @@ fn vakuu_program_order(owner: &CardSpec, selector: Selector) -> Option<VakuuOrde
 }
 
 /// Whether Whispering Earring's AutoPlay of `spec` can meet a selection
-/// only at the program [`VakuuSelectorScope`] resolves (#3414, #3433,
-/// #3608).
+/// only where [`VakuuSelectorScope`] resolves it (#3414, #3433, #3608,
+/// #3637, #3665).
 ///
-/// Glimmer (`FromHand`, `CardSelectorPrefs(prompt, PutBack)` with a null
-/// filter at `Glimmer/<OnPlay>d__4::MoveNext` RVA `0x3a173c`
-/// IL_00a7-IL_00d8), and Cosmic Indifference, Thinking Ahead and Secret
-/// Weapon ([`vakuu_program_order`]). Thinking Ahead's generated program is
-/// its Draw followed by its select, the native order. Secret Weapon's is its
-/// select alone.
+/// # A selection of the child's own
+///
+/// Four programs were read under the selector: Glimmer (`FromHand`,
+/// `CardSelectorPrefs(prompt, PutBack)` with a null filter at
+/// `Glimmer/<OnPlay>d__4::MoveNext` RVA `0x3a173c` IL_00a7-IL_00d8), and
+/// Cosmic Indifference, Thinking Ahead and Secret Weapon
+/// ([`vakuu_program_order`]). Thinking Ahead's generated program is its Draw
+/// followed by its select, the native order. Secret Weapon's is its select
+/// alone. Every other selecting child is unresolved.
+///
+/// # Beside a live Draw hook
+///
 /// `draw_hooks_quiet` says no Draw hook can suspend (Stratagem, or
-/// Hellraiser with a selecting Strike). Without it those four stay
-/// unresolved: their own selection beside a live Draw hook was not read
-/// here. Secret Weapon draws nothing, but it is held to the same condition.
-/// The one child resolved beside a live Draw hook is the plain-Draw child
-/// of [`plain_draw_child_meets_only_stratagem`] (#3637).
+/// Hellraiser with a selecting Strike). Without it:
+///
+/// - **Hellraiser reachable** (`Catalog::hellraiser_reachable`): nothing the
+///   wall asks about is resolved. A Draw's only blocking listener besides
+///   Stratagem is Hellraiser's AutoPlay of a selecting Strike
+///   (`draw::centennial_puzzle_draw_one` has the census), and what the
+///   selector answers for such a Strike was not read.
+/// - **Otherwise the only selection a Draw can meet is Stratagem's
+///   `AfterShuffle`**, which the selector answers on the resumable Draw
+///   frame (`draw::stratagem_after_shuffle`). The four children above stay
+///   resolved: Cosmic Indifference and Secret Weapon issue no Draw, and
+///   Thinking Ahead (`<OnPlay>d__5` RVA `0x3c3300`, `CardPileCmd::Draw`
+///   IL_0049 before `FromHand` IL_00c4) and Glimmer (RVA `0x3a173c`, Draw
+///   IL_0049 before `FromHand` IL_00d8) select from the Hand as their Draw
+///   left it. A drawing child with no selection of its own is resolved too
+///   ([`drawing_child_meets_only_stratagem`]).
 pub(crate) fn whispering_earring_child_selection_is_vakuu_resolved(
     spec: &CardSpec,
     catalog: &Catalog,
@@ -300,7 +318,12 @@ pub(crate) fn whispering_earring_child_selection_is_vakuu_resolved(
         return false;
     }
     if !draw_hooks_quiet {
-        return plain_draw_child_meets_only_stratagem(spec, catalog);
+        if catalog.hellraiser_reachable() {
+            return false;
+        }
+        if drawing_child_meets_only_stratagem(spec, catalog) {
+            return true;
+        }
     }
     let prefix = match spec.identity.id {
         CardId::Glimmer => {
@@ -321,46 +344,72 @@ pub(crate) fn whispering_earring_child_selection_is_vakuu_resolved(
             .is_ok_and(|selector| vakuu_program_order(spec, selector).is_some())
 }
 
-/// Whether the only selection Whispering Earring's AutoPlay of `spec` can
-/// meet beside a live Draw hook is Stratagem's `AfterShuffle`, which the
-/// Earring's selector answers (#3637, `draw::stratagem_after_shuffle`).
+/// Whether `spec` is a drawing child with no selection of its own, so that
+/// beside a live Stratagem (and no Hellraiser) the only selection Whispering
+/// Earring's AutoPlay of it can meet is Stratagem's `AfterShuffle` (#3637,
+/// #3665).
 ///
-/// That holds for a child whose program suspends only through the generated
-/// plain `Draw` step (`play::draw_cardplay_no_result`, the bare
-/// `CardPileCmd.Draw`), in a fight where Hellraiser cannot be live: no
-/// Hellraiser card is reachable and the power was not live at the root
-/// (`Catalog::hellraiser_reachable`). A Draw's only other blocking listener
-/// is Hellraiser's AutoPlay of a selecting Strike
-/// (`draw::centennial_puzzle_draw_one` has the census), and what the
-/// selector answers for such a Strike was not read here.
+/// The child's program holds a Draw step of one of the three exact families,
+/// each of which issues its Draw on the resumable frame
+/// (`draw::draw_cards_for_potion_from`) beneath the child's CardPlay, and no
+/// step that selects (`play::autoplay_child_requires_explicit_selection`).
+/// The selector answers the reshuffle's pick inline there
+/// (`draw::stratagem_after_shuffle`), so the Draw returns complete and the
+/// child's own handler continues exactly as it does when the reshuffled pile
+/// is no larger than Amount.
 ///
-/// Still unresolved, and so still refused by the Earring's child wall: a
-/// child with a selection of its own, a fused Draw kind (Big Bang, Scrawl,
-/// Burning Pact and the rest of `play::cardplay_no_result_draw_source_step_is_exact`),
-/// a Draw tail or a result Draw (Scrape, Pillage). Each has a handler of its
-/// own around the Draw that was not read under the selector.
-fn plain_draw_child_meets_only_stratagem(spec: &CardSpec, catalog: &Catalog) -> bool {
+/// Native: every body listed below awaits `CardPileCmd::Draw`, whose
+/// overloads all end in `DrawInternal` (the four-argument one at RVA
+/// `0x13141f` IL_0005; the single-card `<Draw>d__18` RVA `0x3e3998` through
+/// it at IL_0028), and with a selector set nothing inside that command
+/// pauses (`draw::stratagem_after_shuffle`). Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`),
+/// each `<OnPlay>` state machine's `MoveNext` and its Draw call:
+///
+/// - the plain `Draw` step (`play::draw_cardplay_no_result`, #3637);
+/// - fused kinds (`play::cardplay_no_result_draw_source_step_is_exact`):
+///   Scrawl `0x3b8bd0` IL_0051, Spoils of Battle `0x3be53c` IL_00b8, Drum of
+///   Battle `0x39a6d4` IL_003a, Compile Driver `0x393a44` IL_0110, FTL
+///   `0x3a048c` IL_00ff, Impatience `0x3a6e24` IL_0079;
+/// - Draw tails (`play::cardplay_owned_draw_tail_source_step_is_exact`): Big
+///   Bang `0x38c648` IL_00cb, Escape Plan `0x39c314` IL_0036, Expertise
+///   `0x39c914` IL_003f;
+/// - result Draws (`play::cardplay_result_draw_source_step_is_exact`):
+///   Pillage `0x3b2734` IL_00e6, Restlessness `0x3b7454` IL_0046.
+///
+/// Each of those has a public-action witness under the selector
+/// (`draw::tests`). The rest of the three families is not this:
+///
+/// - Fetch (`0x39de84`, Draw IL_0120) is excluded by name. It awaits the
+///   same command, but no witness ran it under the selector.
+/// - Burning Pact's `ExhaustDraw` step selects before it draws (`<OnPlay>d__5`
+///   RVA `0x390434`, `FromHand` IL_004c), and Glimmer is resolved by the
+///   caller. Every other selecting child is unresolved.
+/// - Scrape and Calculated Gamble discard, which can AutoPlay a Sly card:
+///   the Earring's wall refuses them on its own clause
+///   (`admission::autoplay_parent_program_can_spawn_child`), whatever this
+///   answers.
+/// - Constellation and Huddle Up are excluded by name, like Fetch. Neither
+///   was witnessed under the selector, and Huddle Up does not call the
+///   command above: `HuddleUp/<OnPlay>d__7` RVA `0x3a60bc` IL_0097 calls
+///   `CardPileCmd::DrawWithoutBlockingOnOtherPlayers` RVA `0x13142c`.
+///   Today the Earring's Hand query never reaches either, because both are
+///   `solo_unplayable`; the exclusion does not rest on that flag, which
+///   #3703 questions for Huddle Up.
+fn drawing_child_meets_only_stratagem(spec: &CardSpec, catalog: &Catalog) -> bool {
     use crate::engine::play::{
         autoplay_child_requires_explicit_selection, cardplay_no_result_draw_step_is_exact,
         cardplay_owned_draw_tail_step_is_exact, cardplay_result_draw_step_is_exact,
     };
-    let mut plain_draw = false;
-    for (index, step) in spec.row.steps.iter().enumerate() {
-        if cardplay_owned_draw_tail_step_is_exact(spec, catalog, index)
+    use crate::ids::CardId;
+    !matches!(
+        spec.identity.id,
+        CardId::Fetch | CardId::Constellation | CardId::HuddleUp
+    ) && (0..spec.row.steps.len()).any(|index| {
+        cardplay_no_result_draw_step_is_exact(spec, catalog, index)
+            || cardplay_owned_draw_tail_step_is_exact(spec, catalog, index)
             || cardplay_result_draw_step_is_exact(spec, catalog, index)
-        {
-            return false;
-        }
-        if cardplay_no_result_draw_step_is_exact(spec, catalog, index) {
-            if step.kind != StepKind::Draw {
-                return false;
-            }
-            plain_draw = true;
-        }
-    }
-    plain_draw
-        && !autoplay_child_requires_explicit_selection(PileId::Hand, spec, catalog)
-        && !catalog.hellraiser_reachable()
+    }) && !autoplay_child_requires_explicit_selection(PileId::Hand, spec, catalog)
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -7734,67 +7783,94 @@ mod tests {
         }
     }
 
-    /// The Earring's child wall (#3433): both Thinking Ahead levels resolve
-    /// under the selector when no Draw hook can suspend, and stay refused
-    /// when one can.
+    /// The Earring's child wall (#3433, #3665): both Thinking Ahead levels
+    /// resolve under the selector, beside a live Draw hook too unless
+    /// Hellraiser can be live. Headbutt never does.
     #[test]
-    fn whispering_earring_thinking_ahead_child_is_vakuu_resolved_only_with_quiet_draw_hooks() {
-        let mut builder = CatalogBuilder::new();
-        for upgrade in [0, 1] {
-            builder
-                .intern_reachable(CardIdentity {
-                    upgrade,
-                    ..identity(CardId::ThinkingAhead)
-                })
-                .unwrap();
-        }
-        builder
-            .intern_reachable(identity(CardId::Headbutt))
-            .unwrap();
-        let catalog = builder.build();
-        let mut seen = 0;
-        for spec in catalog.reachable_specs() {
-            let resolved =
-                |quiet| whispering_earring_child_selection_is_vakuu_resolved(spec, &catalog, quiet);
-            if spec.identity.id == CardId::ThinkingAhead {
-                seen += 1;
-                assert!(resolved(true), "{:?}", spec.identity);
-                assert!(!resolved(false), "{:?}", spec.identity);
-            } else {
-                assert!(!resolved(true), "{:?}", spec.identity);
+    fn whispering_earring_thinking_ahead_child_is_vakuu_resolved_unless_hellraiser_is_reachable() {
+        for hellraiser in [false, true] {
+            let mut builder = CatalogBuilder::new();
+            for upgrade in [0, 1] {
+                builder
+                    .intern_reachable(CardIdentity {
+                        upgrade,
+                        ..identity(CardId::ThinkingAhead)
+                    })
+                    .unwrap();
             }
+            builder
+                .intern_reachable(identity(CardId::Headbutt))
+                .unwrap();
+            if hellraiser {
+                builder.mark_live_hellraiser_reachable();
+            }
+            let catalog = builder.build();
+            let mut seen = 0;
+            for spec in catalog.reachable_specs() {
+                let resolved = |quiet| {
+                    whispering_earring_child_selection_is_vakuu_resolved(spec, &catalog, quiet)
+                };
+                if spec.identity.id == CardId::ThinkingAhead {
+                    seen += 1;
+                    assert!(resolved(true), "{:?}", spec.identity);
+                    assert_eq!(resolved(false), !hellraiser, "{:?}", spec.identity);
+                } else {
+                    assert!(!resolved(true), "{:?}", spec.identity);
+                    assert!(!resolved(false), "{:?}", spec.identity);
+                }
+            }
+            assert_eq!(seen, 2);
+            assert_eq!(catalog.reachable_specs().count(), 3);
         }
-        assert_eq!(seen, 2);
-        assert_eq!(catalog.reachable_specs().count(), 3);
     }
 
-    /// The Earring's child wall beside a live Draw hook (#3637). A child
-    /// whose program suspends only through the plain `Draw` step is resolved
-    /// when no Hellraiser card is reachable: the one selection its Draw can
-    /// meet is Stratagem's, which the selector answers. A fused Draw kind, a
-    /// Draw tail, a result Draw and every selecting child stay unresolved,
-    /// and so does the plain Draw when Hellraiser can be live. A plain-Draw
-    /// child whose enchantment leaves the body inexact (Nimble) is never
-    /// resolved, with quiet Draw hooks or without.
+    /// The Earring's child wall beside a live Draw hook (#3637, #3665).
+    /// With no Hellraiser reachable, the only selection a Draw can meet is
+    /// Stratagem's, which the selector answers: a drawing child with no
+    /// selection of its own is resolved, and so are the four children whose
+    /// own selection the selector resolves. Every other selecting child
+    /// stays unresolved, and so do Fetch, Constellation and Huddle Up, which
+    /// the predicate excludes by name. With Hellraiser reachable
+    /// nothing is resolved. A drawing child whose enchantment leaves the
+    /// body inexact (Nimble) is never resolved, with quiet Draw hooks or
+    /// without.
+    ///
+    /// Scrape and Calculated Gamble answer true here and stay behind the
+    /// wall's AutoPlay-parent clause (`draw::tests` has the public refusal).
     #[test]
-    fn whispering_earring_plain_draw_child_is_resolved_beside_a_live_stratagem_only() {
-        const PLAIN: [CardId; 5] = [
+    fn whispering_earring_draw_children_are_resolved_beside_a_live_stratagem_only() {
+        const RESOLVED: [CardId; 22] = [
             CardId::FlashOfSteel,
             CardId::Backflip,
             CardId::BattleTrance,
             CardId::Adrenaline,
             CardId::Finesse,
-        ];
-        const UNRESOLVED: [CardId; 11] = [
-            CardId::BigBang,
             CardId::Scrawl,
-            CardId::BurningPact,
-            CardId::Scrape,
+            CardId::SpoilsOfBattle,
+            CardId::DrumOfBattle,
+            CardId::CompileDriver,
+            CardId::Ftl,
+            CardId::Impatience,
+            CardId::BigBang,
+            CardId::EscapePlan,
+            CardId::Expertise,
             CardId::Pillage,
-            CardId::Acrobatics,
+            CardId::Restlessness,
+            CardId::Scrape,
+            CardId::CalculatedGamble,
+            CardId::Glimmer,
             CardId::ThinkingAhead,
             CardId::SecretWeapon,
-            CardId::Glimmer,
+            CardId::CosmicIndifference,
+        ];
+        const UNRESOLVED: [CardId; 9] = [
+            CardId::Fetch,
+            CardId::Constellation,
+            CardId::HuddleUp,
+            CardId::BurningPact,
+            CardId::Acrobatics,
+            CardId::Headbutt,
+            CardId::SecretTechnique,
             CardId::Stratagem,
             CardId::StrikeIronclad,
         ];
@@ -7802,7 +7878,7 @@ mod tests {
         // power already live at the root with no card left in any pile.
         for (hellraiser, live_power_only) in [(false, false), (true, false), (true, true)] {
             let mut builder = CatalogBuilder::new();
-            for id in PLAIN.into_iter().chain(UNRESOLVED) {
+            for id in RESOLVED.into_iter().chain(UNRESOLVED) {
                 for upgrade in [0, 1] {
                     builder
                         .intern_reachable(CardIdentity {
@@ -7828,19 +7904,19 @@ mod tests {
                     .any(|spec| spec.identity.id == CardId::Hellraiser),
                 hellraiser && !live_power_only
             );
-            let mut plain_seen = 0;
+            let mut resolved_seen = 0;
             for spec in catalog.reachable_specs() {
                 let beside_a_live_hook =
                     whispering_earring_child_selection_is_vakuu_resolved(spec, &catalog, false);
-                let plain = PLAIN.contains(&spec.identity.id);
-                plain_seen += usize::from(plain);
+                let resolved = RESOLVED.contains(&spec.identity.id);
+                resolved_seen += usize::from(resolved);
                 assert_eq!(
                     beside_a_live_hook,
-                    plain && !hellraiser,
+                    resolved && !hellraiser,
                     "{:?} hellraiser={hellraiser}",
                     spec.identity
                 );
-                if plain {
+                if resolved {
                     assert!(
                         crate::engine::play::autoplay_child_requires_suspension(
                             PileId::Hand,
@@ -7852,7 +7928,7 @@ mod tests {
                     );
                 }
             }
-            assert_eq!(plain_seen, 10);
+            assert_eq!(resolved_seen, 44);
         }
 
         let nimble = CardIdentity {
@@ -8094,13 +8170,15 @@ mod tests {
     }
 
     /// The Earring's child wall (#3608): both Secret Weapon levels resolve
-    /// under the selector when no Draw hook can suspend, and stay refused
-    /// when one can. Secret Technique, the same Draw-to-Hand shape with a
+    /// under the selector, beside a live Draw hook too when Hellraiser cannot
+    /// be live (#3665; no Hellraiser is reachable here, and
+    /// `whispering_earring_draw_children_are_resolved_beside_a_live_stratagem_only`
+    /// has the Hellraiser side). Secret Technique, the same Draw-to-Hand shape with a
     /// Skill filter, was not read and stays refused. A Secret Weapon select
     /// with any other pile, count, filter or sink is not the resolved
     /// program.
     #[test]
-    fn whispering_earring_secret_weapon_child_is_vakuu_resolved_only_with_quiet_draw_hooks() {
+    fn whispering_earring_secret_weapon_child_is_vakuu_resolved() {
         let mut builder = CatalogBuilder::new();
         for upgrade in [0, 1] {
             builder
@@ -8121,7 +8199,7 @@ mod tests {
             if spec.identity.id == CardId::SecretWeapon {
                 seen += 1;
                 assert!(resolved(true), "{:?}", spec.identity);
-                assert!(!resolved(false), "{:?}", spec.identity);
+                assert!(resolved(false), "{:?}", spec.identity);
 
                 let exact = Selector {
                     pile: PileId::Draw,
@@ -8157,6 +8235,7 @@ mod tests {
                 }
             } else {
                 assert!(!resolved(true), "{:?}", spec.identity);
+                assert!(!resolved(false), "{:?}", spec.identity);
             }
         }
         assert_eq!(seen, 2);

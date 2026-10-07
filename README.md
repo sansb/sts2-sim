@@ -7,7 +7,7 @@ Not affiliated with or endorsed by Mega Crit. No game files included; some tooli
 ## About
 
 * Combat only. Simulates single combats from fully specified starting states. Does not currently simulate non-combat events.
-* Optimized for search. High-throughput Rust-based engine implementation. up to ~1m transitions/core/second, ~100k t/c/s more typical (see [PERF.md](v0.111.0/engine/PERF.md))
+* Optimized for search. High-throughput Rust-based engine implementation. up to ~1m transitions/core/second, ~300k t/c/s typical (see [PERF.md](v0.111.0/engine/PERF.md))
 * High fidelity with actual game, but not guaranteed. Please file issues if you find any divergence from actual game.
 
 ## Comparison with other sims

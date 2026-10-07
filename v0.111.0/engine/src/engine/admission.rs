@@ -2783,8 +2783,9 @@ pub fn admit(
     // pushed VakuuCardSelector when its CardSelectCmd path was read
     // (`selection::VakuuSelectorScope`): Glimmer, Cosmic Indifference,
     // Thinking Ahead (#3433) and Secret Weapon (#3608). Beside a reachable
-    // Stratagem, a child that suspends only through the plain `Draw` step
-    // is resolved too when Hellraiser cannot be live (#3637).
+    // Stratagem those four stay resolved, and a drawing child with no
+    // selection of its own is resolved too, when Hellraiser cannot be live
+    // (#3637, #3665): the selector answers the reshuffle's pick.
     if whispering_earring
         && crate::engine::turn::whispering_earring_loop_is_ahead(state)
         && catalog.reachable_specs().any(|spec| {

@@ -6564,10 +6564,11 @@ pub(crate) fn autoplay_history_course_dupe(
 /// and a child that applies neither, only an explicit selection can
 /// suspend, and Glimmer's, Cosmic Indifference's, Thinking Ahead's (#3433)
 /// and Secret Weapon's (#3608) resolve inline under the loop's
-/// `VakuuCardSelector`. Otherwise the fight-wide answer stands, with one
-/// exception (#3637): a child that suspends only through the plain `Draw`
-/// step, in a fight where Hellraiser cannot be live, meets only Stratagem's
-/// reshuffle pick, which the selector answers
+/// `VakuuCardSelector`. Otherwise the fight-wide answer stands, except in a
+/// fight where Hellraiser cannot be live (#3637, #3665): there a Draw meets
+/// only Stratagem's reshuffle pick, which the selector answers, so a
+/// drawing child with no selection of its own is cleared, and so are those
+/// four selecting children
 /// (`selection::whispering_earring_child_selection_is_vakuu_resolved`).
 fn whispering_earring_child_can_suspend(
     state: &HotState,
@@ -50561,49 +50562,73 @@ mod whispering_earring_child_tests {
     /// `PowerId::Stratagem` is live both fall back to the fight-wide answer.
     #[test]
     fn earring_children_are_cleared_against_the_live_draw_hooks() {
-        let mut builder = CatalogBuilder::new();
-        for id in [CardId::BigBang, CardId::Glimmer, CardId::Stratagem] {
-            builder
-                .intern_reachable(CardIdentity {
-                    id,
-                    upgrade: 0,
-                    enchantment: None,
-                })
-                .unwrap();
-        }
-        let catalog = builder.build();
-        assert!(catalog.cardplay_draw_hook_can_suspend());
-        let spec = |id| {
-            catalog
-                .spec(
-                    catalog
-                        .atom(&CardIdentity {
-                            id,
-                            upgrade: 0,
-                            enchantment: None,
-                        })
-                        .unwrap(),
-                )
-                .unwrap()
-        };
-        let mut state = HotState::at_defaults();
-        for id in [CardId::BigBang, CardId::Glimmer] {
-            assert!(autoplay_child_requires_suspension(
-                PileId::Hand,
-                spec(id),
-                &catalog
+        for hellraiser in [false, true] {
+            let mut builder = CatalogBuilder::new();
+            for id in [
+                CardId::BigBang,
+                CardId::Glimmer,
+                CardId::BurningPact,
+                CardId::Stratagem,
+            ] {
+                builder
+                    .intern_reachable(CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+            }
+            if hellraiser {
+                builder.mark_live_hellraiser_reachable();
+            }
+            let catalog = builder.build();
+            assert!(catalog.cardplay_draw_hook_can_suspend());
+            let spec = |id| {
+                catalog
+                    .spec(
+                        catalog
+                            .atom(&CardIdentity {
+                                id,
+                                upgrade: 0,
+                                enchantment: None,
+                            })
+                            .unwrap(),
+                    )
+                    .unwrap()
+            };
+            let mut state = HotState::at_defaults();
+            for id in [CardId::BigBang, CardId::Glimmer] {
+                assert!(autoplay_child_requires_suspension(
+                    PileId::Hand,
+                    spec(id),
+                    &catalog
+                ));
+                assert!(
+                    !whispering_earring_child_can_suspend(&state, &catalog, spec(id)),
+                    "{id:?}"
+                );
+            }
+            // Burning Pact's own selection is not one the selector resolves.
+            assert!(whispering_earring_child_can_suspend(
+                &state,
+                &catalog,
+                spec(CardId::BurningPact)
             ));
-            assert!(
-                !whispering_earring_child_can_suspend(&state, &catalog, spec(id)),
-                "{id:?}"
-            );
-        }
-        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
-        for id in [CardId::BigBang, CardId::Glimmer] {
-            assert!(
-                whispering_earring_child_can_suspend(&state, &catalog, spec(id)),
-                "{id:?}"
-            );
+            // Beside a live Stratagem the selector answers the reshuffle
+            // (#3665), unless Hellraiser can be live as well.
+            state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+            for id in [CardId::BigBang, CardId::Glimmer] {
+                assert_eq!(
+                    whispering_earring_child_can_suspend(&state, &catalog, spec(id)),
+                    hellraiser,
+                    "{id:?}"
+                );
+            }
+            assert!(whispering_earring_child_can_suspend(
+                &state,
+                &catalog,
+                spec(CardId::BurningPact)
+            ));
         }
     }
 
