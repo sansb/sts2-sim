@@ -1479,7 +1479,7 @@ pub(crate) fn special_option_count(
             let spec = catalog
                 .spec(active.atom)
                 .ok_or(EngineRefusal::UnknownAtom(active.atom))?;
-            options(
+            selector_option_count(
                 state,
                 catalog,
                 hand_cap_selector(
@@ -1489,8 +1489,7 @@ pub(crate) fn special_option_count(
                     record.selection_amount,
                     selection_cards,
                 )?,
-            )?
-            .len()
+            )? as usize
         }
         PendingSelectionKind::Glimmer => {
             if state.history.over {
@@ -1504,7 +1503,7 @@ pub(crate) fn special_option_count(
                 record.target.is_some(),
                 selection_cards,
             )?;
-            options(state, catalog, glimmer_selector())?.len()
+            selector_option_count(state, catalog, glimmer_selector())? as usize
         }
         _ => return Err(EngineRefusal::ContinuationNotModeled),
     };
@@ -1815,10 +1814,7 @@ pub(crate) fn apply_special_option(
                 record.selection_amount,
                 selection_cards,
             )?;
-            let answer = options(state, catalog, selector)?
-                .get(option_index as usize)
-                .cloned()
-                .ok_or(EngineRefusal::MalformedArgs("selection option index"))?;
+            let answer = selector_option_at(state, catalog, selector, option_index)?;
             apply(state, catalog, selector, &answer, events)
         }
         PendingSelectionKind::Glimmer => {
@@ -1830,10 +1826,7 @@ pub(crate) fn apply_special_option(
                 record.target.is_some(),
                 selection_cards,
             )?;
-            let answer = options(state, catalog, glimmer_selector())?
-                .get(option_index as usize)
-                .cloned()
-                .ok_or(EngineRefusal::MalformedArgs("selection option index"))?;
+            let answer = selector_option_at(state, catalog, glimmer_selector(), option_index)?;
             apply(state, catalog, glimmer_selector(), &answer, events)
         }
         _ => Err(EngineRefusal::ContinuationNotModeled),
@@ -2162,6 +2155,134 @@ fn options(
     Ok(options)
 }
 
+/// The answer space of one generic selector, held as its sorted candidates
+/// and size bounds instead of the materialized answer list (#3717).
+///
+/// [`options`] is the definition: answers are the candidate subsets in the
+/// order its doubling loop emits them (lexicographic on the per-candidate
+/// include bit, first candidate most significant, "excluded" first), kept
+/// when their size is in `lo..=hi`, and — where
+/// [`selection_order_is_observable`] — each subset is replaced in place by
+/// its permutations in index-lexicographic order. The candidates are distinct
+/// live cards, so the count is `Σ_k C(n, k)` (`Σ_k P(n, k)` when ordered) and
+/// one ordinal decodes without building its predecessors. No native
+/// semantics are read here: this numbers the same answers the same way.
+struct OptionSpace {
+    candidates: Vec<HotCard>,
+    lo: usize,
+    hi: usize,
+    ordered: bool,
+    /// Pascal's triangle over `0..=candidates.len()`, saturating.
+    binomial: Vec<u64>,
+}
+
+impl OptionSpace {
+    fn new(state: &HotState, catalog: &Catalog, selector: Selector) -> Result<Self, EngineRefusal> {
+        let candidates = sorted_exact_candidates(state, catalog, selector)?;
+        let n = candidates.len();
+        let width = n + 1;
+        let mut binomial = vec![0_u64; width * width];
+        for row in 0..width {
+            binomial[row * width] = 1;
+            for k in 1..=row {
+                binomial[row * width + k] = binomial[(row - 1) * width + k - 1]
+                    .saturating_add(binomial[(row - 1) * width + k]);
+            }
+        }
+        Ok(Self {
+            lo: selector.min.min(n),
+            hi: selector.max.min(n),
+            ordered: selection_order_is_observable(selector.operation),
+            candidates,
+            binomial,
+        })
+    }
+
+    /// How many answers one subset of `size` cards contributes.
+    fn orders(&self, size: usize) -> u64 {
+        if !self.ordered {
+            return 1;
+        }
+        (2..=size as u64).fold(1_u64, u64::saturating_mul)
+    }
+
+    /// Answers that extend `chosen` already-included cards with any subset
+    /// of `remaining` undecided candidates. Saturating.
+    fn completions(&self, remaining: usize, chosen: usize) -> u64 {
+        let width = self.candidates.len() + 1;
+        let mut total = 0_u64;
+        for extra in 0..=remaining {
+            let size = chosen + extra;
+            if size > self.hi {
+                break;
+            }
+            if size < self.lo {
+                continue;
+            }
+            total = total.saturating_add(
+                self.binomial[remaining * width + extra].saturating_mul(self.orders(size)),
+            );
+        }
+        total
+    }
+
+    fn count(&self) -> Result<u32, EngineRefusal> {
+        u32::try_from(self.completions(self.candidates.len(), 0))
+            .map_err(|_| EngineRefusal::CounterOverflow("selection option count"))
+    }
+
+    /// The answer [`options`] holds at `ordinal`, or `None` past the end.
+    fn at(&self, ordinal: u32) -> Option<Vec<HotCard>> {
+        let n = self.candidates.len();
+        let mut rest = u64::from(ordinal);
+        if rest >= self.completions(n, 0) {
+            return None;
+        }
+        let mut subset = Vec::new();
+        for (index, card) in self.candidates.iter().enumerate() {
+            let without = self.completions(n - index - 1, subset.len());
+            if rest >= without {
+                rest -= without;
+                subset.push(*card);
+            }
+        }
+        if !self.ordered {
+            return Some(subset);
+        }
+        let mut answer = Vec::with_capacity(subset.len());
+        while !subset.is_empty() {
+            let block = self.orders(subset.len() - 1);
+            answer.push(subset.remove((rest / block) as usize));
+            rest %= block;
+        }
+        Some(answer)
+    }
+}
+
+/// How many answers [`options`] would hold for `selector`.
+fn selector_option_count(
+    state: &HotState,
+    catalog: &Catalog,
+    selector: Selector,
+) -> Result<u32, EngineRefusal> {
+    OptionSpace::new(state, catalog, selector)?.count()
+}
+
+/// The answer [`options`] would hold at `ordinal` for `selector`.
+fn selector_option_at(
+    state: &HotState,
+    catalog: &Catalog,
+    selector: Selector,
+    ordinal: u32,
+) -> Result<Vec<HotCard>, EngineRefusal> {
+    let space = OptionSpace::new(state, catalog, selector)?;
+    // `options` refuses an oversized surface before any index is read.
+    space.count()?;
+    space
+        .at(ordinal)
+        .ok_or(EngineRefusal::MalformedArgs("selection option index"))
+}
+
 /// Whether this consumer operation makes SELECTION ORDER observable.
 ///
 /// Current v0.111.0 `sts2.dll`
@@ -2336,13 +2457,11 @@ pub(crate) fn option_count(
     if step.kind != StepKind::Select {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
-    let count = options(
+    selector_option_count(
         state,
         catalog,
         selector_from_args(catalog, spec, catalog.args(step.args))?,
-    )?
-    .len();
-    Ok(count as u32)
+    )
 }
 
 /// Read-only replay metadata: the answer that applies exactly `uids`, in that
@@ -2599,10 +2718,7 @@ pub(crate) fn apply_option(
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     let selector = selector_from_args(catalog, spec, catalog.args(step.args))?;
-    let answer = options(state, catalog, selector)?
-        .get(option_index as usize)
-        .cloned()
-        .ok_or(EngineRefusal::MalformedArgs("selection option index"))?;
+    let answer = selector_option_at(state, catalog, selector, option_index)?;
     apply(state, catalog, selector, &answer, events)
 }
 
@@ -3254,6 +3370,191 @@ mod tests {
                 "{recorded:?}"
             );
         }
+
+        // #3717: the membership probe is `legal_actions(..).contains(..)`
+        // for every offered ordinal, the first one past the end, and the
+        // action shapes this pending state does not offer.
+        let listed = legal_actions(&pending, &catalog);
+        for action in (0..=1958)
+            .map(|ordinal| Action::Select {
+                answer: SelectionAnswer::OptionIndex(ordinal),
+            })
+            .chain([
+                Action::Select {
+                    answer: SelectionAnswer::OptionIndex(u32::MAX),
+                },
+                Action::Select {
+                    answer: SelectionAnswer::CardUid(2),
+                },
+                Action::EndTurn,
+                Action::Play {
+                    uid: 2,
+                    target: None,
+                    selection: SelectionRef::NONE,
+                },
+            ])
+        {
+            assert_eq!(
+                crate::engine::action_is_offered(&pending, &catalog, &action),
+                listed.contains(&action),
+                "{action:?}"
+            );
+        }
+        // And for a state with nothing pending.
+        for action in legal_actions(&state, &catalog).into_iter().chain([
+            Action::Select {
+                answer: SelectionAnswer::OptionIndex(0),
+            },
+            Action::Play {
+                uid: 99,
+                target: None,
+                selection: SelectionRef::NONE,
+            },
+        ]) {
+            assert_eq!(
+                crate::engine::action_is_offered(&state, &catalog, &action),
+                legal_actions(&state, &catalog).contains(&action),
+                "{action:?}"
+            );
+        }
+    }
+
+    /// #3717: [`OptionSpace`] numbers the answers exactly as the materialized
+    /// [`options`] list does. For every hand size, every `min..max` window
+    /// and both an order-observable and an order-blind sink, the closed-form
+    /// count is the list's length, each ordinal decodes to the list's
+    /// element, and the first ordinal past the end decodes to nothing. A
+    /// selector the list refuses is refused by name the same way.
+    #[test]
+    fn option_space_counts_and_decodes_the_materialized_answer_list() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern(identity(CardId::DefendSilent)).unwrap();
+        builder.intern(identity(CardId::StrikeSilent)).unwrap();
+        let catalog = builder.build();
+        let mut ordered_surfaces = 0;
+        let mut unordered_surfaces = 0;
+        for operation in [
+            Operation::Discard,
+            Operation::Exhaust,
+            Operation::Upgrade,
+            Operation::ApplyPermanentRetain,
+            Operation::ApplySingleTurnSly,
+        ] {
+            for size in 0..=6_u32 {
+                let mut state = HotState::at_defaults();
+                state
+                    .piles
+                    .get_mut(PileId::Hand)
+                    .make_mut()
+                    .extend((1..=size).map(|uid| {
+                        let id = if uid % 2 == 0 {
+                            CardId::StrikeSilent
+                        } else {
+                            CardId::DefendSilent
+                        };
+                        card(&catalog, id, uid)
+                    }));
+                for min in 0..=7 {
+                    for max in 0..=7 {
+                        let selector = Selector {
+                            pile: PileId::Hand,
+                            min,
+                            max,
+                            filter: None,
+                            operation,
+                        };
+                        let label = format!("{operation:?} n={size} {min}..={max}");
+                        let listed = match options(&state, &catalog, selector) {
+                            Ok(listed) => listed,
+                            Err(refusal) => {
+                                assert_eq!(
+                                    selector_option_count(&state, &catalog, selector),
+                                    Err(refusal.clone()),
+                                    "{label}"
+                                );
+                                assert_eq!(
+                                    selector_option_at(&state, &catalog, selector, 0),
+                                    Err(refusal),
+                                    "{label}"
+                                );
+                                continue;
+                            }
+                        };
+                        assert_eq!(
+                            selector_option_count(&state, &catalog, selector),
+                            Ok(listed.len() as u32),
+                            "{label}"
+                        );
+                        for (ordinal, answer) in listed.iter().enumerate() {
+                            assert_eq!(
+                                selector_option_at(&state, &catalog, selector, ordinal as u32)
+                                    .as_ref(),
+                                Ok(answer),
+                                "{label} ordinal {ordinal}"
+                            );
+                        }
+                        assert_eq!(
+                            selector_option_at(&state, &catalog, selector, listed.len() as u32),
+                            Err(EngineRefusal::MalformedArgs("selection option index")),
+                            "{label}"
+                        );
+                        if listed.iter().any(|answer| answer.len() > 1) {
+                            if selection_order_is_observable(operation) {
+                                ordered_surfaces += 1;
+                            } else {
+                                unordered_surfaces += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // The sweep is not vacuous on either arm.
+        assert!(ordered_surfaces > 0);
+        assert!(unordered_surfaces > 0);
+    }
+
+    /// #3717: a surface too large to list is counted and refused by name
+    /// instead of being built. Thirteen cards in any order is
+    /// `Σ_k P(13, k)` = 16,926,797,487 answers.
+    #[test]
+    fn an_oversized_ordered_surface_refuses_without_being_listed() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern(identity(CardId::DefendSilent)).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .extend((1..=13).map(|uid| card(&catalog, CardId::DefendSilent, uid)));
+        let selector = |max| Selector {
+            pile: PileId::Discard,
+            min: 0,
+            max,
+            filter: None,
+            operation: Operation::Exhaust,
+        };
+        let refusal = EngineRefusal::CounterOverflow("selection option count");
+        assert_eq!(
+            selector_option_count(&state, &catalog, selector(13)),
+            Err(refusal.clone())
+        );
+        assert_eq!(
+            selector_option_at(&state, &catalog, selector(13), 0),
+            Err(refusal)
+        );
+        // Three of thirteen in order still fits: 1 + 13 + 156 + 1716.
+        assert_eq!(
+            selector_option_count(&state, &catalog, selector(3)),
+            Ok(1886)
+        );
+        assert_eq!(
+            selector_option_at(&state, &catalog, selector(3), 1885)
+                .unwrap()
+                .len(),
+            3
+        );
     }
 
     /// #3581: the memo slot also carries the two non-list outcomes. A

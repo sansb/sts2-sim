@@ -170,9 +170,9 @@ pub enum OpeningRefusal {
     /// `owner` is the modeled relic whose body the gate protects; `peers` are
     /// the co-owned relics that make the order observable.
     ///
-    /// Since #2884 two pairs read their order from a vouched inventory instead:
+    /// Since #2884 some pairs read their order from a vouched inventory instead:
     /// Choices Paradox before Bellows, and Festive Popper beside Toasty Mittens
-    /// in either order. For the first pair the refusal also covers a vouched
+    /// or Gambling Chip in either order. For the first pair the refusal also covers a vouched
     /// inventory whose recorded order (Bellows first) this engine does not run.
     TurnStartRelicOrderUnrecorded {
         owner: &'static str,

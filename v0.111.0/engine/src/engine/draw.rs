@@ -1254,6 +1254,23 @@ pub(crate) fn preflight_card_play_after_physical_moves(
     Ok(())
 }
 
+/// Fiddle's veto of a non-turn-start Draw command on the resumable entries.
+///
+/// `Fiddle::ShouldDraw` (RVA `0x939ab`): `fromHandDraw` returns true
+/// (IL_0001-0005), a non-owner player returns true (IL_0006-0010), and a draw
+/// while `CurrentSide` is not the owner's side returns true (IL_0011-002f);
+/// everything else returns false (IL_0030). The veto covers every Draw
+/// command — a card body, a potion, a relic, a power — so the resumable
+/// entries below owe it exactly as [`draw_cards_into_inner`] does. This solo
+/// state owns every represented pile, so the owner test is vacuous.
+fn fiddle_denies_command_draw(state: &HotState, catalog: &Catalog) -> bool {
+    if catalog.hooks().owns(RelicId::RelicFiddle) && state.player_side_active {
+        crate::coverage::record_relic(RelicId::RelicFiddle);
+        return true;
+    }
+    false
+}
+
 /// Execute a command Draw whose admitted parked owner is the immediately
 /// lower `PotionFinish` or exact no-result `CardPlay`. The arena record is installed before an
 /// awaited hook begins, so a child CardPlay can park above it without
@@ -1269,7 +1286,9 @@ pub(crate) fn draw_cards_for_potion(
         u32::try_from(n).map_err(|_| EngineRefusal::CounterOverflow("draw requested"))?;
     if requested == 0
         || state.history.over
-        || caller != DrawCaller::TurnStart && state.powers.value(PowerId::NoDraw) > 0
+        || caller != DrawCaller::TurnStart
+            && (fiddle_denies_command_draw(state, catalog)
+                || state.powers.value(PowerId::NoDraw) > 0)
     {
         return Ok(PotionDrawResult::Complete);
     }
@@ -1299,7 +1318,11 @@ pub(crate) fn draw_cards_for_gamble_tail(
     events: &mut Vec<Event>,
 ) -> Result<PotionDrawResult, EngineRefusal> {
     let requested = paired.count;
-    if requested == 0 || state.history.over || state.powers.value(PowerId::NoDraw) > 0 {
+    if requested == 0
+        || state.history.over
+        || fiddle_denies_command_draw(state, catalog)
+        || state.powers.value(PowerId::NoDraw) > 0
+    {
         return Ok(PotionDrawResult::Complete);
     }
     Ok(draw_cards_for_potion_from(
@@ -1337,7 +1360,11 @@ pub(crate) fn draw_cards_for_card_result(
     }
     let requested =
         u32::try_from(n).map_err(|_| EngineRefusal::CounterOverflow("draw requested"))?;
-    if requested == 0 || state.history.over || state.powers.value(PowerId::NoDraw) > 0 {
+    if requested == 0
+        || state.history.over
+        || fiddle_denies_command_draw(state, catalog)
+        || state.powers.value(PowerId::NoDraw) > 0
+    {
         return Ok(CardDrawResult::Complete(Vec::new()));
     }
     let (result, drawn) = draw_cards_for_potion_from(

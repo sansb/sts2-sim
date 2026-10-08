@@ -1338,9 +1338,11 @@ fn bellows_after_player_turn_start(
 /// admission (`turn_start_damage_relics` and the Bone Tea / Vexing Puzzlebox
 /// lists). The oracle's one recorded-order Queen trio is refused rather than
 /// admitted, which is stricter than the oracle and never wrong. The one
-/// exception is Toasty Mittens under a vouched inventory (#2884): Popper then
-/// runs on its recorded side of Toasty, ahead of the Hand choice when it was
-/// recorded first ([`festive_popper_precedes_toasty_mittens`]).
+/// exceptions are Toasty Mittens (#2884) and Gambling Chip under a vouched
+/// inventory: Popper then runs on its recorded side of that relic, ahead of
+/// the Hand choice when it was recorded first
+/// ([`festive_popper_precedes_toasty_mittens`],
+/// [`festive_popper_precedes_gambling_chip`]).
 fn festive_popper_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
@@ -1388,7 +1390,9 @@ fn continue_after_toasty_mittens(
         debug_assert!(written);
         crate::coverage::record_relic(RelicId::RelicBoneTea);
     }
-    if !festive_popper_precedes_toasty_mittens(catalog) {
+    if !festive_popper_precedes_toasty_mittens(catalog)
+        && !festive_popper_precedes_gambling_chip(catalog)
+    {
         festive_popper_after_player_turn_start(catalog, state, events)?;
     }
     if !state.history.over && catalog.hooks().owns(RelicId::RelicMrStruggles) {
@@ -1465,8 +1469,8 @@ pub(crate) fn vexing_toasty_order_is_exact(catalog: &Catalog) -> bool {
 /// runs Popper after Toasty, is exact only for the Toasty-first inventory, and
 /// this predicate moves Popper to just before Toasty for the other one. Every
 /// other same-hook peer Popper does not commute with (Choices Paradox,
-/// Gambling Chip, Vexing Puzzlebox, Bone Tea, Mr Struggles, Mercury Hourglass,
-/// Royal Poison) is refused beside Popper by the opening
+/// Vexing Puzzlebox, Bone Tea, Mr Struggles, Mercury Hourglass, Royal Poison)
+/// is refused beside Popper by the opening
 /// (`entry::opening::after_player_turn_start_peers_are_ordered`) and, where
 /// the engine can see them, by admission, so moving Popper past Bellows and
 /// Bone Tea reorders it only against bodies it is never co-owned with here.
@@ -1477,6 +1481,8 @@ pub(crate) fn festive_popper_precedes_toasty_mittens(catalog: &Catalog) -> bool 
     if !hooks.owns(RelicId::RelicFestivePopper)
         || !hooks.owns(RelicId::RelicToastyMittens)
         || !hooks.dispatch_ordered()
+        // Popper already ran, ahead of the earlier Gambling Chip choice.
+        || festive_popper_precedes_gambling_chip(catalog)
     {
         return false;
     }
@@ -1490,6 +1496,55 @@ pub(crate) fn festive_popper_precedes_toasty_mittens(catalog: &Catalog) -> bool 
     last_popper
         .zip(first_toasty)
         .is_some_and(|(popper, toasty)| popper < toasty)
+}
+
+/// Whether Festive Popper's turn-one damage runs **ahead of** Gambling Chip's
+/// Hand choice: both owned, the inventory vouched for as dispatch order, and
+/// every Festive Popper recorded before every Gambling Chip.
+///
+/// The listener walk is [`festive_popper_precedes_toasty_mittens`]'s
+/// (`Hook/<AfterPlayerTurnStart>d__56::MoveNext`, v0.111.0 RVA `0x3cff0c`,
+/// `Player.Relics` order, no ending check between listeners). The two bodies
+/// do not commute:
+///
+/// * `FestivePopper/<AfterPlayerTurnStart>d__4::MoveNext` (RVA `0x324b94`)
+///   gates `player == Owner` (`IL_0027`-`IL_002c`) and `TurnNumber == 1`
+///   (`IL_0045`-`IL_0055`), then awaits `CreatureCmd::Damage` over
+///   `HittableEnemies` (`IL_0079`-`IL_0094`);
+/// * `GamblingChip/<AfterPlayerTurnStart>d__2::MoveNext` (RVA `0x325788`)
+///   gates `player == Owner` (`IL_002e`-`IL_0033`) and `TurnNumber <= 1`
+///   (`IL_003b`-`IL_004b`), then pauses on
+///   `CardSelectCmd::FromHandForDiscard` (`IL_0071`) and awaits
+///   `CardCmd::DiscardAndDraw` (`IL_00f0`).
+///
+/// Popper first means the enemies are already hit (or dead, ending the fight)
+/// when the discard choice is offered and when the side-start tail runs at
+/// that pause (#3050); Chip first means the reverse. The fixed suffix runs
+/// Popper after Chip, so it is exact only for the Chip-first inventory, and
+/// this predicate moves Popper to just before Chip for the other one. The
+/// bodies between the two places (Vexing Puzzlebox, Toasty Mittens, Bellows,
+/// Bone Tea) are either refused beside Popper by the opening
+/// (`entry::opening::after_player_turn_start_peers_are_ordered`) or, for
+/// Toasty Mittens, held to the recorded order at the pause
+/// ([`after_player_turn_start_pause_order_is_native`]).
+pub(crate) fn festive_popper_precedes_gambling_chip(catalog: &Catalog) -> bool {
+    let hooks = catalog.hooks();
+    if !hooks.owns(RelicId::RelicFestivePopper)
+        || !hooks.owns(RelicId::RelicGamblingChip)
+        || !hooks.dispatch_ordered()
+    {
+        return false;
+    }
+    let relics = hooks.relics();
+    let last_popper = relics
+        .iter()
+        .rposition(|relic| *relic == RelicId::RelicFestivePopper);
+    let first_chip = relics
+        .iter()
+        .position(|relic| *relic == RelicId::RelicGamblingChip);
+    last_popper
+        .zip(first_chip)
+        .is_some_and(|(popper, chip)| popper < chip)
 }
 
 /// Vexing Puzzlebox's turn-one card: the first of one full
@@ -1698,6 +1753,11 @@ fn continue_after_choices_paradox(
     state: &mut HotState,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
+    // A Festive Popper recorded before Gambling Chip deals its damage ahead of
+    // the discard choice, and the later places then skip it.
+    if festive_popper_precedes_gambling_chip(catalog) {
+        festive_popper_after_player_turn_start(catalog, state, events)?;
+    }
     if state.turn <= 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicGamblingChip) {
         if state.piles.get(PileId::Hand).is_empty() {
             // `GamblingChip/<AfterPlayerTurnStart>d__2` (RVA `0x325788`)
@@ -1981,14 +2041,20 @@ const AFTER_PLAYER_TURN_START_RELIC_DISPATCH: [RelicId; 11] = [
 
 /// The order this engine runs [`AFTER_PLAYER_TURN_START_RELIC_DISPATCH`] in
 /// for `catalog`: the fixed sequence, except that Festive Popper runs just
-/// before Toasty Mittens when the inventory records it first
+/// before Gambling Chip when the inventory records it first
+/// ([`festive_popper_precedes_gambling_chip`]) or else just before Toasty
+/// Mittens when the inventory records it first
 /// ([`festive_popper_precedes_toasty_mittens`], #2884), Vexing Puzzlebox runs
 /// just before Choices Paradox when recorded first
 /// ([`vexing_puzzlebox_precedes_choices_paradox`], #3321), and a leading
 /// Mercury Hourglass runs first ([`mercury_hourglass_leads`], #3321).
 fn after_player_turn_start_dispatch(catalog: &Catalog) -> [RelicId; 11] {
     let mut order = AFTER_PLAYER_TURN_START_RELIC_DISPATCH;
-    if festive_popper_precedes_toasty_mittens(catalog) {
+    if festive_popper_precedes_gambling_chip(catalog) {
+        let chip = dispatch_position(&order, RelicId::RelicGamblingChip);
+        let popper = dispatch_position(&order, RelicId::RelicFestivePopper);
+        order[chip..=popper].rotate_right(1);
+    } else if festive_popper_precedes_toasty_mittens(catalog) {
         let toasty = dispatch_position(&order, RelicId::RelicToastyMittens);
         let popper = dispatch_position(&order, RelicId::RelicFestivePopper);
         order[toasty..=popper].rotate_right(1);
@@ -5955,6 +6021,81 @@ mod tests {
             &catalog,
             1,
             crate::engine::draw::DrawSource::HandDraw,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+    }
+
+    /// The resumable Draw entries (a card body's owned tail, a result-bearing
+    /// body, a potion) owe `Fiddle::ShouldDraw` (RVA `0x939ab`) like the plain
+    /// command: Big Bang and Scrawl drew through Fiddle before this gate.
+    #[test]
+    fn fiddle_blocks_resumable_command_draws_on_the_player_side() {
+        use crate::engine::draw::{
+            CardDrawResult, PotionDrawResult, draw_cards_for_card_result, draw_cards_for_potion,
+        };
+        use crate::hot::DrawCaller;
+        let mut builder = CatalogBuilder::new();
+        let atom = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.set_relics(&[RelicId::RelicFiddle]).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.player_side_active = true;
+        for uid in 1..=3 {
+            state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                uid,
+                atom,
+                flags: 0,
+            });
+        }
+        let before = state.clone();
+
+        for caller in [DrawCaller::CardPlay, DrawCaller::PotionEpilogue] {
+            assert_eq!(
+                draw_cards_for_potion(&mut state, &catalog, 1, caller, &mut Vec::new()).unwrap(),
+                PotionDrawResult::Complete
+            );
+            assert_eq!(state, before, "{caller:?}");
+        }
+        assert_eq!(
+            draw_cards_for_card_result(
+                &mut state,
+                &catalog,
+                1,
+                DrawCaller::CardPlay,
+                &mut Vec::new()
+            )
+            .unwrap(),
+            CardDrawResult::Complete(Vec::new())
+        );
+        assert_eq!(state, before);
+
+        // The enemy side is not the owner's turn: the same command draws.
+        let mut enemy_side = before.clone();
+        enemy_side.player_side_active = false;
+        draw_cards_for_potion(
+            &mut enemy_side,
+            &catalog,
+            1,
+            DrawCaller::CardPlay,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(enemy_side.piles.get(PileId::Hand).len(), 1);
+
+        // The turn-start HandDraw is `fromHandDraw` and is never vetoed.
+        draw_cards_for_potion(
+            &mut state,
+            &catalog,
+            1,
+            DrawCaller::TurnStart,
             &mut Vec::new(),
         )
         .unwrap();

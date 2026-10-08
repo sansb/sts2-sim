@@ -1470,6 +1470,11 @@ pub struct LegalActionBuffer {
     /// The engine refusal that cut the last enumeration short, if one was
     /// named (#2985). [`legal_actions_checked`] reports it.
     refusal: Option<EngineRefusal>,
+    /// Membership-probe mode ([`action_is_offered`]): a pending selection's
+    /// `0..count` ordinal range is recorded in `probed_ordinals` instead of
+    /// being written out one action per answer.
+    probe_ordinals: bool,
+    probed_ordinals: u32,
 }
 
 impl LegalActionBuffer {
@@ -1487,13 +1492,43 @@ impl LegalActionBuffer {
         self.candidates.clear();
         self.selected_positions.clear();
         self.refusal = None;
+        self.probed_ordinals = 0;
     }
 }
 
-fn append_selection_ordinals(actions: &mut Vec<Action>, count: u32) {
-    actions.extend((0..count).map(|option| Action::Select {
-        answer: SelectionAnswer::OptionIndex(option),
-    }));
+/// Offer the pending selection's answers `0..count`. Every pending arm of
+/// [`legal_actions_into`] that offers ordinals offers exactly one such range
+/// and nothing else, which is what lets a probe keep the bound alone.
+fn append_selection_ordinals(buffer: &mut LegalActionBuffer, count: u32) {
+    if buffer.probe_ordinals {
+        buffer.probed_ordinals = count;
+        return;
+    }
+    buffer
+        .actions
+        .extend((0..count).map(|option| Action::Select {
+            answer: SelectionAnswer::OptionIndex(option),
+        }));
+}
+
+/// Exactly `legal_actions(state, catalog).contains(action)`, without writing
+/// out a pending selection's ordinal range to test one ordinal against it
+/// (#3717: an ordered any-number pick offers up to `Σ_k P(n, k)` answers, and
+/// every replay-aware transition asks this question at least twice).
+pub(crate) fn action_is_offered(state: &HotState, catalog: &Catalog, action: &Action) -> bool {
+    let mut buffer = LegalActionBuffer {
+        probe_ordinals: true,
+        ..LegalActionBuffer::default()
+    };
+    if legal_actions_into(state, catalog, &mut buffer).contains(action) {
+        return true;
+    }
+    matches!(
+        action,
+        Action::Select {
+            answer: SelectionAnswer::OptionIndex(ordinal),
+        } if *ordinal < buffer.probed_ordinals
+    )
 }
 
 fn push_legal_action(
@@ -1679,7 +1714,7 @@ pub fn legal_actions_into<'a>(
     if let Some(pending) = state.pending.as_deref() {
         if pending.is_relic_selection() {
             if let Ok(count) = relics::relic_selection_action_count(state, catalog) {
-                append_selection_ordinals(&mut buffer.actions, count);
+                append_selection_ordinals(buffer, count);
             }
             return &buffer.actions;
         }
@@ -1689,7 +1724,7 @@ pub fn legal_actions_into<'a>(
             if play::persisted_card_play_stack_is_exact(state, catalog).is_ok()
                 && let Ok(count) = draw::stratagem_selection_action_count(state, catalog)
             {
-                append_selection_ordinals(&mut buffer.actions, count);
+                append_selection_ordinals(buffer, count);
             }
             return &buffer.actions;
         }
@@ -1699,7 +1734,7 @@ pub fn legal_actions_into<'a>(
                 // count (Python's payload order over Gambler's Brew twins,
                 // say) reaches `legal_actions_checked` by name.
                 match potions::selection_action_count(state, catalog) {
-                    Ok(count) => append_selection_ordinals(&mut buffer.actions, count),
+                    Ok(count) => append_selection_ordinals(buffer, count),
                     Err(refusal) => buffer.refusal = Some(refusal),
                 }
             }
@@ -1709,7 +1744,7 @@ pub fn legal_actions_into<'a>(
             if play::persisted_card_play_stack_is_exact(state, catalog).is_ok()
                 && let Ok(count) = potions::generation_selection_action_count(state, catalog)
             {
-                append_selection_ordinals(&mut buffer.actions, count);
+                append_selection_ordinals(buffer, count);
             }
             return &buffer.actions;
         }
@@ -1718,7 +1753,7 @@ pub fn legal_actions_into<'a>(
             .is_some()
         {
             if let Ok(Some(count)) = turn::turn_start_hand_choice_action_count(state, catalog) {
-                append_selection_ordinals(&mut buffer.actions, count);
+                append_selection_ordinals(buffer, count);
             }
             return &buffer.actions;
         }
@@ -1727,7 +1762,7 @@ pub fn legal_actions_into<'a>(
             .is_some()
         {
             if let Ok(count) = turn::foregone_selection_action_count(state) {
-                append_selection_ordinals(&mut buffer.actions, count);
+                append_selection_ordinals(buffer, count);
             }
             return &buffer.actions;
         }
@@ -1741,7 +1776,7 @@ pub fn legal_actions_into<'a>(
             {
                 return &buffer.actions;
             }
-            append_selection_ordinals(&mut buffer.actions, 2);
+            append_selection_ordinals(buffer, 2);
             return &buffer.actions;
         }
         if catalog.requires_action_replay()
@@ -1812,7 +1847,7 @@ pub fn legal_actions_into<'a>(
                 // payload order, say) used to leave only an empty list, which
                 // a search read as a dead end and aborted on.
                 match selection::option_count(state, catalog, spec, step_index) {
-                    Ok(count) => append_selection_ordinals(&mut buffer.actions, count),
+                    Ok(count) => append_selection_ordinals(buffer, count),
                     Err(refusal) => buffer.refusal = Some(refusal),
                 }
             }
@@ -1847,7 +1882,7 @@ pub fn legal_actions_into<'a>(
                 let Ok(count) = selection::special_option_count(state, catalog, pending) else {
                     return &buffer.actions;
                 };
-                append_selection_ordinals(&mut buffer.actions, count);
+                append_selection_ordinals(buffer, count);
             }
         }
         return &buffer.actions;
@@ -2295,6 +2330,11 @@ pub(crate) fn action_is_legal_modulo_hand_dedupe(
     catalog: &Catalog,
     action: &Action,
 ) -> bool {
+    // A Select matches an offered action only by equality, so it needs no
+    // walk of the offered list (#3717).
+    if matches!(action, Action::Select { .. }) {
+        return action_is_offered(state, catalog, action);
+    }
     legal_actions(state, catalog)
         .iter()
         .any(|offered| action_matches_modulo_hand_dedupe(state, offered, action))
@@ -2821,12 +2861,11 @@ pub(crate) fn rehearse_pending_replay_tree(
         ancestors: vec![predecessor.clone()],
         replay: expected_root.clone(),
     }];
-    let mut memoized = Vec::<HotState>::new();
+    let mut memoized = std::collections::HashSet::<HotState>::new();
     while let Some(node) = work.pop() {
-        if memoized.iter().any(|seen| seen == &node.state) {
+        if !memoized.insert(node.state.clone()) {
             continue;
         }
-        memoized.push(node.state.clone());
         if action_replay_root_count(&node.state) != 1 {
             return Err(EngineRefusal::ContinuationNotModeled);
         }
@@ -2954,7 +2993,7 @@ fn apply_action_into_replay(
     if replay_root.is_some()
         && (!matches!(action, Action::Select { .. })
             || !(is_ordered_extension_select(state, catalog, action)
-                || legal_actions(state, catalog).contains(action)))
+                || action_is_offered(state, catalog, action)))
     {
         return Err(EngineRefusal::ContinuationNotModeled);
     }

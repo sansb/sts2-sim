@@ -2507,7 +2507,9 @@ fn bellows_beside_each_oracle_admitted_peer_matches_the_oracle() {
 /// `choices_paradox_then_bellows_is_admitted_and_the_reverse_refuses`), and
 /// Festive Popper beside Toasty Mittens has left this list: it is admitted in
 /// either vouched order
-/// (`festive_popper_runs_on_its_recorded_side_of_toasty_mittens`).
+/// (`festive_popper_runs_on_its_recorded_side_of_toasty_mittens`), and so has
+/// Festive Popper beside Gambling Chip
+/// (`festive_popper_runs_on_its_recorded_side_of_gambling_chip`).
 #[test]
 fn the_oracles_same_hook_refusals_around_bellows_and_popper_refuse_by_name() {
     let cases = [
@@ -2515,7 +2517,6 @@ fn the_oracles_same_hook_refusals_around_bellows_and_popper_refuse_by_name() {
         ("RELIC.BELLOWS", "RELIC.TOASTY_MITTENS"),
         ("RELIC.BELLOWS", "RELIC.CHOICES_PARADOX"),
         ("RELIC.BELLOWS", "RELIC.VEXING_PUZZLEBOX"),
-        ("RELIC.FESTIVE_POPPER", "RELIC.GAMBLING_CHIP"),
         ("RELIC.FESTIVE_POPPER", "RELIC.CHOICES_PARADOX"),
         ("RELIC.FESTIVE_POPPER", "RELIC.VEXING_PUZZLEBOX"),
         ("RELIC.FESTIVE_POPPER", "RELIC.BONE_TEA"),
@@ -2656,6 +2657,106 @@ fn festive_popper_runs_on_its_recorded_side_of_toasty_mittens() {
         );
         let text = refusal.to_string();
         assert!(text.contains(POPPER) && text.contains(TOASTY), "{text}");
+    }
+}
+
+/// Festive Popper and Gambling Chip do not commute, and the engine runs Popper
+/// on whichever side of Chip the vouched inventory records.
+///
+/// `FestivePopper/<AfterPlayerTurnStart>d__4` (RVA `0x324b94`) hits every
+/// enemy for 9 on turn one; `GamblingChip/<AfterPlayerTurnStart>d__2` (RVA
+/// `0x325788`) pauses on a discard choice
+/// (`CardSelectCmd::FromHandForDiscard`, `IL_0071`). Native awaits them in
+/// `Player.Relics` order, so the two orders offer the choice against different
+/// enemy HP:
+///
+/// * **Popper first** (8M2X57B83DNY, Popper acquired on floor 8 and Chip on
+///   10): the choice is offered after the 9 has landed, and resolving it deals
+///   nothing more;
+/// * **Chip first:** the choice is offered to undamaged enemies, and Popper's
+///   9 lands after it resolves.
+///
+/// An unvouched inventory cannot say which, and refuses by name either way.
+#[test]
+fn festive_popper_runs_on_its_recorded_side_of_gambling_chip() {
+    const POPPER: &str = "RELIC.FESTIVE_POPPER";
+    const CHIP: &str = "RELIC.GAMBLING_CHIP";
+    let popper_first = open_in_order(&[POPPER, CHIP], false, true)
+        .unwrap_or_else(|refusal| panic!("Popper then Chip opens: {refusal}"));
+    let chip_first = open_in_order(&[CHIP, POPPER], false, true)
+        .unwrap_or_else(|refusal| panic!("Chip then Popper opens: {refusal}"));
+    for opening in [&popper_first, &chip_first] {
+        assert_eq!(
+            opening.document.player["pending"][0],
+            Value::from("gambling_chip_select")
+        );
+    }
+    assert_eq!(monster_damage_taken(&popper_first.document), [9, 9]);
+    assert_eq!(monster_damage_taken(&chip_first.document), [0, 0]);
+    assert_ne!(
+        popper_first.document.differential_digest(),
+        chip_first.document.differential_digest(),
+        "the two orders are distinct decision points"
+    );
+
+    for (opening, order) in [(&popper_first, "Popper first"), (&chip_first, "Chip first")] {
+        let (state, catalog) = resolve_first_choice(opening);
+        let after = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(
+            monster_damage_taken(&after),
+            [9, 9],
+            "{order}: Popper hit once"
+        );
+        assert!(state.pending.is_none(), "{order}: the turn is the player's");
+    }
+
+    for relics in [[POPPER, CHIP], [CHIP, POPPER]] {
+        let refusal = open_in_order(&relics, false, false).unwrap_err();
+        assert_eq!(
+            refusal.class(),
+            "turn_start_relic_order_unrecorded",
+            "{relics:?}: {refusal}"
+        );
+        let text = refusal.to_string();
+        assert!(text.contains(POPPER) && text.contains(CHIP), "{text}");
+    }
+}
+
+/// Festive Popper beside both Gambling Chip and Toasty Mittens: the engine
+/// always runs Chip before Toasty, so an inventory recording Toasty first is
+/// refused at the pause, and every other order opens with Popper's 9 landed
+/// exactly when the inventory puts Popper ahead of the first choice.
+#[test]
+fn festive_popper_beside_gambling_chip_and_toasty_mittens_follows_the_inventory() {
+    const POPPER: &str = "RELIC.FESTIVE_POPPER";
+    const CHIP: &str = "RELIC.GAMBLING_CHIP";
+    const TOASTY: &str = "RELIC.TOASTY_MITTENS";
+    for (relics, popper_landed) in [
+        ([POPPER, CHIP, TOASTY], Some(true)),
+        ([CHIP, POPPER, TOASTY], Some(false)),
+        ([CHIP, TOASTY, POPPER], Some(false)),
+        ([POPPER, TOASTY, CHIP], None),
+        ([TOASTY, POPPER, CHIP], None),
+        ([TOASTY, CHIP, POPPER], None),
+    ] {
+        match (open_in_order(&relics, false, true), popper_landed) {
+            (Ok(opening), Some(landed)) => {
+                assert_eq!(
+                    opening.document.player["pending"][0],
+                    Value::from("gambling_chip_select"),
+                    "{relics:?}"
+                );
+                let expected = if landed { [9, 9] } else { [0, 0] };
+                assert_eq!(
+                    monster_damage_taken(&opening.document),
+                    expected,
+                    "{relics:?}"
+                );
+            }
+            (Err(_), None) => {}
+            (Ok(_), None) => panic!("{relics:?} opened with Toasty recorded before Chip"),
+            (Err(refusal), Some(_)) => panic!("{relics:?} refused: {refusal}"),
+        }
     }
 }
 

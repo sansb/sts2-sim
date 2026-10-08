@@ -3826,7 +3826,7 @@ fn counter_relic_dispatch_is_representable(
 /// # The two orders this gate reads from the save (#2884)
 ///
 /// Where the inventory is vouched for as dispatch order
-/// (`relics_entering_dispatch_ordered`), two of the pairs above no longer need
+/// (`relics_entering_dispatch_ordered`), three of the pairs above no longer need
 /// a guess, and every corpus fight that met this refusal holds one of them:
 ///
 /// * **Choices Paradox, then Bellows.**
@@ -3850,8 +3850,15 @@ fn counter_relic_dispatch_is_representable(
 ///   carries the IL), but the engine now runs Popper on its recorded side of
 ///   Toasty, so a vouched inventory is exact both ways. An unvouched one
 ///   refuses.
+/// * **Festive Popper and Gambling Chip, in either order.** The same shape:
+///   Chip pauses on a discard choice
+///   (`GamblingChip/<AfterPlayerTurnStart>d__2::MoveNext` RVA `0x325788`,
+///   `CardSelectCmd::FromHandForDiscard` at `IL_0071`), and the engine runs
+///   Popper on its recorded side of that pause
+///   (`engine::relics::festive_popper_precedes_gambling_chip` carries the IL).
+///   An unvouched inventory refuses. Bellows beside Gambling Chip still does.
 ///
-/// Both exemptions are pair-local. A third peer still refuses by its own rule,
+/// The exemptions are pair-local. A third peer still refuses by its own rule,
 /// so relaxing one pair never admits a trio the rules above refuse.
 ///
 /// The co-ownerships among *other* same-hook relics that #2884 lists
@@ -3874,10 +3881,11 @@ fn after_player_turn_start_peers_are_ordered(
     const POPPER: &str = "RELIC.FESTIVE_POPPER";
     const CHOICES_PARADOX: &str = "RELIC.CHOICES_PARADOX";
     const TOASTY_MITTENS: &str = "RELIC.TOASTY_MITTENS";
+    const GAMBLING_CHIP: &str = "RELIC.GAMBLING_CHIP";
     // Refused beside either body.
     const ORDER_OBSERVABLE_PEERS: [&str; 4] = [
         CHOICES_PARADOX,
-        "RELIC.GAMBLING_CHIP",
+        GAMBLING_CHIP,
         TOASTY_MITTENS,
         "RELIC.VEXING_PUZZLEBOX",
     ];
@@ -3907,7 +3915,7 @@ fn after_player_turn_start_peers_are_ordered(
     // The pairs whose order the save records and this engine then follows.
     let recorded = |owner: &str, peer: &str| match (owner, peer) {
         (BELLOWS, CHOICES_PARADOX) => precedes(CHOICES_PARADOX, BELLOWS),
-        (POPPER, TOASTY_MITTENS) => dispatch_ordered,
+        (POPPER, TOASTY_MITTENS | GAMBLING_CHIP) => dispatch_ordered,
         _ => false,
     };
     for owner in [POPPER, BELLOWS] {
