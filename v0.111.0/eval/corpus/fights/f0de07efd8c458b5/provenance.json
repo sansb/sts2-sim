@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "F6S6HJBE8CRA",
+ "node": 36,
+ "encounter": "ENCOUNTER.FROG_KNIGHT_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "28027ad3147151aac412087f31ce17c8dde9dfa077c3097cb218e7da934c2bde",
+ "save_sha256": "46db5a7b23a18256065cc24d775062dfd0fe8e1f5c903006dc67714786477c92",
+ "entry_digest": "d1131aaecccfa5943fe2af3519f4161320bb628f17a4503e3d29e60cd6907861",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

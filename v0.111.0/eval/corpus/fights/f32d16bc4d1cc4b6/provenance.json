@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MW6WGHZ9XF82",
+ "node": 16,
+ "encounter": "ENCOUNTER.THE_KIN_BOSS",
+ "node_type": "boss",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "70d948a4647df021e943beb907504d4ded23d6bd218f90ceb6c14ebe276b53b2",
+ "save_sha256": "feeb5b137ef399072cca48fd923575f47c61c490e0cf0240b5cca36e59626243",
+ "entry_digest": "7360a61a015aa40035a9ad631c5b6645d8c7831b34987a2d24c4d135f016ee28",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

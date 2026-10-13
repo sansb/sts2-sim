@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 47,
+ "encounter": "ENCOUNTER.AEONGLASS_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "3adbf86b399e8f9c450e804cff348844e3c4936f81f9b0f427a07cbfe70ede0c",
+ "save_sha256": "1e5c02b8170bcc709ff490e7e73c86b9c60e3a0d2943045e1470a79683690748",
+ "entry_digest": "a26aed6dc9d03bc985e229133894c82da5adca36dc324dedc8c327473a7b6647",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

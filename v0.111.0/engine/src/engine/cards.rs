@@ -381,8 +381,7 @@ fn aeonglass_owner_state_is_exact(
         && (0..=999_999_999).contains(&boss.block)
         && matches!(boss.loop_pos, 0..=2)
         && boss.random_ai.is_empty()
-        && boss.override_state == crate::hot::MonsterOverride::None
-        && boss.forced_follow_up == crate::hot::MonsterFollowUp::None
+        && super::monsters::machine_is_undisturbed_or_generic_stun(boss)
         && !boss.spawn_noop
         && !boss.ritual_fresh
         && boss.last_spawned.is_none()
@@ -480,8 +479,19 @@ pub(crate) struct FrozenPhysicalCardMove {
 /// lazy sequence before delegating to `<Add>d__10::MoveNext` RVA `0x3e1ba4`.
 /// That body performs another `Any`; on ending it enumerates `Select(...).ToList`
 /// into failed results, while the live path later inserts in enumeration order.
-/// Summon Forth supplies Draw/Bottom over Hand, Discard, Exhaust, Play Blades;
+/// Summon Forth supplies Hand/Bottom over Draw, Discard, Exhaust, Play Blades
+/// (#3762; `SummonForth/<OnPlay>d__5::MoveNext` RVA `0x3c04ac` IL_00e1-IL_00e5,
+/// read with the `PileType` values in [`crate::steps::regent_forge`]);
 /// the successful command preserves physical object identity and result order.
+///
+/// A Hand destination is decided per member, in order: `<Add>d__10` IL_04ef-
+/// IL_0531 replaces the target with the owner's Discard pile
+/// (`CardPile.Get(3, Owner)`) when it is the Hand (`PileType` 2) and
+/// `Cards.Count >= CardPile.MaxCardsInHand`, immediately before
+/// `RemoveFromCurrentPile` (IL_054b) and `AddInternal` (IL_062e). No member
+/// may come from the Hand when the Hand is the destination: removing them all
+/// first, as this helper does, would then change the count that test reads.
+/// Such a batch is refused.
 ///
 /// Every member is authenticated before the first removal. The current-build
 /// `AfterCardChangedPiles` census is six overrides outside the two `Mock*`
@@ -525,6 +535,11 @@ pub(crate) fn move_frozen_physical_cards_to_bottom(
         return Ok(());
     }
     for (position, entry) in frozen.iter().enumerate() {
+        if destination == PileId::Hand && entry.source_pile == PileId::Hand {
+            return Err(EngineRefusal::MalformedArgs(
+                "physical move from Hand to Hand",
+            ));
+        }
         if frozen[..position]
             .iter()
             .any(|earlier| earlier.card.uid == entry.card.uid)
@@ -584,15 +599,18 @@ pub(crate) fn move_frozen_physical_cards_to_bottom(
     for (pile, retained) in retained_piles {
         *state.piles.get_mut(pile).make_mut() = retained;
     }
-    state
-        .piles
-        .get_mut(destination)
-        .make_mut()
-        .extend(frozen.iter().map(|entry| entry.card));
     for entry in frozen {
+        let landed = if destination == PileId::Hand
+            && state.piles.get(PileId::Hand).len() >= MAX_CARDS_IN_HAND
+        {
+            PileId::Discard
+        } else {
+            destination
+        };
+        state.piles.get_mut(landed).make_mut().push(entry.card);
         events.push(Event::CardResolved {
             uid: entry.card.uid,
-            pile: destination,
+            pile: landed,
         });
     }
     Ok(())
@@ -757,11 +775,14 @@ fn spectral_knight_ai_is_exact(monster: &HotMonster) -> bool {
         let Some(current) = monster.random_ai.log_at(position) else {
             return false;
         };
+        // #3823: a stun logs the parked move a second time, so any of the
+        // three may follow itself (`admission::valid_random_ai_state`).
         if current > 2
             || position > 0
+                && monster.random_ai.log_at(position - 1) != Some(current)
                 && !matches!(
                     (monster.random_ai.log_at(position - 1), current),
-                    (Some(0), 1) | (Some(1), 1) | (Some(1), 2) | (Some(2), 1)
+                    (Some(0), 1) | (Some(1), 2) | (Some(2), 1)
                 )
         {
             return false;
@@ -819,11 +840,43 @@ fn knights_roster_is_exact(state: &HotState, allow_dead_magi: bool) -> bool {
         return false;
     }
     [flail, spectral, magi].into_iter().all(|monster| {
-        monster.override_state == crate::hot::MonsterOverride::None
-            && monster.forced_follow_up == crate::hot::MonsterFollowUp::None
+        super::monsters::machine_is_undisturbed_or_generic_stun(monster)
             && !monster.spawn_noop
             && monster.revive_stage == 0
     })
+}
+
+/// The Hex state a Knights roster owes beside Dampen.
+///
+/// `spectral_present` is the caller's reading of "the Spectral Knight still
+/// holds its Hex" (alive, or alive-or-dying inside a death batch). A Knight
+/// that is gone owes no Hex. One that is present owes Hex on the player and
+/// every card, **or** has not yet performed HEX_MOVE and owes none.
+///
+/// The second arm is #3823. HEX_MOVE is the machine's initial state and
+/// nothing leads back to it (`SpectralKnight::GenerateMoveStateMachine`
+/// `0xbf5ec`: HEX follows to SOUL_SLASH, and `RAND` holds SOUL_SLASH and
+/// SOUL_FLAME only), so the Knight is still due its HEX exactly while its log
+/// is HEX alone: once from the constructor, once more per stun over it
+/// (`turn::resume_stunned_random_ai`). Without a stun the Knight acts before
+/// the Magi Knight and HEX is its first move, the Magi's DAMPEN its second,
+/// so Dampen never met a Hex-less live Knight. A stun over HEX on turns one
+/// and two lets DAMPEN land first. Native: `KNIGHTS_ELITE` with the Spectral
+/// Knight stunned on turns 1, 2 and 3 shows Dampen on the player from turn 2
+/// and Hex from turn 4 (`engine::native_stun_traces`, case
+/// `knights_hex_after_dampen`).
+///
+/// The log still reads HEX alone between HEX performing and the roll at
+/// `PrepareForNextTurn` (the Magi acts in between), which is why the first
+/// arm does not ask the log anything.
+fn knights_hex_state_is_exact(state: &HotState, spectral_present: bool) -> bool {
+    if !spectral_present {
+        return no_hex_state_is_exact(state);
+    }
+    let machine = state.monsters[1].random_ai;
+    let hex_is_still_due = machine.next() == Some(0)
+        && (0..machine.log_len()).all(|position| machine.log_at(position) == Some(0));
+    hex_card_state_is_exact(state) || (hex_is_still_due && no_hex_state_is_exact(state))
 }
 
 fn no_hex_state_is_exact(state: &HotState) -> bool {
@@ -917,18 +970,30 @@ pub(crate) fn dampen_fresh_entry_is_exact(state: &HotState, catalog: &Catalog) -
 /// DampenPower.AfterApplied, v111 RVA 0xa1198: Magi's second move downgrades the current
 /// cards, regardless of damage/debuffs dealt to the roster before its action.
 /// A killed Spectral has already removed Hex; both exact states are valid.
+///
+/// **No prior exact pile identity is asked (#3823).** Until now this gate
+/// required `exact_piles`, which only Hex's application had promoted by the
+/// time DAMPEN performs, so a Dampen that lands with no Hex refused on a
+/// root whose piles were not exact: the Spectral Knight killed before its
+/// HEX_MOVE, and now also a HEX_MOVE parked by a stun past the Magi's second
+/// turn. `DampenPower::AfterApplied` RVA `0xa1198` walks
+/// `PlayerCombatState.AllCards` filtered by `CardModel.IsUpgraded`
+/// (IL_000d-IL_0041, predicate `<AfterApplied>b__6_0` `0x338714`), and for
+/// each such card records `CurrentUpgradeLevel` in its dictionary and calls
+/// `CardCmd.Downgrade` (IL_0050-IL_006e). Nothing in the walk reads a
+/// card-group ordering property or another power, so the application needs
+/// no prior exact pile identity; [`apply_dampen_power`] is the promotion, as
+/// [`apply_hex_power`] is for Hex
+/// ([`hex_card_affliction_application_is_exact`]). The frozen oracle agreed:
+/// `_apply_dampen_power` rebuilt the identities itself
+/// (`_normalize_card_identities`).
 pub(crate) fn dampen_application_is_exact(state: &HotState, catalog: &Catalog) -> bool {
     state.card_states.dampen().is_none()
         && state.card_states.hopper().is_none()
         && !state.history.over
-        && state.exact_piles
         && knights_roster_is_exact(state, false)
         && state.monsters[2].loop_pos == 1
-        && if state.monsters[1].hp > 0 {
-            hex_card_state_is_exact(state)
-        } else {
-            no_hex_state_is_exact(state)
-        }
+        && knights_hex_state_is_exact(state, state.monsters[1].hp > 0)
         && dampen_card_collection_is_exact(state, catalog)
 }
 
@@ -955,11 +1020,7 @@ pub(crate) fn dampen_state_is_exact(state: &HotState, catalog: &Catalog) -> bool
     if dampen.caster_uid != 2
         || state.card_states.hopper().is_some()
         || !knights_roster_is_exact(state, false)
-        || if state.monsters[1].hp > 0 {
-            !hex_card_state_is_exact(state)
-        } else {
-            !no_hex_state_is_exact(state)
-        }
+        || !knights_hex_state_is_exact(state, state.monsters[1].hp > 0)
         || !dampen_card_collection_is_exact(state, catalog)
         || dampen.cards.iter().enumerate().any(|(position, row)| {
             row.old_level != 1
@@ -1013,15 +1074,13 @@ pub(crate) fn dampen_internal_state_is_exact(state: &HotState) -> bool {
     };
     if dampen.caster_uid != 2
         || !knights_roster_is_exact(state, false)
-        || if state.monsters[1].hp > 0
-            || state
-                .fanouts
-                .monster_death_is_pending(state.monsters[1].uid)
-        {
-            !hex_card_state_is_exact(state)
-        } else {
-            !no_hex_state_is_exact(state)
-        }
+        || !knights_hex_state_is_exact(
+            state,
+            state.monsters[1].hp > 0
+                || state
+                    .fanouts
+                    .monster_death_is_pending(state.monsters[1].uid),
+        )
         || !dampen_card_collection_shape_is_exact(state)
         || dampen.cards.iter().enumerate().any(|(position, row)| {
             row.old_level != 1
@@ -1179,6 +1238,9 @@ pub(crate) fn apply_dampen_power(
         caster_uid,
         cards: rows,
     }));
+    // The rows name physical cards by uid: from here the piles are exact
+    // (see `dampen_application_is_exact`).
+    state.exact_piles = true;
     Ok(())
 }
 
@@ -1214,11 +1276,7 @@ pub(crate) fn remove_dampen_after_death(
     }
     if !knights_roster_is_exact(state, true)
         || state.monsters[2].hp > 0
-        || if state.monsters[1].hp > 0 {
-            !hex_card_state_is_exact(state)
-        } else {
-            !no_hex_state_is_exact(state)
-        }
+        || !knights_hex_state_is_exact(state, state.monsters[1].hp > 0)
         || !dampen_card_collection_shape_is_exact(state)
     {
         return Err(EngineRefusal::MalformedArgs("Dampen death state"));
@@ -1499,12 +1557,35 @@ pub(crate) fn spectral_hex_fresh_entry_is_exact(state: &HotState, catalog: &Cata
 ///
 /// Sculpting Strike (#3022) is a third writer: its OnPlay
 /// (`SculptingStrike/<OnPlay>d__7::MoveNext` RVA `0x3b8cec`, IL_0187/IL_0189)
-/// applies Ethereal to ANY chosen Hand card, so while a Sculpting Strike L0/L1
-/// is physically present in a combat pile the envelope is only the unique
-/// live physical card. A catalog-closure member alone (for example one of
-/// Call's generated pool) is not a writer: it has to exist to have been
-/// played, and a marked card whose writer has since left every pile refuses
-/// by name rather than being guessed at.
+/// applies Ethereal to ANY chosen Hand card, so once one has marked a card
+/// the envelope is only the unique live physical card.
+///
+/// The writer does not have to be in a pile (#3877). The keyword is written
+/// on the chosen card (`CardCmd::ApplyKeyword` RVA `0x12fd98`,
+/// `CardModel::AddKeyword` at IL_0018) and nothing ties it to the Sculpting
+/// Strike afterwards, while a transform takes the Strike itself out of combat:
+/// `CardCmd/<Transform>d__13::MoveNext` (RVA `0x3e0ae0`) calls
+/// `Original.RemoveFromCurrentPile()` at IL_018c and adds the replacement with
+/// `CardPile::AddInternal` (IL_03d8). Seance does that to a Draw-pile card
+/// (`Seance/<OnPlay>d__7::MoveNext` `0x3b8ed8`, `TransformTo<Soul>` at
+/// IL_016a) and Entropy to a Hand card. The game keeps the mark: on the
+/// archived DLL, a Defend marked by a Sculpting Strike is still Ethereal after
+/// Seance turns the Strike into a Soul, with and without a live Call of the
+/// Void (`tests/native/issue3877_sculpting_writer_transformed.spec.json`).
+///
+/// Until #3877 this reader asked for a Sculpting Strike in a combat pile, so
+/// the state after such a transform failed it: the engine had produced the
+/// state itself, and every later `legal_actions` returned nothing for a live
+/// fight. The evidence is now the fight's own record that the keyword was
+/// written, `FanoutState::sculpting_strike_marked`, set
+/// where the selector writes it and carried by the document, so the state
+/// also reloads. A live Sculpting Strike still counts without the latch (a
+/// document serialized before #3877 has the marked card and no latch).
+/// A catalog row is not evidence: Call of the Void's pool closure interns
+/// Sculpting Strike in every fight that holds the power, and a marked card
+/// outside Call's pool with neither the latch nor a live Strike stays the
+/// forgery it was (`boundary::tests::
+/// call_of_the_void_pool_uses_the_generated_order_and_rejects_forgery`).
 ///
 /// Music Box (#3551) is a fourth writer. `MusicBox::BeforeCardPlayed` RVA
 /// `0x972ac` arms on the owner's first Attack of the turn (`Type == 1`,
@@ -1539,14 +1620,16 @@ pub(crate) fn call_local_ethereal_provenance_is_exact(state: &HotState, catalog:
         }
         found = true;
         let sculpting_writer = *sculpting_writer.get_or_insert_with(|| {
-            ALL_CARD_PILES
-                .into_iter()
-                .flat_map(|pile| state.piles.get(pile).as_slice())
-                .any(|card| {
-                    catalog.spec(card.atom).is_some_and(|spec| {
-                        spec.identity.id == CardId::SculptingStrike && spec.identity.upgrade <= 1
+            state.fanouts.sculpting_strike_marked()
+                || ALL_CARD_PILES
+                    .into_iter()
+                    .flat_map(|pile| state.piles.get(pile).as_slice())
+                    .any(|card| {
+                        catalog.spec(card.atom).is_some_and(|spec| {
+                            spec.identity.id == CardId::SculptingStrike
+                                && spec.identity.upgrade <= 1
+                        })
                     })
-                })
         });
         let mut live = ALL_CARD_PILES
             .into_iter()
@@ -2728,7 +2811,7 @@ pub(crate) fn bulk_transform_fixed_same_pile(
         ));
     }
     if frozen.iter().any(|(original, _)| {
-        super::monsters::deck_version_link_owns_uid(state, original.uid)
+        super::monsters::deck_version_link_refuses_transform(state, original.uid)
             || dampen_tracks_uid(state, original.uid)
     }) {
         return Err(EngineRefusal::MalformedArgs(
@@ -2813,6 +2896,7 @@ pub(crate) fn bulk_transform_fixed_same_pile(
     for (_, original) in &records {
         next.card_states
             .set(original.uid, CardInstanceState::default());
+        super::monsters::note_hopper_transformed(&mut next, original.uid);
         let original_spec = catalog
             .spec(original.atom)
             .ok_or(EngineRefusal::UnknownAtom(original.atom))?;
@@ -3660,7 +3744,9 @@ pub(crate) fn inject_aeonglass_wither(
     apply(state, catalog, destination, events)
 }
 
-/// Front player-power AfterCardPlayed callback for Withering Presence.
+/// Withering Presence's AfterCardPlayed callback. The power is on the
+/// Aeonglass (#3821), so `play::after_card_played_enemy_suffix` runs this
+/// after every player-owned listener; the IL is cited at that call.
 pub(crate) fn withering_after_card_played(
     state: &mut HotState,
     catalog: &Catalog,
@@ -4353,6 +4439,46 @@ pub fn inject_generated_rewritten_clone_bottom(
         Some((flags, instance)),
         1,
         GeneratedTransaction::record_before_add(destination, GeneratedExactMode::WhenLive).cloned(),
+        events,
+    )
+}
+
+/// Record and insert one copy of a `NightmarePower` object's held card into
+/// Hand/Bottom (#3794).
+///
+/// `NightmarePower/<BeforeHandDraw>d__11::MoveNext` RVA `0x33ed34`
+/// IL_005c-IL_0076 calls `CardModel::CreateClone` on the held card and awaits
+/// `CardPileCmd::AddGeneratedCardToCombat(clone, PileType 2 /* Hand */,
+/// Owner.Player, position 1 /* Bottom */)`, the singular command the other
+/// clone writers use. The held card lives in no pile, so the payload comes
+/// from the power's own record rather than from a live source: `flags` and
+/// `instance` are what [`crate::hot::NightmareInstance`] froze.
+/// `CreateClone` RVA `0x7e1e0` sets `_cloneOf` (IL_0044-IL_0046), so the copy
+/// is a clone to every `AfterCardEnteredCombat` listener that asks.
+///
+/// The copy enters Hand beside cards it may differ from only in payload, so
+/// exact pile order is published with it, as for the other BeforeHandDraw
+/// generators.
+pub(crate) fn inject_nightmare_copy(
+    state: &mut HotState,
+    catalog: &Catalog,
+    atom: crate::catalog::CardAtom,
+    flags: u16,
+    instance: &CardInstanceState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let identity = catalog
+        .spec(atom)
+        .ok_or(EngineRefusal::UnknownAtom(atom))?
+        .identity;
+    inject_generated_payload_bottom(
+        state,
+        catalog,
+        identity,
+        Some((flags, instance.clone())),
+        1,
+        GeneratedTransaction::record_before_add(PileId::Hand, GeneratedExactMode::WhenLive)
+            .cloned(),
         events,
     )
 }
@@ -5559,6 +5685,27 @@ pub(crate) fn owner_pool_generation_provenance_is_exact(
         .entropy_card_pool
         .is_none_or(|p| Some(p) == state.reward_card_pool)
         && owner_pool_profile_provenance_is_exact(state, catalog)
+}
+
+/// Infernal Blade's provenance (#3816).
+///
+/// An Ironclad owner keeps the gate the body always had: an Entropy owner
+/// equal to `ironclad`, which the opening writes only under the fully
+/// revealed Ironclad pool the frozen table is, and a live Generation stream.
+/// Every other owner reads `Owner.Character.CardPool` and `Owner.UnlockState`
+/// and nothing else (`InfernalBlade/<OnPlay>d__3::MoveNext` RVA `0x3a7164`
+/// IL_0021-IL_0051), the shape [`owner_pool_generation_provenance_is_exact`]
+/// is the gate for: an owner, no contradicting Entropy owner, a recorded
+/// profile, solo, and a live Generation stream.
+pub(crate) fn infernal_blade_provenance_is_exact(state: &HotState, catalog: &Catalog) -> bool {
+    match state.reward_card_pool {
+        Some(crate::catalog::RewardPool::Ironclad) => {
+            state.entropy_card_pool == Some(crate::catalog::RewardPool::Ironclad)
+                && !state.rng.is_vacant(RngStream::Generation)
+        }
+        Some(_) => owner_pool_generation_provenance_is_exact(state, catalog),
+        None => false,
+    }
 }
 
 /// [`owner_pool_generation_provenance_is_exact`] without its Entropy-owner
@@ -7937,6 +8084,50 @@ mod tests {
         assert_eq!(state, before);
         assert_eq!(events, before_events);
 
+        // #3762: a Hand destination takes no Hand member (the batch here
+        // holds one), and without it lands the rest in order.
+        let mut to_hand = before.clone();
+        assert_eq!(
+            move_frozen_physical_cards_to_bottom(
+                &mut to_hand,
+                &catalog,
+                &frozen,
+                PileId::Hand,
+                &mut events,
+            ),
+            Err(EngineRefusal::MalformedArgs(
+                "physical move from Hand to Hand"
+            ))
+        );
+        assert_eq!(to_hand, before);
+        assert_eq!(events, before_events);
+        let mut landed = Vec::new();
+        move_frozen_physical_cards_to_bottom(
+            &mut to_hand,
+            &catalog,
+            &frozen[1..],
+            PileId::Hand,
+            &mut landed,
+        )
+        .unwrap();
+        assert_eq!(
+            to_hand
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .collect::<Vec<_>>(),
+            [11, 12, 13, 14]
+        );
+        assert_eq!(
+            landed,
+            [12, 13, 14].map(|uid| Event::CardResolved {
+                uid,
+                pile: PileId::Hand,
+            })
+        );
+
         let mut vanished = before.clone();
         vanished.piles.get_mut(PileId::Play).make_mut().clear();
         let vanished_before = vanished.clone();
@@ -8508,6 +8699,7 @@ mod tests {
                 state: CardInstanceState::default(),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
 
         upgrade_live_cards_once(&mut state, &catalog, &[master.uid, generated.uid]).unwrap();
@@ -11488,11 +11680,13 @@ mod tests {
         );
     }
 
-    /// #3022: a live Sculpting Strike (L0 or L1, any pile) authenticates a
-    /// local Ethereal on any unique live card; a Sculpting Strike that is only
-    /// a catalog member, or a duplicated marked card, does not.
+    /// #3022, #3877: a local Ethereal on any unique live card is
+    /// authenticated by a live Sculpting Strike (L0 or L1, any pile) or by the
+    /// fight's record that one marked a card, which outlives the Strike. A
+    /// Sculpting Strike that is only a catalog member, or a duplicated marked
+    /// card, is not.
     #[test]
-    fn sculpting_strike_is_a_local_ethereal_writer_only_while_live() {
+    fn sculpting_strike_is_a_local_ethereal_writer_live_or_by_its_latch() {
         let identity = |id, upgrade| CardIdentity {
             id,
             upgrade,
@@ -11521,6 +11715,22 @@ mod tests {
             assert!(
                 !call_local_ethereal_provenance_is_exact(&state, &catalog),
                 "a catalog-only Sculpting Strike is not a writer"
+            );
+            // The Strike marked the card and was then transformed away.
+            let mut transformed = state.clone();
+            transformed.fanouts.set_sculpting_strike_marked(true);
+            assert!(
+                call_local_ethereal_provenance_is_exact(&transformed, &catalog),
+                "the mark outlives its writer"
+            );
+            let mut duplicated = transformed.clone();
+            duplicated.piles.set(
+                PileId::Discard,
+                crate::hot::HotPile::from_cards(vec![card(2, bash)]),
+            );
+            assert!(
+                !call_local_ethereal_provenance_is_exact(&duplicated, &catalog),
+                "the latch does not excuse a duplicated marked card"
             );
 
             state.piles.set(

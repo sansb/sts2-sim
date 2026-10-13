@@ -693,7 +693,7 @@ const BIT_READS: &[(&str, &str, usize, BitRead)] = &[
     ),
     (
         "engine/admission.rs",
-        "distilled_recursive_source_closure_is_exact",
+        "distilled_recursive_source_closure_refusal",
         1,
         BitRead::Refusal,
     ),

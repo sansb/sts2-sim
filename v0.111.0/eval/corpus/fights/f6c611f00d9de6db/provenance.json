@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "KQFAZH480H1Q",
+ "node": 41,
+ "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "d305d2735081fd91fd1e07518d88b4b09c9650d80b1230f7aa3f9d00447d11fe",
+ "save_sha256": "1db5faf09759cc569ff0365463263cd1e508ed226d224ece84f3e5f4726eb714",
+ "entry_digest": "21f5d4dd1185ca99a3ed6d7fd61eb7550edf90d7ece10bf0e3571315a37038c3",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

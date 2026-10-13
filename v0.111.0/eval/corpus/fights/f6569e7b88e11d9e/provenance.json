@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TS8D6ATY6QWW",
+ "node": 32,
+ "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "dc9ea69dac63d193b92b1c1c7b97c18fdda0764d996b3f015b75efdcbf8b3d57",
+ "save_sha256": "ead34d1de9f63eb15701ba03a6d090e31e6e4e6c8cd0ec0f944ebe0bc64daf38",
+ "entry_digest": "21bcf506fb74aac5573bfe139fb2053ea83f59c1321a715b674d237df66e9053",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

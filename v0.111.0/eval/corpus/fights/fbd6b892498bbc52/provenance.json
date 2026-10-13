@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "J5LLBQ6N0KN4",
+ "node": 47,
+ "encounter": "ENCOUNTER.AEONGLASS_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "edca1d294f4d586c79363350d1f745ca47fb31458a138297a591c4e86a6b7a19",
+ "save_sha256": "9989498614043424540254a83584bc3e5253179ba30e4232755937a42850288f",
+ "entry_digest": "e64fc35b67552dad738c7d3c5211b11729b06352b6fb2b7c00b6032c26e5ba86",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

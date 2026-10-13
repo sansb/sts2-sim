@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "EV5Z075JZY56",
+ "node": 1,
+ "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "919b145f1a7ac057c71796dd093ae66e8cf9a63c2a2b56af55697f40047efb0d",
+ "save_sha256": "4905fa364322389b1ac83d265196b9ec91d434c2ce364f1d57dde1f2550d639a",
+ "entry_digest": "d83e5484adc674a9fa3cd444f733d7d1e2831033733d7d260415fa350cce0e60",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

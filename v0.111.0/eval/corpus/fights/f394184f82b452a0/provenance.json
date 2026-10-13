@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "GR8LAJRF0QDW",
+ "node": 16,
+ "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "27e4ec8aa222d56b088963a07744f76d4228bc383085b15aa469b9c459b8d679",
+ "save_sha256": "bcccc894eccfde07a4a94a2fb720f86c3499e76ed1ca3b04b794606430f03041",
+ "entry_digest": "f65e19f17f0f7c1f4f8a1b22efbefe8d9bb1dfd99ad71dcc66b73372f4a332d5",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 28,
+ "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "1237ec745ecc8dcd5c0ebb004340d63d0bd06123adb714075ded6a19637a54b6",
+ "save_sha256": "ff8b2bd7327c6f77cdc171c27fb9923ba667fbfc419807a0fc009da606c88966",
+ "entry_digest": "dea39964df42f4413ca955a53c31b25ba77e49050ae906a84c58fc183bddd625",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

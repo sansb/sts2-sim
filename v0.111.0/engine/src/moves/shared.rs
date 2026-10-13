@@ -246,7 +246,31 @@ pub(crate) fn attack_block(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
 }
 
 /// `("attack_frail", damage, hits, frail)` — attack, then enemy-applied
-/// player Frail while the actor and combat remain live.
+/// player Frail while the combat remains live.
+///
+/// The suffix does not wait on the actor's survival (#3827): a move body is
+/// straight-line, and `PowerCmd.Apply` to the player reads no applier HP
+/// (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988` returns only on
+/// `IsEnding`, IL_0020-IL_002a, and on a target that cannot receive powers,
+/// IL_003a-IL_0044; `<Apply>d__2` RVA `0x3efbac` adds the zero-amount and
+/// no-combat-state returns, IL_004b-IL_008c). v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad…12b4`. Each native body awaits `AttackCommand.Execute` and makes
+/// the Apply its next statement, with only the await's `IsCompleted` branch
+/// between:
+///
+/// | body | RVA | Execute | `Apply<FrailPower>` |
+/// |---|---|---|---|
+/// | `FakeMerchantMonster/<ThrowRelicMove>d__22` | `0x35b048` | IL_00cc | IL_013f |
+/// | `Flyconid/<FrailSporesMove>d__10` | `0x35b924` | IL_00c9 | IL_0140 |
+/// | `FossilStalker/<TackleMove>d__24` | `0x35c534` | IL_0063 | IL_00d6 |
+/// | `FrogKnight/<TongueLashMove>d__28` | `0x35cbf0` | IL_0063 | IL_00d7 |
+/// | `GlobeHead/<ShockingSlap>d__23` | `0x35d600` | IL_0063 | IL_00d7 |
+/// | `KinPriest/<OrbOfFrailtyMove>d__37` | `0x360088` | IL_008d | IL_0100 |
+/// | `PunchConstruct/<FastPunchMove>d__28` | `0x366d84` | IL_0076 | IL_00e9 |
+/// | `Stabbot/<StabMove>d__10` | `0x36ce64` | IL_0057 | IL_00ca |
+///
+/// When the actor was the last enemy `history.over` is latched and nothing
+/// lands, which is native's `IsEnding` return.
 pub(crate) fn attack_frail(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [
         CompiledArg::I(damage),
@@ -267,7 +291,7 @@ pub(crate) fn attack_frail(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
         *hits,
         ctx.events,
     )?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         apply_player_duration_affliction(
             ctx.state,
             PowerId::PlayerFrail,
@@ -338,7 +362,22 @@ pub(crate) fn attack_strength(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal
 }
 
 /// `("attack_weak_frail", damage, hits, weak, frail)` — attack, then Weak
-/// and Frail in that order, each marked fresh.
+/// and Frail in that order, each marked fresh, while the combat remains live.
+///
+/// The suffix does not wait on the actor's survival (#3827): a move body is
+/// straight-line, and `PowerCmd.Apply` to the player reads no applier HP
+/// (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988` returns only on
+/// `IsEnding`, IL_0020-IL_002a, and on a target that cannot receive powers,
+/// IL_003a-IL_0044; `<Apply>d__2` RVA `0x3efbac` adds the zero-amount and
+/// no-combat-state returns, IL_004b-IL_008c). v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad…12b4`. Each native body awaits `AttackCommand.Execute` and makes
+/// the Apply its next statement, with only the await's `IsCompleted` branch
+/// between:
+///
+/// | body | RVA | Execute | `Apply<WeakPower>` | `Apply<FrailPower>` |
+/// |---|---|---|---|---|
+/// | `Axebot/<HammerUppercutMove>d__38` | `0x353108` | IL_006b | IL_00df | IL_0153 |
+/// | `Crusher/<BugStingMove>d__40` | `0x357294` | IL_00e8 | IL_015c | IL_01d3 |
 pub(crate) fn attack_weak_frail(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [
         CompiledArg::I(damage),
@@ -360,7 +399,7 @@ pub(crate) fn attack_weak_frail(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefus
         *hits,
         ctx.events,
     )?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         for (power, fresh, raw, site) in [
             (
                 PowerId::PlayerWeak,
@@ -390,7 +429,27 @@ pub(crate) fn attack_weak_frail(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefus
 }
 
 /// `("attack_weak_player", damage, hits, weak)` — attack, then enemy-applied
-/// player Weak while the actor and combat remain live.
+/// player Weak while the combat remains live.
+///
+/// The Weak does not wait on the actor's survival (#3756). v0.111.0
+/// `sts2.dll` (SHA-256 `9cb4f1ad…12b4`): each of the kind's three native
+/// bodies awaits its `AttackCommand.Execute` and then calls
+/// `PowerCmd.Apply<WeakPower>(targets, amount, Creature, null, false)` on the
+/// very next statement, with no test in between:
+/// `DecimillipedeSegment/<ConstrictMove>d__50::MoveNext` RVA `0x358dcc`
+/// (Execute IL_00b9, Apply IL_0114-IL_012c), `KinPriest/<OrbOfWeaknessMove>
+/// d__38` RVA `0x36023c` (IL_008d, IL_0100) and `SludgeSpinner/<OilSprayMove>
+/// d__16` RVA `0x36a5a0` (IL_0063, IL_00d6). `PowerCmd/<Apply>d__1`1` RVA
+/// `0x3ef988` returns only on `CombatManager.IsEnding` (IL_0020-IL_002a) or a
+/// target that cannot receive powers (IL_003a-IL_0044); it never reads the
+/// applier's HP. So an actor killed inside its own attack by the player's
+/// retaliation (Thorns, Flame Barrier) still applies the Weak. Site
+/// witnesses: a Decimillipede segment at 6 HP constricting into Thorns 9
+/// (`9LK521591W4A` node 26) and one at 1 HP into Flame Barrier
+/// (`J5LLBQ6N0KN4` node 23); the game's next checkpoint has the player Weak.
+///
+/// The combat-ending half stays: when the retaliation kills the last enemy
+/// `history.over` is latched and native's Apply returns at IsEnding.
 pub(crate) fn attack_weak_player(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [
         CompiledArg::I(damage),
@@ -411,7 +470,7 @@ pub(crate) fn attack_weak_player(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefu
         *hits,
         ctx.events,
     )?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         apply_player_duration_affliction(
             ctx.state,
             PowerId::PlayerWeak,
@@ -1323,6 +1382,159 @@ mod tests {
             shrink(&mut ctx),
             Err(EngineRefusal::PowerRestackNotModeled(PowerId::PlayerShrink))
         );
+    }
+
+    /// #3756, site witnesses `9LK521591W4A` node 26 and `J5LLBQ6N0KN4` node
+    /// 23: a Decimillipede segment killed inside its own Constrict by the
+    /// player's Thorns still applies the Weak. Native's move body calls
+    /// `PowerCmd.Apply<WeakPower>` straight after the attack (`0x358dcc`
+    /// IL_0114-IL_012c) and that command never reads the applier's HP.
+    #[test]
+    fn a_weak_attacker_killed_by_retaliation_still_applies_its_weak() {
+        for (thorns, actor_dies) in [(0, false), (50, true)] {
+            let (document, catalog) = state_for(MonsterKind::DecimillipedeSegment);
+            let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            state.hp = 60;
+            state.monsters_mut()[0].hp = 6;
+            // A second living segment keeps the combat going when the actor
+            // falls, as the other segments do in the witness fights.
+            let mut peer = state.monsters[0].clone();
+            peer.hp = 30;
+            peer.uid += 1;
+            state.monsters_mut().push(peer);
+            if thorns > 0 {
+                state.powers.set(PowerId::Thorns, SlotWire::Int, thorns);
+            }
+            let entry = row(
+                &catalog,
+                MonsterKind::DecimillipedeSegment,
+                MoveKind::AttackWeakPlayer,
+            );
+            let mut events = Vec::new();
+            let mut ctx = MoveCtx {
+                state: &mut state,
+                catalog: &catalog,
+                actor: 0,
+                args: catalog.args(entry.args),
+                events: &mut events,
+            };
+            attack_weak_player(&mut ctx).unwrap();
+            assert_eq!(state.monsters[0].hp <= 0, actor_dies, "Thorns {thorns}");
+            assert!(!state.history.over);
+            assert_eq!(state.powers.value(PowerId::PlayerWeak), 1);
+            assert_eq!(state.powers.value(PowerId::PlayerWeakFresh), 1);
+        }
+    }
+
+    /// The combat-ending half of the same gate: when the retaliation kills
+    /// the last enemy the combat is over, native's Apply returns at IsEnding
+    /// (`0x3ef988` IL_0020-IL_002a), and no Weak lands.
+    #[test]
+    fn a_weak_attacker_whose_death_ends_the_combat_applies_no_weak() {
+        let (document, catalog) = state_for(MonsterKind::SludgeSpinner);
+        let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        state.hp = 60;
+        state.monsters_mut()[0].hp = 3;
+        state.powers.set(PowerId::Thorns, SlotWire::Int, 50);
+        let entry = row(
+            &catalog,
+            MonsterKind::SludgeSpinner,
+            MoveKind::AttackWeakPlayer,
+        );
+        let mut events = Vec::new();
+        let mut ctx = MoveCtx {
+            state: &mut state,
+            catalog: &catalog,
+            actor: 0,
+            args: catalog.args(entry.args),
+            events: &mut events,
+        };
+        attack_weak_player(&mut ctx).unwrap();
+        assert!(state.monsters[0].hp <= 0);
+        assert!(state.history.over);
+        assert_eq!(state.powers.value(PowerId::PlayerWeak), 0);
+    }
+
+    /// #3827: the player-debuff suffix of an attack does not wait on the
+    /// actor. With no Thorns the actor lives; with Thorns 50 it dies inside
+    /// its own attack while a second enemy keeps the combat going. Frail (and
+    /// Weak) land either way, with their fresh latches.
+    #[test]
+    fn a_frail_attacker_killed_by_retaliation_still_applies_its_debuffs() {
+        for (monster, kind, weak) in [
+            (MonsterKind::PunchConstruct, MoveKind::AttackFrail, 0),
+            (MonsterKind::Axebot, MoveKind::AttackWeakFrail, 2),
+        ] {
+            for (thorns, actor_dies) in [(0, false), (50, true)] {
+                let (document, catalog) = state_for(monster);
+                let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+                state.hp = 60;
+                state.monsters_mut()[0].hp = 6;
+                let mut peer = state.monsters[0].clone();
+                peer.hp = 30;
+                peer.uid += 1;
+                state.monsters_mut().push(peer);
+                if thorns > 0 {
+                    state.powers.set(PowerId::Thorns, SlotWire::Int, thorns);
+                }
+                let entry = row(&catalog, monster, kind);
+                let frail = match catalog.args(entry.args).last() {
+                    Some(CompiledArg::I(frail)) => i32::try_from(*frail).unwrap(),
+                    other => panic!("{monster:?} Frail argument {other:?}"),
+                };
+                let mut events = Vec::new();
+                let mut ctx = MoveCtx {
+                    state: &mut state,
+                    catalog: &catalog,
+                    actor: 0,
+                    args: catalog.args(entry.args),
+                    events: &mut events,
+                };
+                super::super::apply_move(kind, &mut ctx).unwrap();
+                assert_eq!(
+                    state.monsters[0].hp <= 0,
+                    actor_dies,
+                    "{monster:?} Thorns {thorns}"
+                );
+                assert!(!state.history.over);
+                assert_eq!(state.powers.value(PowerId::PlayerFrail), frail);
+                assert_eq!(state.powers.value(PowerId::PlayerFrailFresh), 1);
+                assert_eq!(state.powers.value(PowerId::PlayerWeak), weak);
+                assert_eq!(
+                    state.powers.value(PowerId::PlayerWeakFresh),
+                    i32::from(weak > 0)
+                );
+            }
+        }
+    }
+
+    /// The combat-ending half: a lone actor killed by the retaliation ends
+    /// the combat, native's Apply returns at IsEnding, and nothing lands.
+    #[test]
+    fn a_frail_attacker_whose_death_ends_the_combat_applies_nothing() {
+        for (monster, kind) in [
+            (MonsterKind::PunchConstruct, MoveKind::AttackFrail),
+            (MonsterKind::Axebot, MoveKind::AttackWeakFrail),
+        ] {
+            let (document, catalog) = state_for(monster);
+            let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            state.hp = 60;
+            state.monsters_mut()[0].hp = 3;
+            state.powers.set(PowerId::Thorns, SlotWire::Int, 50);
+            let entry = row(&catalog, monster, kind);
+            let mut events = Vec::new();
+            let mut ctx = MoveCtx {
+                state: &mut state,
+                catalog: &catalog,
+                actor: 0,
+                args: catalog.args(entry.args),
+                events: &mut events,
+            };
+            super::super::apply_move(kind, &mut ctx).unwrap();
+            assert!(state.history.over, "{monster:?}");
+            assert_eq!(state.powers.value(PowerId::PlayerFrail), 0);
+            assert_eq!(state.powers.value(PowerId::PlayerWeak), 0);
+        }
     }
 
     #[test]

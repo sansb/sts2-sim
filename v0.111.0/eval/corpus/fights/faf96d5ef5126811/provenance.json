@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "DTRRXWQSHGV5",
+ "node": 16,
+ "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "2b4c43c81a8e5d5f1fd654c0897f190c2820e823ee018030f4a807997e3b9967",
+ "save_sha256": "50d943f4f128bbcc097d25067b130dbdc8add06c149bafc68d1cf1e0cfbbf828",
+ "entry_digest": "28e4d28f8362639a0a2e432c9c44ed5be5ce02ad4d2489688317ac53394f2fcc",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

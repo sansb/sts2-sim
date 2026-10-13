@@ -829,6 +829,37 @@ pub(crate) fn crossbow_owner_attack_pool(
     owner_type_generation_pool(owner, epochs, crate::content_tables::CardType::Attack)
 }
 
+/// Infernal Blade's pool for its owner (#3816).
+///
+/// `InfernalBlade/<OnPlay>d__3::MoveNext` (v0.111.0 RVA `0x3a7164`, `sts2.dll`
+/// SHA-256 `9cb4f1ad…`) names no character. It reads
+/// `Owner.Character.CardPool` (IL_0021-IL_0031) through
+/// `GetUnlockedCards(Owner.UnlockState, RunState.CardMultiplayerConstraint)`
+/// (IL_0037-IL_0051), keeps `Type == Attack` (`Where` at IL_0075 over
+/// `<>c::<OnPlay>b__3_0` RVA `0x3a7156`: `get_Type; ldc.i4.1; ceq`), and takes
+/// the first of `CardFactory::GetDistinctForCombat(Owner, list, 1,
+/// CombatCardGeneration)` (count IL_007a, stream getter IL_008b, call
+/// IL_0090, `FirstOrDefault` IL_0095), whose `FilterForCombat` drops Basic,
+/// Ancient and Event rarities before its one shuffle. That is Crossbow's
+/// projection ([`crossbow_owner_attack_pool`]) and Distraction's and White
+/// Noise's with the Attack type ([`owner_type_generation_pool`]).
+///
+/// An Ironclad owner keeps the frozen `INFERNAL_BLADE_ATTACK_POOL_V109`, the
+/// same projection at the fully-unlocked Ironclad profile
+/// (`crossbow_owner_pools_reproduce_the_frozen_table`), because the Ironclad
+/// path is still gated on that profile (`entry::opening`) and not on a
+/// recorded one; nothing about it changes here. Every other owner gets the
+/// projection under the recorded profile. Consumes no RNG.
+pub(crate) fn infernal_blade_owner_attack_pool(
+    owner: RewardPool,
+    epochs: Option<&[&'static str]>,
+) -> Vec<CardId> {
+    if owner == RewardPool::Ironclad {
+        return crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109.to_vec();
+    }
+    owner_type_generation_pool(owner, epochs, crate::content_tables::CardType::Attack)
+}
+
 /// Native owner-pool listeners: CreativeAiPower.BeforeHandDraw 0x338180
 /// filters Power; HelloWorldPower 0x33bfd0 filters Common; CallOfTheVoidPower
 /// 0x336b08 / predicate 0x336ae0 excludes Basic (1) and Ancient (5).
@@ -2176,6 +2207,25 @@ pub(crate) fn rend_target_power_count(monster: &HotMonster) -> i64 {
         + i64::from(crate::engine::monsters::owner_carries_imbalanced(monster))
 }
 
+/// `rend_exact` — one attack whose damage counts the target's debuffs.
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad...fbf12b4`),
+/// `Rend/<OnPlay>d__3::MoveNext` RVA `0x3b70b0`: `ThrowIfNull(cardPlay.Target)`
+/// (IL_0026-IL_0030), then `DamageCmd.Attack(CalculatedDamage).FromCard(this)
+/// .Targeting(cardPlay.Target)...Execute` (IL_0036-IL_0077). There is no
+/// liveness test in the body.
+///
+/// A target that an earlier body of the same play killed is still that
+/// creature object, not null (#3877): `OnPlayWrapper` hands every replayed
+/// body the frozen target and reads only the owner's liveness
+/// ([`crate::engine::play`]'s CardPlay doc, `0x31b8d0`). So a Glam or Echo
+/// Form replay of a Rend that killed its target runs this body again, and
+/// `AttackCommand.Execute`'s per-hit `IsAlive` filter (`<Execute>d__90`
+/// `0x3f19c0` IL_0168-IL_0196) leaves it no receiver. That is the attack
+/// helper's ordinary dead-target no-op, which this body now reaches; it used
+/// to refuse the dead target by index, and a legal line stopped there. The
+/// damage it computes for a dead receiver lands on nobody. A target index
+/// outside the roster is still refused: no play produces one.
 pub(crate) fn rend_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (base, per) = two_ints(ctx, "rend_exact")?;
     let target = ctx
@@ -2185,9 +2235,6 @@ pub(crate) fn rend_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         let Some(monster) = ctx.state.monsters.get(target) else {
             return Err(dead_target(target));
         };
-        if monster.hp <= 0 {
-            return Err(dead_target(target));
-        }
         rend_target_power_count(monster)
     };
     let damage = per
@@ -3060,6 +3107,16 @@ pub(crate) fn the_bomb_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
 /// `ToricToughness/<OnPlay>d__8` RVA `0x3c403c` awaits `CreatureCmd.GainBlock`
 /// (IL_0041), then `PowerCmd.Apply<ToricToughnessPower>` (IL_00d9) and sets its
 /// Block on the result (IL_0142). `PowerCmd/<Apply>d__1`1::MoveNext` (`0x3ef988`) returns at `IsEnding` (IL_0025-002a) before the power exists, so the gate is the shared IsEnding projection, not `history.over` (#3515).
+///
+/// #3756: the power is Instanced (`ToricToughnessPower::get_InstanceType` RVA
+/// `0xaa24b` IL_0001 returns 1; `PowerCmd::FindExistingInstanceForStacking`
+/// RVA `0x1338d8` IL_0021-0036 answers null), so a play beside a live object
+/// attaches another object with its own Block var and its own duration. Each
+/// runs its own `<AfterBlockCleared>d__11::MoveNext` RVA `0x349e3c`:
+/// `GainBlock(Owner, DynamicVars.Block, 0, null)` at IL_003d-0050, then
+/// `PowerCmd.Decrement(this)` at IL_00ab-00ac. The first live object is the
+/// keyed record; each later one is a `ToricToughnessLaterInstance` row with
+/// its place in the after-block-cleared walk.
 pub(crate) fn toric_toughness_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (block, duration) = two_ints(ctx, "toric_toughness_exact")?;
     let expected_block = match (ctx.spec.identity.id, ctx.spec.identity.upgrade) {
@@ -3107,11 +3164,36 @@ pub(crate) fn toric_toughness_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineR
         // (`<AfterBlockCleared>d__11::MoveNext` RVA `0x349e3c`) gains its own
         // Block var (IL_003d-0050) and decrements its own duration
         // (IL_00ab-00ac). The single keyed record would add the durations
-        // and overwrite the Block, so a second live object refuses by name.
-        if ctx.state.fanouts.toric_toughness().is_some() {
-            return Err(EngineRefusal::PowerRestackNotModeled(
+        // and overwrite the Block, so the second object is a row of its own
+        // (#3756, `ToricToughnessLaterInstance`): the newest power, placed
+        // after every current after-block-cleared listener. A first object
+        // that would outlast it is not a state this step produces (every
+        // object starts at the same duration), and refuses by name.
+        if let Some(first) = ctx.state.fanouts.toric_toughness() {
+            let newest = ctx
+                .state
+                .fanouts
+                .toric_toughness_later_instances()
+                .last()
+                .map_or(first.duration, |later| i32::from(later.duration));
+            if newest > duration {
+                return Err(EngineRefusal::PowerRestackNotModeled(
+                    PowerId::ToricToughness,
+                ));
+            }
+            ctx.state
+                .fanouts
+                .push_toric_toughness_later(duration, retained)
+                .map_err(|_| {
+                    EngineRefusal::PowerOrderNotModeled("after-block-cleared power order")
+                })?;
+            crate::engine::damage::note_power(
+                ctx.events,
+                Subject::Player,
                 PowerId::ToricToughness,
-            ));
+                duration,
+            );
+            return Ok(());
         }
         let updated = ctx
             .state
@@ -5347,7 +5429,7 @@ mod tests {
     }
 
     #[test]
-    fn toric_both_rows_retain_full_powered_decimal_and_refuse_a_second_object() {
+    fn toric_both_rows_retain_full_powered_decimal_and_a_second_play_is_a_second_object() {
         for upgrade in 0..=1 {
             let (mut plain, plain_catalog, plain_toric) = toric_state(upgrade);
             run_toric(&mut plain, &plain_catalog, plain_toric, &mut Vec::new()).unwrap();
@@ -5386,17 +5468,267 @@ mod tests {
             );
         }
 
-        // #3057: ToricToughnessPower is Instanced, so a second play while
-        // the first object lives attaches a second object with its own Block
-        // and duration (out of step: 5 Block / 2 turns vs 6 Block / 2 turns
-        // here). The single keyed record cannot hold it: refuse by name,
-        // atomically, including the card's own powered GainBlock prefix.
+        // #3057/#3756: ToricToughnessPower is Instanced, so a second play
+        // while the first object lives attaches a second object with its own
+        // Block and duration (5 Block vs 6 Block here). The first object's
+        // keyed record and its order entry do not move; the second is a row
+        // placed after every current listener.
         let (mut state, catalog, toric) = toric_state(0);
         let mut events = Vec::new();
         run_toric(&mut state, &catalog, toric, &mut events).unwrap();
         state.powers.set(PowerId::Dexterity, SlotWire::Int, 1);
+        events.clear();
+        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        assert_eq!(state.block, 11);
+        let first = state.fanouts.toric_toughness().unwrap();
+        assert_eq!(
+            (first.duration, first.block.nonnegative_fraction()),
+            (2, Some((5, 1)))
+        );
+        assert_eq!(
+            toric_later(&state),
+            vec![(2, (6, 1), 1)],
+            "the second object: its own duration and Block, after the first"
+        );
+        assert_eq!(
+            state.fanouts.after_block_cleared_order(),
+            &[PowerId::ToricToughness]
+        );
+        assert!(events.iter().any(|event| matches!(
+            event,
+            crate::engine::Event::PowerChanged {
+                power: PowerId::ToricToughness,
+                amount: 2,
+                ..
+            }
+        )));
+
+        // Both were cast in one turn, so both run twice and expire in the
+        // same walk: the second is promoted to the keyed record when the
+        // first expires, and still runs once, at its own place.
+        for (turn, live) in [(2, true), (3, false)] {
+            state.turn = turn;
+            state.block = 0;
+            events.clear();
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(block_gains(&events), vec![5, 6]);
+            assert_eq!(state.block, 11);
+            assert_eq!(state.fanouts.toric_toughness().is_some(), live);
+            assert_eq!(
+                toric_later(&state),
+                if live { vec![(1, (6, 1), 1)] } else { vec![] }
+            );
+        }
+        assert!(state.fanouts.after_block_cleared_order().is_empty());
+
+        // Once every object has expired, the next play is a fresh first
+        // object again.
+        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        let instance = state.fanouts.toric_toughness().unwrap();
+        assert_eq!(instance.duration, 2);
+        assert_eq!(instance.block.nonnegative_fraction(), Some((6, 1)));
+        assert!(toric_later(&state).is_empty());
+        assert_eq!(
+            state.fanouts.after_block_cleared_order(),
+            &[PowerId::ToricToughness]
+        );
+    }
+
+    fn toric_later(state: &HotState) -> Vec<(u8, (u128, u128), u8)> {
+        state
+            .fanouts
+            .toric_toughness_later_instances()
+            .iter()
+            .map(|later| {
+                (
+                    later.duration,
+                    later.block.nonnegative_fraction().unwrap(),
+                    later.listeners_before,
+                )
+            })
+            .collect()
+    }
+
+    fn block_gains(events: &[crate::engine::Event]) -> Vec<i32> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                crate::engine::Event::PlayerBlockGained { amount, .. } => Some(*amount),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// #3756 witness, the corpus shape: a Toric cast one turn after another.
+    /// The older object runs first and expires a turn earlier; the newer one
+    /// then becomes the keyed first object and runs out its own duration.
+    #[test]
+    fn a_toric_cast_a_turn_later_outlives_the_first_object() {
+        let (mut state, catalog, toric) = toric_state(0);
+        let mut events = Vec::new();
+        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        state.turn = 2;
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(state.fanouts.toric_toughness().unwrap().duration, 1);
+        state.powers.set(PowerId::Dexterity, SlotWire::Int, 1);
+        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        assert_eq!(toric_later(&state), vec![(2, (6, 1), 1)]);
+
+        state.turn = 3;
+        events.clear();
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(block_gains(&events), vec![5, 6]);
+        let promoted = state.fanouts.toric_toughness().unwrap();
+        assert_eq!(
+            (promoted.duration, promoted.block.nonnegative_fraction()),
+            (1, Some((6, 1)))
+        );
+        assert!(toric_later(&state).is_empty());
+        assert_eq!(
+            state.fanouts.after_block_cleared_order(),
+            &[PowerId::ToricToughness]
+        );
+        assert!(crate::engine::admission::delayed_block_power_state_is_exact(&state));
+
+        state.turn = 4;
+        events.clear();
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(block_gains(&events), vec![6]);
+        assert!(state.fanouts.toric_toughness().is_none());
+        assert!(state.fanouts.after_block_cleared_order().is_empty());
+    }
+
+    /// #3756 witness, both orders of the pair: a later Toric object runs at
+    /// its acquisition place relative to a Block Next Turn power, and keeps
+    /// that place when it is promoted to the keyed record.
+    #[test]
+    fn a_later_toric_object_runs_at_its_acquisition_place_beside_block_next_turn() {
+        for delayed_first in [false, true] {
+            let (mut state, catalog, toric) = toric_state(0);
+            let mut events = Vec::new();
+            run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+            state.turn = 2;
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            state.powers.set(PowerId::Dexterity, SlotWire::Int, 1);
+            if delayed_first {
+                crate::engine::damage::apply_block_next_turn(&mut state, 7, &mut events).unwrap();
+            }
+            run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+            if !delayed_first {
+                crate::engine::damage::apply_block_next_turn(&mut state, 7, &mut events).unwrap();
+            }
+            assert_eq!(
+                state.fanouts.after_block_cleared_order(),
+                &[PowerId::ToricToughness, PowerId::BlockNextTurn]
+            );
+            assert_eq!(
+                toric_later(&state),
+                vec![(2, (6, 1), if delayed_first { 2 } else { 1 })]
+            );
+            assert!(crate::engine::admission::delayed_block_power_state_is_exact(&state));
+
+            state.turn = 3;
+            events.clear();
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(
+                block_gains(&events),
+                if delayed_first {
+                    vec![5, 7, 6]
+                } else {
+                    vec![5, 6, 7]
+                }
+            );
+            assert_eq!(state.fanouts.toric_toughness().unwrap().duration, 1);
+            assert!(toric_later(&state).is_empty());
+            assert_eq!(
+                state.fanouts.after_block_cleared_order(),
+                &[PowerId::ToricToughness]
+            );
+
+            // Next turn the promoted object is the older listener.
+            crate::engine::damage::apply_block_next_turn(&mut state, 7, &mut events).unwrap();
+            state.turn = 4;
+            events.clear();
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(block_gains(&events), vec![6, 7]);
+            assert!(state.fanouts.after_block_cleared_order().is_empty());
+        }
+    }
+
+    /// #3756 witness: a Block Next Turn power that leaves the walk lowers the
+    /// place of a Toric object behind it, so the object stays where it was
+    /// relative to a Block Next Turn acquired afterwards.
+    #[test]
+    fn a_later_toric_object_keeps_its_place_when_an_earlier_listener_leaves() {
+        let (mut state, catalog, toric) = toric_state(0);
+        let mut events = Vec::new();
+        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        crate::engine::damage::apply_block_next_turn(&mut state, 7, &mut events).unwrap();
+        state.powers.set(PowerId::Dexterity, SlotWire::Int, 1);
+        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        assert_eq!(toric_later(&state), vec![(2, (6, 1), 2)]);
+
+        state.turn = 2;
+        events.clear();
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(block_gains(&events), vec![5, 7, 6]);
+        assert_eq!(toric_later(&state), vec![(1, (6, 1), 1)]);
+
+        crate::engine::damage::apply_block_next_turn(&mut state, 9, &mut events).unwrap();
+        state.turn = 3;
+        events.clear();
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(block_gains(&events), vec![5, 6, 9]);
+        assert!(state.fanouts.toric_toughness().is_none());
+        assert!(toric_later(&state).is_empty());
+        assert!(state.fanouts.after_block_cleared_order().is_empty());
+    }
+
+    /// #3756 witness: three objects cast in one turn expire in one walk, each
+    /// promoted in turn and each run exactly once.
+    #[test]
+    fn three_toric_objects_expire_in_one_walk_in_acquisition_order() {
+        let (mut state, catalog, toric) = toric_state(0);
+        let mut events = Vec::new();
+        for dexterity in 0..3 {
+            state
+                .powers
+                .set(PowerId::Dexterity, SlotWire::Int, dexterity);
+            run_toric(&mut state, &catalog, toric, &mut events).unwrap();
+        }
+        assert_eq!(toric_later(&state), vec![(2, (6, 1), 1), (2, (7, 1), 1)]);
+        for turn in [2, 3] {
+            state.turn = turn;
+            events.clear();
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(block_gains(&events), vec![5, 6, 7]);
+        }
+        assert!(state.fanouts.toric_toughness().is_none());
+        assert!(toric_later(&state).is_empty());
+        assert!(state.fanouts.after_block_cleared_order().is_empty());
+    }
+
+    /// #3756 witness: a first object that would outlast a new one is not a
+    /// state this step produces (every object starts at duration 2), so a
+    /// second play beside it still refuses by name, atomically.
+    #[test]
+    fn a_toric_beside_a_longer_lived_first_object_refuses_by_name() {
+        let (mut state, catalog, toric) = toric_state(0);
+        assert!(
+            state
+                .fanouts
+                .register_after_block_cleared(PowerId::ToricToughness)
+        );
+        assert!(
+            state
+                .fanouts
+                .set_toric_toughness(Some(crate::hot::ToricToughnessInstance {
+                    duration: 3,
+                    block: crate::decimal::DotNetDecimal::from_i64(5),
+                }))
+        );
         let before = state.clone();
-        let events_before = events.clone();
+        let mut events = Vec::new();
         assert_eq!(
             run_toric(&mut state, &catalog, toric, &mut events),
             Err(EngineRefusal::PowerRestackNotModeled(
@@ -5404,21 +5736,52 @@ mod tests {
             ))
         );
         assert_eq!(state, before);
-        assert_eq!(events, events_before);
+        assert!(events.is_empty());
+    }
 
-        // Once the first object has expired, the next play is a fresh first
-        // object again.
-        state.fanouts.decrement_toric_toughness().unwrap();
-        assert_eq!(state.fanouts.decrement_toric_toughness(), Ok(0));
-        assert!(state.fanouts.toric_toughness().is_none());
-        run_toric(&mut state, &catalog, toric, &mut events).unwrap();
-        let instance = state.fanouts.toric_toughness().unwrap();
-        assert_eq!(instance.duration, 2);
-        assert_eq!(instance.block.nonnegative_fraction(), Some((6, 1)));
-        assert_eq!(
-            state.fanouts.after_block_cleared_order(),
-            &[PowerId::ToricToughness]
+    /// #3756 witness: later rows are authenticated against the first object
+    /// and the walk order. A row with no first object, a row placed at or
+    /// before the first object's entry, a row past the order, rows out of
+    /// acquisition order, and a row the first object would outlast all fail
+    /// the delayed-block gate that admission and the boundary require.
+    #[test]
+    fn later_toric_rows_must_follow_a_live_first_object() {
+        let (mut state, catalog, toric) = toric_state(0);
+        let row = |duration, listeners_before| crate::hot::ToricToughnessLaterInstance {
+            block: crate::decimal::DotNetDecimal::from_i64(6),
+            duration,
+            listeners_before,
+        };
+        let exact = crate::engine::admission::delayed_block_power_state_is_exact;
+        assert!(
+            state
+                .fanouts
+                .set_toric_toughness_later_instances(&[row(2, 0)])
         );
+        assert!(!exact(&state), "no first object");
+        assert!(state.fanouts.set_toric_toughness_later_instances(&[]));
+        assert!(
+            !state
+                .fanouts
+                .set_toric_toughness_later_instances(&[row(0, 1)]),
+            "a row is a live object"
+        );
+
+        run_toric(&mut state, &catalog, toric, &mut Vec::new()).unwrap();
+        crate::engine::damage::apply_block_next_turn(&mut state, 7, &mut Vec::new()).unwrap();
+        for (rows, expected) in [
+            (vec![row(2, 1)], true),
+            (vec![row(2, 2)], true),
+            (vec![row(2, 1), row(2, 2)], true),
+            (vec![row(2, 0)], false),
+            (vec![row(2, 3)], false),
+            (vec![row(2, 2), row(2, 1)], false),
+            (vec![row(1, 1)], false),
+            (vec![row(3, 1), row(2, 1)], false),
+        ] {
+            assert!(state.fanouts.set_toric_toughness_later_instances(&rows));
+            assert_eq!(exact(&state), expected, "{rows:?}");
+        }
     }
 
     #[test]
@@ -5539,9 +5902,9 @@ mod tests {
         let before = overflow.clone();
         let mut events = vec![crate::engine::Event::TurnEnded { turn: 7 }];
         let before_events = events.clone();
-        // A live object makes this play a second native object (#3057), so
-        // the named restack refusal now fires before the duration overflow
-        // could; it is just as atomic.
+        // A live object makes this play a second native object (#3057). No
+        // native first object outlasts a new one, so this forged duration
+        // keeps the named restack refusal (#3756), and it is just as atomic.
         assert_eq!(
             run_toric(&mut overflow, &catalog, toric, &mut events),
             Err(EngineRefusal::PowerRestackNotModeled(
@@ -5581,23 +5944,27 @@ mod tests {
         replay.set_base_replay_count(Some(1)).unwrap();
         manual.card_states.set(source.uid, replay);
         // The replayed body is a second native ToricToughnessPower object
-        // (#3057: Instanced, its own Block and duration), which the one keyed
-        // record cannot hold, so the public action refuses by name.
+        // (#3057: Instanced, its own Block and duration): a later row beside
+        // the first play's keyed record (#3756), each retaining its own
+        // Frail-scaled 15/4.
+        let replayed = crate::engine::apply_action(
+            &manual,
+            &catalog,
+            &crate::engine::Action::Play {
+                uid: source.uid,
+                target: None,
+                selection: crate::engine::SelectionRef::NONE,
+            },
+        )
+        .unwrap()
+        .state;
+        assert_eq!(replayed.block, 6);
+        let first = replayed.fanouts.toric_toughness().unwrap();
         assert_eq!(
-            crate::engine::apply_action(
-                &manual,
-                &catalog,
-                &crate::engine::Action::Play {
-                    uid: source.uid,
-                    target: None,
-                    selection: crate::engine::SelectionRef::NONE,
-                },
-            )
-            .map(|_| ()),
-            Err(EngineRefusal::PowerRestackNotModeled(
-                PowerId::ToricToughness
-            ))
+            (first.duration, first.block.nonnegative_fraction()),
+            (2, Some((15, 4)))
         );
+        assert_eq!(toric_later(&replayed), vec![(2, (15, 4), 1)]);
 
         let mut autoplay = HotState::at_defaults();
 
@@ -7655,10 +8022,14 @@ mod tests {
         assert_eq!(state.monsters[0].powers.value(PowerId::Doom), 7);
     }
 
+    /// #3877: a dead target is the attack's ordinary no-op (a replayed body
+    /// keeps the target its first body killed); a target outside the roster
+    /// and a missing target still refuse.
     #[test]
-    fn rend_refuses_a_dead_target_rather_than_skipping() {
+    fn rend_on_a_dead_target_lands_on_nobody_and_an_absent_one_refuses() {
         let (mut state, catalog) = ctx_state();
         state.monsters_mut()[1].hp = 0;
+        let before = state.clone();
         assert_eq!(
             run(
                 StepKind::RendExact,
@@ -7667,8 +8038,10 @@ mod tests {
                 Some(1),
                 &[CompiledArg::I(10), CompiledArg::I(5)],
             ),
-            Err(EngineRefusal::BadTarget(1))
+            Ok(())
         );
+        assert_eq!(state.monsters, before.monsters);
+        assert_eq!(state.hp, before.hp);
         assert_eq!(
             run(
                 StepKind::RendExact,

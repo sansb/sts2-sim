@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "2N2EA6KACA1J",
+ "node": 10,
+ "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "d5c194718dc4dac8f70480b4b2e680b17950ab6005dfc561fff99887faafecc4",
+ "save_sha256": "cf4e4fd5992b8b8fec6e47ceab98b805e77d5362000b92c7779e71f5201f62c3",
+ "entry_digest": "2a04c32f77bf4e2242108b80b168dd39714f8d954fc1ff2649947658230bc522",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

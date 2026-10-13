@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "KD13JGCDPB3U",
+ "node": 11,
+ "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "4c652dda1e0a65ab97b76e32a90b03cef2e3f0d703a959827dcc59f2fed688d3",
+ "save_sha256": "443de6baa30ed377a3a78a3267c7079be30945035dc3055309e6499240da8c5b",
+ "entry_digest": "9b632fdab946c44180d39f50dffe51020d76dc26d9495a095f0e127ebdee9ab8",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

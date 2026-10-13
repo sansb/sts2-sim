@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "QF89PUW7MNBC",
+ "node": 13,
+ "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "0f00c512452399675a657486037a4a29868530872b435ba6e19768032be65270",
+ "save_sha256": "287a2ecc3db82db7fbc27c6e9b221595c35080339540d4def3469c0453db76bc",
+ "entry_digest": "93d5fba85a88a9e9c97a65a4ef57acba62afd3f98169e525ca9eb61b5778a77d",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

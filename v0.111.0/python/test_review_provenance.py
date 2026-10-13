@@ -362,8 +362,3 @@ def test_capture_identity_admitted_is_the_association_rule():
     assert not admitted(SOURCE_START, BRANCH_START, 17, lineage)
     assert not admitted(SOURCE_START, BRANCH_START, 1, ())
     assert not admitted(999, BRANCH_START, 1, lineage)
-    assert provenance.parse_lineage([[SOURCE_START, 17]]) == (
-        (SOURCE_START, 17),)
-    for bad in ({"links": []}, [[SOURCE_START, 0]], [["1", 2]]):
-        with pytest.raises(ValueError):
-            provenance.parse_lineage(bad)

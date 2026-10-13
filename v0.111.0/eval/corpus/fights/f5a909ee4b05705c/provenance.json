@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "1KGHECHZ6J1N",
+ "node": 11,
+ "encounter": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "ec7dbdcc4a7446de328bf88965b521aee6da198714222a4db8443947b295f739",
+ "save_sha256": "718b46c65efe493871a20db7ff67be8624ad29c0e54216b861aaec9bb2f6705a",
+ "entry_digest": "0e7ba954333cd732dc7c68189168b12a59eecb928593be2ef0886e72f8177746",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

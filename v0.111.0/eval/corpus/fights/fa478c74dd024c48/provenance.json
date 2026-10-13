@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "F3C51JD0JVEK",
+ "node": 45,
+ "encounter": "ENCOUNTER.SLIMED_BERSERKER_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "12d73b1f88b851e665819f53ec17303061d3cc06381db48e4e21c32796e704dc",
+ "save_sha256": "042f0a190841395d322b35a7d6a3b3f3e05b16a6fe9b6eebb2ede033fcc218f6",
+ "entry_digest": "a50296db355fd01ff6aa05053e77cd856d85105369f869a30652909dc00a6936",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

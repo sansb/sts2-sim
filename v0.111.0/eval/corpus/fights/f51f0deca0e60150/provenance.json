@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "T1UFMCZV8EBJ",
+ "node": 22,
+ "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "665dd1a6a3f26ed4b1cbdd15f1045b8f49108e29bd7679a873df9f56ff593a49",
+ "save_sha256": "ba9092fd3b236ee2b41fb673efcb1832cb05c40b862eed9133a6ae6ff8ccd0d9",
+ "entry_digest": "1492d5e23879bd9366006fdaceac8205263c6a47bcc60fc841a919df7fd2ac4f",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

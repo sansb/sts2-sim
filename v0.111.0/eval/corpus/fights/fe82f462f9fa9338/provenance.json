@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "T1UFMCZV8EBJ",
+ "node": 2,
+ "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "d200866ae5558b2b64275b62c2df345fecc4fa1ef42f338121589ffb836ec760",
+ "save_sha256": "796b56ddc5e02e842c8bd4992e56f3c9f71d8b1776ed87af2428f638b00ac14b",
+ "entry_digest": "0a7bdda90c368203270394c15aa776bd999a778855c1e06107c48f9e4dd164ac",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "P6XAS3GPQTUM",
+ "node": 5,
+ "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "69f5ad99542200e399ce6a46cc25f8e96488c9a17fedd444bf582a5f77a69eaf",
+ "save_sha256": "782fcc5833a40f74a8cb9f77f3952d3b6e8b503b74235efd0a832de7e49b0afd",
+ "entry_digest": "8a50fa9e5e748cabcf3ea203488e5dc876ee230d8288d62ae6c11e2ae7daeaea",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

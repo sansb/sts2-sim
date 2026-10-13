@@ -434,21 +434,39 @@ pub(crate) fn resume_expertise_after_draw(
 
 /// `("expose_exact", vulnerable)` — Expose.
 ///
-/// Python: `_run_steps_inner` (frozen, deleted #2827). On a live target and a running combat:
-/// `_lose_all_monster_block(s, target, BreakerIdentity.PLAYER, log)`,
-/// then **either** clear the surviving `ArtifactPower` instance **or**
-/// `apply_monster_debuff(target, "vuln", _lamp_amount(s, target, step[1]))`.
-/// The order is load-bearing in Python: LoseBlock's `AfterBlockBroken`
-/// consumers run *before* the remainder of the body, and one of them (Hand
-/// Drill) can eat the Artifact stack this branch then tests.
+/// v0.111.0 `sts2.dll` (SHA-256 `9cb4f1ad…12b4`),
+/// `Expose/<OnPlay>d__8::MoveNext` RVA `0x39ca44`, three commands in order:
 ///
-/// The catalog-aware block-removal seam runs
-/// `_hand_drill_after_block_broken` (frozen Python, deleted #2827) for Hand Drill's Vulnerable 2
-/// and `_burrowed_after_block_broken` for Tunneler's Burrowed/DIZZY
-/// subscriber before Expose tests the surviving Artifact and applies its own
-/// Vulnerable. That preserves the load-bearing Python order without treating
-/// either listener as card-sourced; Vicious observation is authenticated by
-/// the shared catalog-aware power path.
+/// 1. `CreatureCmd.LoseBlock(target, target.Block, Owner.Creature)`
+///    (IL_00f0-IL_0120).
+/// 2. `if (target.HasPower<ArtifactPower>())` (IL_0180-IL_018a)
+///    `PowerCmd.Remove<ArtifactPower>(target)` (IL_018c-IL_0197). The generic
+///    `PowerCmd/<Remove>d__7` RVA `0x3f08f0` fetches the instance
+///    (`GetPower<T>`, IL_001c) and hands it to `PowerCmd/<Remove>d__8` RVA
+///    `0x3f09bc`, which calls `PowerModel::RemoveInternal` (IL_0030) and the
+///    power's own `AfterRemoved` (IL_00b4). That is the WHOLE power, every
+///    stack; `ArtifactPower` overrides no `AfterRemoved`, and Remove
+///    broadcasts no amount-changed hook and has no combat-ending gate.
+/// 3. `PowerCmd.Apply<VulnerablePower>(ctx, target, amount, Owner.Creature,
+///    this, false)` (IL_01f4-IL_021d). The `brfalse.s` at IL_018a lands on
+///    IL_01f4, so the Vulnerable is applied whether or not an Artifact was
+///    removed, and `ldloc.1` at IL_021b passes the card itself as
+///    `cardSource`: it is an ordinary card-sourced debuff, exactly like
+///    Bash's, so Unsettling Lamp's `BeforePowerAmountChanged` (`0x9d4fc`,
+///    which requires a non-null card at IL_0028) sees it. Because step 2 ran
+///    first, the Lamp's `HasPower<ArtifactPower>` test (IL_0083-IL_0089) and
+///    `ArtifactPower::TryModifyPowerAmountReceived` (`0x9f844`) both find no
+///    Artifact left by this card.
+///
+/// The order of 1 and 2 is load-bearing: LoseBlock's `AfterBlockBroken`
+/// consumers run before the Artifact test, and Hand Drill's null-card
+/// Vulnerable 2 is absorbed by (and spends one stack of) the Artifact that
+/// step 2 then removes if any is left. The catalog-aware block-removal seam
+/// runs that listener and Tunneler's Burrowed/DIZZY subscriber.
+///
+/// Until #3756 this body skipped step 2 and applied step 3 as a null-card
+/// debuff, so an Artifact absorbed Expose's Vulnerable and kept its other
+/// stacks (site witnesses: Mecha Knight and Aeonglass, Artifact 3).
 pub(crate) fn expose_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(vulnerable)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("expose_exact"));
@@ -469,7 +487,16 @@ pub(crate) fn expose_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         target,
         ctx.events,
     )?;
-    crate::engine::damage::apply_power_monster_debuff_with_catalog(
+    // IL_0180-IL_0197: the whole Artifact power, when any stack survived
+    // LoseBlock's listeners.
+    if ctx.state.monsters[target].powers.value(PowerId::Artifact) > 0 {
+        let uid = ctx.state.monsters[target].uid;
+        ctx.state.monsters_mut()[target]
+            .powers
+            .set(PowerId::Artifact, SlotWire::Int, 0);
+        note_power(ctx.events, Subject::Monster(uid), PowerId::Artifact, 0);
+    }
+    crate::engine::damage::apply_card_monster_debuff_with_catalog(
         ctx.state,
         ctx.catalog,
         target,

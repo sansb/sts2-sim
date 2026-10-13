@@ -142,6 +142,68 @@ thread_local! {
     /// proven to see the same state natively (#3386, see
     /// [`DeferredChoiceListener`]).
     static DEFERRED_CHOICE_LISTENER: Cell<Option<&'static str>> = const { Cell::new(None) };
+    /// Whether the innermost deferred-choice listener is one whose pause Rust
+    /// models by starting its later peers at the choice's signal
+    /// ([`SideEndDeferral`]).
+    static SIDE_END_DEFERRAL: Cell<SideEndDeferral> = const { Cell::new(SideEndDeferral::Inactive) };
+}
+
+/// The innermost deferred-choice listener's modeled pause (#3756).
+///
+/// Constrict's `AfterSideTurnEnd` listener is the one listener whose first
+/// prompt Rust resolves in native order: the later listeners of its walk are
+/// started when the prompt is asked
+/// (`turn::side_end_prompt_starts_later_listeners`), and the listener's
+/// remainder runs after them as the Rust stack unwinds.
+///
+/// A select that resolves without a prompt before that first prompt is
+/// still counted and refused ([`AUTO_RESOLVED_IN_DEFERRED_LISTENER`]). Its
+/// signal releases the walk as a prompted one does, and with no prompt to
+/// hold the listener back, the order of its remainder against the later
+/// listeners depends on real-time waits and is not established
+/// (`turn::side_end_prompt_starts_later_listeners` has the IL and both
+/// native traces). Once the first prompt has started the later peers, the
+/// listener is its own running hook action and its later selects are
+/// sequential in it, prompted or not.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SideEndDeferral {
+    /// The innermost listener is not such a listener.
+    Inactive,
+    /// It is, and it has not asked a choice in this run.
+    Armed,
+    /// It has: its later peers have been started, so a park inside it is in
+    /// native order.
+    Started,
+}
+
+/// The innermost deferred-choice listener's [`SideEndDeferral`].
+pub(crate) fn side_end_deferral() -> SideEndDeferral {
+    SIDE_END_DEFERRAL.with(Cell::get)
+}
+
+/// The innermost listener has asked its first choice and its later peers
+/// have been started ([`SideEndDeferral::Started`]). From here the listener
+/// is its own running hook action: a later choice pauses it directly
+/// (`HookPlayerChoiceContext/<SignalPlayerChoiceBegun>d__37` RVA `0x3d64f4`
+/// IL_00e7-010b), so a park is exact and its later selects are no longer
+/// counted.
+pub(crate) fn side_end_deferral_started() {
+    if side_end_deferral() == SideEndDeferral::Inactive {
+        return;
+    }
+    SIDE_END_DEFERRAL.with(|deferral| deferral.set(SideEndDeferral::Started));
+    DEFERRED_CHOICE_LISTENER.with(|listener| listener.set(None));
+    super::hook_action::stop_counting_unprompted_selects();
+}
+
+/// Whether the innermost listener is an armed [`SideEndDeferral`] in which a
+/// select has already resolved without a prompt. Its first prompt then
+/// refuses by [`AUTO_RESOLVED_IN_DEFERRED_LISTENER`] instead of starting the
+/// later listeners: native released the walk at that earlier signal
+/// (`turn::side_end_prompt_starts_later_listeners`).
+pub(crate) fn side_end_deferral_released_unprompted() -> bool {
+    side_end_deferral() == SideEndDeferral::Armed
+        && super::hook_action::unprompted_selects_counted() > 0
 }
 
 /// A listener of a native deferred-choice hook walk is running (#3386).
@@ -215,13 +277,28 @@ thread_local! {
 /// three Rust arms that call `note_unprompted_select`.
 pub(crate) struct DeferredChoiceListener {
     outer: Option<&'static str>,
+    outer_deferral: SideEndDeferral,
     wall: Option<&'static str>,
     signals: super::hook_action::UnsignaledListener,
 }
 
 impl DeferredChoiceListener {
     pub(crate) fn enter(wall: Option<&'static str>) -> Self {
+        Self::enter_with(wall, SideEndDeferral::Inactive)
+    }
+
+    /// Enter a listener whose pause is modeled ([`SideEndDeferral`]). `wall`
+    /// stays the backstop: a park that did not start the later listeners
+    /// refuses under it. Its selects that resolve without a prompt are
+    /// counted until its first prompt has started the later listeners
+    /// ([`SideEndDeferral`]).
+    pub(crate) fn enter_side_end_deferral(wall: &'static str) -> Self {
+        Self::enter_with(Some(wall), SideEndDeferral::Armed)
+    }
+
+    fn enter_with(wall: Option<&'static str>, deferral: SideEndDeferral) -> Self {
         let outer = DEFERRED_CHOICE_LISTENER.with(|listener| listener.replace(wall));
+        let outer_deferral = SIDE_END_DEFERRAL.with(|slot| slot.replace(deferral));
         let signals = if wall.is_some() {
             super::hook_action::UnsignaledListener::enter()
         } else {
@@ -229,6 +306,7 @@ impl DeferredChoiceListener {
         };
         Self {
             outer,
+            outer_deferral,
             wall,
             signals,
         }
@@ -251,6 +329,7 @@ impl DeferredChoiceListener {
 impl Drop for DeferredChoiceListener {
     fn drop(&mut self) {
         DEFERRED_CHOICE_LISTENER.with(|listener| listener.set(self.outer));
+        SIDE_END_DEFERRAL.with(|deferral| deferral.set(self.outer_deferral));
     }
 }
 
@@ -302,7 +381,11 @@ pub(crate) fn deferred_choice_wall() -> Option<&'static str> {
 pub(crate) const fn is_receipt_owned(caller: DrawCaller) -> bool {
     matches!(
         caller,
-        DrawCaller::CentennialPuzzle | DrawCaller::SwiftEnchantment | DrawCaller::JossPaper
+        DrawCaller::CentennialPuzzle
+            | DrawCaller::SwiftEnchantment
+            | DrawCaller::JossPaper
+            | DrawCaller::GamePiece
+            | DrawCaller::IronClub
     )
 }
 
@@ -362,19 +445,21 @@ fn park(state: &HotState) -> Result<(), EngineRefusal> {
     if let Some(wall) = deferred_choice_wall() {
         return Err(EngineRefusal::PowerOrderNotModeled(wall));
     }
-    // #3387: a queued hook action would have to cross this park's boundary.
-    if state.fanouts.deferred_hook_action_is_queued() {
-        return Err(EngineRefusal::PowerOrderNotModeled(
-            super::hook_action::BESIDE_A_CHOICE,
-        ));
-    }
     if !CARRIER_OPEN.with(Cell::get) {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     // The LAST park wins. A park unwinds to its rehearsal site, which either
     // propagates it (no later park) or swallows it and runs the committed
     // command, which then parks at the same await on the committed state.
-    SNAPSHOT.with(|snapshot| *snapshot.borrow_mut() = Some(state.clone()));
+    let mut parked = state.clone();
+    // #3903: a hook action queued behind this action is not part of the
+    // published park. The game asks this choice first
+    // (`engine::hook_action`, "A choice of the enclosing action"), and every
+    // answer re-executes the action from its receipt, which queues the hook
+    // action again.
+    parked.fanouts.discard_deferred_hook_action();
+    parked.fanouts.set_hook_action_running(false);
+    SNAPSHOT.with(|snapshot| *snapshot.borrow_mut() = Some(parked));
     Err(EngineRefusal::MalformedArgs(PARK_SITE))
 }
 
@@ -445,6 +530,16 @@ pub(crate) fn with_tape_for_test<T>(
 ) -> T {
     let _tape = TapeGuard::install(answers);
     body()
+}
+
+/// Whether the installed tape holds an answer `state`'s lineage has not
+/// consumed.
+pub(crate) fn tape_has_unread_answer(state: &HotState) -> bool {
+    TAPE.with(|tape| {
+        tape.borrow()
+            .as_ref()
+            .is_some_and(|tape| usize::from(state.fanouts.replay_tape_cursor()) < tape.len())
+    })
 }
 
 /// Whether a re-execution is running. Its intermediate public applications
@@ -624,15 +719,32 @@ pub(crate) fn receipt_owned_draw(
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     let depth = state.frames.len();
+    let word_base = state.frames.word_len();
     match super::draw::draw_cards_for_potion(state, catalog, n, caller, events)? {
         super::draw::PotionDrawResult::Complete => return Ok(()),
         super::draw::PotionDrawResult::Suspended => {}
     }
     loop {
+        // #3756: a prompt inside a paused side-end listener is asked only
+        // after its later peers have run; if they end the combat it is
+        // never answered.
+        if super::turn::side_end_prompt_starts_later_listeners(
+            state, catalog, events, depth, word_base,
+        )? {
+            return Ok(());
+        }
         if state.pending.is_none() || parked_draw_depth(state) != Some(depth) {
             return Err(EngineRefusal::ContinuationNotModeled);
         }
-        let Some((answer, last)) = take_answer(state)? else {
+        // #3903: inside a deferred-choice listener that has not yet begun a
+        // choice, this one is the listener's first. It is not answered
+        // here: it starts the listener's hook action
+        // (`hook_action::receipt_choice_in_listener`).
+        let taken = match super::hook_action::receipt_choice_in_listener(state, events)? {
+            Some(taken) => Some((taken, false)),
+            None => take_answer(state)?,
+        };
+        let Some((answer, last)) = taken else {
             return park(state);
         };
         if last {
@@ -829,6 +941,20 @@ mod tests {
     use crate::hot::{CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotCard, HotMonster, HotState, PileId};
     use crate::ids::{CardId, MonsterKind, PowerId, RelicId};
     use crate::powers::SlotWire;
+
+    // #3756: a choice inside Constrict's side-end damage.
+    mod constrict_side_end;
+
+    /// Constrict `amount` on the player, registered at the end of the
+    /// side-end ledger. Kept in this module so the carrier's writer census
+    /// (`tests/hot_path_contract.rs`) sees production call sites only.
+    fn constrict(state: &mut HotState, amount: i32) {
+        assert!(state.fanouts.set_constrict_amount(amount));
+        state
+            .fanouts
+            .register_after_side_turn_end_power(crate::hot::AfterSideTurnEndPowerToken::Constrict)
+            .unwrap();
+    }
 
     fn plain(id: CardId) -> CardIdentity {
         CardIdentity {
@@ -4309,4 +4435,7 @@ mod tests {
             .insert("hp".to_owned(), serde_json::json!(parked.hp + 1));
         refuses(&healed, "state the receipt does not reproduce", REPLAY);
     }
+
+    // #3822: Game Piece's and Iron Club's AfterCardPlayed tail Draws.
+    mod after_card_played;
 }

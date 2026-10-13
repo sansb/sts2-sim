@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "V283Z110WXSJ",
+ "node": 22,
+ "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "ef249349de6a36e682d733f226d0215737505807ac5567450610271234ed240c",
+ "save_sha256": "0d5acb427d728452f797c1f01ef1c6c467ba6b5fed27ace651b94cfba096ce00",
+ "entry_digest": "4a59ec82cc70b815009e417815fee068659e734f3ac9643b3ee187517d36cc0d",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

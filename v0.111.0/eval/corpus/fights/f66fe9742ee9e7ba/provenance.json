@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TS8D6ATY6QWW",
+ "node": 30,
+ "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+ "node_type": "elite",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "3ea3a9fa95007b9bb6487fc6ce07169a55265bdf159e6f93092f78f3b20f39f1",
+ "save_sha256": "683d11d83e1ef63762d5eaa9b8290b306911e403254d51152106ba6920da1569",
+ "entry_digest": "047b5d08b07dc856ae0af30f36d3a6f476e94eeb4447bdcf7b481c43fddab3b8",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -175,6 +175,17 @@ pub enum EntryRefusal {
     /// say whether they are the pre-event snapshot or the state after the
     /// event's option (#3248).
     EventCombatFactsUnvouched { encounter: String },
+    /// The run carries a modifier that overrides a hook which fires inside a
+    /// combat room, and the engine does not model what it does there (#3760,
+    /// `entry::modifiers::RUN_MODIFIERS`).
+    RunModifierNotModeled {
+        modifier: String,
+        hook: &'static str,
+        effect: &'static str,
+    },
+    /// The run carries a modifier id outside the IL-read table, so whether it
+    /// acts in a combat is unknown (#3760).
+    RunModifierUnknown { modifier: String },
 }
 
 impl EntryRefusal {
@@ -224,6 +235,8 @@ impl EntryRefusal {
             Self::EventCombatListenerNotModeled { .. } => "event_combat_listener_not_modeled",
             Self::EventCombatRunModifiers { .. } => "event_combat_run_modifiers",
             Self::EventCombatFactsUnvouched { .. } => "event_combat_facts_unvouched",
+            Self::RunModifierNotModeled { .. } => "run_modifier_not_modeled",
+            Self::RunModifierUnknown { .. } => "run_modifier_unknown",
         }
     }
 }
@@ -405,6 +418,20 @@ impl fmt::Display for EntryRefusal {
                 "{encounter} is started by an event, and an entry-facts document cannot \
                  vouch whether its player is the pre-event snapshot"
             ),
+            Self::RunModifierNotModeled {
+                modifier,
+                hook,
+                effect,
+            } => write!(
+                f,
+                "the run's modifier {modifier} listens to {hook} inside a combat ({effect}), \
+                 which the engine does not model"
+            ),
+            Self::RunModifierUnknown { modifier } => write!(
+                f,
+                "the run's modifier {modifier} is not in the IL-read modifier table, so \
+                 whether it acts in a combat is unknown"
+            ),
         }
     }
 }
@@ -508,6 +535,14 @@ mod tests {
             },
             EntryRefusal::EventCombatFactsUnvouched {
                 encounter: String::new(),
+            },
+            EntryRefusal::RunModifierNotModeled {
+                modifier: String::new(),
+                hook: "",
+                effect: "",
+            },
+            EntryRefusal::RunModifierUnknown {
+                modifier: String::new(),
             },
         ];
         let mut classes: Vec<&str> = refusals.iter().map(EntryRefusal::class).collect();

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "PCLUQUAW2H27",
+ "node": 20,
+ "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "ac02b4076d71143b946f237bf0beb023fd6e471f356bc24bc793e11336817c4a",
+ "save_sha256": "be3d701937fcef323002acec90011e86a7a3bdc784c7275276c7befa246d85d4",
+ "entry_digest": "42be83c763b25f9ffbf3f75eaa34ee892bec35a6b788d8d4f7f938806533d906",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

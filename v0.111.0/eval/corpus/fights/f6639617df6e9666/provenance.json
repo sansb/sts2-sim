@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "1ZDHW9HXPV4F",
+ "node": 21,
+ "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "df2319e4f00195ac8ab42b5f53e9470eda213fc0fbaceda7410e18cb619732bd",
+ "save_sha256": "c4ac58d59869627f264a6d959da77247b905d2a06c7081e7c8a3d13ec350f659",
+ "entry_digest": "a2afadd65893dd546ffe61fdf45908822b286c69f86bdcb77eb7b24b6f1d7d05",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

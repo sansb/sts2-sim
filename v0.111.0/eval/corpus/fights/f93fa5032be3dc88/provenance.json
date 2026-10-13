@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "YGX1ME6C5FDA",
+ "node": 19,
+ "encounter": "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "91e32981791025b680c3ff3d6b6b3466d63198e2769a85bfc3f6670f668672b5",
+ "save_sha256": "6ec5dae3a273aa69b835e9ff3f639a8613f1aed4530b49b48e1860f322bc2ecf",
+ "entry_digest": "cf980251b0291235a4f64f6b974f844cacb53222c7c757433d3144ecbce04266",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

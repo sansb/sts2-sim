@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "5NU6V4FX14B9",
+ "node": 44,
+ "encounter": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "26dea07fcb7408c0e3fe785a121102856b2b4c4a8840cbde758353a9573e1645",
+ "save_sha256": "cc33ff410eabb06ee2dc3a5e68e3686525530ac388ccd674833ce8d062530b5e",
+ "entry_digest": "dcc74fa0e1197906c0570ed0ff25212aad633296f8c0ba3bb5d079897fd57467",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

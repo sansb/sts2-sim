@@ -55,14 +55,67 @@ def _rng_tuple(rng_doc: dict, stream: str) -> tuple:
     return tuple(words) + (counter,)
 
 
-def first_cycle_from_replay(replay: dict) -> list:
-    """Combat-card instance order from the MCR's own entry snapshot."""
+def _saved_int(card: dict, name: str):
+    """One saved integer property of a deck row, in either spelling: the
+    decoder's flat `{name: value}` or a save's `{"ints": [{name, value}]}`."""
+    props = card.get("props") or {}
+    if name in props:
+        return props[name]
+    for row in props.get("ints") or ():
+        if isinstance(row, dict) and row.get("name") == name:
+            return row.get("value")
+    return None
+
+
+def combat_deck(deck: list, root: dict | None) -> list:
+    """The entry snapshot's deck as the combat copies were made from it.
+
+    The snapshot is written on moving onto the node, before the room is
+    entered. `Cards.Dowsing::BeforeRoomEntered` (v0.111.0 DLL `9cb4f1ad`,
+    `Dowsing/<BeforeRoomEntered>d__15::MoveNext` RVA `0x399e18`) counts the
+    first room of a `?` point, and when the saved `RoomsEntered` 4 becomes 5
+    it replaces the deck card with an Abundance (`TransformTo<Abundance>`,
+    IL_0099-00a1) that `CardCmd/<Transform>d__13` (RVA `0x3e0ae0`) adds at
+    the deck's END (`AddInternal(replacement, -1, false)`, IL_03ca-03d8). The
+    combat deck is cloned afterwards, so combat-card instance k is row k of
+    THAT deck (#3791).
+
+    Whether this entry was the counting room is the Rust opening's decision
+    (`entry::opening::dowsing_before_room_entered`), and it is read off the
+    root rather than decided a second time here: the saved deck holds
+    Dowsing rows one room short, and the root holds that many fewer Dowsing
+    cards. Every instance is still compared with the root's own card
+    afterwards, so a reading the root does not bear out refuses the deal.
+    Without a root, or when nothing transformed, the deck is returned as is.
+    """
+    if root is None:
+        return deck
+    is_dowsing = lambda card: card["id"].removeprefix("CARD.") == "DOWSING"
+    due = [row for row, card in enumerate(deck)
+           if is_dowsing(card) and _saved_int(card, "RoomsEntered") == 4]
+    if not due:
+        return deck
+    saved = sum(1 for card in deck if is_dowsing(card))
+    held = sum(1 for pile in root["piles"].values() for card in pile
+               if card.get("id") == "DOWSING")
+    if held != saved - len(due):
+        return deck
+    return ([card for row, card in enumerate(deck) if row not in due]
+            + [{"id": "CARD.ABUNDANCE", "upgrade_level": 0} for _ in due])
+
+
+def first_cycle_from_replay(replay: dict, root: dict | None = None) -> list:
+    """Combat-card instance order from the MCR's own entry snapshot.
+
+    `root`, when given, is the Rust root the cycle will be matched against;
+    see `combat_deck` for the one thing it changes.
+    """
 
     player = require_single_player(replay["run"], "MCR replay")
     ids = [(card["id"].removeprefix("CARD."),
             card.get("upgrade_level") or
             card.get("current_upgrade_level") or 0)
-           for card in player["deck"]]
+           for card in combat_deck(player["deck"], root)]
     return [ids[row] for row in first_cycle_rows_from_replay(replay)]
 
 

@@ -27,13 +27,31 @@ pub const PER_INSTANCE_PROP_CARDS: [&str; 3] = [
     "CARD.MAD_SCIENCE",
 ];
 
+/// The card whose saved per-instance property the opening reads at room
+/// entry and which no combat copy carries (#3791).
+///
+/// `CARD.DOWSING` saves `RoomsEntered`, its count of `?` rooms. On the fifth
+/// it is replaced in the deck by an Abundance before the combat deck is
+/// built, and the save is written before that room is entered, so the
+/// opening needs the count to know which deck the fight starts from
+/// (`entry::opening::dowsing_before_room_entered`). Kept apart from
+/// [`PER_INSTANCE_PROP_CARDS`], whose props are combat state.
+pub const ROOM_ENTRY_PROP_CARDS: [&str; 1] = ["CARD.DOWSING"];
+
+/// Whether a deck row of this card id keeps its saved `props`
+/// ([`PER_INSTANCE_PROP_CARDS`] or [`ROOM_ENTRY_PROP_CARDS`]).
+pub fn carries_saved_props(id: &str) -> bool {
+    PER_INSTANCE_PROP_CARDS.contains(&id) || ROOM_ENTRY_PROP_CARDS.contains(&id)
+}
+
 /// One entering deck row, in `build_entry`'s exact key vocabulary.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeckEntry {
     pub id: String,
     pub upgrade_level: i64,
-    /// Present only for [`PER_INSTANCE_PROP_CARDS`], and only when the save
-    /// row carried a `props` object at all.
+    /// Present only for [`PER_INSTANCE_PROP_CARDS`] and
+    /// [`ROOM_ENTRY_PROP_CARDS`], and only when the save row carried a `props`
+    /// object at all.
     pub props: Option<Map<String, Value>>,
     pub enchantment: Option<String>,
     pub enchant_amount: Option<i64>,
@@ -79,7 +97,7 @@ pub fn deck_entering(player: &SerializedPlayer) -> Result<Vec<DeckEntry>, EntryR
     let mut rows = Vec::with_capacity(player.deck.len());
     for card in &player.deck {
         let id = canonical_model_id(card.id.as_deref(), "CARD")?;
-        let props = if PER_INSTANCE_PROP_CARDS.contains(&id.as_str()) {
+        let props = if carries_saved_props(&id) {
             card.props.clone()
         } else {
             None
@@ -153,6 +171,19 @@ mod tests {
         ))
         .unwrap();
         assert!(scythe[0].props.is_some());
+        // #3791: Dowsing's room counter, which the opening reads.
+        let dowsing = deck_entering(&player(
+            r#"[{"id": "CARD.DOWSING",
+                 "props": {"ints": [{"name": "RoomsEntered", "value": 4}]}}]"#,
+        ))
+        .unwrap();
+        assert_eq!(
+            dowsing[0].to_json()["props"]["ints"][0]["value"],
+            Value::from(4)
+        );
+        assert!(carries_saved_props("CARD.DOWSING"));
+        assert!(carries_saved_props("CARD.MAD_SCIENCE"));
+        assert!(!carries_saved_props("CARD.SPOILS"));
         let other = deck_entering(&player(
             r#"[{"id": "CARD.SPOILS",
                  "props": {"ints": [{"name": "SpoilsActIndex", "value": 1}]}}]"#,

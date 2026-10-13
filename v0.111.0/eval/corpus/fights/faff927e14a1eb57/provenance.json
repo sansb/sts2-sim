@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "FQR107Z924CD",
+ "node": 26,
+ "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "fb5456e23dcc3ccaed91587aad01046f46082976bf2ab0c52ea1c46db969131a",
+ "save_sha256": "bd70a46a3f1b074f13c235f363075ddbb581f92be58e9c6435bb269d1e640dc9",
+ "entry_digest": "3a437c5ff715d465f39ce3a025c25112bcbe8aa5aa101338abc8badb2c32503f",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

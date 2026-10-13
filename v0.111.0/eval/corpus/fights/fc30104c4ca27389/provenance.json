@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MY14VFZZAVM0",
+ "node": 2,
+ "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 9,
+ "capture_sha256": "b83b3762f56b8321d097bf67c601282c755321a374430c76359addd0f4ab994c",
+ "save_sha256": "8e6e82ea1b5ec8ce603e868cb658823f1877dac7570fadef86198fc1cf080bce",
+ "entry_digest": "5d861eca7e4af06e91db34882e364ecf63d90c0756e2d34d9519f9169fd6a6a3",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

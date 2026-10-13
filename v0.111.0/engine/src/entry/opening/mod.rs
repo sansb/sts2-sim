@@ -110,10 +110,12 @@ pub struct Opening {
     ///
     /// Native writes the capture's opening checksum ("After player turn
     /// start") BEFORE `RunAutoPrePlayPhase`, but [`Self::document`] is the
-    /// post-AutoPre state: a turn-one Imbued AutoPlay has already run in it.
-    /// The certification census compares the opening checksum against the
-    /// recorded [`NativeCheckpointKind::AfterPlayerTurnStart`] state instead
-    /// (#3392, IL cited on the kind).
+    /// post-AutoPre state: a turn-one Imbued AutoPlay has already run in it,
+    /// or is parked in it on the card's own choice (#3817, the card in Play
+    /// above an Imbued phase record). The certification census compares the
+    /// opening checksum against the recorded
+    /// [`NativeCheckpointKind::AfterPlayerTurnStart`] state instead (#3392,
+    /// IL cited on the kind).
     ///
     /// [`NativeCheckpointKind::AfterPlayerTurnStart`]:
     ///     crate::engine::native_checkpoint::NativeCheckpointKind::AfterPlayerTurnStart
@@ -186,8 +188,10 @@ pub struct Opening {
 /// ([`pantograph_before_combat_start`]), and Planisphere keeps its own, more
 /// specific refusal ([`OpeningRefusal::RoomEntryHealUnmodeled`], spec Part C6)
 /// only on the `?` point its body reads ([`planisphere_heals_here`]).
-/// `BOOMING_CONCH` is not here either — its own gate refuses the only case it
-/// can be wrong in.
+/// `BOOMING_CONCH` is not here either: its bodies are engine rows that read
+/// one room-type flag, which [`pre_hook_document`] writes in an elite room
+/// ([`booming_conch_elite`], #3759), and its own gate refuses the one case
+/// where the room type is unknown.
 ///
 /// # The three room-entry bodies this slice modeled (#2693)
 ///
@@ -235,7 +239,7 @@ pub struct Opening {
 ///   `engine::relics::jeweled_mask_before_hand_draw`, which also gained the
 ///   IL's non-Innate preference here. Its move breaks the prefix-deal premise
 ///   the uid check rests on, so the check reorders for it
-///   ([`jeweled_mask_moved_order`]).
+///   ([`jeweled_mask_moved_order_at`]).
 /// * `FUNERARY_MASK` and `RADIANT_PEARL` — their turn-1 `BeforeHandDraw`
 ///   generators were already `engine::relics` rows; the uid check covers
 ///   their pre-deal allocations ([`pre_deal_allocations`]).
@@ -249,8 +253,9 @@ pub struct Opening {
 ///   combat room's node — presentation, no model write. `AfterObtained`'s
 ///   `GainMaxHp(20)` is the pickup, outside combat.
 /// * `TEA_OF_DISCOURTESY` — a spent Tea's `BeforeCombatStart` is inert and
-///   opens with `tea_discourtesy_combats_left` 0; a charged one keeps the
-///   refusal it had here ([`tea_of_discourtesy_spent`]).
+///   opens with `tea_discourtesy_combats_left` 0; a charged one opens with 1
+///   and the engine runs its two Dazed (#3756,
+///   [`tea_of_discourtesy_combats_left`]).
 ///
 /// # `VAJRA` (#2827)
 ///
@@ -275,7 +280,7 @@ pub struct Opening {
 /// refuses a document whose roster disagrees with ownership, so
 /// [`pre_hook_document`] writes the roster, and says there why that is exact.
 /// Pael's Legion's `paels_legion_cooldown = 0` was already seeded there. Pael's Legion's turn-1 `AfterSideTurnStart` was
-/// already modeled in `engine::relics::after_side_turn_start_late`, and it is
+/// already modeled in `engine::relics::after_side_turn_start`, and it is
 /// a no-op on turn 1 because the cooldown starts at 0.
 ///
 /// # `RING_OF_THE_SNAKE` (#2827)
@@ -506,7 +511,7 @@ pub struct Opening {
 ///   the IL and the oracle position are cited.
 ///   The turn-1 `AfterSideTurnStart` (`<AfterSideTurnStart>d__11::MoveNext`,
 ///   `0x32e134`) summons 2 more with no turn test, and it was already
-///   `engine::relics::after_side_turn_start_late`'s row, which the opening
+///   `engine::relics::after_side_turn_start`'s row, which the opening
 ///   reaches through `engine::deal_opening_hand`. The document's Osty is
 ///   therefore 7/7, as the oracle projects. Holding it with Bound Phylactery
 ///   refuses by name (`refuse_incompatible_phylacteries`), as `start_combat`
@@ -557,8 +562,8 @@ pub struct Opening {
 ///   `IL_0094`-`IL_009d`. What follows is `PreviewCardPileAdd` and a
 ///   `Cmd::Wait`, presentation only. So: three fresh L0 Dazed, each at a
 ///   uniform random Draw index over the growing pile, on the first player
-///   turn only. That is the `RelicBlessedAntler` row of
-///   `engine::relics::continue_before_hand_draw_after_toolbox` (three
+///   turn only. That is the `RelicBlessedAntler` arm of
+///   `engine::relics::before_hand_draw`'s walk (three
 ///   `engine::cards::inject_generated_draw_random` calls, the same generated-
 ///   card transaction Funerary Mask's row runs), which
 ///   [`crate::engine::deal_opening_hand`] reaches through `begin_player_turn`'s
@@ -624,69 +629,98 @@ pub struct Opening {
 /// fixture tests' direct assertions: the turn-1 Hand, the three following
 /// hand draws, and the sums beside the other `ModifyHandDraw` rows.
 ///
-/// # The six still gated (#2758 audit, 2026-10-02)
+/// # `SNECKO_EYE` and `FAKE_SNECKO_EYE` (#3618)
 ///
-/// Each was re-read on the same DLL. None is a pure over-refusal: every one
-/// has a window member this opening does not run, or state it cannot seed.
+/// Left the table on 2026-10-11. Both were over-refusals of the Pendulum
+/// kind: every member the opening window reaches was already this crate's.
+/// IL re-read on the v0.111.0 DLL (sha256 `9cb4f1ad…`, `dump_type.py SneckoEye
+/// FakeSneckoEye ConfusedPower` and the nested state machines):
 ///
-/// * `BELT_BUCKLE` (#3617) — `<BeforeCombatStart>d__11::MoveNext` (`0x31f444`) clears
-///   `DexterityApplied` (`IL_001e`-`IL_001f`) and, when the belt holds no
-///   potion (`Owner.Potions.Any()` at `IL_002b`-`IL_003a`), runs
-///   `ApplyDexterity` (`<ApplyDexterity>d__17` `0x31f344`: latch at
-///   `IL_002b`-`IL_002c`, `Apply<DexterityPower>` of `CanonicalVars`' 2 with a
-///   null applier at `IL_0048`-`IL_005a`). The in-fight half exists
-///   (`engine::potions::apply_belt_buckle_after_use` and the `belt_buckle` /
-///   `belt_buckle_applied` belt flags), but nothing runs the combat-start
-///   half or seeds those flags, and its `AfterPotionProcured` removal
-///   (`<AfterPotionProcured>d__13` `0x31f164`) observes Delicate Frond's and
-///   Petrified Toad's combat-start procurements.
-/// * `SNECKO_EYE` and `FAKE_SNECKO_EYE` (#3618) — `<BeforeCombatStart>d__8`
-///   (`0x331628` / `0x3248b8`) is `ApplyPower` (`<ApplyPower>d__10`
-///   `0x33153c` / `<ApplyPower>d__9` `0x3247cc`): `Apply<ConfusedPower>` of
-///   `Decimal::One` on the owner at `IL_001d`-`IL_003f`. This crate carries
-///   Confused as a projection of ownership (`boundary.rs`'s `"confused"`
-///   mirror) and rolls it per drawn card in `engine::draw`
-///   (`confused_after_card_drawn`, on `CombatEnergyCosts`); Snecko Eye's
-///   `ModifyHandDraw` (`0x9ba8b`, `+ CardsVar(2)` unconditionally) is a row of
-///   the same fold as the ring's. What the opening still owes is a witness
-///   that its first deal rolls each card exactly once and in native order
-///   (#2690 made the engine listener exactly-once; the opening's own deal is
-///   not yet measured), and the entry refusals
-///   `engine::admission` carries by name and the opening does not run
-///   (`Tea of Discourtesy + Snecko Eye entry order`, `Confused EnergyCosts
-///   provenance`). No capture owns either relic, so nothing measures it.
+/// * `SneckoEye/<BeforeCombatStart>d__8::MoveNext` (`0x331628`) and
+///   `FakeSneckoEye/<BeforeCombatStart>d__8` (`0x3248b8`) each await
+///   `ApplyPower` (`<ApplyPower>d__10` `0x33153c` / `<ApplyPower>d__9`
+///   `0x3247cc`): `PowerCmd::Apply<ConfusedPower>` of `Decimal::One` on the
+///   owner, applier the owner, at `IL_001d`-`IL_003f`. What follows
+///   (`ApplyTestEnergyCostOverrideToPower`, `0x9bb10` / `0x936f0`) returns
+///   at `IL_000d`-`IL_0013` unless the relic's own override is non-negative,
+///   and both constructors write `-1` (`0x9bb48` / `0x93728`).
+/// * `ConfusedPower` declares one hook, `AfterCardDrawn` (`0xa07f4`): for the
+///   owner's card (`IL_000c`-`IL_001d`) with `EnergyCost.Canonical >= 0`
+///   (`IL_0025`-`IL_0031`), `NextEnergyCost` (`0xa0861`,
+///   `RunState.Rng.CombatEnergyCosts.NextInt(4)`) and
+///   `EnergyCost.SetThisCombat(roll, false)` (`IL_0039`-`IL_0048`). It never
+///   reads `Amount`. That is `engine::draw::confused_after_card_drawn`, which
+///   carries the listener's position in the walk; the power itself is
+///   `boundary.rs`'s `"confused"` mirror of ownership.
+/// * With both relics the second `Apply` finds the first instance
+///   (`PowerCmd::FindExistingInstanceForStacking` `0x1338d8`) and adds to it
+///   (`PowerCmd/<Apply>d__1` `0x3ef988` `IL_0117`-`IL_013b`,
+///   `<ModifyAmount>d__6` `0x3f032c` `IL_01a8`-`IL_01d6`): one power at
+///   amount 2, one listener, one roll per card.
+/// * `SneckoEye::ModifyHandDraw` (`0x9ba8b`): the owner test, then `draw +
+///   DynamicVars.Cards` unconditionally (`CardsVar(2)`, `get_CanonicalVars`
+///   `0x9b9d6`). That is the `RelicSneckoEye` row of
+///   `engine::relics::modifier_total`'s fold. Fake Snecko Eye has none.
+/// * `<AfterObtained>d__7` (`0x33146c` / `0x3246fc`) applies the power only
+///   inside a combat in progress, which no opening is.
+///
+/// What #3618 asked to be shown before the entries left:
+///
+/// * The first deal rolls each drawn card once, in draw order, on the
+///   `CombatEnergyCosts` stream the entry seeds. The deal is
+///   [`crate::engine::deal_opening_hand`]'s ordinary hand draw, whose
+///   per-card `AfterCardDrawn` walk rolls Confused first (#2690). Site fight
+///   seed `ZP056KQDB137` node 24 (Fake Snecko Eye) matches the game's opening
+///   checkpoint and every later per-action checksum, and the fixture tests
+///   recompute the rolls from the pre-hook stream for each ownership.
+/// * `Confused EnergyCosts provenance` (`engine::admission`'s refusal of a
+///   vacant stream) cannot arise: `combat_energy_costs` is one of
+///   `entry::counters::REQUIRED_COMBAT_STREAMS`, so an entry without it is
+///   refused before the opening is built.
+/// * `Tea of Discourtesy + Snecko Eye entry order` (the oracle's refusal of a
+///   charged Tea beside either relic) is kept: the opening's Tea of
+///   Discourtesy counter gate refuses a charged Tea beside either relic.
+///
+/// The cards the pre-deal movers put into the Hand (Jeweled Mask, Power
+/// Cell, Ninja Scroll, Radiant Pearl) are `CardPileCmd::Add` or generated
+/// cards, not draws, so they take no roll natively or here.
+///
+/// # The one still gated (#2758 audit, 2026-10-02)
+///
+/// Re-read on the same DLL. It is not a pure over-refusal: one of its cases
+/// is state the opening cannot seed.
+///
 /// * `FUR_COAT` — `<BeforeCombatStart>d__26` (`0x325360`) sets every hittable
 ///   enemy to 1 HP (`CreatureCmd::SetCurrentHp` at `IL_00c2`-`IL_00c7`) when
 ///   `GetMarkedCoords` contains the current map point (`IL_0021`-`IL_0045`).
 ///   The entry now answers that membership (#2526,
 ///   `entry::relics::fur_coat_membership`), and a fight it proves **unmarked**
-///   passes this gate ([`fur_coat_is_inert_here`]). A marked room still
-///   refuses, because the opening has no body for the initial roster and
-///   `fur_coat_active` is not seeded (#3634), and so does a save whose
-///   membership is unprovable.
-/// * `NINJA_SCROLL` (#3619) — `<BeforeHandDraw>d__7` (`0x32b770`): owner test, then
-///   `TurnNumber; ldc.i4.1; ble.s` at `IL_0034`-`IL_0044`, then
-///   `Shiv::CreateInHand(Owner, DynamicVars["Shivs"], null)` at
-///   `IL_0052`-`IL_0073` (`'Shivs'` = 3, `get_CanonicalVars` `0x97752`). No
-///   Rust body exists anywhere.
-/// * `PHILOSOPHERS_STONE` (#3620) — `<AfterRoomEntered>d__8` (`0x32dff0`) applies
-///   `StrengthPower` of `DynamicVars["StrengthPower"]` (1) with a null applier
-///   to every living opponent in a combat room (`IL_0033`-`IL_009b`). The
-///   opening's room-entry Strength block is the player's only. Its
-///   `ModifyMaxEnergy` row and its `AfterCreatureAddedToCombat` body for
-///   enemies added mid-fight (`engine::monsters::fur_coat_after_opponent_added`)
-///   are already the engine's.
-const OPENING_WINDOW_RELIC_BODIES: [&str; 6] = [
-    "RELIC.BELT_BUCKLE",
-    "RELIC.FAKE_SNECKO_EYE",
-    "RELIC.FUR_COAT",
-    "RELIC.NINJA_SCROLL",
-    "RELIC.PHILOSOPHERS_STONE",
-    "RELIC.SNECKO_EYE",
-];
+///   passes this gate ([`fur_coat_room_is_answered`]). So does a proven
+///   **marked** one since #3634: [`pre_hook_document`] seeds
+///   `fur_coat_active`, and `engine::monsters::fur_coat_before_combat_start`
+///   (which carries the IL) is the body. The entry stays in this table for
+///   the remaining case, a save whose membership is unprovable, which still
+///   refuses.
+///
+/// `PHILOSOPHERS_STONE` was the sixth until #3620: its room-entry body is
+/// [`philosophers_stone_after_room_entered`], which carries the IL.
+/// `BELT_BUCKLE` left with #3617: its `BeforeCombatStart` latch reset and
+/// empty-belt Dexterity are `engine::potions::belt_buckle_before_combat_start`
+/// (which carries the IL and the order argument against the combat-start
+/// procurers), in the ordinary pass of
+/// [`crate::engine::fire_before_combat_start`], and [`pre_hook_document`]
+/// writes the `belt_buckle` ownership flag that body reads.
+/// `SNECKO_EYE` and `FAKE_SNECKO_EYE` left with #3618 (their section above).
+/// `NINJA_SCROLL` left with #3619: its turn-one `BeforeHandDraw` Shivs are
+/// `engine::relics::ninja_scroll_before_hand_draw` (which carries the IL),
+/// reached through [`crate::engine::deal_opening_hand`], and
+/// [`pre_deal_allocations`] expects their three uids at the Hand's head. Its
+/// same-hook gates already named it
+/// ([`refuse_unordered_hand_draw_card_peers`], Blessed Antler's and Toolbox's).
+const OPENING_WINDOW_RELIC_BODIES: [&str; 1] = ["RELIC.FUR_COAT"];
 
-/// Whether `relic` is a Fur Coat the entry proves does nothing in this room
-/// (#2526), the one case [`OPENING_WINDOW_RELIC_BODIES`] lets an owner past.
+/// Whether `relic` is a Fur Coat whose room the entry has answered (#2526,
+/// #3634), the one case [`OPENING_WINDOW_RELIC_BODIES`] lets an owner past.
 ///
 /// `FurCoat` declares two combat hooks and both leave before any write when
 /// `GetMarkedCoords` (RVA `0x94204`) is null or does not hold
@@ -702,10 +736,13 @@ const OPENING_WINDOW_RELIC_BODIES: [&str; 6] = [
 /// `engine::monsters::fur_coat_after_opponent_added`) stays at its `false`
 /// default.
 ///
-/// Only `Some(false)` passes. `Some(true)` owes the initial-roster body
-/// (#3634) and `None` is a membership the save could not prove; both refuse.
-fn fur_coat_is_inert_here(relic: &str, entry: &EntryDocument) -> bool {
-    relic == "RELIC.FUR_COAT" && entry.relic_entry.fur_coat_active == Some(false)
+/// A marked room (`Some(true)`) passes too since #3634: [`pre_hook_document`]
+/// writes the `fur_coat_active` flag, which arms both
+/// `engine::monsters::fur_coat_before_combat_start` (the initial roster) and
+/// `fur_coat_after_opponent_added` (enemies added later). `None` is a
+/// membership the save could not prove, and refuses.
+fn fur_coat_room_is_answered(relic: &str, entry: &EntryDocument) -> bool {
+    relic == "RELIC.FUR_COAT" && entry.relic_entry.fur_coat_active.is_some()
 }
 
 /// The forty window-hook relics deliberately **not** in
@@ -780,10 +817,20 @@ fn fur_coat_is_inert_here(relic: &str, entry: &EntryDocument) -> bool {
 /// ordinary pass of [`crate::engine::fire_before_combat_start`].
 /// `RING_OF_THE_DRAKE` followed on 2026-10-02 (#2758): its only hook is
 /// `ModifyHandDraw`, already a row of `engine::relics::modifier_total`'s fold.
+/// `PHILOSOPHERS_STONE` followed on 2026-10-10 (#3620): its room-entry enemy
+/// Strength is [`philosophers_stone_after_room_entered`], run by [`build`].
+/// `BELT_BUCKLE` followed on 2026-10-11 (#3617): its `BeforeCombatStart` body
+/// is `engine::potions::belt_buckle_before_combat_start`.
+/// `NINJA_SCROLL` followed the same day (#3619): its turn-one Shivs are
+/// `engine::relics::ninja_scroll_before_hand_draw`.
+/// `SNECKO_EYE` and `FAKE_SNECKO_EYE` followed the same day (#3618): the
+/// Confused they apply is a projection of ownership, rolled per drawn card in
+/// `engine::draw::confused_after_card_drawn`.
 #[cfg(test)]
-const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
+const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 45] = [
     "RELIC.ANCHOR",
     "RELIC.BAG_OF_PREPARATION",
+    "RELIC.BELT_BUCKLE",
     "RELIC.BIG_MUSHROOM",
     "RELIC.BLESSED_ANTLER",
     "RELIC.BOOMING_CONCH",
@@ -793,6 +840,7 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
     "RELIC.DELICATE_FROND",
     "RELIC.EMBER_TEA",
     "RELIC.ETERNAL_FEATHER",
+    "RELIC.FAKE_SNECKO_EYE",
     "RELIC.FUNERARY_MASK",
     "RELIC.GHOST_SEED",
     "RELIC.GIRYA",
@@ -802,12 +850,14 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
     "RELIC.LETTER_OPENER",
     "RELIC.MEAL_TICKET",
     "RELIC.MEAT_ON_THE_BONE",
+    "RELIC.NINJA_SCROLL",
     "RELIC.ODDLY_SMOOTH_STONE",
     "RELIC.PAELS_FLESH",
     "RELIC.PAELS_LEGION",
     "RELIC.PANTOGRAPH",
     "RELIC.PENDULUM",
     "RELIC.PETRIFIED_TOAD",
+    "RELIC.PHILOSOPHERS_STONE",
     "RELIC.PHYLACTERY_UNBOUND",
     "RELIC.PLANISPHERE",
     "RELIC.POCKETWATCH",
@@ -816,6 +866,7 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
     "RELIC.RING_OF_THE_DRAKE",
     "RELIC.RING_OF_THE_SNAKE",
     "RELIC.SLING_OF_COURAGE",
+    "RELIC.SNECKO_EYE",
     "RELIC.STONE_CRACKER",
     "RELIC.TEA_OF_DISCOURTESY",
     "RELIC.TOOLBOX",
@@ -852,7 +903,7 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
 ///
 /// That prints **53** relics at v0.111.0 (2026-09-21). **42** of them have a
 /// hand-authored Rust body — `engine::relics::before_side_turn_start`,
-/// `…::after_side_turn_start`, `…::after_side_turn_start_late` and
+/// `…::after_side_turn_start` and
 /// `…::after_player_turn_start` are where most of them live — so firing the
 /// hook reaches real code and nothing is silently dropped. The other **11**
 /// have no body site anywhere in `src/engine`, `src/steps`, `src/entry` or
@@ -877,13 +928,15 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
 /// `admission.rs` but the bare `IMPLEMENTED_RELICS` entry. None of that runs an
 /// effect — `admission.rs` validates and refuses, it is not a subscriber.
 ///
-/// Of the **three** that remain, one is already refused by
-/// [`TURN_ONE_ORB_RELICS`] (`RUNIC_CAPACITOR`), one is
-/// `TURN_ONE_GATE_EXCLUSIONS`, and the remaining **one** is this table.
+/// The **one** that remains is `TURN_ONE_GATE_EXCLUSIONS`, so this table is
+/// empty.
 /// (`CRACKED_CORE` made it eight until its engine body landed, #2827,
 /// `SYMBIOTIC_VIRUS` made it seven until its own did, also #2827,
-/// `BELLOWS` and `FESTIVE_POPPER` made it six until theirs did, #2827, and
-/// `FENCING_MANUAL` made it four until its own did, #3090.)
+/// `BELLOWS` and `FESTIVE_POPPER` made it six until theirs did, #2827,
+/// `FENCING_MANUAL` made it four until its own did, #3090,
+/// `RUNIC_CAPACITOR`, which [`TURN_ONE_ORB_RELICS`] refused, made it three
+/// until its own did, #3756, and `TWISTED_FUNNEL`, this table's last entry,
+/// made it two until its own did, also #3756.)
 ///
 /// # The three bodies this slice modeled (#2693)
 ///
@@ -892,7 +945,9 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
 /// the same save, which is why the unsubscribed count above became **8** and
 /// not 11; `CRACKED_CORE`'s engine body (#2827) took it to **7**,
 /// `SYMBIOTIC_VIRUS`' to **6**, `BELLOWS`' and `FESTIVE_POPPER`'s (#2827,
-/// below) to **4**, and `FENCING_MANUAL`'s (#3090, above) to **3**. Their bodies are
+/// below) to **4**, `FENCING_MANUAL`'s (#3090, above) to **3**, and
+/// `RUNIC_CAPACITOR`'s (#3756, on [`TURN_ONE_ORB_RELICS`]) to **2**, and
+/// `TWISTED_FUNNEL`'s (#3756, below) to **1**. Their bodies are
 /// `engine::relics::turn_one_all_enemy_debuffs` and the
 /// `RELIC.LANTERN` row of `engine::relics::after_side_turn_start`, where the IL
 /// and oracle citations live; they are in the **engine** and not in
@@ -902,33 +957,36 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
 /// [`OpeningRefusal::TurnOneDebuffPartialArtifact`] — see
 /// [`TURN_ONE_ALL_ENEMY_DEBUFF_RELICS`].
 ///
-/// `TWISTED_FUNNEL` **stays gated** although it shares the debuff loop: its
-/// amount picks up `RELIC.SNECKO_SKULL` and a fresh Poison application
-/// allocates an instance identity, which the oracle's opening call — made with
-/// `state=None`, so `m.poison_uid = -1` (frozen Python `_record_misery_debuff_application`, deleted #2827) — does
-/// not. That is a different shape, so it owes its own derivation and witness
-/// rather than a ride on this one.
+/// # `RELIC.TWISTED_FUNNEL` (#3756)
+///
+/// The table's last entry, retired on 2026-10-10. It shares the debuff loop
+/// but stayed gated while the frozen oracle was the authority: its amount
+/// picks up `RELIC.SNECKO_SKULL`, and a fresh Poison application allocates an
+/// instance identity, which the oracle's opening call — made with
+/// `state=None`, so `m.poison_uid = -1` (frozen Python
+/// `_record_misery_debuff_application`, deleted #2827) — did not. With native
+/// as the authority that difference is the oracle's, not the game's: the body
+/// is the third row of `engine::relics::TURN_ONE_ALL_ENEMY_DEBUFFS`, where the
+/// IL citations live (`TwistedFunnel/<BeforeSideTurnStart>d__6::MoveNext`
+/// `0x3336e8`, Poison 4, applier `Owner.Creature`), applied through the same
+/// shared seam every other Poison source uses. Its order against Red Mask and
+/// Bag of Marbles is the inventory's when that is vouched for, and
+/// [`all_enemy_debuff_order_is_recorded`] refuses the co-ownership when
+/// it is not.
 ///
 /// # Every entry's body is turn-1-only, which is why the opening is the whole
 /// # exposure
 ///
 /// This matters for scope, not just for tidiness: a relic whose body fires on
 /// *every* side turn would also be missing from a post-opening root, and
-/// walling off the opening would hide half the defect. Each entry is
+/// walling off the opening would hide half the defect. Each entry was
 /// gated to the first player turn in the oracle **and in IL**, re-read
 /// 2026-09-21 and again 2026-09-22 on
 /// `sim/dll-archive/v0.111.0/data_sts2_macos_arm64/sts2.dll`
 /// (sha256 `9cb4f1ad…`). The all-enemy debuffs share one shape —
 /// `Contains<Creature>(participants, Owner.Creature)`, then
 /// `PlayerCombatState::get_TurnNumber; ldc.i4.1; ble` which `leave`s the body
-/// when the turn is past one:
-///
-/// * `RELIC.TWISTED_FUNNEL` — Poison 4 (`TwistedFunnel::get_CanonicalVars`
-///   `0x9d2b2` is `ldc.i4.4`).
-///   `TwistedFunnel/<BeforeSideTurnStart>d__6::MoveNext` (`0x3336e8`), guard at
-///   `IL_004f-IL_0055`, `Apply<PoisonPower>` at `IL_0192`. Oracle:
-///   frozen Python `start_combat`, deleted #2827, where the amount also picks up
-///   `RELIC.SNECKO_SKULL`.
+/// when the turn is past one.
 ///
 /// # `RELIC.FENCING_MANUAL` (#3090)
 ///
@@ -946,11 +1004,10 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
 /// `RELIC.BELLOWS` (upgrade the turn-one Hand once) and `RELIC.FESTIVE_POPPER`
 /// (9 unpowered damage to every hittable enemy on turn one) left the table on
 /// 2026-09-23. Their bodies are `engine::relics::bellows_after_player_turn_start`
-/// and `…::festive_popper_after_player_turn_start`, placed in
-/// `continue_after_toasty_mittens` where the oracle's
-/// `_continue_after_toasty_mittens` runs them (frozen Python, deleted #2827);
-/// the IL citations live there. Retiring the entries also brought across the
-/// oracle's same-hook co-ownership refusals for the two, as
+/// and `…::festive_popper_after_player_turn_start`, run by the hook's relic
+/// walk (`engine::relics::after_player_turn_start`); the IL citations live
+/// there. Retiring the entries also brought across the oracle's same-hook
+/// co-ownership refusals for the two, on an unvouched inventory, as
 /// [`OpeningRefusal::TurnStartRelicOrderUnrecorded`] (see
 /// [`after_player_turn_start_peers_are_ordered`]). Bellows also makes the
 /// catalog intern the card-upgrade closure (`boundary.rs`, beside Razor Tooth),
@@ -962,7 +1019,16 @@ const OPENING_WINDOW_GATE_EXCLUSIONS: [&str; 40] = [
 /// change — while retiring an entry is an engine change, because the body has
 /// to run at the native fire point for a Rust-opened and a post-opening
 /// document to agree.
-const TURN_ONE_RELIC_BODIES: [&str; 1] = ["RELIC.TWISTED_FUNNEL"];
+///
+/// # Empty since #3756
+///
+/// Every relic this table held now has an engine body. The table, its gate
+/// loop in [`pre_hook_document`] and
+/// [`OpeningRefusal::TurnOneRelicBodyNotModeled`] stay: the pin
+/// (`fixture_tests::every_opening_window_relic_body_is_gated_or_explicitly_excluded`)
+/// still requires a turn-1 relic with no Rust body to be here or in an
+/// exclusion list, which is where the next build's new relic would land.
+const TURN_ONE_RELIC_BODIES: [&str; 0] = [];
 
 /// The oracle's `_TURN_ONE_ALL_ENEMY_DEBUFF_RELICS` (frozen Python, deleted #2827),
 /// carried whole because the `partial_artifact` comparison is against its
@@ -970,12 +1036,10 @@ const TURN_ONE_RELIC_BODIES: [&str; 1] = ["RELIC.TWISTED_FUNNEL"];
 ///
 /// frozen Python `start_combat` (deleted #2827) computes `relics & _TURN_ONE_ALL_ENEMY_DEBUFF_RELICS`
 /// and refuses when any created monster has
-/// `0 < m.artifact < len(that intersection)`. Two of the three now have Rust
-/// bodies (`engine::relics::turn_one_all_enemy_debuffs`) and
-/// `RELIC.TWISTED_FUNNEL` is still in [`TURN_ONE_RELIC_BODIES`], so a fight
-/// holding it refuses above this check and the intersection this port ever
-/// measures is exactly the oracle's — the set is spelled in full anyway, so
-/// retiring Funnel cannot silently shrink the count the refusal compares.
+/// `0 < m.artifact < len(that intersection)`. All three have Rust bodies
+/// (`engine::relics::turn_one_all_enemy_debuffs`; `RELIC.TWISTED_FUNNEL`
+/// since #3756), so the intersection this port measures is exactly the
+/// oracle's, and with all three owned an Artifact of 1 or 2 refuses.
 const TURN_ONE_ALL_ENEMY_DEBUFF_RELICS: [&str; 3] = [
     "RELIC.BAG_OF_MARBLES",
     "RELIC.RED_MASK",
@@ -1232,7 +1296,7 @@ fn maw_bank_after_room_entered(
 ///
 /// `CRACKED_CORE` and `INFUSED_CORE` channel a Lightning orb during the first
 /// turn-start walk, and `RUNIC_CAPACITOR` changes the queue's capacity around
-/// that channel (the table first held three more, below). The engine's bodies for these are
+/// that channel (the table first held four more, below). The engine's bodies for these are
 /// wired to a turn walk entered from an already-opened document, and an
 /// opening-built state reaches them differently: measured 2026-09-16, every
 /// corpus fight holding `CRACKED_CORE` produced a document missing the
@@ -1277,7 +1341,30 @@ fn maw_bank_after_room_entered(
 /// function through [`crate::engine::deal_opening_hand`] exactly as every
 /// later turn does, so the relic's every reachable effect is the engine's
 /// existing body.
-const TURN_ONE_ORB_RELICS: [&str; 2] = ["RELIC.INFUSED_CORE", "RELIC.RUNIC_CAPACITOR"];
+///
+/// `RUNIC_CAPACITOR` left on 2026-10-10 (#3756). Its one hook is a turn-one
+/// `OrbCmd::AddSlots(Owner, 3)`
+/// (`RunicCapacitor/<AfterSideTurnStart>d__4::MoveNext`, RVA `0x32ffac`),
+/// now `engine::relics::runic_capacitor_after_side_turn_start` in the late
+/// `AfterSideTurnStart` group, where the IL citations and the commutation
+/// argument live; the opening reaches it through
+/// [`crate::engine::deal_opening_hand`]. The relic carries no saved state.
+/// The one same-hook order the opening can reach and cannot place, Symbiotic
+/// Virus's Dark channel at zero base slots, refuses in
+/// [`symbiotic_virus_turn_start_order_is_recorded`]. An undetermined
+/// character still refuses in [`ORB_SLOT_SENSITIVE_RELICS`].
+///
+/// `INFUSED_CORE`, the last entry, left the same day (#3756). Its turn-one
+/// three `Channel<LightningOrb>`
+/// (`InfusedCore/<AfterSideTurnStart>d__8::MoveNext`, RVA `0x326d00`) are
+/// `engine::relics::infused_core_after_side_turn_start`, in the late
+/// `AfterSideTurnStart` group, where the IL citations live. The same-hook
+/// co-ownerships whose order around those channels is observable refuse in
+/// [`infused_core_turn_start_order_is_recorded`] and in the Symbiotic Virus
+/// and Fencing Manual gates that already named this relic. The table is
+/// empty; it and its gate loop stay for the next build's relics, as
+/// [`TURN_ONE_RELIC_BODIES`] does.
+const TURN_ONE_ORB_RELICS: [&str; 0] = [];
 
 /// Relics carrying a per-combat persistent counter the opening seeds from the
 /// run, with the modulus `start_combat` applies (frozen Python, deleted #2827).
@@ -1442,18 +1529,23 @@ const OWNER_POOL_GENERATION_CARDS: [&str; 8] = [
     "STOKE",
 ];
 
-/// The one of those whose body the engine models for an Ironclad owner only,
-/// over a frozen fully-unlocked pool (#3336).
+/// The one of those whose body draws a frozen fully-unlocked pool for an
+/// Ironclad owner (#3336), and the owner's derived pool for anyone else
+/// (#3816).
 ///
 /// `InfernalBlade/<OnPlay>d__3::MoveNext` (v0.111.0 RVA `0x3a7164`) reads
 /// `Owner.Character.CardPool` (IL_0027-IL_0031) through
 /// `GetUnlockedCards(Owner.UnlockState, CardMultiplayerConstraint)`
 /// (IL_0037-IL_0051), then shuffles on `CombatCardGeneration` (IL_008b): the
-/// owner's pool, like every source here. The engine
+/// owner's pool, like every source here. For an Ironclad owner the engine
 /// (`steps::ironclad_uncommon::infernal_blade_exact`) shuffles the frozen
-/// `INFERNAL_BLADE_ATTACK_POOL_V109`, which is that read for an Ironclad owner
-/// whose profile reveals every Ironclad gating epoch. So both the owner and
-/// the owner's epochs are gated here, and nothing else is.
+/// `INFERNAL_BLADE_ATTACK_POOL_V109`, which is that read under a profile
+/// revealing every Ironclad gating epoch, so an Ironclad's epochs are gated
+/// here. For any other owner it shuffles
+/// `Catalog::infernal_blade_attack_pool(owner)`, the same read under the
+/// recorded profile, so that owner needs a recorded profile and nothing more,
+/// as Stoke and the other owner-pool sources do. Before #3816 every owner but
+/// Ironclad refused here (`GenerationPoolUnmodeled`).
 ///
 /// The oracle's `ironclad_only` (frozen Python `start_combat`, deleted #2827)
 /// also named `STOKE`. #3336 drops it: `Stoke/<OnPlay>d__1::MoveNext` (RVA
@@ -1463,7 +1555,7 @@ const OWNER_POOL_GENERATION_CARDS: [&str; 8] = [
 /// (`steps::ironclad_rare::stoke_exact`) draws
 /// `Catalog::owner_generation_pool(owner)` for any owner under the recorded
 /// profile, so a foreign Stoke is modeled, not unmodeled.
-const IRONCLAD_ONLY_GENERATION_CARDS: [&str; 1] = ["INFERNAL_BLADE"];
+const FROZEN_IRONCLAD_POOL_GENERATION_CARDS: [&str; 1] = ["INFERNAL_BLADE"];
 
 /// The owner whose fully revealed card pool Infernal Blade's frozen pool is.
 const INFERNAL_BLADE_FULL_POOL_OWNER: &str = "CHARACTER.IRONCLAD";
@@ -1779,13 +1871,104 @@ pub enum RedSkullRoomEntry {
 /// room-entry Strength block, fires `AfterRoomEntered` and
 /// `BeforeCombatStart`, deals the first hand, and emits the post-opening
 /// canonical v2 document.
+///
+/// # The Misery ledger follows the root's catalog (#3684)
+///
+/// The monster attachment ledger is kept only while `Misery` is reachable
+/// (`HotFanouts::misery_attachment_upkeep`, mirrored from
+/// `Catalog::misery_is_reachable` when a document is loaded). The opening
+/// loads the PRE-hook document, so it mirrors the pre-hook catalog. An
+/// opening hook can widen the closure: Delicate Frond fills the belt
+/// (`relics::delicate_frond_before_combat_start`), and a procured Colorless
+/// Potion reaches the Colorless pool and `Misery` with it. The root document
+/// then derives a catalog in which `Misery` is reachable, while every
+/// monster Strength the opening itself wrote (an Imbued Skill auto-played
+/// into Test Subject's Enrage, a Brimstone tick) went unrecorded. Such a
+/// root held "an entering Strength the ledger cannot place" beside tokens
+/// the same opening had recorded, and refused at admission
+/// (`unplaceable entering Strength beside a reachable reducer`; site census
+/// `NV4GUW6TTRXA` n48), although the opening knew the order all along.
+///
+/// So when the opened document's own catalog reaches `Misery` and the
+/// opening ran without the ledger, the opening is run again from a pre-hook
+/// document that records the bit (`player.session_bookkeeping`, #3660: the
+/// field a session document uses to keep a ledger its closure no longer
+/// implies). Loading that document mirrors the bit and places each spawn
+/// Strength exactly as a root load does, and the opened document carries
+/// the record. The ledger is write-only to everything but `Misery`, so the
+/// two runs differ in the recorded rows and that field and in nothing else,
+/// and the second run's closure is the first's.
+///
+/// # The other two session bits follow it too (#3756)
+///
+/// The same widening reaches the other two bits of
+/// [`crate::catalog::SessionBookkeeping`], with a silent result instead of a
+/// refusal. A procured Colorless Potion also reaches `Bolas` and
+/// `Thrumming Hatchet` (`self_return_uids`), and a pool that reaches
+/// `Entropy` reaches the curse pool and `Normality` with it
+/// (`normality_count`). The opening starts card plays of its own (Whispering
+/// Earring's turn-one loop, an Imbued Skill), and
+/// `engine::play::note_normality_card_play_started` counts one only while
+/// the catalog holds a `Normality`: an opening that ran without the bit
+/// handed over a root whose started-play count was zero beside a catalog
+/// that could put a `Normality` in Hand that same turn.
+///
+/// So the second run records every bit the opened document's catalog keeps
+/// and the first run did not, not only the ledger's.
 pub fn build(
     entry: &EntryDocument,
     options: &OpeningOptions<'_>,
 ) -> Result<Opening, OpeningRefusal> {
-    let pre_hook = build_pre_hook(entry)?;
+    let none = crate::catalog::SessionBookkeeping::default();
+    let (opening, kept) = build_keeping(entry, options, none)?;
+    let Ok(root) = HotBoundary::catalog_from_canonical(&opening.document) else {
+        return Ok(opening);
+    };
+    let wanted = root.session_bookkeeping().union(kept);
+    if wanted != kept {
+        return build_keeping(entry, options, wanted).map(|(opening, _)| opening);
+    }
+    Ok(opening)
+}
+
+/// [`build`], with the `forced` session bits recorded on the pre-hook
+/// document (#3684, #3756). Returns the opening and the bits it ran with.
+fn build_keeping(
+    entry: &EntryDocument,
+    options: &OpeningOptions<'_>,
+    forced: crate::catalog::SessionBookkeeping,
+) -> Result<(Opening, crate::catalog::SessionBookkeeping), OpeningRefusal> {
+    let mut pre_hook = build_pre_hook(entry)?;
+    let names = crate::catalog::SessionBookkeeping::NAMES
+        .into_iter()
+        .zip(forced.bits())
+        .filter_map(|(name, bit)| bit.then_some(name))
+        .collect::<Vec<_>>();
+    if !names.is_empty() {
+        pre_hook
+            .document
+            .player
+            .insert("session_bookkeeping".to_string(), serde_json::json!(names));
+    }
+    open_from_pre_hook(entry, &pre_hook, options)
+}
+
+/// The opening from the state the fire points act on: the load, the
+/// room-entry block, the two fire points and the deal. Returns the opening
+/// and the session bits it ran with.
+///
+/// Split from [`build_keeping`] so a test can lower the created roster's HP
+/// between the two halves (#3889). Turn-one relic damage is the only way an
+/// opening reaches a combat that is over, and the fixture's roster is too
+/// large for it.
+fn open_from_pre_hook(
+    entry: &EntryDocument,
+    pre_hook: &PreHook,
+    options: &OpeningOptions<'_>,
+) -> Result<(Opening, crate::catalog::SessionBookkeeping), OpeningRefusal> {
     let catalog = HotBoundary::catalog_from_canonical(&pre_hook.document)?;
     let mut state = HotBoundary::from_canonical(&pre_hook.document, &catalog)?;
+    let kept = catalog.session_bookkeeping();
     // #3364: the pre-hook roster is exactly what `AfterAddedToRoom` left, so
     // a spawn Strength the IL proves self-applied gets its owner as applier
     // here, before any hook below can move it.
@@ -1801,6 +1984,9 @@ pub fn build(
         &mut state,
         &mut events,
     )?;
+    // Philosopher's Stone's enemy Strength (#3620), with the other room-entry
+    // Strength grants. No `AfterRoomEntered` peer reads an enemy's Strength.
+    philosophers_stone_after_room_entered(&catalog, &mut state, &mut events)?;
     // Red Skull and Planisphere in the order `red_skull_room_entry_lifts`
     // established: a Red Skull that ran first read the pre-heal HP.
     if pre_hook.red_skull_room_entry == RedSkullRoomEntry::BeforeCrossingHeal {
@@ -1820,6 +2006,9 @@ pub fn build(
         maw_bank_after_room_entered(&catalog, &mut state, &mut events)?;
     }
     crate::engine::fire_after_room_entered(&catalog, &mut state, &mut events)?;
+    // The Murderous run modifier (#3934): the last `AfterRoomEntered`
+    // listener, after every relic's.
+    murderous_after_room_entered(&catalog, &mut state, &mut events)?;
     if pre_hook.pantograph_boss {
         pantograph_before_combat_start(&catalog, &mut state, &mut events)?;
     }
@@ -1837,7 +2026,11 @@ pub fn build(
             .get("draw")
             .map(Vec::as_slice)
             .unwrap_or(&[]);
-        if defers_turn_one_fixup(&relics, is_thieving_hopper_entry(entry)) {
+        if defers_turn_one_fixup(
+            &relics,
+            is_thieving_hopper_entry(entry),
+            tea_of_discourtesy_charged(entry),
+        ) {
             let (order, _) = turn_one_fixup_order(draw)?;
             (!is_identity_order(&order)).then_some(order)
         } else {
@@ -1877,20 +2070,31 @@ pub fn build(
     // pile in the order that allocation sees. The two agree exactly while
     // nothing between the stamp and the deal moves a card other than a prefix
     // draw — checked here rather than assumed.
-    let expected = jeweled_mask_moved_order(
-        &opened,
-        expected_identity_order(
-            &pre_hook.document,
-            &entry.relic_entry.relics_entering,
-            deferred_fixup.as_deref(),
-        ),
+    let expected = expected_identity_order(
+        &pre_hook.document,
         &entry.relic_entry.relics_entering,
+        deferred_fixup.as_deref(),
     );
-    check_card_identity_allocation(
+    // Power Cell's hook is the earlier one, so its cards head the Hand; the
+    // `BeforeHandDraw` writers follow in the order the engine ran them.
+    let (expected, power_cell_moved) =
+        power_cell_moved_order(&opened, expected, &entry.relic_entry.relics_entering)?;
+    let pre_deal = PreDealWalk {
+        deck_head: power_cell_moved,
+        ..pre_deal_walk(
+            &entry.relic_entry.relics_entering,
+            entry.relic_entry.dispatch_ordered,
+            tea_of_discourtesy_charged(entry),
+        )
+    };
+    let expected = jeweled_mask_moved_order_at(
         &opened,
-        &expected,
-        pre_deal_allocations(&entry.relic_entry.relics_entering),
-    )?;
+        expected,
+        &entry.relic_entry.relics_entering,
+        pre_deal.jeweled_mask_hand_index(),
+        power_cell_moved,
+    );
+    check_card_identity_allocation(&opened, &expected, pre_deal)?;
     let pre_splice_rng = opened.rng.clone();
     let mcr_splice_applied = match options.mcr_first_checksum {
         Some(checksum) => {
@@ -1899,12 +2103,15 @@ pub fn build(
         }
         None => false,
     };
-    Ok(Opening {
-        document: opened,
-        mcr_splice_applied,
-        pre_splice_rng,
-        native_checkpoints,
-    })
+    Ok((
+        Opening {
+            document: opened,
+            mcr_splice_applied,
+            pre_splice_rng,
+            native_checkpoints,
+        },
+        kept,
+    ))
 }
 
 /// The opening up to the state the fire points act on.
@@ -1912,6 +2119,10 @@ pub fn build(
 /// Takes no options: the `--mcr` splice acts on the post-deal document, and
 /// nothing above the fire points depends on it.
 pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> {
+    // `Dowsing::BeforeRoomEntered` (#3791) runs before the combat deck is
+    // built, so everything below reads the deck it leaves.
+    let dowsed = dowsing_before_room_entered(entry)?;
+    let entry = dowsed.as_ref().unwrap_or(entry);
     // --- the fight's ascension (#2539) -------------------------------------
     // `start_combat` validates `entry["ascension"]` first, in its pure
     // construction half: an exact `AscensionLevel` in `0..=MAX_ASCENSION`,
@@ -1954,8 +2165,16 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
     // fixed procurement observes trailing empty slots, so the oracle demands
     // the exact positive belt capacity even when the belt is empty.
     // `DELICATE_FROND` shares the oracle's gate (#3533): its loop fills every
-    // empty slot, which is the same capacity question.
-    for relic in ["RELIC.DELICATE_FROND", "RELIC.PETRIFIED_TOAD"] {
+    // empty slot, which is the same capacity question. `BELT_BUCKLE` asks
+    // it too (#3617): its body reads whether the belt holds a potion, and the
+    // belt state carries its flag only on a materialised belt, so a Buckle
+    // root without an exact positive capacity refuses here by name rather
+    // than at the boundary.
+    for relic in [
+        "RELIC.BELT_BUCKLE",
+        "RELIC.DELICATE_FROND",
+        "RELIC.PETRIFIED_TOAD",
+    ] {
         if relics.contains(relic) {
             procuring_relic_belt_is_exact(entry, relic)?;
         }
@@ -1981,17 +2200,6 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
         .collect();
     if !sources.is_empty() {
         let owner = character.unwrap_or("<undetermined>");
-        let ironclad_only: Vec<&str> = sources
-            .iter()
-            .copied()
-            .filter(|id| IRONCLAD_ONLY_GENERATION_CARDS.contains(id))
-            .collect();
-        if !ironclad_only.is_empty() && owner != "CHARACTER.IRONCLAD" {
-            return Err(OpeningRefusal::GenerationPoolUnmodeled {
-                source: ironclad_only.join("/"),
-                character: owner.to_string(),
-            });
-        }
         if !MODELED_GENERATION_CHARACTERS.contains(&owner) {
             return Err(OpeningRefusal::GenerationPoolUnmodeled {
                 source: sources.join("/"),
@@ -2027,7 +2235,7 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
     // (`start_combat`) sits between the two in the oracle, so it runs between
     // them here too (#2992).
     refuse_unordered_kusarigama_peers(&relics, &deck_ids, KusarigamaGate::MusicBox)?;
-    refuse_unordered_blessed_antler_peers(&relics)?;
+    refuse_unordered_blessed_antler_peers(&relics, entry.relic_entry.dispatch_ordered)?;
     refuse_unordered_kusarigama_peers(&relics, &deck_ids, KusarigamaGate::DaughterOfTheWind)?;
 
     // --- the nine streams, read from the save at their recorded counters ---
@@ -2081,7 +2289,7 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
         .into_iter()
         .chain(TURN_ONE_ORB_RELICS)
     {
-        if relics.contains(relic) && !fur_coat_is_inert_here(relic, entry) {
+        if relics.contains(relic) && !fur_coat_room_is_answered(relic, entry) {
             return Err(OpeningRefusal::RoomEntryRelicNotModeled {
                 relic: relic.to_string(),
             });
@@ -2090,9 +2298,10 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
     // The turn-1 half of the window (#2731), placed here rather than after the
     // deal for the same reason `TURN_ONE_ORB_RELICS` is: the refusal depends
     // only on ownership, so the earliest position that can decide it is the
-    // right one. The oracle decides `TWISTED_FUNNEL` here, since the all-enemy
-    // debuffs are applied inline right after `make_monsters`
+    // right one. The oracle decided the all-enemy debuffs here, since it
+    // applied them inline right after `make_monsters`
     // (frozen Python `start_combat`, deleted #2827; the `partial_artifact` gate in `start_combat`).
+    // The table is empty since #3756 retired `TWISTED_FUNNEL`, its last entry.
     for relic in TURN_ONE_RELIC_BODIES {
         if relics.contains(relic) {
             return Err(OpeningRefusal::TurnOneRelicBodyNotModeled {
@@ -2100,30 +2309,33 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
             });
         }
     }
+    // Twisted Funnel's Poison against the other two all-enemy debuffs
+    // (#3756), where the gate above refused it. Ownership and the inventory's
+    // provenance only.
+    all_enemy_debuff_order_is_recorded(&relics, entry.relic_entry.dispatch_ordered)?;
+    // Infused Core's turn-one channels against the same-hook peers that can
+    // observe them (#3756), where the gate above refused the relic.
+    infused_core_turn_start_order_is_recorded(
+        &relics,
+        orb_base_slots(entry.character.as_deref()),
+        entry.relic_entry.dispatch_ordered,
+    )?;
     // The same-hook co-ownerships the oracle refuses around the two
     // `AfterPlayerTurnStart` bodies this crate gained in #2827. Ownership
     // only, so it sits with the other ownership decisions.
-    after_player_turn_start_peers_are_ordered(
-        &relics,
-        &entry.relic_entry.relics_entering,
-        entry.relic_entry.dispatch_ordered,
-    )?;
-    // The turn-1 `BeforeHandDraw` card movers this crate runs in a fixed
-    // order (#3162). Ownership only.
-    refuse_unordered_hand_draw_card_peers(&relics)?;
-    // Tea of Discourtesy's `BeforeCombatStart` Dazed (#3162): inert once spent,
-    // unmodeled while charged. Where the body table refused it before.
-    let tea_of_discourtesy_spent = tea_of_discourtesy_spent(entry, &relics)?;
+    after_player_turn_start_peers_are_ordered(&relics, entry.relic_entry.dispatch_ordered)?;
+    // The turn-1 `BeforeHandDraw` card movers, which this crate runs in a
+    // fixed order unless the inventory records one (#3162, #3635).
+    refuse_unordered_hand_draw_card_peers(&relics, entry.relic_entry.dispatch_ordered)?;
+    // Tea of Discourtesy's `BeforeCombatStart` Dazed (#3162, #3756): the saved
+    // charge, and the co-ownerships a charged one refuses.
+    let tea_of_discourtesy_combats_left = tea_of_discourtesy_combats_left(entry, &relics)?;
     // Fencing Manual's `AfterSideTurnStart` Forge (#3090): ownership and
     // the vouched inventory order.
-    fencing_manual_turn_start_peers_are_ordered(
-        &relics,
-        &entry.relic_entry.relics_entering,
-        entry.relic_entry.dispatch_ordered,
-    )?;
+    fencing_manual_turn_start_peers_are_ordered(&relics, entry.relic_entry.dispatch_ordered)?;
     // Toolbox's owner, profile and same-hook gates (#2827 item B), before
     // its stream gate as in the oracle.
-    toolbox_provenance_is_recorded(entry, &relics)?;
+    toolbox_provenance_is_recorded(entry, &relics, entry.relic_entry.dispatch_ordered)?;
     // Ownership plus the save's stream table: placed after the same-hook
     // order gate so a generation relic beside an unordered peer still
     // reports that.
@@ -2132,8 +2344,13 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
     // the oracle's own position: immediately after `make_monsters` and before
     // any all-enemy debuff is applied. It is placed AFTER the body table above
     // so the intersection it measures is the oracle's — see
-    // [`TURN_ONE_ALL_ENEMY_DEBUFF_RELICS`].
-    turn_one_debuff_artifact_is_unambiguous(&relics, &roster.monsters)?;
+    // [`TURN_ONE_ALL_ENEMY_DEBUFF_RELICS`]. A vouched inventory passes: the
+    // engine runs the bodies in the recorded order (#3756).
+    turn_one_debuff_artifact_is_unambiguous(
+        &relics,
+        &roster.monsters,
+        entry.relic_entry.dispatch_ordered,
+    )?;
     // The per-fight state this builder does not seed
     // ([`PER_FIGHT_RELIC_STATE_UNSEEDED`]). Placed with the other
     // ownership-only decisions for the same reason: the earliest position that
@@ -2190,6 +2407,9 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
             relic: "RELIC.FAKE_VENERABLE_TEA_SET",
         });
     }
+    // Booming Conch is live only in an elite room ([`booming_conch_elite`],
+    // which [`pre_hook_document`] writes); without a node type that is
+    // unknown.
     if relics.contains("RELIC.BOOMING_CONCH") && entry.node_type.is_none() {
         return Err(OpeningRefusal::BoomingConchRoomTypeUnknown);
     }
@@ -2201,6 +2421,7 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
         &entry.relic_entry.relics_entering,
         entry.relic_entry.dispatch_ordered,
     )?;
+    fur_coat_red_skull_recheck_is_inert(entry, &relics, red_skull_lifts)?;
     ruined_helmet_room_entry_strength_is_ordered(
         &relics,
         sling_elite,
@@ -2222,16 +2443,20 @@ pub fn build_pre_hook(entry: &EntryDocument) -> Result<PreHook, OpeningRefusal> 
     if lizard_tail_spent {
         seeded.insert("lizard_tail_used", 1);
     }
-    // A spent Tea of Discourtesy's `CombatsLeft` 0 (#3162); the boundary's
-    // `-1` default is the not-owned value, so an owner's 0 is written.
-    if tea_of_discourtesy_spent {
-        seeded.insert("tea_discourtesy_combats_left", 0);
+    // Tea of Discourtesy's saved `CombatsLeft` (#3162, #3756); the boundary's
+    // `-1` default is the not-owned value, so an owner's 0 is written too.
+    if let Some(combats_left) = tea_of_discourtesy_combats_left {
+        seeded.insert("tea_discourtesy_combats_left", combats_left);
     }
     counter_relic_dispatch_is_representable(entry, &relics)?;
     // --- Symbiotic Virus's same-hook order (frozen Python `start_combat`, deleted #2827) ----------------
     // The oracle refuses these right after constructing the `State`, which is
     // after the seeded counters above.
-    symbiotic_virus_turn_start_order_is_recorded(&relics, orb_base_slots(character))?;
+    symbiotic_virus_turn_start_order_is_recorded(
+        &relics,
+        orb_base_slots(character),
+        entry.relic_entry.dispatch_ordered,
+    )?;
 
     // --- the pre-hook document ---------------------------------------------
     let document = pre_hook_document(
@@ -2403,47 +2628,121 @@ fn ember_tea_combats_left(
     Ok(Some(value))
 }
 
-/// Whether an owned `RELIC.TEA_OF_DISCOURTESY` is spent, so its combat-start
-/// body is inert (#3162).
+/// An owned `RELIC.TEA_OF_DISCOURTESY`'s saved `CombatsLeft` (#3162, #3756).
 ///
-/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…fbf12b4`, hash-verified 2026-09-26).
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…fbf12b4`, hash-verified 2026-09-26,
+/// re-read 2026-10-11).
 /// The type's one hook is `BeforeCombatStart` (RVA `0x9c56c`, the async stub).
 /// Its saved state is `_combatsLeft` (`CombatsLeft`): the constructor
 /// (`0x9c5af`) writes `ldc.i4.1` at `IL_0002`, and the only other writer is the
 /// body's decrement, so the domain is `0..=1`. The body is
 /// `TeaOfDiscourtesy/<BeforeCombatStart>d__16::MoveNext` (RVA `0x3324dc`):
 ///
-/// * `CombatsLeft; ldc.i4.0; bgt.s`, else `leave` (`IL_001d`-`IL_0026`) —
+/// * `CombatsLeft; ldc.i4.0; bgt.s`, else `leave` (`IL_001e`-`IL_0026`) —
 ///   a spent Tea returns before it writes anything;
 /// * otherwise `CardPileCmd::AddToCombatAndPreview<Dazed>(Owner.Creature,
-///   Draw, DazedCount = 2, Owner, Random)` (`IL_002b`-`IL_0053`), then
-///   `set_CombatsLeft(CombatsLeft - 1)` and `Flash` (`IL_00aa`-`IL_00bb`).
+///   Draw, DazedCount = 2, Owner, Random)` (`IL_002c`-`IL_0053`), then
+///   `set_CombatsLeft(CombatsLeft - 1)` and `Flash` (`IL_00ab`-`IL_00bb`).
 ///
 /// So a saved `0` is the whole combat-start effect: nothing, and the canonical
-/// `tea_discourtesy_combats_left` is `0`. A saved `1` would insert two Dazed
-/// before the deal and allocate their uids ahead of it, which this crate does
-/// not run: that is [`OpeningRefusal::RoomEntryRelicNotModeled`], the refusal
-/// the relic carried from [`OPENING_WINDOW_RELIC_BODIES`] until #3162. Any
-/// other value refuses as [`OpeningRefusal::RelicCounterNotExact`].
-fn tea_of_discourtesy_spent(
+/// `tea_discourtesy_combats_left` is `0`. A saved `1` is written as `1`, and
+/// `engine::relics::tea_of_discourtesy_before_combat_start` inserts the two
+/// Dazed at combat start and spends the charge. Any other value refuses as
+/// [`OpeningRefusal::RelicCounterNotExact`].
+///
+/// # What a charged Tea refuses beside
+///
+/// The two Dazed are generated before the deal, into the shuffled pile
+/// ([`defers_turn_one_fixup`]). Each co-ownership below would observe that in
+/// a way this crate does not carry, so it refuses by name
+/// ([`CHARGED_TEA_REFUSED_PEERS`]):
+///
+/// * `REGALITE` answers each owner-generated card with `GainBlock` and its
+///   `UsedThisTurn` latch (`Regalite/<AfterCardGeneratedForCombat>d__8`
+///   `0x32f988`); a combat-start trigger ahead of turn one's
+///   `BeforeSideTurnStart` reset is not witnessed.
+/// * `SNECKO_EYE` and `FAKE_SNECKO_EYE`: the oracle's own refusal, which
+///   `engine::admission` keeps for a loaded document (`Tea of Discourtesy +
+///   Snecko Eye entry order`); the opening does not run admission.
+/// * `BLESSED_ANTLER`, `FUNERARY_MASK`, `RADIANT_PEARL`, `NINJA_SCROLL`: the
+///   other pre-deal generators. [`PreDeal`] carries one generator's uids.
+/// * `JEWELED_MASK`, `POWER_CELL`, `WHISPERING_EARRING`: their pre-deal and
+///   turn-one moves are checked against a pile with no generated card in it
+///   ([`jeweled_mask_moved_order_at`], [`power_cell_moved_order`],
+///   [`without_auto_played`]).
+/// * `GHOST_SEED` and a Thieving Hopper room keep the build-time fixup for
+///   their own uid stamping ([`stamp_card_identities`]), which would put the
+///   Dazed into the fixed pile instead of the shuffled one.
+fn tea_of_discourtesy_combats_left(
     entry: &EntryDocument,
     relics: &BTreeSet<&str>,
-) -> Result<bool, OpeningRefusal> {
-    const RELIC: &str = "RELIC.TEA_OF_DISCOURTESY";
-    if !relics.contains(RELIC) {
-        return Ok(false);
+) -> Result<Option<i64>, OpeningRefusal> {
+    if !relics.contains(TEA_OF_DISCOURTESY) {
+        return Ok(None);
     }
-    let raw = entry.relic_entry.relic_counters.get(RELIC);
+    let raw = entry.relic_entry.relic_counters.get(TEA_OF_DISCOURTESY);
     match raw.and_then(Value::as_i64) {
-        Some(0) => Ok(true),
-        Some(1) => Err(OpeningRefusal::RoomEntryRelicNotModeled {
-            relic: RELIC.to_string(),
-        }),
+        Some(0) => Ok(Some(0)),
+        Some(1) => {
+            let mut refused: Vec<String> = CHARGED_TEA_REFUSED_PEERS
+                .into_iter()
+                .filter(|peer| relics.contains(peer))
+                .map(ToString::to_string)
+                .collect();
+            if is_thieving_hopper_entry(entry) {
+                return Err(OpeningRefusal::RelicCombinationRefused {
+                    relics: vec![TEA_OF_DISCOURTESY.to_string()],
+                    reason: "a charged Tea of Discourtesy in a Thieving Hopper room: the                              Hopper's deck-row stamping keeps the build-time pile fixup, and                              the Tea's Dazed enter the shuffled pile",
+                });
+            }
+            if !refused.is_empty() {
+                refused.push(TEA_OF_DISCOURTESY.to_string());
+                refused.sort();
+                return Err(OpeningRefusal::RelicCombinationRefused {
+                    relics: refused,
+                    reason: "a charged Tea of Discourtesy generates two Dazed into the                              shuffled Draw pile at combat start; beside this relic the                              generated-card listener, the entry order or the pre-deal uid                              check is not modeled",
+                });
+            }
+            Ok(Some(1))
+        }
         _ => Err(OpeningRefusal::RelicCounterNotExact {
-            relic: RELIC,
+            relic: TEA_OF_DISCOURTESY,
             value: raw.map_or_else(|| "absent".to_string(), ToString::to_string),
         }),
     }
+}
+
+/// The relics a charged Tea of Discourtesy refuses beside
+/// ([`tea_of_discourtesy_combats_left`] says why, row by row).
+const CHARGED_TEA_REFUSED_PEERS: [&str; 11] = [
+    "RELIC.BLESSED_ANTLER",
+    "RELIC.FAKE_SNECKO_EYE",
+    "RELIC.FUNERARY_MASK",
+    "RELIC.GHOST_SEED",
+    "RELIC.JEWELED_MASK",
+    "RELIC.NINJA_SCROLL",
+    "RELIC.POWER_CELL",
+    "RELIC.RADIANT_PEARL",
+    "RELIC.REGALITE",
+    "RELIC.SNECKO_EYE",
+    "RELIC.WHISPERING_EARRING",
+];
+
+/// Whether the entry holds a charged Tea of Discourtesy: owned, with a saved
+/// `CombatsLeft` of exactly 1. [`tea_of_discourtesy_combats_left`] has already
+/// refused every other non-zero value by the time [`build`] asks.
+fn tea_of_discourtesy_charged(entry: &EntryDocument) -> bool {
+    entry
+        .relic_entry
+        .relics_entering
+        .iter()
+        .any(|relic| relic == TEA_OF_DISCOURTESY)
+        && entry
+            .relic_entry
+            .relic_counters
+            .get(TEA_OF_DISCOURTESY)
+            .and_then(Value::as_i64)
+            == Some(1)
 }
 
 /// Whether an owned `RELIC.LIZARD_TAIL` is already spent (#2847).
@@ -2543,6 +2842,24 @@ fn procuring_relic_belt_is_exact(
 /// `damage::apply_relic_monster_debuff` for the second case, so the decrement
 /// is the engine's one implementation rather than a second copy here.
 ///
+/// # A vouched inventory is not ambiguous (#3756)
+///
+/// Where the inventory is vouched for as dispatch order (`dispatch_ordered`:
+/// a save or a capture's embedded run, [`all_enemy_debuff_order_is_recorded`])
+/// the order *is* recorded, and `engine::relics::turn_one_all_enemy_debuff_rows`
+/// already runs the bodies in it. Each body applies its debuff to every
+/// hittable enemy before the next relic's body starts, and each application
+/// meets the target's Artifact through the shared received-side gate, so the
+/// first `a` recorded relics are the ones a monster's Artifact eats.
+/// v0.111.0: `ArtifactPower::TryModifyPowerAmountReceived` RVA `0x9f844`
+/// zeroes the amount (IL_0045-IL_004e) when the target is its owner
+/// (IL_000c-IL_0013), the incoming power is a Debuff for that amount
+/// (`GetTypeForAmount == 2`, IL_001f-IL_0027) and visible (IL_0033-IL_0039);
+/// `ArtifactPower/<AfterModifyingPowerAmountReceived>d__7::MoveNext` RVA
+/// `0x334fd0` then awaits one `PowerCmd::Decrement` (IL_001d-IL_001e). The
+/// gate therefore refuses only an unvouched inventory, where the same two
+/// relics already refuse by [`all_enemy_debuff_order_is_recorded`].
+///
 /// The Artifact amount is read from the roster's own spawn state
 /// (`MonsterSpec::initial_state`, which mirrors the `combat_sim.Monster`
 /// keyword the content builder sets) rather than from the built document, for
@@ -2551,7 +2868,11 @@ fn procuring_relic_belt_is_exact(
 fn turn_one_debuff_artifact_is_unambiguous(
     relics: &BTreeSet<&str>,
     monsters: &[MonsterSpec],
+    dispatch_ordered: bool,
 ) -> Result<(), OpeningRefusal> {
+    if dispatch_ordered {
+        return Ok(());
+    }
     let owned: Vec<&str> = TURN_ONE_ALL_ENEMY_DEBUFF_RELICS
         .into_iter()
         .filter(|relic| relics.contains(relic))
@@ -2832,6 +3153,103 @@ fn refuse_unordered_kusarigama_peers(
     Ok(())
 }
 
+/// Whether `BoomingConch` is live in this fight: owned, in an elite room
+/// (#3759).
+///
+/// # The native contract
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`). The type declares two combat
+/// hooks, no field and no saved property (`get_CanonicalVars` `0x91383`:
+/// `CardsVar(2)` at `IL_0008`-`IL_000a`, `EnergyVar(1)` at
+/// `IL_0011`-`IL_0013`):
+///
+/// * `BoomingConch::ModifyHandDraw` (RVA `0x913a4`, synchronous):
+///   `player == Owner` at `IL_000c`-`IL_0013` (else the draw unchanged,
+///   `IL_0015`-`IL_0016`); `Owner.PlayerCombatState.TurnNumber; ldc.i4.1;
+///   ble.s` at `IL_0017`-`IL_0028` (else unchanged, `IL_002a`-`IL_002b`);
+///   `player.RunState.CurrentRoom?.RoomType == 2` at `IL_002c`-`IL_0049`
+///   (a null room, or any other type, returns the draw unchanged at
+///   `IL_004b`-`IL_004c`); then `draw + DynamicVars.Cards.IntValue` at
+///   `IL_004d`-`IL_0063`.
+/// * `BoomingConch/<AfterSideTurnStart>d__7::MoveNext` (RVA `0x32048c`):
+///   `participants.Contains(Owner.Creature)` at `IL_0020`-`IL_0036`, the same
+///   turn guard at `IL_003d`-`IL_004e`, the same
+///   `combatState.RunState.CurrentRoom?.RoomType == 2` test at
+///   `IL_0055`-`IL_0077` (else `leave` at `IL_0079`), `Flash`, then
+///   `PlayerCmd::GainEnergy(DynamicVars.Energy.BaseValue, Owner)` at
+///   `IL_0084`-`IL_009a`.
+///
+/// `RoomType` 2 is `Elite` (the enum is Unassigned 0, Monster 1, Elite 2,
+/// Boss 3), the test `SlingOfCourage`'s room-entry body makes
+/// ([`sling_of_courage_elite`]), and the entry's node type is that room's
+/// kind. The room does not change inside a combat, so one answer serves both
+/// hooks, and the engine carries it as the `booming_conch_elite` state flag:
+/// `engine::relics::modifier_total`'s `ModifyHandDraw` row (`turn <= 1`, +2)
+/// and `engine::relics::after_side_turn_start`'s turn-one Energy both read
+/// it. Those bodies predate this function. What was missing is the write:
+/// until #3759 only `boundary.rs` set the flag (loading a document that
+/// already carried it), so a Rust-built opening left it false and an elite
+/// root came out one Energy and two cards short of the game's first
+/// checkpoint, with no refusal.
+///
+/// # Position
+///
+/// Neither hook is ordered against a peer in an observable way.
+/// `ModifyHandDraw` listeners each return `draw ± their own var`, an additive
+/// fold (see the ring's section on [`OPENING_WINDOW_RELIC_BODIES`]). The
+/// Energy is one `GainEnergy` among the hook's other gains, which sum; the
+/// one same-hook body that does not commute with a gain is Bread's turn-one
+/// loss, and `engine::admission` refuses the reachable case by name (`Bread
+/// with active turn-start energy peer and two Void cards`, which reads this
+/// flag).
+///
+/// An owned Conch with no recorded node type refuses upstream
+/// ([`OpeningRefusal::BoomingConchRoomTypeUnknown`]), so `None` cannot reach
+/// here as "not an elite".
+fn booming_conch_elite(entry: &EntryDocument, relics: &BTreeSet<&str>) -> bool {
+    relics.contains("RELIC.BOOMING_CONCH") && entry.node_type.as_deref() == Some("elite")
+}
+
+/// A marked Fur Coat room beside a Red Skull whose latch this opening leaves
+/// stale refuses (#3634).
+///
+/// Fur Coat's combat-start HP writes raise `AfterCurrentHpChanged`, and
+/// `RedSkull/<AfterCurrentHpChanged>d__13::MoveNext` (v0.111.0 RVA
+/// `0x32f5ec`) answers for **any** creature once the combat is in progress
+/// (`IL_001d`-`IL_0027`), re-running `ModifyStrengthIfNecessary` on its
+/// owner (`IL_002c`). That re-check changes nothing when Red Skull's latch
+/// agrees with the owner's HP. It disagrees in exactly one represented case,
+/// [`RedSkullRoomEntry::BeforeCrossingHeal`]: Red Skull applied its Strength
+/// at room entry, Planisphere's heal then crossed half HP, and this opening
+/// carries the latch as stale until the first in-combat HP change. With a
+/// marked Fur Coat the first such change is an enemy's, at
+/// `BeforeCombatStart`, where native would remove the Strength and this
+/// crate's body (`engine::monsters::fur_coat_before_combat_start`) does not
+/// walk the hook. Refused by name rather than modeled: no capture holds the
+/// trio.
+fn fur_coat_red_skull_recheck_is_inert(
+    entry: &EntryDocument,
+    relics: &BTreeSet<&str>,
+    red_skull: RedSkullRoomEntry,
+) -> Result<(), OpeningRefusal> {
+    if red_skull == RedSkullRoomEntry::BeforeCrossingHeal
+        && relics.contains("RELIC.FUR_COAT")
+        && entry.relic_entry.fur_coat_active == Some(true)
+    {
+        return Err(OpeningRefusal::RelicCombinationRefused {
+            relics: vec![
+                "RELIC.FUR_COAT".to_string(),
+                "RELIC.PLANISPHERE".to_string(),
+                "RELIC.RED_SKULL".to_string(),
+            ],
+            reason: "Fur Coat's combat-start HP writes re-run Red Skull's check while its \
+                     latch is stale from Planisphere's crossing heal, and that re-check \
+                     is not modeled at BeforeCombatStart",
+        });
+    }
+    Ok(())
+}
+
 /// Whether `SlingOfCourage` applies its Strength in this fight.
 ///
 /// The oracle's gate (frozen Python `start_combat`, deleted #2827): an owned Sling needs the
@@ -2884,6 +3302,28 @@ const BEFORE_HAND_DRAW_RELICS: [&str; 8] = [
 /// * no same-`BeforeHandDraw` relic peer (`start_combat`): relics within a
 ///   hook dispatch in acquisition order, and the choice's modal pause changes
 ///   what a later peer observes. [`OpeningRefusal::RelicCombinationRefused`].
+///   One peer is admitted on its recorded order (#3756): Pollinous Core,
+///   when a vouched inventory records every Toolbox before it.
+///
+/// # Pollinous Core behind Toolbox (#3756)
+///
+/// `PollinousCore::BeforeHandDraw` (v0.111.0 RVA `0x9998c`) is synchronous
+/// and is one write: for its owner (IL_000c-0013), `TurnsSeen = TurnsSeen +
+/// 1` (IL_001b-0026). Its `ModifyHandDraw` (`0x999cc`) and
+/// `AfterModifyingHandDraw` (`0x99a19`) run after the whole `BeforeHandDraw`
+/// walk. `Toolbox/<BeforeHandDraw>d__4::MoveNext` (`0x332adc`) reads its
+/// owner, `TurnNumber`, the Colorless pool under the owner's `UnlockState`
+/// and `CombatCardGeneration` (IL_002e-00a8), pauses at
+/// `FromChooseACardScreen` (IL_00c1) and adds the pick to the Hand
+/// (IL_012f). Neither body reads what the other writes.
+///
+/// `engine::relics::before_hand_draw` walks the hook's relics in the recorded
+/// order of a vouched inventory (`relics_entering_dispatch_ordered`,
+/// `Player.Relics` order, #3635): the ones recorded ahead of Toolbox run
+/// before its choice is published, the ones behind it after the answer, as
+/// the game awaits them. So a vouched inventory refuses no peer here. An
+/// unvouched one cannot say which side of the pause a peer's body is on, and
+/// refuses every peer.
 ///
 /// Its exact `CombatCardGeneration` counter is
 /// [`generation_relic_streams_are_recorded`]'s. The body itself is
@@ -2892,6 +3332,7 @@ const BEFORE_HAND_DRAW_RELICS: [&str; 8] = [
 fn toolbox_provenance_is_recorded(
     entry: &EntryDocument,
     relics: &BTreeSet<&str>,
+    dispatch_ordered: bool,
 ) -> Result<(), OpeningRefusal> {
     if !relics.contains("RELIC.TOOLBOX") {
         return Ok(());
@@ -2915,7 +3356,7 @@ fn toolbox_provenance_is_recorded(
         .filter(|relic| *relic != "RELIC.TOOLBOX" && relics.contains(relic))
         .map(ToString::to_string)
         .collect();
-    if !peers.is_empty() {
+    if !dispatch_ordered && !peers.is_empty() {
         return Err(OpeningRefusal::RelicCombinationRefused {
             relics: std::iter::once("RELIC.TOOLBOX".to_string())
                 .chain(peers)
@@ -2951,7 +3392,9 @@ const BEFORE_HAND_DRAW_ORDER_RELICS: [&str; 7] = [
 /// (frozen Python `start_combat`, deleted #2827; #2992).
 ///
 /// Native runs relic `BeforeHandDraw` listeners in acquisition order, which
-/// neither the run nor the `.mcr` records. Antler's three random-position Draw
+/// a `.run`-only root does not record. A vouched inventory does, the engine
+/// walks it as recorded (`engine::relics::before_hand_draw`, #3635), and this
+/// gate passes it. Antler's three random-position Draw
 /// inserts (`<BeforeHandDraw>d__7::MoveNext` `0x31fe64`, `IL_0094`-`IL_009d`)
 /// move the insertion bounds, RNG draws, generated-card listener chains and
 /// uid allocation of every other body in this group, so the oracle refuses
@@ -2969,8 +3412,11 @@ const BEFORE_HAND_DRAW_ORDER_RELICS: [&str; 7] = [
 /// reason string differs.
 ///
 /// The named relics are the owned members in the oracle's `sorted(...)` order.
-fn refuse_unordered_blessed_antler_peers(relics: &BTreeSet<&str>) -> Result<(), OpeningRefusal> {
-    if !relics.contains("RELIC.BLESSED_ANTLER") {
+fn refuse_unordered_blessed_antler_peers(
+    relics: &BTreeSet<&str>,
+    dispatch_ordered: bool,
+) -> Result<(), OpeningRefusal> {
+    if dispatch_ordered || !relics.contains("RELIC.BLESSED_ANTLER") {
         return Ok(());
     }
     let owned: BTreeSet<&str> = BEFORE_HAND_DRAW_ORDER_RELICS
@@ -2988,33 +3434,38 @@ fn refuse_unordered_blessed_antler_peers(relics: &BTreeSet<&str>) -> Result<(), 
 }
 
 /// The turn-1 `BeforeHandDraw` relic bodies that move a Draw or Hand card,
-/// which the engine runs in a fixed order (#3162).
+/// which the engine runs in a fixed order on an unvouched inventory (#3162).
 ///
-/// Native runs relic `BeforeHandDraw` listeners in `Player.Relics` order;
-/// `engine::relics::continue_before_hand_draw_after_toolbox` runs Funerary
-/// Mask's three random-position Soul inserts into Draw
-/// (`FuneraryMask/<BeforeHandDraw>d__6::MoveNext` `0x325000`,
-/// `AddGeneratedCardToCombat(card, Draw, Owner, Random)` at
+/// Native runs relic `BeforeHandDraw` listeners in `Player.Relics` order, and
+/// `engine::relics::before_hand_draw` walks a vouched inventory in that
+/// order (#3635), so a vouched inventory refuses nothing here. Without a
+/// recorded order the walk runs Funerary Mask's three random-position Soul
+/// inserts into Draw (`FuneraryMask/<BeforeHandDraw>d__6::MoveNext`
+/// `0x325000`, `AddGeneratedCardToCombat(card, Draw, Owner, Random)` at
 /// `IL_0074`-`IL_007d`), then Jeweled Mask's Draw-to-Hand move
 /// (`engine::relics::jeweled_mask_before_hand_draw`, `0x3272f4`), and
-/// `engine::relics::radiant_pearl_before_hand_draw` inserts Luminesce at the
-/// Hand's bottom last (`RadiantPearl/<BeforeHandDraw>d__6::MoveNext`
+/// Radiant Pearl's Luminesce at the Hand's bottom last
+/// (`RadiantPearl/<BeforeHandDraw>d__6::MoveNext`
 /// `0x32f10c`, `AddGeneratedCardsToCombat(list, Hand, Owner, …)` at
 /// `IL_008d`-`IL_0096`). Any two of them observe each other: a Draw insert
 /// moves the pile Jeweled Mask selects from and the bound of the next random
 /// insert, two Hand writers reverse the Hand's order, and each generator
-/// allocates the next card uid. `NINJA_SCROLL`'s turn-1 Shivs into Hand are
-/// spelled too; it is still refused earlier by
-/// [`OPENING_WINDOW_RELIC_BODIES`], and naming it here keeps retiring that
-/// entry from silently opening the pair.
+/// allocates the next card uid. `NINJA_SCROLL`'s turn-1 Shivs into Hand
+/// (`engine::relics::ninja_scroll_before_hand_draw`, #3619) are a fourth
+/// such body, so the Scroll beside any of the three refuses here.
 ///
 /// Blessed Antler and Toolbox beside any of these are refused by their own
 /// gates ([`refuse_unordered_blessed_antler_peers`],
 /// [`toolbox_provenance_is_recorded`]). Pendulum's and Pollinous Core's bodies
-/// write only their counters and commute with every row here. The corpus holds
-/// no fight with two of these, so no recorded order is vouched for; a pair
-/// refuses at any order. The named relics are the owned members, sorted.
-fn refuse_unordered_hand_draw_card_peers(relics: &BTreeSet<&str>) -> Result<(), OpeningRefusal> {
+/// write only their counters and commute with every row here. The named
+/// relics are the owned members, sorted.
+fn refuse_unordered_hand_draw_card_peers(
+    relics: &BTreeSet<&str>,
+    dispatch_ordered: bool,
+) -> Result<(), OpeningRefusal> {
+    if dispatch_ordered {
+        return Ok(());
+    }
     const HAND_DRAW_CARD_MOVERS: [&str; 4] = [
         "RELIC.FUNERARY_MASK",
         "RELIC.JEWELED_MASK",
@@ -3147,6 +3598,252 @@ fn planisphere_after_room_entered(
     Ok(())
 }
 
+/// `CARD.DOWSING`'s `BeforeRoomEntered` (#3791): the entry with the deck that
+/// hook leaves, or `None` when it leaves the saved one.
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`). `Cards.Dowsing` declares one
+/// hook, `BeforeRoomEntered` (stub `0xde13c`), and no other type in the
+/// assembly overrides that hook. Its saved property is `RoomsEntered`
+/// (`0xde100` / `0xde108`; the setter also writes the display var `Rooms = 5
+/// - RoomsEntered`). The body is `Dowsing/<BeforeRoomEntered>d__15::MoveNext`
+/// (RVA `0x399e18`):
+///
+/// * `Pile?.Type == 6` (the Deck), else `leave` (`IL_0020`-`IL_003a`): only
+///   the deck card counts, never a combat copy;
+/// * `RunState.CurrentRoomCount <= 1`, else `leave` (`IL_003f`-`IL_0052`): the
+///   map point's first room only;
+/// * `RunState.CurrentMapPoint?.PointType == 1`, else `leave`
+///   (`IL_0057`-`IL_007b`): a `?` point only (`MapPointType.Unknown`, the
+///   enum [`planisphere_heals_here`] cites);
+/// * `RoomsEntered += 1` (`IL_0080`-`IL_008b`), and when it reaches 5
+///   (`IL_0090`-`IL_0097`) `PlayerCmd::CompleteQuest` and
+///   `CardCmd::TransformTo<Abundance>(this, …)` (`IL_0099`-`IL_00a1`).
+///
+/// `PlayerCmd::CompleteQuest` (`0x133660`) only appends to the map point
+/// history. `CardCmd/<TransformTo>d__10` (`0x3e15f0`) creates a fresh
+/// `Abundance` for the owner (`IL_001c`-`IL_002c`) and calls
+/// `CardCmd/<Transform>d__13::MoveNext` (`0x3e0ae0`), which for a card whose
+/// pile is the Deck:
+///
+/// * takes the given replacement as it is
+///   (`CardTransformation::GetReplacement` `0x11f078` `IL_000d`-`IL_001c`), so
+///   nothing of the Dowsing carries over, and removes the original
+///   (`RemoveFromCurrentPile`, `IL_018c`);
+/// * runs `Hook::ModifyCardBeingAddedToDeck` on the replacement
+///   (`IL_0310`-`IL_032f`);
+/// * adds it with `CardPile::AddInternal(replacement, -1, false)`
+///   (`IL_03ca`-`IL_03d8`): at the **end** of the deck, not at the Dowsing's
+///   index (the other pile types pass an explicit index, `IL_03e2`-`IL_03f1`);
+/// * raises `Hook::AfterCardChangedPiles` (`IL_0485`-`IL_04a3`).
+///
+/// The save is written on moving onto the node, before the room is entered,
+/// so it still holds the Dowsing and a `RoomsEntered` one short. The combat
+/// deck is cloned from the deck afterwards, and deck order feeds the
+/// shuffle: site seeds `QN0D3KCZWL5H` node 6 and `S09VM8AM9XU6` node 11 dealt
+/// an Abundance natively where this opening dealt the deck's last card.
+///
+/// So, for each Dowsing row whose saved count is 4:
+///
+/// * a point of any other type leaves the deck alone, and so does a boss
+///   room with no named point (entered only from the act's boss point);
+/// * a `?` point that resolved straight into its scheduled monster room
+///   (`entry.next_normal_encounter`, the proof [`build_pre_hook`] takes for
+///   Planisphere's heal) is the point's first room: the row leaves and a
+///   level-zero Abundance joins at the end;
+/// * any other `?` fight, or a point the entry does not name, refuses
+///   ([`OpeningRefusal::CardRoomEntryTransformUnmodeled`]): the opening
+///   cannot tell whether this is the point's first room.
+///
+/// The transform also refuses beside a relic that answers a card joining the
+/// deck ([`DECK_ADD_LISTENER_RELICS`]), except Book of Five Rings, whose
+/// answer is read ([`book_of_five_rings_heals_on`]). A count below 4 changes no combat
+/// state at any point, so those rows pass untouched; a count outside `0..=4`
+/// is not one the game writes and refuses as
+/// [`OpeningRefusal::CardEntryPropsNotExact`].
+///
+/// A row with no `props` at all is left alone. A save always writes the
+/// property; a facts document built from a `.run` does not carry it, and
+/// names no map point either, so this function has nothing to decide with.
+/// That root is as exact about Dowsing as it was before #3791, which is to
+/// say not on the transforming floor.
+fn dowsing_before_room_entered(
+    entry: &EntryDocument,
+) -> Result<Option<EntryDocument>, OpeningRefusal> {
+    let mut due = Vec::new();
+    for (row, card) in entry.deck_entering.iter().enumerate() {
+        if card.id != DOWSING || card.props.is_none() {
+            continue;
+        }
+        if dowsing_rooms_entered(card)? == DOWSING_ROOMS - 1 {
+            due.push(row);
+        }
+    }
+    if due.is_empty() {
+        return Ok(None);
+    }
+    let refuse = |detail: String| OpeningRefusal::CardRoomEntryTransformUnmodeled {
+        card: "DOWSING",
+        detail,
+    };
+    match entry.map_point_type.as_deref() {
+        Some("unknown")
+            if entry.next_normal_encounter.as_deref() == Some(entry.encounter_id.as_str()) => {}
+        Some("unknown") => {
+            return Err(refuse(
+                "this fight is on a ? map point and is not the act's next scheduled normal \
+                 encounter, so the entry cannot prove it is the point's first room"
+                    .to_string(),
+            ));
+        }
+        Some(_) => return Ok(None),
+        None if entry.node_type.as_deref() == Some("boss") => return Ok(None),
+        None => {
+            return Err(refuse(
+                "the entry does not name this fight's map point, and a ? point would \
+                 complete the quest"
+                    .to_string(),
+            ));
+        }
+    }
+    let listeners: Vec<&str> = DECK_ADD_LISTENER_RELICS
+        .into_iter()
+        .filter(|relic| {
+            entry
+                .relic_entry
+                .relics_entering
+                .iter()
+                .any(|owned| owned == relic)
+        })
+        .collect();
+    if !listeners.is_empty() {
+        return Err(refuse(format!(
+            "{listeners:?} answer a card joining the deck, and the Abundance joins it"
+        )));
+    }
+    if book_of_five_rings_heals_on(entry, due.len())? {
+        return Err(refuse(
+            "RELIC.BOOK_OF_FIVE_RINGS counts the Abundance as its fifth card and heals \
+             on entering the room"
+                .to_string(),
+        ));
+    }
+    let mut transformed = entry.clone();
+    transformed.deck_entering = entry
+        .deck_entering
+        .iter()
+        .enumerate()
+        .filter(|(row, _)| !due.contains(row))
+        .map(|(_, card)| card.clone())
+        .chain(due.iter().map(|_| crate::entry::deck::DeckEntry {
+            id: "CARD.ABUNDANCE".to_string(),
+            upgrade_level: 0,
+            props: None,
+            enchantment: None,
+            enchant_amount: None,
+        }))
+        .collect();
+    Ok(Some(transformed))
+}
+
+const DOWSING: &str = "CARD.DOWSING";
+
+/// Dowsing's `Rooms` (`get_CanonicalVars` `0xde0d4`, `IL_0001`-`IL_0007`; the
+/// threshold `ldc.i4.5` at `<BeforeRoomEntered>d__15` `IL_0096`).
+const DOWSING_ROOMS: i64 = 5;
+
+/// One saved Dowsing row's `RoomsEntered`: `props` is exactly `{"ints":
+/// [{"name": "RoomsEntered", "value": n}]}` with `n` in `0..=4`. The fifth
+/// room replaces the card, so the game never saves a 5.
+fn dowsing_rooms_entered(card: &crate::entry::deck::DeckEntry) -> Result<i64, OpeningRefusal> {
+    let malformed = || entry_props_malformed(card, "DOWSING");
+    let ints = card
+        .props
+        .as_ref()
+        .filter(|props| props.len() == 1)
+        .and_then(|props| props.get("ints"))
+        .and_then(Value::as_array)
+        .filter(|ints| ints.len() == 1)
+        .ok_or_else(malformed)?;
+    let row = ints[0]
+        .as_object()
+        .filter(|row| row.len() == 2)
+        .ok_or_else(malformed)?;
+    if row.get("name").and_then(Value::as_str) != Some("RoomsEntered") {
+        return Err(malformed());
+    }
+    row.get("value")
+        .and_then(Value::as_i64)
+        .filter(|rooms| (0..DOWSING_ROOMS).contains(rooms))
+        .ok_or_else(malformed)
+}
+
+/// Whether an owned Book of Five Rings heals when `added` cards join the
+/// deck at room entry (#3791).
+///
+/// `BookOfFiveRings/<AfterCardChangedPiles>d__19::MoveNext` (v0.111.0 RVA
+/// `0x320238`): for a living owner (`IL_0021`-`IL_0030`), the owner's card
+/// (`IL_003d`-`IL_0048`) whose pile is the Deck (`IL_0055`-`IL_006c`),
+/// `CardsAdded += 1` (`IL_0074`-`IL_007e`), and when
+/// `CardsAddedSinceLastTrigger` (`0x911c6`: `CardsAdded % Cards`, with
+/// `CardsVar(5)` in `get_CanonicalVars` `0x911df`) is zero, `CreatureCmd::Heal`
+/// of `HealVar(20)` (`IL_0098`-`IL_00b3`). It reads neither the old pile nor
+/// the source, so the Abundance a Dowsing turns into counts as a card added.
+///
+/// The count that is not a multiple of five writes only the saved counter,
+/// which no combat hook reads, so the room opens as if the relic were not
+/// there. A multiple of five heals before the combat, which the opening does
+/// not apply: the caller refuses. The saved `CardsAdded` is the bare
+/// `relic_counters` integer (`entry::relics`' grouped adapter); a missing or
+/// negative one refuses as not exact.
+fn book_of_five_rings_heals_on(
+    entry: &EntryDocument,
+    added: usize,
+) -> Result<bool, OpeningRefusal> {
+    const RELIC: &str = "RELIC.BOOK_OF_FIVE_RINGS";
+    const CARDS: u64 = 5;
+    if !entry
+        .relic_entry
+        .relics_entering
+        .iter()
+        .any(|relic| relic == RELIC)
+    {
+        return Ok(false);
+    }
+    let raw = entry.relic_entry.relic_counters.get(RELIC);
+    let cards_added =
+        raw.and_then(Value::as_u64)
+            .ok_or_else(|| OpeningRefusal::RelicCounterNotExact {
+                relic: RELIC,
+                value: raw.map_or_else(|| "absent".to_string(), ToString::to_string),
+            })?;
+    Ok((1..=added as u64).any(|step| (cards_added.saturating_add(step)) % CARDS == 0))
+}
+
+/// The relics that answer a card joining the deck, beside which a Dowsing's
+/// transform refuses ([`dowsing_before_room_entered`]).
+///
+/// From the v0.111.0 TypeDef rows: the four relic overrides of
+/// `TryModifyCardBeingAddedToDeck` (Fresnel Lens, Frozen Egg, Molten Egg,
+/// Toxic Egg; no type overrides the `…Late` twin), which
+/// `Hook::ModifyCardBeingAddedToDeck` (`0x104d58`) walks and which can change
+/// the Abundance itself, and three of the four relic overrides of
+/// `AfterCardChangedPiles` (Bing Bong, Darkstone Periapt, Lucky Fysh), which
+/// can add a card, raise max HP or pay gold when one joins. None of these
+/// seven bodies was read for whether it acts on this card; the pair refuses
+/// instead. The fourth override, Book of Five Rings, was read
+/// ([`book_of_five_rings_heals_on`]). The one modifier that overrides
+/// `AfterCardChangedPiles` (Hoarder) is refused at the entry with every
+/// in-combat modifier (`entry::modifiers`).
+const DECK_ADD_LISTENER_RELICS: [&str; 7] = [
+    "RELIC.BING_BONG",
+    "RELIC.DARKSTONE_PERIAPT",
+    "RELIC.FRESNEL_LENS",
+    "RELIC.FROZEN_EGG",
+    "RELIC.LUCKY_FYSH",
+    "RELIC.MOLTEN_EGG",
+    "RELIC.TOXIC_EGG",
+];
+
 /// Whether `Planisphere`'s room-entry heal can fire at this node (#3162).
 ///
 /// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…fbf12b4`, hash-verified 2026-09-26).
@@ -3268,6 +3965,161 @@ fn apply_room_entry_strength(
     Ok(())
 }
 
+/// `PhilosophersStone`'s `StrengthPower` canonical var.
+///
+/// `PhilosophersStone::get_CanonicalVars` (v0.111.0 RVA `0x9946e`) builds
+/// `PowerVar<StrengthPower>(Decimal::One)` at `IL_0009`-`IL_000e` (and
+/// `EnergyVar(1)` at `IL_0016`-`IL_0017`, the `ModifyMaxEnergy` row's).
+const PHILOSOPHERS_STONE_STRENGTH: i32 = 1;
+
+/// Philosopher's Stone's room-entry body: one Strength on every living
+/// opponent (#3620).
+///
+/// # The native contract
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`).
+/// `PhilosophersStone/<AfterRoomEntered>d__8::MoveNext` (RVA `0x32dff0`):
+///
+/// * `room isinst CombatRoom` at `IL_0020`-`IL_002b`, else `leave` at
+///   `IL_002d`;
+/// * `Owner.Creature.CombatState.GetOpponentsOf(Owner.Creature)` at
+///   `IL_0032`-`IL_004d`, filtered by `<>c::<AfterRoomEntered>b__8_0` (RVA
+///   `0x32dfe6`, `Creature::get_IsAlive`) at `IL_0052`-`IL_0071`;
+/// * `Flash`, then one `PowerCmd.Apply<StrengthPower>(ctx, thatList,
+///   DynamicVars["StrengthPower"].BaseValue, null, null, false)` at
+///   `IL_007d`-`IL_009b`: a null applier and a null card.
+///
+/// The relic's other members are `ModifyMaxEnergy` (`0x994c6`, already a row
+/// of `engine::relics::modifier_total`) and `AfterCreatureAddedToCombat`
+/// (`0x994f0`, the same Strength for an opponent added later, already
+/// `engine::monsters::fur_coat_after_opponent_added`). It has no field and no
+/// saved property.
+///
+/// # One Strength, not two
+///
+/// `Hook::AfterCreatureAddedToCombat` has one caller in the assembly,
+/// `CreatureCmd/<Add>d__2::MoveNext` (`0x3e9234`, `IL_01f0`; a call scan for
+/// the hook name finds no other). The encounter's own enemies do not go
+/// through `CreatureCmd.Add`: `CombatRoom/<StartCombat>d__46::MoveNext`
+/// (`0x310bf0`) creates them with `CombatState::CreateCreature` at `IL_00fc`
+/// and then raises `Hook::AfterRoomEntered` at `IL_01aa`. So the initial
+/// roster meets only this body, and each enemy opens at one Strength. The
+/// `.mcr` census agrees on every fight that owns the relic.
+///
+/// # What runs
+///
+/// The shared monster-Strength command, as Brimstone's turn-start body uses
+/// it (`engine::relics::brimstone_after_side_turn_start`): the scalar, the
+/// `Applier::None` attachment row a null applier records, the power event and
+/// the `AfterPowerAmountChanged` suffix. Strength on a monster is a buff, so
+/// no Artifact gate applies.
+///
+/// # Position
+///
+/// Native runs the `AfterRoomEntered` relic listeners in `Player.Relics`
+/// order. Nothing else on that hook reads or writes an enemy's Strength: the
+/// other grants are the owner's (Vajra, Sling of Courage, Girya, Ember Tea,
+/// Red Skull, Sword of Jade), and `RuinedHelmet::TryModifyPowerAmountReceived`
+/// (`0x9aa00`) answers only when the target is its owner's Creature
+/// (`IL_001e`-`IL_002a`). So the fixed place beside the owner's grants is not
+/// observable.
+fn philosophers_stone_after_room_entered(
+    catalog: &crate::catalog::Catalog,
+    state: &mut crate::hot::HotState,
+    events: &mut Vec<crate::engine::Event>,
+) -> Result<(), OpeningRefusal> {
+    if !catalog
+        .hooks()
+        .owns(crate::ids::RelicId::RelicPhilosophersStone)
+    {
+        return Ok(());
+    }
+    for target in crate::engine::damage::alive_targets(state) {
+        crate::engine::damage::apply_monster_strength_delta_after_type_two_gate(
+            state,
+            Some(catalog),
+            target,
+            PHILOSOPHERS_STONE_STRENGTH,
+            crate::hot::Applier::None,
+            events,
+        )?;
+    }
+    crate::coverage::record_relic(crate::ids::RelicId::RelicPhilosophersStone);
+    Ok(())
+}
+
+/// The Murderous run modifier's room-entry body: three Strength on every
+/// creature in the combat (#3934).
+///
+/// # The native contract
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`).
+/// `Murderous/<AfterRoomEntered>d__1::MoveNext` (RVA `0x377cf8`):
+///
+/// * `room isinst CombatRoom` at `IL_001c`, else `leave` at `IL_0025`;
+/// * one `PowerCmd.Apply<StrengthPower>(new ThrowingPlayerChoiceContext(),
+///   room.CombatState.Creatures, 3m, null, null, false)` at
+///   `IL_002a`-`IL_0043`: the amount is `ldc.i4.3` (`IL_003a`), with a null
+///   applier and a null card.
+///
+/// `CombatState::get_Creatures` (`0x136e51`) is `_allies.Concat(_enemies)`,
+/// so the player's creature takes its Strength before any enemy.
+///
+/// # No pet takes it
+///
+/// `CombatRoom/<StartCombat>d__46::MoveNext` (`0x310bf0`) raises
+/// `Hook::AfterRoomEntered` at `IL_01aa`, straight after
+/// `CombatManager::SetUpCombat` (`IL_0196`). Until then `_allies` holds only
+/// what `CombatState::AddPlayer` (`0x137059`) attached, the player's own
+/// creature: a pet joins through `PlayerCmd.AddPet` from a `BeforeCombatStart`
+/// listener or later, which is after this hook. Such a pet does reach
+/// `Murderous::AfterCreatureAddedToCombat` (`0xc666f`), which returns for a
+/// creature on `CombatSide.Player` (`IL_0002`-`IL_000f`).
+///
+/// # Position
+///
+/// `Hook/<AfterRoomEntered>d__72::MoveNext` (`0x3d0eec`) walks
+/// `IRunState.IterateHookListeners`, and
+/// `CombatState/<IterateHookListeners>d__69::MoveNext` (`0x3f9720`) appends
+/// the run's modifiers at `IL_0219`-`IL_0225`, after every creature's powers
+/// and the player's relics, potions, orbs and cards. So this body runs after
+/// every relic's `AfterRoomEntered`, which is where [`open_from_pre_hook`]
+/// calls it. A Ruined Helmet whose first-positive doubling no relic grant
+/// spent therefore doubles this one, through the engine's one implementation
+/// in [`crate::engine::damage::apply_owner_strength`].
+///
+/// # What runs
+///
+/// The owner's Strength command, then the shared monster-Strength command
+/// Philosopher's Stone's room-entry body uses, with the `Applier::None`
+/// attachment row a null applier records. An enemy added later takes the same
+/// three in `engine::monsters::fur_coat_after_opponent_added`.
+fn murderous_after_room_entered(
+    catalog: &crate::catalog::Catalog,
+    state: &mut crate::hot::HotState,
+    events: &mut Vec<crate::engine::Event>,
+) -> Result<(), OpeningRefusal> {
+    if !state.fanouts.murderous() {
+        return Ok(());
+    }
+    crate::engine::damage::apply_owner_strength(
+        state,
+        crate::engine::monsters::MURDEROUS_STRENGTH,
+        events,
+    )?;
+    for target in crate::engine::damage::alive_targets(state) {
+        crate::engine::damage::apply_monster_strength_delta_after_type_two_gate(
+            state,
+            Some(catalog),
+            target,
+            crate::engine::monsters::MURDEROUS_STRENGTH,
+            crate::hot::Applier::None,
+            events,
+        )?;
+    }
+    Ok(())
+}
+
 /// Whether the recorded profile reveals every epoch that gates a row of
 /// `character`'s own `CharacterCardPool` (#3336).
 ///
@@ -3320,10 +4172,12 @@ fn owner_card_pool_epochs_revealed(entry: &EntryDocument, character: Option<&str
 /// opened under one hiding `DEFECT7_EPOCH` (which does). Each source now gets
 /// the check its native pool and its engine body need:
 ///
-/// * **Infernal Blade**: the Ironclad owner's pool fully revealed
-///   ([`owner_card_pool_epochs_revealed`]), because its engine body shuffles a
-///   frozen fully-unlocked Ironclad pool (see
-///   [`IRONCLAD_ONLY_GENERATION_CARDS`] for the IL).
+/// * **Infernal Blade**: for an Ironclad owner, the Ironclad pool fully
+///   revealed ([`owner_card_pool_epochs_revealed`]), because that owner's
+///   engine body shuffles a frozen fully-unlocked Ironclad pool (see
+///   [`FROZEN_IRONCLAD_POOL_GENERATION_CARDS`] for the IL). For any other
+///   owner (#3816) it joins the next group: the body draws that owner's
+///   Attack projection under the recorded profile.
 /// * **The owner's `CharacterCardPool` under `Owner.UnlockState`**: Discovery
 ///   (`Discovery/<OnPlay>d__4::MoveNext` `0x399254` IL_003e-IL_0063),
 ///   Jackpot (`Jackpot/<OnPlay>d__3::MoveNext` `0x3a80d4` IL_00e6-IL_010b),
@@ -3357,12 +4211,13 @@ fn owner_pool_generation_profile_is_recorded(
     let profile_recorded = normalized_card_pool_epochs(entry).is_some_and(|e| !e.is_empty());
     let infernal_blade_pool_revealed =
         owner_card_pool_epochs_revealed(entry, Some(INFERNAL_BLADE_FULL_POOL_OWNER));
+    let frozen_pool_owner = entry.character.as_deref() == Some(INFERNAL_BLADE_FULL_POOL_OWNER);
     let failing: Vec<&str> = sources
         .iter()
         .copied()
         .filter(|id| !PARTIAL_UNLOCK_TOLERANT_GENERATION_CARDS.contains(id))
         .filter(|id| {
-            if IRONCLAD_ONLY_GENERATION_CARDS.contains(id) {
+            if frozen_pool_owner && FROZEN_IRONCLAD_POOL_GENERATION_CARDS.contains(id) {
                 !infernal_blade_pool_revealed
             } else {
                 !profile_recorded
@@ -3598,7 +4453,7 @@ fn seeded_counters(
     // one (`IL_0029`-`IL_003a`), upgrades each Hand card (`IL_0042`-`IL_0064`)
     // and stores `CombatsLeft - 1` (`IL_007d`-`IL_0088`). So the domain is
     // exactly `0..=1`, and the charge a combat begins with is the saved one.
-    // The body that spends it is `engine::relics::continue_after_toasty_mittens`,
+    // The body that spends it is `engine::relics::bone_tea_after_player_turn_start`,
     // reached through the opening's turn-1 walk. Before this seed the fanout
     // stayed 0, so a charged Bone Tea's Hand upgrade was silently dropped.
     for (relic, field, modulus, maximum) in [
@@ -3703,16 +4558,22 @@ const JOSS_PAPER_EXHAUSTS: i64 = 5;
 /// (`Symbiotic Virus + Infused Core turn-start order`, `… + Runic Capacitor
 /// zero-slot order`, `… + Cracked Core zero-slot turn-start order`), but the
 /// opening builds its document without running admission, so the refusal has
-/// to be here too. Infused Core and Runic Capacitor are still gated above
-/// this call, so today only the Cracked Core arm is reachable (with either
-/// Brimstone or, since #3090 retired its gate, Fencing Manual); the other two
-/// are spelled so that retiring those gates cannot silently open a
-/// combination the oracle refuses.
+/// to be here too. All four arms are reachable: the Infused Core and Runic
+/// Capacitor arms since #3756 retired those relics' gates, and the Cracked
+/// Core arm with either Brimstone or, since #3090, Fencing Manual.
+///
+/// All four stand for an unvouched inventory only (#3635). A vouched one
+/// records the order, and `engine::relics::after_side_turn_start` runs the
+/// hook's relics in it: the native harness gives Infused Core then Symbiotic
+/// Virus three Lightning evokes and the reverse a Dark evoke and two
+/// Lightning ones, and Symbiotic Virus, Runic Capacitor, Infused Core no
+/// evoke where Runic Capacitor first gives one.
 fn symbiotic_virus_turn_start_order_is_recorded(
     relics: &BTreeSet<&str>,
     base_slots: i64,
+    dispatch_ordered: bool,
 ) -> Result<(), OpeningRefusal> {
-    if !relics.contains("RELIC.SYMBIOTIC_VIRUS") {
+    if dispatch_ordered || !relics.contains("RELIC.SYMBIOTIC_VIRUS") {
         return Ok(());
     }
     let owns = |relic: &str| relics.contains(relic);
@@ -3736,6 +4597,124 @@ fn symbiotic_virus_turn_start_order_is_recorded(
     }
     Err(OpeningRefusal::SymbioticVirusTurnStartOrder {
         peers: peers.into_iter().map(ToString::to_string).collect(),
+    })
+}
+
+/// Any two of Red Mask, Bag of Marbles and Twisted Funnel need a vouched
+/// inventory (#3756 for the Funnel; #3765 for the Funnel-less pair).
+///
+/// The three turn-1 `BeforeSideTurnStart` bodies each apply one debuff to
+/// every hittable enemy, and native awaits them in `Player.Relics` order
+/// (`CombatState::IterateHookListeners` `0x137409`). The order an enemy
+/// acquires its debuffs in is state (the Misery acquisition order, and each
+/// power's place in the creature's power list), so it has to be the game's.
+/// `engine::relics::turn_one_all_enemy_debuff_rows` follows the inventory
+/// when it is vouched for as dispatch order
+/// (`relics_entering_dispatch_ordered`); without that provenance the order
+/// is a guess, and the co-ownership refuses by name.
+///
+/// One of the three alone is order-free: no other represented listener of
+/// the hook reads or writes a monster's Weak, Vulnerable or Poison. Until
+/// #3765 Red Mask beside Bag of Marbles was outside this gate and ran in
+/// table order (Weak, then Vulnerable) even under an inventory that recorded
+/// the reverse; that pair now follows a vouched inventory in the engine and
+/// refuses here without one. Every admitted v0.111.0 save vouches its
+/// inventory (`entry::relics`: `dispatch_ordered` is the save carrying
+/// `rng.rngs`), so the refusal reaches only a root built without that
+/// provenance. The partial-Artifact case
+/// ([`turn_one_debuff_artifact_is_unambiguous`]) is the same question and
+/// has the same answer since #3756: it refuses only an unvouched inventory.
+fn all_enemy_debuff_order_is_recorded(
+    relics: &BTreeSet<&str>,
+    dispatch_ordered: bool,
+) -> Result<(), OpeningRefusal> {
+    if dispatch_ordered {
+        return Ok(());
+    }
+    // Funnel first, as the refusal has always named it; then table order.
+    let mut owned: Vec<&str> = TURN_ONE_ALL_ENEMY_DEBUFF_RELICS
+        .into_iter()
+        .filter(|relic| relics.contains(relic))
+        .collect();
+    if owned.len() < 2 {
+        return Ok(());
+    }
+    owned.sort_by_key(|relic| *relic != "RELIC.TWISTED_FUNNEL");
+    Err(OpeningRefusal::RelicCombinationRefused {
+        relics: owned.into_iter().map(ToString::to_string).collect(),
+        reason: "the turn-1 BeforeSideTurnStart order of the all-enemy \
+                 debuff relics decides each enemy's debuff acquisition \
+                 order, and the relic order is not recorded as dispatch \
+                 order",
+    })
+}
+
+/// The same-`AfterSideTurnStart` co-ownerships whose order around Infused
+/// Core's three turn-one Lightning channels is observable (#3756).
+///
+/// The body (`engine::relics::infused_core_after_side_turn_start`, which
+/// carries the IL) runs at its recorded place on a vouched inventory (#3635),
+/// which this gate passes. On an unvouched one it runs at a fixed place in
+/// this port's late relic group, while native follows `Player.Relics`, and
+/// the rest of this comment is about that inventory. Three channels into an empty
+/// three-slot queue write nothing a peer reads. What makes the order
+/// observable is the three **not fitting**: at zero `BaseOrbSlotCount` the
+/// first channel bootstraps one slot and the other two each evoke, and behind
+/// Cracked Core's Lightning (channeled on the earlier `BeforeSideTurnStart`
+/// hook) the third evokes. An evoke rolls `CombatTargets`, hits an enemy and
+/// can kill it or end the combat. So, where the three do not fit:
+///
+/// * `RELIC.RUNIC_CAPACITOR` — its three slots arrive before the channels
+///   (no evoke, or a three-slot queue at zero base) or after them
+///   (`engine::admission`'s `Runic Capacitor + Infused Core turn-start
+///   order`, the same condition);
+/// * `RELIC.BREAD` — its turn-one Energy loss does not run in a combat the
+///   evoke ended;
+/// * `RELIC.BRIMSTONE` — it snapshots the living opponents the evoke may have
+///   changed.
+///
+/// The frozen oracle refused the last two only beside Cracked Core
+/// (`engine::admission` still carries both, as its Bread and Brimstone
+/// "… Cracked Core … Infused Core turn-start order" shapes). The zero-base
+/// case evokes for the same reason, so this gate refuses it too: stricter
+/// than the oracle, never wrong.
+///
+/// Symbiotic Virus (any capacity) and Fencing Manual (any capacity) refuse
+/// beside Infused Core in their own gates
+/// ([`symbiotic_virus_turn_start_order_is_recorded`],
+/// [`fencing_manual_turn_start_peers_are_ordered`]). Cracked Core alone is
+/// not an order question: it is on the earlier hook.
+fn infused_core_turn_start_order_is_recorded(
+    relics: &BTreeSet<&str>,
+    base_slots: i64,
+    dispatch_ordered: bool,
+) -> Result<(), OpeningRefusal> {
+    const INFUSED_CORE: &str = "RELIC.INFUSED_CORE";
+    const CRACKED_CORE: &str = "RELIC.CRACKED_CORE";
+    if dispatch_ordered || !relics.contains(INFUSED_CORE) {
+        return Ok(());
+    }
+    let cracked = relics.contains(CRACKED_CORE);
+    if base_slots != 0 && !cracked {
+        return Ok(());
+    }
+    let peers: Vec<&str> = ["RELIC.BREAD", "RELIC.BRIMSTONE", "RELIC.RUNIC_CAPACITOR"]
+        .into_iter()
+        .filter(|peer| relics.contains(peer))
+        .collect();
+    if peers.is_empty() {
+        return Ok(());
+    }
+    Err(OpeningRefusal::RelicCombinationRefused {
+        relics: std::iter::once(INFUSED_CORE)
+            .chain(cracked.then_some(CRACKED_CORE))
+            .chain(peers)
+            .map(ToString::to_string)
+            .collect(),
+        reason: "Infused Core's three turn-1 Lightning channels do not fit the \
+                 queue here, so one evokes, and the AfterSideTurnStart order of \
+                 that evoke (or of Runic Capacitor's slots) against this peer \
+                 is observable and unrecorded",
     })
 }
 
@@ -3789,14 +4768,14 @@ fn counter_relic_dispatch_is_representable(
 /// `start_combat`'s same-`AfterPlayerTurnStart` refusals, for the two relics
 /// whose bodies #2827 modeled (`RELIC.BELLOWS`, `RELIC.FESTIVE_POPPER`).
 ///
-/// Both engines run the hook's relic bodies as one **fixed** suffix —
-/// Choices Paradox, Gambling Chip, Vexing Puzzlebox, Toasty Mittens, then
-/// Bellows, Bone Tea, Festive Popper, Mr Struggles, Royal Poison
-/// (`combat_sim._continue_after_toasty_mittens` (frozen Python, deleted #2827)), then Emotion
-/// Chip (`_turn_start_after_royal`), mirrored by
-/// `engine::relics::continue_after_toasty_mittens` — while native awaits
-/// the listeners in `Player.Relics` order, which the run payload does not
-/// vouch for. The oracle refuses every co-ownership where that order is
+/// On an unvouched inventory the engine runs the hook's relic bodies as one
+/// **fixed** sequence — Choices Paradox, Gambling Chip, Vexing Puzzlebox,
+/// Toasty Mittens, then Bellows, Bone Tea, Festive Popper, Mr Struggles,
+/// Royal Poison (`combat_sim._continue_after_toasty_mittens` (frozen Python,
+/// deleted #2827)), then Emotion Chip (`_turn_start_after_royal`), which is
+/// `engine::relics::AFTER_PLAYER_TURN_START_RELIC_DISPATCH` — while native
+/// awaits the listeners in `Player.Relics` order, which such a payload does
+/// not vouch for. The oracle refuses every co-ownership where that order is
 /// observable, and this gate refuses the ones that touch the two new bodies
 /// by the same rules:
 ///
@@ -3823,101 +4802,65 @@ fn counter_relic_dispatch_is_representable(
 /// was compared digest for digest against the oracle on the fixture save
 /// (`fixture_tests`).
 ///
-/// # The two orders this gate reads from the save (#2884)
+/// # A vouched inventory (#3635)
 ///
 /// Where the inventory is vouched for as dispatch order
-/// (`relics_entering_dispatch_ordered`), three of the pairs above no longer need
-/// a guess, and every corpus fight that met this refusal holds one of them:
+/// (`relics_entering_dispatch_ordered`), none of the pairs above needs a
+/// guess: the engine runs this hook's relic bodies in that recorded order
+/// (`engine::relics::relic_walk_order`, which carries the listener-walk IL),
+/// pausing and resuming at a Hand or grid choice, so this gate admits every
+/// one of them. A body the engine cannot run where the walk reaches it (on a
+/// combat an earlier relic of the walk ended) refuses there, by the body's
+/// name.
 ///
-/// * **Choices Paradox, then Bellows.**
-///   `ChoicesParadox/<AfterPlayerTurnStart>d__6::MoveNext` (v0.111.0 RVA
-///   `0x321b0c`) acts on `TurnNumber == 1` (`IL_0045`-`IL_004b`), offers a
-///   `CardFactory::GetDistinctForCombat` grid (`IL_00b3`,
-///   `CardSelectCmd::FromSimpleGrid` at `IL_0144`) and adds the pick to the
-///   Hand (`CardPileCmd::AddGeneratedCardToCombat`, `IL_01d0`).
-///   `Bellows::AfterPlayerTurnStart` (RVA `0x906dc`, synchronous) gates
-///   `player == Owner` (`IL_000c`-`IL_0013`) and `TurnNumber <= 1`
-///   (`IL_001c`-`IL_002c`), then calls `CardCmd::Upgrade` on the whole Hand
-///   (`IL_003a`-`IL_004c`). So Bellows upgrades the Paradox card exactly when
-///   it runs second, and the two do not commute. The fixed suffix runs Choices
-///   Paradox first, so an inventory recording every Choices Paradox before
-///   every Bellows is exact and admitted. The reverse, or an unvouched
-///   inventory, still refuses by this name. (At the Paradox pause,
-///   `engine::relics::after_player_turn_start_pause_order_is_native` would
-///   refuse the reverse as well; refusing it here names it at the opening.)
-/// * **Festive Popper and Toasty Mittens, in either order.** These do not
-///   commute either (`engine::relics::festive_popper_precedes_toasty_mittens`
-///   carries the IL), but the engine now runs Popper on its recorded side of
-///   Toasty, so a vouched inventory is exact both ways. An unvouched one
-///   refuses.
-/// * **Festive Popper and Gambling Chip, in either order.** The same shape:
-///   Chip pauses on a discard choice
-///   (`GamblingChip/<AfterPlayerTurnStart>d__2::MoveNext` RVA `0x325788`,
-///   `CardSelectCmd::FromHandForDiscard` at `IL_0071`), and the engine runs
-///   Popper on its recorded side of that pause
-///   (`engine::relics::festive_popper_precedes_gambling_chip` carries the IL).
-///   An unvouched inventory refuses. Bellows beside Gambling Chip still does.
-///
-/// The exemptions are pair-local. A third peer still refuses by its own rule,
-/// so relaxing one pair never admits a trio the rules above refuse.
+/// That the order is recorded at all: a save and a capture's embedded run
+/// both write `Player.Relics` in list order (`Player::ToSerializable` RVA
+/// `0x116dec`, `get_Relics` at `IL_00ef`, `Select(RelicModel::ToSerializable)`
+/// and `ToList` at `IL_0113`-`IL_0118`, `set_Relics` at `IL_011d`), and that
+/// list is what `CombatState/<IterateHookListeners>d__69::MoveNext` (RVA
+/// `0x3f9720`) walks by ascending index for each player (`IL_00c9`-`IL_00ef`).
+/// A `.run`-only entry (`entry::facts`) carries no such vouch, and for it the
+/// rules above stand.
 ///
 /// The co-ownerships among *other* same-hook relics that #2884 lists
 /// (Gambling Chip or Toasty Mittens beside Mr Struggles) do not run as a
-/// silent fixed order. Both relics pause the walk on a Hand choice, and at that
-/// pause `engine::relics::after_player_turn_start_pause_order_is_native`
-/// requires a vouched inventory that agrees with this engine's order for every
-/// relic that acts, or it refuses by name (witnessed in `fixture_tests`, in
-/// both orders). Mr Struggles beside Mercury Hourglass is refused by
-/// `engine::admission` (`multiple AfterPlayerTurnStart enemy-damage relics`).
+/// silent fixed order on an unvouched inventory either: both relics pause the
+/// walk on a Hand choice, and at that pause
+/// `engine::relics::after_player_turn_start_pause_order_is_native` refuses by
+/// name when another relic of the hook acts. `engine::admission` carries the
+/// remaining unvouched refusals (two enemy hits, Royal Poison or Emotion Chip
+/// beside one, Bone Tea's and Vexing Puzzlebox's peers).
 /// Bone Tea's charge, the other half of #2884, is seeded from the save in
 /// [`seeded_counters`], so its pass runs in a Rust-built opening exactly as it
 /// does in a loaded document.
 fn after_player_turn_start_peers_are_ordered(
     relics: &BTreeSet<&str>,
-    relics_entering: &[String],
     dispatch_ordered: bool,
 ) -> Result<(), OpeningRefusal> {
+    if dispatch_ordered {
+        return Ok(());
+    }
     const BELLOWS: &str = "RELIC.BELLOWS";
     const POPPER: &str = "RELIC.FESTIVE_POPPER";
     const CHOICES_PARADOX: &str = "RELIC.CHOICES_PARADOX";
     const TOASTY_MITTENS: &str = "RELIC.TOASTY_MITTENS";
     const GAMBLING_CHIP: &str = "RELIC.GAMBLING_CHIP";
+    const VEXING_PUZZLEBOX: &str = "RELIC.VEXING_PUZZLEBOX";
+    const MERCURY_HOURGLASS: &str = "RELIC.MERCURY_HOURGLASS";
     // Refused beside either body.
     const ORDER_OBSERVABLE_PEERS: [&str; 4] = [
         CHOICES_PARADOX,
         GAMBLING_CHIP,
         TOASTY_MITTENS,
-        "RELIC.VEXING_PUZZLEBOX",
+        VEXING_PUZZLEBOX,
     ];
     // Refused beside Popper only.
     const POPPER_ONLY_PEERS: [&str; 4] = [
         "RELIC.BONE_TEA",
-        "RELIC.MERCURY_HOURGLASS",
+        MERCURY_HOURGLASS,
         "RELIC.MR_STRUGGLES",
         "RELIC.ROYAL_POISON",
     ];
-    let precedes = |first: &str, second: &str| {
-        let positions = |relic: &str| {
-            relics_entering
-                .iter()
-                .enumerate()
-                .filter(move |(_, owned)| owned.as_str() == relic)
-                .map(|(index, _)| index)
-                .collect::<Vec<_>>()
-        };
-        dispatch_ordered
-            && positions(first)
-                .into_iter()
-                .max()
-                .zip(positions(second).into_iter().min())
-                .is_some_and(|(last_first, first_second)| last_first < first_second)
-    };
-    // The pairs whose order the save records and this engine then follows.
-    let recorded = |owner: &str, peer: &str| match (owner, peer) {
-        (BELLOWS, CHOICES_PARADOX) => precedes(CHOICES_PARADOX, BELLOWS),
-        (POPPER, TOASTY_MITTENS | GAMBLING_CHIP) => dispatch_ordered,
-        _ => false,
-    };
     for owner in [POPPER, BELLOWS] {
         if !relics.contains(owner) {
             continue;
@@ -3933,7 +4876,7 @@ fn after_player_turn_start_peers_are_ordered(
                 .iter()
                 .copied(),
             )
-            .filter(|peer| relics.contains(peer) && !recorded(owner, peer))
+            .filter(|peer| relics.contains(peer))
             .map(ToString::to_string)
             .collect();
         if !peers.is_empty() {
@@ -3944,76 +4887,49 @@ fn after_player_turn_start_peers_are_ordered(
 }
 
 /// The same-`AfterSideTurnStart` co-ownerships whose order around Fencing
-/// Manual's turn-one Forge is observable (#3090).
+/// Manual's turn-one Forge is observable on an unvouched inventory (#3090).
 ///
 /// Native runs the relic listeners of this hook in `Player.Relics` order
-/// (`CombatState::IterateHookListeners` `0x137409`); this port runs
-/// `engine::relics::fencing_manual_after_side_turn_start` at a fixed position
-/// in the late relic group, after the whole early group
-/// (`engine::relics::after_side_turn_start`) and the compiled template pass.
-/// The Forge writes the Hand (a generated L0 Sovereign Blade appended at its
-/// bottom, with the next card uid and a generated-card history tick) and
-/// nothing else a peer reads, so the peers that make the order observable are
-/// the other turn-one Hand generators of the same hook:
+/// (`CombatState::IterateHookListeners` `0x137409`), and so does
+/// `engine::relics::after_side_turn_start` on a vouched inventory (#3635),
+/// which this gate passes: the native harness puts the Sovereign Blade ahead
+/// of Crossbow's card and of Orange Dough's two when Fencing Manual is
+/// granted first, and behind them when it is granted second.
 ///
-/// * `RELIC.ORANGE_DOUGH` — two generated cards into Hand, in the **early**
-///   group. Dough-then-Blade and Blade-then-Dough give different Hand orders
-///   and uids. The fixed order is Dough first, which is native exactly when
-///   the inventory is vouched for as dispatch order
-///   (`relics_entering_dispatch_ordered`) and every Orange Dough precedes
-///   every Fencing Manual in it. That is admitted — it is every Fencing
-///   Manual fight in the corpus (UE7YGG9XC3ZB holds Orange Dough at index 3
-///   and Fencing Manual at 9) — and every other case refuses.
-/// * `RELIC.CROSSBOW` and `RELIC.BIG_HAT` — likewise early-group Hand
-///   generators, refused at any order. `engine::admission` already refuses
-///   Fencing Manual beside either (`Crossbow AfterSideTurnStart acquisition
-///   order`, Big Hat's same-hook list), and the engine refuses Big Hat for a
-///   non-Ironclad owner, while Fencing Manual is in `RegentRelicPool` only
-///   (`Relic<FencingManual>` at its `IL_001c`, and in no other pool). Since
-///   #2970 Crossbow draws any owner's pool, a Regent's included, so this
-///   refusal and admission's are what keep a Crossbow + Fencing Manual pair
-///   closed; both are spelled so that no widening can silently open it.
+/// On an unvouched inventory the Forge
+/// (`engine::relics::fencing_manual_after_side_turn_start`) runs at a fixed
+/// position in the late relic group, after the whole early group and the
+/// compiled templates. The Forge writes the Hand (a generated L0 Sovereign
+/// Blade appended at its bottom, with the next card uid and a generated-card
+/// history tick) and nothing else a peer reads, so the peers that make the
+/// order observable are the other turn-one Hand generators of the same hook,
+/// `RELIC.ORANGE_DOUGH` and `RELIC.CROSSBOW` (Blade-then-card and
+/// card-then-Blade give different Hand orders and uids), and
+/// `RELIC.INFUSED_CORE`, whose turn-one Lightning channel the oracle refused
+/// beside Fencing Manual (`engine::admission`'s `Fencing Manual + Infused
+/// Core turn-start order`).
 ///
-/// and `RELIC.INFUSED_CORE`, whose turn-one Lightning channel the oracle
-/// refused beside Fencing Manual (`engine::admission`'s `Fencing Manual +
-/// Infused Core turn-start order`). It is gated above by
-/// [`TURN_ONE_ORB_RELICS`] today and is spelled for the same reason.
+/// Big Hat is not on the list: its admitted owner is a fully-unlocked
+/// Ironclad, whose Ethereal pool is empty, so its body writes nothing
+/// (`engine::relics::after_side_turn_start_body`), and every other owner
+/// refuses in that body by name.
 ///
 /// Every other represented same-hook listener writes energy, gold, Strength,
 /// an orb or a pet, none of which the Forge reads or writes, so those orders
 /// commute. Placed with the other ownership-only decisions.
 fn fencing_manual_turn_start_peers_are_ordered(
     relics: &BTreeSet<&str>,
-    relics_entering: &[String],
     dispatch_ordered: bool,
 ) -> Result<(), OpeningRefusal> {
     const FENCING_MANUAL: &str = "RELIC.FENCING_MANUAL";
-    const ORANGE_DOUGH: &str = "RELIC.ORANGE_DOUGH";
-    const ORDER_OBSERVABLE_PEERS: [&str; 4] = [
-        "RELIC.BIG_HAT",
-        "RELIC.CROSSBOW",
-        "RELIC.INFUSED_CORE",
-        ORANGE_DOUGH,
-    ];
-    if !relics.contains(FENCING_MANUAL) {
+    const ORDER_OBSERVABLE_PEERS: [&str; 3] =
+        ["RELIC.CROSSBOW", "RELIC.INFUSED_CORE", "RELIC.ORANGE_DOUGH"];
+    if dispatch_ordered || !relics.contains(FENCING_MANUAL) {
         return Ok(());
     }
-    let positions = |relic: &'static str| {
-        relics_entering
-            .iter()
-            .enumerate()
-            .filter(move |(_, owned)| owned.as_str() == relic)
-            .map(|(index, _)| index)
-    };
-    let dough_runs_first = dispatch_ordered
-        && positions(ORANGE_DOUGH)
-            .max()
-            .zip(positions(FENCING_MANUAL).min())
-            .is_some_and(|(last_dough, first_manual)| last_dough < first_manual);
     let peers: Vec<&str> = ORDER_OBSERVABLE_PEERS
         .into_iter()
         .filter(|peer| relics.contains(peer))
-        .filter(|peer| !(*peer == ORANGE_DOUGH && dough_runs_first))
         .collect();
     if peers.is_empty() {
         return Ok(());
@@ -4025,8 +4941,8 @@ fn fencing_manual_turn_start_peers_are_ordered(
             .collect(),
         reason: "the turn-1 AfterSideTurnStart order of Fencing Manual's Forge \
                  against a same-hook Hand generator (or Infused Core) is \
-                 observable, and the recorded relic order does not place it \
-                 where this port's fixed listener order runs it",
+                 observable, and the relic order is not recorded as dispatch \
+                 order",
     })
 }
 
@@ -4264,6 +5180,28 @@ fn pre_hook_document(
     // `boundary_unrepresentable`.
     if relics.contains("RELIC.SOZU") {
         player.insert("sozu".to_string(), Value::Bool(true));
+    }
+    // Belt Buckle's ownership flag on the belt (#3617), which every Buckle
+    // body in `engine::potions` reads. Its latch, `belt_buckle_applied`, is
+    // not seeded: `BeforeCombatStart` clears it and then sets it itself on an
+    // empty belt (`engine::potions::belt_buckle_before_combat_start`).
+    if relics.contains("RELIC.BELT_BUCKLE") {
+        player.insert("belt_buckle".to_string(), Value::Bool(true));
+    }
+    // Fur Coat in a room its saved marks hold (#3634): the flag both of its
+    // combat bodies read. An unmarked room leaves it at its false default,
+    // and an unprovable membership refused in the body gate above.
+    if relics.contains("RELIC.FUR_COAT") && entry.relic_entry.fur_coat_active == Some(true) {
+        player.insert("fur_coat_active".to_string(), Value::Bool(true));
+    }
+    if booming_conch_elite(entry, relics) {
+        player.insert("booming_conch_elite".to_string(), Value::Bool(true));
+    }
+    // The Murderous run modifier (#3934): the flag its room-entry body
+    // ([`murderous_after_room_entered`]) and the engine's enemy-add listener
+    // read. Absent, it stays at its false default.
+    if entry.murderous {
+        player.insert("murderous".to_string(), Value::Bool(true));
     }
     // The dense compatibility mirror (`combat_sim._sync_potion_belt_mirrors`).
     // It goes through the same [`potion_identity`] strip as the authoritative
@@ -4535,7 +5473,9 @@ fn pre_hook_document(
     // the shuffled order (each card carrying the uid it was just stamped with)
     // and the engine applies the fixup after those relics. See
     // [`defers_turn_one_fixup`].
-    if defers_turn_one_fixup(relics, hopper) && !is_identity_order(&fixup_order) {
+    if defers_turn_one_fixup(relics, hopper, tea_of_discourtesy_charged(entry))
+        && !is_identity_order(&fixup_order)
+    {
         let mut shuffled: Vec<Option<CanonicalCardV2>> = vec![None; draw.len()];
         for (card, &index) in draw.drain(..).zip(&fixup_order) {
             shuffled[index] = Some(card);
@@ -4709,10 +5649,11 @@ fn normalized_card_pool_epochs(entry: &EntryDocument) -> Option<Vec<String>> {
 /// for the two characters whose Entropy pool the oracle carries.
 ///
 /// The field has no native counterpart. What it certifies is read off its
-/// consumers. Two require it to EQUAL `ironclad`: Infernal Blade
-/// (`steps::ironclad_uncommon::infernal_blade_exact` and its admission twin),
-/// which shuffles the frozen fully-unlocked Ironclad attack pool, and Big Hat's
-/// admission gate. Every other reader only refuses a value that CONTRADICTS
+/// consumers. Two require it to EQUAL `ironclad`: an Ironclad owner's Infernal
+/// Blade (`steps::ironclad_uncommon::infernal_blade_exact` and its admission
+/// twin), which shuffles the frozen fully-unlocked Ironclad attack pool, and
+/// Big Hat's admission gate. (Another owner's Infernal Blade is one of the
+/// "every other reader" group since #3816.) Every other reader only refuses a value that CONTRADICTS
 /// `reward_card_pool` (`engine::cards::owner_pool_generation_provenance_is_exact`
 /// and the #3122 Colorless twins), so for a Regent the field adds no input.
 /// The certificate is therefore "this owner's own pool is fully revealed".
@@ -5077,20 +6018,31 @@ fn is_identity_order(order: &[usize]) -> bool {
 /// * Jeweled Mask's `NextItem` (`JeweledMask/<BeforeHandDraw>d__2::MoveNext`
 ///   `0x3272f4` IL_00ce-IL_00e4) indexes the Draw Powers in shuffled order.
 ///
-/// Thieving Hopper, Ghost Seed and Tea of Discourtesy owners keep the
+/// A charged Tea of Discourtesy is a fourth writer, one hook earlier (#3756):
+/// `TeaOfDiscourtesy/<BeforeCombatStart>d__16::MoveNext` (`0x3324dc`
+/// IL_002c-IL_0053) inserts its two Dazed at combat start, before
+/// `SetupPlayerTurn` runs at all, so its indexes are drawn against the
+/// shuffled pile too.
+///
+/// Thieving Hopper, Ghost Seed and spent Tea of Discourtesy owners keep the
 /// build-time fixup: their uid stamping has its own contract
 /// ([`stamp_card_identities`]), and the corpus has none beside these relics.
-fn defers_turn_one_fixup(relics: &BTreeSet<&str>, hopper: bool) -> bool {
-    !hopper
-        && !relics.contains(GHOST_SEED)
-        && !relics.contains(TEA_OF_DISCOURTESY)
-        && [
-            "RELIC.FUNERARY_MASK",
-            "RELIC.BLESSED_ANTLER",
-            "RELIC.JEWELED_MASK",
-        ]
-        .into_iter()
-        .any(|relic| relics.contains(relic))
+/// A charged Tea beside any of the others is refused before this is asked
+/// ([`tea_of_discourtesy_combats_left`]).
+fn defers_turn_one_fixup(relics: &BTreeSet<&str>, hopper: bool, tea_charged: bool) -> bool {
+    if hopper || relics.contains(GHOST_SEED) {
+        return false;
+    }
+    if relics.contains(TEA_OF_DISCOURTESY) {
+        return tea_charged;
+    }
+    [
+        "RELIC.FUNERARY_MASK",
+        "RELIC.BLESSED_ANTLER",
+        "RELIC.JEWELED_MASK",
+    ]
+    .into_iter()
+    .any(|relic| relics.contains(relic))
 }
 
 /// `RELIC.GHOST_SEED`: its oracle body allocates physical-card uids
@@ -5128,14 +6080,17 @@ const GHOST_SEED: &str = "RELIC.GHOST_SEED";
 /// `RELIC.TEA_OF_DISCOURTESY`, the other pre-fixup allocator
 /// ([`GHOST_SEED`] lists both).
 ///
-/// A live Tea allocates in the middle of its own two Dazed insertions, which
-/// this opening does not order the oracle's way (the fixup runs here before
-/// the hooks, the oracle's after them (frozen Python `start_combat`, deleted #2827)); every such fight has two
-/// cards beyond the deck after the deal, and the check refuses on the count.
-/// A spent Tea allocates nothing (`if s.tea_discourtesy_combats_left > 0`, `start_combat`), so the oracle numbers the post-fixup pile. Rather than read the
-/// counter, an owner keeps the shuffled stamping and is held to the strict
-/// `0..n-1` order, which it meets exactly when the fixup moved nothing: the
-/// conservative side of that choice is a refusal, never a wrong uid.
+/// A charged Tea inserts its two Dazed at combat start, into the shuffled
+/// pile, and the opening defers the fixup to the engine for it
+/// ([`defers_turn_one_fixup`], #3756): the pile keeps the shuffled stamping,
+/// the deal is checked against the fixed order of those stamps, and the
+/// Dazed take the next two uids ([`pre_deal_allocations`]).
+/// A spent Tea allocates nothing (`if s.tea_discourtesy_combats_left > 0`,
+/// frozen Python `start_combat`, deleted #2827), so the oracle numbered the
+/// post-fixup pile. Rather than restamp, a spent owner keeps the shuffled
+/// stamping and is held to the strict `0..n-1` order, which it meets exactly
+/// when the fixup moved nothing: the conservative side of that choice is a
+/// refusal, never a wrong uid.
 const TEA_OF_DISCOURTESY: &str = "RELIC.TEA_OF_DISCOURTESY";
 
 /// The uids the opening allocates before the deal, and where they land
@@ -5143,10 +6098,8 @@ const TEA_OF_DISCOURTESY: &str = "RELIC.TEA_OF_DISCOURTESY";
 ///
 /// `draw` fresh cards of id `draw_id` are inserted at random Draw positions,
 /// then `hand_head` fresh cards are added at the Hand's bottom, all before the
-/// `fromHandDraw` Draw, so the deal appends after them. The turn-1
-/// `BeforeHandDraw` generators that allocate are mutually refused
-/// ([`refuse_unordered_blessed_antler_peers`],
-/// [`refuse_unordered_hand_draw_card_peers`]), so at most one row is non-zero.
+/// `fromHandDraw` Draw, so the deal appends after them. This is one
+/// generator's form; several in a recorded order are a [`PreDealWalk`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct PreDeal {
     draw: u64,
@@ -5155,6 +6108,159 @@ struct PreDeal {
     /// Whispering Earring's turn-one AutoPre loop ran after the deal
     /// (#3414): see [`check_card_identity_allocation`].
     whispering_earring: bool,
+}
+
+/// One turn-one `BeforeHandDraw` writer the uid check accounts for, in the
+/// order the engine ran it (#3635).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PreDealSegment {
+    /// `count` fresh `id` cards inserted at random Draw positions.
+    Draw { count: u64, id: &'static str },
+    /// `count` fresh cards added at the Hand's bottom, each an `id` when the
+    /// walk names one.
+    Hand {
+        count: u64,
+        id: Option<&'static str>,
+    },
+    /// Jeweled Mask: at most one deck Power lifted from Draw to the Hand's
+    /// bottom. It allocates nothing.
+    DeckPower,
+}
+
+/// Every pre-deal writer of one opening, in walk order ([`pre_deal_walk`]).
+///
+/// Each generating segment takes the next uids past the entering deck, in
+/// this order, and the Hand holds the Hand writers' cards in this order,
+/// behind `deck_head` deck cards an earlier hook put there (Power Cell,
+/// [`power_cell_moved_order`]) and ahead of the deal.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct PreDealWalk {
+    segments: Vec<PreDealSegment>,
+    deck_head: usize,
+    whispering_earring: bool,
+}
+
+impl PreDealWalk {
+    /// The Hand index Jeweled Mask's lifted card sits at: behind
+    /// `deck_head` and every Hand card a segment recorded ahead of it added.
+    /// `None` when Jeweled Mask is not in the walk.
+    fn jeweled_mask_hand_index(&self) -> Option<usize> {
+        let mut index = self.deck_head;
+        for segment in &self.segments {
+            match segment {
+                PreDealSegment::Hand { count, .. } => {
+                    index = index.saturating_add(usize::try_from(*count).unwrap_or(usize::MAX));
+                }
+                PreDealSegment::DeckPower => return Some(index),
+                PreDealSegment::Draw { .. } => {}
+            }
+        }
+        None
+    }
+}
+
+/// One generator's allocations as a walk: its Draw inserts, then its Hand
+/// cards.
+impl From<PreDeal> for PreDealWalk {
+    fn from(pre_deal: PreDeal) -> Self {
+        let mut segments = Vec::new();
+        if pre_deal.draw > 0 {
+            segments.push(PreDealSegment::Draw {
+                count: pre_deal.draw,
+                id: pre_deal.draw_id,
+            });
+        }
+        if pre_deal.hand_head > 0 {
+            segments.push(PreDealSegment::Hand {
+                count: pre_deal.hand_head,
+                id: None,
+            });
+        }
+        Self {
+            segments,
+            deck_head: 0,
+            whispering_earring: pre_deal.whispering_earring,
+        }
+    }
+}
+
+impl From<u64> for PreDealWalk {
+    fn from(draw: u64) -> Self {
+        PreDeal::from(draw).into()
+    }
+}
+
+/// The opening's pre-deal writers in the order the engine ran them (#3635).
+///
+/// The order is `engine::relics::relic_walk_order` over the hook's relics:
+/// the recorded order of a vouched inventory (`Player.Relics`, the order
+/// `Hook/<BeforeHandDraw>d__36::MoveNext` RVA `0x3d2e3c` awaits them in),
+/// else the fixed sequence, where every pair of writers is refused before
+/// this is reached ([`refuse_unordered_hand_draw_card_peers`], Blessed
+/// Antler's and Toolbox's gates). The per-relic counts and their IL are
+/// [`pre_deal_allocations`]'.
+///
+/// Toolbox ends the list: the opening's document is published at its choice,
+/// with only the relics recorded ahead of it run. Its own card is added on
+/// resume, outside the opening.
+///
+/// A charged Tea of Discourtesy is the whole walk: it is refused beside every
+/// other row ([`tea_of_discourtesy_combats_left`]).
+fn pre_deal_walk(relics: &[String], dispatch_ordered: bool, tea_charged: bool) -> PreDealWalk {
+    const FIXED: [&str; 6] = [
+        "RELIC.TOOLBOX",
+        "RELIC.BLESSED_ANTLER",
+        "RELIC.FUNERARY_MASK",
+        "RELIC.NINJA_SCROLL",
+        "RELIC.JEWELED_MASK",
+        "RELIC.RADIANT_PEARL",
+    ];
+    let owns = |id: &str| relics.iter().any(|relic| relic == id);
+    let whispering_earring = owns("RELIC.WHISPERING_EARRING");
+    if tea_charged && owns(TEA_OF_DISCOURTESY) {
+        return PreDealWalk {
+            whispering_earring,
+            ..pre_deal_allocations(relics, tea_charged).into()
+        };
+    }
+    let mut order: Vec<&str> = Vec::new();
+    if dispatch_ordered {
+        for relic in relics {
+            if FIXED.contains(&relic.as_str()) && !order.contains(&relic.as_str()) {
+                order.push(relic.as_str());
+            }
+        }
+    } else {
+        order.extend(FIXED.into_iter().filter(|relic| owns(relic)));
+    }
+    let mut segments = Vec::new();
+    for relic in order {
+        segments.push(match relic {
+            "RELIC.TOOLBOX" => break,
+            "RELIC.BLESSED_ANTLER" => PreDealSegment::Draw {
+                count: BLESSED_ANTLER_DAZED,
+                id: "DAZED",
+            },
+            "RELIC.FUNERARY_MASK" => PreDealSegment::Draw {
+                count: FUNERARY_MASK_SOULS,
+                id: "SOUL",
+            },
+            "RELIC.NINJA_SCROLL" => PreDealSegment::Hand {
+                count: NINJA_SCROLL_SHIVS,
+                id: Some("SHIV"),
+            },
+            "RELIC.RADIANT_PEARL" => PreDealSegment::Hand {
+                count: RADIANT_PEARL_LUMINESCE,
+                id: Some("LUMINESCE"),
+            },
+            _ => PreDealSegment::DeckPower,
+        });
+    }
+    PreDealWalk {
+        segments,
+        deck_head: 0,
+        whispering_earring,
+    }
 }
 
 /// A bare count is Blessed Antler's form: that many Dazed into Draw.
@@ -5185,11 +6291,29 @@ impl From<u64> for PreDeal {
 ///   `0x99f9e`, `ldc.i4.1` at `IL_0001`), one `Luminesce` created at
 ///   `IL_0055`-`IL_006c` and added by `AddGeneratedCardsToCombat(list, Hand,
 ///   Owner, …)` at `IL_008d`-`IL_0096`, before the deal, so it heads the Hand.
+/// * Ninja Scroll (#3619): three Shivs (`NinjaScroll::get_CanonicalVars`
+///   `0x97752`) through `Shiv::CreateInHand`'s one plural
+///   `AddGeneratedCardsToCombat(list, Hand, …)`
+///   (`Shiv/<CreateInHand>d__12::MoveNext` `0x3bb20c` `IL_0081`-`IL_0093`),
+///   before the deal, so the three head the Hand in creation order.
 ///
-/// Every other pre-deal generator is still refused by a gate table.
-fn pre_deal_allocations(relics: &[String]) -> PreDeal {
+/// This returns the one row of an inventory that owns one. An inventory that
+/// owns several reaches the check only when vouched, through
+/// [`pre_deal_walk`], which lists them in recorded order.
+///
+/// A charged Tea of Discourtesy's two Dazed (#3756) are the one row that is
+/// not ownership alone: `tea_charged`. They are generated a hook earlier
+/// (`BeforeCombatStart`), and a charged Tea beside any other row here is
+/// refused ([`tea_of_discourtesy_combats_left`]).
+fn pre_deal_allocations(relics: &[String], tea_charged: bool) -> PreDeal {
     let owns = |id: &str| relics.iter().any(|relic| relic == id);
-    let pre_deal = if owns("RELIC.BLESSED_ANTLER") {
+    let pre_deal = if tea_charged && owns(TEA_OF_DISCOURTESY) {
+        PreDeal {
+            draw: crate::engine::relics::TEA_OF_DISCOURTESY_DAZED as u64,
+            draw_id: "DAZED",
+            ..PreDeal::default()
+        }
+    } else if owns("RELIC.BLESSED_ANTLER") {
         PreDeal::from(BLESSED_ANTLER_DAZED)
     } else if owns("RELIC.FUNERARY_MASK") {
         PreDeal {
@@ -5200,6 +6324,11 @@ fn pre_deal_allocations(relics: &[String]) -> PreDeal {
     } else if owns("RELIC.RADIANT_PEARL") {
         PreDeal {
             hand_head: RADIANT_PEARL_LUMINESCE,
+            ..PreDeal::default()
+        }
+    } else if owns("RELIC.NINJA_SCROLL") {
+        PreDeal {
+            hand_head: NINJA_SCROLL_SHIVS,
             ..PreDeal::default()
         }
     } else {
@@ -5221,6 +6350,9 @@ const FUNERARY_MASK_SOULS: u64 = 3;
 /// Radiant Pearl's `CardsVar` (`0x99f9e` `IL_0001` `ldc.i4.1`).
 const RADIANT_PEARL_LUMINESCE: u64 = 1;
 
+/// Ninja Scroll's `"Shivs"` var (`0x97752` `IL_0006` `ldc.i4.3`).
+const NINJA_SCROLL_SHIVS: u64 = 3;
+
 /// The `hand ++ draw` uid order after Jeweled Mask's pre-deal move (#3162).
 ///
 /// `engine::relics::jeweled_mask_before_hand_draw` moves one deck Power from
@@ -5230,33 +6362,167 @@ const RADIANT_PEARL_LUMINESCE: u64 = 1;
 /// deal is a prefix draw of the pile with that card removed, appended after
 /// it. The check's premise then holds for `[moved] ++ (expected - moved)`.
 ///
-/// The moved card is read off the document: the Hand's first card, when it
-/// is a deck uid and a Power. When nothing moved (no Power in Draw), the Hand
-/// head is the prefix draw's first card, `expected[0]`, and the reorder is the
-/// identity, so this never widens what the check admits past one Power
-/// lifted from anywhere in the pile to the Hand's head.
-fn jeweled_mask_moved_order(
+/// The moved card is read off the document: the Hand's card at `hand_index`,
+/// when it is a deck uid and a Power. Alone, that is the Hand's first card.
+/// When nothing moved (no Power in Draw), that card is the prefix draw's
+/// first, already at its place, and the reorder is the identity, so this
+/// never widens what the check admits past one Power lifted from anywhere in
+/// the pile to that place.
+///
+/// Beside other pre-deal writers (#3635) `hand_index` is the card's place
+/// behind what the writers recorded ahead of Jeweled Mask put in the Hand
+/// ([`PreDealWalk::jeweled_mask_hand_index`]), and it moves to `deck_index`
+/// of the order, behind the deck cards an earlier hook lifted (Power Cell).
+/// A lifted card is only ever taken from a later place in the order, so a
+/// card already ahead of `deck_index` is left alone.
+fn jeweled_mask_moved_order_at(
     document: &CanonicalStateV2,
     expected: Vec<Option<u64>>,
     relics: &[String],
+    hand_index: Option<usize>,
+    deck_index: usize,
 ) -> Vec<Option<u64>> {
     if !relics.iter().any(|relic| relic == "RELIC.JEWELED_MASK") {
         return expected;
     }
-    let Some(head) = document.piles.get("hand").and_then(|hand| hand.first()) else {
+    let Some(head) = hand_index.and_then(|index| document.piles.get("hand")?.get(index)) else {
         return expected;
     };
     let is_power = canonical_card_row(head).is_some_and(|row| row.is_power);
     let Some(position) = expected.iter().position(|uid| *uid == head.uid) else {
         return expected;
     };
-    if !is_power {
+    if !is_power || position < deck_index {
         return expected;
     }
     let mut reordered = expected;
     let moved = reordered.remove(position);
-    reordered.insert(0, moved);
+    reordered.insert(deck_index, moved);
     reordered
+}
+
+/// [`jeweled_mask_moved_order_at`] for Jeweled Mask as the only pre-deal
+/// writer: the Hand's first card, to the head of the order.
+#[cfg(test)]
+fn jeweled_mask_moved_order(
+    document: &CanonicalStateV2,
+    expected: Vec<Option<u64>>,
+    relics: &[String],
+) -> Vec<Option<u64>> {
+    jeweled_mask_moved_order_at(document, expected, relics, Some(0), 0)
+}
+
+/// `PowerCell`'s `CardsVar`: `get_CanonicalVars` (v0.111.0 RVA `0x99b46`) is
+/// `ldc.i4.2; newobj CardsVar` at `IL_0001`-`IL_0002`.
+const POWER_CELL_CARDS: usize = 2;
+
+/// The `hand ++ draw` uid order after Power Cell's pre-deal move (#3767).
+///
+/// `PowerCell/<BeforeSideTurnStart>d__4::MoveNext` (v0.111.0 RVA `0x32e780`):
+/// owner-participates at `IL_0020`-`IL_0036`, `TurnNumber <= 1` at
+/// `IL_003d`-`IL_004e`, then the Draw pile's cards (`IL_005b`-`IL_0067`)
+/// filtered by `<>c::<BeforeSideTurnStart>b__4_0` (`0x32e75e`: not `CostsX`,
+/// and `EnergyCost.GetWithModifiers(…) == 0`), `StableShuffle`d on
+/// `CombatCardSelection` (`IL_0095`-`IL_00aa`), the first `DynamicVars.Cards`
+/// taken (`IL_00af`-`IL_00bf`, [`POWER_CELL_CARDS`]) and
+/// `CardPileCmd::Add(cards, Hand, Bottom, …)` (`IL_00c6`-`IL_00ca`). The body
+/// is `engine::relics::power_cell_before_side_turn_start`.
+///
+/// So up to two **deck** cards leave Draw, from anywhere in it, for the
+/// Hand's head, keeping their uids, before the hand draw. The deal is then a
+/// prefix draw of what is left. That is Jeweled Mask's shape
+/// ([`jeweled_mask_moved_order_at`]) with up to two cards, so
+/// [`check_card_identity_allocation`]'s premise holds for `moved ++ (expected
+/// - moved)`.
+///
+/// The moved cards are read off the document: the Hand's leading cards, at
+/// most two, each a deck uid whose row costs zero and is not X. A leading
+/// card already at its expected place is left alone (nothing moved it, or
+/// the move and the deal agree). A leading card that is out of place and not
+/// free is no Power Cell move, so the reorder stops and the check refuses as
+/// before. This never widens what the check admits past two free cards
+/// lifted to the Hand's head, and every consumer of the root still matches
+/// each deck uid against the capture's recorded deck
+/// (`eval_suite._dealt_uids`, which reads a Power Cell root in uid order).
+///
+/// Two cases refuse rather than reorder:
+///
+/// * another pre-deal mover or generator is owned
+///   ([`pre_deal_allocations`] is not the default, or Jeweled Mask): the
+///   Hand's head is then shared, and nothing here says in which order;
+/// * a moved card is Innate while the turn-one draw was clamped up to the
+///   Innate count. Native clamps to the Innate cards the pile fixup moved
+///   (`CombatManager/<SetupPlayerTurn>d__102` `0x3f6c6c` IL_038b-IL_0395),
+///   which no longer include a card Power Cell took, while this crate clamps
+///   to the root's `innate_min_draw`, which does.
+fn power_cell_moved_order(
+    document: &CanonicalStateV2,
+    expected: Vec<Option<u64>>,
+    relics: &[String],
+) -> Result<(Vec<Option<u64>>, usize), OpeningRefusal> {
+    let owns = |id: &str| relics.iter().any(|relic| relic == id);
+    if !owns("RELIC.POWER_CELL") {
+        return Ok((expected, 0));
+    }
+    let diverged = |detail: String| OpeningRefusal::CardIdentityAllocationDiverged { detail };
+    let empty = Vec::new();
+    let hand = document.piles.get("hand").unwrap_or(&empty);
+    let mut reordered = expected;
+    let mut moved: Vec<&CanonicalCardV2> = Vec::new();
+    for (index, card) in hand.iter().take(POWER_CELL_CARDS).enumerate() {
+        let Some(position) = reordered.iter().position(|uid| *uid == card.uid) else {
+            break;
+        };
+        if position == index {
+            continue;
+        }
+        let free = canonical_card_row(card).is_some_and(|row| row.cost == 0 && !row.x_cost);
+        if !free || position < index {
+            break;
+        }
+        let uid = reordered.remove(position);
+        reordered.insert(index, uid);
+        moved.push(card);
+    }
+    if moved.is_empty() {
+        return Ok((reordered, 0));
+    }
+    // A charged Tea of Discourtesy is refused beside Power Cell before the
+    // deal ([`tea_of_discourtesy_combats_left`]).
+    if owns("RELIC.WHISPERING_EARRING") {
+        return Err(diverged(
+            "RELIC.POWER_CELL moved a card to the Hand before the deal beside Whispering \
+             Earring's turn-one loop, and the Hand's head after that loop is not modeled"
+                .to_string(),
+        ));
+    }
+    let innate_min_draw = document
+        .player
+        .get("innate_min_draw")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let moved_innate = moved
+        .iter()
+        .any(|card| canonical_card_row(card).is_some_and(|row| row.innate));
+    let deck = reordered.len() as u64;
+    // Jeweled Mask's lifted Power is a deck card in the Hand that was not
+    // dealt either; taking one off whenever the Mask is owned keeps the
+    // clamp test on the refusing side.
+    let lifted = moved.len() as u64 + u64::from(owns("RELIC.JEWELED_MASK"));
+    let dealt = (hand
+        .iter()
+        .filter(|card| card.uid.is_some_and(|uid| uid < deck))
+        .count() as u64)
+        .saturating_sub(lifted);
+    if moved_innate && innate_min_draw >= dealt {
+        return Err(diverged(format!(
+            "RELIC.POWER_CELL took an Innate card before the deal and the turn-one draw \
+             ({dealt}) is the Innate clamp ({innate_min_draw}), which native takes over the \
+             Innate cards still in Draw"
+        )));
+    }
+    let count = moved.len();
+    Ok((reordered, count))
 }
 
 /// Stamp physical-card uids in the order the oracle allocates them.
@@ -6116,8 +7382,12 @@ fn monster_entity((index, spec): (usize, &MonsterSpec)) -> CanonicalEntityV2 {
 /// Hand in allocation order and may themselves be played later in the loop.
 /// A child may also put a card back on Draw's top (Cosmic Indifference's
 /// Discard pick, Glimmer's Hand pick), and a played Power leaves every pile.
-/// So a fresh uid may sit anywhere in Hand, in allocation order, and is set
-/// aside, and what is left of `hand ++ draw` must be distinct uids of the
+/// So a fresh uid may sit anywhere in Hand and is set aside. Their order is
+/// not compared either (#3756): a child can move a generated card after
+/// later ones exist (Summon Forth returns an earlier Sovereign Blade to the
+/// Hand's end), and a pre-deal Hand card (Radiant Pearl's Luminesce) is a
+/// live Hand card the loop may itself play, so it counts as fresh here and
+/// need not head the Hand. Each fresh uid may appear once. What is left of `hand ++ draw` must be distinct uids of the
 /// dealt allocation ([`without_auto_played`]); its order is not compared.
 /// That premise is instead checked card by card downstream, where every
 /// consumer of the root matches each deck uid's identity against the
@@ -6127,12 +7397,11 @@ fn monster_entity((index, spec): (usize, &MonsterSpec)) -> CanonicalEntityV2 {
 fn check_card_identity_allocation(
     document: &CanonicalStateV2,
     expected: &[Option<u64>],
-    pre_deal: impl Into<PreDeal>,
+    pre_deal: impl Into<PreDealWalk>,
 ) -> Result<(), OpeningRefusal> {
-    let PreDeal {
-        draw: pre_deal,
-        draw_id,
-        hand_head,
+    let PreDealWalk {
+        segments,
+        deck_head,
         whispering_earring,
     } = pre_deal.into();
     let empty = Vec::new();
@@ -6142,15 +7411,37 @@ fn check_card_identity_allocation(
         .get("next_card_uid")
         .and_then(Value::as_u64)
         .unwrap_or(deck);
-    let inserted = deck..deck.saturating_add(pre_deal);
-    if pre_deal > 0 {
+    // Each generating segment takes the next uids past the deck, in walk
+    // order (#3635).
+    let mut cursor = deck;
+    let plan: Vec<(PreDealSegment, std::ops::Range<u64>)> = segments
+        .iter()
+        .map(|segment| {
+            let count = match segment {
+                PreDealSegment::Draw { count, .. } | PreDealSegment::Hand { count, .. } => *count,
+                PreDealSegment::DeckPower => 0,
+            };
+            let range = cursor..cursor.saturating_add(count);
+            cursor = range.end;
+            (*segment, range)
+        })
+        .collect();
+    let after_deal = cursor;
+    for (segment, inserted) in &plan {
+        let PreDealSegment::Draw {
+            count: pre_deal,
+            id: draw_id,
+        } = segment
+        else {
+            continue;
+        };
         let found: Vec<u64> = document
             .piles
             .get("hand")
             .unwrap_or(&empty)
             .iter()
             .chain(document.piles.get("draw").unwrap_or(&empty))
-            .filter(|card| card.id == draw_id)
+            .filter(|card| card.id == *draw_id)
             .filter_map(|card| card.uid)
             .filter(|uid| inserted.contains(uid))
             .collect();
@@ -6165,7 +7456,17 @@ fn check_card_identity_allocation(
             });
         }
     }
-    let keep = |card: &&CanonicalCardV2| !card.uid.is_some_and(|uid| inserted.contains(&uid));
+    let draw_inserted = |uid: u64| {
+        plan.iter().any(|(segment, range)| {
+            matches!(segment, PreDealSegment::Draw { .. }) && range.contains(&uid)
+        })
+    };
+    let hand_generated = |uid: u64| {
+        plan.iter().any(|(segment, range)| {
+            matches!(segment, PreDealSegment::Hand { .. }) && range.contains(&uid)
+        })
+    };
+    let keep = |card: &&CanonicalCardV2| !card.uid.is_some_and(draw_inserted);
     let mut hand: Vec<&CanonicalCardV2> = document
         .piles
         .get("hand")
@@ -6173,25 +7474,78 @@ fn check_card_identity_allocation(
         .iter()
         .filter(keep)
         .collect();
-    // The pre-deal Hand-head allocations (Radiant Pearl's Luminesce): the next
-    // `hand_head` uids, in allocation order, ahead of every dealt card.
-    let head_range = inserted.end..inserted.end.saturating_add(hand_head);
-    if hand_head > 0 {
-        let head: Vec<Option<u64>> = hand
-            .iter()
-            .take(usize::try_from(hand_head).unwrap_or(usize::MAX))
-            .map(|card| card.uid)
-            .collect();
-        let allocated: Vec<Option<u64>> = head_range.clone().map(Some).collect();
-        if next < head_range.end || head != allocated {
-            return Err(OpeningRefusal::CardIdentityAllocationDiverged {
-                detail: format!(
-                    "the {hand_head} card(s) generated into Hand before the deal should head \
-                     it with uids {allocated:?}, found {head:?} (next_card_uid {next})"
-                ),
-            });
+    // The pre-deal Hand allocations (Ninja Scroll's Shivs, Radiant Pearl's
+    // Luminesce): each segment's uids, in allocation order, at its place in
+    // the walk, behind the `deck_head` cards an earlier hook lifted and ahead
+    // of every dealt card. Jeweled Mask's lifted deck card sits among them at
+    // its own place and stays in the Hand for the order check below.
+    //
+    // Under Whispering Earring the loop may AutoPlay a pre-deal Hand card
+    // itself (it is a live Hand card like any other), or play cards around
+    // it, so it need not head the Hand or be in it at all (#3756). Its uids
+    // are then set aside with the loop's own allocations below; only the
+    // allocator's high-water mark is still checked here.
+    if whispering_earring {
+        for (segment, head_range) in &plan {
+            let PreDealSegment::Hand {
+                count: hand_head, ..
+            } = segment
+            else {
+                continue;
+            };
+            if next < head_range.end {
+                return Err(OpeningRefusal::CardIdentityAllocationDiverged {
+                    detail: format!(
+                        "the {hand_head} card(s) generated into Hand before the deal should \
+                         carry uids {head_range:?}, but next_card_uid is {next}"
+                    ),
+                });
+            }
         }
-        hand.drain(..allocated.len());
+    } else {
+        let mut at = deck_head;
+        for (segment, head_range) in &plan {
+            match segment {
+                PreDealSegment::Draw { .. } => {}
+                PreDealSegment::DeckPower => {
+                    // `jeweled_mask_moved_order_at` put a lifted card at
+                    // `deck_head` of the order; nothing lifted leaves the
+                    // next segment's card (or the deal) here.
+                    let lifted = hand.get(at).is_some_and(|card| {
+                        card.uid.is_some() && expected.get(deck_head) == Some(&card.uid)
+                    });
+                    if lifted {
+                        at += 1;
+                    }
+                }
+                PreDealSegment::Hand {
+                    count: hand_head,
+                    id,
+                } => {
+                    let count = usize::try_from(*hand_head).unwrap_or(usize::MAX);
+                    let head: Vec<Option<u64>> = hand
+                        .iter()
+                        .skip(at)
+                        .take(count)
+                        .map(|card| card.uid)
+                        .collect();
+                    let allocated: Vec<Option<u64>> = head_range.clone().map(Some).collect();
+                    let named = id.is_none_or(|id| {
+                        hand.iter().skip(at).take(count).all(|card| card.id == id)
+                    });
+                    if next < head_range.end || head != allocated || !named {
+                        return Err(OpeningRefusal::CardIdentityAllocationDiverged {
+                            detail: format!(
+                                "the {hand_head} card(s) generated into Hand before the deal \
+                                 should head it with uids {allocated:?}, found {head:?} \
+                                 (next_card_uid {next})"
+                            ),
+                        });
+                    }
+                    hand.drain(at..at + allocated.len());
+                }
+            }
+        }
     }
     let draw: Vec<&CanonicalCardV2> = document
         .piles
@@ -6200,22 +7554,30 @@ fn check_card_identity_allocation(
         .iter()
         .filter(keep)
         .collect();
-    let after_deal = head_range.end;
     let dealt_hand: Vec<&CanonicalCardV2> = if whispering_earring {
+        // Fresh: a pre-deal Hand card (see above) or anything allocated past
+        // the whole pre-deal walk.
         let is_fresh = |card: &CanonicalCardV2| {
             card.uid
-                .is_some_and(|uid| (after_deal..next).contains(&uid))
+                .is_some_and(|uid| hand_generated(uid) || (after_deal..next).contains(&uid))
         };
         let fresh: Vec<u64> = hand
             .iter()
             .filter(|card| is_fresh(card))
             .filter_map(|card| card.uid)
             .collect();
-        if !fresh.is_sorted_by(|a, b| a < b) {
+        // Each fresh uid at most once. Their ORDER is not compared (#3756):
+        // a child can move a generated card after later ones were created
+        // (Summon Forth returns an earlier Sovereign Blade to the Hand's
+        // end), so allocation order is not Hand order.
+        let mut distinct = fresh.clone();
+        distinct.sort_unstable();
+        distinct.dedup();
+        if distinct.len() != fresh.len() {
             return Err(OpeningRefusal::CardIdentityAllocationDiverged {
                 detail: format!(
-                    "the uid(s) allocated past the entering deck are not in allocation \
-                     order in the hand after Whispering Earring's loop: {fresh:?}"
+                    "a uid allocated past the entering deck appears twice in the hand \
+                     after Whispering Earring's loop: {fresh:?}"
                 ),
             });
         }

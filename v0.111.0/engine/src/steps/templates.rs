@@ -184,7 +184,9 @@ enum FanoutOrder {
 ///   `DynamicVars.Damage` (5, IL_024a-0263). Two objects are two AoE hits
 ///   and two +5 growths.
 ///
-/// None of these objects is representable beside the first one here, so the
+/// Orbit and Rolling Boulder now keep a row per later object (#3756:
+/// [`orbit`], [`rolling_boulder`]) and no longer call this. A second
+/// Cacophony is still not representable beside the first one here, so its
 /// application refuses by name instead of summing into the scalar. The gate
 /// sits after the native IsEnding gate (`PowerCmd/<Apply>d__1`1::MoveNext`
 /// RVA `0x3ef988` IL_0020-0034 returns before any object is built), and
@@ -664,22 +666,22 @@ pub(crate) fn blur(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// `engine::play` reads the amount in the early global energy-cost fold after
 /// local modifiers and Tangled, before every absolute-zero late listener.
 ///
-/// #3427: refuses while a Curious is live, the other half of
-/// [`mad_science_curious`]'s listener-order refusal.
+/// #3756: a newly attached BorrowedTimePower goes to the end of the owner's
+/// power list (`Creature::ApplyPowerInternal` RVA `0x11da0c` IL_0063-IL_006f),
+/// so it follows any live Curious; a stack onto a live one keeps its place.
+/// See [`crate::hot::HotFanouts::curious_follows_borrowed_time`].
 pub(crate) fn borrowed_time(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
-    if !crate::engine::damage::damage_combat_is_ending(ctx.state)
-        && ctx.state.powers.value(PowerId::Curious) > 0
-    {
-        return Err(EngineRefusal::MalformedArgs(
-            "Borrowed Time beside Curious energy-cost listener order",
-        ));
-    }
+    let before = ctx.state.powers.value(PowerId::BorrowedTime);
     apply_exact_player_power(
         ctx,
         "borrowed_time",
         PowerId::BorrowedTime,
         &[(CardId::BorrowedTime, 0, 1), (CardId::BorrowedTime, 1, 1)],
-    )
+    )?;
+    if before <= 0 && ctx.state.powers.value(PowerId::BorrowedTime) > 0 {
+        ctx.state.fanouts.set_curious_follows_borrowed_time(false);
+    }
+    Ok(())
 }
 
 /// `("buffer", n)` — negate the next `n` positive HP-loss results.
@@ -953,7 +955,17 @@ pub(crate) fn debilitate(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let target = ctx
         .target
         .ok_or(EngineRefusal::TargetMismatch { required: true })?;
-    if !crate::engine::play::active_card_target_is_current(ctx.state, ctx.source_uid, target) {
+    // #3747: the Apply at `0x3973fc` IL_010d receives the ORIGINAL
+    // `cardPlay.Target` (IL_00e1-IL_00e6). After a lethal hit on a
+    // Stock-bearing Axebot that Creature has left combat and the Apply lands
+    // on nobody; the replacement's fresh uid fails the frozen identity. See
+    // [`stock_replaced_target_is_current`].
+    if !stock_replaced_target_is_current(
+        ctx.state,
+        ctx.source_uid,
+        target,
+        "Debilitate Axebot Stock target identity",
+    )? {
         return Ok(());
     }
     let Some(monster) = ctx.state.monsters.get(target) else {
@@ -964,11 +976,6 @@ pub(crate) fn debilitate(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     }
     if ctx.state.history.over || monster.hp <= 0 {
         return Ok(());
-    }
-    if post_attack_stock_target_identity_is_unrepresentable(ctx.state) {
-        return Err(EngineRefusal::MalformedArgs(
-            "Debilitate Axebot Stock target identity",
-        ));
     }
     apply_card_monster_debuff(
         ctx.state,
@@ -1367,15 +1374,17 @@ pub(crate) fn free_power(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 ///   the type declares no hook but `TryModifyEnergyCostInCombat` (RVA
 ///   `0xa102c`, read by [`crate::engine::play`]'s early cost fold).
 ///
-/// The one refused shape is a Curious beside a live Borrowed Time. Both are
-/// early `TryModifyEnergyCostInCombat` listeners, and `Hook::
+/// Curious beside a live Borrowed Time (#3756). Both are early
+/// `TryModifyEnergyCostInCombat` listeners, and `Hook::
 /// ModifyEnergyCostInCombat` RVA `0x1052f0` folds them in listener order
 /// (IL_001d-IL_0043, each call reading the running value), where Borrowed
 /// Time's `+Amount` (RVA `0x9feb6` IL_001d-IL_002f) and Curious's
 /// "skip at or below zero, else subtract and clamp at zero" do not commute on
-/// a Power card whose cost is below the Curious amount. This crate carries no
-/// order between the two, so either application refuses while the other is
-/// live ([`borrowed_time`] is the other half). The third early listener that
+/// a Power card whose cost is below the Curious amount. The order is the
+/// order of the two attachments, so a Curious first attached while a Borrowed
+/// Time is live follows it, and this step records that in
+/// [`crate::hot::HotFanouts::curious_follows_borrowed_time`]; a stack onto a
+/// live Curious keeps its place. The third early listener that
 /// reads a Power card, `SpikedGauntlets::TryModifyEnergyCostInCombat` RVA
 /// `0x9bd30` (`+1` on the owner's Power cards, IL_0022-IL_0039), is a relic:
 /// `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720` lists a
@@ -1390,19 +1399,18 @@ pub(crate) fn mad_science_curious(ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
     {
         return Err(EngineRefusal::MalformedArgs("mad_science_curious"));
     }
-    if !crate::engine::damage::damage_combat_is_ending(ctx.state)
-        && ctx.state.powers.value(PowerId::BorrowedTime) > 0
-    {
-        return Err(EngineRefusal::MalformedArgs(
-            "Curious beside Borrowed Time energy-cost listener order",
-        ));
-    }
+    let before = ctx.state.powers.value(PowerId::Curious);
     apply_exact_player_power(
         ctx,
         "mad_science_curious",
         PowerId::Curious,
         &[(CardId::MadScience, 0, 1), (CardId::MadScience, 1, 1)],
-    )
+    )?;
+    if before <= 0 && ctx.state.powers.value(PowerId::Curious) > 0 {
+        let follows = ctx.state.powers.value(PowerId::BorrowedTime) > 0;
+        ctx.state.fanouts.set_curious_follows_borrowed_time(follows);
+    }
+    Ok(())
 }
 
 /// `("free_skill", n)` — the next `n` Skill plays cost zero.
@@ -1525,10 +1533,13 @@ pub(crate) fn hello_world(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// recursion data.
 ///
 /// [`crate::engine::draw`] owns the early listener. Admission restricts it to
-/// the finite-enemy, nonselecting-Strike quotient whose complete recursive
-/// direct-AutoPlay chain is synchronous. Reapplication is a no-op: native's
-/// Unique stack type neither replaces the listener nor resets its private
-/// recursion data.
+/// the nonselecting-Strike quotient whose complete recursive direct-AutoPlay
+/// chain is synchronous. Reapplication is a no-op: native's Unique stack type
+/// neither replaces the listener nor resets its private recursion data, which
+/// includes the count of AutoPlays against an all-infinite HP display
+/// (`draw::hellraiser_should_auto_play`, #3929). A first application is a new
+/// power object with a new `Data` (`HellraiserPower::InitInternalData` RVA
+/// `0xa3629`, v0.111.0 SHA-256 `9cb4f1ad…`), so the count starts at zero.
 pub(crate) fn hellraiser(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if !matches!(ctx.args, [CompiledArg::I(1)])
         || !matches!(ctx.spec.identity.id, CardId::Hellraiser)
@@ -1544,6 +1555,8 @@ pub(crate) fn hellraiser(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
             1,
         )?;
         ctx.state.powers.set(PowerId::Hellraiser, SlotWire::Int, 1);
+        let written = ctx.state.fanouts.set_hellraiser_infinite_auto_plays(0);
+        debug_assert!(written);
         crate::engine::damage::note_power(
             ctx.events,
             crate::engine::Subject::Player,
@@ -1682,7 +1695,15 @@ pub(crate) fn knockdown(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let target = ctx
         .target
         .ok_or(EngineRefusal::TargetMismatch { required: true })?;
-    if !crate::engine::play::active_card_target_is_current(ctx.state, ctx.source_uid, target) {
+    // #3747: the Apply at `0x3a8adc` IL_010d receives the ORIGINAL
+    // `cardPlay.Target` (IL_00e1-IL_00e6), which a lethal Stock hit has
+    // removed from combat. See [`stock_replaced_target_is_current`].
+    if !stock_replaced_target_is_current(
+        ctx.state,
+        ctx.source_uid,
+        target,
+        "Knockdown Axebot Stock target identity",
+    )? {
         return Ok(());
     }
     let Some(monster) = ctx.state.monsters.get(target) else {
@@ -1695,11 +1716,6 @@ pub(crate) fn knockdown(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     }
     if crate::engine::damage::damage_combat_is_ending(ctx.state) || monster.hp <= 0 {
         return Ok(());
-    }
-    if post_attack_stock_target_identity_is_unrepresentable(ctx.state) {
-        return Err(EngineRefusal::MalformedArgs(
-            "Knockdown Axebot Stock target identity",
-        ));
     }
     apply_card_knockdown(ctx.state, target, amount, ctx.events)
 }
@@ -1933,11 +1949,6 @@ pub(crate) fn one_two_punch(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> 
 /// application is a new object with its own zeroed `Data` counters. It
 /// refuses by name ([`refuse_second_instanced_object`], #3057).
 pub(crate) fn orbit(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
-    refuse_second_instanced_object(
-        ctx,
-        PowerId::Orbit,
-        &[(CardId::Orbit, 0, 1), (CardId::Orbit, 1, 1)],
-    )?;
     let amount = match ctx.args {
         [CompiledArg::I(1)]
             if matches!(ctx.spec.identity.id, CardId::Orbit)
@@ -1947,6 +1958,38 @@ pub(crate) fn orbit(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         }
         _ => return Err(EngineRefusal::MalformedArgs("orbit")),
     };
+    // #3756: a second application is a second OrbitPower object, not a
+    // stack (`get_InstanceType` RVA `0xa5476` returns 1, so
+    // `PowerCmd::FindExistingInstanceForStacking` RVA `0x1338d8` answers
+    // null at IL_0034). It carries Amount 1 and a zeroed `Data`, and is kept
+    // beside the first object as one more `energySpent` counter. The native
+    // IsEnding gate (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988`
+    // IL_0020-0034) builds no object once the combat is ending. A first
+    // object whose scalar is not the native Amount 1 is not a state any
+    // writer here produces, and a second object beside it refuses.
+    let first = ctx.state.powers.value(PowerId::Orbit);
+    if first > 0 {
+        if crate::engine::damage::damage_combat_is_ending(ctx.state) {
+            return Ok(());
+        }
+        if first != 1 {
+            return Err(EngineRefusal::PowerRestackNotModeled(PowerId::Orbit));
+        }
+        let mut later = ctx.state.orbs.orbit_later_energy_spent().to_vec();
+        later.push(0);
+        let objects = i32::try_from(later.len())
+            .ok()
+            .and_then(|later| later.checked_add(1))
+            .ok_or(EngineRefusal::CounterOverflow("orbit"))?;
+        ctx.state.orbs.set_orbit_later_energy_spent(later);
+        crate::engine::damage::note_power(
+            ctx.events,
+            crate::engine::Subject::Player,
+            PowerId::Orbit,
+            objects,
+        );
+        return Ok(());
+    }
     let updated = ctx
         .state
         .powers
@@ -2327,15 +2370,49 @@ pub(crate) fn retain_hand(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
 /// even when the damage ended combat. Admission refuses all observable
 /// unprojected AfterPlayerTurnStart peer orders.
 ///
-/// A second live RollingBoulderPower object refuses by name
-/// ([`refuse_second_instanced_object`], #3057): native runs its own AoE and
-/// its own +5 growth.
+/// #3756: RollingBoulderPower is Instanced (`get_InstanceType` RVA `0xa6da1`
+/// IL_0001 returns 1), so `FindExistingInstanceForStacking` (RVA `0x1338d8`
+/// IL_0021 -> IL_0034) answers null and a play beside a live object attaches a
+/// SECOND object with this card's amount. It is a row of its own
+/// ([`crate::hot::RollingBoulderLaterInstance`]): the newest power, placed
+/// after every current after-player-turn-start listener, with its own AoE and
+/// its own +5 growth. The native IsEnding gate (`PowerCmd/<Apply>d__1`1::
+/// MoveNext` RVA `0x3ef988` IL_0020-0034) builds no object once the combat
+/// is ending.
+///
+/// One shape still refuses by name: an object attached while this turn's
+/// AfterPlayerTurnStart walk is in flight (a Sly Rolling Boulder discarded by
+/// Tools of the Trade beside a live one). Native's walk runs the listeners it
+/// captured at its start, so the new object must sit out this walk, and the
+/// parked walk's record has no place to say so.
 pub(crate) fn rolling_boulder(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     const ALLOWED: &[(CardId, u8, i64)] = &[
         (CardId::RollingBoulder, 0, 5),
         (CardId::RollingBoulder, 1, 10),
     ];
-    refuse_second_instanced_object(ctx, PowerId::RollingBoulder, ALLOWED)?;
+    if let [CompiledArg::I(amount)] = ctx.args
+        && ALLOWED.contains(&(ctx.spec.identity.id, ctx.spec.identity.upgrade, *amount))
+        && ctx.state.powers.value(PowerId::RollingBoulder) > 0
+        && !crate::engine::damage::damage_combat_is_ending(ctx.state)
+    {
+        if ctx.state.frames.turn_start_hand_choice_in_flight() {
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                "Rolling Boulder object attached inside the AfterPlayerTurnStart walk",
+            ));
+        }
+        let amount = i32::try_from(*amount)
+            .map_err(|_| EngineRefusal::CounterOverflow("rolling_boulder"))?;
+        ctx.state.push_rolling_boulder_later(amount).map_err(|_| {
+            EngineRefusal::PowerOrderNotModeled("player-power AfterPlayerTurnStart order")
+        })?;
+        crate::engine::damage::note_power(
+            ctx.events,
+            crate::engine::Subject::Player,
+            PowerId::RollingBoulder,
+            amount,
+        );
+        return Ok(());
+    }
     apply_exact_player_power(ctx, "rolling_boulder", PowerId::RollingBoulder, ALLOWED)
 }
 
@@ -3168,8 +3245,9 @@ pub(crate) fn temp_strength_enemy(ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
     crate::steps::shared::apply_temp_strength_enemy(ctx.state, target, model, amount, ctx.events)
 }
 
-/// Whether the roster entry at `target` is still the Creature a Mangle or
-/// Fight Me play captured, across a possible Axebot Stock respawn (#3326).
+/// Whether the roster entry at `target` is still the Creature a Mangle,
+/// Fight Me, Debilitate or Knockdown play captured, across a possible Axebot
+/// Stock respawn (#3326; Debilitate and Knockdown since #3747).
 ///
 /// v0.111.0 (`sts2.dll` SHA-256 `9cb4f1ad…12b4`):
 ///
@@ -3190,6 +3268,11 @@ pub(crate) fn temp_strength_enemy(ctx: &mut StepCtx<'_>) -> Result<(), EngineRef
 ///   `0x3ab670` likewise attacks `cardPlay.Target` (IL_005d-IL_0068) and then
 ///   applies `ManglePower` to the same `cardPlay.Target` (IL_010f-IL_013c).
 ///   Neither re-reads the roster: the Apply receives the ORIGINAL Creature.
+///   `Debilitate/<OnPlay>d__5::MoveNext` RVA `0x3973fc` and
+///   `Knockdown/<OnPlay>d__5::MoveNext` RVA `0x3a8adc` are the same shape,
+///   offset for offset: attack `cardPlay.Target` (IL_005e-IL_0068), then
+///   `PowerCmd.Apply<DebilitatePower>` / `Apply<KnockdownPower>` on
+///   `cardPlay.Target` (IL_00e1-IL_010d).
 /// * The original is gone from combat by the time the attack's await
 ///   returns: `CreatureCmd/<KillWithoutCheckingWinCondition>d__15::MoveNext`
 ///   RVA `0x3ebe90` runs the AfterDeath walk (Stock's respawn) and then, for
@@ -3226,13 +3309,15 @@ pub(crate) fn stock_replaced_target_is_current(
     ))
 }
 
-/// Whether a post-attack target object cannot be reconstructed.
+/// Whether a post-attack target object cannot be reconstructed without a
+/// frozen CardPlay identity.
 ///
-/// Native Debilitate, Knockdown and Heirloom Hammer retain the original
-/// Creature across the attack await. A lethal hit on a Stock-bearing Axebot
-/// replaces that object in the same roster slot. Those bodies refuse the
-/// composition rather than apply a later command to the replacement Axebot;
-/// Mangle and Fight Me are modeled by [`stock_replaced_target_is_current`].
+/// A lethal hit on a Stock-bearing Axebot replaces the attacked Creature in
+/// the same roster slot. Every card body that carries its target past the
+/// attack (Mangle, Fight Me, Debilitate, Knockdown) reads the play's frozen
+/// identity through [`stock_replaced_target_is_current`], which is this
+/// predicate's only caller: it refuses only a caller that has no frozen
+/// identity to compare.
 pub(crate) fn post_attack_stock_target_identity_is_unrepresentable(
     state: &crate::hot::HotState,
 ) -> bool {
@@ -4216,25 +4301,16 @@ mod tests {
 
     /// #3057 witness: a second live object of an Instanced power Rust keeps
     /// as one scalar refuses by name, with the first object out of step
-    /// (Cacophony mid-countdown, Orbit mid-four-energy window, Rolling
-    /// Boulder already grown), and leaves the state and events untouched.
+    /// (Cacophony mid-countdown), and leaves the state and events untouched.
+    /// Orbit and Rolling Boulder keep a row per later object instead (#3756).
     #[test]
     fn second_live_instanced_power_object_refuses_by_name_out_of_step() {
-        let cases: [(StepKind, CardId, i64, PowerId); 3] = [
-            (
-                StepKind::Cacophony,
-                CardId::Cacophony,
-                66,
-                PowerId::Cacophony,
-            ),
-            (StepKind::Orbit, CardId::Orbit, 1, PowerId::Orbit),
-            (
-                StepKind::RollingBoulder,
-                CardId::RollingBoulder,
-                5,
-                PowerId::RollingBoulder,
-            ),
-        ];
+        let cases: [(StepKind, CardId, i64, PowerId); 1] = [(
+            StepKind::Cacophony,
+            CardId::Cacophony,
+            66,
+            PowerId::Cacophony,
+        )];
         for (kind, id, amount, power) in cases {
             for upgrade in 0..=1u8 {
                 let amount = match (id, upgrade) {
@@ -4255,7 +4331,6 @@ mod tests {
                 // Put the first object out of step with a fresh one.
                 match power {
                     PowerId::Cacophony => state.fanouts.set_cacophony_left(20),
-                    PowerId::Orbit => state.orbs.set_orbit_counters(2, 0),
                     _ => state.powers.set(power, SlotWire::Int, amount as i32 + 5),
                 }
                 let before = state.clone();
@@ -4278,7 +4353,7 @@ mod tests {
 
                 // Native Apply builds no object while combat is ending, so
                 // the ending-gated writers stay silent rather than refuse.
-                if power != PowerId::Orbit {
+                {
                     let mut ending = before.clone();
                     ending.monsters_mut()[0].hp = 0;
                     let ending_before = ending.clone();
@@ -4286,6 +4361,174 @@ mod tests {
                     assert_eq!(ending, ending_before, "{id:?} ending gate");
                 }
             }
+        }
+    }
+
+    /// #3756: a second Rolling Boulder application is a second object beside
+    /// the first, carrying its own card's amount and placed after every
+    /// current after-player-turn-start listener; the first object's grown
+    /// amount is not touched. No object is built once the combat is ending,
+    /// a malformed row reports its own refusal, and an object attached while
+    /// a turn-start Hand-choice walk is in flight refuses by name.
+    #[test]
+    fn a_second_rolling_boulder_application_is_a_second_object_not_a_stack() {
+        for upgrade in 0..=1u8 {
+            let amount = [5_i64, 10][usize::from(upgrade)];
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 99));
+            let args = [CompiledArg::I(amount)];
+            let run = |state: &mut HotState, events: &mut Vec<Event>| {
+                run_card(
+                    StepKind::RollingBoulder,
+                    CardId::RollingBoulder,
+                    upgrade,
+                    state,
+                    None,
+                    &args,
+                    events,
+                )
+            };
+            run(&mut state, &mut Vec::new()).unwrap();
+            assert_eq!(state.powers.value(PowerId::RollingBoulder), amount as i32);
+            assert!(state.fanouts.rolling_boulder_later_instances().is_empty());
+            // The first object has grown twice since.
+            let grown = amount as i32 + 10;
+            state
+                .powers
+                .set(PowerId::RollingBoulder, SlotWire::Int, grown);
+
+            let mut ending = state.clone();
+            ending.monsters_mut()[0].hp = 0;
+            let ending_before = ending.clone();
+            run(&mut ending, &mut Vec::new()).unwrap();
+            assert_eq!(ending, ending_before);
+
+            let bad = [CompiledArg::I(amount + 1)];
+            assert_eq!(
+                run_card(
+                    StepKind::RollingBoulder,
+                    CardId::RollingBoulder,
+                    upgrade,
+                    &mut state.clone(),
+                    None,
+                    &bad,
+                    &mut Vec::new()
+                ),
+                Err(EngineRefusal::MalformedArgs("rolling_boulder"))
+            );
+
+            let mut events = Vec::new();
+            run(&mut state, &mut events).unwrap();
+            run(&mut state, &mut events).unwrap();
+            assert_eq!(state.powers.value(PowerId::RollingBoulder), grown);
+            let row = crate::hot::RollingBoulderLaterInstance {
+                amount: amount as i32,
+                listeners_before: 1,
+            };
+            assert_eq!(
+                state.fanouts.rolling_boulder_later_instances(),
+                vec![row, row]
+            );
+            assert!(state.rolling_boulder_later_state_is_exact());
+            assert_eq!(
+                state.after_player_turn_start_order().unwrap().as_ref(),
+                &[PowerId::RollingBoulder]
+            );
+            assert_eq!(events.len(), 2);
+
+            // A walk in flight: the new object would have to sit this walk
+            // out, which the parked record cannot say.
+            let mut walking = state.clone();
+            walking
+                .frames
+                .push_turn_start_hand_choice(&crate::hot::TurnStartHandChoiceRecord {
+                    listener_order: vec![crate::hot::TurnStartHandChoiceKind::ToolsOfTheTrade],
+                    appended_suffix: Vec::new(),
+                    kind: crate::hot::TurnStartHandChoiceKind::ToolsOfTheTrade,
+                    amount: 1,
+                    next_listener: 1,
+                    cursor: 1,
+                    phase: crate::hot::TurnStartHandChoicePhase::Effect,
+                    entries: vec![crate::hot::FrozenAutoBatchEntry::from_current(
+                        HotCard {
+                            uid: 9,
+                            atom: 0,
+                            flags: 0,
+                        },
+                        &walking.card_states,
+                    )],
+                })
+                .unwrap();
+            let walking_before = walking.clone();
+            assert_eq!(
+                run(&mut walking, &mut Vec::new()),
+                Err(EngineRefusal::PowerOrderNotModeled(
+                    "Rolling Boulder object attached inside the AfterPlayerTurnStart walk"
+                ))
+            );
+            assert_eq!(walking, walking_before);
+        }
+    }
+
+    /// #3756: a second Orbit application is a second object beside the
+    /// first, with a zeroed counter; the first object's counters are not
+    /// touched. No object is built once the combat is ending, and a first
+    /// object whose scalar is not the native Amount 1 still refuses.
+    #[test]
+    fn a_second_orbit_application_is_a_second_object_not_a_stack() {
+        for upgrade in 0..=1u8 {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 99));
+            let args = [CompiledArg::I(1)];
+            let run = |state: &mut HotState, events: &mut Vec<Event>| {
+                run_card(
+                    StepKind::Orbit,
+                    CardId::Orbit,
+                    upgrade,
+                    state,
+                    None,
+                    &args,
+                    events,
+                )
+            };
+            run(&mut state, &mut Vec::new()).unwrap();
+            assert_eq!(state.powers.value(PowerId::Orbit), 1);
+            assert!(state.orbs.orbit_later_energy_spent().is_empty());
+            state.orbs.set_orbit_counters(2, 0);
+
+            let mut ending = state.clone();
+            ending.monsters_mut()[0].hp = 0;
+            let ending_before = ending.clone();
+            run(&mut ending, &mut Vec::new()).unwrap();
+            assert_eq!(ending, ending_before);
+
+            let mut forged = state.clone();
+            forged.powers.set(PowerId::Orbit, SlotWire::Int, 2);
+            let forged_before = forged.clone();
+            assert_eq!(
+                run(&mut forged, &mut Vec::new()),
+                Err(EngineRefusal::PowerRestackNotModeled(PowerId::Orbit))
+            );
+            assert_eq!(forged, forged_before);
+
+            let mut events = Vec::new();
+            run(&mut state, &mut events).unwrap();
+            run(&mut state, &mut events).unwrap();
+            assert_eq!(state.powers.value(PowerId::Orbit), 1);
+            assert_eq!(
+                (
+                    state.orbs.orbit_energy_spent(),
+                    state.orbs.orbit_trigger_count()
+                ),
+                (2, 0)
+            );
+            assert_eq!(state.orbs.orbit_later_energy_spent(), [0, 0]);
         }
     }
 
@@ -6728,6 +6971,82 @@ mod tests {
         }
     }
 
+    /// #3747: Debilitate and Knockdown take the same three arms of
+    /// [`stock_replaced_target_is_current`]. Their trailing Apply
+    /// (`0x3973fc` / `0x3a8adc` IL_010d) receives the original
+    /// `cardPlay.Target`, as Mangle's and Fight Me's do.
+    #[test]
+    fn debilitate_and_knockdown_stock_target_follows_the_frozen_identity() {
+        for (kind, id, arg, reason) in [
+            (
+                StepKind::Debilitate,
+                CardId::Debilitate,
+                2,
+                "Debilitate Axebot Stock target identity",
+            ),
+            (
+                StepKind::Knockdown,
+                CardId::Knockdown,
+                2,
+                "Knockdown Axebot Stock target identity",
+            ),
+        ] {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            let mut axebot = HotMonster::new(MonsterKind::Axebot, 40);
+            axebot.uid = 1;
+            axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
+            state.monsters_mut().push(axebot);
+            let before = state.clone();
+            let mut events = Vec::new();
+            assert_eq!(
+                run_card(
+                    kind,
+                    id,
+                    0,
+                    &mut state,
+                    Some(0),
+                    &[CompiledArg::I(arg)],
+                    &mut events
+                ),
+                Err(EngineRefusal::MalformedArgs(reason)),
+                "{id:?}: no frozen identity beside a live Stock body"
+            );
+            assert_eq!(state, before);
+            assert!(events.is_empty());
+
+            crate::engine::play::with_test_active_play_target(0, (0, 0), || {
+                run_card(
+                    kind,
+                    id,
+                    0,
+                    &mut state,
+                    Some(0),
+                    &[CompiledArg::I(arg)],
+                    &mut events,
+                )
+            })
+            .unwrap();
+            assert_eq!(state, before, "{id:?}: the replacement takes nothing");
+            assert!(events.is_empty());
+
+            crate::engine::play::with_test_active_play_target(0, (0, 1), || {
+                run_card(
+                    kind,
+                    id,
+                    0,
+                    &mut state,
+                    Some(0),
+                    &[CompiledArg::I(arg)],
+                    &mut events,
+                )
+            })
+            .unwrap();
+            assert_ne!(state, before, "{id:?}: the attacked body itself takes it");
+            assert!(!events.is_empty());
+        }
+    }
+
     #[test]
     fn strength_enemy_is_exactly_fight_me_and_bypasses_type_two_listeners() {
         let (mut state, _) = ctx_state();
@@ -7094,9 +7413,10 @@ mod tests {
 
     /// #3427 witness: Mad Science's Curious rider applies CuriousPower
     /// `CuriousReduction` (1 at both levels) and stacks it (Counter); it
-    /// writes nothing while combat is ending; it refuses by name beside a
-    /// live Borrowed Time and for any spec that is not the generated Curious
-    /// row; beside an owned Spiked Gauntlets it applies (#3437).
+    /// writes nothing while combat is ending; it refuses by name for any spec
+    /// that is not the generated Curious row; beside an owned Spiked
+    /// Gauntlets it applies (#3437). Beside a live Borrowed Time it applies
+    /// and records that it follows it (#3756).
     #[test]
     fn mad_science_curious_applies_and_stacks_curious_power_or_refuses_by_name() {
         for upgrade in [0, 1] {
@@ -7142,25 +7462,53 @@ mod tests {
             assert_eq!(ending, before);
             assert!(events.is_empty());
 
-            // Beside a live Borrowed Time the listener order is unknown.
+            // #3756: a Curious first attached beside a live Borrowed Time
+            // goes behind it in the power list; a second stack keeps that
+            // place, and a Curious attached with no Borrowed Time is first.
+            assert!(!state.fanouts.curious_follows_borrowed_time());
             let mut borrowed = curious_fixture(atom, 99);
             borrowed.powers.set(PowerId::BorrowedTime, SlotWire::Int, 1);
-            let before = borrowed.clone();
+            for stacks in [1, 2] {
+                let (result, _) = apply_power_row(
+                    &mut borrowed,
+                    &catalog,
+                    &spec,
+                    StepKind::MadScienceCurious,
+                    &args,
+                    None,
+                );
+                assert_eq!(result, Ok(()));
+                assert_eq!(borrowed.powers.value(PowerId::Curious), stacks);
+                assert!(borrowed.fanouts.curious_follows_borrowed_time());
+            }
+            // A stack onto a Curious that was first keeps it first, even
+            // with a Borrowed Time live now.
+            let mut first = state.clone();
+            first.powers.set(PowerId::BorrowedTime, SlotWire::Int, 1);
             let (result, _) = apply_power_row(
-                &mut borrowed,
+                &mut first,
                 &catalog,
                 &spec,
                 StepKind::MadScienceCurious,
                 &args,
                 None,
             );
-            assert_eq!(
-                result,
-                Err(EngineRefusal::MalformedArgs(
-                    "Curious beside Borrowed Time energy-cost listener order"
-                ))
+            assert_eq!(result, Ok(()));
+            assert!(!first.fanouts.curious_follows_borrowed_time());
+            // An ending combat attaches nothing and records nothing.
+            let mut ending = curious_fixture(atom, 0);
+            ending.powers.set(PowerId::BorrowedTime, SlotWire::Int, 1);
+            let before = ending.clone();
+            let (result, _) = apply_power_row(
+                &mut ending,
+                &catalog,
+                &spec,
+                StepKind::MadScienceCurious,
+                &args,
+                None,
             );
-            assert_eq!(borrowed, before);
+            assert_eq!(result, Ok(()));
+            assert_eq!(ending, before);
 
             // #3437: Spiked Gauntlets is a relic, so it always folds after
             // Curious; the application proceeds beside it.
@@ -7221,11 +7569,11 @@ mod tests {
         }
     }
 
-    /// #3427 witness: Borrowed Time refuses while a Curious is live (the
-    /// other half of the listener-order refusal), and still applies without
-    /// one.
+    /// #3756 witness: a Borrowed Time attached beside a live Curious goes
+    /// behind it, whatever an earlier Borrowed Time left in the order bit; a
+    /// stack onto a live Borrowed Time keeps its place.
     #[test]
-    fn borrowed_time_refuses_beside_a_live_curious() {
+    fn borrowed_time_attaches_behind_a_live_curious() {
         let identity = CardIdentity {
             id: CardId::BorrowedTime,
             upgrade: 0,
@@ -7255,9 +7603,11 @@ mod tests {
         assert_eq!(result, Ok(()));
         assert!(plain.powers.value(PowerId::BorrowedTime) > 0);
 
+        // A bit left by an expired Borrowed Time is overwritten by the new
+        // attachment.
         let mut curious = curious_fixture(atom, 99);
         curious.powers.set(PowerId::Curious, SlotWire::Int, 1);
-        let before = curious.clone();
+        curious.fanouts.set_curious_follows_borrowed_time(true);
         let (result, _) = apply_power_row(
             &mut curious,
             &catalog,
@@ -7266,13 +7616,26 @@ mod tests {
             &args,
             None,
         );
-        assert_eq!(
-            result,
-            Err(EngineRefusal::MalformedArgs(
-                "Borrowed Time beside Curious energy-cost listener order"
-            ))
+        assert_eq!(result, Ok(()));
+        assert_eq!(curious.powers.value(PowerId::BorrowedTime), 1);
+        assert!(!curious.fanouts.curious_follows_borrowed_time());
+
+        // Curious attached behind a live Borrowed Time: a second Borrowed
+        // Time stacks onto the first and both keep their places.
+        let mut behind = plain.clone();
+        behind.powers.set(PowerId::Curious, SlotWire::Int, 1);
+        behind.fanouts.set_curious_follows_borrowed_time(true);
+        let (result, _) = apply_power_row(
+            &mut behind,
+            &catalog,
+            &spec,
+            StepKind::BorrowedTime,
+            &args,
+            None,
         );
-        assert_eq!(curious, before);
+        assert_eq!(result, Ok(()));
+        assert_eq!(behind.powers.value(PowerId::BorrowedTime), 2);
+        assert!(behind.fanouts.curious_follows_borrowed_time());
 
         // A combat that is ending writes nothing either way.
         let mut ending = curious_fixture(atom, 0);

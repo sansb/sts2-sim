@@ -527,7 +527,7 @@
   },
   {
    "relic": "RELIC.NINJA_SCROLL",
-   "rust_body_site": false,
+   "rust_body_site": true,
    "template": false,
    "turn_one_hooks": [],
    "window_hooks": [
@@ -773,7 +773,7 @@
   },
   {
    "relic": "RELIC.RUNIC_CAPACITOR",
-   "rust_body_site": false,
+   "rust_body_site": true,
    "template": false,
    "turn_one_hooks": [
     "AfterSideTurnStart"
@@ -864,7 +864,7 @@
   },
   {
    "relic": "RELIC.TEA_OF_DISCOURTESY",
-   "rust_body_site": false,
+   "rust_body_site": true,
    "template": false,
    "turn_one_hooks": [],
    "window_hooks": [
@@ -891,7 +891,7 @@
   },
   {
    "relic": "RELIC.TWISTED_FUNNEL",
-   "rust_body_site": false,
+   "rust_body_site": true,
    "template": false,
    "turn_one_hooks": [
     "BeforeSideTurnStart"

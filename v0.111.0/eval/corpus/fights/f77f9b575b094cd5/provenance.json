@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Q2BEDKXQDES1",
+ "node": 16,
+ "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "7825fb91fbca74cf8a0e5716ec2e9a4c1f9d9aabdc0f6914fa614a6ed40ac839",
+ "save_sha256": "eb75e63b13313c2e0f96cd516d25c5fce6e4f7ce15b95338375c5a9d62acf60d",
+ "entry_digest": "92f83c225a722f69523c31a370ddc4f0a05632dc0a4caf8e9aa001d346204323",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

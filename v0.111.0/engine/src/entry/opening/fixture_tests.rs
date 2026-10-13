@@ -342,8 +342,7 @@ fn the_empty_belt_variant_opens_end_to_end_and_matches_the_oracle() {
 /// Gold Plated Cables opens (#3381): it has no body on a hook the opening
 /// fires, only the orb-passive trigger-count modifier the engine already runs
 /// (the IL is on `TURN_ONE_ORB_RELICS`). The opened document is the control's
-/// except for the ownership mirrors. Infused Core, still in the table, still
-/// refuses by name.
+/// except for the ownership mirrors.
 #[test]
 fn gold_plated_cables_opens_and_changes_only_its_ownership_mirror() {
     let strip = |document: &crate::canonical::CanonicalStateV2| {
@@ -365,18 +364,6 @@ fn gold_plated_cables_opens_and_changes_only_its_ownership_mirror() {
         Some(&Value::Bool(true))
     );
     assert_eq!(strip(&opening.document), strip(&control.document));
-
-    let mut case = empty_belt_case();
-    relic(
-        &mut case,
-        serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.INFUSED_CORE"}),
-    );
-    assert_eq!(
-        open(&case).unwrap_err(),
-        OpeningRefusal::RoomEntryRelicNotModeled {
-            relic: "RELIC.INFUSED_CORE".to_string()
-        }
-    );
 }
 
 /// High-tier review finding P1-2 (#2544): a saved Genetic Algorithm copy's
@@ -2185,7 +2172,9 @@ fn a_generation_reachable_voltaic_opens_tracked_and_admits() {
     assert_eq!(admits_as_loaded(&untracked), Ok(()));
 
     // Control: a Block Potion closure holds no Voltaic. The count stays
-    // untracked, and a forced count has no reader and refuses.
+    // untracked at the opening. A count beside no Voltaic has no reader and
+    // is admitted (#3877): it is what a fight holds once the potion that put
+    // a Voltaic in its closure has been used.
     let (control, control_catalog, _) =
         generation_potion_root_with("CHARACTER.DEFECT", "BLOCK_POTION", &[], &[]);
     assert!(control_catalog.atom(&voltaic).is_none());
@@ -2198,11 +2187,7 @@ fn a_generation_reachable_voltaic_opens_tracked_and_admits() {
     forced
         .player
         .insert("lightning_channeled".to_string(), Value::from(0));
-    assert!(
-        admits_as_loaded(&forced)
-            .unwrap_err()
-            .contains("unsupported orb queue state")
-    );
+    assert_eq!(admits_as_loaded(&forced), Ok(()));
 
     // A physically present Voltaic still needs its count.
     let present = opens_and_admits(&with_voltaic(empty_belt_case(), 0), "Voltaic L0");
@@ -2265,7 +2250,7 @@ fn a_byrdpip_save_adds_its_passive_pet_and_matches_the_oracle() {
 /// `PaelsLegion/<BeforeCombatStart>d__32::MoveNext` (`0x32cbc4`) calls
 /// `SummonPet` → `PlayerCmd::AddPet<PaelsLegion>(Owner)` (`0x32cc88`,
 /// `IL_0023`). The turn-1 tick (`<AfterSideTurnStart>d__36`, `0x32c9d4`) runs
-/// in `engine::relics::after_side_turn_start_late`. The cooldown starts at 0,
+/// in `engine::relics::after_side_turn_start`. The cooldown starts at 0,
 /// so the tick changes nothing the oracle projects. Digest printed by the
 /// oracle with the recipe above `empty_belt_case`.
 #[test]
@@ -2501,15 +2486,11 @@ fn bellows_beside_each_oracle_admitted_peer_matches_the_oracle() {
 /// fixed-order document, which the pre-#2827 gate did only because it refused
 /// the two relics outright.
 ///
-/// Each peer is appended after the owner, so the fixture's vouched inventory
-/// records the owner first. That is the order #2884 leaves refused for Bellows
-/// beside Choices Paradox (the reverse is admitted, see
-/// `choices_paradox_then_bellows_is_admitted_and_the_reverse_refuses`), and
-/// Festive Popper beside Toasty Mittens has left this list: it is admitted in
-/// either vouched order
-/// (`festive_popper_runs_on_its_recorded_side_of_toasty_mittens`), and so has
-/// Festive Popper beside Gambling Chip
-/// (`festive_popper_runs_on_its_recorded_side_of_gambling_chip`).
+/// The gate stands for an **unvouched** inventory only (#3635): the fixture's
+/// save vouches for its inventory, so each case clears that vouch, as a
+/// `.run`-only root has it. Vouched, every pair opens, because the engine
+/// runs the hook's relic bodies in recorded order
+/// (`every_same_hook_pair_around_bellows_and_popper_opens_on_a_vouched_inventory`).
 #[test]
 fn the_oracles_same_hook_refusals_around_bellows_and_popper_refuse_by_name() {
     let cases = [
@@ -2518,10 +2499,8 @@ fn the_oracles_same_hook_refusals_around_bellows_and_popper_refuse_by_name() {
         ("RELIC.BELLOWS", "RELIC.CHOICES_PARADOX"),
         ("RELIC.BELLOWS", "RELIC.VEXING_PUZZLEBOX"),
         ("RELIC.FESTIVE_POPPER", "RELIC.CHOICES_PARADOX"),
-        ("RELIC.FESTIVE_POPPER", "RELIC.VEXING_PUZZLEBOX"),
         ("RELIC.FESTIVE_POPPER", "RELIC.BONE_TEA"),
         ("RELIC.FESTIVE_POPPER", "RELIC.MR_STRUGGLES"),
-        ("RELIC.FESTIVE_POPPER", "RELIC.MERCURY_HOURGLASS"),
         ("RELIC.FESTIVE_POPPER", "RELIC.ROYAL_POISON"),
     ];
     for (owner, peer) in cases {
@@ -2531,7 +2510,9 @@ fn the_oracles_same_hook_refusals_around_bellows_and_popper_refuse_by_name() {
             row["props"] = serde_json::json!({"ints": [{"name": "CombatsLeft", "value": 1}]});
         }
         relic(&mut case, row);
-        let refusal = open(&case).unwrap_err();
+        let mut facts = entry_facts(&case);
+        facts.relic_entry.dispatch_ordered = false;
+        let refusal = build_opening(&facts, &OpeningOptions::default()).unwrap_err();
         assert_eq!(
             refusal.class(),
             "turn_start_relic_order_unrecorded",
@@ -2539,6 +2520,30 @@ fn the_oracles_same_hook_refusals_around_bellows_and_popper_refuse_by_name() {
         );
         assert!(refusal.to_string().contains(owner), "{refusal}");
         assert!(refusal.to_string().contains(peer), "{refusal}");
+    }
+}
+
+/// #3635: on a vouched inventory the opening gate refuses none of those
+/// pairs, in either recorded order. Whatever still refuses is not this gate.
+#[test]
+fn every_same_hook_pair_around_bellows_and_popper_opens_on_a_vouched_inventory() {
+    for (owner, peer) in [
+        ("RELIC.BELLOWS", "RELIC.GAMBLING_CHIP"),
+        ("RELIC.BELLOWS", "RELIC.TOASTY_MITTENS"),
+        ("RELIC.FESTIVE_POPPER", "RELIC.MR_STRUGGLES"),
+        ("RELIC.FESTIVE_POPPER", "RELIC.ROYAL_POISON"),
+        ("RELIC.BELLOWS", "RELIC.MR_STRUGGLES"),
+    ] {
+        for relics in [[owner, peer], [peer, owner]] {
+            let opening = open_in_order(&relics, false, true)
+                .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal}"));
+            let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+                .expect("the opened document builds a catalog");
+            let state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+                .expect("the opened document hydrates");
+            crate::engine::admit(&opening.document, &state, &catalog)
+                .unwrap_or_else(|refusal| panic!("{relics:?} is admitted: {refusal}"));
+        }
     }
 }
 
@@ -2731,32 +2736,32 @@ fn festive_popper_beside_gambling_chip_and_toasty_mittens_follows_the_inventory(
     const POPPER: &str = "RELIC.FESTIVE_POPPER";
     const CHIP: &str = "RELIC.GAMBLING_CHIP";
     const TOASTY: &str = "RELIC.TOASTY_MITTENS";
-    for (relics, popper_landed) in [
-        ([POPPER, CHIP, TOASTY], Some(true)),
-        ([CHIP, POPPER, TOASTY], Some(false)),
-        ([CHIP, TOASTY, POPPER], Some(false)),
-        ([POPPER, TOASTY, CHIP], None),
-        ([TOASTY, POPPER, CHIP], None),
-        ([TOASTY, CHIP, POPPER], None),
+    // #3635: all six orders open. The first pause is the first Hand-choice
+    // relic recorded, and Popper's 9 has landed there exactly when Popper is
+    // recorded ahead of it.
+    const CHIP_SELECT: &str = "gambling_chip_select";
+    const TOASTY_SELECT: &str = "toasty_mittens_select";
+    for (relics, first_pause, popper_landed) in [
+        ([POPPER, CHIP, TOASTY], CHIP_SELECT, true),
+        ([CHIP, POPPER, TOASTY], CHIP_SELECT, false),
+        ([CHIP, TOASTY, POPPER], CHIP_SELECT, false),
+        ([POPPER, TOASTY, CHIP], TOASTY_SELECT, true),
+        ([TOASTY, POPPER, CHIP], TOASTY_SELECT, false),
+        ([TOASTY, CHIP, POPPER], TOASTY_SELECT, false),
     ] {
-        match (open_in_order(&relics, false, true), popper_landed) {
-            (Ok(opening), Some(landed)) => {
-                assert_eq!(
-                    opening.document.player["pending"][0],
-                    Value::from("gambling_chip_select"),
-                    "{relics:?}"
-                );
-                let expected = if landed { [9, 9] } else { [0, 0] };
-                assert_eq!(
-                    monster_damage_taken(&opening.document),
-                    expected,
-                    "{relics:?}"
-                );
-            }
-            (Err(_), None) => {}
-            (Ok(_), None) => panic!("{relics:?} opened with Toasty recorded before Chip"),
-            (Err(refusal), Some(_)) => panic!("{relics:?} refused: {refusal}"),
-        }
+        let opening = open_in_order(&relics, false, true)
+            .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal}"));
+        assert_eq!(
+            opening.document.player["pending"][0],
+            Value::from(first_pause),
+            "{relics:?}"
+        );
+        let expected = if popper_landed { [9, 9] } else { [0, 0] };
+        assert_eq!(
+            monster_damage_taken(&opening.document),
+            expected,
+            "{relics:?}"
+        );
     }
 }
 
@@ -2773,7 +2778,7 @@ fn festive_popper_beside_gambling_chip_and_toasty_mittens_follows_the_inventory(
 /// first, or an unvouched inventory, refuses by name. The profile is fully
 /// unlocked so the Paradox's owner pool is exact.
 #[test]
-fn choices_paradox_then_bellows_is_admitted_and_the_reverse_refuses() {
+fn choices_paradox_and_bellows_open_in_either_recorded_order() {
     const PARADOX: &str = "RELIC.CHOICES_PARADOX";
     const BELLOWS: &str = "RELIC.BELLOWS";
     let opening = open_in_order(&[PARADOX, BELLOWS], true, true)
@@ -2796,11 +2801,27 @@ fn choices_paradox_then_bellows_is_admitted_and_the_reverse_refuses() {
         assert_eq!(card.upgrade, 1, "{} is upgraded by Bellows", card.id);
     }
 
-    for (relics, ordered) in [
-        ([BELLOWS, PARADOX], true),
-        ([BELLOWS, PARADOX], false),
-        ([PARADOX, BELLOWS], false),
-    ] {
+    // #3635: Bellows recorded first upgrades the dealt Hand before the grid
+    // opens, and the pick arrives behind it, not upgraded.
+    let bellows_first = open_in_order(&[BELLOWS, PARADOX], true, true)
+        .unwrap_or_else(|refusal| panic!("Bellows then Choices Paradox opens: {refusal}"));
+    assert!(
+        bellows_first.document.piles["hand"]
+            .iter()
+            .all(|card| card.upgrade == 1),
+        "Bellows ran ahead of the Paradox choice"
+    );
+    let (state, catalog) = resolve_first_choice(&bellows_first);
+    let after = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+    let hand = &after.piles["hand"];
+    assert_eq!(hand.len(), 6, "the five dealt cards and the pick");
+    assert_eq!(
+        hand.iter().map(|card| card.upgrade).collect::<Vec<_>>(),
+        [1, 1, 1, 1, 1, 0],
+        "the pick arrived behind Bellows"
+    );
+
+    for (relics, ordered) in [([BELLOWS, PARADOX], false), ([PARADOX, BELLOWS], false)] {
         let refusal = open_in_order(&relics, true, ordered).unwrap_err();
         assert_eq!(
             refusal.class(),
@@ -2839,14 +2860,64 @@ fn hand_choice_relics_beside_mr_struggles_follow_the_recorded_order() {
             [0, 0],
             "{pauser}: Mr Struggles runs after the choice"
         );
-        for (relics, ordered) in [([STRUGGLES, pauser], true), ([pauser, STRUGGLES], false)] {
-            let refusal = open_in_order(&relics, false, ordered).unwrap_err();
+        // #3635: Mr Struggles recorded first has hit for the turn number
+        // before the choice opens.
+        let struggles_first = open_in_order(&[STRUGGLES, pauser], false, true)
+            .unwrap_or_else(|refusal| panic!("Mr Struggles then {pauser} opens: {refusal}"));
+        assert!(
+            struggles_first.document.player.contains_key("pending"),
+            "{pauser}: the choice is open"
+        );
+        assert_eq!(
+            monster_damage_taken(&struggles_first.document),
+            [1, 1],
+            "{pauser}: Mr Struggles ran ahead of the choice"
+        );
+        for relics in [[STRUGGLES, pauser], [pauser, STRUGGLES]] {
+            let refusal = open_in_order(&relics, false, false).unwrap_err();
             assert!(
                 refusal.to_string().contains(PAUSE_ORDER),
-                "{relics:?} vouched {ordered}: {refusal}"
+                "{relics:?} unvouched: {refusal}"
             );
         }
     }
+}
+
+/// #3635: Bellows beside Vexing Puzzlebox opens in either vouched order, and
+/// the boundary has the free card's upgraded identity interned for the order
+/// that needs it. `Bellows::AfterPlayerTurnStart` (RVA `0x906dc`) upgrades
+/// the Hand at `IL_003a`-`IL_004c`; `VexingPuzzlebox/<AfterPlayerTurnStart>d__2`
+/// (RVA `0x333de0`) adds its card at `IL_00b7`. Recorded behind the
+/// Puzzlebox, Bellows upgrades all six cards; recorded ahead, the five dealt.
+#[test]
+fn bellows_upgrades_the_puzzlebox_card_only_when_recorded_behind_it() {
+    const IRONCLAD: &str = "CHARACTER.IRONCLAD";
+    const BELLOWS: &str = "RELIC.BELLOWS";
+    const PUZZLEBOX: &str = "RELIC.VEXING_PUZZLEBOX";
+    for (relics, expected) in [
+        ([PUZZLEBOX, BELLOWS], [1, 1, 1, 1, 1, 1]),
+        ([BELLOWS, PUZZLEBOX], [1, 1, 1, 1, 1, 0]),
+    ] {
+        let opening = open_owner_in_order(IRONCLAD, &relics, true)
+            .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal}"));
+        let upgrades = opening.document.piles["hand"]
+            .iter()
+            .map(|card| card.upgrade)
+            .collect::<Vec<_>>();
+        assert_eq!(upgrades, expected, "{relics:?}");
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+            .expect("the opened document builds a catalog");
+        let state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+            .expect("the opened document hydrates");
+        crate::engine::admit(&opening.document, &state, &catalog)
+            .unwrap_or_else(|refusal| panic!("{relics:?} is admitted: {refusal}"));
+    }
+    let refusal = open_owner_in_order(IRONCLAD, &[PUZZLEBOX, BELLOWS], false).unwrap_err();
+    assert_eq!(
+        refusal.class(),
+        "turn_start_relic_order_unrecorded",
+        "{refusal}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -2962,16 +3033,214 @@ fn hourglass_and_puzzlebox_recorded_before_choices_paradox_run_ahead_of_its_grid
         "Hourglass draws no RNG"
     );
 
-    for (relics, ordered) in [
-        ([HOURGLASS, PUZZLEBOX, PARADOX], false),
-        ([PUZZLEBOX, HOURGLASS, PARADOX], true),
+    // #3635: Hourglass recorded between the two runs between them. It draws
+    // no RNG, so the pause is the recorded order's.
+    let between = open_owner_in_order(NECROBINDER, &[PUZZLEBOX, HOURGLASS, PARADOX], true)
+        .unwrap_or_else(|refusal| panic!("Puzzlebox, Hourglass, Paradox opens: {refusal}"));
+    assert_eq!(between.document.monsters, recorded.document.monsters);
+    assert_eq!(between.document.piles, recorded.document.piles);
+    assert_eq!(
+        generation_options(&between.document),
+        generation_options(&recorded.document)
+    );
+    // Hourglass between Paradox and the Puzzlebox waits behind the grid.
+    let behind = open_owner_in_order(NECROBINDER, &[PARADOX, HOURGLASS, PUZZLEBOX], true)
+        .unwrap_or_else(|refusal| panic!("Paradox, Hourglass, Puzzlebox opens: {refusal}"));
+    assert_eq!(behind.document.monsters, fixed.document.monsters);
+    assert_eq!(
+        generation_options(&behind.document),
+        generation_options(&fixed.document)
+    );
+
+    let refusal =
+        open_owner_in_order(NECROBINDER, &[HOURGLASS, PUZZLEBOX, PARADOX], false).unwrap_err();
+    assert!(
+        refusal.to_string().contains(PAUSE_ORDER)
+            || refusal.class() == "turn_start_relic_order_unrecorded",
+        "unvouched: {refusal}"
+    );
+}
+
+/// Festive Popper beside Vexing Puzzlebox, and beside Mercury Hourglass, opens
+/// in either vouched order (#3756).
+///
+/// A save and a capture's embedded run both list `relics` in `Player.Relics`
+/// order (`Player::ToSerializable` RVA `0x116dec`, `get_Relics` at `IL_00ef`
+/// through `set_Relics` at `IL_011d`), which is the order native awaits the
+/// hook's relic listeners in (`CombatState/<IterateHookListeners>d__69` RVA
+/// `0x3f9720`, `IL_00c9`-`IL_00ef`), so the order is recorded on every such
+/// root and the engine runs it:
+///
+/// * Popper and the Puzzlebox run in recorded order
+///   (`engine::relics::relic_walk_order`). Nothing listens to the hit on
+///   this fixture, so the two reach one state: every enemy hit for 9 and the
+///   free card at the Hand's bottom;
+/// * Popper and Hourglass hit in recorded order. Every enemy takes 12.
+///
+/// Each opened root is admitted, the mixed three-relic shapes included
+/// (#3635). An unvouched inventory refuses by name.
+#[test]
+fn festive_popper_opens_on_its_recorded_side_of_puzzlebox_and_hourglass() {
+    const IRONCLAD: &str = "CHARACTER.IRONCLAD";
+    const POPPER: &str = "RELIC.FESTIVE_POPPER";
+    const PUZZLEBOX: &str = "RELIC.VEXING_PUZZLEBOX";
+    const HOURGLASS: &str = "RELIC.MERCURY_HOURGLASS";
+    const CHIP: &str = "RELIC.GAMBLING_CHIP";
+    let admitted = |opening: &Opening, relics: &[&str]| {
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+            .expect("the opened document builds a catalog");
+        let state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+            .expect("the opened document hydrates");
+        crate::engine::admit(&opening.document, &state, &catalog)
+            .unwrap_or_else(|refusal| panic!("{relics:?} is admitted: {refusal}"));
+    };
+    let mut reached = Vec::new();
+    for (relics, damage, hand) in [
+        (&[POPPER, PUZZLEBOX][..], 9, 6),
+        (&[PUZZLEBOX, POPPER], 9, 6),
+        (&[POPPER, HOURGLASS], 12, 5),
+        (&[HOURGLASS, POPPER], 12, 5),
+        (&[HOURGLASS, POPPER, PUZZLEBOX], 12, 6),
+        (&[PUZZLEBOX, POPPER, HOURGLASS], 12, 6),
+        // #3635: Hourglass recorded between the two, where the fixed tail
+        // could not put it.
+        (&[PUZZLEBOX, HOURGLASS, POPPER], 12, 6),
+        (&[POPPER, HOURGLASS, PUZZLEBOX], 12, 6),
     ] {
-        let refusal = open_owner_in_order(NECROBINDER, &relics, ordered).unwrap_err();
+        let opening = open_owner_in_order(IRONCLAD, relics, true)
+            .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal}"));
         assert!(
-            refusal.to_string().contains(PAUSE_ORDER),
+            monster_damage_taken(&opening.document)
+                .iter()
+                .all(|taken| *taken == damage),
+            "{relics:?}: {:?}",
+            monster_damage_taken(&opening.document)
+        );
+        assert_eq!(opening.document.piles["hand"].len(), hand, "{relics:?}");
+        assert!(
+            !opening.document.player.contains_key("pending"),
+            "{relics:?}: the turn is the player's"
+        );
+        admitted(&opening, relics);
+        reached.push(opening.document);
+    }
+    assert_eq!(
+        reached[0].piles, reached[1].piles,
+        "Popper and Puzzlebox commute where nothing listens to the hit"
+    );
+    assert_eq!(reached[0].monsters, reached[1].monsters);
+    assert_eq!(reached[0].rng, reached[1].rng);
+    assert_eq!(reached[2].monsters, reached[3].monsters);
+
+    // #3635: a Puzzlebox recorded before a Popper that precedes Gambling
+    // Chip. The card is generated, Popper hits, and the Chip then offers the
+    // six-card Hand.
+    let chip_last = open_owner_in_order(IRONCLAD, &[PUZZLEBOX, POPPER, CHIP], true)
+        .unwrap_or_else(|refusal| panic!("Puzzlebox, Popper, Chip opens: {refusal}"));
+    assert_eq!(
+        chip_last.document.player["pending"][0],
+        Value::from("gambling_chip_select")
+    );
+    assert_eq!(chip_last.document.piles["hand"].len(), 6);
+    assert!(
+        monster_damage_taken(&chip_last.document)
+            .iter()
+            .all(|taken| *taken == 9)
+    );
+    admitted(&chip_last, &[PUZZLEBOX, POPPER, CHIP]);
+
+    for (relics, peer) in [
+        (&[POPPER, PUZZLEBOX][..], PUZZLEBOX),
+        (&[PUZZLEBOX, POPPER], PUZZLEBOX),
+        (&[POPPER, HOURGLASS], HOURGLASS),
+        (&[HOURGLASS, POPPER], HOURGLASS),
+    ] {
+        let ordered = false;
+        let refusal = open_owner_in_order(IRONCLAD, relics, ordered).unwrap_err();
+        assert_eq!(
+            refusal.class(),
+            "turn_start_relic_order_unrecorded",
             "{relics:?} vouched {ordered}: {refusal}"
         );
+        let text = refusal.to_string();
+        assert!(text.contains(POPPER) && text.contains(peer), "{text}");
     }
+}
+
+/// Toasty Mittens recorded before Vexing Puzzlebox, alone and with Festive
+/// Popper at each recorded place (#3756). The F8GKB1DJ96L1 shape is Popper,
+/// Toasty, Puzzlebox.
+///
+/// Native awaits the three in `Player.Relics` order
+/// (`Hook/<AfterPlayerTurnStart>d__56` RVA `0x3cff0c`), so a Toasty-first
+/// inventory offers its Hand choice over the dealt five, before the
+/// Puzzlebox card exists (`engine::relics::relic_walk_order` carries the
+/// listener-walk IL). Popper's 9 has
+/// landed at that pause exactly when Popper is recorded before Toasty. Once
+/// the pick is exhausted every order holds four dealt cards and the free
+/// card, with one Popper hit and one Strength. The Puzzlebox-first control
+/// offers six. Each opened root is admitted, and an unvouched inventory
+/// refuses.
+#[test]
+fn toasty_mittens_opens_ahead_of_a_puzzlebox_recorded_after_it() {
+    const IRONCLAD: &str = "CHARACTER.IRONCLAD";
+    const POPPER: &str = "RELIC.FESTIVE_POPPER";
+    const TOASTY: &str = "RELIC.TOASTY_MITTENS";
+    const PUZZLEBOX: &str = "RELIC.VEXING_PUZZLEBOX";
+    for (relics, offered, hit_at_pause, popper) in [
+        (&[TOASTY, PUZZLEBOX][..], 5, 0, false),
+        (&[PUZZLEBOX, TOASTY], 6, 0, false),
+        (&[POPPER, TOASTY, PUZZLEBOX], 5, 9, true),
+        (&[TOASTY, POPPER, PUZZLEBOX], 5, 0, true),
+        (&[TOASTY, PUZZLEBOX, POPPER], 5, 0, true),
+    ] {
+        let opening = open_owner_in_order(IRONCLAD, relics, true)
+            .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal}"));
+        assert_eq!(
+            opening.document.player["pending"][0],
+            Value::from("toasty_mittens_select"),
+            "{relics:?}"
+        );
+        assert_eq!(
+            opening.document.piles["hand"].len(),
+            offered,
+            "{relics:?}: the Hand the choice is offered over"
+        );
+        assert!(
+            monster_damage_taken(&opening.document)
+                .iter()
+                .all(|taken| *taken == hit_at_pause),
+            "{relics:?}: {:?}",
+            monster_damage_taken(&opening.document)
+        );
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+            .expect("the opened document builds a catalog");
+        let root = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+            .expect("the opened document hydrates");
+        crate::engine::admit(&opening.document, &root, &catalog)
+            .unwrap_or_else(|refusal| panic!("{relics:?} is admitted: {refusal}"));
+
+        let (state, catalog) = resolve_first_choice(&opening);
+        let after = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert!(state.pending.is_none(), "{relics:?}");
+        assert_eq!(after.piles["hand"].len(), 5, "{relics:?}");
+        assert_eq!(state.piles.get(crate::hot::PileId::Exhaust).len(), 1);
+        assert_eq!(state.powers.value(crate::ids::PowerId::Strength), 1);
+        let hit = if popper { 9 } else { 0 };
+        assert!(
+            monster_damage_taken(&after)
+                .iter()
+                .all(|taken| *taken == hit),
+            "{relics:?}: Popper hit once"
+        );
+    }
+    let refusal = open_owner_in_order(IRONCLAD, &[TOASTY, PUZZLEBOX], false).unwrap_err();
+    assert!(
+        refusal
+            .to_string()
+            .contains("Toasty Mittens + Vexing Puzzlebox recorded order"),
+        "{refusal}"
+    );
 }
 
 /// Choices Paradox draws its owner's unlocked pool (#3321):
@@ -3758,8 +4027,9 @@ fn a_delicate_frond_save_with_sozu_spends_one_generation_and_fills_nothing() {
 ///
 /// The seed admits the carrier; it widens no other gate. A procuring relic
 /// still needs the exact belt capacity (its guard reads the slots before Sozu
-/// is asked), and Belt Buckle, whose latch a procurement clears, is still
-/// refused by the room-entry gate exactly as it is without Sozu.
+/// is asked). Belt Buckle was this test's second example until #3617 ported
+/// its combat-start body; it now opens, with Sozu and without, to the same
+/// empty-belt grant, since Sozu vetoes procurement and not the Buckle.
 #[test]
 fn a_sozu_save_keeps_the_procuring_relics_own_refusals() {
     for procurer in ["RELIC.PETRIFIED_TOAD", "RELIC.DELICATE_FROND"] {
@@ -3770,13 +4040,12 @@ fn a_sozu_save_keeps_the_procuring_relics_own_refusals() {
     let buckle = serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.BELT_BUCKLE"});
     let mut without = full_profile_case();
     relic(&mut without, buckle.clone());
-    let without = open(&without).expect_err("Belt Buckle refuses without Sozu");
+    let without = open(&without).expect("Belt Buckle opens without Sozu");
     let mut with = sozu_case();
     relic(&mut with, buckle);
-    let with = open(&with).expect_err("and with it");
-    assert_eq!(with.class(), without.class());
-    assert_eq!(with.to_string(), without.to_string());
-    assert_ne!(with.class(), "boundary_unrepresentable");
+    let with = open(&with).expect("and with it");
+    assert_eq!(buckle_state(&with), buckle_state(&without));
+    assert_eq!(buckle_state(&with), (Some(true), Some(true), 2));
 }
 
 /// A Petrified Toad fight without an exact positive belt capacity refuses,
@@ -3871,6 +4140,222 @@ fn a_delicate_frond_save_fills_every_open_slot_from_the_potion_stream() {
     assert_eq!(empty.document.monsters, control.document.monsters);
 }
 
+/// #3684: the Misery ledger follows the ROOT's catalog, not the pre-hook
+/// one ([`super::build`]).
+///
+/// The save holds no `Misery` and nothing that reaches one, so the opening
+/// loads with the ledger off. Delicate Frond then fills the belt from the
+/// potion stream. Over a range of seeds some fills reach `Misery` (a
+/// Colorless Potion's pool holds it) and some do not. Where the opened
+/// document's own catalog reaches it, the Strength the opening itself wrote
+/// (Brimstone's turn-one enemy tick, a literal null applier, amount 1) is
+/// recorded behind Red Mask's Weak token, exactly as in the save that held a
+/// physical Misery
+/// (`a_rust_opened_root_records_the_brimstone_strength_behind_red_masks_weak_token`);
+/// before, such a root carried "Strength, a token, no row" and refused at
+/// admission by `unplaceable entering Strength beside a reachable reducer`.
+/// Where it does not, nothing is recorded and the document is the one the
+/// single run built. Either way the document reloads to itself.
+///
+/// The potion stream is reseeded per case to find both arms; a fill that
+/// reaches `Misery` is, for example, an Entropic Brew, whose procurable
+/// set is the whole potion pool.
+#[test]
+fn an_opening_whose_procured_potion_reaches_misery_records_its_strength_rows() {
+    use crate::boundary::HotBoundary;
+    let wall = "unplaceable entering Strength beside a reachable reducer";
+    let mut seen = [0usize; 2];
+    for n in 0..48 {
+        let mut case = frond_case(vec![]);
+        for id in ["RELIC.BRIMSTONE", "RELIC.RED_MASK"] {
+            relic(
+                &mut case,
+                serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+            );
+        }
+        // Another potion stream per case; every other stream is the save's.
+        let words =
+            crate::rng::run_stream_at_zero(&format!("E3684S{n}"), "potion_generation").words;
+        let keys = case["save"]["rng"]["rngs"]
+            .as_object()
+            .expect("the save's streams are an object")
+            .keys()
+            .filter(|key| key.contains("potion"))
+            .cloned()
+            .collect::<Vec<_>>();
+        assert_eq!(keys.len(), 1, "{keys:?}");
+        case["save"]["rng"]["rngs"][keys[0].as_str()] = serde_json::json!({
+            "counter": 0, "s0": words[0], "s1": words[1], "s2": words[2], "s3": words[3]});
+        let Ok(opening) = open(&case) else {
+            continue;
+        };
+        let root = HotBoundary::catalog_from_canonical(&opening.document)
+            .unwrap_or_else(|refusal| panic!("seed {n}: {refusal}"));
+        let reaches = root.session_bookkeeping().misery_ledger;
+        let rows = monster_field(&opening.document, "power_attachments");
+        assert!(!rows.is_empty(), "seed {n}");
+        for row in &rows {
+            if reaches {
+                assert_eq!(
+                    *row,
+                    serde_json::json!([["strength", "none", 0, 1, 1]]),
+                    "seed {n}: potions {}",
+                    opening.document.player["potion_slots"]
+                );
+            } else {
+                assert_eq!(*row, Value::Null, "seed {n}");
+            }
+        }
+        let state = HotBoundary::from_canonical(&opening.document, &root)
+            .unwrap_or_else(|refusal| panic!("seed {n}: {refusal}"));
+        // The root reloads to itself. The one field left out is the record
+        // itself: the root's catalog can keep the other two session bits by
+        // closure, which the opening does not carry back.
+        let mut reloaded = HotBoundary::to_canonical(&state, &root);
+        let mut opened = opening.document.clone();
+        reloaded.player.remove("session_bookkeeping");
+        opened.player.remove("session_bookkeeping");
+        assert_eq!(reloaded, opened, "seed {n}: the root reloads to itself");
+        if let Err(refusal) = crate::engine::admit(&opening.document, &state, &root) {
+            assert!(!refusal.to_string().contains(wall), "seed {n}: {refusal}");
+        }
+        // #3756: the record names every bit the root keeps, the ledger's
+        // among them.
+        let recorded = crate::catalog::SessionBookkeeping::NAMES
+            .into_iter()
+            .zip(root.session_bookkeeping().bits())
+            .filter_map(|(name, bit)| bit.then_some(Value::from(name)))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            opening.document.player.get("session_bookkeeping"),
+            (!recorded.is_empty())
+                .then_some(Value::Array(recorded))
+                .as_ref(),
+            "seed {n}: the record is written exactly where a bit was carried back"
+        );
+        seen[usize::from(reaches)] += 1;
+    }
+    assert!(seen[0] > 0 && seen[1] > 0, "both arms: {seen:?}");
+}
+
+/// #3756: the other two session bits follow the ROOT's catalog too
+/// ([`super::build`]).
+///
+/// Delicate Frond fills the belt from a reseeded potion stream and
+/// Whispering Earring auto-plays the dealt Hand, so the opening starts card
+/// plays of its own. Where the opened document's catalog holds a
+/// `Normality` (a fill whose pool reaches the curse pool) the root's
+/// started-play count is the number of plays the opening started; before,
+/// it was zero beside a catalog that could put a `Normality` in Hand that
+/// same turn. Where it does not, the field stays at its default.
+///
+/// `self_return_uids` has nothing to carry: every card a Rust opening writes
+/// has a uid, so building with that bit recorded gives the same document.
+/// The loop establishes that for every fill it meets.
+#[test]
+fn an_opening_whose_procured_potion_reaches_normality_counts_its_own_plays() {
+    use crate::boundary::HotBoundary;
+    use crate::catalog::SessionBookkeeping;
+    let count = "normality_card_plays_started_this_turn";
+    let mut seen = [0usize; 2];
+    let mut self_return_seen = 0usize;
+    let mut defect_seen = 0usize;
+    for n in 0..64 {
+        let mut case = with_whispering_earring(frond_case(vec![]));
+        let words =
+            crate::rng::run_stream_at_zero(&format!("E3756N{n}"), "potion_generation").words;
+        let keys = case["save"]["rng"]["rngs"]
+            .as_object()
+            .expect("the save's streams are an object")
+            .keys()
+            .filter(|key| key.contains("potion"))
+            .cloned()
+            .collect::<Vec<_>>();
+        assert_eq!(keys.len(), 1, "{keys:?}");
+        case["save"]["rng"]["rngs"][keys[0].as_str()] = serde_json::json!({
+            "counter": 0, "s0": words[0], "s1": words[1], "s2": words[2], "s3": words[3]});
+        let Ok(opening) = open(&case) else {
+            continue;
+        };
+        let root = HotBoundary::catalog_from_canonical(&opening.document)
+            .unwrap_or_else(|refusal| panic!("seed {n}: {refusal}"));
+        let implied = root.session_bookkeeping();
+        let started = opening
+            .document
+            .player
+            .get(count)
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        let plays = opening
+            .document
+            .player
+            .get("card_plays_started_this_turn")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        if implied.normality_count {
+            assert!(started > 0, "seed {n}: the opening's plays are counted");
+            if plays > 0 {
+                assert_eq!(started, plays, "seed {n}");
+            }
+        } else {
+            assert_eq!(started, 0, "seed {n}");
+        }
+        seen[usize::from(implied.normality_count)] += 1;
+
+        // The record names exactly the bits the root keeps.
+        let recorded = SessionBookkeeping::NAMES
+            .into_iter()
+            .zip(implied.bits())
+            .filter_map(|(name, bit)| bit.then_some(Value::from(name)))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            opening.document.player.get("session_bookkeeping"),
+            (!recorded.is_empty())
+                .then_some(Value::Array(recorded))
+                .as_ref(),
+            "seed {n}"
+        );
+
+        // `self_return_uids` alone changes nothing but its own record.
+        {
+            let entry = entry_facts(&case);
+            let options = OpeningOptions::default();
+            let (plain, kept) =
+                super::build_keeping(&entry, &options, SessionBookkeeping::default())
+                    .expect("the first run opens");
+            // The defect: the single run, which is what the opening used to
+            // hand over, counted nothing.
+            if implied.normality_count && !kept.normality_count {
+                assert_eq!(plain.document.player.get(count), None, "seed {n}");
+                defect_seen += 1;
+            }
+            let mut with_bit = kept;
+            with_bit.self_return_uids = true;
+            let (forced, _) =
+                super::build_keeping(&entry, &options, with_bit).expect("the forced run opens");
+            let strip = |document: &crate::canonical::CanonicalStateV2| {
+                let mut document = document.clone();
+                document.player.remove("session_bookkeeping");
+                document
+            };
+            assert_eq!(strip(&plain.document), strip(&forced.document), "seed {n}");
+            self_return_seen += usize::from(implied.self_return_uids);
+        }
+
+        // The root reloads to itself and is not refused for its count.
+        let state = HotBoundary::from_canonical(&opening.document, &root)
+            .unwrap_or_else(|refusal| panic!("seed {n}: {refusal}"));
+        assert_eq!(
+            HotBoundary::to_canonical(&state, &root),
+            opening.document,
+            "seed {n}: the root reloads to itself"
+        );
+    }
+    assert!(seen[0] > 0 && seen[1] > 0, "both arms: {seen:?}");
+    assert!(self_return_seen > 0, "a fill reached a self-return card");
+    assert!(defect_seen > 0, "a single run that dropped its own plays");
+}
+
 /// A full belt never enters the loop (`IL_0023` branches to the guard at
 /// `IL_00be`), so the fight is the same save without the relic's effect: no
 /// draw, no procurement.
@@ -3959,6 +4444,125 @@ fn a_delicate_frond_save_without_a_pool_proof_refuses_like_the_same_save_without
 // potions. Each arm is witnessed twice below: directly on `potion_slots`, and
 // end to end through a synthetic save, where the refusal must surface from
 // `open` rather than a document without `potion_slots`.
+
+/// [`recorded_belt_case`] at capacity two holding `relics` in that order.
+fn buckle_case(rows: Vec<Value>, relics: &[&str]) -> Value {
+    let mut case = recorded_belt_case(2, rows);
+    for id in relics {
+        relic(
+            &mut case,
+            serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+        );
+    }
+    case
+}
+
+/// `(belt_buckle, belt_buckle_applied, dexterity)` of an opened root.
+fn buckle_state(opening: &Opening) -> (Option<bool>, Option<bool>, i64) {
+    let player = &opening.document.player;
+    (
+        player.get("belt_buckle").and_then(Value::as_bool),
+        player.get("belt_buckle_applied").and_then(Value::as_bool),
+        player.get("dexterity").and_then(Value::as_i64).unwrap_or(0),
+    )
+}
+
+/// `RELIC.BELT_BUCKLE` opens (#3617): two Dexterity and the latch on an empty
+/// belt, neither with a potion held.
+///
+/// `BeltBuckle/<BeforeCombatStart>d__11::MoveNext` (`0x31f444`), cited on
+/// `engine::potions::belt_buckle_before_combat_start`. Each root is compared,
+/// whole, with the same save without the relic: the ownership flag, the
+/// latch and the Dexterity are the only fields that move. Both roots load and
+/// admit.
+#[test]
+fn a_belt_buckle_save_opens_with_dexterity_only_on_an_empty_belt() {
+    const BUCKLE: &str = "RELIC.BELT_BUCKLE";
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        for field in [
+            "belt_buckle",
+            "belt_buckle_applied",
+            "dexterity",
+            "relics_entering",
+        ] {
+            player.remove(field);
+        }
+        value
+    };
+    for (name, rows, expected) in [
+        ("empty belt", vec![], (Some(true), Some(true), 2)),
+        (
+            "one potion held",
+            vec![potion_row("POTION.FIRE_POTION", 0)],
+            (Some(true), None, 0),
+        ),
+    ] {
+        let control = opens_and_admits(&buckle_case(rows.clone(), &[]), name);
+        let opening = opens_and_admits(&buckle_case(rows, &[BUCKLE]), name);
+        assert_eq!(buckle_state(&opening), expected, "{name}");
+        assert_eq!(buckle_state(&control), (None, None, 0), "{name} control");
+        assert_eq!(
+            strip(&opening.document),
+            strip(&control.document),
+            "{name}: nothing else moves"
+        );
+    }
+}
+
+/// Belt Buckle beside each combat-start procurer on an empty belt, in both
+/// inventory orders: the procured potion takes the Dexterity back.
+///
+/// `CombatManager.IsInProgress` is already set when `BeforeCombatStart` runs,
+/// so a procurement reaches `<AfterPotionProcured>d__13` (`0x31f164`) and its
+/// `RemoveDexterity`. Delicate Frond is a same-walk peer: Buckle first grants
+/// and loses the two, Frond first leaves a belt the Buckle finds non-empty.
+/// Petrified Toad runs in the later walk and always takes them back. Every
+/// case ends with no Dexterity and a clear latch, and equals the same save
+/// without the Buckle but for its ownership flag.
+#[test]
+fn belt_buckle_beside_a_combat_start_procurer_ends_without_its_dexterity() {
+    const BUCKLE: &str = "RELIC.BELT_BUCKLE";
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("belt_buckle");
+        player.remove("relics_entering");
+        value
+    };
+    for procurer in ["RELIC.DELICATE_FROND", "RELIC.PETRIFIED_TOAD"] {
+        let control = open(&buckle_case(vec![], &[procurer]))
+            .unwrap_or_else(|refusal| panic!("{procurer} control: {refusal}"));
+        for order in [[BUCKLE, procurer], [procurer, BUCKLE]] {
+            let opening = opens_and_admits(&buckle_case(vec![], &order), procurer);
+            assert_eq!(
+                buckle_state(&opening),
+                (Some(true), None, 0),
+                "{order:?}: the procurement took the Dexterity back"
+            );
+            assert_eq!(
+                strip(&opening.document),
+                strip(&control.document),
+                "{order:?}"
+            );
+        }
+    }
+    // Without an exact positive belt capacity the Buckle's question (does the
+    // belt hold a potion) has no answer the belt state can carry: refused by
+    // name, as the procurers are.
+    let refusal = open(&with_relic(BUCKLE)).expect_err("capacity 0 refuses");
+    assert_eq!(refusal.class(), "potion_belt_not_exact");
+    assert!(refusal.to_string().contains(BUCKLE), "{refusal}");
+    // A procurer that cannot procure leaves the Buckle's grant alone: Sozu
+    // blocks the Toad, so the empty belt keeps its two Dexterity.
+    let blocked = open(&buckle_case(
+        vec![],
+        &[BUCKLE, "RELIC.PETRIFIED_TOAD", "RELIC.SOZU"],
+    ))
+    .expect("Sozu beside the Toad opens");
+    assert_eq!(buckle_state(&blocked), (Some(true), Some(true), 2));
+}
 
 /// The fixture save with `rows` as its potion belt and `capacity` recorded.
 fn recorded_belt_case(capacity: i64, rows: Vec<Value>) -> Value {
@@ -4285,13 +4889,18 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // gained its turn-1 Dark channel there too (#2827,
     // `engine::relics::symbiotic_virus_after_side_turn_start`). 4 since
     // `BELLOWS` and `FESTIVE_POPPER` gained their `AfterPlayerTurnStart`
-    // bodies in `engine::relics::continue_after_toasty_mittens` (#2827,
+    // bodies in `engine::relics::after_player_turn_start_body` (#2827,
     // 2026-09-23). 3 since `FENCING_MANUAL` gained its turn-1 Forge in
     // `engine::relics::fencing_manual_after_side_turn_start` (#3090,
     // 2026-09-25; the manifest's `rust_body_site` flipped by hand, since its
-    // generator is deleted).
+    // generator is deleted). 2 since `RUNIC_CAPACITOR` gained its turn-1
+    // `AddSlots` in `engine::relics::runic_capacitor_after_side_turn_start`
+    // (#3756, 2026-10-10; flipped by hand the same way).
+    // 1 since `TWISTED_FUNNEL` gained its turn-1 Poison row in
+    // `engine::relics::TURN_ONE_ALL_ENEMY_DEBUFFS` (#3756, 2026-10-10;
+    // flipped by hand as well). The one left is `AKABEKO`, an exclusion.
     assert_eq!(
-        turn_one_unsubscribed, 3,
+        turn_one_unsubscribed, 1,
         "of those, the ones with no Rust body at all"
     );
 
@@ -4398,7 +5007,7 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // `RELIC.PHYLACTERY_UNBOUND`:
     // their body sites were Kusarigama's `AfterCardPlayed` hit and
     // `AfterSideTurnEnd` reset, and Phylactery Unbound's turn-start summon in
-    // `after_side_turn_start_late`. Their WINDOW bodies are Kusarigama's inert
+    // `after_side_turn_start`. Their WINDOW bodies are Kusarigama's inert
     // counter reset (already seeded) and Phylactery Unbound's combat-start
     // summon, now `engine::phylactery_before_combat_start`, with parity
     // witnesses below.
@@ -4418,8 +5027,8 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // `PER_FIGHT_RELIC_STATE_SEEDED` row, with parity witnesses at the end of
     // this file.
     // 9 since #2992 retired `RELIC.BLESSED_ANTLER`: its body site WAS its
-    // window body (the turn-1 `BeforeHandDraw` Dazed row of
-    // `engine::relics::continue_before_hand_draw_after_toolbox`), so the gate
+    // window body (the turn-1 `BeforeHandDraw` Dazed arm of
+    // `engine::relics::before_hand_draw`'s walk), so the gate
     // was an over-refusal; parity witnesses are at the end of this file.
     // 5 since #3162 retired `RELIC.JEWELED_MASK`, `RELIC.FUNERARY_MASK`,
     // `RELIC.RADIANT_PEARL` and `RELIC.BIG_MUSHROOM`: each body site WAS its
@@ -4428,8 +5037,9 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // Mushroom's `AfterRoomEntered` is a visual scale in IL). The census
     // opening checkpoint is their witness, with fixture witnesses at the end
     // of this file. `RELIC.TEA_OF_DISCOURTESY` left in the same change and
-    // never counted here: it has no Rust body site, and a spent Tea's
-    // `BeforeCombatStart` is inert in IL (`tea_of_discourtesy_spent`).
+    // never counted here: it had no Rust body site then, and a spent Tea's
+    // `BeforeCombatStart` is inert in IL. Its charged body followed in
+    // #3756 (`engine::relics::tea_of_discourtesy_before_combat_start`).
     // Still 5 after #3533 retired `RELIC.DELICATE_FROND`: it had no Rust
     // body site while gated, and its manifest row flipped by hand with the
     // port (`engine::potions::delicate_frond_before_combat_start`).
@@ -4439,9 +5049,22 @@ fn every_opening_window_relic_body_is_gated_or_explicitly_excluded() {
     // Snecko Eye, Fur Coat and Philosopher's Stone, each named from a body
     // root for a hook other than the one that keeps it gated (the audit above
     // `OPENING_WINDOW_RELIC_BODIES` says which).
+    // 3 since #3620 retired `RELIC.PHILOSOPHERS_STONE`: its body sites were
+    // the `ModifyMaxEnergy` row and the mid-fight `AfterCreatureAddedToCombat`
+    // body, and its WINDOW body (the room-entry enemy Strength) is now
+    // `entry::opening`'s `philosophers_stone_after_room_entered`, with fixture
+    // witnesses beside the other turn-one relic tests and the census opening
+    // checkpoint on every fight that owns it.
+    // 1 since #3618 retired `RELIC.SNECKO_EYE` and `RELIC.FAKE_SNECKO_EYE`:
+    // their WINDOW body (`BeforeCombatStart`'s Confused) is the ownership
+    // projection `engine::draw::confused_after_card_drawn` rolls from, and
+    // Snecko Eye's `ModifyHandDraw` was already a row of the fold. Fixture
+    // witnesses are beside the other hand-draw relic tests; the census opening
+    // checkpoint covers the one capture that owns either. The one left is Fur
+    // Coat, for a save whose marked rooms are unprovable.
     assert_eq!(
         gated_with_a_body.len(),
-        4,
+        1,
         "a five-hook gate entry gained or lost a Rust body site — check whether \
          the body is for its WINDOW hook, and if it is, retire the entry with \
          a parity witness instead of adjusting this number: {gated_with_a_body:?}"
@@ -4509,14 +5132,22 @@ fn with_relic(id: &str) -> Value {
 /// `RELIC.RED_MASK`, `RELIC.BAG_OF_MARBLES` and `RELIC.LANTERN` were in this
 /// loop until 2026-09-22 and are now witnessed by their parity tests further
 /// down, as are `RELIC.BELLOWS` and `RELIC.FESTIVE_POPPER` since 2026-09-23
-/// (#2827); the two that remain still owe their bodies. The refusal must also say
-/// *which half* of the opening the body is in — a reader chasing a census row
-/// to the wrong half is what the distinct variant exists to prevent.
+/// (#2827), `RELIC.FENCING_MANUAL` since #3090 and `RELIC.TWISTED_FUNNEL`
+/// since #3756, which emptied the table: the loop is vacuous today, and the
+/// class and its message are pinned on a constructed refusal instead. The
+/// refusal must also say *which half* of the opening the body is in — a reader
+/// chasing a census row to the wrong half is what the distinct variant exists
+/// to prevent.
 #[test]
 fn every_turn_one_gated_relic_refuses_by_its_own_name() {
+    let constructed = OpeningRefusal::TurnOneRelicBodyNotModeled {
+        relic: "RELIC.X".to_string(),
+    };
+    assert_eq!(constructed.class(), "turn_one_relic_body_not_modeled");
     assert!(
-        !super::TURN_ONE_RELIC_BODIES.is_empty(),
-        "an empty table would make this loop vacuous"
+        constructed.to_string().contains("RELIC.X")
+            && constructed.to_string().contains("begin_player_turn"),
+        "{constructed}"
     );
     for relic in super::TURN_ONE_RELIC_BODIES {
         let refusal = open(&with_relic(relic)).unwrap_err();
@@ -4779,7 +5410,7 @@ fn the_pre_hook_document_writes_template_relics_in_inventory_order() {
 ///
 /// Brimstone shares `AfterSideTurnStart` with `RELIC.LANTERN` and is the reason
 /// the gate had to be derived rather than swept: it is a non-template relic
-/// with a hand-authored engine body (`engine::relics::after_side_turn_start_late`,
+/// with a hand-authored engine body (`engine::relics::after_side_turn_start`,
 /// `Brimstone/<AfterSideTurnStart>d__8::MoveNext` `0x32098c`), so a gate keyed
 /// on "non-template" alone would have refused it. Oracle: `cd63aaa2…`, owner
 /// Strength 2 and +1 on each Toadpole.
@@ -5747,6 +6378,796 @@ fn the_two_all_enemy_debuff_relics_record_their_tokens_in_the_oracles_order() {
     );
 }
 
+/// The fixture case holding `ids` in that inventory order.
+fn with_relics_in_order(ids: &[&str]) -> Value {
+    let mut case = empty_belt_case();
+    for id in ids {
+        relic(
+            &mut case,
+            serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+        );
+    }
+    case
+}
+
+/// `RELIC.TWISTED_FUNNEL` applies Poison 4 to every hittable enemy on turn 1
+/// (#3756).
+///
+/// `TwistedFunnel/<BeforeSideTurnStart>d__6::MoveNext` `0x3336e8`, cited on
+/// `engine::relics::TURN_ONE_ALL_ENEMY_DEBUFFS`. The frozen oracle is deleted,
+/// so this is a direct assertion against the same save without the relic:
+/// each enemy gains the Poison, its acquisition token and a fresh instance
+/// identity (allocated in roster order from the combat's allocator, which
+/// ends one past the last), and nothing else in the document moves. The opened
+/// root loads and admits.
+#[test]
+fn a_twisted_funnel_save_poisons_every_enemy_and_allocates_each_identity() {
+    let control = opens_and_admits(&empty_belt_case(), "the control");
+    let opening = opens_and_admits(&with_relic("RELIC.TWISTED_FUNNEL"), "Twisted Funnel");
+    assert_eq!(
+        monster_field(&opening.document, "poison"),
+        vec![Value::from(4), Value::from(4)]
+    );
+    assert_eq!(
+        monster_field(&opening.document, "misery_debuff_order"),
+        vec![serde_json::json!(["poison"]), serde_json::json!(["poison"])]
+    );
+    assert_eq!(
+        monster_field(&opening.document, "poison_uid"),
+        vec![Value::from(0), Value::from(1)]
+    );
+    assert_eq!(
+        opening.document.player.get("next_poison_uid"),
+        Some(&Value::from(2))
+    );
+    assert_eq!(
+        monster_field(&control.document, "poison"),
+        vec![Value::Null; 2]
+    );
+
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("twisted_funnel");
+        player.remove("relics_entering");
+        player.remove("next_poison_uid");
+        for monster in value["monsters"].as_array_mut().unwrap() {
+            let monster = monster.as_object_mut().unwrap();
+            monster.remove("poison");
+            monster.remove("poison_uid");
+            monster.remove("misery_debuff_order");
+        }
+        value
+    };
+    assert_eq!(strip(&opening.document), strip(&control.document));
+}
+
+/// Snecko Skull adds its one to the Funnel's Poison, because the body passes
+/// the owner's Creature as applier (`0x3336e8` `IL_0185`-`IL_018b`) and
+/// `SneckoSkull::ModifyPowerAmountGivenAdditive` (`0x9bb8d`) answers for a
+/// `PoisonPower` whose applier is its owner.
+#[test]
+fn a_twisted_funnel_beside_snecko_skull_applies_five_poison() {
+    let opening = opens_and_admits(
+        &with_relics_in_order(&["RELIC.TWISTED_FUNNEL", "RELIC.SNECKO_SKULL"]),
+        "Twisted Funnel + Snecko Skull",
+    );
+    assert_eq!(
+        monster_field(&opening.document, "poison"),
+        vec![Value::from(5), Value::from(5)]
+    );
+}
+
+/// The three all-enemy debuff relics follow a vouched inventory once the
+/// Funnel is among them, and refuse without one (#3756).
+///
+/// Native awaits the bodies in `Player.Relics` order, and the order an enemy
+/// acquires its debuffs in is the Misery token order. Every permutation of
+/// the trio opens with its own recorded order; the same saves with the
+/// inventory not vouched refuse by the Funnel's name and its peers'. The
+/// Funnel alone needs no order, and Red Mask beside Bag of Marbles without it
+/// keeps #2693's table order even when the inventory records the reverse.
+#[test]
+fn twisted_funnel_follows_the_recorded_order_of_the_all_enemy_debuffs() {
+    const MASK: &str = "RELIC.RED_MASK";
+    const BAG: &str = "RELIC.BAG_OF_MARBLES";
+    const FUNNEL: &str = "RELIC.TWISTED_FUNNEL";
+    let token = |relic: &str| match relic {
+        MASK => "weak",
+        BAG => "vuln",
+        _ => "poison",
+    };
+    let open_as = |ids: &[&str], vouched: bool| {
+        let mut facts = entry_facts(&with_relics_in_order(ids));
+        facts.relic_entry.dispatch_ordered = vouched;
+        open_facts(&facts)
+    };
+    for order in [
+        [MASK, BAG, FUNNEL],
+        [MASK, FUNNEL, BAG],
+        [BAG, MASK, FUNNEL],
+        [BAG, FUNNEL, MASK],
+        [FUNNEL, MASK, BAG],
+        [FUNNEL, BAG, MASK],
+    ] {
+        let opening = open_as(&order, true).unwrap_or_else(|err| panic!("{order:?}: {err}"));
+        let tokens: Vec<&str> = order.iter().map(|relic| token(relic)).collect();
+        assert_eq!(
+            monster_field(&opening.document, "misery_debuff_order"),
+            vec![serde_json::json!(tokens), serde_json::json!(tokens)],
+            "{order:?}"
+        );
+        for (field, amount) in [("weak", 1), ("vuln", 1), ("poison", 4)] {
+            assert_eq!(
+                monster_field(&opening.document, field),
+                vec![Value::from(amount); 2],
+                "{order:?} {field}"
+            );
+        }
+
+        let refusal = open_as(&order, false).unwrap_err();
+        assert_eq!(refusal.class(), "relic_combination_refused", "{order:?}");
+        for relic in order {
+            assert!(refusal.to_string().contains(relic), "{refusal}");
+        }
+    }
+    // One peer is enough to need the order, in either position.
+    for (order, tokens) in [
+        ([FUNNEL, MASK], ["poison", "weak"]),
+        ([BAG, FUNNEL], ["vuln", "poison"]),
+    ] {
+        let opening = open_as(&order, true).unwrap_or_else(|err| panic!("{order:?}: {err}"));
+        assert_eq!(
+            monster_field(&opening.document, "misery_debuff_order"),
+            vec![serde_json::json!(tokens), serde_json::json!(tokens)],
+            "{order:?}"
+        );
+        let peer = order.into_iter().find(|relic| *relic != FUNNEL).unwrap();
+        match open_as(&order, false).unwrap_err() {
+            OpeningRefusal::RelicCombinationRefused { relics, reason } => {
+                assert_eq!(relics, [FUNNEL.to_string(), peer.to_string()], "{order:?}");
+                assert!(reason.contains("BeforeSideTurnStart"), "{reason}");
+            }
+            other => panic!("{order:?}: wrong refusal {other}"),
+        }
+    }
+    // The Funnel alone opens without a vouched inventory.
+    let alone = open_as(&[FUNNEL], false).expect("the Funnel alone needs no order");
+    assert_eq!(
+        monster_field(&alone.document, "misery_debuff_order"),
+        vec![serde_json::json!(["poison"]); 2]
+    );
+    // #3765: without the Funnel the pair follows a vouched inventory too,
+    // in either order, and refuses by name without one.
+    for (order, tokens) in [
+        ([BAG, MASK], ["vuln", "weak"]),
+        ([MASK, BAG], ["weak", "vuln"]),
+    ] {
+        let pair = open_as(&order, true).expect("the vouched pair opens");
+        assert_eq!(
+            monster_field(&pair.document, "misery_debuff_order"),
+            vec![serde_json::json!(tokens); 2],
+            "{order:?}"
+        );
+        match open_as(&order, false).unwrap_err() {
+            OpeningRefusal::RelicCombinationRefused { relics, reason } => {
+                assert_eq!(relics, [BAG.to_string(), MASK.to_string()], "{order:?}");
+                assert!(reason.contains("BeforeSideTurnStart"), "{reason}");
+            }
+            other => panic!("{order:?}: wrong refusal {other}"),
+        }
+    }
+    // Either of the pair alone opens without a vouched inventory.
+    for (relic, token) in [(MASK, "weak"), (BAG, "vuln")] {
+        let alone = open_as(&[relic], false).expect("one debuff relic needs no order");
+        assert_eq!(
+            monster_field(&alone.document, "misery_debuff_order"),
+            vec![serde_json::json!([token]); 2],
+            "{relic}"
+        );
+    }
+}
+
+/// `RELIC.INFUSED_CORE` channels three Lightning on the first turn-start walk
+/// (#3756).
+///
+/// `InfusedCore/<AfterSideTurnStart>d__8::MoveNext` (`0x326d00`); the body is
+/// `engine::relics::infused_core_after_side_turn_start`. The frozen oracle is
+/// deleted, so this compares the opened document, whole, with the same Defect
+/// save without the relic: the three orbs and the ownership mirrors are the
+/// only fields that move, with no evoke, no damage and no RNG draw. The root
+/// loads and admits. Metronome counts the three channels, which shows they
+/// run through the shared command.
+#[test]
+fn an_infused_core_save_opens_with_three_lightning_in_a_defects_queue() {
+    let defect = |ids: &[&str]| {
+        let mut case = with_relics_in_order(ids);
+        case["save"]["players"][0]["character_id"] = Value::from("CHARACTER.DEFECT");
+        case
+    };
+    let control = opens_and_admits(&defect(&[]), "the Defect control");
+    let opening = opens_and_admits(&defect(&["RELIC.INFUSED_CORE"]), "Infused Core");
+    assert_eq!(
+        opening.document.player.get("orbs"),
+        Some(&serde_json::json!([
+            ["LIGHTNING", null],
+            ["LIGHTNING", null],
+            ["LIGHTNING", null]
+        ]))
+    );
+    assert_eq!(
+        opening.document.player.get("orb_slots"),
+        Some(&Value::from(3))
+    );
+    assert_eq!(control.document.player.get("orbs"), None);
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("orbs");
+        player.remove("infused_core");
+        player.remove("relics_entering");
+        value
+    };
+    assert_eq!(strip(&opening.document), strip(&control.document));
+
+    let with_metronome = open(&defect(&["RELIC.INFUSED_CORE", "RELIC.METRONOME"]))
+        .expect("Infused Core with Metronome opens");
+    assert_eq!(
+        with_metronome.document.player.get("metronome"),
+        Some(&Value::from(3))
+    );
+}
+
+/// Where the three channels do not fit, they evoke.
+///
+/// * Defect behind Cracked Core's Lightning (the earlier hook): the third
+///   channel evokes the front orb, 8 + Infused Core's 1 at one enemy, and the
+///   queue ends at three Lightning.
+/// * Ironclad (no base slots): the first channel bootstraps one slot and the
+///   next two each evoke, so 18 damage lands in total and one Lightning is
+///   left in a one-slot queue.
+///
+/// Both are the shared channel command's own behaviour, alone on the hook, so
+/// they open; the peers that could observe the evoke refuse in
+/// `infused_core_refuses_beside_the_peers_that_observe_its_channels`.
+#[test]
+fn infused_core_evokes_when_its_three_channels_do_not_fit() {
+    let damage =
+        |opening: &Opening| -> i64 { monster_damage_taken(&opening.document).iter().sum() };
+    let lightning =
+        |count: usize| Value::Array(vec![serde_json::json!(["LIGHTNING", null]); count]);
+
+    let mut defect = with_relics_in_order(&["RELIC.CRACKED_CORE", "RELIC.INFUSED_CORE"]);
+    defect["save"]["players"][0]["character_id"] = Value::from("CHARACTER.DEFECT");
+    let opening = opens_and_admits(&defect, "Defect, Cracked Core + Infused Core");
+    assert_eq!(opening.document.player.get("orbs"), Some(&lightning(3)));
+    assert_eq!(
+        opening.document.player.get("orb_slots"),
+        Some(&Value::from(3))
+    );
+    assert_eq!(damage(&opening), 9);
+
+    let opening = opens_and_admits(
+        &with_relics_in_order(&["RELIC.INFUSED_CORE"]),
+        "Ironclad, Infused Core",
+    );
+    assert_eq!(opening.document.player.get("orbs"), Some(&lightning(1)));
+    assert_eq!(
+        opening.document.player.get("orb_slots"),
+        Some(&Value::from(1))
+    );
+    assert_eq!(damage(&opening), 18);
+}
+
+/// Every arm of `infused_core_turn_start_order_is_recorded`, and the same
+/// refusals through `open` (#3756).
+///
+/// Runic Capacitor, Bread and Brimstone refuse beside Infused Core exactly
+/// when the three channels do not fit: at zero base slots, or with Cracked
+/// Core. With a Defect's base slots and no Cracked Core they open. Symbiotic
+/// Virus and Fencing Manual refuse at any capacity, in their own gates.
+#[test]
+fn infused_core_refuses_beside_the_peers_that_observe_its_channels() {
+    const IC: &str = "RELIC.INFUSED_CORE";
+    const CC: &str = "RELIC.CRACKED_CORE";
+    let vouched = |owned: &[&str], base: i64| {
+        let relics: std::collections::BTreeSet<&str> = owned.iter().copied().collect();
+        super::infused_core_turn_start_order_is_recorded(&relics, base, true)
+    };
+    // #3635: a vouched inventory records the order the walk runs.
+    for peer in ["RELIC.BREAD", "RELIC.BRIMSTONE", "RELIC.RUNIC_CAPACITOR"] {
+        for base in [0, 3] {
+            assert_eq!(vouched(&[IC, CC, peer], base), Ok(()), "{peer} vouched");
+            assert_eq!(vouched(&[IC, peer], base), Ok(()), "{peer} vouched");
+        }
+    }
+    let check = |owned: &[&str], base: i64| {
+        let relics: std::collections::BTreeSet<&str> = owned.iter().copied().collect();
+        super::infused_core_turn_start_order_is_recorded(&relics, base, false)
+            .err()
+            .map(|refusal| match refusal {
+                OpeningRefusal::RelicCombinationRefused { relics, .. } => relics,
+                other => panic!("wrong refusal {other:?}"),
+            })
+    };
+    for peer in ["RELIC.BREAD", "RELIC.BRIMSTONE", "RELIC.RUNIC_CAPACITOR"] {
+        assert_eq!(check(&[IC, peer], 3), None, "{peer} fits at base three");
+        assert_eq!(
+            check(&[IC, peer], 0),
+            Some(vec![IC.to_string(), peer.to_string()]),
+            "{peer} at zero base slots"
+        );
+        assert_eq!(
+            check(&[IC, CC, peer], 3),
+            Some(vec![IC.to_string(), CC.to_string(), peer.to_string()]),
+            "{peer} behind Cracked Core"
+        );
+        assert_eq!(check(&[CC, peer], 0), None, "{peer} without Infused Core");
+    }
+    assert_eq!(check(&[IC], 0), None);
+    assert_eq!(check(&[IC, CC], 3), None);
+    assert_eq!(check(&[IC, CC], 0), None);
+    assert_eq!(check(&[IC, "RELIC.LANTERN"], 0), None);
+
+    // Through `open`, on an unvouched inventory. The fixture save is an
+    // Ironclad's (zero base slots).
+    let refusal = open_unvouched(&with_relics_in_order(&[IC, "RELIC.BRIMSTONE"])).unwrap_err();
+    assert_eq!(refusal.class(), "relic_combination_refused");
+    assert!(
+        refusal.to_string().contains(IC) && refusal.to_string().contains("RELIC.BRIMSTONE"),
+        "{refusal}"
+    );
+    let defect = |ids: &[&str]| {
+        let mut case = with_relics_in_order(ids);
+        case["save"]["players"][0]["character_id"] = Value::from("CHARACTER.DEFECT");
+        case
+    };
+    let refusal = open_unvouched(&defect(&[CC, IC, "RELIC.RUNIC_CAPACITOR"])).unwrap_err();
+    assert_eq!(refusal.class(), "relic_combination_refused");
+    assert!(
+        refusal.to_string().contains("RELIC.RUNIC_CAPACITOR"),
+        "{refusal}"
+    );
+    // A Defect without Cracked Core: the Capacitor's slots and the three
+    // channels commute, so it opens with three Lightning in six slots.
+    let opening = opens_and_admits(
+        &defect(&[IC, "RELIC.RUNIC_CAPACITOR"]),
+        "Defect, Infused Core + Runic Capacitor",
+    );
+    assert_eq!(
+        opening.document.player.get("orb_slots"),
+        Some(&Value::from(6))
+    );
+    assert_eq!(
+        opening.document.player["orbs"].as_array().map(Vec::len),
+        Some(3)
+    );
+    // Symbiotic Virus and Fencing Manual refuse beside it in their own gates,
+    // at a Defect's capacity too.
+    assert_eq!(
+        open_unvouched(&defect(&[IC, "RELIC.SYMBIOTIC_VIRUS"])).unwrap_err(),
+        OpeningRefusal::SymbioticVirusTurnStartOrder {
+            peers: vec![IC.to_string()]
+        }
+    );
+    let refusal = open_unvouched(&defect(&[IC, "RELIC.FENCING_MANUAL"])).unwrap_err();
+    assert_eq!(refusal.class(), "relic_combination_refused");
+    assert!(
+        refusal.to_string().contains("RELIC.FENCING_MANUAL"),
+        "{refusal}"
+    );
+}
+
+/// The fixture case holding Power Cell (when `owned`) and `cards` on top of
+/// the starter deck.
+fn power_cell_case(owned: bool, cards: &[&str], relics: &[&str]) -> Value {
+    let mut ids: Vec<&str> = relics.to_vec();
+    if owned {
+        ids.push("RELIC.POWER_CELL");
+    }
+    let mut case = with_relics_in_order(&ids);
+    for card in cards {
+        deck_row(
+            &mut case,
+            serde_json::json!({"floor_added_to_deck": 1, "id": format!("CARD.{card}")}),
+        );
+    }
+    case
+}
+
+fn hand_ids(document: &crate::canonical::CanonicalStateV2) -> Vec<String> {
+    document.piles["hand"]
+        .iter()
+        .map(|card| card.id.clone())
+        .collect()
+}
+
+/// A Power Cell root opens with its free cards at the Hand's head (#3767).
+///
+/// `PowerCell/<BeforeSideTurnStart>d__4::MoveNext` (`0x32e780`) lifts up to
+/// two zero-cost Draw cards into the Hand before the hand draw. Until #3767
+/// every such root refused as `card_identity_allocation_diverged`, because
+/// the allocation check read `hand ++ draw` as one prefix deal. The lifted
+/// cards keep their deck uids, the five dealt after them are the control's
+/// deal with those cards skipped, and the root loads and admits.
+#[test]
+fn a_power_cell_root_opens_with_its_free_cards_ahead_of_the_deal() {
+    let free = ["ANGER", "BLOODLETTING"];
+    let control = opens_and_admits(&power_cell_case(false, &free, &[]), "the control");
+    let opening = opens_and_admits(&power_cell_case(true, &free, &[]), "Power Cell");
+    assert_eq!(hand_size(&control.document), 5);
+    assert_eq!(hand_size(&opening.document), 7);
+    let mut head = hand_ids(&opening.document)[..2].to_vec();
+    head.sort();
+    assert_eq!(head, free, "both free cards lead the Hand");
+
+    // Same cards, same uids: only where they sit differs.
+    let all = |opening: &Opening| {
+        let mut cards = pile_ids_and_uids(&opening.document, "hand");
+        cards.extend(pile_ids_and_uids(&opening.document, "draw"));
+        cards.sort();
+        cards
+    };
+    assert_eq!(all(&opening), all(&control));
+    // What follows the lifted cards is the control's order with them removed.
+    let lifted: Vec<_> = pile_ids_and_uids(&opening.document, "hand")[..2].to_vec();
+    let rest = |opening: &Opening| {
+        let mut cards = pile_ids_and_uids(&opening.document, "hand");
+        cards.extend(pile_ids_and_uids(&opening.document, "draw"));
+        cards.retain(|card| !lifted.contains(card));
+        cards
+    };
+    assert_eq!(rest(&opening), rest(&control));
+}
+
+/// Power Cell takes at most two, and none when nothing in Draw is free.
+#[test]
+fn power_cell_lifts_at_most_two_cards_and_none_without_a_free_one() {
+    let opening = opens_and_admits(
+        &power_cell_case(true, &["ANGER", "BLOODLETTING", "BATTLE_TRANCE"], &[]),
+        "three free cards",
+    );
+    assert_eq!(hand_size(&opening.document), 7, "two lifted, five dealt");
+
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("power_cell");
+        player.remove("relics_entering");
+        value
+    };
+    let control = opens_and_admits(&power_cell_case(false, &[], &[]), "the control");
+    let inert = opens_and_admits(&power_cell_case(true, &[], &[]), "no free card");
+    assert_eq!(strip(&inert.document), strip(&control.document));
+}
+
+/// Power Cell beside another pre-deal Hand writer, and the one case
+/// `power_cell_moved_order` still refuses rather than reorder.
+///
+/// Power Cell's hook is `BeforeSideTurnStart`, the one before
+/// `SetupPlayerTurn` (`CombatManager/<StartTurn>d__100::MoveNext` RVA
+/// `0x3f781c`, IL_0203), so its two cards head the Hand whatever the
+/// inventory order, ahead of a `BeforeHandDraw` writer's (#3635). Native, the
+/// harness on the v0.111.0 DLL: Power Cell with Ninja Scroll, Radiant Pearl,
+/// Funerary Mask, Blessed Antler or Jeweled Mask, granted on either side,
+/// opens with Anger and Bloodletting first, then the Shivs, the Luminesce or
+/// the lifted Power, then the deal. Until #3635 the opening refused this as
+/// an unmodeled Hand head.
+///
+/// When Power Cell takes an Innate card while the turn-one draw is the
+/// Innate clamp, native clamps to the Innate cards left in Draw and this
+/// crate to the deck's count: six free Innate cards make the clamp six and
+/// Power Cell takes two of them.
+#[test]
+fn power_cell_heads_the_hand_beside_another_writer_and_refuses_a_clamped_innate_lift() {
+    for (peer, head) in [
+        ("RELIC.RADIANT_PEARL", &["LUMINESCE"][..]),
+        ("RELIC.NINJA_SCROLL", &["SHIV", "SHIV", "SHIV"][..]),
+        ("RELIC.FUNERARY_MASK", &[][..]),
+    ] {
+        for cell_first in [false, true] {
+            for vouched in [true, false] {
+                let ids = if cell_first {
+                    ["RELIC.POWER_CELL", peer]
+                } else {
+                    [peer, "RELIC.POWER_CELL"]
+                };
+                let mut case = with_relics_in_order(&ids);
+                for card in ["ANGER", "BLOODLETTING"] {
+                    deck_row(
+                        &mut case,
+                        serde_json::json!({"floor_added_to_deck": 1, "id": format!("CARD.{card}")}),
+                    );
+                }
+                let mut facts = entry_facts(&case);
+                facts.relic_entry.dispatch_ordered = vouched;
+                let opening = open_facts(&facts)
+                    .unwrap_or_else(|refusal| panic!("{ids:?} vouched {vouched}: {refusal}"));
+                let hand: Vec<String> = pile_ids_and_uids(&opening.document, "hand")
+                    .into_iter()
+                    .map(|(id, _)| id)
+                    .collect();
+                let mut lifted = hand[..2].to_vec();
+                lifted.sort();
+                assert_eq!(lifted, ["ANGER", "BLOODLETTING"], "{ids:?}: {hand:?}");
+                assert_eq!(
+                    hand[2..2 + head.len()],
+                    *head,
+                    "{ids:?} vouched {vouched}: {hand:?}"
+                );
+                let catalog =
+                    crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+                        .unwrap();
+                let state =
+                    crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+                        .unwrap();
+                crate::engine::admit(&opening.document, &state, &catalog)
+                    .unwrap_or_else(|refusal| panic!("{ids:?} vouched {vouched}: {refusal}"));
+            }
+        }
+    }
+
+    let clamped = open(&power_cell_case(true, &["BACKSTAB"; 6], &[])).unwrap_err();
+    assert_eq!(clamped.class(), "card_identity_allocation_diverged");
+    assert!(clamped.to_string().contains("Innate"), "{clamped}");
+    // The same six Innate cards without Power Cell open: the gate is the
+    // relic's.
+    open(&power_cell_case(false, &["BACKSTAB"; 6], &[])).expect("six Innate cards open");
+}
+
+/// Every arm of `power_cell_moved_order`, on a document's Hand directly.
+#[test]
+fn power_cell_moved_order_reorders_only_free_cards_at_the_hand_head() {
+    let opening = open(&power_cell_case(true, &["ANGER", "BLOODLETTING"], &[]))
+        .expect("the Power Cell root opens");
+    let document = &opening.document;
+    let hand: Vec<Option<u64>> = document.piles["hand"].iter().map(|card| card.uid).collect();
+    let draw: Vec<Option<u64>> = document.piles["draw"].iter().map(|card| card.uid).collect();
+    let dealt_order: Vec<Option<u64>> = hand.iter().chain(&draw).copied().collect();
+    let mut deck_order = dealt_order.clone();
+    deck_order.sort();
+    let owner = vec!["RELIC.POWER_CELL".to_string()];
+
+    // The deck's own numbering becomes the dealt order: the two lifted uids
+    // move to the front, nothing else moves.
+    assert_eq!(
+        super::power_cell_moved_order(document, deck_order.clone(), &owner).unwrap(),
+        (dealt_order.clone(), 2)
+    );
+    // Already in place: unchanged.
+    assert_eq!(
+        super::power_cell_moved_order(document, dealt_order.clone(), &owner).unwrap(),
+        (dealt_order.clone(), 0)
+    );
+    // Not an owner: untouched, whatever the Hand says.
+    assert_eq!(
+        super::power_cell_moved_order(document, deck_order.clone(), &[]).unwrap(),
+        (deck_order.clone(), 0)
+    );
+    // A leading card that is out of place and not free is not Power Cell's
+    // move: the reorder stops, and the allocation check then refuses.
+    let mut costly = document.clone();
+    costly.piles.get_mut("hand").unwrap().swap(0, 6);
+    assert_ne!(
+        canonical_cost(&costly.piles["hand"][0]),
+        Some(0),
+        "the fixture's dealt card is not free"
+    );
+    let (untouched, moved) =
+        super::power_cell_moved_order(&costly, deck_order.clone(), &owner).unwrap();
+    assert_eq!((&untouched, moved), (&deck_order, 0));
+    // Beside Whispering Earring's turn-one loop a lift is still refused.
+    let beside_earring = vec![
+        "RELIC.POWER_CELL".to_string(),
+        "RELIC.WHISPERING_EARRING".to_string(),
+    ];
+    let refusal =
+        super::power_cell_moved_order(document, deck_order.clone(), &beside_earring).unwrap_err();
+    assert_eq!(refusal.class(), "card_identity_allocation_diverged");
+    assert!(refusal.to_string().contains("Whispering"), "{refusal}");
+    assert!(
+        super::check_card_identity_allocation(&costly, &untouched, 0u64).is_err(),
+        "the unreordered layout still refuses"
+    );
+}
+
+fn canonical_cost(card: &crate::canonical::CanonicalCardV2) -> Option<i64> {
+    super::canonical_card_row(card).map(|row| row.cost)
+}
+
+/// `RELIC.PHILOSOPHERS_STONE` gives every enemy of the initial roster one
+/// Strength at room entry (#3620).
+///
+/// `PhilosophersStone/<AfterRoomEntered>d__8::MoveNext` (`0x32dff0`), cited on
+/// `super::philosophers_stone_after_room_entered`. One, not two: the initial
+/// roster is created by `CombatState::CreateCreature`, which does not raise
+/// `AfterCreatureAddedToCombat`. The frozen oracle is deleted, so this
+/// compares the opened document, whole, with the same save without the relic:
+/// each enemy's `strength` and the ownership mirrors are the only fields that
+/// move. The owner's own Strength does not, and the extra Energy is the
+/// relic's `ModifyMaxEnergy` row. The root loads and admits.
+#[test]
+fn a_philosophers_stone_save_opens_with_one_strength_on_every_enemy() {
+    let control = opens_and_admits(&empty_belt_case(), "the control");
+    let opening = opens_and_admits(
+        &with_relic("RELIC.PHILOSOPHERS_STONE"),
+        "Philosopher's Stone",
+    );
+    assert_eq!(
+        monster_field(&opening.document, "strength"),
+        vec![Value::from(1), Value::from(1)]
+    );
+    assert_eq!(
+        monster_field(&control.document, "strength"),
+        vec![Value::Null; 2]
+    );
+    assert_eq!(opening.document.player.get("strength"), None);
+    assert_eq!(
+        opening.document.player.get("energy"),
+        Some(&Value::from(4)),
+        "three plus the Stone's ModifyMaxEnergy one"
+    );
+
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("philosophers_stone");
+        player.remove("relics_entering");
+        player.remove("energy");
+        player.remove("max_energy");
+        for monster in value["monsters"].as_array_mut().unwrap() {
+            monster.as_object_mut().unwrap().remove("strength");
+        }
+        value
+    };
+    assert_eq!(strip(&opening.document), strip(&control.document));
+}
+
+/// The Stone's enemy Strength is independent of the owner's room-entry
+/// grants: beside Vajra and Ruined Helmet the owner still gets Vajra's one,
+/// doubled, and every enemy still gets exactly one.
+/// `RuinedHelmet::TryModifyPowerAmountReceived` (`0x9aa00`) answers only for
+/// its owner's Creature (`IL_001e`-`IL_002a`), so it neither doubles an
+/// enemy's Strength nor spends its latch on one, in either inventory order.
+#[test]
+fn philosophers_stone_does_not_touch_the_owners_strength_or_ruined_helmet() {
+    for order in [
+        [
+            "RELIC.PHILOSOPHERS_STONE",
+            "RELIC.RUINED_HELMET",
+            "RELIC.VAJRA",
+        ],
+        [
+            "RELIC.VAJRA",
+            "RELIC.RUINED_HELMET",
+            "RELIC.PHILOSOPHERS_STONE",
+        ],
+    ] {
+        let opening = open(&with_relics_in_order(&order))
+            .unwrap_or_else(|refusal| panic!("{order:?}: {refusal}"));
+        assert_eq!(
+            monster_field(&opening.document, "strength"),
+            vec![Value::from(1), Value::from(1)],
+            "{order:?}"
+        );
+        assert_eq!(
+            opening.document.player.get("strength"),
+            Some(&Value::from(2)),
+            "{order:?}: Vajra's one, doubled by the Helmet"
+        );
+    }
+}
+
+fn with_modifiers(mut case: Value, ids: &[&str]) -> Value {
+    case["save"]["modifiers"] = Value::Array(
+        ids.iter()
+            .map(|id| serde_json::json!({"id": id, "props": null}))
+            .collect(),
+    );
+    case
+}
+
+/// The Murderous run modifier gives the player and every enemy of the initial
+/// roster three Strength at room entry (#3934).
+///
+/// `Murderous/<AfterRoomEntered>d__1::MoveNext` (`0x377cf8`), cited on
+/// `super::murderous_after_room_entered`. The opened document, whole, is
+/// compared with the same save without the modifier: the three Strengths and
+/// the `murderous` flag the enemy-add listener reads are the only fields that
+/// move. The inert modifiers the daily run carried beside it (Flight,
+/// Insanity) move nothing. The root loads and admits, and the flag survives
+/// the load.
+#[test]
+fn a_murderous_run_opens_with_three_strength_on_every_creature() {
+    let control = opens_and_admits(&empty_belt_case(), "the control");
+    let inert = opens_and_admits(
+        &with_modifiers(empty_belt_case(), &["FLIGHT", "INSANITY"]),
+        "Flight and Insanity",
+    );
+    assert_eq!(inert.document, control.document);
+    for spelling in ["MURDEROUS", "MODIFIER.MURDEROUS"] {
+        let opening = opens_and_admits(
+            &with_modifiers(empty_belt_case(), &["FLIGHT", "INSANITY", spelling]),
+            "Murderous",
+        );
+        assert_eq!(
+            monster_field(&opening.document, "strength"),
+            vec![Value::from(3), Value::from(3)],
+            "{spelling}"
+        );
+        assert_eq!(
+            opening.document.player.get("strength"),
+            Some(&Value::from(3)),
+            "{spelling}"
+        );
+        assert_eq!(
+            opening.document.player.get("murderous"),
+            Some(&Value::Bool(true)),
+            "{spelling}"
+        );
+        assert_eq!(control.document.player.get("murderous"), None);
+        let catalog =
+            crate::boundary::HotBoundary::catalog_from_canonical(&opening.document).unwrap();
+        let state =
+            crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog).unwrap();
+        assert!(state.fanouts.murderous());
+
+        let strip = |document: &crate::canonical::CanonicalStateV2| {
+            let mut value = serde_json::to_value(document).unwrap();
+            let player = value["player"].as_object_mut().unwrap();
+            player.remove("murderous");
+            player.remove("strength");
+            for monster in value["monsters"].as_array_mut().unwrap() {
+                monster.as_object_mut().unwrap().remove("strength");
+            }
+            value
+        };
+        assert_eq!(
+            strip(&opening.document),
+            strip(&control.document),
+            "{spelling}"
+        );
+    }
+}
+
+/// Murderous runs after every relic's `AfterRoomEntered`
+/// (`CombatState/<IterateHookListeners>d__69::MoveNext` `0x3f9720`
+/// IL_0219-IL_0225 appends modifiers after the player's relics), so beside
+/// Vajra its three stack on Vajra's one; beside Ruined Helmet alone its grant
+/// is the first positive Strength and is doubled; beside both the Helmet is
+/// spent on Vajra's; and Philosopher's Stone's enemy Strength adds to it.
+#[test]
+fn murderous_stacks_after_the_relic_room_entry_strength() {
+    let strengths = |relics: &[&str]| {
+        let opening = open(&with_modifiers(
+            with_relics_in_order(relics),
+            &["MODIFIER.MURDEROUS"],
+        ))
+        .unwrap_or_else(|refusal| panic!("{relics:?}: {refusal}"));
+        (
+            opening.document.player.get("strength").cloned(),
+            monster_field(&opening.document, "strength"),
+        )
+    };
+    let enemies = |amount: i64| vec![Value::from(amount), Value::from(amount)];
+    assert_eq!(
+        strengths(&["RELIC.VAJRA"]),
+        (Some(Value::from(4)), enemies(3))
+    );
+    assert_eq!(
+        strengths(&["RELIC.RUINED_HELMET"]),
+        (Some(Value::from(6)), enemies(3))
+    );
+    assert_eq!(
+        strengths(&["RELIC.VAJRA", "RELIC.RUINED_HELMET"]),
+        (Some(Value::from(5)), enemies(3))
+    );
+    assert_eq!(
+        strengths(&["RELIC.PHILOSOPHERS_STONE"]),
+        (Some(Value::from(3)), enemies(4))
+    );
+}
+
 /// `RELIC.LANTERN` grants one Energy on the first `AfterSideTurnStart`.
 ///
 /// `Lantern/<AfterSideTurnStart>d__6::MoveNext` `0x328268`, `get_CanonicalVars`
@@ -5869,18 +7290,20 @@ fn an_entering_artifact_eats_the_turn_one_debuffs_instead_of_stacking_under_them
 }
 
 /// A roster whose Artifact blocks **some but not all** of the owner's debuff
-/// relics refuses rather than guessing their `Player.Relics` order.
+/// relics refuses rather than guessing their `Player.Relics` order, and is
+/// admitted when the inventory records that order (#3756; the engine witness
+/// is `relics::tests::the_all_enemy_debuffs_land_in_the_recorded_order_beside_the_funnel`).
 ///
 /// The oracle's `partial_artifact` (frozen Python `start_combat`, deleted #2827), ported as
 /// `OpeningRefusal::TurnOneDebuffPartialArtifact`. Asserted against
-/// `turn_one_debuff_artifact_is_unambiguous` directly rather than end to end,
-/// because it is **not reachable through the current roster registry**: the
-/// condition needs `0 < artifact < n`, `n` is at most 2 while
-/// `RELIC.TWISTED_FUNNEL` is still gated, and the one registered roster with an
-/// innate Artifact carries 3 (above). That makes this an exact guard with no
-/// corpus witness yet — stated here rather than left as an unexplained
-/// unreachable branch, and the boundary cases either side of it are pinned in
-/// the same loop so the comparison is not off by one.
+/// `turn_one_debuff_artifact_is_unambiguous` directly rather than end to end:
+/// the condition needs `0 < artifact < n`, `n` was at most 2 until
+/// `RELIC.TWISTED_FUNNEL` left its gate (#3756) and is 3 with all three owned,
+/// and the one registered roster with an innate Artifact carries 3 (above),
+/// which blocks all three. That makes this an exact guard with no corpus
+/// witness yet — stated here rather than left as an unexplained branch, and
+/// the boundary cases either side of it are pinned in the same loop so the
+/// comparison is not off by one.
 #[test]
 fn a_partial_artifact_roster_refuses_rather_than_guessing_the_relic_order() {
     use crate::encounters::MonsterSpec;
@@ -5905,6 +7328,7 @@ fn a_partial_artifact_roster_refuses_rather_than_guessing_the_relic_order() {
             super::turn_one_debuff_artifact_is_unambiguous(
                 &owned(&["RELIC.RED_MASK"]),
                 &roster(artifact),
+                false,
             )
             .is_ok(),
             "a single debuff relic is order-free at artifact {artifact}"
@@ -5916,6 +7340,7 @@ fn a_partial_artifact_roster_refuses_rather_than_guessing_the_relic_order() {
             super::turn_one_debuff_artifact_is_unambiguous(
                 &owned(&["RELIC.RED_MASK", "RELIC.BAG_OF_MARBLES"]),
                 &roster(artifact),
+                false,
             )
             .is_ok(),
             "artifact {artifact} against two relics is order-free"
@@ -5924,6 +7349,7 @@ fn a_partial_artifact_roster_refuses_rather_than_guessing_the_relic_order() {
     let refusal = super::turn_one_debuff_artifact_is_unambiguous(
         &owned(&["RELIC.RED_MASK", "RELIC.BAG_OF_MARBLES"]),
         &roster(1),
+        false,
     )
     .expect_err("artifact 1 against two relics is ambiguous");
     assert_eq!(refusal.class(), "turn_one_debuff_partial_artifact");
@@ -5933,11 +7359,53 @@ fn a_partial_artifact_roster_refuses_rather_than_guessing_the_relic_order() {
         "the refusal carries the oracle's own (slot, kind, artifact) tuple: \
          {refusal}"
     );
-    // The gated third member still counts toward `n`, which is what keeps this
-    // exact when `RELIC.TWISTED_FUNNEL` is retired.
+    // The third member counts toward `n` (#3756 retired its gate): with all
+    // three owned, 0 lands every debuff, 3 blocks every one, and 1 or 2
+    // refuses on an unvouched inventory.
     assert!(
         super::TURN_ONE_ALL_ENEMY_DEBUFF_RELICS.contains(&"RELIC.TWISTED_FUNNEL"),
         "the oracle's set is carried whole"
+    );
+    let trio = owned(&[
+        "RELIC.RED_MASK",
+        "RELIC.BAG_OF_MARBLES",
+        "RELIC.TWISTED_FUNNEL",
+    ]);
+    for artifact in [0, 3, 4] {
+        assert!(
+            super::turn_one_debuff_artifact_is_unambiguous(&trio, &roster(artifact), false).is_ok(),
+            "artifact {artifact} against three relics is order-free"
+        );
+    }
+    for artifact in [1, 2] {
+        let refusal =
+            super::turn_one_debuff_artifact_is_unambiguous(&trio, &roster(artifact), false)
+                .expect_err("a partial Artifact against three relics is ambiguous");
+        assert_eq!(refusal.class(), "turn_one_debuff_partial_artifact");
+        assert!(
+            refusal.to_string().contains("RELIC.TWISTED_FUNNEL"),
+            "{refusal}"
+        );
+    }
+    // A vouched inventory is the recorded order: nothing is ambiguous, at
+    // any Artifact, for the pair or the trio (#3756).
+    for artifact in 0..=4 {
+        for relics in [&owned(&["RELIC.RED_MASK", "RELIC.BAG_OF_MARBLES"]), &trio] {
+            assert!(
+                super::turn_one_debuff_artifact_is_unambiguous(relics, &roster(artifact), true)
+                    .is_ok(),
+                "artifact {artifact} under a vouched inventory"
+            );
+        }
+    }
+    // The Funnel beside one peer is the two-relic case.
+    assert!(
+        super::turn_one_debuff_artifact_is_unambiguous(
+            &owned(&["RELIC.RED_MASK", "RELIC.TWISTED_FUNNEL"]),
+            &roster(1),
+            false,
+        )
+        .is_err()
     );
 }
 
@@ -7519,6 +8987,10 @@ fn a_fake_happy_flower_save_seeds_its_counter_modulo_five() {
 /// refusal was Blessed Antler's own room-entry gate; since Antler left
 /// `OPENING_WINDOW_RELIC_BODIES` it is the oracle's peer gate, ported as
 /// `refuse_unordered_blessed_antler_peers`, naming the same two relics.
+///
+/// That is the unvouched inventory. A vouched one opens (#3635): the Core's
+/// counter write and the Antler's Dazed run in the recorded order, and the
+/// fourth turn deals seven.
 #[test]
 fn pollinous_core_beside_blessed_antler_refuses_like_the_oracle() {
     let mut case = with_relic("RELIC.BLESSED_ANTLER");
@@ -7528,7 +9000,15 @@ fn pollinous_core_beside_blessed_antler_refuses_like_the_oracle() {
             "floor_added_to_deck": 1, "id": "RELIC.POLLINOUS_CORE",
             "props": {"ints": [{"name": "TurnsSeen", "value": 3}]}}),
     );
-    let refusal = open(&case).unwrap_err();
+    let vouched = opens_and_admits(&case, "vouched Blessed Antler + Pollinous Core");
+    assert_eq!(hand_size(&vouched.document), 7);
+    assert_eq!(
+        vouched.document.player.get("pollinous_core"),
+        Some(&Value::from(0))
+    );
+    let mut facts = entry_facts(&case);
+    facts.relic_entry.dispatch_ordered = false;
+    let refusal = open_facts(&facts).unwrap_err();
     assert_eq!(refusal.class(), "relic_combination_refused", "{refusal}");
     match refusal {
         OpeningRefusal::RelicCombinationRefused { relics, .. } => assert_eq!(
@@ -7603,10 +9083,11 @@ fn a_symbiotic_virus_save_channels_one_dark_orb_and_matches_the_oracle() {
     }
 }
 
-/// Symbiotic Virus + Cracked Core + Brimstone at zero base slots refuses, as
-/// the oracle's `start_combat` does (frozen Python, deleted #2827): the Dark
-/// channel's evoke can kill before or after Brimstone's live-opponent
-/// snapshot depending on unrecorded acquisition order.
+/// Symbiotic Virus + Cracked Core + Brimstone at zero base slots refuses on
+/// an unvouched inventory, as the oracle's `start_combat` does (frozen
+/// Python, deleted #2827): the Dark channel's evoke can kill before or after
+/// Brimstone's live-opponent snapshot depending on unrecorded acquisition
+/// order. A vouched inventory records it and passes the gate (#3635).
 #[test]
 fn symbiotic_virus_with_cracked_core_and_brimstone_refuses_like_the_oracle() {
     let mut case = with_relic("RELIC.SYMBIOTIC_VIRUS");
@@ -7616,7 +9097,10 @@ fn symbiotic_virus_with_cracked_core_and_brimstone_refuses_like_the_oracle() {
             serde_json::json!({"floor_added_to_deck": 1, "id": peer}),
         );
     }
-    let refusal = open(&case).unwrap_err();
+    if let Err(refusal) = open(&case) {
+        assert_ne!(refusal.class(), "symbiotic_virus_turn_start_order");
+    }
+    let refusal = open_unvouched(&case).unwrap_err();
     assert_eq!(refusal.class(), "symbiotic_virus_turn_start_order");
     assert!(
         refusal.to_string().contains("RELIC.BRIMSTONE")
@@ -7628,16 +9112,39 @@ fn symbiotic_virus_with_cracked_core_and_brimstone_refuses_like_the_oracle() {
 /// Every arm of the oracle's Symbiotic Virus refusal, and the capacities at
 /// which it does not refuse (frozen Python `start_combat`, deleted #2827).
 ///
-/// Called directly because two of the four peers (Infused Core, Runic
-/// Capacitor) are still gated before the call, so no save can reach those arms
-/// through `open` yet; the Fencing Manual arm is reached through `open` by
+/// Called directly so every arm is pinned at both capacities. Through `open`
+/// the Infused Core arm is reached by
+/// `infused_core_refuses_beside_the_peers_that_observe_its_channels` (#3756),
+/// the Runic Capacitor arm by
+/// `runic_capacitor_with_symbiotic_virus_refuses_only_without_base_slots`
+/// (#3756), and the Fencing Manual arm by
 /// `fencing_manual_with_symbiotic_virus_and_cracked_core_refuses_like_the_oracle`. The base-slot argument is the
 /// character's (`orb_base_slots`): 0 for Ironclad, 3 for Defect.
 #[test]
 fn every_symbiotic_virus_order_refusal_arm_matches_the_oracle() {
+    // #3635: a vouched inventory records the order the walk runs.
+    for peers in [
+        vec!["RELIC.INFUSED_CORE"],
+        vec!["RELIC.RUNIC_CAPACITOR"],
+        vec!["RELIC.CRACKED_CORE", "RELIC.BRIMSTONE"],
+        vec!["RELIC.CRACKED_CORE", "RELIC.FENCING_MANUAL"],
+    ] {
+        let relics: std::collections::BTreeSet<&str> = peers
+            .iter()
+            .copied()
+            .chain(["RELIC.SYMBIOTIC_VIRUS"])
+            .collect();
+        for base in [0, 3] {
+            assert_eq!(
+                super::symbiotic_virus_turn_start_order_is_recorded(&relics, base, true),
+                Ok(()),
+                "{peers:?} vouched"
+            );
+        }
+    }
     let check = |owned: &[&str], base: i64| {
         let relics: std::collections::BTreeSet<&str> = owned.iter().copied().collect();
-        super::symbiotic_virus_turn_start_order_is_recorded(&relics, base)
+        super::symbiotic_virus_turn_start_order_is_recorded(&relics, base, false)
             .err()
             .map(|refusal| match refusal {
                 OpeningRefusal::SymbioticVirusTurnStartOrder { peers } => peers,
@@ -7677,6 +9184,155 @@ fn every_symbiotic_virus_order_refusal_arm_matches_the_oracle() {
         None
     );
     assert_eq!(check(&[SV], 0), None);
+}
+
+/// `RELIC.RUNIC_CAPACITOR` adds three orb slots on the first turn-start walk
+/// (#3756).
+///
+/// `RunicCapacitor/<AfterSideTurnStart>d__4::MoveNext` (`0x32ffac`); the body
+/// is `engine::relics::runic_capacitor_after_side_turn_start`. The frozen
+/// oracle is deleted, so these are direct assertions, and the opened document
+/// is compared whole against the same save without the relic: the slot count
+/// and the ownership mirrors are the only fields that move.
+///
+/// * Ironclad (no base slots): three slots, no bootstrap.
+/// * Ironclad with Cracked Core: the Lightning is channeled on the earlier
+///   `BeforeSideTurnStart` hook and bootstraps one slot, so the queue ends at
+///   four with the Lightning still in it.
+/// * Defect (base three), with and without Cracked Core: six.
+#[test]
+fn a_runic_capacitor_save_opens_with_three_more_orb_slots() {
+    const RC: &str = "RELIC.RUNIC_CAPACITOR";
+    let add = |mut case: Value, ids: &[&str]| {
+        for id in ids {
+            relic(
+                &mut case,
+                serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+            );
+        }
+        case
+    };
+    let defect = || {
+        let mut case = empty_belt_case();
+        case["save"]["players"][0]["character_id"] = Value::from("CHARACTER.DEFECT");
+        case
+    };
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("orb_slots");
+        player.remove("runic_capacitor");
+        player.remove("relics_entering");
+        value
+    };
+    for (what, base, peers, slots, orbs) in [
+        ("Ironclad", empty_belt_case(), &[][..], 3, None),
+        (
+            "Ironclad + Cracked Core",
+            empty_belt_case(),
+            &["RELIC.CRACKED_CORE"][..],
+            4,
+            Some(serde_json::json!([["LIGHTNING", null]])),
+        ),
+        ("Defect", defect(), &[][..], 6, None),
+        (
+            "Defect + Cracked Core",
+            defect(),
+            &["RELIC.CRACKED_CORE"][..],
+            6,
+            Some(serde_json::json!([["LIGHTNING", null]])),
+        ),
+    ] {
+        let control = opens_and_admits(&add(base.clone(), peers), &format!("{what} control"));
+        let mut owned: Vec<&str> = peers.to_vec();
+        owned.push(RC);
+        let opening = opens_and_admits(&add(base, &owned), what);
+        assert_eq!(
+            opening.document.player.get("orb_slots"),
+            Some(&Value::from(slots)),
+            "{what}"
+        );
+        assert_eq!(
+            opening
+                .document
+                .player
+                .get("orb_slots")
+                .and_then(Value::as_i64),
+            Some(
+                control
+                    .document
+                    .player
+                    .get("orb_slots")
+                    .and_then(Value::as_i64)
+                    .unwrap_or(0)
+                    + 3
+            ),
+            "{what}: exactly three more than the control"
+        );
+        assert_eq!(opening.document.player.get("orbs"), orbs.as_ref(), "{what}");
+        assert_eq!(
+            opening.document.player.get("runic_capacitor"),
+            Some(&Value::Bool(true)),
+            "{what}"
+        );
+        assert_eq!(
+            strip(&opening.document),
+            strip(&control.document),
+            "{what}: nothing else moves"
+        );
+    }
+}
+
+/// Runic Capacitor beside Symbiotic Virus (#3756): the one same-hook order
+/// the opening can now reach.
+///
+/// At zero base slots the Dark channel bootstraps a slot before or after the
+/// three are added (four slots or three), so an unvouched Ironclad inventory
+/// refuses by the Capacitor's name. A Defect's channel never reads the
+/// capacity at three slots or six, so that save opens with the Dark orb in a
+/// six-slot queue.
+#[test]
+fn runic_capacitor_with_symbiotic_virus_refuses_only_without_base_slots() {
+    let both = |mut case: Value| {
+        for id in ["RELIC.RUNIC_CAPACITOR", "RELIC.SYMBIOTIC_VIRUS"] {
+            relic(
+                &mut case,
+                serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+            );
+        }
+        case
+    };
+    let refusal = open_unvouched(&both(empty_belt_case())).unwrap_err();
+    assert_eq!(
+        refusal,
+        OpeningRefusal::SymbioticVirusTurnStartOrder {
+            peers: vec!["RELIC.RUNIC_CAPACITOR".to_string()]
+        }
+    );
+    // #3635: a vouched Ironclad inventory runs the two as recorded. The
+    // fixture records Runic Capacitor first: three slots, then the Dark orb
+    // into one of them (the native harness's `rc_sv_ic` order).
+    let opening = opens_and_admits(&both(empty_belt_case()), "vouched Ironclad with both");
+    assert_eq!(
+        opening.document.player.get("orbs"),
+        Some(&serde_json::json!([["DARK", 6]]))
+    );
+    assert_eq!(
+        opening.document.player.get("orb_slots"),
+        Some(&Value::from(3))
+    );
+
+    let mut defect = empty_belt_case();
+    defect["save"]["players"][0]["character_id"] = Value::from("CHARACTER.DEFECT");
+    let opening = opens_and_admits(&both(defect), "Defect with both");
+    assert_eq!(
+        opening.document.player.get("orbs"),
+        Some(&serde_json::json!([["DARK", 6]]))
+    );
+    assert_eq!(
+        opening.document.player.get("orb_slots"),
+        Some(&Value::from(6))
+    );
 }
 
 /// `RELIC.VAMBRACE`'s `BeforeCombatStart` makes the first-card-block doubling
@@ -8011,13 +9667,23 @@ fn the_uid_check_admits_blessed_antlers_pre_deal_dazed_and_nothing_else() {
 /// `OPENING_WINDOW_RELIC_BODIES`, which is reached later but refuses it by its
 /// own name. Either way no document is emitted, as the oracle emits
 /// none.
+///
+/// That is the unvouched inventory. One that records its order is walked in
+/// it (#3635), and the gate passes it: whatever a vouched pair then reports
+/// is not this gate's refusal.
 #[test]
 fn every_before_hand_draw_peer_of_blessed_antler_refuses() {
     for peer in super::BEFORE_HAND_DRAW_ORDER_RELICS
         .into_iter()
         .filter(|relic| *relic != "RELIC.BLESSED_ANTLER")
     {
-        let refusal = open(&with_relics("RELIC.BLESSED_ANTLER", peer))
+        let mut facts = entry_facts(&with_relics("RELIC.BLESSED_ANTLER", peer));
+        assert!(facts.relic_entry.dispatch_ordered, "the fixture is a save");
+        if let Err(OpeningRefusal::RelicCombinationRefused { reason, .. }) = open_facts(&facts) {
+            panic!("vouched Blessed Antler with {peer}: {reason}");
+        }
+        facts.relic_entry.dispatch_ordered = false;
+        let refusal = open_facts(&facts)
             .err()
             .unwrap_or_else(|| panic!("Blessed Antler with {peer} must refuse"));
         match &refusal {
@@ -8899,9 +10565,9 @@ fn a_ghost_seed_owner_keeps_the_shuffled_numbering_through_the_fixup() {
 /// A Tea of Discourtesy owner is held to the strict `0..n-1` order, whatever
 /// the fixup did (`expected_identity_order`).
 ///
-/// Not reachable through `build` today — Tea refuses earlier as a turn-one
-/// relic body with no subscriber — so the branch is witnessed on the two
-/// functions directly. The oracle, for the record: with `CombatsLeft = 0`
+/// Reached through `build` by a spent Tea only (a charged one defers the
+/// fixup, #3756), so the branch is witnessed on the two functions
+/// directly. The oracle, for the record: with `CombatsLeft = 0`
 /// and the Writhe row, Tea allocates nothing and the hand opens `WRITHE:0`
 /// (`a55a448c…`); with `CombatsLeft = 1` it allocates over the shuffled pile
 /// and opens `WRITHE:4` with two Dazed at uids 11 and 12 (`d5c4c1c5…`). The
@@ -9140,8 +10806,11 @@ fn necrobinder_owner_pool_generators_open_and_match_the_oracle() {
 ///   refused this partial profile on the Ironclad 2/5/7 epochs (*"Jackpot
 ///   requires the explicitly fully-unlocked owner card pool"*, frozen Python
 ///   `start_combat`, deleted #2827), which cannot move a Necrobinder row.
-/// * Infernal Blade stays Ironclad-only, as the oracle's *"INFERNAL_BLADE
-///   requires an explicit Ironclad owner"* (`start_combat`).
+/// * Infernal Blade is no longer one of them (#3816): the oracle's
+///   *"INFERNAL_BLADE requires an explicit Ironclad owner"* (`start_combat`)
+///   is gone, and
+///   `a_foreign_owners_infernal_blade_opens_on_a_recorded_profile` pins what
+///   replaced it.
 /// * Silent and Defect joined `MODELED_GENERATION_CHARACTERS` in #2827 item B;
 ///   `silent_and_defect_generators_open_and_match_the_oracle` is their parity
 ///   witness.
@@ -9156,16 +10825,77 @@ fn the_necrobinder_slice_keeps_its_remaining_gates() {
     let refusal = open(&partial).expect_err("an unrecorded profile refuses");
     assert_eq!(refusal.class(), "generation_pool_partial_unlock");
     assert!(refusal.to_string().contains("JACKPOT"), "{refusal}");
+}
 
+/// #3816: Infernal Blade in another character's deck opens. Native names no
+/// character (`InfernalBlade/<OnPlay>d__3::MoveNext` RVA `0x3a7164` reads
+/// `Owner.Character.CardPool` at IL_0021-IL_0031 and `Owner.UnlockState` at
+/// IL_0037-IL_003c), and the engine body draws that owner's Attack pool under
+/// the recorded profile, so the opening asks for a recorded profile and
+/// nothing else: a partial one opens (`owner_deck_with` hides
+/// `DEFECT7_EPOCH`), an unrecorded one refuses naming the card. The Ironclad
+/// gate is `infernal_blade_alone_still_needs_the_ironclad_pool_revealed`,
+/// unchanged. A character with no modeled pool still refuses as unmodeled.
+#[test]
+fn a_foreign_owners_infernal_blade_opens_on_a_recorded_profile() {
+    for character in [
+        "CHARACTER.DEFECT",
+        "CHARACTER.NECROBINDER",
+        "CHARACTER.SILENT",
+        "CHARACTER.REGENT",
+    ] {
+        let case = owner_deck_with(character, &["INFERNAL_BLADE"]);
+        let opening = open(&case).unwrap_or_else(|refusal| panic!("{character}: {refusal}"));
+        assert_eq!(
+            opening.document.player.get("entropy_card_pool"),
+            (character == "CHARACTER.REGENT")
+                .then(|| Value::from("regent"))
+                .as_ref(),
+            "{character}"
+        );
+        let catalog =
+            crate::boundary::HotBoundary::catalog_from_canonical(&opening.document).unwrap();
+        let state =
+            crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog).unwrap();
+        let owner = state
+            .reward_card_pool
+            .expect("the opening writes the owner");
+        assert_ne!(owner, crate::catalog::RewardPool::Ironclad);
+        let pool = catalog.infernal_blade_attack_pool(owner);
+        assert_eq!(pool, catalog.crossbow_attack_pool(owner), "{character}");
+        for id in pool {
+            assert!(
+                catalog.is_reachable(crate::catalog::CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                }),
+                "{character} {id:?}"
+            );
+        }
+        let refused = crate::engine::admit(&opening.document, &state, &catalog)
+            .err()
+            .map(|refusal| refusal.to_string())
+            .unwrap_or_default();
+        assert!(
+            !refused.contains("infernal blade"),
+            "{character}: {refused}"
+        );
+
+        let mut unrecorded = case.clone();
+        unrecorded["save"]["players"][0]["unlock_state"]["unlocked_epochs"] = serde_json::json!([]);
+        match open(&unrecorded) {
+            Err(OpeningRefusal::GenerationPoolPartialUnlock { source, .. }) => {
+                assert_eq!(source, "INFERNAL_BLADE", "{character}");
+            }
+            other => panic!("{character}: {other:?}"),
+        }
+    }
     assert_eq!(
-        open(&owner_deck_with(
-            "CHARACTER.NECROBINDER",
-            &["INFERNAL_BLADE"]
-        ))
-        .unwrap_err(),
+        open(&owner_deck_with("CHARACTER.WATCHER", &["INFERNAL_BLADE"])).unwrap_err(),
         OpeningRefusal::GenerationPoolUnmodeled {
             source: "INFERNAL_BLADE".to_string(),
-            character: "CHARACTER.NECROBINDER".to_string(),
+            character: "CHARACTER.WATCHER".to_string(),
         }
     );
 }
@@ -10498,13 +12228,15 @@ fn crossbow_draws_the_owner_attack_pool_and_names_the_rest() {
 
 /// Crossbow's same-`AfterSideTurnStart` peers at admission (#2970).
 ///
-/// The five peers whose bodies commute with Crossbow's (the IL is in
+/// The six peers whose bodies commute with Crossbow's (the IL is in
 /// `engine::admission`'s comment above the gate) admit beside it, alone and
 /// together, on a partial-profile Ironclad root: the 1KJJGR1GFZR6 shape, which
 /// holds Brimstone, Happy Flower and Candelabra before its Crossbow and a
 /// Lantern after it. Pael's Legion is the Necrobinder run's (WV9GZBQ50ZHH)
-/// peer. Every other same-hook peer still refuses by the acquisition-order
-/// name (Chandelier stands for them). Brimstone beside a reachable Arsenal,
+/// peer, and Stone Calendar, recorded before Crossbow, is KQFAZH480H1Q's
+/// (#3756). Every other same-hook peer runs at its recorded place on a
+/// vouched inventory (#3635) and refuses by the acquisition-order name on an
+/// unvouched one (Chandelier stands for them). Brimstone beside a reachable Arsenal,
 /// whether the Arsenal is a card in the deck or an Arsenal power already
 /// live, admits in either vouched order and refuses by its own name on an
 /// unvouched inventory (#3381).
@@ -10546,7 +12278,14 @@ fn crossbow_admits_its_commuting_turn_start_peers_and_names_the_rest() {
         &["CANDELABRA"],
         &["HAPPY_FLOWER"],
         &["LANTERN"],
-        &["BRIMSTONE", "HAPPY_FLOWER", "CANDELABRA", "LANTERN"],
+        &["STONE_CALENDAR"],
+        &[
+            "BRIMSTONE",
+            "HAPPY_FLOWER",
+            "CANDELABRA",
+            "LANTERN",
+            "STONE_CALENDAR",
+        ],
     ] {
         admit(&with("CHARACTER.IRONCLAD", peers, &[]))
             .unwrap_or_else(|missing| panic!("{peers:?}: {missing:?}"));
@@ -10555,15 +12294,74 @@ fn crossbow_admits_its_commuting_turn_start_peers_and_names_the_rest() {
         .unwrap_or_else(|missing| panic!("Pael's Legion: {missing:?}"));
 
     let order = "argument shape at Crossbow AfterSideTurnStart acquisition order";
-    let missing = admit(&with("CHARACTER.IRONCLAD", &["CHANDELIER"], &[]))
-        .expect_err("an unproven peer still refuses");
+    // The same case on an inventory that does not vouch for its order.
+    let admit_unvouched = |case: &Value| {
+        let mut facts = entry_facts(case);
+        facts.relic_entry.dispatch_ordered = false;
+        let opening = open_facts(&facts).unwrap_or_else(|refusal| panic!("opens: {refusal}"));
+        let document = &opening.document;
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(document).unwrap();
+        let state = crate::boundary::HotBoundary::from_canonical(document, &catalog).unwrap();
+        crate::engine::admit(document, &state, &catalog).map_err(|refusal| {
+            refusal
+                .missing()
+                .map(|item| item.to_string())
+                .collect::<Vec<_>>()
+        })
+    };
+    let chandelier = with("CHARACTER.IRONCLAD", &["CHANDELIER"], &[]);
+    admit(&chandelier).unwrap_or_else(|missing| panic!("vouched Chandelier: {missing:?}"));
+    let missing = admit_unvouched(&chandelier).expect_err("an unvouched peer still refuses");
+    assert!(missing.iter().any(|item| item == order), "{missing:?}");
+
+    // Stone Calendar (#3756): `StoneCalendar::AfterSideTurnStart` (RVA
+    // `0x9be34`) writes a display status only, so the pair opens to one state
+    // whichever relic the inventory records first, vouched or not, and each
+    // root is admitted. A refusing peer beside it still refuses.
+    let calendar = with("CHARACTER.IRONCLAD", &["STONE_CALENDAR"], &[]);
+    let mut reached = Vec::new();
+    for (calendar_first, vouched) in [(false, true), (true, true), (false, false), (true, false)] {
+        let mut facts = entry_facts(&calendar);
+        let relics = &mut facts.relic_entry.relics_entering;
+        let position = |relics: &[String], id: &str| relics.iter().position(|r| r == id).unwrap();
+        let crossbow = position(relics, "RELIC.CROSSBOW");
+        let stone = position(relics, "RELIC.STONE_CALENDAR");
+        assert!(crossbow < stone, "the fixture appends Stone Calendar last");
+        if calendar_first {
+            relics.swap(crossbow, stone);
+        }
+        facts.relic_entry.dispatch_ordered = vouched;
+        let opening = open_facts(&facts).unwrap_or_else(|refusal| {
+            panic!("Stone Calendar first {calendar_first}, vouched {vouched}: {refusal}")
+        });
+        let document = opening.document;
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&document).unwrap();
+        let state = crate::boundary::HotBoundary::from_canonical(&document, &catalog).unwrap();
+        crate::engine::admit(&document, &state, &catalog).unwrap_or_else(|refusal| {
+            panic!("Stone Calendar first {calendar_first}, vouched {vouched}: {refusal}")
+        });
+        assert_eq!(
+            document.piles["hand"].len(),
+            6,
+            "the dealt five and Crossbow's card"
+        );
+        reached.push(state);
+    }
+    for other in &reached[1..] {
+        assert_eq!(&reached[0], other, "one state in every recorded order");
+    }
+    let missing = admit_unvouched(&with(
+        "CHARACTER.IRONCLAD",
+        &["STONE_CALENDAR", "CHANDELIER"],
+        &[],
+    ))
+    .expect_err("Stone Calendar does not hide a refusing peer");
     assert!(missing.iter().any(|item| item == order), "{missing:?}");
 
     // Brimstone beside a reachable Arsenal (#3381): a vouched inventory
-    // decides the pair's order in either direction (Crossbow first is the
-    // engine's fixed order, Brimstone first moves Brimstone ahead,
-    // `engine::relics::brimstone_leads_crossbow`); an unvouched one refuses
-    // by the pair's name.
+    // decides the pair's order in either direction (the walk runs the two as
+    // recorded, `engine::relics::after_side_turn_start`); an unvouched one
+    // refuses by the pair's name.
     let arsenal = "argument shape at Crossbow + Brimstone with Arsenal Strength order";
     // `case`'s facts with the inventory vouched or not, Crossbow and Brimstone
     // swapped when `brimstone_first`.
@@ -10795,12 +12593,325 @@ fn a_deferring_deal_that_parks_before_the_hand_draw_refuses() {
     );
 }
 
+/// #3756 witness, both orders of the pair: Pollinous Core behind Toolbox in a
+/// vouched inventory opens at Toolbox's choice with the Core's counter not yet
+/// advanced, and answering the choice advances it and deals the Hand
+/// (`PollinousCore::BeforeHandDraw` `0x9998c` IL_001b-0026 after
+/// `Toolbox/<BeforeHandDraw>d__4::MoveNext` `0x332adc`). A saved counter of 3
+/// is the turn the Core grants its two cards, behind the pause like the rest.
+/// Either order unvouched refuses by name.
+///
+/// Pollinous Core recorded first opens too (#3635): the Core has counted at
+/// the pause, so a saved three is published as four, `Turns`, which the hand
+/// draw reads and resets after the answer. Native, the harness on the
+/// v0.111.0 DLL: `TurnsSeen` at the pause is 1 and 4 with the Core first, 0
+/// and 3 with Toolbox first; after the answer 0 with seven dealt from three,
+/// in both orders.
+#[test]
+fn pollinous_core_behind_toolbox_follows_a_vouched_inventory() {
+    const TOOLBOX: &str = "RELIC.TOOLBOX";
+    const CORE: &str = "RELIC.POLLINOUS_CORE";
+    let case = |order: [&str; 2], seen: i64| {
+        let mut case = coach_case(None, &[], &[], true, true);
+        for id in order {
+            let mut row = serde_json::json!({"floor_added_to_deck": 1, "id": id});
+            if id == CORE {
+                row["props"] = serde_json::json!({"ints": [{"name": "TurnsSeen", "value": seen}]});
+            }
+            relic(&mut case, row);
+        }
+        case
+    };
+    let open_in = |order: [&str; 2], seen: i64, vouched: bool| {
+        let mut facts = entry_facts(&case(order, seen));
+        facts.relic_entry.dispatch_ordered = vouched;
+        build_opening(&facts, &OpeningOptions::default())
+    };
+    for (order, seen, after, dealt) in [
+        ([TOOLBOX, CORE], 0, 1, 5),
+        ([TOOLBOX, CORE], 3, 0, 7),
+        ([CORE, TOOLBOX], 0, 1, 5),
+        ([CORE, TOOLBOX], 3, 0, 7),
+    ] {
+        let opening = open_in(order, seen, true)
+            .unwrap_or_else(|refusal| panic!("{order:?} TurnsSeen {seen} opens: {refusal}"));
+        assert_eq!(generation_options(&opening.document).len(), 3);
+        let at_pause = if order[0] == CORE { seen + 1 } else { seen };
+        assert_eq!(
+            opening.document.player.get("pollinous_core"),
+            Some(&Value::from(at_pause)),
+            "{order:?} TurnsSeen {seen}: the Core has run at Toolbox's pause only when recorded first"
+        );
+        assert_eq!(hand_size(&opening.document), 0, "TurnsSeen {seen}");
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+            .expect("the opened document builds a catalog");
+        let state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+            .expect("the opened document hydrates");
+        crate::engine::admit(&opening.document, &state, &catalog)
+            .unwrap_or_else(|refusal| panic!("TurnsSeen {seen} is admitted: {refusal}"));
+        let pick = crate::engine::legal_actions(&state, &catalog)
+            .into_iter()
+            .find(|action| matches!(action, crate::engine::Action::Select { .. }))
+            .expect("Toolbox offers a pick");
+        let next = crate::engine::apply_action(&state, &catalog, &pick)
+            .unwrap_or_else(|refusal| panic!("TurnsSeen {seen} resolves: {refusal}"))
+            .state;
+        assert!(next.pending.is_none());
+        assert_eq!(next.pollinous_core(), after, "TurnsSeen {seen}");
+        assert_eq!(
+            next.piles.get(crate::hot::PileId::Hand).as_slice().len(),
+            dealt + 1,
+            "TurnsSeen {seen}: the deal plus Toolbox's card"
+        );
+    }
+    let refused = OpeningRefusal::RelicCombinationRefused {
+        relics: vec![TOOLBOX.to_string(), CORE.to_string()],
+        reason: "Toolbox's same-BeforeHandDraw relic order is unrecorded",
+    };
+    for (order, vouched) in [([CORE, TOOLBOX], false), ([TOOLBOX, CORE], false)] {
+        assert_eq!(
+            open_in(order, 0, vouched).unwrap_err(),
+            refused,
+            "{order:?} vouched={vouched}"
+        );
+    }
+    // Pendulum beside them refuses on an unvouched inventory.
+    let mut pendulum = coach_case(None, &[TOOLBOX, "RELIC.PENDULUM"], &[], true, true);
+    relic(
+        &mut pendulum,
+        serde_json::json!({"floor_added_to_deck": 1, "id": CORE}),
+    );
+    let mut facts = entry_facts(&pendulum);
+    facts.relic_entry.dispatch_ordered = false;
+    assert_eq!(
+        build_opening(&facts, &OpeningOptions::default()).unwrap_err(),
+        OpeningRefusal::RelicCombinationRefused {
+            relics: vec![
+                TOOLBOX.to_string(),
+                "RELIC.PENDULUM".to_string(),
+                CORE.to_string()
+            ],
+            reason: "Toolbox's same-BeforeHandDraw relic order is unrecorded",
+        }
+    );
+}
+
+/// #3635: Toolbox beside each turn-one `BeforeHandDraw` card writer, in both
+/// recorded orders of a vouched inventory.
+///
+/// The opening publishes Toolbox's choice with exactly the relics recorded
+/// ahead of it run: a writer ahead has its cards in the piles (and passes the
+/// uid check as the walk's prefix), one behind has added nothing yet. The
+/// answer then adds Toolbox's card and runs the writer behind it, so the Hand
+/// holds the two in recorded order. Native, the harness on the v0.111.0 DLL
+/// with the game's selector pending: the same split at the pause for Ninja
+/// Scroll, Radiant Pearl, Funerary Mask, Blessed Antler and Jeweled Mask on
+/// either side, and the same Hand after the first option is picked
+/// (`engine::relics`' `toolbox_pauses_the_before_hand_draw_walk_where_the_game_does`
+/// asserts the game's piles).
+#[test]
+fn toolbox_opens_beside_its_before_hand_draw_peers_as_recorded() {
+    use crate::hot::PileId;
+    use crate::ids::CardId;
+    const TOOLBOX: &str = "RELIC.TOOLBOX";
+    for (peer, id, count, into_hand) in [
+        ("RELIC.NINJA_SCROLL", CardId::Shiv, 3, true),
+        ("RELIC.RADIANT_PEARL", CardId::Luminesce, 1, true),
+        ("RELIC.FUNERARY_MASK", CardId::Soul, 3, false),
+        ("RELIC.BLESSED_ANTLER", CardId::Dazed, 3, false),
+    ] {
+        for peer_first in [true, false] {
+            let ids = if peer_first {
+                [peer, TOOLBOX]
+            } else {
+                [TOOLBOX, peer]
+            };
+            let what = format!("{ids:?}");
+            let mut facts = entry_facts(&coach_case(None, &ids, &[], true, true));
+            facts.relic_entry.dispatch_ordered = true;
+            let opening = open_facts(&facts).unwrap_or_else(|refusal| panic!("{what}: {refusal}"));
+            assert_eq!(generation_options(&opening.document).len(), 3, "{what}");
+            let catalog =
+                crate::boundary::HotBoundary::catalog_from_canonical(&opening.document).unwrap();
+            let state =
+                crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog).unwrap();
+            crate::engine::admit(&opening.document, &state, &catalog)
+                .unwrap_or_else(|refusal| panic!("{what} is admitted: {refusal}"));
+            let added = |state: &crate::hot::HotState, pile: PileId| {
+                state
+                    .piles
+                    .get(pile)
+                    .as_slice()
+                    .iter()
+                    .filter(|card| catalog.spec(card.atom).unwrap().identity.id == id)
+                    .count()
+            };
+            let at_pause = added(&state, PileId::Hand) + added(&state, PileId::Draw);
+            assert_eq!(at_pause, if peer_first { count } else { 0 }, "{what}");
+            let pick = crate::engine::legal_actions(&state, &catalog)
+                .into_iter()
+                .find(|action| matches!(action, crate::engine::Action::Select { .. }))
+                .expect("Toolbox offers a pick");
+            let next = crate::engine::apply_action(&state, &catalog, &pick)
+                .unwrap_or_else(|refusal| panic!("{what} resolves: {refusal}"))
+                .state;
+            assert!(next.pending.is_none(), "{what}");
+            assert_eq!(
+                added(&next, PileId::Hand) + added(&next, PileId::Draw),
+                count,
+                "{what}"
+            );
+            if into_hand {
+                let hand = next.piles.get(PileId::Hand).as_slice();
+                let first = hand
+                    .iter()
+                    .position(|card| catalog.spec(card.atom).unwrap().identity.id == id)
+                    .unwrap();
+                // Toolbox's card is the one Hand card ahead of the writer's
+                // when Toolbox is recorded first, and directly behind them
+                // otherwise.
+                assert_eq!(first, usize::from(!peer_first), "{what}");
+                let toolbox_card = if peer_first { hand[count] } else { hand[0] };
+                assert_ne!(
+                    catalog.spec(toolbox_card.atom).unwrap().identity.id,
+                    id,
+                    "{what}"
+                );
+                assert!(
+                    toolbox_card.uid >= state.next_card_uid,
+                    "{what}: Toolbox's card is minted on the answer"
+                );
+            }
+            // Unvouched, the pair refuses by name.
+            facts.relic_entry.dispatch_ordered = false;
+            assert!(
+                matches!(
+                    open_facts(&facts),
+                    Err(OpeningRefusal::RelicCombinationRefused { .. })
+                ),
+                "{what} unvouched"
+            );
+        }
+    }
+}
+
+/// #3635: `pre_deal_walk` lists the opening's pre-deal writers in the order
+/// the engine runs them, and the uid check holds a document to that order.
+#[test]
+fn the_pre_deal_walk_follows_the_recorded_order_and_the_uid_check_holds_it() {
+    use super::{PreDealSegment, PreDealWalk, check_card_identity_allocation, pre_deal_walk};
+    let owned = |ids: &[&str]| ids.iter().map(|id| id.to_string()).collect::<Vec<_>>();
+    let hand = |count, id| PreDealSegment::Hand {
+        count,
+        id: Some(id),
+    };
+    let draw = |id| PreDealSegment::Draw { count: 3, id };
+    // Recorded order, cut at Toolbox: its choice is where the opening stops.
+    let recorded = owned(&[
+        "RELIC.RADIANT_PEARL",
+        "RELIC.PENDULUM",
+        "RELIC.BLESSED_ANTLER",
+        "RELIC.JEWELED_MASK",
+        "RELIC.NINJA_SCROLL",
+        "RELIC.TOOLBOX",
+        "RELIC.FUNERARY_MASK",
+    ]);
+    let walk = pre_deal_walk(&recorded, true, false);
+    assert_eq!(
+        walk.segments,
+        [
+            hand(1, "LUMINESCE"),
+            draw("DAZED"),
+            PreDealSegment::DeckPower,
+            hand(3, "SHIV")
+        ]
+    );
+    assert_eq!(walk.jeweled_mask_hand_index(), Some(1));
+    assert_eq!(
+        PreDealWalk {
+            deck_head: 2,
+            ..walk
+        }
+        .jeweled_mask_hand_index(),
+        Some(3)
+    );
+    // Unvouched: the fixed sequence, where Toolbox comes first.
+    assert_eq!(pre_deal_walk(&recorded, false, false).segments, []);
+    let no_toolbox = owned(&["RELIC.RADIANT_PEARL", "RELIC.FUNERARY_MASK"]);
+    assert_eq!(
+        pre_deal_walk(&no_toolbox, false, false).segments,
+        [draw("SOUL"), hand(1, "LUMINESCE")]
+    );
+    assert_eq!(
+        pre_deal_walk(&no_toolbox, true, false).segments,
+        [hand(1, "LUMINESCE"), draw("SOUL")]
+    );
+    assert_eq!(
+        pre_deal_walk(&no_toolbox, true, false).jeweled_mask_hand_index(),
+        None
+    );
+    assert!(pre_deal_walk(&owned(&["RELIC.WHISPERING_EARRING"]), true, false).whispering_earring);
+    // A charged Tea of Discourtesy is the whole walk.
+    let tea = owned(&["RELIC.TEA_OF_DISCOURTESY", "RELIC.NINJA_SCROLL"]);
+    assert_eq!(
+        pre_deal_walk(&tea, true, true).segments,
+        [PreDealSegment::Draw {
+            count: 2,
+            id: "DAZED"
+        }]
+    );
+    assert_eq!(pre_deal_walk(&tea, true, false).segments, [hand(3, "SHIV")]);
+
+    // The check, on the document a vouched Scroll-then-Pearl save opens to:
+    // it holds under its own walk and refuses under the other order, where
+    // the first uid past the deck would be the Luminesce's.
+    let case = with_relics("RELIC.NINJA_SCROLL", "RELIC.RADIANT_PEARL");
+    let opening = open(&case).expect("the vouched pair opens");
+    let deck = opening.document.piles["hand"].len() + opening.document.piles["draw"].len() - 4;
+    let expected: Vec<Option<u64>> = opening.document.piles["hand"][4..]
+        .iter()
+        .chain(&opening.document.piles["draw"])
+        .map(|card| card.uid)
+        .collect();
+    assert_eq!(expected.len(), deck);
+    let scroll_first = owned(&["RELIC.NINJA_SCROLL", "RELIC.RADIANT_PEARL"]);
+    let pearl_first = owned(&["RELIC.RADIANT_PEARL", "RELIC.NINJA_SCROLL"]);
+    check_card_identity_allocation(
+        &opening.document,
+        &expected,
+        pre_deal_walk(&scroll_first, true, false),
+    )
+    .expect("the document's own walk");
+    let refusal = check_card_identity_allocation(
+        &opening.document,
+        &expected,
+        pre_deal_walk(&pearl_first, true, false),
+    )
+    .unwrap_err();
+    assert_eq!(refusal.class(), "card_identity_allocation_diverged");
+    assert!(refusal.to_string().contains("should head it"), "{refusal}");
+    // An allocator short of the walk refuses too.
+    let mut short = opening.document.clone();
+    short
+        .player
+        .insert("next_card_uid".to_string(), Value::from(deck as u64 + 3));
+    assert!(
+        check_card_identity_allocation(
+            &short,
+            &expected,
+            pre_deal_walk(&scroll_first, true, false)
+        )
+        .is_err()
+    );
+}
+
 /// Toolbox's gates refuse by name.
 ///
 /// Oracle messages: *"Toolbox requires the explicitly fully-unlocked owner
 /// card pool"* with no profile (the oracle also refused a partial one; #3325
 /// admits it, see [`toolbox_offers_the_recorded_colorless_pool_for_every_owner`]); *"TOOLBOX with
-/// same-BeforeHandDraw relic peers ['PENDULUM']"* (and `['POLLINOUS_CORE']`);
+/// same-BeforeHandDraw relic peers ['PENDULUM']"* (the oracle refused
+/// `['POLLINOUS_CORE']` too; #3756 admits it on its recorded order);
 /// *"CombatOrbGeneration counter unknown for this fight (consumers:
 /// generation-relic card pools)"* with no `combat_orbs` stream.
 #[test]
@@ -10810,16 +12921,19 @@ fn toolbox_refuses_where_the_oracle_does() {
             .expect_err("no profile refuses");
         assert_eq!(refusal.class(), "generation_pool_partial_unlock");
     }
-    for peer in ["RELIC.PENDULUM", "RELIC.POLLINOUS_CORE"] {
-        assert_eq!(
-            open(&coach_case(None, &["RELIC.TOOLBOX", peer], &[], true, true)).unwrap_err(),
-            OpeningRefusal::RelicCombinationRefused {
-                relics: vec!["RELIC.TOOLBOX".to_string(), peer.to_string()],
-                reason: "Toolbox's same-BeforeHandDraw relic order is unrecorded",
-            },
-            "{peer}"
-        );
-    }
+    // Every same-hook peer is walked in the recorded order of a vouched
+    // inventory (#3635, `toolbox_opens_beside_its_before_hand_draw_peers_as_recorded`);
+    // an unvouched one refuses each of them.
+    let peer = "RELIC.PENDULUM";
+    let mut unvouched = entry_facts(&coach_case(None, &["RELIC.TOOLBOX", peer], &[], true, true));
+    unvouched.relic_entry.dispatch_ordered = false;
+    assert_eq!(
+        open_facts(&unvouched).unwrap_err(),
+        OpeningRefusal::RelicCombinationRefused {
+            relics: vec!["RELIC.TOOLBOX".to_string(), peer.to_string()],
+            reason: "Toolbox's same-BeforeHandDraw relic order is unrecorded",
+        }
+    );
     assert_eq!(
         open(&coach_case(None, &["RELIC.TOOLBOX"], &[], true, false)).unwrap_err(),
         OpeningRefusal::CombatStreamAbsent {
@@ -11353,54 +13467,49 @@ fn the_catalog_interns_the_fencing_manual_blade_only_before_the_walk() {
 
 /// Every Fencing Manual same-hook arm, by direct call.
 ///
-/// Crossbow, Big Hat and Infused Core refuse at any order (Infused Core is
-/// gated earlier by `TURN_ONE_ORB_RELICS`, so only a direct call reaches it).
-/// Orange Dough is admitted exactly when the inventory is vouched for and
-/// every Dough precedes every Manual; each way that can fail refuses.
+/// A vouched inventory passes in every order: the walk runs the hook's
+/// relics as recorded (#3635). An unvouched one refuses Crossbow, Orange
+/// Dough and Infused Core (Infused Core's arm is also reached through `open`,
+/// by `infused_core_refuses_beside_the_peers_that_observe_its_channels`). Big
+/// Hat is no peer: an Ironclad's writes nothing, and any other owner's
+/// refuses in the engine by its own name.
 #[test]
 fn every_fencing_manual_turn_start_order_arm_refuses_by_name() {
     const FM: &str = "RELIC.FENCING_MANUAL";
     const OD: &str = "RELIC.ORANGE_DOUGH";
     let check = |inventory: &[&str], ordered: bool| {
         let relics: std::collections::BTreeSet<&str> = inventory.iter().copied().collect();
-        let entering: Vec<String> = inventory.iter().map(ToString::to_string).collect();
-        super::fencing_manual_turn_start_peers_are_ordered(&relics, &entering, ordered)
+        super::fencing_manual_turn_start_peers_are_ordered(&relics, ordered)
             .err()
             .map(|refusal| match refusal {
                 OpeningRefusal::RelicCombinationRefused { relics, .. } => relics,
                 other => panic!("wrong refusal {other:?}"),
             })
     };
-    for peer in ["RELIC.BIG_HAT", "RELIC.CROSSBOW", "RELIC.INFUSED_CORE"] {
-        for ordered in [false, true] {
-            for inventory in [[peer, FM], [FM, peer]] {
-                assert_eq!(
-                    check(&inventory, ordered),
-                    Some(vec![FM.to_string(), peer.to_string()]),
-                    "{inventory:?} ordered={ordered}"
-                );
-            }
+    for peer in ["RELIC.CROSSBOW", "RELIC.INFUSED_CORE", OD] {
+        for inventory in [[peer, FM], [FM, peer]] {
+            assert_eq!(check(&inventory, true), None, "{inventory:?} vouched");
+            assert_eq!(
+                check(&inventory, false),
+                Some(vec![FM.to_string(), peer.to_string()]),
+                "{inventory:?} unvouched"
+            );
         }
-        assert_eq!(check(&[peer], true), None, "{peer} without Fencing Manual");
+        assert_eq!(check(&[peer], false), None, "{peer} without Fencing Manual");
     }
-    // Orange Dough: the one admitted order, and every refused one.
-    assert_eq!(check(&[OD, "RELIC.LANTERN", FM], true), None);
-    let refused = Some(vec![FM.to_string(), OD.to_string()]);
-    assert_eq!(check(&[FM, OD], true), refused, "Manual first");
-    assert_eq!(check(&[OD, FM], false), refused, "order not vouched for");
+    // Every observable peer is named, in table order.
     assert_eq!(
-        check(&[OD, FM, OD], true),
-        refused,
-        "a Dough after the Manual"
+        check(&[OD, "RELIC.CROSSBOW", FM], false),
+        Some(vec![
+            FM.to_string(),
+            "RELIC.CROSSBOW".to_string(),
+            OD.to_string()
+        ])
     );
-    assert_eq!(check(&[OD], true), None, "Dough without Fencing Manual");
-    // A vouched Dough-first order does not excuse a second, unorderable peer.
-    assert_eq!(
-        check(&[OD, "RELIC.CROSSBOW", FM], true),
-        Some(vec![FM.to_string(), "RELIC.CROSSBOW".to_string()])
-    );
+    assert_eq!(check(&[OD, "RELIC.CROSSBOW", FM], true), None);
     // Same-hook peers whose writes commute with the Forge are admitted.
     for peer in [
+        "RELIC.BIG_HAT",
         "RELIC.BRIMSTONE",
         "RELIC.LANTERN",
         "RELIC.BREAD",
@@ -11413,8 +13522,63 @@ fn every_fencing_manual_turn_start_order_arm_refuses_by_name() {
     assert_eq!(check(&[FM], false), None);
 }
 
-/// Orange Dough acquired AFTER Fencing Manual refuses through the opening:
-/// native would Forge before the Dough, and this port runs the Dough first.
+/// Fencing Manual's Forge on its recorded side of Crossbow's card (#3756).
+///
+/// `FencingManual/<AfterSideTurnStart>d__6` (RVA `0x324a80`, `ForgeCmd::Forge`
+/// at IL_006c) and `Crossbow/<AfterSideTurnStart>d__2` (RVA `0x322340`,
+/// `AddGeneratedCardsToCombat` at IL_0112) are awaited in `Player.Relics`
+/// order, and both add a card to the Hand's bottom. So the recorded order is
+/// the order of the Hand's last two cards and of their uids: the Sovereign
+/// Blade then the Attack when Fencing Manual is recorded first (the
+/// AUNPC3BZ101H shape), the Attack then the Blade when Crossbow is. Each
+/// opened root is admitted. An unvouched inventory refuses in either order.
+#[test]
+fn fencing_manual_forges_on_its_recorded_side_of_crossbow() {
+    const REGENT: &str = "CHARACTER.REGENT";
+    const FM: &str = "RELIC.FENCING_MANUAL";
+    const CROSSBOW: &str = "RELIC.CROSSBOW";
+    const BLADE: &str = "SOVEREIGN_BLADE";
+    for (relics, blade_first) in [([FM, CROSSBOW], true), ([CROSSBOW, FM], false)] {
+        let opening = open_owner_in_order(REGENT, &relics, true)
+            .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal}"));
+        let hand = &opening.document.piles["hand"];
+        assert_eq!(
+            hand.len(),
+            7,
+            "{relics:?}: the dealt five and two generated"
+        );
+        let tail = &hand[5..];
+        assert_eq!(
+            [tail[0].id == BLADE, tail[1].id == BLADE],
+            [blade_first, !blade_first],
+            "{relics:?}: {} then {}",
+            tail[0].id,
+            tail[1].id
+        );
+        assert!(
+            tail[0].uid < tail[1].uid,
+            "{relics:?}: uids in arrival order"
+        );
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+            .expect("the opened document builds a catalog");
+        let state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+            .expect("the opened document hydrates");
+        crate::engine::admit(&opening.document, &state, &catalog)
+            .unwrap_or_else(|refusal| panic!("{relics:?} is admitted: {refusal}"));
+
+        let refusal = open_owner_in_order(REGENT, &relics, false).unwrap_err();
+        assert_eq!(
+            refusal.class(),
+            "relic_combination_refused",
+            "{relics:?} unvouched: {refusal}"
+        );
+    }
+}
+
+/// Orange Dough acquired AFTER Fencing Manual refuses through the opening on
+/// an unvouched inventory: the fixed order runs the Dough first. A vouched
+/// inventory passes the gate (#3635: the walk Forges first, as recorded) and
+/// goes on to the Dough's stream gate, which this synthetic save fails.
 #[test]
 fn fencing_manual_before_orange_dough_refuses_through_the_opening() {
     let mut case = with_relic("RELIC.FENCING_MANUAL");
@@ -11422,7 +13586,9 @@ fn fencing_manual_before_orange_dough_refuses_through_the_opening() {
         &mut case,
         serde_json::json!({"floor_added_to_deck": 1, "id": "RELIC.ORANGE_DOUGH"}),
     );
-    let refusal = open(&case).unwrap_err();
+    let vouched = open(&case).unwrap_err();
+    assert_eq!(vouched.class(), "combat_stream_absent", "{vouched}");
+    let refusal = open_unvouched(&case).unwrap_err();
     assert_eq!(refusal.class(), "relic_combination_refused");
     assert!(
         refusal.to_string().contains("RELIC.FENCING_MANUAL")
@@ -11461,7 +13627,11 @@ fn fencing_manual_with_symbiotic_virus_and_cracked_core_refuses_like_the_oracle(
             serde_json::json!({"floor_added_to_deck": 1, "id": peer}),
         );
     }
-    let refusal = open(&case).unwrap_err();
+    // #3635: a vouched inventory records the order and passes this gate.
+    if let Err(refusal) = open(&case) {
+        assert_ne!(refusal.class(), "symbiotic_virus_turn_start_order");
+    }
+    let refusal = open_unvouched(&case).unwrap_err();
     assert_eq!(refusal.class(), "symbiotic_virus_turn_start_order");
     assert!(
         refusal.to_string().contains("RELIC.FENCING_MANUAL")
@@ -12908,6 +15078,14 @@ fn a_necrobinder_vexing_puzzlebox_root_admits_on_its_recorded_profile() {
 // of these relics that now roots matches its own `.mcr` opening checkpoint
 // (tabulated in the #3162 invariant walk).
 
+/// `open` on the case's facts with the inventory NOT vouched for as dispatch
+/// order (a `.run`-only root's provenance).
+fn open_unvouched(case: &Value) -> Result<Opening, OpeningRefusal> {
+    let mut facts = entry_facts(case);
+    facts.relic_entry.dispatch_ordered = false;
+    open_facts(&facts)
+}
+
 fn open_facts(entry: &crate::entry::document::EntryDocument) -> Result<Opening, OpeningRefusal> {
     build_opening(entry, &OpeningOptions::default())
 }
@@ -13135,6 +15313,80 @@ fn a_radiant_pearl_save_heads_the_hand_with_one_fresh_luminesce() {
     );
 }
 
+/// `NinjaScroll/<BeforeHandDraw>d__7::MoveNext` (`0x32b770`) generates three
+/// Shivs into the Hand before the turn-one deal (#3619): they head the Hand
+/// with the first three uids past the deck, in creation order, and the deal
+/// follows them unchanged. No stream moves, the second turn generates none,
+/// and the root loads and admits. The body is
+/// `engine::relics::ninja_scroll_before_hand_draw`.
+#[test]
+fn a_ninja_scroll_save_heads_the_hand_with_three_fresh_shivs() {
+    let control = opens_and_admits(&empty_belt_case(), "the control");
+    let opening = opens_and_admits(&with_relic("RELIC.NINJA_SCROLL"), "Ninja Scroll");
+    let hand = pile_ids_and_uids(&opening.document, "hand");
+    let deck = (hand_size(&control.document) + control.document.piles["draw"].len()) as u64;
+    assert_eq!(
+        hand[..3],
+        [
+            ("SHIV".to_string(), Some(deck)),
+            ("SHIV".to_string(), Some(deck + 1)),
+            ("SHIV".to_string(), Some(deck + 2)),
+        ],
+        "{hand:?}"
+    );
+    assert_eq!(hand[3..], pile_ids_and_uids(&control.document, "hand")[..]);
+    assert_eq!(
+        pile_ids_and_uids(&opening.document, "draw"),
+        pile_ids_and_uids(&control.document, "draw")
+    );
+    assert_eq!(
+        opening.document.player.get("next_card_uid"),
+        Some(&Value::from(deck + 3))
+    );
+    assert_eq!(opening.document.rng, control.document.rng);
+    // Turn one only: the turn end discards the Hand, and the next one is the
+    // ordinary five with no new Shiv.
+    assert_eq!(hand_sizes_after_end_turns(&control, 1), [(2, 5)]);
+    assert_eq!(hand_sizes_after_end_turns(&opening, 1), [(2, 5)]);
+}
+
+/// Ninja Scroll beside the other turn-one `BeforeHandDraw` bodies that are
+/// not Hand/Draw movers: Pendulum and Pollinous Core write only their own
+/// counters, so the Scroll still opens with its three Shivs ahead of the
+/// deal. Blessed Antler and Toolbox refuse beside it by their own gates.
+#[test]
+fn ninja_scroll_opens_beside_counter_peers_and_refuses_beside_card_movers() {
+    for peer in ["RELIC.PENDULUM", "RELIC.POLLINOUS_CORE"] {
+        let case = with_relics(peer, "RELIC.NINJA_SCROLL");
+        match open(&case) {
+            Ok(opening) => {
+                let hand = pile_ids_and_uids(&opening.document, "hand");
+                assert!(
+                    hand[..3].iter().all(|(id, _)| id == "SHIV"),
+                    "{peer}: {hand:?}"
+                );
+            }
+            // A counter relic whose saved counter the fixture does not carry
+            // refuses by that relic's own name, never by the Scroll's.
+            Err(refusal) => assert!(
+                !refusal.to_string().contains("RELIC.NINJA_SCROLL"),
+                "{peer}: {refusal}"
+            ),
+        }
+    }
+    // On an unvouched inventory; a vouched one is walked as recorded (#3635).
+    for peer in ["RELIC.BLESSED_ANTLER", "RELIC.TOOLBOX"] {
+        let mut facts = entry_facts(&with_relics(peer, "RELIC.NINJA_SCROLL"));
+        facts.relic_entry.dispatch_ordered = false;
+        let refusal = open_facts(&facts).unwrap_err();
+        let name = peer.trim_start_matches("RELIC.");
+        assert!(
+            refusal.to_string().contains("NINJA_SCROLL") || refusal.to_string().contains(name),
+            "{peer}: {refusal}"
+        );
+    }
+}
+
 /// `FuneraryMask/<BeforeHandDraw>d__6::MoveNext` (`0x325000`) inserts three
 /// fresh Souls at random Draw positions before the deal, with the next three
 /// uids in creation order; the deal can reach them.
@@ -13254,7 +15506,8 @@ fn a_jeweled_mask_innate_power_lift_clamps_the_deferred_draw() {
 
 /// #3404: which openings defer the fixup. One of the three turn-one
 /// Draw-order relics, and none of the three owners whose uid stamping has its
-/// own contract (Thieving Hopper, Ghost Seed, Tea of Discourtesy).
+/// own contract (Thieving Hopper, Ghost Seed, a spent Tea of Discourtesy).
+/// #3756: a charged Tea defers on its own, and only without the other two.
 #[test]
 fn only_a_draw_order_relic_without_a_stamping_owner_defers_the_fixup() {
     use super::defers_turn_one_fixup;
@@ -13265,23 +15518,124 @@ fn only_a_draw_order_relic_without_a_stamping_owner_defers_the_fixup() {
         "RELIC.BLESSED_ANTLER",
         "RELIC.JEWELED_MASK",
     ] {
-        assert!(defers_turn_one_fixup(&set(&[relic]), false), "{relic}");
         assert!(
-            !defers_turn_one_fixup(&set(&[relic]), true),
+            defers_turn_one_fixup(&set(&[relic]), false, false),
+            "{relic}"
+        );
+        assert!(
+            !defers_turn_one_fixup(&set(&[relic]), true, false),
             "{relic} hopper"
         );
         for owner in ["RELIC.GHOST_SEED", "RELIC.TEA_OF_DISCOURTESY"] {
             assert!(
-                !defers_turn_one_fixup(&set(&[relic, owner]), false),
+                !defers_turn_one_fixup(&set(&[relic, owner]), false, false),
                 "{relic} {owner}"
             );
         }
     }
     assert!(!defers_turn_one_fixup(
         &set(&["RELIC.RADIANT_PEARL"]),
+        false,
         false
     ));
-    assert!(!defers_turn_one_fixup(&set(&[]), false));
+    assert!(!defers_turn_one_fixup(&set(&[]), false, false));
+    // The charge is read only for an owner.
+    assert!(!defers_turn_one_fixup(&set(&[]), false, true));
+    let tea = "RELIC.TEA_OF_DISCOURTESY";
+    assert!(defers_turn_one_fixup(&set(&[tea]), false, true));
+    assert!(!defers_turn_one_fixup(&set(&[tea]), false, false));
+    assert!(!defers_turn_one_fixup(&set(&[tea]), true, true), "hopper");
+    assert!(!defers_turn_one_fixup(
+        &set(&[tea, "RELIC.GHOST_SEED"]),
+        false,
+        true
+    ));
+}
+
+/// Snecko Eye and Fake Snecko Eye (#3618): the Confused their
+/// `BeforeCombatStart` applies rolls every card of the first deal once, in
+/// draw order, on the `CombatEnergyCosts` stream the entry seeded
+/// (`ConfusedPower::AfterCardDrawn` `0xa07f4`). The rolls are recomputed here
+/// from the pre-hook stream and compared card by card. Snecko Eye also draws
+/// two more (`ModifyHandDraw` `0x9ba8b`); Fake Snecko Eye does not; owning
+/// both is one power at amount 2, so still one roll per card. Cards left in
+/// Draw carry no roll, and nothing else in the opening moves.
+#[test]
+fn snecko_eyes_roll_each_card_of_the_first_deal_once_in_draw_order() {
+    let control = open(&empty_belt_case())
+        .expect("the control opens")
+        .document;
+    assert!(!control.player.contains_key("confused"));
+    let confused_costs = |document: &crate::canonical::CanonicalStateV2, pile: &str| {
+        document.piles[pile]
+            .iter()
+            .map(|card| card.physical_state.as_ref().map(|state| state[1].clone()))
+            .collect::<Vec<_>>()
+    };
+    for (relics, hand) in [
+        (&["RELIC.SNECKO_EYE"][..], 7_usize),
+        (&["RELIC.FAKE_SNECKO_EYE"][..], 5),
+        (&["RELIC.SNECKO_EYE", "RELIC.FAKE_SNECKO_EYE"][..], 7),
+        (&["RELIC.FAKE_SNECKO_EYE", "RELIC.SNECKO_EYE"][..], 7),
+    ] {
+        let mut case = empty_belt_case();
+        for id in relics {
+            relic(
+                &mut case,
+                serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+            );
+        }
+        let built = pre_hook(&case)
+            .expect("the pre-hook opening builds")
+            .document;
+        let opened = open(&case)
+            .unwrap_or_else(|refusal| panic!("{relics:?} opens: {refusal:?}"))
+            .document;
+        assert_eq!(opened.player.get("confused"), Some(&Value::Bool(true)));
+        assert_eq!(hand_size(&opened), hand, "{relics:?}");
+
+        // The deal is a prefix draw of the pre-hook pile, in order.
+        let dealt: Vec<Option<u64>> = opened.piles["hand"]
+            .iter()
+            .chain(&opened.piles["draw"])
+            .map(|card| card.uid)
+            .collect();
+        let pile: Vec<Option<u64>> = built.piles["draw"].iter().map(|card| card.uid).collect();
+        assert_eq!(dealt, pile, "{relics:?}");
+
+        // One `NextInt(4)` per drawn card, from the stream the entry seeded.
+        // A card's cost rows are slot 1 of its `PHYSICAL_CARD_STATE`, each
+        // `[kind, amount, expiration, reduce_only]`: kind 1 is `Set`,
+        // expiration 0 is `ThisCombat` (`EnergyCost.SetThisCombat(roll, false)`).
+        let before = &built.rng["energy_costs"];
+        let mut stream = crate::rng::Xoshiro256StarStar {
+            words: before.words,
+            counter: before.counter,
+        };
+        let rolls: Vec<Option<Value>> = (0..hand)
+            .map(|_| {
+                let roll = stream.next_bounded(4).expect("a bound of four");
+                Some(serde_json::json!([[1, roll, 0, false]]))
+            })
+            .collect();
+        assert_eq!(confused_costs(&opened, "hand"), rolls, "{relics:?}");
+        let after = &opened.rng["energy_costs"];
+        assert_eq!(after.counter, before.counter + hand as u64, "{relics:?}");
+        assert_eq!(after.words, stream.words, "{relics:?}");
+        assert!(
+            confused_costs(&opened, "draw").iter().all(Option::is_none),
+            "{relics:?}: an undrawn card carries no roll"
+        );
+
+        // Nothing else moved: every other stream and the enemies are the
+        // control's.
+        for (name, state) in &control.rng {
+            if name != "energy_costs" {
+                assert_eq!(opened.rng.get(name), Some(state), "{relics:?} {name}");
+            }
+        }
+        assert_eq!(opened.monsters, control.monsters, "{relics:?}");
+    }
 }
 
 /// `BigMushroom::ModifyHandDraw` (`0x90aa8`) takes two from the turn-1 draw;
@@ -13299,45 +15653,119 @@ fn a_big_mushroom_save_deals_three() {
 }
 
 /// Any two of the turn-1 `BeforeHandDraw` Draw/Hand card movers refuse by
-/// name (`refuse_unordered_hand_draw_card_peers`); Ninja Scroll still refuses
-/// by its own name first, from the body table.
+/// name on an unvouched inventory (`refuse_unordered_hand_draw_card_peers`),
+/// Ninja Scroll among them since #3619 retired its body gate.
+///
+/// A vouched inventory opens (#3635): the engine walks the pair as recorded.
+/// The generators take the uids past the deck in that order, the Hand writers
+/// head the Hand in that order, and the root is admitted. The game's own
+/// piles for each pair are asserted in
+/// `engine::relics`' `before_hand_draw_relics_run_in_the_recorded_order_the_game_runs`.
 #[test]
-fn every_pair_of_hand_draw_card_movers_refuses() {
+fn every_pair_of_hand_draw_card_movers_follows_a_recorded_order_or_refuses() {
     let movers = [
         "RELIC.FUNERARY_MASK",
         "RELIC.JEWELED_MASK",
+        "RELIC.NINJA_SCROLL",
         "RELIC.RADIANT_PEARL",
     ];
+    // What each generator adds: (card id, count, into the Hand).
+    let generated = |relic: &str| match relic {
+        "RELIC.FUNERARY_MASK" => Some(("SOUL", 3, false)),
+        "RELIC.NINJA_SCROLL" => Some(("SHIV", 3, true)),
+        "RELIC.RADIANT_PEARL" => Some(("LUMINESCE", 1, true)),
+        _ => None,
+    };
+    let control = opens_and_admits(&empty_belt_case(), "the control");
+    let deck = (hand_size(&control.document) + control.document.piles["draw"].len()) as u64;
     for (index, first) in movers.iter().enumerate() {
         for second in &movers[index + 1..] {
-            match open(&with_relics(first, second)) {
-                Err(OpeningRefusal::RelicCombinationRefused { relics, .. }) => {
-                    assert_eq!(relics, [first.to_string(), second.to_string()]);
+            for order in [[*first, *second], [*second, *first]] {
+                let case = with_relics(order[0], order[1]);
+                // Unvouched: the gate is ownership, and names them sorted.
+                let mut facts = entry_facts(&case);
+                facts.relic_entry.dispatch_ordered = false;
+                match open_facts(&facts) {
+                    Err(OpeningRefusal::RelicCombinationRefused { relics, .. }) => {
+                        assert_eq!(relics, [first.to_string(), second.to_string()]);
+                    }
+                    other => panic!("{first} + {second}: {:?}", other.err()),
                 }
-                other => panic!("{first} + {second}: {:?}", other.err()),
+                // Vouched: opened in the recorded order.
+                let opening = opens_and_admits(&case, &format!("{order:?}"));
+                let hand = pile_ids_and_uids(&opening.document, "hand");
+                let all: Vec<(String, Option<u64>)> = hand
+                    .iter()
+                    .cloned()
+                    .chain(pile_ids_and_uids(&opening.document, "draw"))
+                    .collect();
+                let mut next = deck;
+                let mut hand_head = Vec::new();
+                for relic in order {
+                    let Some((id, count, into_hand)) = generated(relic) else {
+                        continue;
+                    };
+                    let uids: Vec<Option<u64>> = (next..next + count).map(Some).collect();
+                    next += count;
+                    let mut found: Vec<Option<u64>> = all
+                        .iter()
+                        .filter(|(card, uid)| card == id && uids.contains(uid))
+                        .map(|(_, uid)| *uid)
+                        .collect();
+                    found.sort();
+                    assert_eq!(found, uids, "{order:?}: {id} uids in walk order");
+                    if into_hand {
+                        hand_head.extend(uids.into_iter().map(|uid| (id.to_string(), uid)));
+                    }
+                }
+                assert_eq!(
+                    opening.document.player.get("next_card_uid"),
+                    Some(&Value::from(next)),
+                    "{order:?}"
+                );
+                // The Hand writers' cards, in recorded order, ahead of the
+                // deal (a Jeweled Mask Power may sit among them).
+                let fresh_in_hand: Vec<(String, Option<u64>)> = hand
+                    .iter()
+                    .filter(|(id, _)| id == "SHIV" || id == "LUMINESCE")
+                    .cloned()
+                    .collect();
+                assert_eq!(fresh_in_hand, hand_head, "{order:?}: {hand:?}");
+                let lead = hand_head.len() + usize::from(order.contains(&"RELIC.JEWELED_MASK"));
+                assert!(
+                    hand.iter()
+                        .skip(lead)
+                        .all(|(id, _)| id != "SHIV" && id != "LUMINESCE"),
+                    "{order:?}: {hand:?}"
+                );
             }
-        }
-        match open(&with_relics(first, "RELIC.NINJA_SCROLL")) {
-            Err(OpeningRefusal::RoomEntryRelicNotModeled { relic }) => {
-                assert_eq!(relic, "RELIC.NINJA_SCROLL");
-            }
-            other => panic!("{first} + Ninja Scroll: {:?}", other.err()),
         }
     }
     let set = |relics: &[&'static str]| relics.iter().copied().collect();
     assert!(
-        super::refuse_unordered_hand_draw_card_peers(&set(&[
-            "RELIC.JEWELED_MASK",
-            "RELIC.NINJA_SCROLL"
-        ]))
+        super::refuse_unordered_hand_draw_card_peers(
+            &set(&["RELIC.JEWELED_MASK", "RELIC.NINJA_SCROLL"]),
+            false
+        )
         .is_err()
     );
+    // A vouched inventory records the order the engine walks (#3635).
     assert!(
-        super::refuse_unordered_hand_draw_card_peers(&set(&[
-            "RELIC.JEWELED_MASK",
-            "RELIC.PENDULUM",
-            "RELIC.POLLINOUS_CORE"
-        ]))
+        super::refuse_unordered_hand_draw_card_peers(
+            &set(&["RELIC.JEWELED_MASK", "RELIC.NINJA_SCROLL"]),
+            true
+        )
+        .is_ok()
+    );
+    assert!(
+        super::refuse_unordered_hand_draw_card_peers(
+            &set(&[
+                "RELIC.JEWELED_MASK",
+                "RELIC.PENDULUM",
+                "RELIC.POLLINOUS_CORE"
+            ]),
+            false
+        )
         .is_ok()
     );
 }
@@ -13385,11 +15813,11 @@ fn the_uid_check_holds_radiant_pearls_luminesce_to_the_hand_head() {
     );
 }
 
-/// `tea_of_discourtesy_spent`: a spent Tea (`CombatsLeft` 0) is inert and
-/// opens with the counter projected; a charged one refuses as the body table
-/// did; an absent or out-of-domain counter refuses as not exact.
+/// `tea_of_discourtesy_combats_left`: a spent Tea (`CombatsLeft` 0) is inert
+/// and opens with the counter projected; an absent or out-of-domain counter
+/// refuses as not exact.
 #[test]
-fn tea_of_discourtesy_opens_spent_and_refuses_charged_or_unknown() {
+fn tea_of_discourtesy_opens_spent_and_refuses_an_unknown_counter() {
     let control = open(&empty_belt_case()).expect("the control opens");
     let spent = open(&with_relic_counter(
         "RELIC.TEA_OF_DISCOURTESY",
@@ -13402,11 +15830,6 @@ fn tea_of_discourtesy_opens_spent_and_refuses_charged_or_unknown() {
         Some(&Value::from(0))
     );
     assert_eq!(spent.document.piles, control.document.piles);
-    assert!(matches!(
-        open(&with_relic_counter("RELIC.TEA_OF_DISCOURTESY", "CombatsLeft", 1)),
-        Err(OpeningRefusal::RoomEntryRelicNotModeled { relic })
-            if relic == "RELIC.TEA_OF_DISCOURTESY"
-    ));
     for case in [
         with_relic_counter("RELIC.TEA_OF_DISCOURTESY", "CombatsLeft", 2),
         with_relic("RELIC.TEA_OF_DISCOURTESY"),
@@ -13419,6 +15842,192 @@ fn tea_of_discourtesy_opens_spent_and_refuses_charged_or_unknown() {
             })
         ));
     }
+}
+
+fn deck_uids_in_deal_order(document: &crate::canonical::CanonicalStateV2) -> Vec<Option<u64>> {
+    document.piles["hand"]
+        .iter()
+        .chain(&document.piles["draw"])
+        .filter(|card| card.id != "DAZED")
+        .map(|card| card.uid)
+        .collect()
+}
+
+fn dazed_uids(document: &crate::canonical::CanonicalStateV2) -> Vec<Option<u64>> {
+    let mut uids: Vec<Option<u64>> = document.piles["hand"]
+        .iter()
+        .chain(&document.piles["draw"])
+        .filter(|card| card.id == "DAZED")
+        .map(|card| card.uid)
+        .collect();
+    uids.sort_unstable();
+    uids
+}
+
+/// A charged Tea of Discourtesy (#3756,
+/// `TeaOfDiscourtesy/<BeforeCombatStart>d__16::MoveNext` `0x3324dc`): the
+/// opening writes the charge, `engine::fire_before_combat_start` inserts two
+/// Dazed into Draw on the next two uids and spends it, and the deal then
+/// draws from that pile. The ten deck cards keep the control's order around
+/// the inserts, and the `Rng` stream is two draws ahead of the control's.
+#[test]
+fn a_charged_tea_of_discourtesy_opens_with_two_dazed_and_spends_the_charge() {
+    let control = open(&empty_belt_case())
+        .expect("the control opens")
+        .document;
+    let case = with_relic_counter("RELIC.TEA_OF_DISCOURTESY", "CombatsLeft", 1);
+    let built = pre_hook(&case).expect("the pre-hook opening builds");
+    assert_eq!(
+        built.document.player.get("tea_discourtesy_combats_left"),
+        Some(&Value::from(1)),
+        "the charge reaches the pre-hook document"
+    );
+    assert!(dazed_uids(&built.document).is_empty());
+    let opened = open(&case).expect("a charged Tea opens").document;
+    assert_eq!(
+        opened.player.get("tea_discourtesy_combats_left"),
+        Some(&Value::from(0)),
+        "the body spends the charge"
+    );
+    assert_eq!(dazed_uids(&opened), [Some(10), Some(11)]);
+    assert_eq!(opened.player.get("next_card_uid"), Some(&Value::from(12)));
+    assert_eq!(hand_size(&opened), hand_size(&control));
+    assert_eq!(
+        opened.piles["hand"].len() + opened.piles["draw"].len(),
+        12,
+        "the deck and the two Dazed"
+    );
+    assert_eq!(
+        deck_uids_in_deal_order(&opened),
+        deck_uids_in_deal_order(&control)
+    );
+    assert_ne!(opened.rng, control.rng, "the two position draws");
+}
+
+/// The same charged Tea over a deck the turn-one fixup reorders (#3756): the
+/// pre-hook pile stays shuffled (Writhe mid-pile on its shuffled uid 4, where
+/// a spent Tea's pile has it in front), the Dazed are inserted into that
+/// pile, and the engine's deferred fixup then carries Writhe to the hand's
+/// head. The frozen oracle opened this save the same way: `WRITHE:4` with
+/// the Dazed on uids 11 and 12 (see
+/// `a_tea_of_discourtesy_owner_is_held_to_the_strict_order`).
+#[test]
+fn a_charged_tea_of_discourtesy_inserts_into_the_shuffled_pile() {
+    let tea = |combats_left: i64| {
+        let mut case = with_deck_front(&[deck_card("WRITHE")]);
+        relic(
+            &mut case,
+            serde_json::json!({
+                "floor_added_to_deck": 1, "id": "RELIC.TEA_OF_DISCOURTESY",
+                "props": {"ints": [{"name": "CombatsLeft", "value": combats_left}]}}),
+        );
+        case
+    };
+    let first = |case: &Value| {
+        let draw = &pre_hook(case)
+            .expect("the pre-hook opening builds")
+            .document
+            .piles["draw"];
+        (draw[0].id.clone(), draw[4].id.clone(), draw[4].uid)
+    };
+    let (front, fifth, fifth_uid) = first(&tea(1));
+    assert_ne!(front, "WRITHE", "a charged Tea's pile is still shuffled");
+    assert_eq!((fifth.as_str(), fifth_uid), ("WRITHE", Some(4)));
+    assert_eq!(first(&tea(0)).0, "WRITHE", "a spent Tea's pile is fixed");
+
+    let opened = open(&tea(1))
+        .expect("a charged Tea over an Innate deck opens")
+        .document;
+    assert_eq!(
+        hand_ids_and_uids(&opened)[0],
+        ("WRITHE".to_string(), Some(4))
+    );
+    assert_eq!(dazed_uids(&opened), [Some(11), Some(12)]);
+    let mut fixed: Vec<Option<u64>> = (0..11).map(Some).collect();
+    fixed.remove(4);
+    fixed.insert(0, Some(4));
+    assert_eq!(deck_uids_in_deal_order(&opened), fixed);
+    // The spent twin keeps the strict order and so refuses the reordered pile.
+    assert!(matches!(
+        open(&tea(0)),
+        Err(OpeningRefusal::CardIdentityAllocationDiverged { .. })
+    ));
+}
+
+/// `tea_of_discourtesy_combats_left`'s charged refusals (#3756): each relic
+/// of `CHARGED_TEA_REFUSED_PEERS` and a Thieving Hopper room refuse by name
+/// beside a charged Tea, and none of them beside a spent one. Called
+/// directly, since several of the peers have earlier gates of their own.
+#[test]
+fn a_charged_tea_of_discourtesy_refuses_beside_each_unmodeled_peer() {
+    use super::{CHARGED_TEA_REFUSED_PEERS, tea_of_discourtesy_combats_left};
+    use std::collections::BTreeSet;
+    const TEA: &str = "RELIC.TEA_OF_DISCOURTESY";
+    let charged = entry_facts(&with_relic_counter(TEA, "CombatsLeft", 1));
+    let spent = entry_facts(&with_relic_counter(TEA, "CombatsLeft", 0));
+    let alone: BTreeSet<&str> = [TEA].into_iter().collect();
+    assert_eq!(
+        tea_of_discourtesy_combats_left(&charged, &alone),
+        Ok(Some(1))
+    );
+    assert_eq!(tea_of_discourtesy_combats_left(&spent, &alone), Ok(Some(0)));
+    assert_eq!(
+        tea_of_discourtesy_combats_left(&charged, &BTreeSet::new()),
+        Ok(None),
+        "not owned"
+    );
+    for peer in CHARGED_TEA_REFUSED_PEERS {
+        let pair: BTreeSet<&str> = [TEA, peer].into_iter().collect();
+        match tea_of_discourtesy_combats_left(&charged, &pair) {
+            Err(OpeningRefusal::RelicCombinationRefused { relics, .. }) => {
+                let mut named = vec![TEA.to_string(), peer.to_string()];
+                named.sort();
+                assert_eq!(relics, named);
+            }
+            other => panic!("{peer} beside a charged Tea: {other:?}"),
+        }
+        assert_eq!(
+            tea_of_discourtesy_combats_left(&spent, &pair),
+            Ok(Some(0)),
+            "{peer} beside a spent Tea"
+        );
+    }
+    let hopper = |combats_left: i64| {
+        let mut case = hopper_case(&[]);
+        relic(
+            &mut case,
+            serde_json::json!({
+                "floor_added_to_deck": 1, "id": TEA,
+                "props": {"ints": [{"name": "CombatsLeft", "value": combats_left}]}}),
+        );
+        entry_facts(&case)
+    };
+    assert!(matches!(
+        tea_of_discourtesy_combats_left(&hopper(1), &alone),
+        Err(OpeningRefusal::RelicCombinationRefused { relics, .. }) if relics == [TEA]
+    ));
+    assert_eq!(
+        tea_of_discourtesy_combats_left(&hopper(0), &alone),
+        Ok(Some(0))
+    );
+}
+
+/// `pre_deal_allocations`' Tea row (#3756): two Dazed into Draw for a charged
+/// owner, and nothing for a spent one or a charge with no owner.
+#[test]
+fn only_a_charged_tea_of_discourtesy_announces_its_two_dazed() {
+    use super::{PreDeal, pre_deal_allocations};
+    let tea = ["RELIC.TEA_OF_DISCOURTESY".to_string()];
+    assert_eq!(
+        pre_deal_allocations(&tea, true),
+        PreDeal {
+            draw: 2,
+            draw_id: "DAZED",
+            ..PreDeal::default()
+        }
+    );
+    assert_eq!(pre_deal_allocations(&tea, false), PreDeal::default());
+    assert_eq!(pre_deal_allocations(&[], true), PreDeal::default());
 }
 
 /// `Planisphere/<AfterRoomEntered>d__5::MoveNext` (`0x32e318`) heals only on
@@ -13548,6 +16157,281 @@ fn red_skull_opens_with_three_strength_at_or_below_half_hp() {
     let mut unowned = entry_facts(&empty_belt_case());
     unowned.hp_entering = max_hp / 2;
     assert_eq!(opening_strength(&open_facts(&unowned).expect("opens")), 0);
+}
+
+fn dowsing_row(rooms_entered: i64) -> Value {
+    serde_json::json!({
+        "floor_added_to_deck": 1, "id": "CARD.DOWSING",
+        "props": {"ints": [{"name": "RoomsEntered", "value": rooms_entered}]}})
+}
+
+/// The fixture entry with `rows` at the deck's front, on a `?` point that
+/// resolved straight into its scheduled monster room.
+fn on_unknown_point(rows: &[Value]) -> crate::entry::document::EntryDocument {
+    let mut entry = entry_facts(&with_deck_front(rows));
+    entry.map_point_type = Some("unknown".to_string());
+    entry.next_normal_encounter = Some(entry.encounter_id.clone());
+    entry
+}
+
+fn deck_ids(entry: &crate::entry::document::EntryDocument) -> Vec<String> {
+    entry
+        .deck_entering
+        .iter()
+        .map(|card| card.id.clone())
+        .collect()
+}
+
+/// `dowsing_before_room_entered` (#3791,
+/// `Dowsing/<BeforeRoomEntered>d__15::MoveNext` `0x399e18`): a Dowsing whose
+/// saved count is 4 leaves the deck on a proven `?` first room and a fresh
+/// Abundance joins at the END, with nothing else of the entry touched. Every
+/// other count, point and props shape takes its own arm.
+#[test]
+fn a_dowsing_one_room_short_becomes_an_abundance_at_the_decks_end() {
+    use super::{DECK_ADD_LISTENER_RELICS, dowsing_before_room_entered};
+    let due = on_unknown_point(&[dowsing_row(4)]);
+    assert_eq!(due.deck_entering[0].id, "CARD.DOWSING");
+    let transformed = dowsing_before_room_entered(&due)
+        .expect("the proven first room transforms")
+        .expect("the deck changes");
+    let mut expected = deck_ids(&due);
+    expected.remove(0);
+    expected.push("CARD.ABUNDANCE".to_string());
+    assert_eq!(deck_ids(&transformed), expected);
+    assert_eq!(
+        transformed.deck_entering.last(),
+        Some(&crate::entry::deck::DeckEntry {
+            id: "CARD.ABUNDANCE".to_string(),
+            upgrade_level: 0,
+            props: None,
+            enchantment: None,
+            enchant_amount: None,
+        })
+    );
+    let mut rest = transformed.clone();
+    rest.deck_entering = due.deck_entering.clone();
+    assert_eq!(rest, due, "only the deck changed");
+
+    // Below the threshold the deck is the saved one, at any point.
+    for rooms in 0..4 {
+        assert_eq!(
+            dowsing_before_room_entered(&on_unknown_point(&[dowsing_row(rooms)])),
+            Ok(None),
+            "RoomsEntered {rooms}"
+        );
+    }
+    // A count the game never saves, and props of another shape.
+    let not_exact = |row: Value| {
+        matches!(
+            dowsing_before_room_entered(&on_unknown_point(&[row])),
+            Err(OpeningRefusal::CardEntryPropsNotExact {
+                card: "DOWSING",
+                ..
+            })
+        )
+    };
+    assert!(not_exact(dowsing_row(-1)));
+    assert!(not_exact(dowsing_row(5)));
+    assert!(not_exact(serde_json::json!({
+        "floor_added_to_deck": 1, "id": "CARD.DOWSING",
+        "props": {"ints": [{"name": "Rooms", "value": 4}]}})));
+    assert!(not_exact(serde_json::json!({
+        "floor_added_to_deck": 1, "id": "CARD.DOWSING",
+        "props": {"ints": [{"name": "RoomsEntered", "value": 4},
+                           {"name": "RoomsEntered", "value": 4}]}})));
+    assert!(not_exact(serde_json::json!({
+        "floor_added_to_deck": 1, "id": "CARD.DOWSING", "props": {"ints": []}})));
+    // A row with no counter at all is left alone (a facts root).
+    assert_eq!(
+        dowsing_before_room_entered(&on_unknown_point(&[deck_card("DOWSING")])),
+        Ok(None)
+    );
+
+    // Any other point type leaves the deck alone.
+    for point in [
+        "unassigned",
+        "shop",
+        "treasure",
+        "rest_site",
+        "monster",
+        "elite",
+        "boss",
+        "ancient",
+    ] {
+        let mut entry = due.clone();
+        entry.map_point_type = Some(point.to_string());
+        assert_eq!(dowsing_before_room_entered(&entry), Ok(None), "{point}");
+    }
+    // A boss room with no named point is entered from the boss point.
+    let mut boss = due.clone();
+    boss.map_point_type = None;
+    boss.node_type = Some("boss".to_string());
+    assert_eq!(dowsing_before_room_entered(&boss), Ok(None));
+    // A `?` fight that is not the scheduled one, and an unnamed point.
+    let refuses = |entry: &crate::entry::document::EntryDocument| {
+        matches!(
+            dowsing_before_room_entered(entry),
+            Err(OpeningRefusal::CardRoomEntryTransformUnmodeled {
+                card: "DOWSING",
+                ..
+            })
+        )
+    };
+    let mut other_fight = due.clone();
+    other_fight.next_normal_encounter = Some("ENCOUNTER.CHOMPERS_NORMAL".to_string());
+    assert!(refuses(&other_fight));
+    other_fight.next_normal_encounter = None;
+    assert!(refuses(&other_fight));
+    let mut unnamed = due.clone();
+    unnamed.map_point_type = None;
+    unnamed.node_type = Some("monster".to_string());
+    assert!(refuses(&unnamed));
+
+    // Beside a relic that answers a card joining the deck: refused when the
+    // card would join, untouched when it would not.
+    for listener in DECK_ADD_LISTENER_RELICS {
+        let mut entry = due.clone();
+        entry.relic_entry.relics_entering.push(listener.to_string());
+        assert!(refuses(&entry), "{listener}");
+        let mut early = on_unknown_point(&[dowsing_row(3)]);
+        early.relic_entry.relics_entering.push(listener.to_string());
+        assert_eq!(dowsing_before_room_entered(&early), Ok(None), "{listener}");
+    }
+
+    // Book of Five Rings counts the Abundance as a card added
+    // (`BookOfFiveRings/<AfterCardChangedPiles>d__19` `0x320238`): only the
+    // fifth heals, and that one refuses. Its saved count must be exact.
+    let book = |cards_added: Option<i64>, rows: &[Value]| {
+        let mut entry = on_unknown_point(rows);
+        let relic = "RELIC.BOOK_OF_FIVE_RINGS".to_string();
+        entry.relic_entry.relics_entering.push(relic.clone());
+        if let Some(cards_added) = cards_added {
+            entry
+                .relic_entry
+                .relic_counters
+                .insert(relic, Value::from(cards_added));
+        }
+        entry
+    };
+    for cards_added in [0, 2, 3, 5, 8] {
+        assert!(
+            matches!(
+                dowsing_before_room_entered(&book(Some(cards_added), &[dowsing_row(4)])),
+                Ok(Some(_))
+            ),
+            "CardsAdded {cards_added}"
+        );
+    }
+    for cards_added in [4, 9] {
+        assert!(
+            refuses(&book(Some(cards_added), &[dowsing_row(4)])),
+            "CardsAdded {cards_added}"
+        );
+    }
+    // Two cards join: the fifth is reached from three as well as from four.
+    let two = [dowsing_row(4), dowsing_row(4)];
+    assert!(refuses(&book(Some(3), &two)));
+    assert!(refuses(&book(Some(4), &two)));
+    assert!(matches!(
+        dowsing_before_room_entered(&book(Some(5), &two)),
+        Ok(Some(_))
+    ));
+    for cards_added in [None, Some(-1)] {
+        assert!(matches!(
+            dowsing_before_room_entered(&book(cards_added, &[dowsing_row(4)])),
+            Err(OpeningRefusal::RelicCounterNotExact {
+                relic: "RELIC.BOOK_OF_FIVE_RINGS",
+                ..
+            })
+        ));
+    }
+    // With no card joining, the relic's counter is not read.
+    assert_eq!(
+        dowsing_before_room_entered(&book(None, &[dowsing_row(3)])),
+        Ok(None)
+    );
+
+    // Two due rows both leave; an enchanted one leaves nothing behind; a row
+    // below the threshold stays where it was.
+    let mut enchanted = dowsing_row(4);
+    enchanted["enchantment"] = serde_json::json!({"id": "ENCHANTMENT.SHARP", "amount": 2});
+    let pair = on_unknown_point(&[dowsing_row(4), dowsing_row(2), enchanted]);
+    let transformed = dowsing_before_room_entered(&pair)
+        .expect("two due rows transform")
+        .expect("the deck changes");
+    let mut expected = deck_ids(&pair);
+    expected.remove(2);
+    expected.remove(0);
+    expected.extend(["CARD.ABUNDANCE".to_string(), "CARD.ABUNDANCE".to_string()]);
+    assert_eq!(deck_ids(&transformed), expected);
+    assert_eq!(transformed.deck_entering[0].id, "CARD.DOWSING");
+    assert!(
+        transformed
+            .deck_entering
+            .iter()
+            .all(|card| card.id != "CARD.ABUNDANCE" || card.enchantment.is_none())
+    );
+}
+
+/// The same transform through [`build_opening`] (#3791): the opening of a
+/// save holding a due Dowsing is the opening of the deck with that row gone
+/// and an Abundance last, document for document, and a Dowsing one room
+/// earlier still opens holding the Dowsing.
+#[test]
+fn a_transforming_dowsing_opens_as_the_deck_with_the_abundance_last() {
+    let open_entry = |entry: &crate::entry::document::EntryDocument| {
+        build_opening(entry, &OpeningOptions::default())
+    };
+    let count = |document: &crate::canonical::CanonicalStateV2, id: &str| {
+        document
+            .piles
+            .values()
+            .flatten()
+            .filter(|card| card.id == id)
+            .count()
+    };
+    let due = on_unknown_point(&[dowsing_row(4)]);
+    let opened = open_entry(&due)
+        .expect("the transforming room opens")
+        .document;
+    assert_eq!(
+        (count(&opened, "DOWSING"), count(&opened, "ABUNDANCE")),
+        (0, 1)
+    );
+
+    let mut twin = due.clone();
+    let moved = twin.deck_entering.remove(0);
+    assert_eq!(moved.id, "CARD.DOWSING");
+    twin.deck_entering.push(crate::entry::deck::DeckEntry {
+        id: "CARD.ABUNDANCE".to_string(),
+        upgrade_level: 0,
+        props: None,
+        enchantment: None,
+        enchant_amount: None,
+    });
+    assert_eq!(
+        opened,
+        open_entry(&twin).expect("the twin deck opens").document
+    );
+
+    let early = open_entry(&on_unknown_point(&[dowsing_row(3)]))
+        .expect("a Dowsing two rooms short opens")
+        .document;
+    assert_eq!(
+        (count(&early, "DOWSING"), count(&early, "ABUNDANCE")),
+        (1, 0)
+    );
+    // The refusal reaches the caller of `build`.
+    let mut unnamed = due.clone();
+    unnamed.map_point_type = None;
+    assert!(matches!(
+        open_entry(&unnamed),
+        Err(OpeningRefusal::CardRoomEntryTransformUnmodeled {
+            card: "DOWSING",
+            ..
+        })
+    ));
 }
 
 /// Planisphere's room-entry heal and Red Skull share the acquisition-ordered
@@ -14052,8 +16936,15 @@ fn whispering_earring_admission_wall_guards_only_a_loop_still_ahead() {
 }
 
 /// The uid-allocation check's Whispering Earring branch (#3414) admits the
-/// opened root and still refuses what the loop cannot produce: fresh uids
-/// out of allocation order in the hand, and a dealt uid carried twice.
+/// opened root and still refuses what the loop cannot produce: a fresh uid
+/// carried twice in the hand, and a dealt uid carried twice.
+///
+/// Fresh uids out of allocation order are NOT refused (#3756): a child can
+/// move a generated card after later ones were created (Summon Forth returns
+/// an earlier Sovereign Blade to the Hand's end), and the site fight that
+/// does exactly that certifies against the game's checksums. A pre-deal Hand
+/// card (Radiant Pearl's Luminesce) is a live Hand card the loop may play, so
+/// under the earring it need not head the Hand or be in it.
 #[test]
 fn whispering_earring_allocation_check_refuses_what_the_loop_cannot_produce() {
     use super::{PreDeal, check_card_identity_allocation, expected_identity_order};
@@ -14082,10 +16973,71 @@ fn whispering_earring_allocation_check_refuses_what_the_loop_cannot_produce() {
     unordered
         .player
         .insert("next_card_uid".to_string(), Value::from(next + 2));
-    assert!(matches!(
+    assert_eq!(
         check_card_identity_allocation(&unordered, &expected, earring),
+        Ok(()),
+        "fresh uids may sit in any order after the loop"
+    );
+
+    let mut fresh_twice = unordered.clone();
+    let repeated = fresh_twice.piles["hand"].last().unwrap().clone();
+    fresh_twice.piles.get_mut("hand").unwrap().push(repeated);
+    assert!(matches!(
+        check_card_identity_allocation(&fresh_twice, &expected, earring),
         Err(OpeningRefusal::CardIdentityAllocationDiverged { detail })
-            if detail.contains("not in allocation order")
+            if detail.contains("appears twice in the hand")
+    ));
+
+    // One pre-deal Hand card: its uid is the first past the deck. Under the
+    // earring it may sit anywhere in the Hand, or have been played out of it.
+    let head = PreDeal {
+        whispering_earring: true,
+        hand_head: 1,
+        ..PreDeal::default()
+    };
+    let deck = expected.len() as u64;
+    let mut pearl = opened.clone();
+    let shift = |document: &mut crate::canonical::CanonicalStateV2| {
+        // Renumber the loop's own allocations past the pre-deal card's uid.
+        for pile in document.piles.values_mut() {
+            for card in pile.iter_mut() {
+                if let Some(uid) = card.uid.filter(|uid| *uid >= deck) {
+                    card.uid = Some(uid + 1);
+                }
+            }
+        }
+        let next = document.player["next_card_uid"].as_u64().unwrap();
+        document
+            .player
+            .insert("next_card_uid".to_string(), Value::from(next + 1));
+    };
+    shift(&mut pearl);
+    assert_eq!(
+        check_card_identity_allocation(&pearl, &expected, head),
+        Ok(()),
+        "the pre-deal Hand card was played out of the Hand"
+    );
+    let mut pearl_in_hand = pearl.clone();
+    let mut luminesce = template.clone();
+    luminesce.uid = Some(deck);
+    pearl_in_hand.piles.get_mut("hand").unwrap().push(luminesce);
+    assert_eq!(
+        check_card_identity_allocation(&pearl_in_hand, &expected, head),
+        Ok(()),
+        "the pre-deal Hand card sits behind the dealt cards"
+    );
+    // The allocator must still have passed it.
+    let mut unallocated = opened.clone();
+    unallocated
+        .player
+        .insert("next_card_uid".to_string(), Value::from(deck));
+    for pile in unallocated.piles.values_mut() {
+        pile.retain(|card| card.uid.is_none_or(|uid| uid < deck));
+    }
+    assert!(matches!(
+        check_card_identity_allocation(&unallocated, &expected, head),
+        Err(OpeningRefusal::CardIdentityAllocationDiverged { detail })
+            if detail.contains("but next_card_uid is")
     ));
 
     let mut twice = opened.clone();
@@ -14232,7 +17184,8 @@ fn ring_of_the_drake_beside_a_still_gated_relic_refuses_by_the_peers_name() {
 // The entry now proves whether the current room is one of Fur Coat's marks
 // (`entry::relics::fur_coat_membership`). An unmarked room passes the body
 // gate, because both of the relic's combat hooks leave before any write; a
-// marked room and an unprovable one still refuse. The fixture save stands on
+// marked room opens with the combat-start body (#3634); an unprovable one
+// still refuses. The fixture save stands on
 // the monster point `(3, 1)` of act 0, the only point its saved map holds. No
 // capture in the corpus owns the relic, so these witnesses assert the opened
 // document against the control's.
@@ -14295,18 +17248,86 @@ fn a_fur_coat_save_in_an_unmarked_room_opens_as_the_fight_without_it() {
     }
 }
 
-/// A marked room keeps refusing: the opening has no body for the initial
-/// roster (#3634). The reader has no act test, so another act's mark on this
-/// coordinate is a marked room too.
+/// A marked room opens with every enemy at 1 HP (#3634). The reader has no
+/// act test, so another act's mark on this coordinate is a marked room too.
+///
+/// `FurCoat/<BeforeCombatStart>d__26::MoveNext` (`0x325360`), cited on
+/// `engine::monsters::fur_coat_before_combat_start`. The opened document is
+/// the same save's in an unmarked room but for each enemy's `hp` and the
+/// `fur_coat_active` flag: max HP, the piles and every RNG stream are
+/// untouched, so the roster's HP roll is the unmarked one. The root loads and
+/// admits.
 #[test]
-fn a_fur_coat_save_in_a_marked_room_still_refuses() {
+fn a_fur_coat_save_in_a_marked_room_opens_with_every_enemy_at_one_hp() {
+    let unmarked = open(&with_fur_coat(0, true, &[], &[])).expect("the unmarked room opens");
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        value["player"]
+            .as_object_mut()
+            .unwrap()
+            .remove("fur_coat_active");
+        for monster in value["monsters"].as_array_mut().unwrap() {
+            monster.as_object_mut().unwrap().remove("hp");
+        }
+        value
+    };
     for case in [
         with_fur_coat(0, true, &[3], &[1]),
         with_fur_coat(2, true, &[6, 3], &[11, 1]),
     ] {
         assert_eq!(entry_facts(&case).relic_entry.fur_coat_active, Some(true));
-        refuses_fur_coat(&case);
+        let opening = open(&case).expect("a marked Fur Coat room opens");
+        let document = &opening.document;
+        assert_eq!(
+            document.player.get("fur_coat_active"),
+            Some(&Value::Bool(true))
+        );
+        assert_eq!(
+            monster_field(document, "hp"),
+            vec![Value::from(1); document.monsters.len()]
+        );
+        assert_eq!(
+            monster_field(document, "max_hp"),
+            monster_field(&unmarked.document, "max_hp")
+        );
+        assert!(
+            monster_field(&unmarked.document, "hp")
+                .iter()
+                .all(|hp| hp.as_i64().is_some_and(|hp| hp > 1)),
+            "the unmarked roster is at its rolled HP"
+        );
+        assert_eq!(strip(document), strip(&unmarked.document));
+        admits_as_loaded(document).expect("the marked Fur Coat root admits");
     }
+}
+
+/// The one marked room that still refuses: Red Skull's latch left stale by
+/// Planisphere's crossing heal, which Fur Coat's HP writes would settle at
+/// `BeforeCombatStart` (`RedSkull/<AfterCurrentHpChanged>d__13` `0x32f5ec`
+/// has no creature test). Every other Red Skull case, an unmarked room and a
+/// non-owner pass.
+#[test]
+fn a_marked_fur_coat_room_refuses_beside_a_stale_red_skull_latch() {
+    use super::RedSkullRoomEntry;
+    let marked = entry_facts(&with_fur_coat(0, true, &[3], &[1]));
+    let unmarked = entry_facts(&with_fur_coat(0, true, &[], &[]));
+    let owned: std::collections::BTreeSet<&str> = ["RELIC.FUR_COAT"].into_iter().collect();
+    let none = std::collections::BTreeSet::new();
+    let check =
+        |entry, relics, case| super::fur_coat_red_skull_recheck_is_inert(entry, relics, case);
+
+    let refusal = check(&marked, &owned, RedSkullRoomEntry::BeforeCrossingHeal).unwrap_err();
+    assert_eq!(refusal.class(), "relic_combination_refused");
+    assert!(
+        refusal.to_string().contains("RELIC.FUR_COAT")
+            && refusal.to_string().contains("RELIC.RED_SKULL"),
+        "{refusal}"
+    );
+    for case in [RedSkullRoomEntry::Inert, RedSkullRoomEntry::Lifts] {
+        assert!(check(&marked, &owned, case).is_ok(), "{case:?}");
+    }
+    assert!(check(&unmarked, &owned, RedSkullRoomEntry::BeforeCrossingHeal).is_ok());
+    assert!(check(&marked, &none, RedSkullRoomEntry::BeforeCrossingHeal).is_ok());
 }
 
 /// Unprovable membership is never read as "unmarked".
@@ -14340,5 +17361,590 @@ fn a_fur_coat_save_with_unprovable_membership_refuses() {
     ] {
         assert_eq!(entry_facts(&case).relic_entry.fur_coat_active, None);
         refuses_fur_coat(&case);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Booming Conch in an elite room (#3759)
+// ---------------------------------------------------------------------------
+//
+// The engine bodies existed and read `booming_conch_elite`; the opening never
+// wrote it. No frozen-oracle digest exists (the Python simulator is deleted),
+// so these assert the opened document against the same save without the
+// relic, and the `.mcr` census certifies the elite fights that own it.
+
+/// An elite root with Booming Conch opens two cards and one Energy up, on
+/// turn one only.
+///
+/// `BoomingConch::ModifyHandDraw` (`0x913a4`) and
+/// `BoomingConch/<AfterSideTurnStart>d__7` (`0x32048c`), cited on
+/// `super::booming_conch_elite`. The deal is the control's, two cards longer:
+/// same shuffle, same RNG position, and the two extra cards are the next two
+/// the control would draw. Everything else in the document is the control's
+/// but the flag, the ownership mirrors and the draw counters. The second
+/// turn deals the ordinary five, and the root loads and admits.
+#[test]
+fn an_elite_booming_conch_root_opens_two_cards_and_one_energy_up() {
+    let elite = |ids: &[&str]| with_node_type(with_relics_named(ids), "elite");
+    let control = opens_and_admits(&elite(&[]), "the elite control");
+    let opening = opens_and_admits(&elite(&["RELIC.BOOMING_CONCH"]), "elite Booming Conch");
+
+    assert_eq!(
+        opening.document.player.get("booming_conch_elite"),
+        Some(&Value::Bool(true))
+    );
+    assert_eq!(control.document.player.get("booming_conch_elite"), None);
+    assert_eq!(hand_size(&control.document), 5);
+    assert_eq!(hand_size(&opening.document), 7);
+    assert_eq!(opened_energy(&opening), opened_energy(&control) + 1);
+
+    let cards = |opening: &Opening, pile: &str| pile_ids_and_uids(&opening.document, pile);
+    assert_eq!(cards(&opening, "hand")[..5], cards(&control, "hand")[..]);
+    let dealt_then_draw = |opening: &Opening| {
+        let mut all = cards(opening, "hand");
+        all.extend(cards(opening, "draw"));
+        all
+    };
+    assert_eq!(dealt_then_draw(&opening), dealt_then_draw(&control));
+    assert_eq!(opening.document.rng, control.document.rng);
+
+    // Turn one only: the next hand is the ordinary five.
+    assert_eq!(hand_sizes_after_end_turns(&opening, 1), [(2, 5)]);
+    assert_eq!(hand_sizes_after_end_turns(&control, 1), [(2, 5)]);
+}
+
+/// Outside an elite room the relic does nothing, and without a node type the
+/// opening refuses rather than guess the room.
+///
+/// `RoomType == 2` (Elite) is the test in both hooks (`0x913a4`
+/// `IL_002c`-`IL_0049`, `0x32048c` `IL_0055`-`IL_0077`), so a monster or boss
+/// root with the relic is the control's document plus the ownership mirrors.
+#[test]
+fn booming_conch_is_inert_outside_an_elite_room_and_refuses_an_unknown_one() {
+    let strip = |document: &crate::canonical::CanonicalStateV2| {
+        let mut value = serde_json::to_value(document).unwrap();
+        let player = value["player"].as_object_mut().unwrap();
+        player.remove("booming_conch");
+        player.remove("relics_entering");
+        value
+    };
+    for node_type in ["monster", "boss"] {
+        let control = opens_and_admits(
+            &with_node_type(with_relics_named(&[]), node_type),
+            node_type,
+        );
+        let opening = opens_and_admits(
+            &with_node_type(with_relics_named(&["RELIC.BOOMING_CONCH"]), node_type),
+            node_type,
+        );
+        assert_eq!(
+            opening.document.player.get("booming_conch_elite"),
+            None,
+            "{node_type}"
+        );
+        assert_eq!(hand_size(&opening.document), 5, "{node_type}");
+        assert_eq!(
+            strip(&opening.document),
+            strip(&control.document),
+            "{node_type}"
+        );
+    }
+
+    let mut unknown = entry_facts(&with_relics_named(&["RELIC.BOOMING_CONCH"]));
+    unknown.node_type = None;
+    assert_eq!(
+        open_facts(&unknown).unwrap_err(),
+        OpeningRefusal::BoomingConchRoomTypeUnknown
+    );
+    // Without the relic an unknown room is not this gate's business.
+    let mut unowned = entry_facts(&with_relics_named(&[]));
+    unowned.node_type = None;
+    assert!(!matches!(
+        open_facts(&unowned),
+        Err(OpeningRefusal::BoomingConchRoomTypeUnknown)
+    ));
+}
+
+/// The Conch's two cards join the other `ModifyHandDraw` rows and its Energy
+/// the other turn-one gains: beside Bag of Preparation and Lantern an elite
+/// root deals nine and holds two Energy over the control.
+#[test]
+fn elite_booming_conch_sums_with_the_other_turn_one_draw_and_energy_rows() {
+    let elite = |ids: &[&str]| with_node_type(with_relics_named(ids), "elite");
+    let control = opens_and_admits(&elite(&[]), "the elite control");
+    let opening = opens_and_admits(
+        &elite(&[
+            "RELIC.BAG_OF_PREPARATION",
+            "RELIC.LANTERN",
+            "RELIC.BOOMING_CONCH",
+        ]),
+        "Conch + Bag + Lantern",
+    );
+    assert_eq!(hand_size(&opening.document), 9);
+    assert_eq!(opened_energy(&opening), opened_energy(&control) + 2);
+}
+
+/// The opened root's Energy; the document elides the default.
+fn opened_energy(opening: &Opening) -> i64 {
+    opening
+        .document
+        .player
+        .get("energy")
+        .and_then(Value::as_i64)
+        .unwrap_or(3)
+}
+
+/// The fixture case holding `ids` in that inventory order.
+fn with_relics_named(ids: &[&str]) -> Value {
+    let mut case = empty_belt_case();
+    for id in ids {
+        relic(
+            &mut case,
+            serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+        );
+    }
+    case
+}
+
+// --- #3817: an Imbued Discovery parks its choice inside AutoPre -----------
+
+/// An Ironclad under the full profile whose deck holds one `IMBUED` card,
+/// `id` at `upgrade`, and the named relics.
+///
+/// Mutation: [`owner_deck_with`]'s, then the card row inserted at the deck
+/// front with `'enchantment': {'id': 'ENCHANTMENT.IMBUED', 'amount': 1}`
+/// (and `current_upgrade_level` when nonzero), and one `p['relics'].append`
+/// per relic.
+fn imbued_case(id: &str, upgrade: i64, relics: &[&str]) -> Value {
+    let mut case = with_orb_stream(owner_deck_with("CHARACTER.IRONCLAD", &[]));
+    let mut row = serde_json::json!({
+        "floor_added_to_deck": 1, "id": format!("CARD.{id}"),
+        "enchantment": {"id": "ENCHANTMENT.IMBUED", "amount": 1}});
+    if upgrade != 0 {
+        row["current_upgrade_level"] = Value::from(upgrade);
+    }
+    deck_row(&mut case, row);
+    for id in relics {
+        relic(
+            &mut case,
+            serde_json::json!({"floor_added_to_deck": 1, "id": id}),
+        );
+    }
+    case
+}
+
+fn pile_ids(document: &crate::canonical::CanonicalStateV2, pile: &str) -> Vec<String> {
+    document
+        .piles
+        .get(pile)
+        .into_iter()
+        .flatten()
+        .map(|card| card.id.clone())
+        .collect()
+}
+
+/// Which loader refuses `document`: the catalog, hydration or admission.
+fn refusing_loader(document: &crate::canonical::CanonicalStateV2) -> Option<&'static str> {
+    let Ok(catalog) = crate::boundary::HotBoundary::catalog_from_canonical(document) else {
+        return Some("catalog");
+    };
+    let Ok(state) = crate::boundary::HotBoundary::from_canonical(document, &catalog) else {
+        return Some("hydration");
+    };
+    crate::engine::admit(document, &state, &catalog)
+        .is_err()
+        .then_some("admission")
+}
+
+/// An `IMBUED` Discovery's turn-one AutoPlay parks its three-card choice
+/// inside the opening's AutoPre phase, and the answer finishes the phase
+/// (#3817; `engine::play::autoplay_imbued_turn_one` carries the IL).
+///
+/// The root is the parked state: the Discovery in Play, the three options
+/// drawn off the generation stream, the Imbued phase record under the
+/// CardPlay. Native's opening checksum precedes it, and the recorded
+/// `AfterPlayerTurnStart` state shows the Discovery still at the Draw bottom
+/// with the stream untouched. Each of the four answers (three cards and the
+/// skip) leaves an ordinary turn-one state: no frame, the ordinary-actions
+/// phase, the chosen card in the Hand, and Discovery in its result pile
+/// (Exhaust unupgraded, Discard upgraded: `Discovery::OnUpgrade` RVA
+/// `0xddc67` removes the keyword).
+#[test]
+fn an_imbued_discovery_parks_its_choice_inside_auto_pre_and_resumes() {
+    use crate::boundary::HotBoundary;
+    let recording = OpeningOptions {
+        record_native_checkpoints: true,
+        ..OpeningOptions::default()
+    };
+    for (upgrade, result_pile) in [(0, "exhaust"), (1, "discard")] {
+        let case = imbued_case("DISCOVERY", upgrade, &[]);
+        let opening = build_opening(&entry_facts(&case), &recording)
+            .unwrap_or_else(|refusal| panic!("+{upgrade} opens: {refusal}"));
+        let document = &opening.document;
+        let pending = &document.player["pending"];
+        assert_eq!(pending[0], Value::from("discovery_select"));
+        let options: Vec<String> = pending[3]
+            .as_array()
+            .expect("the options are an array")
+            .iter()
+            .map(|option| option[0].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(options.len(), 3);
+        let frames: Vec<&str> = document
+            .continuations
+            .iter()
+            .map(|frame| frame.frame_type.as_str())
+            .collect();
+        assert_eq!(frames, ["PhaseFrame", "CardPlayFrame"]);
+        assert_eq!(
+            document.continuations[0].fields["snapshot"],
+            serde_json::json!([["enchantment", "IMBUED"]])
+        );
+        assert_eq!(
+            document.continuations[0].fields["locals"][0],
+            document.continuations[1].fields["uid"]
+        );
+        assert_eq!(pile_ids(document, "play"), ["DISCOVERY"]);
+
+        // Native's opening checksum: before AutoPre.
+        let checkpoints = opening.native_checkpoints.as_ref().expect("recorded");
+        assert_eq!(checkpoints.len(), 1);
+        let before = checkpoints[0].state.as_ref().expect("projects");
+        assert!(!before.player.contains_key("pending"));
+        assert!(before.continuations.is_empty());
+        assert_eq!(pile_ids(before, "draw").last().unwrap(), "DISCOVERY");
+        assert_eq!(before.piles["hand"], document.piles["hand"]);
+        assert_ne!(before.rng["generation"], document.rng["generation"]);
+
+        let catalog = HotBoundary::catalog_from_canonical(document).unwrap();
+        let state = HotBoundary::from_canonical(document, &catalog).unwrap();
+        crate::engine::admit(document, &state, &catalog)
+            .unwrap_or_else(|refusal| panic!("the parked root admits: {refusal}"));
+        assert_eq!(
+            &HotBoundary::try_to_canonical(&state, &catalog).unwrap(),
+            document,
+            "the parked root round-trips"
+        );
+        assert!(crate::engine::play::imbued_identity_is_inert(
+            catalog
+                .spec(state.piles.get(crate::hot::PileId::Play).as_slice()[0].atom)
+                .unwrap(),
+            &state
+        ));
+        let actions = crate::engine::legal_actions(&state, &catalog);
+        assert_eq!(actions.len(), 4, "three cards and the skip: {actions:?}");
+        let hand = document.piles["hand"].len();
+        for (index, action) in actions.iter().enumerate() {
+            let next = crate::engine::apply_action(&state, &catalog, action)
+                .unwrap_or_else(|refusal| panic!("answer {index} resumes: {refusal}"))
+                .state;
+            assert!(next.pending.is_none() && next.frames.is_empty());
+            assert_eq!(
+                next.player_phase,
+                crate::engine::admission::PHASE_ORDINARY_ACTIONS
+            );
+            let after = HotBoundary::try_to_canonical(&next, &catalog).unwrap();
+            assert_eq!(pile_ids(&after, result_pile), ["DISCOVERY"]);
+            assert!(pile_ids(&after, "play").is_empty());
+            assert_eq!(after.rng["generation"], document.rng["generation"]);
+            let hand_after = pile_ids(&after, "hand");
+            if index < 3 {
+                assert_eq!(hand_after.len(), hand + 1);
+                assert_eq!(hand_after.last().unwrap(), &options[index]);
+            } else {
+                assert_eq!(hand_after.len(), hand, "the skip adds nothing");
+            }
+            crate::engine::admit(&after, &next, &catalog)
+                .unwrap_or_else(|refusal| panic!("answer {index} leaves a root: {refusal}"));
+        }
+    }
+}
+
+/// The parked Imbued root is one exact shape (#3817): every forged variant
+/// of it is refused at load or admission
+/// (`engine::play::imbued_auto_pre_stack_is_exact`).
+#[test]
+fn a_forged_imbued_auto_pre_root_is_refused() {
+    let opening = open_with_reset_ledger(&imbued_case("DISCOVERY", 1, &[])).expect("opens");
+    let document = opening.document;
+    assert_eq!(refusing_loader(&document), None, "the control is admitted");
+    let forge = |edit: &dyn Fn(&mut crate::canonical::CanonicalStateV2)| {
+        let mut forged = document.clone();
+        edit(&mut forged);
+        refusing_loader(&forged).is_some()
+    };
+    // An option repeated, and one from outside the owner's pool.
+    assert!(forge(&|forged| {
+        let first = forged.player["pending"][3][0].clone();
+        forged.player.get_mut("pending").unwrap()[3][1] = first;
+    }));
+    assert!(forge(&|forged| {
+        forged.player.get_mut("pending").unwrap()[3][0] = serde_json::json!(["DAZED", 0]);
+    }));
+    assert!(forge(&|forged| {
+        forged.player.get_mut("pending").unwrap()[3][0][1] = Value::from(1);
+    }));
+    // The phase record naming another card, and the stack without it.
+    assert!(forge(&|forged| {
+        forged.continuations[0]
+            .fields
+            .insert("locals".to_owned(), serde_json::json!([0]));
+    }));
+    assert!(forge(&|forged| {
+        forged.continuations.remove(0);
+    }));
+    assert!(forge(&|forged| {
+        forged.continuations[0].fields.insert(
+            "snapshot".to_owned(),
+            serde_json::json!([["power", "mayhem"]]),
+        );
+    }));
+    // Something spent on the AutoPlay, and a later turn.
+    assert!(forge(&|forged| {
+        forged.continuations[1]
+            .fields
+            .insert("spent".to_owned(), Value::from(1));
+    }));
+    assert!(forge(&|forged| {
+        forged.player.insert("turn".to_owned(), Value::from(2));
+    }));
+    // A second Imbued card.
+    assert!(forge(&|forged| {
+        let enchantment = forged.piles["play"][0].enchantment.clone();
+        forged.piles.get_mut("hand").unwrap()[0].enchantment = enchantment;
+    }));
+
+    // The grammar itself, on the hydrated root: each fact it reads, moved.
+    use crate::hot::PileId;
+    let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&document).unwrap();
+    let root = crate::boundary::HotBoundary::from_canonical(&document, &catalog).unwrap();
+    let exact = |state: &crate::hot::HotState| {
+        crate::engine::play::imbued_auto_pre_stack_is_exact(state, &catalog).is_ok()
+    };
+    assert!(exact(&root));
+    let tamper = |edit: &dyn Fn(&mut crate::hot::HotState)| {
+        let mut state = root.clone();
+        edit(&mut state);
+        exact(&state)
+    };
+    let with_play = |state: &mut crate::hot::HotState,
+                     edit: &dyn Fn(&mut crate::hot::CardPlayRecord)| {
+        let Some(crate::frame::Frame::CardPlay { record }) = state.frames.top() else {
+            panic!("the CardPlay is on top");
+        };
+        let mut play = state.frames.card_play(record).unwrap().to_owned();
+        edit(&mut play);
+        state.frames.replace_top_card_play(&play).unwrap();
+    };
+    assert!(!tamper(&|state| state.turn = 2));
+    assert!(!tamper(&|state| {
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+    }));
+    assert!(!tamper(&|state| state.history.over = true));
+    assert!(!tamper(&|state| {
+        let card = state.piles.get_mut(PileId::Play).make_mut().remove(0);
+        state.piles.get_mut(PileId::Discard).make_mut().push(card);
+    }));
+    assert!(!tamper(&|state| {
+        let atom = state.piles.get(PileId::Play).as_slice()[0].atom;
+        state.piles.get_mut(PileId::Hand).make_mut()[0].atom = atom;
+    }));
+    assert!(!tamper(&|state| with_play(state, &|play| play.spent = 1)));
+    assert!(!tamper(&|state| with_play(state, &|play| play.plays = 2)));
+    assert!(!tamper(&|state| with_play(state, &|play| play
+        .force_exhaust =
+        true)));
+    assert!(!tamper(&|state| {
+        with_play(state, &|play| {
+            play.source = crate::hot::CardPlaySource::Manual;
+            // A manual record cannot carry an AutoPlay's EnergyValue
+            // (#3756); drop it so the forged record still encodes.
+            play.energy_value = None;
+        });
+    }));
+    assert!(!tamper(&|state| {
+        with_play(state, &|play| {
+            play.selection_cards[1] = play.selection_cards[0]
+        });
+    }));
+    assert!(!tamper(&|state| with_play(state, &|play| {
+        play.selection_cards.pop();
+    })));
+    assert!(!tamper(&|state| {
+        let imbued = state.piles.get(PileId::Play).as_slice()[0].atom;
+        with_play(state, &|play| play.selection_cards[0].atom = imbued);
+    }));
+    assert!(!tamper(&|state| {
+        let play = state.frames.pop_top_card_play().unwrap();
+        let uid = state.frames.pop_top_auto_pre_imbued_phase().unwrap();
+        state.frames.push_auto_pre_imbued_phase(uid + 1).unwrap();
+        let record = state.frames.push_card_play(&play).unwrap();
+        state.pending = Some(std::sync::Arc::new(crate::hot::PendingSelection {
+            frame_uid: play.uid,
+            frame_record: record,
+        }));
+    }));
+    // With nothing pending the two-frame and one-frame stacks are the
+    // execution-only shapes of the same turn-one AutoPre, and nothing else.
+    let mut answered = root.clone();
+    with_play(&mut answered, &|play| {
+        play.pending_choice = false;
+        play.selection_kind = None;
+        play.selection_cards.clear();
+    });
+    answered.pending = None;
+    assert!(exact(&answered));
+    answered.frames.pop_top_card_play().unwrap();
+    assert!(exact(&answered));
+    answered.turn = 2;
+    assert!(!exact(&answered));
+}
+
+/// The shapes beside a parking Imbued body that refuse by name (#3817), and
+/// the entry gate that plays nothing.
+#[test]
+fn an_imbued_choice_refuses_its_unmodeled_neighbours_by_name() {
+    use crate::boundary::HotBoundary;
+    use crate::engine::play::{
+        IMBUED_CHILD, IMBUED_CHOICE_AFTER_SETUP_PAUSE, IMBUED_CHOICE_BESIDE_EARRING,
+        autoplay_imbued_turn_one,
+    };
+    // Whispering Earring's Late pass would run inside the same hook action.
+    let refusal =
+        open_with_reset_ledger(&imbued_case("DISCOVERY", 1, &["RELIC.WHISPERING_EARRING"]))
+            .unwrap_err();
+    assert!(
+        refusal.to_string().contains(IMBUED_CHOICE_BESIDE_EARRING),
+        "{refusal}"
+    );
+    // Another selecting Skill keeps the old name.
+    let refusal = open_with_reset_ledger(&imbued_case("BURNING_PACT", 0, &[])).unwrap_err();
+    assert!(refusal.to_string().contains(IMBUED_CHILD), "{refusal}");
+
+    // The state at native's opening checksum, where the listener has yet to
+    // run, driven directly.
+    let recording = OpeningOptions {
+        record_native_checkpoints: true,
+        ..OpeningOptions::default()
+    };
+    let opening =
+        build_opening(&entry_facts(&imbued_case("DISCOVERY", 1, &[])), &recording).expect("opens");
+    let before = opening.native_checkpoints.unwrap().remove(0).state.unwrap();
+    let catalog = HotBoundary::catalog_from_canonical(&before).unwrap();
+    let ahead = HotBoundary::from_canonical(&before, &catalog).unwrap();
+
+    // Reached from a resumed turn start, the choice would re-pause a hook
+    // action that is already running.
+    let mut resumed = ahead.clone();
+    assert_eq!(
+        autoplay_imbued_turn_one(&mut resumed, &catalog, false, &mut Vec::new()),
+        Err(crate::engine::EngineRefusal::MalformedArgs(
+            IMBUED_CHOICE_AFTER_SETUP_PAUSE
+        ))
+    );
+    // `CardCmd.AutoPlay`'s entry gate: a dead owner plays nothing.
+    let mut dead = ahead.clone();
+    dead.hp = 0;
+    let untouched = dead.clone();
+    autoplay_imbued_turn_one(&mut dead, &catalog, true, &mut Vec::new()).expect("returns");
+    assert!(dead == untouched, "nothing moved");
+    // And the synchronous walk parks.
+    let mut parked = ahead;
+    parked.player_phase = crate::engine::turn::PHASE_AUTO_PRE;
+    autoplay_imbued_turn_one(&mut parked, &catalog, true, &mut Vec::new()).expect("parks");
+    assert!(parked.pending.is_some());
+    assert_eq!(parked.frames.len(), 2);
+    assert_eq!(
+        HotBoundary::try_to_canonical(&parked, &catalog)
+            .unwrap()
+            .player["pending"],
+        opening.document.player["pending"]
+    );
+}
+
+// ---------------------------------------------------------------------------
+// An opening whose own turn-one relics end the combat (#3889)
+// ---------------------------------------------------------------------------
+
+/// The Toadpoles opening holding `relics` in that vouched order with the
+/// owner at `hp`, every created monster lowered to 5 HP between the pre-hook
+/// half and the fire points (`super::open_from_pre_hook`).
+fn open_with_enemies_at_five(relics: &[&str], hp: i64) -> Result<Opening, OpeningRefusal> {
+    let mut case = coach_case(None, relics, &[], false, false);
+    case["save"]["players"][0]["current_hp"] = Value::from(hp);
+    let mut facts = entry_facts(&case);
+    facts.relic_entry.dispatch_ordered = true;
+    let mut pre_hook = build_pre_hook(&facts)?;
+    for monster in &mut pre_hook.document.monsters {
+        monster.insert("hp".to_string(), Value::from(5));
+    }
+    super::open_from_pre_hook(&facts, &pre_hook, &OpeningOptions::default())
+        .map(|(opening, _)| opening)
+}
+
+/// #3889: what the opening and admission do with a fight its own turn-one
+/// relics finish.
+///
+/// Royal Poison fires on turn one only, so "won, then the owner dead" arises
+/// while the root is being built. The opening does not refuse it: it builds
+/// the document the game's state is (`over`, the owner at 0 HP with its hooks
+/// deactivated, every enemy dead). Admission then refuses that document as a
+/// combat that has already ended, exactly as it refuses an opening the Popper
+/// won with the owner alive and an opening Royal Poison lost on a live
+/// combat. No over opening is published as a root to search, and the
+/// won-then-dead document reads as the loss it is (`over` with `hp` 0).
+///
+/// The roster is lowered by hand: no registered roster is small enough for
+/// turn-one relic damage to end the combat (the largest all-enemy total is
+/// Festive Popper 9 + Mercury Hourglass 3 + Mr Struggles 1).
+#[test]
+fn an_opening_its_own_relics_end_is_built_and_refused_as_already_over() {
+    const POPPER: &str = "RELIC.FESTIVE_POPPER";
+    const ROYAL_POISON: &str = "RELIC.ROYAL_POISON";
+    // (relics, owner HP in, owner HP out, owner dead, enemies' HP out)
+    let rows: [(&[&str], i64, i32, bool, i64); 5] = [
+        // Won, the owner alive.
+        (&[POPPER], 68, 68, false, -4),
+        // Won, then the owner dead: the loss.
+        (&[POPPER, ROYAL_POISON], 4, 0, true, -4),
+        // Won, the owner left at 1.
+        (&[POPPER, ROYAL_POISON], 5, 1, false, -4),
+        // Controls on a live combat: the owner dies first and its Popper
+        // never fires.
+        (&[ROYAL_POISON, POPPER], 4, 0, true, 5),
+        (&[ROYAL_POISON], 4, 0, true, 5),
+    ];
+    for (relics, hp, hp_after, dead, enemy_hp) in rows {
+        let opening = open_with_enemies_at_five(relics, hp)
+            .unwrap_or_else(|refusal| panic!("{relics:?} at {hp} opens: {refusal}"));
+        assert_eq!(
+            monster_hps(&opening.document),
+            vec![Value::from(enemy_hp), Value::from(enemy_hp)],
+            "{relics:?} at {hp}"
+        );
+        let catalog = crate::boundary::HotBoundary::catalog_from_canonical(&opening.document)
+            .expect("the over opening builds a catalog");
+        let state = crate::boundary::HotBoundary::from_canonical(&opening.document, &catalog)
+            .expect("the over opening loads");
+        assert!(state.history.over, "{relics:?} at {hp}");
+        assert_eq!(state.hp, hp_after, "{relics:?} at {hp}");
+        assert_eq!(
+            state.fanouts.player_hooks_deactivated(),
+            dead,
+            "{relics:?} at {hp}"
+        );
+        assert!(state.pending.is_none(), "{relics:?} at {hp}");
+        let refusal = crate::engine::admit(&opening.document, &state, &catalog)
+            .expect_err("an over opening is not a root");
+        assert!(
+            refusal.contains(crate::engine::admission::MissingCapability::AlreadyOver),
+            "{relics:?} at {hp}: {refusal}"
+        );
+        assert!(
+            !refusal
+                .missing()
+                .any(|item| item.to_string() == "actual player death hook state"),
+            "{relics:?} at {hp}: {refusal}"
+        );
     }
 }

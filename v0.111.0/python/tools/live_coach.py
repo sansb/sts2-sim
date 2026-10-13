@@ -3,17 +3,16 @@
 
 The Python side keeps save parsing, game-build/RNG verification, caveat
 reporting and narration. The combat-entry root is the Rust opening
-(``sts-sim entry --save --opening``, the same root the review worker builds,
-#2827), and exact search, memoization, deadlines, objective ordering and
+(``sts-sim entry --save --opening``, #2827), and exact search, memoization, deadlines, objective ordering and
 action selection belong to ``sts-sim exact-solve``. The solved line is
 replayed in Rust (``diff-serve``) and must reach the digest the solver
 claimed before it is narrated.
 
 The save-adapter helpers below (``build_entry``, ``verify_stream_seeding``,
 ``current_node``, the unlock-state readers) are the documented oracle of the
-Rust entry crate (``engine/src/entry/**`` cites them by name), and the review
-CLI imports them too. Nothing here imports the frozen Python simulator (#2827
-item F1).
+Rust entry crate (``engine/src/entry/**`` cites them by name), and the upload
+import's entry checks (``provenance_entry``, ``rust_review``) import them too.
+Nothing here imports the frozen Python simulator (#2827 item F1).
 
 Usage:
     python3 -u tools/live_coach.py SAVE [--encounter ID]
@@ -358,6 +357,19 @@ def _strict_joss_paper_properties(props):
     return {name: values.get(name, 0) for name in required}
 
 
+# How many fights Fur Coat marks. v0.111.0 sts2.dll (sha256 9cb4f1ad...):
+# FurCoat::get_CanonicalVars (RVA 0x93ee2) builds DynamicVar("Combats", 8)
+# (IL_0001..000c), and FurCoat::AddMarkedRooms (RVA 0x93f38), the only writer
+# of the coordinate arrays, shuffles the act's Monster and Elite points that
+# pass <AddMarkedRooms>b__25_1 (RVA 0x325194: PointType 5 or 6, and no quest
+# of the type b__25_2 tests for), takes
+# DynamicVars["Combats"].IntValue of them (IL_00b7..00d6) and sizes both
+# arrays to the count it took (IL_00e0..00fc).  The value is per build: it is
+# 8 in v0.110.1 as well (RVA 0x975de) and was 7 in v0.109.1 (RVA 0x240142),
+# which is the build #758 read; the 7 stayed here until #3756.
+FUR_COAT_COMBATS = 8
+
+
 def _strict_fur_coat_membership(props, current_coord):
     """Return exact current-coordinate membership, or None if unprovable.
 
@@ -425,7 +437,12 @@ def _strict_fur_coat_membership(props, current_coord):
                    for value in cols + rows)):
         return None
     if values["FurCoatCoordsSet"]:
-        if len(cols) != 7 or len(set(zip(cols, rows))) != 7:
+        # At most FUR_COAT_COMBATS marks, all different: AddMarkedRooms
+        # writes one coordinate per map point it took, and it takes
+        # `Take(Combats)` of a filtered `GetAllMapPoints`, which is fewer
+        # when the act has fewer unquested fights left to mark.
+        if (len(cols) > FUR_COAT_COMBATS
+                or len(set(zip(cols, rows))) != len(cols)):
             return None
     elif cols or rows:
         return None
@@ -614,13 +631,13 @@ def potion_caveat(root: dict) -> str | None:
 
 def rust_opening(binary: pathlib.Path, save_path: pathlib.Path, build: str,
                  encounter: str | None, ntype: str | None) -> dict:
-    """`sts-sim entry --save --opening`: the review worker's own root.
+    """`sts-sim entry --save --opening`: the fight's root, built in Rust.
 
     The Rust entry reads the save (the port of `build_entry`,
     `stream_counters`, `current_node`, `node_type` and `next_encounter`
     above), runs the combat opening, and answers a canonical document or a
-    named refusal. The entry's empty AfterEnergyReset order is proposed the
-    way the floor-snapshot review does it (`rust_review.build_root`).
+    named refusal. The entry's empty AfterEnergyReset order is proposed by
+    `rust_review._with_entry_reset_witness`.
     """
     import subprocess
 

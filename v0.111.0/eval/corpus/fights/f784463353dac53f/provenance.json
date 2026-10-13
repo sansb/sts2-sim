@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "GR8LAJRF0QDW",
+ "node": 18,
+ "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "997bae9df5e50b42693690c092396963ef88dc2f1bddbc24d287b68bc37c7b2c",
+ "save_sha256": "8aaa5372b358c62c804a8adcbf782b33bf774621b2010158c6a77afb2fe4d5a8",
+ "entry_digest": "492451aefadb0aa3c20c6f25712cba2403ddb278c81417980aefaad33d48832c",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

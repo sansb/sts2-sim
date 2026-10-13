@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "8VXZUTM3DTA6",
+ "node": 5,
+ "encounter": "ENCOUNTER.GREMLIN_MERC_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "5d0d1c9d1c37aa089884b428bb05c7cdebb61c2baa550fb47eb725060deba741",
+ "save_sha256": "01fb66eaad8d8f437c3df277e4a75106c48b41ea77ecb2fa86a608de60de7f21",
+ "entry_digest": "7848058c6bfd574f82992e2a1815be2934c7ece9d7e7bc48f8b053e0f6bc14fc",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "AUNPC3BZ101H",
+ "node": 42,
+ "encounter": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "acb9cb6871b89bd006c7396954700dbf92664476b635507eac7a5e47156dc677",
+ "save_sha256": "1b5d14fd642b12ab6d7a9098c002ee28858ade4f5217068923b5422033640a42",
+ "entry_digest": "b1ce84c79ddc20ccb8d3c21438cd3c0692e4b13ec69480f9f17c9eaca374e437",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TNGH22DDY3JZ",
+ "node": 14,
+ "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "4430411a7c7c0fa1240a5e49f020683670e789bf11c796adbd25c20832e486e0",
+ "save_sha256": "0258eea0f03a71dafe58f71a89a1a745348aacda35da2cf5c62a6f4c96250c13",
+ "entry_digest": "def9826cead0a5d89de3c657e225bd8a5dfe0e8defb6fac0b4ae0b011eef1f0e",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

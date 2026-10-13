@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "HZ0D5WK0VBHR",
+ "node": 6,
+ "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "1c81780f06b18fe40e317a65c8e6f2fec7e265ce0ea73ed9d08d3c4ab37f7df6",
+ "save_sha256": "0a66ef78903589c823e533e7422af59202f53b8258b5dab7ae9715bed07296ad",
+ "entry_digest": "ee8d035c93f4477bcd309cb7e0989328237ff276ffd06fdfb618e8cab83b9ec2",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

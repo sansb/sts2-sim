@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 32,
+ "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "d40b525350a332d82dc6c7f4582d6cbbd53f1f71b7e9b46459bf4e4c13c378bb",
+ "save_sha256": "f97b9114c5abfacc7d28a5968fa2df83f34d835af8020a4ea8dbcbc28de76ffe",
+ "entry_digest": "e7f6dcf50fd469e956908950037c7a9c7b72a71543acedb9b2fd746803c24c9a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

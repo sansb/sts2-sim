@@ -52,6 +52,7 @@ pub mod event_combat;
 pub mod facts;
 #[cfg(test)]
 mod fixture_tests;
+pub mod modifiers;
 pub mod node;
 pub mod opening;
 pub mod props;
@@ -359,14 +360,18 @@ fn build_document(request: &EntryRequest<'_>) -> Result<EntryDocument, EntryRefu
     let streams = counters::run_streams(&run)?;
     let hp_saved = require(player.current_hp, "player", "current_hp")?;
     let max_hp_entering = require(player.max_hp, "player", "max_hp")?;
-    // #3248: an event-started combat is entered after the event's option ran,
-    // and the save predates the event. Admitted only on an IL-read option
-    // chain whose pre-combat effects are modeled; refused by name otherwise.
     let modifiers: Vec<String> = run
         .modifiers
         .iter()
         .map(|modifier| modifier.id.clone().unwrap_or_else(|| "<no id>".to_string()))
         .collect();
+    // #3760: a run modifier is a hook listener in every combat. One whose
+    // hooks can run in a fight refuses the root by name; the rest are
+    // admitted on the IL read in `modifiers::RUN_MODIFIERS`.
+    modifiers::combat_gate(&modifiers)?;
+    // #3248: an event-started combat is entered after the event's option ran,
+    // and the save predates the event. Admitted only on an IL-read option
+    // chain whose pre-combat effects are modeled; refused by name otherwise.
     let hp_entering = event_combat::hp_entering(
         &encounter_id,
         &event_combat::EventRootFacts {
@@ -404,6 +409,7 @@ fn build_document(request: &EntryRequest<'_>) -> Result<EntryDocument, EntryRefu
         streams: streams.streams.clone(),
         map_point_type: node::map_point_type(&run),
         next_normal_encounter: node::next_encounter(&run, "monster").ok(),
+        murderous: modifiers::murderous(&modifiers),
     })
 }
 
@@ -509,6 +515,7 @@ mod tests {
                 streams: std::collections::BTreeMap::new(),
                 map_point_type: None,
                 next_normal_encounter: None,
+                murderous: false,
             }),
             opening::refusal::OpeningRefusal::StoneCrackerUpgradeLadderUnknown {
                 card: "X+0".to_string(),

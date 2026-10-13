@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "LMWKPC7VYF5P",
+ "node": 45,
+ "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "e1328547439dcb10f8a1838c82208df3abbc7acb057eaac44c7a192232325989",
+ "save_sha256": "43a1101e4aed8b9f9448ed858644c66fec4bf0a17ca778bb504033764586dc92",
+ "entry_digest": "bcc6c931ee279f688649a3bb34d2eee5de1faafcc1aae4a89e58ae4d065c96e4",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

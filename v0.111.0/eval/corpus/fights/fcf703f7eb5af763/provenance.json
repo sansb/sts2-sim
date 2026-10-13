@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "L2MPQ4TPZ1DP",
+ "node": 11,
+ "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 9,
+ "capture_sha256": "31cdd7f941a43545914874edd645dfe5ce2e61c99b2abd6ea502f0c14559c565",
+ "save_sha256": "fda003806df32d6f88cbd27c9571ac87f623e4d63dc62462182a5e06bae0b53f",
+ "entry_digest": "0450cbab1929449ebc7b6530545df17611985e4a2cff050634ada4768bffa15e",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

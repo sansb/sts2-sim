@@ -19,6 +19,9 @@ use super::{EngineRefusal, Event, Subject};
 
 /// Stable D2f refusal for a nonlocal Magi-death atom restoration.
 pub(crate) const DISTILLED_DAMPEN_FRONTIER: &str = "R52D2f Distilled active Dampen restore";
+/// A Distilled rehearsal asked to start on the predecessor it is already
+/// rehearsing (#3756): refused by name, never recursed into.
+pub(crate) const DISTILLED_REHEARSAL_REENTRY: &str = "Distilled rehearsal reentry";
 
 /// The ordered candidate pool one generation potion shuffles, under the
 /// recorded unlock profile `epochs` (`None` = the fully-unlocked projection).
@@ -251,11 +254,52 @@ thread_local! {
     };
 }
 
+thread_local! {
+    /// The predecessors whose Distilled rehearsal is running on this thread,
+    /// outermost first, by address (#3756).
+    ///
+    /// [`DISTILLED_REHEARSAL_BYPASS`] is a budget: one pass per held Distilled
+    /// Chaos plus the direct validation. It counts the validations the
+    /// rehearsed transition is expected to repeat on its own predecessor, and
+    /// the replay-root installer's legal-action scan repeats one for EVERY
+    /// held potion whose validation runs this proof. A held Entropic Brew is
+    /// one ([`manual_part_d_prerequisites_are_exact`] rehearses the Distilled
+    /// trajectory for a brew that can procure one), and it is not in that
+    /// count. So a belt of Distilled Chaos and Entropic Brew whose Distilled
+    /// use parks a choice spent the budget, started the same rehearsal of the
+    /// same predecessor again from inside itself, and recursed until the
+    /// stack overflowed.
+    ///
+    /// The budget cannot be the brake, because it has to predict every
+    /// validation site. This is the brake: a rehearsal borrows its
+    /// predecessor for as long as its guard lives, so while an address is
+    /// listed here no other `HotState` can occupy it, and a validation that
+    /// arrives with that address is asking the question the enclosing
+    /// rehearsal is already answering.
+    static DISTILLED_REHEARSAL_ACTIVE: std::cell::RefCell<Vec<usize>> = const {
+        std::cell::RefCell::new(Vec::new())
+    };
+}
+
+/// Whether `state` is the predecessor of a Distilled rehearsal still running
+/// on this thread. See [`DISTILLED_REHEARSAL_ACTIVE`].
+fn distilled_rehearsal_is_active_for(state: &HotState) -> bool {
+    let address = state as *const HotState as usize;
+    DISTILLED_REHEARSAL_ACTIVE.with(|active| active.borrow().contains(&address))
+}
+
 struct DistilledRehearsalGuard(Option<(usize, u8, usize)>);
 
 impl DistilledRehearsalGuard {
     fn enter(state: &HotState, slot: u8) -> Result<Self, EngineRefusal> {
         let identity = (state as *const HotState as usize, slot);
+        // Unreachable through [`preflight_distilled_batch_suffix`], which
+        // answers a re-entrant validation before it gets here. Kept as a
+        // named refusal so no future caller can turn the same rehearsal of
+        // the same predecessor into unbounded recursion.
+        if distilled_rehearsal_is_active_for(state) {
+            return Err(EngineRefusal::MalformedArgs(DISTILLED_REHEARSAL_REENTRY));
+        }
         let validations = state
             .fanouts
             .potion_slots()
@@ -271,6 +315,7 @@ impl DistilledRehearsalGuard {
                 return Err(EngineRefusal::ContinuationNotModeled);
             }
             let prior = bypass.replace(Some((identity.0, identity.1, validations)));
+            DISTILLED_REHEARSAL_ACTIVE.with(|active| active.borrow_mut().push(identity.0));
             Ok(Self(prior))
         })
     }
@@ -279,6 +324,9 @@ impl DistilledRehearsalGuard {
 impl Drop for DistilledRehearsalGuard {
     fn drop(&mut self) {
         DISTILLED_REHEARSAL_BYPASS.with(|bypass| bypass.set(self.0.take()));
+        // A guard exists only for a successful `enter`, which pushed exactly
+        // one address; guards drop in reverse order of entry.
+        DISTILLED_REHEARSAL_ACTIVE.with(|active| active.borrow_mut().pop());
     }
 }
 
@@ -376,6 +424,15 @@ pub(crate) fn preflight_distilled_batch_suffix(
     if consume_distilled_rehearsal_bypass(state) {
         return Ok(());
     }
+    // #3756: a validation of the predecessor a rehearsal on this thread is
+    // already proving, arriving after the counted budget is spent (a held
+    // Entropic Brew's, in the installer's legal-action scan). The enclosing
+    // rehearsal is this proof of this state and its verdict stands for the
+    // whole transition, so the nested question is answered like a budgeted
+    // one instead of being rehearsed again from inside itself.
+    if distilled_rehearsal_is_active_for(state) {
+        return Ok(());
+    }
     let replay_roots = action_replay_root_count(state);
     if state.pending.is_some() {
         // A held potion is not an action while another exact continuation is
@@ -392,13 +449,6 @@ pub(crate) fn preflight_distilled_batch_suffix(
     }
     if replay_roots != 0 {
         return Err(EngineRefusal::ContinuationNotModeled);
-    }
-    if crate::engine::admission::unceasing_top_same_uid_hellraiser_reentry_is_reachable(
-        state, catalog,
-    ) {
-        return Err(EngineRefusal::MalformedArgs(
-            "Unceasing Top same-UID Hellraiser reentry",
-        ));
     }
     let candidate_cards = [PileId::Draw, PileId::Discard]
         .into_iter()
@@ -780,12 +830,15 @@ pub(crate) fn prospective_part_d_prerequisites_are_exact(
             .make_mut()
             .extend(routable_play);
 
-        // Summon Forth can return an exhausted Sovereign Blade to Draw.  This
-        // is the same physical move pinned by
+        // Summon Forth can return an exhausted Sovereign Blade to the Hand
+        // (#3762: `PileType` 2 is the Hand; IL cited at the step in
+        // `steps::regent_forge`). This is the same physical move pinned by
         // `summon_forth_both_levels_move_one_ordered_plural_batch_then_forge`:
         // preserve its already-authenticated payload instead of repairing a
         // malformed Blade while projecting it. No other exhausted physical is
-        // included merely because it exists.
+        // included merely because it exists. A Hand card is projected into
+        // Discard above, and a returned Blade is a Hand card, so it joins
+        // them there.
         let summon_forth_reachable = catalog
             .reachable_specs()
             .any(|spec| spec.identity.id == CardId::SummonForth);
@@ -806,17 +859,18 @@ pub(crate) fn prospective_part_d_prerequisites_are_exact(
             }
             prospective
                 .piles
-                .get_mut(PileId::Draw)
+                .get_mut(PileId::Discard)
                 .make_mut()
                 .extend(returning_blades);
         }
         preflight_distilled_target_rng(&prospective, catalog)?;
         preflight_distilled_batch_suffix(&prospective, catalog)?;
 
-        if !crate::engine::admission::distilled_recursive_source_closure_is_exact(state, catalog) {
-            return Err(EngineRefusal::MalformedArgs(
-                "Distilled prospective recursive source closure",
-            ));
+        // Each conjunct refuses under its own name (#3209, #3824).
+        if let Some(name) =
+            crate::engine::admission::distilled_recursive_source_closure_refusal(state, catalog)
+        {
+            return Err(EngineRefusal::MalformedArgs(name));
         }
     }
     Ok(())
@@ -1603,7 +1657,8 @@ pub(crate) fn orobic_after_child_is_exact(
 ///
 /// Factory reachability is character-specific and separate from this body
 /// census. A supported held potion need not belong to the owner's factory pool.
-pub(crate) const SUPPORTED: [PotionId; 62] = [
+pub(crate) const SUPPORTED: [PotionId; 64] = [
+    PotionId::Ambergris,
     PotionId::Ashwater,
     PotionId::AttackPotion,
     PotionId::BeetleJuice,
@@ -1638,6 +1693,7 @@ pub(crate) const SUPPORTED: [PotionId; 62] = [
     PotionId::GigantificationPotion,
     PotionId::GlowwaterPotion,
     PotionId::HeartOfIron,
+    PotionId::KingsCourage,
     PotionId::LiquidBronze,
     PotionId::LiquidMemories,
     PotionId::LuckyTonic,
@@ -1720,10 +1776,10 @@ pub(crate) fn is_resumable(potion: PotionId) -> bool {
 /// `CombatManager.IsInProgress` and 8 otherwise — combat is the only place a
 /// manual use reaches this engine.
 ///
-/// `None` for a body outside [`SUPPORTED`]: those refuse before any target
-/// question is asked, and a body added to the supported set owes its getter
-/// read here (the `supported_potion_native_target_types_are_pinned` witness
-/// fails until it does).
+/// `None` is for a body outside [`SUPPORTED`]: those refuse before any target
+/// question is asked. Since #3756 ported King's Courage every potion id is
+/// supported and read, so the match is total and no id answers `None`; a new
+/// potion id fails to compile here until its getter is read.
 pub(crate) fn native_target_type(potion: PotionId) -> Option<u8> {
     Some(match potion {
         // TargetType 1 (Self): `FairyInABottle::get_TargetType` 0xac3c9.
@@ -1743,7 +1799,8 @@ pub(crate) fn native_target_type(potion: PotionId) -> Option<u8> {
         | PotionId::PotionOfBinding // 0xad005
         | PotionId::ShacklingPotion => 3, // 0xad4cd
         // TargetType 5 (AnyPlayer).
-        PotionId::Ashwater // 0xab9b9
+        PotionId::Ambergris // 0xab93c (#3756)
+        | PotionId::Ashwater // 0xab9b9
         | PotionId::AttackPotion // 0xaba3d
         | PotionId::BlessingOfTheForge // 0xabb31
         | PotionId::BlockPotion // 0xabbca
@@ -1772,6 +1829,7 @@ pub(crate) fn native_target_type(potion: PotionId) -> Option<u8> {
         | PotionId::GigantificationPotion // 0xacaad
         | PotionId::GlowwaterPotion // 0xacb25
         | PotionId::HeartOfIron // 0xacba5
+        | PotionId::KingsCourage // 0xacc55 (#3756)
         | PotionId::LiquidBronze // 0xaccc9
         | PotionId::LiquidMemories // 0xacd61
         | PotionId::LuckyTonic // 0xacdc5
@@ -1792,7 +1850,6 @@ pub(crate) fn native_target_type(potion: PotionId) -> Option<u8> {
         | PotionId::StrengthPotion // 0xad971
         | PotionId::SwiftPotion // 0xada09
         | PotionId::TouchOfInsanity => 5, // 0xada7d
-        _ => return None,
     })
 }
 
@@ -2050,14 +2107,84 @@ fn apply_belt_buckle_after_use(
     super::damage::apply_signed_player_stat(state, PowerId::Dexterity, 2, events)
 }
 
+/// Belt Buckle's `BeforeCombatStart` (#3617): the latch is cleared, and an
+/// empty belt grants the Dexterity at once.
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`).
+/// `BeltBuckle/<BeforeCombatStart>d__11::MoveNext` (RVA `0x31f444`):
+/// `set_DexterityApplied(false)` at `IL_001e`-`IL_001f`, `RefreshStatus`
+/// (display, `0x90983`) at `IL_0025`, then `Owner.Potions.Any()` at
+/// `IL_002b`-`IL_003a`; an empty belt awaits `ApplyDexterity` (`IL_003d`).
+/// `<ApplyDexterity>d__17::MoveNext` (`0x31f344`) returns when the latch is
+/// already set (`IL_001e`-`IL_0025`), sets it (`IL_002b`-`IL_002c`), and
+/// applies `DexterityPower` of `DynamicVars.Dexterity` (2, `get_CanonicalVars`
+/// `0x90755`) to the owner with a null applier and a null card
+/// (`IL_003d`-`IL_005a`). That is [`apply_belt_buckle_after_use`], the body
+/// the in-fight `AfterPotionUsed` and `AfterPotionDiscarded` hooks already
+/// share, entered with the latch cleared.
+///
+/// The latch is not saved state: `AfterCombatVictory` (`0x908e7`) clears it
+/// and this hook clears it again, so every combat starts from false whatever
+/// the save holds.
+///
+/// # Against the combat-start procurers
+///
+/// `CombatManager.IsInProgress` is already true here
+/// (`CombatManager/<StartCombatInternal>d__98::MoveNext` `0x3f71b0` sets it at
+/// `IL_020f` and raises `Hook.BeforeCombatStart` at `IL_023b`), so a potion
+/// procured later in the same combat start reaches
+/// `<AfterPotionProcured>d__13::MoveNext` (`0x31f164`: `IsInProgress` at
+/// `IL_0023`-`IL_002d`, `Owner.Potions.Any()` at `IL_0035`-`IL_0044`,
+/// `RemoveDexterity` at `IL_0049`), which [`procure_potion`] already runs
+/// ([`belt_buckle_after_procured`]).
+///
+/// Delicate Frond is a first-walk peer, ordered against this body by relic
+/// acquisition, and the two orders end in the same state. Buckle first on an
+/// empty belt grants 2 and the Frond's first procurement takes it back and
+/// clears the latch; Frond first leaves a belt this body finds non-empty, so
+/// nothing is granted and the latch stays clear. Either way: no Dexterity,
+/// latch clear. When the Frond procures nothing (Sozu, or no free slot) it
+/// writes nothing. So this body's fixed place ahead of the Frond is not
+/// observable. Petrified Toad runs in the separate `…Late` walk, after both,
+/// in native too.
+pub(crate) fn belt_buckle_before_combat_start(
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if !state.fanouts.potion_belt_buckle() {
+        return Ok(());
+    }
+    state.fanouts.set_potion_belt_buckle_applied(false);
+    apply_belt_buckle_after_use(state, events)?;
+    crate::coverage::record_relic(RelicId::RelicBeltBuckle);
+    Ok(())
+}
+
 /// Consume the first physical Fairy in a Bottle at the player-lethal hook.
 ///
 /// FairyInABottle/OnLethalDamagePrevented (current v0.111.0) removes its own
 /// belt model before healing 30% max HP (minimum one), then awaits the same
 /// AfterPotionUsed subscriber walk as a manual wrapper.  The caller invokes
 /// this before owner-death cleanup; ForceKill callers deliberately bypass it.
+///
+/// That walk has exactly two listeners. v0.111.0 `sts2.dll` (SHA-256
+/// `9cb4f1ad…12b4`) declares `AfterPotionUsed` on `AbstractModel` (`0x7a151`)
+/// and overrides it on `BeltBuckle` (`0x908a4`) and `ReptileTrinket`
+/// (`0x9a618`) only. `ReptileTrinket/<AfterPotionUsed>d__6::MoveNext` RVA
+/// `0x32fa9c`: the potion's owner is the relic's (IL_0021-IL_002c), a combat
+/// is in progress (IL_0038-IL_0042), then
+/// `PowerCmd.Apply<ReptileTrinketPower>(Owner.Creature, Strength,
+/// Owner.Creature, null)` (IL_0055-IL_007c), 3 temporary Strength. It does
+/// not ask whose turn it is, so a Fairy spent on an enemy's hit grants it
+/// too, and the Strength lasts until the owner's next side end (#3756, site
+/// witness `LU7UZCTYY2EZ` node 16).
+///
+/// Belt Buckle's half is a state latch. Reptile Trinket's ownership is the
+/// catalog's, so a caller with no catalog cannot run this walk exactly and
+/// is refused by name once a Fairy is actually there to spend.
 pub(crate) fn consume_first_fairy_after_lethal(
     state: &mut HotState,
+    catalog: Option<&Catalog>,
     events: &mut Vec<Event>,
 ) -> Result<bool, EngineRefusal> {
     let Some(slot) = state
@@ -2067,6 +2194,11 @@ pub(crate) fn consume_first_fairy_after_lethal(
         .position(|potion| *potion == Some(PotionId::FairyInABottle))
     else {
         return Ok(false);
+    };
+    let Some(catalog) = catalog else {
+        return Err(EngineRefusal::MalformedArgs(
+            "Fairy AfterPotionUsed relic catalog",
+        ));
     };
     if state.fanouts.remove_potion_at(slot) != Some(PotionId::FairyInABottle) {
         return Err(EngineRefusal::ContinuationNotModeled);
@@ -2081,6 +2213,10 @@ pub(crate) fn consume_first_fairy_after_lethal(
     // `AfterCurrentHpChanged` reaches Red Skull (#3044).
     super::damage::red_skull_after_player_hp_changed(state, hp_before, state.max_hp, events)?;
     apply_belt_buckle_after_use(state, events)?;
+    if !state.history.over && catalog.hooks().owns(RelicId::RelicReptileTrinket) {
+        super::allies::gain_temp_strength(state, 0, 3, events)?;
+        crate::coverage::record_relic(RelicId::RelicReptileTrinket);
+    }
     Ok(true)
 }
 
@@ -2245,12 +2381,10 @@ fn finish(
     // potion/card effect suppresses Top; otherwise its Draw(1) is owned by
     // this AfterTop cursor and may park through the shared resumable Draw
     // grammar without replaying Belt Buckle or the potion body.
-    let nested_effect = state.frames.as_slice().iter().rev().skip(1).any(|frame| {
-        matches!(*frame, Frame::PotionFinish { record }
-            if state.frames.potion_finish(record).is_some_and(|view|
-                view.stage == PotionFinishStage::Effect))
-            || matches!(frame, Frame::CardPlay { .. })
-    });
+    // This wrapper's own frame is at AfterTop, so it is not counted. An
+    // enclosing card play that runs on the Rust stack is (#3822): Fairy in
+    // a Bottle used from a card body's lethal HP loss.
+    let nested_effect = super::play::card_or_potion_effect_is_executing(state);
     if state.fanouts.unceasing_top()
         && !state.history.over
         && state.hp > 0
@@ -4190,6 +4324,47 @@ pub(crate) fn use_potion(
                 events,
             )?;
         }
+        // Ambergris/<OnUse>d__9::MoveNext RVA `0x34b9cc`, OnUse `0xab958`
+        // (#3756). `get_Rarity` (`0xab936`) is 4, Event: no random pool holds
+        // it. `get_Usage` (`0xab939`) is 2, AnyTime, and `get_TargetType`
+        // (`0xab93c`) is 5.
+        //
+        // The body is Blood Potion's heal at another percent, then one power:
+        // `CreatureCmd::Heal(target, MaxHp * HealPercent / 100, true)` at
+        // IL_0059-008a with `get_CanonicalVars` (`0xab93f`) `HealPercent` 50,
+        // then, only while `CombatManager.IsInProgress` (IL_00e4-00ee),
+        // `PowerCmd.Apply<AmbergrisPower>(target, 1, applier = Owner.Creature,
+        // null, false)` at IL_00fc-010e. `AmbergrisPower` is Type 1, Counter
+        // stacked (`0x9f73b`, `0x9f73e`) and overrides only the two
+        // extra-turn hooks, so the apply is a player-owned Type-1 amount
+        // change whose `AfterPowerAmountChanged` walk is inert;
+        // `manual_potion_preflight` authenticates that walk and the amount
+        // before the slot is spent. The turn it buys is taken in
+        // `finish_player_turn_after_ordinary_side_end`.
+        PotionId::Ambergris => {
+            let heal = i64::from(state.max_hp) * 50 / 100;
+            let hp_before = state.hp;
+            state.hp = i64::from(state.max_hp)
+                .min(i64::from(state.hp) + heal)
+                .try_into()
+                .map_err(|_| EngineRefusal::CounterOverflow("ambergris heal"))?;
+            // One `CreatureCmd.Heal` (`0x3eb4b0`): Red Skull's
+            // `AfterCurrentHpChanged` (#3044).
+            super::damage::red_skull_after_player_hp_changed(
+                state,
+                hp_before,
+                state.max_hp,
+                events,
+            )?;
+            if !state.history.over {
+                let amount = state
+                    .fanouts
+                    .ambergris()
+                    .checked_add(1)
+                    .ok_or(EngineRefusal::CounterOverflow("ambergris"))?;
+                state.fanouts.set_ambergris(amount);
+            }
+        }
         // Attack/Skill/Power/Colorless potion bodies each consume one full
         // Generation-stream shuffle, freeze the first three L0 identities,
         // and expose those options followed by the native skip action.
@@ -4804,6 +4979,23 @@ pub(crate) fn use_potion(
         PotionId::CunningPotion => {
             super::cards::inject_generated_storm_shivs(state, catalog, 3, 1, events)?
         }
+        // KingsCourage/<OnUse>d__10::MoveNext RVA `0x34ea88`, OnUse `0xacc70`
+        // (#3756). `get_Rarity` (`0xacc4f`) is 2, Uncommon, in the Regent
+        // pool; `get_Usage` (`0xacc52`) is 1, CombatOnly; `get_TargetType`
+        // (`0xacc55`) is 5, AnyPlayer.
+        //
+        // The body is one command: `ForgeCmd::Forge(DynamicVars.Forge.IntValue,
+        // target.Player, this)` at IL_0028-0049, with `get_CanonicalVars`
+        // (`0xacc58`) `ForgeVar(15)`. The third argument is the Forge's
+        // `source`, which `ForgeCmd/<Forge>d__2::MoveNext` (`0x3ed3bc`) only
+        // hands to `Hook::AfterForge` (IL_013a-013f); its listeners are
+        // `HammerTimePower` (a teammate's power, behind the solo-target gate)
+        // and an achievement. So this is the shared Forge every Forge card
+        // runs, including its IsOverOrEnding gate and the generated level-zero
+        // Sovereign Blade when no live one exists.
+        PotionId::KingsCourage => {
+            crate::steps::regent_forge::forge_exact(state, catalog, 15, events)?
+        }
         PotionId::CosmicConcoction => cosmic_concoction(state, catalog, events)?,
         // EntropicBrew/<OnUse>d__6::MoveNext RVA 0x34d33c. Its do/while
         // generation loop is intentionally not combat-ending gated.
@@ -4857,6 +5049,171 @@ mod rehearsal_tests {
         assert!(!consume_distilled_rehearsal_bypass(&state));
         assert!(!consume_distilled_rehearsal_bypass(&different_address));
         let _fresh_scope = DistilledRehearsalGuard::enter(&different_address, 1).unwrap();
+    }
+
+    /// #3756: the budget runs out, and the predecessor is still being
+    /// rehearsed. Starting the same rehearsal again is refused by name.
+    #[test]
+    fn a_rehearsal_cannot_restart_on_the_predecessor_it_is_rehearsing() {
+        let mut state = HotState::at_defaults();
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(PotionId::DistilledChaos), Some(PotionId::EntropicBrew)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+        let nested = state.clone();
+        assert!(!distilled_rehearsal_is_active_for(&state));
+        {
+            let _outer = DistilledRehearsalGuard::enter(&state, 0).unwrap();
+            // One held Distilled Chaos: the direct validation and one scan.
+            assert!(consume_distilled_rehearsal_bypass(&state));
+            assert!(consume_distilled_rehearsal_bypass(&state));
+            assert!(!consume_distilled_rehearsal_bypass(&state));
+            assert!(distilled_rehearsal_is_active_for(&state));
+            assert!(!distilled_rehearsal_is_active_for(&nested));
+            for slot in [0, 1] {
+                assert_eq!(
+                    DistilledRehearsalGuard::enter(&state, slot).err(),
+                    Some(EngineRefusal::MalformedArgs(DISTILLED_REHEARSAL_REENTRY))
+                );
+            }
+            // A refused entry registers nothing and unregisters nothing.
+            assert!(distilled_rehearsal_is_active_for(&state));
+            {
+                // A different state is a different rehearsal; leaving it
+                // leaves the enclosing one registered.
+                let _inner = DistilledRehearsalGuard::enter(&nested, 0).unwrap();
+                assert!(distilled_rehearsal_is_active_for(&nested));
+                assert!(distilled_rehearsal_is_active_for(&state));
+            }
+            assert!(!distilled_rehearsal_is_active_for(&nested));
+            assert!(distilled_rehearsal_is_active_for(&state));
+        }
+        assert!(!distilled_rehearsal_is_active_for(&state));
+        let _again = DistilledRehearsalGuard::enter(&state, 0).unwrap();
+    }
+
+    /// #3756 (daily seed `10_10_2026_1P`, node 19, built here from nothing).
+    /// Distilled Chaos beside an Entropic Brew, over a draw pile whose second
+    /// card parks a choice. The parked use installs a replay root, whose
+    /// legal-action scan validates the brew on the predecessor after the
+    /// counted budget is spent. That validation used to start the rehearsal
+    /// again from inside itself and overflow the stack.
+    #[test]
+    fn distilled_beside_entropic_brew_rehearses_a_parked_use_once() {
+        use crate::catalog::CardIdentity;
+        use crate::hot::{CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotCard, HotMonster, RngStreamState};
+        use crate::ids::{CardId, MonsterKind};
+
+        let plain = |id| CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        for id in crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109
+            .into_iter()
+            .chain(crate::content_tables::GENERATION_POTION_SKILL_POOL_V1091)
+            .chain(crate::content_tables::GENERATION_POTION_POWER_POOL_V1091)
+            .chain(crate::content_tables::ENTROPY_COLORLESS_TRANSFORM_POOL_V109)
+        {
+            builder.intern(plain(id)).unwrap();
+        }
+        let defend = builder
+            .intern_reachable(plain(CardId::DefendIronclad))
+            .unwrap();
+        let purity = builder.intern_reachable(plain(CardId::Purity)).unwrap();
+        builder.mark_persistent_action_replay_required();
+        let catalog = builder.build();
+
+        let mut state = HotState::at_defaults();
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 99));
+        state.hp = 50;
+        state.max_hp = 50;
+        state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+        state.next_card_uid = 5;
+        state.exact_piles = true;
+        state.reward_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.entropy_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.fully_unlocked_card_pool_epochs = true;
+        crate::engine::give_a_real_root_s_current_build_provenance(&mut state);
+        for stream in RngStream::ALL {
+            state.rng.set(
+                stream,
+                RngStreamState {
+                    words: [11, 12, 13, 14],
+                    counter: 0,
+                },
+            );
+        }
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(PotionId::DistilledChaos), Some(PotionId::EntropicBrew)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+        let card = |uid, atom| HotCard {
+            uid,
+            atom,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        };
+        state.piles.get_mut(PileId::Draw).make_mut().extend([
+            card(1, defend),
+            card(2, purity),
+            card(3, defend),
+        ]);
+        state
+            .piles
+            .get_mut(PileId::Hand)
+            .make_mut()
+            .push(card(4, defend));
+        let before = state.clone();
+
+        // The brew's own validation reaches the Distilled rehearsal: it is
+        // the nested caller this test exists for.
+        assert!(!state.fanouts.potion_sozu());
+        assert_eq!(
+            manual_part_d_prerequisites_are_exact(&state, &catalog, PotionId::EntropicBrew),
+            Ok(())
+        );
+        assert_eq!(
+            manual_part_d_prerequisites_are_exact(&state, &catalog, PotionId::DistilledChaos),
+            Ok(())
+        );
+        let distilled = crate::engine::Action::UsePotion {
+            slot: 0,
+            target: None,
+        };
+        let brew = crate::engine::Action::UsePotion {
+            slot: 1,
+            target: None,
+        };
+        let legal = crate::engine::legal_actions(&state, &catalog);
+        assert!(legal.contains(&distilled) && legal.contains(&brew));
+
+        let parked = crate::engine::apply_action(&state, &catalog, &distilled)
+            .unwrap()
+            .state;
+        assert!(parked.pending.is_some());
+        assert!(matches!(
+            parked.frames.as_slice().first(),
+            Some(Frame::ActionReplay { .. })
+        ));
+        assert_eq!(
+            parked.fanouts.potion_slots(),
+            [None, Some(PotionId::EntropicBrew)]
+        );
+        // Nothing is left registered, and the predecessor is untouched.
+        assert!(!distilled_rehearsal_is_active_for(&state));
+        assert!(!consume_distilled_rehearsal_bypass(&state));
+        assert_eq!(state, before);
     }
 
     #[test]
@@ -5093,7 +5450,10 @@ mod generation_owner_tests {
             "Fruit Juice hp domain",
             "Regen Potion amount/order",
             "Fairy AfterPotionUsed Belt Buckle",
-            "Distilled prospective recursive source closure",
+            super::super::admission::DISTILLED_CLOSURE_ROW_IDENTITY,
+            super::super::admission::DISTILLED_CLOSURE_ROW_ADMISSION,
+            super::super::admission::DISTILLED_CLOSURE_FAMILIES,
+            super::super::admission::DISTILLED_CLOSURE_CARRIER,
         ] {
             assert_eq!(
                 part_d_prerequisite_refusal_name(&EngineRefusal::MalformedArgs(own)),
@@ -5391,7 +5751,10 @@ mod red_skull_heal_tests {
     #[test]
     fn both_fairy_paths_are_heals_red_skull_hears() {
         let mut direct = skull(PotionId::FairyInABottle, 0, 1, 3);
-        assert!(consume_first_fairy_after_lethal(&mut direct, &mut Vec::new()).unwrap());
+        assert!(
+            consume_first_fairy_after_lethal(&mut direct, Some(&skull_catalog()), &mut Vec::new())
+                .unwrap()
+        );
         assert_eq!((direct.hp, direct.powers.value(PowerId::Strength)), (1, 0));
 
         let mut wrapped = skull(PotionId::FairyInABottle, 0, 1, 3);
@@ -5406,11 +5769,85 @@ mod red_skull_heal_tests {
         );
 
         let mut ordinary = skull(PotionId::FairyInABottle, 0, 80, 3);
-        assert!(consume_first_fairy_after_lethal(&mut ordinary, &mut Vec::new()).unwrap());
+        assert!(
+            consume_first_fairy_after_lethal(
+                &mut ordinary,
+                Some(&skull_catalog()),
+                &mut Vec::new()
+            )
+            .unwrap()
+        );
         assert_eq!(
             (ordinary.hp, ordinary.powers.value(PowerId::Strength)),
             (24, 3)
         );
+    }
+
+    /// #3756, site witness `LU7UZCTYY2EZ` node 16: a Fairy spent on an
+    /// enemy's hit runs the same AfterPotionUsed walk as a drunk potion, so
+    /// Reptile Trinket (`0x32fa9c` IL_0055-IL_007c) grants its 3 temporary
+    /// Strength there too. Without the relic nothing is granted.
+    #[test]
+    fn a_fairy_spent_at_lethal_runs_reptile_trinket() {
+        for owned in [false, true] {
+            let mut builder = CatalogBuilder::new();
+            if owned {
+                builder.set_relics(&[RelicId::RelicReptileTrinket]).unwrap();
+            }
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.monsters_mut().push(crate::hot::HotMonster::new(
+                crate::ids::MonsterKind::Toadpole,
+                40,
+            ));
+            state.max_hp = 80;
+            state.hp = 0;
+            assert!(state.fanouts.set_potion_belt(
+                vec![Some(PotionId::FairyInABottle)],
+                false,
+                false,
+                false,
+                false,
+                true
+            ));
+            assert!(
+                consume_first_fairy_after_lethal(&mut state, Some(&catalog), &mut Vec::new())
+                    .unwrap()
+            );
+            assert_eq!(state.hp, 24);
+            assert_eq!(state.fanouts.potion_slots(), [None]);
+            assert_eq!(state.temp_strength, if owned { 3 } else { 0 });
+        }
+    }
+
+    /// The walk's Reptile Trinket half reads the catalog's relic inventory.
+    /// A caller without one is refused by name, before the Fairy leaves the
+    /// belt, and only when there is a Fairy to spend.
+    #[test]
+    fn a_fairy_at_lethal_without_a_catalog_refuses_by_name() {
+        let mut state = HotState::at_defaults();
+        state.max_hp = 80;
+        state.hp = 0;
+        assert_eq!(
+            consume_first_fairy_after_lethal(&mut state, None, &mut Vec::new()),
+            Ok(false)
+        );
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(PotionId::FairyInABottle)],
+            false,
+            false,
+            false,
+            false,
+            true
+        ));
+        let before = state.clone();
+        assert_eq!(
+            consume_first_fairy_after_lethal(&mut state, None, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "Fairy AfterPotionUsed relic catalog"
+            ))
+        );
+        assert_eq!(state, before);
     }
 }
 

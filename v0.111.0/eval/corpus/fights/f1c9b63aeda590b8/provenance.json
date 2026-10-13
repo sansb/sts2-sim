@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "WQXLUF17VCRY",
+ "node": 46,
+ "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "f894df2be961a2167836bd65600a73e4b7c66e4908a50e0e1a4daec8a9c01f87",
+ "save_sha256": "8c5128318300faa51250cd7a5da491365c1da110261f74efeee96367d5600975",
+ "entry_digest": "7fd324fd71598c5f81f0753bc39359da174770e4b2de4c62f9ae47f9dd52c315",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

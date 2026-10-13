@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "GR8LAJRF0QDW",
+ "node": 11,
+ "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "fe2e1f07a95f0439fa4c8f80e6907389b25f0242764e8a30e048d42cd25015b0",
+ "save_sha256": "4f1d32109006607712eb19fbc7ee3e99a4442a2a61c7a9ca27297ca22642cef2",
+ "entry_digest": "d1e72eab7c0a5fa7d83b63a1e17591188a955b339d8b65a783c5bf161fa42ffb",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

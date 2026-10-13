@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "DZW3T5ASVVUP",
+ "node": 32,
+ "encounter": "ENCOUNTER.KNOWLEDGE_DEMON_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "b7d40f2a8c1d4a67591e4d6c720595856a2ab21f519238ba5a9c228df6239fc4",
+ "save_sha256": "6cb331c3dc9ca25bd1af8afc87c7f55cba24f86df5dcaaeb81e6c89080307b6f",
+ "entry_digest": "f1af4961c3969b3f3e9edd42a851b71923b4660ffd4392bdbc971a0d920c2003",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

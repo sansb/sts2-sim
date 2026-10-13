@@ -116,6 +116,9 @@ fn damaged_input_is_refused_and_never_panics() {
     for cut in (64..bytes.len()).step_by((bytes.len() / 97).max(1)) {
         assert!(mcr::decode(&bytes[..cut]).is_err(), "cut {cut} decoded");
     }
+    // This fixture's stream ends inside its last byte, so a byte after it is
+    // a ninth unread bit. (One that ends ON a byte boundary may carry one
+    // zero byte: `a_byte_aligned_capture_may_carry_one_zero_byte`.)
     let mut padded = bytes.clone();
     padded.push(0);
     assert_eq!(mcr::decode(&padded).unwrap_err().code, "malformed_replay");
@@ -124,6 +127,94 @@ fn damaged_input_is_refused_and_never_panics() {
         let mut flipped = bytes.clone();
         flipped[index] ^= 0x10;
         let _ = mcr::decode(&flipped);
+    }
+}
+
+/// #3756: a capture whose stream ends exactly on a byte boundary. The game's
+/// writer stops there; some uploaded files carry one more zero byte. Both
+/// decode to the same document, and nothing else after the stream does.
+#[test]
+fn a_byte_aligned_capture_may_carry_one_zero_byte() {
+    let bytes = std::fs::read(testdata().join("WDRG3QZP2Y7G_n02_byte_aligned.mcr")).unwrap();
+    let document = mcr::decode(&bytes).unwrap();
+    assert_eq!(document["events"].as_array().unwrap().len(), 1);
+    assert_eq!(document["checksums"].as_array().unwrap().len(), 2);
+    // The stream ends on the boundary: dropping the last byte truncates it,
+    // and that byte is not padding the decoder skipped.
+    assert_eq!(
+        mcr::decode(&bytes[..bytes.len() - 1]).unwrap_err().code,
+        "truncated_replay"
+    );
+
+    let with = |tail: &[u8]| {
+        let mut longer = bytes.clone();
+        longer.extend_from_slice(tail);
+        mcr::decode(&longer)
+    };
+    assert_eq!(with(&[0]).unwrap(), document);
+    for tail in [&[1u8][..], &[0x80], &[0, 0], &[0, 1]] {
+        let error = with(tail).unwrap_err();
+        assert_eq!(error.code, "malformed_replay", "{tail:?}");
+        assert!(
+            error.detail.contains("unconsumed bits after decode"),
+            "{tail:?}: {error}"
+        );
+    }
+}
+
+/// #2103: a snapshot that carries player map drawings decodes, and so does
+/// everything after it. The strokes are the ones the site's map-ink fixture for
+/// this run records from the floor save: an erased pen dot still in the list,
+/// then eraser strokes of 126 and 133 points over it.
+#[test]
+fn a_capture_with_map_drawings_decodes_to_its_last_bit() {
+    let bytes = std::fs::read(testdata().join("39D29WG6HMEK_d21_map_drawings.mcr")).unwrap();
+    let document = mcr::decode(&bytes).unwrap();
+    let run = &document["run"];
+    assert_eq!(run["rng"]["seed"], "39D29WG6HMEK");
+    // A drift of one bit in the snapshot would not leave 17 events and 25
+    // checksums that end on the final byte.
+    assert_eq!(document["events"].as_array().unwrap().len(), 17);
+    assert_eq!(document["checksums"].as_array().unwrap().len(), 25);
+
+    let drawings = run["map_drawings"].as_array().unwrap();
+    assert_eq!(drawings.len(), 1);
+    assert_eq!(drawings[0]["player_id"], run["players"][0]["net_id"]);
+    let lines = drawings[0]["lines"].as_array().unwrap();
+    assert_eq!(lines.len(), 33);
+    let shape: Vec<(bool, usize)> = lines
+        .iter()
+        .map(|line| {
+            (
+                line["is_eraser"].as_bool().unwrap(),
+                line["points"].as_array().unwrap().len(),
+            )
+        })
+        .collect();
+    assert_eq!(shape.iter().map(|(_, points)| points).sum::<usize>(), 346);
+    assert_eq!(
+        shape[27..31],
+        [(true, 126), (true, 133), (true, 2), (true, 3)]
+    );
+    assert!(
+        shape
+            .iter()
+            .enumerate()
+            .all(|(index, (eraser, _))| *eraser == (27..31).contains(&index))
+    );
+    assert_eq!(
+        lines[0]["points"][0],
+        serde_json::json!([-0.595458984375, 0.42401123046875])
+    );
+    for point in lines
+        .iter()
+        .flat_map(|line| line["points"].as_array().unwrap())
+    {
+        let (x, y) = (point[0].as_f64().unwrap(), point[1].as_f64().unwrap());
+        assert!((-3.0..3.0).contains(&x) && (-2.0..2.0).contains(&y));
+        // On the grid: 13 bits over a span of 6, 16 bits over 4.
+        assert_eq!(((x + 3.0) * 8192.0 / 6.0).fract(), 0.0);
+        assert_eq!(((y + 2.0) * 65536.0 / 4.0).fract(), 0.0);
     }
 }
 

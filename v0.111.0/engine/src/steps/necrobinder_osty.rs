@@ -315,14 +315,11 @@ pub(crate) fn osty_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         ] => {
             player_pet_attack_all_from_card(ctx.state, source, *base, 1, ctx.events)?;
             gain_powered_card_block(ctx.state, ctx.catalog, ctx.spec, *block, ctx.events)?;
-            let had_osty = ctx.state.fanouts.pet().osty().is_some();
-            ctx.state
-                .fanouts
-                .mutate_pet(|pet| {
-                    pet.kill();
-                    Ok(())
-                })
-                .map_err(|_| EngineRefusal::CounterOverflow("Bone Shards Osty kill"))?;
+            // `BoneShards/<OnPlay>d__9` `0x38e33c` IL_015f-IL_0177: after the
+            // attack and the Block, `if (Owner.IsOstyAlive) Kill(Owner.Osty)`.
+            // The Kill's HP loss reaches Necro Mastery (#3756).
+            let had_osty =
+                crate::engine::damage::kill_live_osty_by_card(ctx.state, ctx.catalog, ctx.events)?;
             if had_osty {
                 crate::engine::cards::physical_cards_after_actual_death(ctx.state)?;
             } else {
@@ -411,23 +408,14 @@ pub(crate) fn sacrifice_osty_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRe
     let block = multiplier
         .checked_mul(i64::from(osty.max_hp()))
         .ok_or(EngineRefusal::CounterOverflow("sacrifice Osty block"))?;
+    // `Sacrifice/<OnPlay>d__9` `0x3b8170` IL_00da-IL_00e5 is a
+    // `CreatureCmd.Kill` of the live Osty, whose HP loss reaches Necro
+    // Mastery before the death walk and the Block (#3756).
     let mut probe = ctx.state.clone();
-    probe
-        .fanouts
-        .mutate_pet(|pet| {
-            pet.kill();
-            Ok(())
-        })
-        .map_err(|_| EngineRefusal::CounterOverflow("sacrifice Osty"))?;
+    crate::engine::damage::kill_live_osty_by_card(&mut probe, ctx.catalog, &mut Vec::new())?;
     crate::engine::cards::physical_cards_after_actual_death(&mut probe)?;
     gain_powered_card_block(&mut probe, ctx.catalog, ctx.spec, block, &mut Vec::new())?;
-    ctx.state
-        .fanouts
-        .mutate_pet(|pet| {
-            pet.kill();
-            Ok(())
-        })
-        .map_err(|_| EngineRefusal::CounterOverflow("sacrifice Osty"))?;
+    crate::engine::damage::kill_live_osty_by_card(ctx.state, ctx.catalog, ctx.events)?;
     crate::engine::cards::physical_cards_after_actual_death(ctx.state)?;
     gain_powered_card_block(ctx.state, ctx.catalog, ctx.spec, block, ctx.events).map(|_| ())
 }
@@ -844,12 +832,17 @@ mod tests {
 
         let mut absent = HotState::at_defaults();
         absent.hp = 50;
-        let before = absent.clone();
+        // #3635: the ending add creates Osty at 1 HP under the summoned
+        // MaxHp, and Spur's own Heal is skipped like the summon's.
+        execute(&mut absent, CardId::Spur, 0, None).unwrap();
         assert_eq!(
-            execute(&mut absent, CardId::Spur, 0, None),
-            Err(EngineRefusal::EndingSummonNotModeled("Osty summon"))
+            absent
+                .fanouts
+                .pet()
+                .osty()
+                .map(|osty| (osty.hp(), osty.max_hp())),
+            Some((1, 3))
         );
-        assert_eq!(absent.fanouts.pet(), before.fanouts.pet());
     }
 
     #[test]
@@ -907,6 +900,67 @@ mod tests {
                 .is_empty()
         );
         assert_eq!(missing, before);
+    }
+
+    /// #3756, site witness `5GDPFDM3Y6HW` node 26: Bone Shards with Osty at
+    /// 23/35 and Necro Mastery 1 takes 9 + 23 from the Entomancer. The Kill's
+    /// HP loss (`0x3ebe90` IL_01bc-IL_0200) is what Necro Mastery answers, so
+    /// it is the live HP at the Kill, times the power's amount, after the
+    /// attack and the Block.
+    #[test]
+    fn bone_shards_kill_reaches_necro_mastery_with_the_live_hp() {
+        for (amount, expected_hp) in [(0, 91), (1, 68), (2, 45)] {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.fanouts.set_osty(Some((23, 35))).unwrap();
+            if amount > 0 {
+                state
+                    .powers
+                    .set(PowerId::NecroMastery, crate::powers::SlotWire::Int, amount);
+            }
+            execute(&mut state, CardId::BoneShards, 0, None).unwrap();
+            assert!(state.fanouts.pet().osty().is_none());
+            assert_eq!(state.block, 9);
+            assert_eq!(state.monsters[0].hp, expected_hp, "Necro Mastery {amount}");
+        }
+    }
+
+    /// The same Kill from Sacrifice (`0x3b8170` IL_00da-IL_00e5): the loss is
+    /// Osty's current HP, not the maximum the Block is computed from.
+    #[test]
+    fn sacrifice_kill_reaches_necro_mastery_before_the_block() {
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.fanouts.set_osty(Some((4, 7))).unwrap();
+        state
+            .powers
+            .set(PowerId::NecroMastery, crate::powers::SlotWire::Int, 2);
+        execute(&mut state, CardId::Sacrifice, 0, None).unwrap();
+        assert!(state.fanouts.pet().osty().is_none());
+        assert_eq!(state.monsters[0].hp, 92);
+        assert_eq!(state.block, 21);
+    }
+
+    /// No live Osty, no Kill and no HP loss: Bone Shards with a missing Osty
+    /// is a no-op, and Necro Mastery has nothing to answer.
+    #[test]
+    fn bone_shards_without_a_live_osty_gives_necro_mastery_nothing() {
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state
+            .powers
+            .set(PowerId::NecroMastery, crate::powers::SlotWire::Int, 3);
+        execute(&mut state, CardId::BoneShards, 0, None).unwrap();
+        assert_eq!(state.monsters[0].hp, 100);
     }
 
     #[test]

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "QN0D3KCZWL5H",
+ "node": 24,
+ "encounter": "ENCOUNTER.OVICOPTER_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "0087abde07ce2ab3294de67f65a8677553bfcf87671bd436d52cc23c06021516",
+ "save_sha256": "b26ff178471ea86d4fc41416c834e873bfbfc184a9669d6d8e15992ab6d18002",
+ "entry_digest": "bb9e9de7cfb80a591eaa741a4cd2c086353bd18bdc983bcf16d46d2cfddf5fd0",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

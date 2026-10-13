@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "EV5Z075JZY56",
+ "node": 10,
+ "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "e78920d8b3e1700067fefa2addaba3170937c534c28a5e9a328cd66737b2dc6d",
+ "save_sha256": "cd1f0a94ef901ddac9702b531793f2dcd400358ebb9c74828edc4477ece7e96a",
+ "entry_digest": "5c38027ed507f7535d04a66f1a1db9506a954d313947ad54c96c78dcfd47b01b",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

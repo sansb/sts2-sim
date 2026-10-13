@@ -352,6 +352,33 @@ impl Decoder<'_> {
         Ok(Value::String(self.r.string()?))
     }
 
+    /// Require that only the writer's zero padding is left.
+    ///
+    /// `CombatReplay::Serialize` (RVA 0x69248) ends at `WriteList` of the
+    /// checksums (IL_0115) and `CombatReplay::Deserialize` (RVA 0x69380) at
+    /// the matching `ReadList` (IL_00ca): the schema has nothing after them.
+    /// `CombatReplayWriter::WriteReplay` (RVA 0x69c7c) writes the first
+    /// `PacketWriter::get_BytePosition` bytes of the buffer (IL_0082..0091),
+    /// and `get_BytePosition` (RVA 0x683b6) is `CeilToInt(BitPosition / 8f)`:
+    /// up to seven zero bits of padding, none when the stream ends on a byte
+    /// boundary. v0.111.0 `sts2.dll`, sha256 `9cb4f1ad...`.
+    ///
+    /// One more length is accepted, and it is an observation, not that IL:
+    /// files of `floor(bits / 8) + 1` bytes, which differ from the above only
+    /// when the stream ends on a byte boundary, where they carry one whole
+    /// zero byte. Every capture of 33 uploaded runs was written that way
+    /// (#3756): 105 byte-aligned streams, each with the extra byte, and not
+    /// one without, against 709 exact ones in the other 360 runs. The cause is
+    /// not known. Nothing the schema defines is in that byte, so it is checked
+    /// for zero and dropped; a ninth bit, or any set bit, is still refused.
+    fn end_of_stream(&mut self) -> Res<()> {
+        let left = self.r.bits_left();
+        if left > 8 || (left > 0 && self.r.read_bits(left as u32)? != 0) {
+            return malformed(format!("{left} unconsumed bits after decode"));
+        }
+        Ok(())
+    }
+
     // --- top level ----------------------------------------------------------
     fn combat_replay(&mut self) -> Res<Value> {
         let version = self.r.string()?;
@@ -375,11 +402,7 @@ impl Decoder<'_> {
         let run = self.serializable_run()?;
         let events = self.list(Self::replay_event)?;
         let checksums = self.list(Self::checksum_data)?;
-        // The writer pads the final byte with zero bits.
-        let left = self.r.bits_left();
-        if left >= 8 || (left > 0 && self.r.read_bits(left as u32)? != 0) {
-            return malformed(format!("{left} unconsumed bits after decode"));
-        }
+        self.end_of_stream()?;
         Ok(obj(vec![
             ("version", Value::String(version)),
             ("git_commit", Value::String(git_commit)),
@@ -848,15 +871,52 @@ impl Decoder<'_> {
         Ok(obj(vec![("from", self.card()?), ("to", self.card()?)]))
     }
 
+    /// `SerializableMapDrawings::Deserialize` (RVA 0x46400, IL_0003..0005) is
+    /// `ReadList<SerializablePlayerMapDrawings>` with a 32-bit count.
+    /// `SerializablePlayerMapDrawings::Deserialize` (RVA 0x465ee) reads
+    /// `ReadULong(64)` playerId (IL_0003..0005), then
+    /// `ReadList<SerializableMapDrawingLine>` with a 32-bit count
+    /// (IL_0011..0013). v0.111.0 `sts2.dll`, sha256 9cb4f1ad...
     fn map_drawings(&mut self) -> Res<Value> {
         self.list(|d| {
             let player_id = d.uint(64)?;
-            let lines = d.list(|_| {
-                // SerializableMapDrawingLine: bool + count(16) + points.
-                malformed("map drawing decode not implemented (no sample file exercises it)")
-            })?;
+            let lines = d.list(Self::map_drawing_line)?;
             Ok(obj(vec![("player_id", player_id), ("lines", lines)]))
         })
+    }
+
+    /// `SerializableMapDrawingLine::Deserialize` (RVA 0x4635c): `ReadBool`
+    /// isEraser (IL_000e), `ReadInt(16)` point count (IL_0019..001b), then that
+    /// many `ReadVector2(_quantizeParamsX, _quantizeParamsY)` (IL_002c..0040).
+    /// `PacketReader::ReadVector2` (RVA 0x680ac) is `ReadFloat` with the x
+    /// params, then `ReadFloat` with the y params. The static constructor
+    /// (RVA 0x463c2) sets them: x is 13 bits over [-3, 3] (IL_0001..000d), y is
+    /// 16 bits over [-2, 2] (IL_0017..0023).
+    fn map_drawing_line(&mut self) -> Res<Value> {
+        let is_eraser = self.boolean()?;
+        let count = self.r.i(16)?;
+        let points = self.repeat(count, |d| {
+            let x = d.quantized_f32(-3.0, 3.0, 13)?;
+            let y = d.quantized_f32(-2.0, 2.0, 16)?;
+            Ok(Value::Array(vec![x, y]))
+        })?;
+        Ok(obj(vec![("is_eraser", is_eraser), ("points", points)]))
+    }
+
+    /// `PacketReader::ReadFloat` (RVA 0x67f08) with `QuantizeParams` present:
+    /// `ReadUInt(bits)` (IL_0028..002d), then `Unquantize` (IL_0058).
+    /// `PacketReader::Unquantize` (RVA 0x6818e) is the float32 of
+    /// `double(q) / 2^bits * double(max - min) + double(min)`, where
+    /// `max - min` is a float32 subtraction (IL_0015..0018) and the result
+    /// narrows to float32 (`conv.r4`, IL_001d).
+    fn quantized_f32(&mut self, min: f32, max: f32, bits: u32) -> Res<Value> {
+        let q = self.r.u(bits)?;
+        let steps = (1u64 << bits) as f64;
+        let value = (q as f64 / steps * f64::from(max - min) + f64::from(min)) as f32;
+        match Number::from_f64(f64::from(value)) {
+            Some(number) => Ok(Value::Number(number)),
+            None => malformed(format!("non-finite float at bit {}", self.r.pos)),
+        }
     }
 
     // --- events ---------------------------------------------------------------
@@ -1114,4 +1174,167 @@ pub fn decode(data: &[u8]) -> Result<Value, McrError> {
         t: tables(),
     }
     .combat_replay()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// LSB-first, the inverse of [`BitReader`].
+    #[derive(Default)]
+    struct BitWriter(Vec<bool>);
+
+    impl BitWriter {
+        fn u(&mut self, value: u64, width: u32) {
+            assert!(width == 64 || value < 1 << width);
+            self.0.extend((0..width).map(|i| (value >> i) & 1 == 1));
+        }
+
+        /// `PacketWriter::Quantize` (RVA 0x68a2b):
+        /// `uint((v - min) / (max - min) * 2^bits)`.
+        fn quantized(&mut self, value: f32, min: f32, max: f32, bits: u32) {
+            let q = (f64::from((value - min) / (max - min)) * f64::from(1u32 << bits)) as u32;
+            self.u(u64::from(q), bits);
+        }
+
+        fn line(&mut self, is_eraser: bool, points: &[(f32, f32)]) {
+            self.u(u64::from(is_eraser), 1);
+            self.u(points.len() as u64, 16);
+            for &(x, y) in points {
+                self.quantized(x, -3.0, 3.0, 13);
+                self.quantized(y, -2.0, 2.0, 16);
+            }
+        }
+
+        fn bytes(&self) -> Vec<u8> {
+            self.0
+                .chunks(8)
+                .map(|byte| {
+                    byte.iter()
+                        .enumerate()
+                        .fold(0u8, |acc, (i, &bit)| acc | (u8::from(bit) << i))
+                })
+                .collect()
+        }
+    }
+
+    fn decoder(data: &[u8]) -> Decoder<'_> {
+        Decoder {
+            r: BitReader { data, pos: 0 },
+            t: tables(),
+        }
+    }
+
+    /// What is left after the last field, for every bit position the stream
+    /// can end on: zero padding inside the final byte, or one whole zero
+    /// byte when it ended on a boundary (#3756). Nothing longer, nothing set.
+    #[test]
+    fn the_end_of_the_stream_is_zero_padding_of_at_most_one_byte() {
+        let end = |data: &[u8], pos: usize| {
+            let mut d = decoder(data);
+            d.r.pos = pos;
+            d.end_of_stream()
+                .map_err(|error| (error.code, error.detail))
+        };
+        let refused = |left: usize| {
+            Err((
+                "malformed_replay",
+                format!("{left} unconsumed bits after decode"),
+            ))
+        };
+        // Ended on a byte boundary: nothing left, or one zero byte.
+        assert_eq!(end(&[0xff], 8), Ok(()));
+        assert_eq!(end(&[0xff, 0x00], 8), Ok(()));
+        // The extra byte carries nothing: any set bit in it is refused.
+        for bit in 0..8 {
+            assert_eq!(end(&[0xff, 1 << bit], 8), refused(8), "bit {bit}");
+        }
+        // Two whole bytes are never padding.
+        assert_eq!(end(&[0xff, 0x00, 0x00], 8), refused(16));
+        // Ended inside a byte: the rest of that byte, zero.
+        for used in 1..8usize {
+            let low = (1u8 << used) - 1;
+            assert_eq!(end(&[low], used), Ok(()), "{used} bits used");
+            assert_eq!(end(&[0xff], used), refused(8 - used), "{used} bits used");
+            // A byte after a partly used one is a ninth bit or more.
+            assert_eq!(
+                end(&[low, 0x00], used),
+                refused(16 - used),
+                "{used} bits used"
+            );
+        }
+    }
+
+    #[test]
+    fn written_map_drawings_read_back_exactly() {
+        let mut w = BitWriter::default();
+        w.u(3, 32);
+        // A Steam-shaped id, past 2^53.
+        w.u(76_561_198_012_718_148, 64);
+        w.u(3, 32);
+        w.line(false, &[(-3.0, -2.0), (0.0, 0.0), (0.75, -0.5)]);
+        w.line(true, &[]);
+        w.line(true, &[(-0.75, 0.3125)]);
+        w.u(1, 64);
+        w.u(0, 32);
+        w.u(u64::MAX, 64);
+        w.u(1, 32);
+        // The largest value each field carries: one step below the top.
+        w.u(0, 1);
+        w.u(1, 16);
+        w.u((1 << 13) - 1, 13);
+        w.u((1 << 16) - 1, 16);
+        let bits = w.0.len();
+        let bytes = w.bytes();
+        let mut d = decoder(&bytes);
+        assert_eq!(
+            d.map_drawings().unwrap(),
+            json!([
+                {"player_id": 76_561_198_012_718_148u64, "lines": [
+                    {"is_eraser": false, "points": [[-3.0, -2.0], [0.0, 0.0], [0.75, -0.5]]},
+                    {"is_eraser": true, "points": []},
+                    {"is_eraser": true, "points": [[-0.75, 0.3125]]},
+                ]},
+                {"player_id": 1, "lines": []},
+                {"player_id": u64::MAX, "lines": [
+                    {"is_eraser": false, "points": [[3.0 - 6.0 / 8192.0, 2.0 - 4.0 / 65536.0]]},
+                ]},
+            ])
+        );
+        assert_eq!(d.r.pos, bits);
+    }
+
+    #[test]
+    fn a_point_is_29_bits_x_first() {
+        let mut w = BitWriter::default();
+        w.u(1, 32);
+        w.u(1, 64);
+        w.u(1, 32);
+        w.u(1, 1);
+        w.u(1, 16);
+        w.u(1, 13); // x: one step above -3
+        w.u(1 << 15, 16); // y: the middle of [-2, 2]
+        let bytes = w.bytes();
+        let mut d = decoder(&bytes);
+        assert_eq!(
+            d.map_drawings().unwrap()[0]["lines"],
+            json!([{"is_eraser": true, "points": [[-3.0 + 6.0 / 8192.0, 0.0]]}])
+        );
+        assert_eq!(d.r.pos, 32 + 64 + 32 + 1 + 16 + 29);
+    }
+
+    #[test]
+    fn map_drawings_that_end_inside_a_line_are_refused() {
+        let mut w = BitWriter::default();
+        w.u(1, 32);
+        w.u(1, 64);
+        w.u(1, 32);
+        w.line(false, &[(0.0, 0.0); 4]);
+        let bytes = w.bytes();
+        let error = decoder(&bytes[..bytes.len() - 2])
+            .map_drawings()
+            .unwrap_err();
+        assert_eq!(error.code, "truncated_replay");
+    }
 }

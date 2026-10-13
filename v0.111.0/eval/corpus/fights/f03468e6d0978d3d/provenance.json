@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "1SQJ4G05QCM6",
+ "node": 16,
+ "encounter": "ENCOUNTER.THE_KIN_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "2b710639d4498dec0c790bf7bb988cba45138dae28652495faf26ba3e776fb14",
+ "save_sha256": "93c30e14744f79b1b7aa7eed31065b6246669e1a8f15d9d5594a15c1c4a32519",
+ "entry_digest": "a3a20ddc489086e9f9f0795a7cf2318ce99cecc0aa2b7386f4b3181a865f7fab",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

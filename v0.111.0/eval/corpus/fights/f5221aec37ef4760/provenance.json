@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "3NNB72PME940",
+ "node": 1,
+ "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "d8d01fe18009ec0f32c17bc197332ca00b558b1a65b36aa10d945ca9c6c32d00",
+ "save_sha256": "6771acbbdd335e5429133c411dc1b2a023633a26a5e2aae81d2919f275ba14fd",
+ "entry_digest": "4388df62fce90361b4e6dabb53defdd7e191ef00c3fedfdf82bcd8cc13c487f2",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

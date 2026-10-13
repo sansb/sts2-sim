@@ -37,7 +37,8 @@
 //!   start" checksum (IL_096f `ldstr`, IL_0975 `GenerateChecksum`), and only
 //!   then calls `RunAutoPrePlayPhase` (IL_0b1e). So a turn-one AutoPre that
 //!   moves state (Imbued's AutoPlay, #3381) runs AFTER the capture's opening
-//!   checksum, while the opening Rust hands back has already run it. The
+//!   checksum, while the opening Rust hands back has already run it, or is
+//!   parked inside it on the Imbued card's own choice (#3817). The
 //!   boundary is observed only on turn one: the census compares no later
 //!   turn-start checksum, so no `apply` ever reports it.
 //!
@@ -91,6 +92,22 @@ pub fn record<T>(transition: impl FnOnce() -> T) -> (T, Recorded) {
     (result, recorded)
 }
 
+/// Run `rehearsal` with recording off and restore the caller's recorder.
+///
+/// A rehearsal runs a command on a state it then throws away, and passes the
+/// same observation sites as the transition that follows it. Native wrote one
+/// checkpoint for the boundary, so only the committed transition may report
+/// it: a root whose catalog reaches Alchemize rehearses every public action
+/// (`engine::apply_public_action_with_replay`), and its End Turn past an
+/// AutoPost listener reported the boundary twice, which the census refuses
+/// (#3756).
+pub(crate) fn unrecorded<T>(rehearsal: impl FnOnce() -> T) -> T {
+    let outer = RECORDER.with(|recorder| recorder.replace(None));
+    let result = rehearsal();
+    RECORDER.with(|recorder| recorder.replace(outer));
+    result
+}
+
 /// Record `state` at `kind`'s boundary when a caller is recording.
 #[cold]
 #[inline(never)]
@@ -127,6 +144,33 @@ mod tests {
                 NativeCheckpointKind::AutoPostHookFinished,
             ]
         );
+        let ((), after) = record(|| {});
+        assert!(after.is_empty());
+    }
+
+    #[test]
+    fn an_unrecorded_rehearsal_reports_nothing_and_keeps_the_callers_recorder() {
+        let state = HotState::at_defaults();
+        let ((), recorded) = record(|| {
+            observe(NativeCheckpointKind::VoidFormEndTurnRequest, &state);
+            let inner = unrecorded(|| {
+                observe(NativeCheckpointKind::AutoPostHookFinished, &state);
+                // A recorder opened inside the rehearsal is its own.
+                record(|| observe(NativeCheckpointKind::AutoPostHookFinished, &state)).1
+            });
+            assert_eq!(inner.len(), 1);
+            observe(NativeCheckpointKind::AutoPostHookFinished, &state);
+        });
+        let kinds: Vec<_> = recorded.iter().map(|(kind, _)| *kind).collect();
+        assert_eq!(
+            kinds,
+            [
+                NativeCheckpointKind::VoidFormEndTurnRequest,
+                NativeCheckpointKind::AutoPostHookFinished,
+            ]
+        );
+        // Outside any recorder it is a plain call.
+        assert_eq!(unrecorded(|| 7), 7);
         let ((), after) = record(|| {});
         assert!(after.is_empty());
     }

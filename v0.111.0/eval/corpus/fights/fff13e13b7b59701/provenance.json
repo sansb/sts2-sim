@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 44,
+ "encounter": "ENCOUNTER.SOUL_NEXUS_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "267fe87f725992056bacb2d13c6cb62860adc77a6e17d3024502f060cd291d7d",
+ "save_sha256": "5841033a87700023e2688d955838113b6928ad8f5603eaa9200be74b3e99bbf0",
+ "entry_digest": "031b38ddceed93e7c370dc90340aef0b5faf7cd7e063ec3a23f66aa8db5c8d6a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

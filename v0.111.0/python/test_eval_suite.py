@@ -22,6 +22,9 @@ What is deliberately opt-in:
 * `STS2_EVAL_REDERIVE=1` re-derives every fixture from its stored capture
   pair through the tool's own `verify`, runs `census --fixtures` against the
   manifest, and re-`add`s one fixture. Each needs the same release binary.
+
+The `rust port` lane, which has an engine binary, runs the label pass of
+`verify` over every stored pair on each engine change (`verify --no-digests`).
 """
 
 from __future__ import annotations
@@ -564,6 +567,93 @@ def test_an_upload_sidecar_names_the_encounter_and_the_entry_input(tmp_path):
     assert eval_suite.entry_input(save) == "--capture-run"
 
 
+def _upload_fight(node_type, encounter="ENCOUNTER.EXOSKELETONS_WEAK"):
+    import types  # noqa: PLC0415
+    return types.SimpleNamespace(node_type=node_type, encounter_id=encounter)
+
+
+def _room(room_type, model_id):
+    return {"room_type": room_type, "model_id": model_id, "monster_ids": [],
+            "turns_taken": 3}
+
+
+def test_an_upload_at_a_combat_point_keeps_the_points_type():
+    for kind in ("monster", "elite", "boss"):
+        fight = _upload_fight(kind)
+        # The point is not consulted: the save names these from its own map.
+        assert eval_suite.upload_combat_room({}, fight) == (kind, None)
+        assert eval_suite.upload_sidecar({}, fight, kind) == {
+            "encounter": "ENCOUNTER.EXOSKELETONS_WEAK", "node_type": kind,
+            "entry_input": "--capture-run",
+            "source": "uploaded .run (#2915)"}
+
+
+def test_an_upload_at_an_unknown_point_is_named_by_its_one_combat_room(
+        tmp_path):
+    """#3756: 328 uploaded fights at `unknown` map points were skipped as
+    `node_type_event`. The `.run` node names the room: a point that rolled a
+    plain fight, or an event that starts one."""
+    fight = _upload_fight("event")
+    rolled = {"map_point_type": "unknown", "rooms": [
+        _room("monster", "ENCOUNTER.EXOSKELETONS_WEAK")]}
+    assert eval_suite.upload_combat_room(rolled, fight) == ("monster", None)
+    assert eval_suite.upload_sidecar(rolled, fight, "monster") == {
+        "encounter": "ENCOUNTER.EXOSKELETONS_WEAK", "node_type": "monster",
+        "entry_input": "--capture-run", "source": "uploaded .run (#2915)",
+        "map_point_type": "unknown", "event": None}
+
+    dummy = _upload_fight(
+        "event", "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER")
+    hosted = {"map_point_type": "unknown", "rooms": [
+        _room("event", "EVENT.BATTLEWORN_DUMMY"),
+        _room("monster", "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER")]}
+    assert eval_suite.upload_combat_room(hosted, dummy) == ("monster", None)
+    sidecar = eval_suite.upload_sidecar(hosted, dummy, "monster")
+    assert sidecar["event"] == "EVENT.BATTLEWORN_DUMMY"
+    assert sidecar["map_point_type"] == "unknown"
+
+    # The room's own type is the answer, whatever it is.
+    hosted["rooms"][1]["room_type"] = "elite"
+    assert eval_suite.upload_combat_room(hosted, dummy) == ("elite", None)
+
+    # The census reads the fight back from the sidecar under the room's type.
+    save = tmp_path / "SEED-019_save_abcdef012345.save"
+    save.write_text("{}")
+    eval_suite.upload_sidecar_path(save).write_text(json.dumps(sidecar))
+    assert eval_suite.derive_encounter({}, None, save, {}) == (
+        "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER", "monster")
+    assert eval_suite.entry_input(save) == "--capture-run"
+
+
+def test_an_unknown_point_that_does_not_name_one_combat_is_skipped_by_name():
+    fight = _upload_fight("event")
+    event_only = {"map_point_type": "unknown", "rooms": [
+        _room("event", "EVENT.PUNCH_OFF")]}
+    assert eval_suite.upload_combat_room(event_only, fight) == (
+        None, "event_node_names_0_combat_rooms")
+    assert eval_suite.upload_combat_room({}, fight) == (
+        None, "event_node_names_0_combat_rooms")
+    assert eval_suite.upload_combat_room({"rooms": ["monster"]}, fight) == (
+        None, "event_node_names_0_combat_rooms")
+
+    two = {"map_point_type": "unknown", "rooms": [
+        _room("event", "EVENT.PUNCH_OFF"),
+        _room("monster", "ENCOUNTER.EXOSKELETONS_WEAK"),
+        _room("monster", "ENCOUNTER.BOWLBUGS_WEAK")]}
+    assert eval_suite.upload_combat_room(two, fight) == (
+        None, "event_node_names_2_combat_rooms")
+
+    other = {"map_point_type": "unknown", "rooms": [
+        _room("monster", "ENCOUNTER.BOWLBUGS_WEAK")]}
+    assert eval_suite.upload_combat_room(other, fight) == (
+        None, "event_node_room_is_not_the_parsed_fight")
+
+    # A node type the parser does not produce today stays skipped under the
+    # name the import always gave it.
+    assert eval_suite.upload_combat_room(other, _upload_fight("shop")) == (
+        None, "node_type_shop")
+
+
 def _eval_coverage():
     sys.path.insert(0, str(EVAL_DIR))
     import eval_coverage  # noqa: PLC0415
@@ -686,6 +776,58 @@ def test_the_deal_undoes_jeweled_masks_pre_deal_power_lift():
     root["player"]["relics_entering"] = []
     with pytest.raises(ValueError, match="identities differ"):
         eval_suite._dealt_uids(root, recorded)
+
+
+def test_the_deal_undoes_power_cells_pre_deal_lift():
+    """#3767: Power Cell lifts up to two zero-cost deck cards into the Hand
+    before the deal; they keep their uids, so uid order is the layout before
+    the lift, exactly as for Jeweled Mask."""
+    card = lambda cid, uid: {"id": cid, "uid": uid, "upgrade": 0}
+    root = {"player": {"innate_min_draw": 0,
+                       "relics_entering": ["RELIC.POWER_CELL"]},
+            "piles": {"hand": [card("FREE", 3), card("ZAP", 1),
+                               card("A", 0), card("B", 2)],
+                      "draw": [card("C", 4)]}}
+    recorded = [("A", 0), ("ZAP", 0), ("B", 0), ("FREE", 0), ("C", 0)]
+    assert eval_suite._dealt_uids(root, recorded) == [0, 1, 2, 3, 4]
+    # A uid that names a different recorded card is still refused.
+    with pytest.raises(ValueError, match="identities differ"):
+        eval_suite._dealt_uids(
+            root, [("A", 0), ("B", 0), ("ZAP", 0), ("FREE", 0), ("C", 0)])
+    # Without the relic the same layout is refused: the reorder is the two
+    # relics' alone.
+    root["player"]["relics_entering"] = []
+    with pytest.raises(ValueError, match="identities differ"):
+        eval_suite._dealt_uids(root, recorded)
+
+
+def test_the_first_cycle_reads_the_deck_a_due_dowsing_left():
+    """#3791: the capture's deck predates room entry. A Dowsing saved one
+    room short that the Rust root no longer holds became an Abundance at the
+    deck's END, and the combat instances index that deck."""
+    import mcr_native
+    dowsing = lambda rooms: {"id": "CARD.DOWSING", "upgrade_level": 0,
+                             "props": {"RoomsEntered": rooms}}
+    plain = lambda cid: {"id": "CARD." + cid, "upgrade_level": 0}
+    ids = lambda deck: [card["id"] for card in deck]
+    root = lambda *held: {"piles": {"draw": [{"id": cid} for cid in held],
+                                    "hand": []}}
+    deck = [plain("A"), dowsing(4), plain("B")]
+    moved = ["CARD.A", "CARD.B", "CARD.ABUNDANCE"]
+    assert ids(mcr_native.combat_deck(deck, root("A", "B", "ABUNDANCE"))) == moved
+    # The root kept the Dowsing (not the counting room), or there is no root.
+    assert mcr_native.combat_deck(deck, root("A", "DOWSING", "B")) is deck
+    assert mcr_native.combat_deck(deck, None) is deck
+    # A count below four never transforms, whatever the root holds.
+    early = [plain("A"), dowsing(3), plain("B")]
+    assert mcr_native.combat_deck(early, root("A", "B", "ABUNDANCE")) is early
+    # The save's own spelling of the property, and a second Dowsing that stays.
+    saved = {"id": "CARD.DOWSING", "upgrade_level": 0,
+             "props": {"ints": [{"name": "RoomsEntered", "value": 4}]}}
+    pair = [saved, plain("A"), dowsing(2)]
+    assert ids(mcr_native.combat_deck(pair, root("A", "DOWSING", "ABUNDANCE"))) == [
+        "CARD.A", "CARD.DOWSING", "CARD.ABUNDANCE"]
+    assert mcr_native.combat_deck(pair, root("A", "DOWSING", "DOWSING")) is pair
 
 
 def test_the_deal_reads_a_whispering_earring_root_in_uid_order():
@@ -1325,6 +1467,453 @@ def test_the_census_headline_is_certified_over_eligible():
             "`no_combat_in_capture` 1)") in markdown
 
 
+def _one_checksum_capture(enemy_hp, events=(), player_hp=58,
+                          context="After player turn start"):
+    """A synthetic capture with one checksum. `enemy_hp=None`: no enemy is
+    listed at all (the game drops a dead monster from the creature list)."""
+    creatures = [
+        {"player_id": 7, "monster_id": None, "current_hp": player_hp},
+        {"player_id": None, "monster_id": "PAELS_LEGION", "current_hp": 9999},
+    ]
+    if enemy_hp is not None:
+        creatures.append({"player_id": None, "monster_id": "OWL_MAGISTRATE",
+                          "current_hp": enemy_hp})
+    return {"version": "v0.111.0", "events": list(events),
+            "run": {"ascension": 10, "players": [
+                {"character": "CHARACTER.REGENT", "deck": [], "relics": []}]},
+            "checksums": [{"context": context,
+                           "full_state": {"creatures": creatures}}]}
+
+
+def test_a_fight_won_before_any_input_is_recognised_from_the_capture_alone():
+    """#3756: no input, one opening checksum, a living player, no living
+    enemy. The relic pet in every case is the player's, not an enemy."""
+    assert eval_suite.capture_won_at_open(_one_checksum_capture(None))
+    assert eval_suite.capture_won_at_open(_one_checksum_capture(0))
+    # An enemy still alive at the one checksum is a fight archived on turn 1.
+    assert not eval_suite.capture_won_at_open(_one_checksum_capture(12))
+    # Any recorded input, a second checksum, or no checksum at all is not it.
+    assert not eval_suite.capture_won_at_open(
+        _one_checksum_capture(None, events=[{"event_type": "GameAction"}]))
+    two = _one_checksum_capture(None)
+    two["checksums"] = two["checksums"] * 2
+    assert not eval_suite.capture_won_at_open(two)
+    assert not eval_suite.capture_won_at_open({"events": [], "checksums": []})
+    # A dead player is a loss, and a checksum that lists no player says
+    # nothing about who won.
+    assert not eval_suite.capture_won_at_open(
+        _one_checksum_capture(None, player_hp=0))
+    nobody = _one_checksum_capture(None)
+    nobody["checksums"][0]["full_state"]["creatures"] = []
+    assert not eval_suite.capture_won_at_open(nobody)
+    # The one checksum has to be the opening checkpoint the census compares.
+    assert not eval_suite.capture_won_at_open(
+        _one_checksum_capture(None, context="After card play"))
+    # An Osty is the player's as well.
+    osty = _one_checksum_capture(None)
+    osty["checksums"][0]["full_state"]["creatures"].append(
+        {"player_id": None, "monster_id": "OSTY", "current_hp": 4})
+    assert eval_suite.capture_won_at_open(osty)
+
+
+class _WonAtOpenSession:
+    def __init__(self, admits):
+        self.admits = admits
+
+    def load(self, document):
+        if self.admits:
+            return {"ok": {"digest": "d"}}
+        return {"refusal": {"kind": "missing_capability",
+                            "detail": "a combat that has already ended"},
+                "missing": ["a combat that has already ended"]}
+
+
+def _won_at_open_row(monkeypatch, tmp_path, replay, opening, admits=False,
+                     line=None, sidecar=None):
+    """`census_row` over a synthetic pair, with Rust's entry answer and the
+    opening comparison supplied. `line` stands in for the replay of a capture
+    that does hold inputs; `sidecar` is the pair's `_upload_` sidecar."""
+    key = ("SEED3756", 1, 36)
+    capture = tmp_path / "c.mcr"
+    capture.write_bytes(b"capture")
+    save = tmp_path / "SEED3756-036_save_abcdef012345.save"
+    save.write_text("{}")
+    sidecar_path = eval_suite.upload_sidecar_path(save)
+    if sidecar is not None:
+        sidecar_path.write_text(json.dumps(sidecar))
+    elif sidecar_path.exists():
+        sidecar_path.unlink()
+    built = {"schema": eval_suite.CANONICAL_SCHEMA, "player": {}}
+    answers = {
+        "entry_refused": {"refusal": {"detail": "entry said no"},
+                          "refusal_class": "entry_class"},
+        "opening_refused": {"schema": "sts-sim-entry-v1", "opening": {
+            "detail": "opening said no", "refusal_class": "opening_class"}},
+    }
+    monkeypatch.setattr(eval_suite, "derive_encounter",
+                        lambda *a: ("OWL_MAGISTRATE_ELITE", "elite"))
+    monkeypatch.setattr(eval_suite, "rust_opening_document",
+                        lambda *a, **k: answers.get(opening, built))
+    monkeypatch.setattr(eval_suite, "split_opening_checkpoints",
+                        lambda output: (output, None))
+    compared = {"match": {"checksummed": True, "opening_checkpoint": "match"},
+                "mismatch": {"checksummed": True,
+                             "opening_checkpoint": "mismatch"},
+                "unchecked": {"checksummed": False}}
+    monkeypatch.setattr(eval_suite, "opening_checkpoint",
+                        lambda *a: dict(compared[opening]))
+    monkeypatch.setattr(eval_suite, "with_native_reset_order",
+                        lambda document, replay: (document, "native"))
+    monkeypatch.setattr(eval_suite.canonical_document, "differential_digest",
+                        lambda document: "d")
+
+    def no_line(*a, **k):
+        raise AssertionError("a fight with no input has no line to replay")
+    monkeypatch.setattr(eval_suite, "replay_recorded_line", line or no_line)
+    return eval_suite.census_row(
+        key, capture, replay, {"first_save": {key: save}, "run_saves": {}},
+        _WonAtOpenSession(admits), pathlib.Path("unused-binary"))
+
+
+def test_a_won_at_open_fight_is_judged_on_its_opening(monkeypatch, tmp_path):
+    """#3756: the opening is compared with the capture's one checksum. A
+    match takes the fight out of eligible; a mismatch is a failure."""
+    won = _one_checksum_capture(None)
+    match = _won_at_open_row(monkeypatch, tmp_path, won, "match")
+    assert match["won_at_open"] == "opening_match"
+    assert match["rust"] == "refused"  # admission's refusal is still recorded
+    assert eval_suite.unusable_reason(match) == "won_at_open"
+
+    mismatch = _won_at_open_row(monkeypatch, tmp_path, won, "mismatch")
+    assert mismatch["won_at_open"] == "opening_mismatch"
+    assert eval_suite.unusable_reason(mismatch) is None
+
+    # Were the root admitted, there is still no line: the verdict stands and
+    # nothing is replayed (`no_line` would raise).
+    admitted = _won_at_open_row(monkeypatch, tmp_path, won, "match",
+                                admits=True)
+    assert admitted["rust"] == "admitted" and "human" not in admitted
+    assert eval_suite.unusable_reason(admitted) == "won_at_open"
+    wrong = _won_at_open_row(monkeypatch, tmp_path, won, "mismatch",
+                             admits=True)
+    assert "human" not in wrong and "lockstep" not in wrong
+    assert eval_suite.unusable_reason(wrong) is None
+
+    summary = eval_suite.census_summary([match, mismatch, admitted, wrong])
+    assert summary["won_at_open"] == {
+        "opening_match": 2, "opening_mismatch": 2}
+    assert summary["excluded_unusable"] == {"won_at_open": 2}
+    assert (summary["eligible"], summary["certified"]) == (2, 0)
+
+
+def test_a_won_at_open_fight_refused_before_its_opening_stays_eligible(
+        monkeypatch, tmp_path):
+    """#3756: where Rust built no opening it has shown nothing, so the fight
+    keeps its refusal and stays in the eligible count."""
+    won = _one_checksum_capture(None)
+    for opening, stage in (("entry_refused", "entry_refused"),
+                           ("opening_refused", "opening_refused"),
+                           ("unchecked", "rooted")):
+        row = _won_at_open_row(monkeypatch, tmp_path, won, opening)
+        assert row["stage"] == stage, row
+        assert "won_at_open" not in row and "unusable" not in row
+        assert eval_suite.unusable_reason(row) is None
+    refused = _won_at_open_row(monkeypatch, tmp_path, won, "opening_refused")
+    assert refused["detail"] == "opening said no"
+    assert eval_suite.refusal_facet(refused)["surface"] == "rust-opening"
+    summary = eval_suite.census_summary([refused])
+    assert (summary["eligible"], summary["excluded_unusable"]) == (1, {})
+
+
+def test_an_ordinary_fight_gets_no_won_at_open_verdict(monkeypatch, tmp_path):
+    """A capture with an enemy alive and an input is refused at admission as
+    before. (With no input at all it is #3820's shape, tested below.)"""
+    played = _one_checksum_capture(12, events=[{"event_type": "GameAction"}])
+    row = _won_at_open_row(monkeypatch, tmp_path, played, "match")
+    assert row["rust"] == "refused" and "won_at_open" not in row
+    assert "no_recorded_input" not in row
+    assert eval_suite.unusable_reason(row) is None
+
+
+def test_the_census_reports_won_at_open_fights_apart_from_certified():
+    """#3756: out of `eligible` on a match only, on their own table row."""
+    won = {"stage": "rooted", "rust": "refused", "opening_checkpoint": "match",
+           "won_at_open": "opening_match"}
+    rows = [
+        {"stage": "rooted", "rust": "admitted", "human": "exact",
+         "lockstep": "lockstep_ok", "opening_checkpoint": "match"},
+        won,
+        dict(won, opening_checkpoint="mismatch",
+             won_at_open="opening_mismatch"),
+    ]
+    summary = eval_suite.census_summary(rows)
+    assert summary["fights"] == 3
+    assert summary["certified"] == 1
+    assert summary["eligible"] == 2
+    assert summary["excluded_unusable"] == {"won_at_open": 1}
+    assert summary["won_at_open"] == {
+        "opening_match": 1, "opening_mismatch": 1}
+    markdown = eval_suite.census_markdown(
+        {"captures": "c", "build": "b", "summary": summary})
+    assert "**certified / eligible: 1 / 2** (50.0%)" in markdown
+    assert "excluded as unusable captures: 1 (`won_at_open` 1)" in markdown
+    assert ("| won before any player input: opening matches its one "
+            "checkpoint (not certifiable, #3756) | 1 / 2 |") in markdown
+    # A census with none prints no such row.
+    plain = eval_suite.census_summary(rows[:1])
+    assert plain["won_at_open"] == {}
+    assert "won before any player input" not in eval_suite.census_markdown(
+        {"captures": "c", "build": "b", "summary": plain})
+
+
+# ---------------------------------------------------------------------------
+# #3820: captures no engine change can certify
+# ---------------------------------------------------------------------------
+
+
+def test_a_capture_that_stops_before_the_first_input_is_recognised():
+    """No input, one opening checksum, a living player AND a living enemy."""
+    assert eval_suite.capture_has_no_input(_one_checksum_capture(12))
+    # No living enemy is the won-at-open shape, not this one, and vice versa.
+    assert not eval_suite.capture_has_no_input(_one_checksum_capture(None))
+    assert not eval_suite.capture_has_no_input(_one_checksum_capture(0))
+    assert not eval_suite.capture_won_at_open(_one_checksum_capture(12))
+    # Any recorded input, a second checksum, or no checksum is not it.
+    assert not eval_suite.capture_has_no_input(
+        _one_checksum_capture(12, events=[{"event_type": "GameAction"}]))
+    two = _one_checksum_capture(12)
+    two["checksums"] = two["checksums"] * 2
+    assert not eval_suite.capture_has_no_input(two)
+    assert not eval_suite.capture_has_no_input({"events": [], "checksums": []})
+    # A dead player, and a checksum that is not the opening checkpoint.
+    assert not eval_suite.capture_has_no_input(
+        _one_checksum_capture(12, player_hp=0))
+    assert not eval_suite.capture_has_no_input(
+        _one_checksum_capture(12, context="After enemy turn start"))
+
+
+def test_a_capture_with_no_input_is_judged_on_its_opening(
+        monkeypatch, tmp_path):
+    """#3820: a match takes the fight out of eligible. The control is the
+    mismatch: an opening Rust gets wrong is still a failure."""
+    unplayed = _one_checksum_capture(12)
+    for admits in (False, True):
+        match = _won_at_open_row(monkeypatch, tmp_path, unplayed, "match",
+                                 admits=admits)
+        assert match["no_recorded_input"] == "opening_match"
+        assert "won_at_open" not in match and "human" not in match
+        assert eval_suite.unusable_reason(match) == "no_recorded_input"
+
+        mismatch = _won_at_open_row(monkeypatch, tmp_path, unplayed,
+                                    "mismatch", admits=admits)
+        assert mismatch["no_recorded_input"] == "opening_mismatch"
+        assert "lockstep" not in mismatch
+        assert eval_suite.unusable_reason(mismatch) is None
+
+    # Refused before its opening, or a checksum the comparison did not read:
+    # Rust has shown nothing, so no verdict and the fight stays eligible.
+    for opening in ("entry_refused", "opening_refused", "unchecked"):
+        row = _won_at_open_row(monkeypatch, tmp_path, unplayed, opening)
+        assert "no_recorded_input" not in row
+        assert eval_suite.unusable_reason(row) is None
+
+    summary = eval_suite.census_summary([match, mismatch])
+    assert summary["no_recorded_input"] == {
+        "opening_match": 1, "opening_mismatch": 1}
+    assert summary["excluded_unusable"] == {"no_recorded_input": 1}
+    assert (summary["fights"], summary["eligible"], summary["certified"]) == (
+        2, 1, 0)
+    markdown = eval_suite.census_markdown(
+        {"captures": "c", "build": "b", "summary": summary})
+    assert "excluded as unusable captures: 1 (`no_recorded_input` 1)" \
+        in markdown
+    assert ("| capture stops before the first input: opening matches its "
+            "one checkpoint (not certifiable, #3820) | 1 / 2 |") in markdown
+    assert "capture stops before the first input" not in \
+        eval_suite.census_markdown({"captures": "c", "build": "b",
+                                    "summary": eval_suite.census_summary([])})
+
+
+def test_the_run_file_names_an_abandon_inside_the_fight():
+    """#3820: all three `.run` facts, or the sidecar says nothing."""
+    fight = _upload_fight("monster", "ENCOUNTER.LIVING_FOG_NORMAL")
+    run = {"was_abandoned": True,
+           "killed_by_encounter": "ENCOUNTER.LIVING_FOG_NORMAL",
+           "map_point_history": [[{}, {}], [{}]]}
+    assert eval_suite.upload_run_abandoned(run, 2, fight)
+    # An earlier node of the same abandoned run was fought to its end.
+    assert not eval_suite.upload_run_abandoned(run, 1, fight)
+    # A run that ended any other way, here a death in this very fight.
+    assert not eval_suite.upload_run_abandoned(
+        dict(run, was_abandoned=False), 2, fight)
+    # Abandoned from somewhere else: no encounter, or another one.
+    assert not eval_suite.upload_run_abandoned(
+        dict(run, killed_by_encounter="NONE.NONE"), 2, fight)
+    assert not eval_suite.upload_run_abandoned(
+        run, 2, _upload_fight("monster", "ENCOUNTER.NIBBITS_WEAK"))
+    assert not eval_suite.upload_run_abandoned({}, 0, fight)
+
+    plain = eval_suite.upload_sidecar({}, fight, "monster")
+    assert "run_abandoned_at_fight" not in plain
+    marked = eval_suite.upload_sidecar({}, fight, "monster", True)
+    assert marked == dict(plain, run_abandoned_at_fight=True)
+
+
+def _end_event(turn=1):
+    return {"event_type": "GameAction", "action": {
+        "type": "NetEndPlayerTurnAction", "turn_number": turn}}
+
+
+@pytest.fixture
+def _hp_checkpoints(monkeypatch):
+    """The real `_CensusChecks`; a checkpoint agrees when its player's HP is
+    Rust's, so a test can make any one checkpoint disagree."""
+    monkeypatch.setattr(eval_suite, "_deal_uid_map",
+                        lambda root, replay: (lambda index: index))
+
+    def check(state, native):
+        hero = next(c for c in native["creatures"]
+                    if c.get("player_id") is not None)
+        if hero["current_hp"] != state["player"]["hp"]:
+            raise ValueError("recorded replay differs from native player state")
+    monkeypatch.setattr(eval_suite, "check_native_checkpoint", check)
+    monkeypatch.setattr(eval_suite, "power_mismatch_rows",
+                        lambda state, native: [])
+
+
+def _replay_abandoned(events, checksums, run_abandoned=True, enemy_hp=395):
+    session = _LiveSession()
+    session.state["monsters"] = [
+        {"kind": "QUEEN", "hp": enemy_hp, "max_hp": 419, "block": 0}]
+    return eval_suite.replay_recorded_line(
+        session, session.state, {"events": events, "checksums": checksums},
+        run_abandoned=run_abandoned)
+
+
+def test_an_abandoned_run_explains_a_capture_that_stops_in_the_enemy_turn(
+        _hp_checkpoints):
+    """#3820: the capture ends on `After enemy turn start`, which the
+    capture-only rule refuses to read (a lost fight ends the same way). The
+    `.run` saying the player abandoned there is what settles it."""
+    events = [_potion_event(), _end_event()]
+    checksums = [_potion_checkpoint(395),
+                 _potion_checkpoint(395, context="After enemy turn start")]
+    with pytest.raises(eval_suite.LineDiverged) as caught:
+        _replay_abandoned(events, checksums, run_abandoned=False)
+    assert not isinstance(caught.value, eval_suite.CaptureTruncated)
+    assert caught.value.check == "combat_not_complete"
+
+    with pytest.raises(eval_suite.CaptureTruncated) as caught:
+        _replay_abandoned(events, checksums)
+    exc = caught.value
+    assert (exc.shape, exc.step, exc.native_checkpoints) == (
+        "run_abandoned", 2, 1)
+    row = {"checksummed": True, "opening_checkpoint": "match",
+           "stage": "rooted", "rust": "admitted"}
+    row.update(eval_suite.truncated_row_fields(row, exc))
+    assert eval_suite.unusable_reason(row) == "run_abandoned"
+    assert "lockstep" not in row
+    summary = eval_suite.census_summary([row, _truncated_row()])
+    assert summary["excluded_unusable"] == {
+        "capture_truncated": 1, "run_abandoned": 1}
+    assert summary["capture_truncated_shapes"] == {
+        "after_completed_action": 1, "run_abandoned": 1}
+    assert summary["human_divergence_classes"] == {}
+    markdown = eval_suite.census_markdown(
+        {"captures": "c", "build": "b", "summary": summary})
+    assert ("| of those, the run was abandoned inside the fight (#3820) "
+            "| 1 |") in markdown
+
+
+def test_an_abandoned_run_never_hides_a_disagreement(_hp_checkpoints):
+    """The controls: each is an abandoned run, and each stays a failure."""
+    end = _end_event()
+    enemy_turn = _potion_checkpoint(395, context="After enemy turn start")
+
+    def stays_a_failure(events, checksums, **kwargs):
+        with pytest.raises(eval_suite.LineDiverged) as caught:
+            _replay_abandoned(events, checksums, **kwargs)
+        assert not isinstance(caught.value, eval_suite.CaptureTruncated)
+        assert caught.value.check == "combat_not_complete"
+        return caught.value
+
+    # A completed-action checkpoint Rust disagreed with (native HP 33).
+    exc = stays_a_failure([_potion_event(), end],
+                          [_potion_checkpoint(395, player_hp=33), enemy_turn])
+    assert exc.checkpoint_mismatch["step"] == 1
+    # The game's combat was already won where the capture stops.
+    stays_a_failure([_potion_event(), end],
+                    [_potion_checkpoint(395),
+                     _potion_checkpoint(0, context="After enemy turn start")])
+    # A completed-action checkpoint no Rust action consumed.
+    stays_a_failure([_potion_event(), end],
+                    [_potion_checkpoint(395), _potion_checkpoint(395),
+                     enemy_turn])
+    # No completed-action checkpoint at all: nothing was verified.
+    stays_a_failure([end], [enemy_turn])
+    # The next turn's start, with the player alive, is a full checkpoint.
+    # Rust disagreeing with it (native HP 33) is an enemy-turn mismatch.
+    exc = stays_a_failure(
+        [_potion_event(), end],
+        [_potion_checkpoint(395),
+         _potion_checkpoint(395, player_hp=33,
+                            context="After player turn start")])
+    assert "final turn-start checksum differs" in exc.detail
+    # The abandon's kill landed before that checksum (player at 0 HP), but
+    # the enemy side still has to be Rust's: here the game's enemy is at 380.
+    stays_a_failure(
+        [_potion_event(), end],
+        [_potion_checkpoint(395),
+         _potion_checkpoint(380, player_hp=0,
+                            context="After player turn start")])
+
+
+def test_an_abandon_at_a_turn_start_compares_the_enemy_side(_hp_checkpoints):
+    """The player is at 0 HP in the final turn-start checksum (the abandon
+    killed them mid-draw); the enemies there are exactly Rust's."""
+    with pytest.raises(eval_suite.CaptureTruncated) as caught:
+        _replay_abandoned(
+            [_potion_event(), _end_event()],
+            [_potion_checkpoint(395),
+             _potion_checkpoint(395, player_hp=0,
+                                context="After player turn start")])
+    assert caught.value.shape == "run_abandoned"
+    # With the player alive there and agreeing, it is the capture-only
+    # truncation it always was, whatever the run file says.
+    with pytest.raises(eval_suite.CaptureTruncated) as caught:
+        _replay_abandoned(
+            [_potion_event(), _end_event()],
+            [_potion_checkpoint(395),
+             _potion_checkpoint(395, context="After player turn start")])
+    assert caught.value.shape == "at_player_turn_start"
+
+
+def test_the_census_offers_the_abandon_only_from_the_sidecar(
+        monkeypatch, tmp_path):
+    """#3820: `census_row` passes the `.run` fact on only when the sidecar
+    carries it and the opening agreed."""
+    played = _one_checksum_capture(12, events=[_end_event()])
+    seen = []
+
+    def line(session, document, replay, run_abandoned=False):
+        seen.append(run_abandoned)
+        raise eval_suite.LineDiverged(1, 1, "combat_not_complete", "x")
+
+    marked = {"encounter": "E", "node_type": "elite",
+              "run_abandoned_at_fight": True}
+    for sidecar, opening in ((marked, "match"), (marked, "mismatch"),
+                             (dict(marked, run_abandoned_at_fight=False),
+                              "match"),
+                             ({"encounter": "E", "node_type": "elite"},
+                              "match"),
+                             (None, "match")):
+        row = _won_at_open_row(monkeypatch, tmp_path, played, opening,
+                               admits=True, line=line, sidecar=sidecar)
+        assert row["human_class"] == "diverged:combat_not_complete"
+        assert eval_suite.unusable_reason(row) is None
+    assert seen == [True, False, False, False, False]
+
+
 # `eval_suite.py --self-test` is deliberately NOT invoked here: it re-derives
 # the Rust-only registry from `boundary.rs`, so running it from this lane would
 # smuggle the same untracked coupling back in. The `rust port` lane runs it
@@ -1469,6 +2058,45 @@ def test_verify_fails_on_a_stored_capture_with_the_wrong_bytes(tmp_path):
     assert len(report["stored_pair_problems"]) == 1
     assert eval_suite.CAPTURE_FILE in report["stored_pair_problems"][0]
     assert report["problems"] and report["rooted_checked"] == 0
+
+
+@rederive_optin
+def test_the_label_pass_alone_fails_on_a_stale_root_or_line(tmp_path):
+    """`verify --no-digests`, the `rust port` lane's form: one walk, and it
+    still names a stored root or step digest the engine no longer derives.
+
+    f8db2d95e9c641ba's root went stale this way: #3810 moved the order its
+    Test Subject acquires Vulnerable and Weak in, and no lane re-derived it.
+    """
+    fight, directory = _one_fixture_tree(tmp_path)
+    clean = _tool("verify", "--eval-dir", str(tmp_path), "--no-digests")
+    assert clean.returncode == 0, clean.stdout + clean.stderr
+    report = json.loads(clean.stdout)
+    assert "problems" not in report and report["labels_checked"] == 1
+    assert report["label_differences"] == []
+
+    def stale(name, mutate):
+        original = (directory / name).read_text()
+        document = json.loads(original)
+        mutate(document)
+        (directory / name).write_text(json.dumps(document, indent=1) + "\n")
+        result = _tool("verify", "--eval-dir", str(tmp_path), "--no-digests")
+        (directory / name).write_text(original)
+        assert result.returncode == 1, result.stdout + result.stderr
+        return json.loads(result.stdout)["label_differences"]
+
+    def other_hp(document):
+        document["player"]["hp"] += 1
+
+    def other_digest(line):
+        line["step_digests"][0] = "0" * 64
+
+    assert stale("entry.canonical.json", other_hp) == [
+        f"{fight['id']}: entry.canonical.json: changed"]
+    assert stale("human_line.json", other_digest) == [
+        f"{fight['id']}: human_line.json.step_digests: changed"]
+    both = _tool("verify", "--no-digests", "--no-labels")
+    assert both.returncode == 2 and "nothing" in both.stderr
 
 
 @rederive_optin

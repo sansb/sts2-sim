@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "SUM91EUXZMGY",
+ "node": 2,
+ "encounter": "ENCOUNTER.FUZZY_WURM_CRAWLER_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "11014b0083d019acb57907c2296fe728020b3ea7b0b6002346a0c21f91d5985a",
+ "save_sha256": "49c16c0e245299932e6056f8f2d144cba7303012639d72154b86b759c0a8e8fe",
+ "entry_digest": "e7df1138b77aba7a2b89751dc78cde8715d8ff23b5666dde5d10ac4fcc4e8cd5",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

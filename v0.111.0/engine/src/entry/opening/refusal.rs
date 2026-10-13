@@ -158,11 +158,10 @@ pub enum OpeningRefusal {
     /// whose relative order the oracle refuses to guess (#2827).
     ///
     /// Native dispatches `Hook::AfterPlayerTurnStart` relic listeners in
-    /// `Player.Relics` order, which the run payload does not vouch for, while
-    /// both engines run the hook as one fixed suffix
-    /// (`combat_sim._continue_after_toasty_mittens`,
-    /// `engine::relics::continue_after_toasty_mittens`). `start_combat` refuses
-    /// the co-ownerships where that fixed order is observable: Gambling Chip's
+    /// `Player.Relics` order, which a `.run`-only payload does not vouch for.
+    /// On such an inventory the engine runs the hook's relic bodies in one
+    /// fixed sequence (`engine::relics::relic_walk_order`), and this refuses
+    /// the co-ownerships where that sequence is observable: Gambling Chip's
     /// and Toasty Mittens' Hand choices, the generation sources' Hand writes,
     /// Bone Tea's second pass, and a second enemy-damage body or Royal Poison
     /// beside Festive Popper. `entry::opening`'s
@@ -170,10 +169,8 @@ pub enum OpeningRefusal {
     /// `owner` is the modeled relic whose body the gate protects; `peers` are
     /// the co-owned relics that make the order observable.
     ///
-    /// Since #2884 some pairs read their order from a vouched inventory instead:
-    /// Choices Paradox before Bellows, and Festive Popper beside Toasty Mittens
-    /// or Gambling Chip in either order. For the first pair the refusal also covers a vouched
-    /// inventory whose recorded order (Bellows first) this engine does not run.
+    /// A vouched inventory never meets it (#3635): the engine runs the bodies
+    /// in the recorded order.
     TurnStartRelicOrderUnrecorded {
         owner: &'static str,
         peers: Vec<String>,
@@ -195,10 +192,10 @@ pub enum OpeningRefusal {
     /// (`engine::relics::turn_one_all_enemy_debuffs`), and what is missing is an
     /// ordering fact about the inventory — the same distinction
     /// [`Self::RelicDispatchOrderUnmodeled`] draws for `AfterCardPlayed`.
-    /// `entry.relic_entry.dispatch_ordered` is a possible future narrowing and
-    /// is deliberately not read here: the oracle refuses unconditionally, and
-    /// matching it keeps this port on the over-refusal side of a fact no
-    /// witness has yet pinned.
+    /// Since #3756 the gate reads `entry.relic_entry.dispatch_ordered`: a
+    /// vouched inventory is the recorded order, the engine runs the bodies in
+    /// it, and the refusal reaches only a root built without that provenance
+    /// (`opening::turn_one_debuff_artifact_is_unambiguous` has the IL).
     TurnOneDebuffPartialArtifact {
         /// The owned debuff relics, sorted — the `len` the oracle compares.
         relics: Vec<String>,
@@ -421,6 +418,16 @@ pub enum OpeningRefusal {
     /// variants (which the fight-level variant axis does not represent),
     /// refuses here by name rather than entering combat as a different card.
     CardEntryVariantNotModeled { card: &'static str, detail: String },
+    /// A deck card that would change the deck on entering this room, in a
+    /// case the opening cannot settle.
+    ///
+    /// `CARD.DOWSING` counts `?` rooms and, on the fifth, is replaced in the
+    /// deck by an Abundance before the combat deck is built (#3791,
+    /// `entry::opening::dowsing_before_room_entered` carries the IL). The
+    /// opening applies that when the save proves the room counts and nothing
+    /// answers the card joining the deck. Otherwise a Dowsing one room short
+    /// refuses here rather than open with a deck the game may not have.
+    CardRoomEntryTransformUnmodeled { card: &'static str, detail: String },
     /// Card identity allocation diverged from the oracle's.
     ///
     /// The opening stamps physical-card uids before the hooks, in the order
@@ -544,6 +551,9 @@ impl OpeningRefusal {
             Self::InnateKeywordProvenance { .. } => "innate_keyword_provenance".to_string(),
             Self::CardEntryPropsNotExact { .. } => "card_entry_props_not_exact".to_string(),
             Self::CardEntryVariantNotModeled { .. } => "card_entry_variant_not_modeled".to_string(),
+            Self::CardRoomEntryTransformUnmodeled { .. } => {
+                "card_room_entry_transform_unmodeled".to_string()
+            }
             Self::CardIdentityAllocationDiverged { .. } => {
                 "card_identity_allocation_diverged".to_string()
             }
@@ -768,6 +778,12 @@ impl fmt::Display for OpeningRefusal {
                 "{card} entering props are outside the exact native domain \
                  start_combat validates: {detail} (SOLVER_INVARIANTS.md I5/I8)"
             ),
+            Self::CardRoomEntryTransformUnmodeled { card, detail } => write!(
+                f,
+                "{card} is one room short of transforming in the deck, and \
+                 whether or how it does on entering this room is not modeled: \
+                 {detail} (SOLVER_INVARIANTS.md I5)"
+            ),
             Self::CardEntryVariantNotModeled { card, detail } => write!(
                 f,
                 "{card} carries a saved per-instance variant that selects a \
@@ -906,6 +922,10 @@ mod tests {
             },
             OpeningRefusal::CardEntryVariantNotModeled {
                 card: "MAD_SCIENCE",
+                detail: String::new(),
+            },
+            OpeningRefusal::CardRoomEntryTransformUnmodeled {
+                card: "DOWSING",
                 detail: String::new(),
             },
             OpeningRefusal::CardIdentityAllocationDiverged {

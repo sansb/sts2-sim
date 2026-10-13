@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "EEFD6ZCJ01DV",
+ "node": 7,
+ "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "3dba8b52332dbcb9dfb2027efaf4358cb572974345bf5d57b9277227c63dd02b",
+ "save_sha256": "28bf8b690f33c5039f2edacddf1995b15bf42f28692ba5e73baa93b45f0bd113",
+ "entry_digest": "b7cb1152dd94fd1f01ec58149c04a4c1f24676e800b5940f53dc865fc4068987",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

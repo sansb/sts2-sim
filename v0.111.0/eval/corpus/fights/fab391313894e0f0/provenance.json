@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "39D29WG6HMEK",
+ "node": 13,
+ "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "bad08082897c94d24ad3bf8f825b1f1fa43454fa513fb1e36a2de544ec81c2c4",
+ "save_sha256": "a11216e9248be453f6151676238af6808bb831f08f70563b7076227f1a153e77",
+ "entry_digest": "dd57bf3083f4004b72f1a407858afc53bbc71f43fabb8451fac865624ab69d60",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

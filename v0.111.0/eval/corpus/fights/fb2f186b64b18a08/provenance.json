@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "DZW3T5ASVVUP",
+ "node": 16,
+ "encounter": "ENCOUNTER.VANTOM_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "43c9442aba7f8c129634ed2479b4070344a7999a207d9964ef997b9dc55cccfa",
+ "save_sha256": "1aa8d05242a43b44e7fc6cd1cf0851dc50a028a9259d984ed2b905dfdbe8e953",
+ "entry_digest": "7b2a779177ee62d362c4451392f6eac295d2dba8d83d33e77f3f0900d6e21e09",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

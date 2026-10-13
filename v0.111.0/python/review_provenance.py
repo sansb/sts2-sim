@@ -22,11 +22,6 @@ from mcr_parser import McrDecoder
 from relay_parser import FightState, RunSummary, parse_run
 
 
-PROVENANCE_TIERS = frozenset((
-    "run_only", "provenance_resolved", "provenance_unresolved",
-    "provenance_legacy",
-))
-
 _COUNTER_OVERRIDES = {
     "Shuffle": "shuffle",
     "CombatCardSelection": "combat_card_selection",
@@ -340,17 +335,6 @@ def capture_identity_admitted(
     except _AssociationError:
         return False
     return bound is None or history_depth < bound
-
-
-def parse_lineage(value: Any) -> tuple[tuple[int, int], ...]:
-    """A lineage from JSON (``[[source_start_time, source_floor], ...]``),
-    validated by the same rule ``analyze_bundle`` applies; raises
-    ``ValueError`` on any other shape."""
-
-    if not isinstance(value, list):
-        raise ValueError("lineage must be a JSON array of links")
-    _accepted_start_times(None, value)
-    return tuple((link[0], link[1]) for link in value)
 
 
 class _AssociationError(ValueError):

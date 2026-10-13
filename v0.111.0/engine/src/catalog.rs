@@ -23,9 +23,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::content_tables::{
-    Arg, CardRow, CardType, MULTIPLAYER_ONLY_CANPLAY_CARDS, Move, Repeats, Step,
-    TEAMMATE_REQUIRED_CANPLAY_CARDS, card_has_native_unplayable_keyword, card_row, monster_loop,
-    random_moves,
+    Arg, CardRow, CardType, Move, Repeats, Step, card_has_native_unplayable_keyword, card_row,
+    monster_loop, random_moves,
 };
 use crate::hooks::{HookRefusal, HookTable};
 use crate::hot::PileId;
@@ -966,8 +965,7 @@ impl CardSpec {
             playable: row.playable,
             native_unplayable: card_has_native_unplayable_keyword(row.id, row.upgrade),
             selects: row.selects,
-            solo_unplayable: MULTIPLAYER_ONLY_CANPLAY_CARDS.contains(&row.id)
-                || TEAMMATE_REQUIRED_CANPLAY_CARDS.contains(&row.id),
+            solo_unplayable: crate::engine::play::card_is_solo_unplayable(row.id),
             row,
         }
     }
@@ -1393,6 +1391,15 @@ impl Catalog {
     /// (#2970). See [`crate::steps::neutral::crossbow_owner_attack_pool`].
     pub(crate) fn crossbow_attack_pool(&self, owner: RewardPool) -> Vec<CardId> {
         crate::steps::neutral::crossbow_owner_attack_pool(
+            owner,
+            self.splash_unlock_epochs.as_deref(),
+        )
+    }
+
+    /// Infernal Blade's pool for `owner` under this fight's recorded profile
+    /// (#3816). See [`crate::steps::neutral::infernal_blade_owner_attack_pool`].
+    pub(crate) fn infernal_blade_attack_pool(&self, owner: RewardPool) -> Vec<CardId> {
+        crate::steps::neutral::infernal_blade_owner_attack_pool(
             owner,
             self.splash_unlock_epochs.as_deref(),
         )
@@ -2088,6 +2095,15 @@ impl CatalogBuilder {
         )
     }
 
+    /// Infernal Blade's pool for `owner` under this fight's recorded profile
+    /// (#3816). See [`crate::steps::neutral::infernal_blade_owner_attack_pool`].
+    pub(crate) fn infernal_blade_attack_pool(&self, owner: RewardPool) -> Vec<CardId> {
+        crate::steps::neutral::infernal_blade_owner_attack_pool(
+            owner,
+            self.splash_unlock_epochs.as_deref(),
+        )
+    }
+
     /// Metamorphosis' `FilterForCombat` Attack projection of the owner pool.
     pub(crate) fn metamorphosis_attack_pool(&self, owner: RewardPool) -> Vec<CardId> {
         crate::steps::neutral::metamorphosis_owner_attack_pool(
@@ -2158,6 +2174,12 @@ impl CatalogBuilder {
 
     /// Mark the source-absent live Furnace carrier as a future Forge command.
     pub(crate) fn mark_live_furnace_reachable(&mut self) {
+        self.forge_command_reachable = true;
+    }
+
+    /// Mark a reachable King's Courage as a future Forge command (#3756): the
+    /// potion's whole body is `ForgeCmd::Forge`, and no card row carries it.
+    pub(crate) fn mark_potion_forge_reachable(&mut self) {
         self.forge_command_reachable = true;
     }
 
@@ -2594,25 +2616,6 @@ impl CatalogBuilder {
             )?;
         }
         Ok(atom)
-    }
-
-    /// Intern every result of one reachable Jackpot level.
-    ///
-    /// Jackpot samples with replacement and does not Exhaust, so its complete
-    /// owner pool at the source level is the smallest exact cold closure.
-    pub(crate) fn intern_jackpot_full_closure(
-        &mut self,
-        upgrade: u8,
-        jackpot_pool: &[CardId],
-    ) -> Result<(), CatalogError> {
-        for id in jackpot_pool {
-            self.intern_reachable(CardIdentity {
-                id: *id,
-                upgrade,
-                enchantment: None,
-            })?;
-        }
-        Ok(())
     }
 
     /// Intern every repeatedly-upgraded Attack identity reachable by
@@ -3305,7 +3308,13 @@ impl CatalogBuilder {
         // CardPlay Draw clauses above; a selecting Attack does not.
         let history_course_dupe_can_suspend =
             selecting_attack_reachable && self.hooks.owns(crate::ids::RelicId::RelicHistoryCourse);
+        // Game Piece's and Iron Club's AfterCardPlayed tail Draws are
+        // receipt-owned the same way (#3822). Neither has a latch.
+        let after_card_played_relic_draw_can_suspend = cardplay_draw_hook_can_suspend
+            && (self.hooks.owns(crate::ids::RelicId::RelicGamePiece)
+                || self.hooks.owns(crate::ids::RelicId::RelicIronClub));
         let requires_action_replay = requires_action_replay
+            || after_card_played_relic_draw_can_suspend
             || history_course_dupe_can_suspend
             || vicious_plain_vulnerable_can_suspend
             || centennial_puzzle_draw_can_suspend

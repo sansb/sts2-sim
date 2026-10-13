@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "UE7YGG9XC3ZB",
+ "node": 20,
+ "encounter": "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "d7a8ffaa72aea86742e7195de306a97b69d62ff68feebfeb7670c01de510f1d3",
+ "save_sha256": "0e44d8ed78e41c808867c36ec5de8894082ba6004a2d05ff442d3c5ba619aff5",
+ "entry_digest": "12b3e1a3cef86999ed9df893a4fb4ba95d6a853f6e0bfec0491bf607b2ad4a5a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

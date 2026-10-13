@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Z2WCCF4NW622",
+ "node": 16,
+ "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "13fdac04ac3287d57dd210812d2093eb805d840588bbf9f9389f5cfb3f3459a4",
+ "save_sha256": "7bfad8cd6e76bbbb6beb7bca76046b2d7f8137fbadc1a1f36940109545c7cc74",
+ "entry_digest": "7e9a4fb834013f20300ed2696d0daff70d0cb152dbe9fef4ffddc6e717b3a7ba",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

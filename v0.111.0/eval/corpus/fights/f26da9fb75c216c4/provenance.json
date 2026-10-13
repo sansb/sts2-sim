@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "EXPZBNCDRDQ4",
+ "node": 12,
+ "encounter": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 9,
+ "capture_sha256": "090c2dae80e5aeb43de3c687d6c03fa422745c05d6922bfa538ccf346b92c20c",
+ "save_sha256": "63ff9764eaf9a51041ff027f200002e14d7e68aa257e3e60e13df8edc0fa4f97",
+ "entry_digest": "de6c6665b296503a0d2d6ea29ec088a34a529a33d9bc082f90c3de051b9a5710",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

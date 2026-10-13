@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "4B0BH2KV8TM9",
+ "node": 13,
+ "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "f0b7a956caceee57f46964f3ded3e72349ebcbac832101f88354d22d6b506d04",
+ "save_sha256": "c4fb23c33030e1be23ff2cecd66fbe7ecc0444aee7c1d33839ccb0cc1ec81662",
+ "entry_digest": "a6e52bc1e26d4855a99f3b1efe697251c8e552c841ec02406dbdd0ee09faab85",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

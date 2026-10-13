@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "WQXLUF17VCRY",
+ "node": 45,
+ "encounter": "ENCOUNTER.AXEBOTS_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "53177d9d05c95f7640178a8dcb7ce23e7a8a165378a3297108118cbf3de84607",
+ "save_sha256": "ce50576f28d9219a25b727997e36369b02936420a233594c30308b657dbc28a0",
+ "entry_digest": "88d1f29ac5c8d9282bf7da4f6d9f504cb78fa10020ea399c96fa19711b284769",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

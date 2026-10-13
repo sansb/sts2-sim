@@ -245,6 +245,9 @@ pub enum Frame {
     /// Deferred: latch tuples and a card payload.
     AfterCardPlayed(Deferred),
     /// Deferred: latch tuples, a card reference tuple, and an object slot.
+    /// A relic's AfterCardPlayed Draw that parks on a player choice needs no
+    /// frame of this kind: the rest of the walk is a pure continuation, owned
+    /// by the action's receipt (#3822, `engine::draw::game_piece_draw`).
     AfterCardPlayedRelic(Deferred),
     /// One frozen acquisition-ordered AfterPowerAmountChanged listener walk.
     AfterPowerAmountChanged {

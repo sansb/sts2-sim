@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "2V9CEL0VBUKB",
+ "node": 18,
+ "encounter": "ENCOUNTER.TUNNELER_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "c5c64f762ab312a168956f44cf043f704b7f4efd32811719216c8d9603e4dac8",
+ "save_sha256": "c1b8c97c5fcf39fe4ab27e1048bec99d4a57b9c84f9788d9d2ee9e878b92efb7",
+ "entry_digest": "52279f3f539cef15a1891fb2a39b3df0df59cf8e77340bc69d0aab09b7af3608",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

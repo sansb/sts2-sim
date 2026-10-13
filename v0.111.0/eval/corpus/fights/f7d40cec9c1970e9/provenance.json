@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "R7NPTLWR6H22",
+ "node": 1,
+ "encounter": "ENCOUNTER.NIBBITS_WEAK",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "a8083ea73b169e4298e7906751d5639ab1014fff2a8b9145a5a23130315d229d",
+ "save_sha256": "53d7fa4dc90842ee780216917dbb82e528358b37d57a451cee1a5015a67d5081",
+ "entry_digest": "8eb7f9e95fa2261708cf644de235db00ae5f6bff359fc6de745dc792397c024e",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

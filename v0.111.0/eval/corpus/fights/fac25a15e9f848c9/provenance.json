@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "5QDR1YYSVUJN",
+ "node": 47,
+ "encounter": "ENCOUNTER.TEST_SUBJECT_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "2476968d3f8f4d487cf089de7ccfc42031c0dce0def60090c200f8be1695bcf2",
+ "save_sha256": "89f34a08c898976cf2d23a0e160f96833165c14d520eaad30c12e6e793f65814",
+ "entry_digest": "35ba55b0bfcc460a78abcdeb5f1bd8f94d2425946f8d5ff58ef62fc950a6ca62",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

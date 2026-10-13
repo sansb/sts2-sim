@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "LMWKPC7VYF5P",
+ "node": 16,
+ "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "07d1ab87a0fa5905ec9b4411b5724574567a6fc41eeb8608aca0f0428415ceeb",
+ "save_sha256": "5264429e3cc38ddeff170553f4566c760988bcca3bfa2c02bf46111acc04138c",
+ "entry_digest": "41b5c61d56f19eca765db7bd1ad2998ff3977363949db0225c3eedeb8d0f3962",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

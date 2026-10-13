@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MW6WGHZ9XF82",
+ "node": 13,
+ "encounter": "ENCOUNTER.OVERGROWTH_CRAWLERS",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "7cc202d76c4becbf45d5d3b2586eab9d1762c6b6924f484aae9a1c5a5bbca060",
+ "save_sha256": "198ff985af1bf9460ed9d9883ff2ab960316790a811cbe0d0a557ad3e01e435f",
+ "entry_digest": "ab8232fdebb603db575c3a4c6f85d321744ec65c4c4320ab513d2098906b3ad3",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

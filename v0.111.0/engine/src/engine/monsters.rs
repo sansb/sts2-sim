@@ -543,6 +543,20 @@ fn hopper_deck_row_payload_is_exact(
 /// The Scythe's live and master damage growth remain equal.  Ordinary live
 /// objects may still diverge through Ringing/Bound/Hexed, local keywords,
 /// costs, and replay state without mutating the master row.
+///
+/// A master row may have no combat object. Three things leave one behind:
+/// the returned row, a played Power, and a transform (#3856).
+/// `CardCmd/<Transform>d__13::MoveNext` RVA `0x3e0ae0` takes the original
+/// out of its pile (`RemoveFromCurrentPile`, IL_0186-IL_018c) and out of the
+/// combat (`CardModel::RemoveFromState` RVA `0x7dbb2`, IL_0a22); it reaches
+/// the run deck only for an original whose pile is the Deck itself
+/// (`CardPile::get_Type` IL_0316, `Hook::ModifyCardBeingAddedToDeck`
+/// IL_032f). So the transformed card's `DeckVersion` stays in the run deck
+/// with nothing in combat pointing at it. A transform is open to every card
+/// type, so an absent row that is neither the returned one nor a Power is
+/// admitted exactly when a transform recorded it
+/// ([`note_hopper_transformed`], `HopperDeckState::transformed`, the
+/// document's `hopper_transformed_rows`).
 pub(crate) fn thieving_hopper_deck_payload_is_exact(
     state: &HotState,
     catalog: &crate::catalog::Catalog,
@@ -586,14 +600,51 @@ pub(crate) fn thieving_hopper_deck_payload_is_exact(
                         || catalog
                             .spec(row.card.atom)
                             .is_some_and(|spec| spec.row.card_type == CardType::Power)
+                        || deck.transformed.binary_search(&row.card.uid).is_ok()
                 }
             }
     });
+    // Each transformed uid names one master row that no pile holds.
+    let transformed_rows_exact = deck.transformed.windows(2).all(|pair| pair[0] < pair[1])
+        && deck.transformed.iter().all(|uid| {
+            deck.master.iter().any(|row| row.card.uid == *uid)
+                && !PileId::ALL
+                    .into_iter()
+                    .flat_map(|pile| state.piles.get(pile).as_slice())
+                    .any(|card| card.uid == *uid)
+        });
     all_rows_exact
+        && transformed_rows_exact
         && deck
             .history
             .iter()
             .all(|event| hopper_deck_row_payload_is_exact(&event.row, catalog))
+}
+
+/// Record that a transform took the combat object of master row `uid` out
+/// of combat (#3856). A card with no master row (a generated card, or any
+/// card outside a Thieving Hopper fight) records nothing.
+///
+/// `CardCmd/<Transform>d__13::MoveNext` RVA `0x3e0ae0` removes the original
+/// from its pile (IL_0186-018c) and from the combat (IL_0a22) and reaches
+/// run-deck state only for a Deck-pile original (IL_0316, IL_032f), so the
+/// `DeckVersion` object is untouched and unreferenced afterwards. The
+/// engine's transform writers are closed and each calls this where it drops
+/// the original: `cards::bulk_transform_fixed_same_pile` (Begone, Charge,
+/// Guards, Seance, Compact), Primal Force, and Entropy.
+pub(crate) fn note_hopper_transformed(state: &mut HotState, uid: u32) {
+    let owns_row = state
+        .card_states
+        .hopper()
+        .is_some_and(|deck| deck.master.iter().any(|row| row.card.uid == uid));
+    if !owns_row {
+        return;
+    }
+    if let Some(deck) = state.card_states.hopper_mut()
+        && let Err(at) = deck.transformed.binary_search(&uid)
+    {
+        deck.transformed.insert(at, uid);
+    }
 }
 
 /// Keep Genetic Algorithm's persistent DeckVersion object synchronized with
@@ -658,23 +709,19 @@ pub(crate) fn update_hopper_scythe_master(
     Ok(())
 }
 
-/// Whether `uid` still owns one persistent Hopper DeckVersion row.
-/// Transform commands cannot replace such a combat object without also
-/// replacing the run-deck object, which R44 deliberately does not invent.
-pub(crate) fn hopper_master_owns_uid(state: &HotState, uid: u32) -> bool {
-    state
-        .card_states
-        .hopper()
-        .is_some_and(|deck| deck.master.iter().any(|row| row.card.uid == uid))
-}
-
-/// Whether `uid` is a combat copy still linked to a persistent run-deck
-/// object the engine carries: a Thieving Hopper master row, or an ordinary
-/// fight's The Scythe `DeckVersion` link (#2941). A transform would have to
-/// decide what becomes of that object, which no port has read, so every
-/// transform site refuses such a copy by name.
-pub(crate) fn deck_version_link_owns_uid(state: &HotState, uid: u32) -> bool {
-    hopper_master_owns_uid(state, uid) || state.card_states.scythe_deck_row(uid).is_some()
+/// Whether a transform of `uid` is still refused for the run-deck object it
+/// is linked to: an ordinary fight's The Scythe `DeckVersion` link (#2941),
+/// whose growth ledger no port has read against a transform.
+///
+/// A Thieving Hopper master row is not one of these (#3856). The transform
+/// leaves the run-deck object where it is
+/// ([`thieving_hopper_deck_payload_is_exact`] has the IL), the replacement
+/// is a fresh card with no `DeckVersion`, and the theft takes only cards
+/// that have one (`ThievingHopper/<>c::<ThieveryMove>b__36_0` RVA
+/// `0x370c1e`, `get_DeckVersion` IL_0002). In the engine that is a master
+/// row whose uid no pile holds any more and a replacement uid no row names.
+pub(crate) fn deck_version_link_refuses_transform(state: &HotState, uid: u32) -> bool {
+    state.card_states.scythe_deck_row(uid).is_some()
 }
 
 fn hopper_owner_shape_is_exact(state: &HotState, owner: &HotMonster) -> bool {
@@ -1546,8 +1593,9 @@ pub(crate) fn temp_strength_provenance_is_recorded(monster: &HotMonster) -> bool
 ///   `0x33cd60` IL_0056's `isinst BowlbugRock` succeeds, so the listener sets
 ///   the `_isOffBalance` latch that #2662 and slice A already model, and the
 ///   clone only moves the amount (see [`imbalanced_amount`]);
-/// * an owner whose generic stun is representable at **every** position its
-///   loop can reach ([`generic_stun_owner_state_is_representable`]), because
+/// * one of [`IMBALANCED_GENERIC_CARRIER_KINDS`] whose generic stun is
+///   representable at **every** position its loop can reach
+///   ([`generic_stun_owner_state_is_representable`]), because
 ///   IL_0068-IL_006f then awaits `CreatureCmd::Stun(Owner, null)`;
 /// * a `SlumberingBeetle` (#2647), whose only dealer path is its awake
 ///   ROLL_OUT_MOVE and whose parked telegraph there is determined
@@ -1568,8 +1616,31 @@ pub(crate) fn imbalanced_clone_recipient_is_representable(
     monster.powers.value(PowerId::Thorns) == 0
         && (monster.kind == MonsterKind::BowlbugRock
             || monster.kind == MonsterKind::SlumberingBeetle
-            || generic_stun_owner_state_is_representable(catalog, monster))
+            || (IMBALANCED_GENERIC_CARRIER_KINDS.contains(&monster.kind)
+                && generic_stun_owner_state_is_representable(catalog, monster)))
 }
+
+/// The generic stun owners a `Misery` clone of `ImbalancedPower` may land on.
+///
+/// Until #3823 this gate read the whole generic stun owner set, which was
+/// these five kinds. #3823 widens that set to every plain-cycle machine for
+/// Whistle's `CreatureCmd::Stun(target, null)`; the clone gate deliberately
+/// does not follow. A carrier's stun is installed inside its **own** attack
+/// (`ImbalancedPower/<AfterDamageGiven>d__4::MoveNext` `0x33cd60`
+/// IL_0020-IL_006f), where what is left of a multi-hit move and the other
+/// `AfterDamageGiven` listeners on the owner are part of the reading, and
+/// those were established for these kinds only (#2647, #3258). The only
+/// native source of the power is a Bowlbug Rock
+/// (`BowlbugRock/<AfterAddedToRoom>d__22::MoveNext` `0x353e30`), which shares
+/// an encounter with the three Bowlbug workers and the Slumbering Beetle and
+/// with nothing else, so no root loses anything to the narrower list.
+const IMBALANCED_GENERIC_CARRIER_KINDS: [MonsterKind; 5] = [
+    MonsterKind::BowlbugEgg,
+    MonsterKind::BowlbugNectar,
+    MonsterKind::BowlbugSilk,
+    MonsterKind::MechaKnight,
+    MonsterKind::OwlMagistrate,
+];
 
 /// The telegraph a generic `CreatureCmd::Stun(creature, null)` parks.
 ///
@@ -1581,22 +1652,60 @@ pub(crate) fn imbalanced_clone_recipient_is_representable(
 /// still the running or telegraphed move — i.e. exactly the row `loop_pos`
 /// names.
 ///
-/// `None` — a refusal, never a guess — whenever that identification is not
-/// uniquely determined:
+/// `None` — a refusal, never a guess — when there is no row to name:
 ///
-/// * the kind has no deterministic loop at all (random AI, or a kind whose
-///   executable table is the private native loop). `StateLog` for a machine
-///   passing through a `RandomBranchState` records only the first loggable
-///   state of the walk (`FindNextMoveState` `0x78e94` IL_009c–IL_00d6), so
-///   `loop_pos` and `StateLog.Last()` are not established to coincide there
-///   (#2647 open question 2);
+/// * the kind has no generated loop at all (a kind whose executable table is
+///   the private native loop), so `loop_pos` is not what carries its
+///   telegraph. A **random table** in
+///   [`GENERIC_STUN_RANDOM_TABLE_KINDS`] answers
+///   [`MonsterFollowUp::ParkedTelegraph`] for `loop_pos` 0: its telegraph is
+///   the row `random_ai.next` names, which the document carries
+///   (`next_move`), and the stun moves neither;
 /// * `loop_pos` is out of range for that loop;
-/// * the row's move name is outside [`MonsterFollowUp`]'s closed vocabulary;
-/// * the name occurs more than once in the loop, so the parked id does not
-///   identify one index to restore. Mirrors frozen
-///   `_monster_loop_state_index` (frozen Python, deleted #2827).
+/// * for a **named** loop only, the name occurs more than once in it, so the
+///   parked id would not identify one row
+///   (`no_generated_loop_repeats_a_move_name` pins that none does).
+///
+/// **Which token names it (#3823).** A kind whose every row is in the named
+/// vocabulary keeps the row's name, as before: the Queen roster, the Bowlbug
+/// workers, Corpse Slug, Mecha Knight and Owl Magistrate, pinned by
+/// `the_named_parked_telegraph_kinds_are_pinned`. Every other loop answers
+/// [`MonsterFollowUp::ParkedTelegraph`] for an in-range `loop_pos`: the
+/// follow-up is then "the row `loop_pos` names", which the document already
+/// carries (the generic resume never maps a name back to an index; it leaves
+/// `loop_pos` where it is).
+///
+/// That `StateLog.Last()` is the telegraphed `MoveState` for **every** machine
+/// shape, not only a plain cycle, is IL: `FindNextMoveState` `0x78e94`
+/// IL_009c-IL_00d6 logs the first state of the walk whose
+/// `ShouldAppearInLogs` holds, and both branch states answer false
+/// (`RandomBranchState::get_ShouldAppearInLogs` `0x79110`,
+/// `ConditionalBranchState::get_ShouldAppearInLogs` `0x78d8f`), so the walk
+/// logs the `MoveState` it lands on. The one way the two part company is a
+/// state installed by `SetMoveImmediate`/`ForceCurrentState`, which is never
+/// logged; every kind with such a writer is in
+/// [`GENERIC_STUN_BESPOKE_KINDS`].
 pub(crate) fn parked_telegraph(kind: MonsterKind, loop_pos: i32) -> Option<MonsterFollowUp> {
-    parked_telegraph_in(crate::content_tables::monster_loop(kind)?, loop_pos)
+    if crate::content_tables::random_moves(kind).is_some() {
+        // A random table (#3823): the telegraph is the row `random_ai.next`
+        // names, and `loop_pos` is always 0 (`valid_random_ai_state`).
+        return (GENERIC_STUN_RANDOM_TABLE_KINDS.contains(&kind) && loop_pos == 0)
+            .then_some(MonsterFollowUp::ParkedTelegraph);
+    }
+    let rows = crate::content_tables::monster_loop(kind)?;
+    if loop_rows_are_all_named(rows) {
+        return parked_telegraph_in(rows, loop_pos);
+    }
+    let index = usize::try_from(loop_pos).ok()?;
+    rows.get(index).map(|_| MonsterFollowUp::ParkedTelegraph)
+}
+
+/// Does every row of this loop resolve to its own named [`MonsterFollowUp`]?
+fn loop_rows_are_all_named(rows: &'static [crate::content_tables::Move]) -> bool {
+    (0..rows.len()).all(|index| {
+        parked_telegraph_in(rows, index as i32)
+            .is_some_and(|follow_up| follow_up != MonsterFollowUp::ParkedTelegraph)
+    })
 }
 
 /// [`parked_telegraph`] over an explicit loop.
@@ -1624,38 +1733,293 @@ fn parked_telegraph_in(
 /// give one wire state two readers. `TerrorEel` is the sharpest case: for it
 /// `STUNNED` with no follow-up is the Terror chain (#2647 §5.7), and nothing
 /// may make a generic parked telegraph wire-indistinguishable from it.
-const GENERIC_STUN_BESPOKE_KINDS: [MonsterKind; 10] = [
+///
+/// #3823 adds the kinds whose native machine has a **second writer of the
+/// move** besides the roll, found by scanning the whole v0.111.0 assembly for
+/// callers of `MonsterModel::SetMoveImmediate` `0x825f0`,
+/// `MonsterMoveStateMachine::ForceCurrentState` `0x78e7f`,
+/// `CreatureCmd::Stun` `0x132b2c` and `get_StateLog` `0x78d9a`, and for
+/// `set_MustPerformOnceBeforeTransitioning` inside a
+/// `GenerateMoveStateMachine`. Such a state is installed without being
+/// logged, so `StateLog.Last()` no longer names the move the monster is
+/// showing, or it refuses to be left before it has performed, so
+/// `SetMoveImmediate(state, force: false)` drops the stun
+/// (`0x825f0` IL_000c-IL_001c). Each needs its own reading:
+///
+/// * `EyeWithTeeth`, `Parafright` — `IllusionPower/<AfterDeath>d__18::
+///   MoveNext` `0x33ca54` IL_00f2-IL_011b reads `StateLog` and calls
+///   `SetMoveImmediate` to install the revive;
+/// * `TestSubject` — `TestSubject/<TriggerDeadState>d__67::MoveNext`
+///   `0x36e658` IL_00c5 `SetMoveImmediate`, and RESPAWN_MOVE is
+///   must-perform (`GenerateMoveStateMachine` `0xc031c` IL_0041);
+/// * `ToughEgg` — `ToughEgg/<AfterAddedToRoom>d__33::MoveNext` `0x3724a8`
+///   IL_01cb `ForceCurrentState`;
+/// * `Tunneler` — `BurrowedPower/<AfterBlockBroken>d__5::MoveNext`
+///   `0x33622c` IL_00db `CreatureCmd::Stun` with its own DIZZY state;
+/// * `WaterfallGiant` — `WaterfallGiant/<TriggerAboutToBlowState>d__77::
+///   MoveNext` `0x3762a8` IL_00b1 `SetMoveImmediate`, and a must-perform
+///   state (`GenerateMoveStateMachine` `0xc4eb0` IL_0169).
+const GENERIC_STUN_BESPOKE_KINDS: [MonsterKind; 16] = [
     MonsterKind::BowlbugRock,
     MonsterKind::CeremonialBeast,
     MonsterKind::CorpseSlug,
     MonsterKind::DecimillipedeSegment,
+    MonsterKind::EyeWithTeeth,
     MonsterKind::LagavulinMatriarch,
+    MonsterKind::Parafright,
     MonsterKind::Queen,
     MonsterKind::SlumberingBeetle,
     MonsterKind::TerrorEel,
+    MonsterKind::TestSubject,
     MonsterKind::ThievingHopper,
     MonsterKind::TorchHeadAmalgam,
+    MonsterKind::ToughEgg,
+    MonsterKind::Tunneler,
+    MonsterKind::WaterfallGiant,
 ];
+
+/// Random-table kinds that take the generic stun (#3823).
+///
+/// What a stun does to a machine with a `RandomBranchState`, from IL
+/// (v0.111.0, `sts2.dll` sha256 `9cb4f1ad…`):
+///
+/// * It never rolls. `Creature::StunInternal` `0x11d7cc` IL_0039-IL_0055
+///   parks `StateLog.Last()`, which is the `MoveState` the last walk landed
+///   on, because `RandomBranchState::get_ShouldAppearInLogs` `0x79110` is
+///   false ([`parked_telegraph`]).
+/// * The STUNNED turn performs nothing, and the roll that follows it
+///   (`MonsterMoveStateMachine::FindNextMoveState` `0x78e94`) leaves STUNNED
+///   by its `FollowUpStateId` (IL_0045-IL_008f) straight into the parked
+///   `MoveState`: no `RandomBranchState::GetNextState` `0x792c4`, so **no
+///   `MonsterAi` draw**, where the unstunned monster's roll at that seam
+///   would have drawn one.
+/// * That walk appends the parked move to `StateLog` **a second time**
+///   (IL_009c-IL_00d1).
+/// * `RandomBranchState::GetStateWeight` `0x79380`, read whole, is the only
+///   reader of the log in a roll: `UseOnlyOnce` asks `Contains`
+///   (IL_0049-IL_0077), which a duplicate cannot change; CannotRepeat
+///   (N = 1) and `CanRepeatXTimes` (N = `maxTimes`) weigh 0 exactly when the
+///   last N entries are all this state (IL_009d-IL_014e), so a duplicate
+///   moves a `maxTimes >= 2` branch only; a cooldown weighs 0 when the state
+///   is among the last `cooldown` entries (IL_0150-IL_01b9), which a
+///   duplicate shortens the reach of by one.
+///
+/// The engine's `RandomAiState` log is that `StateLog`'s tail and every
+/// weight above is already computed from it, so the whole model is:
+/// `monster_act` performs nothing for a stunned random-table monster and
+/// leaves the override in place (native's `NextMove` is still STUNNED while
+/// the rest of the enemy side acts), and `prepare_random_ai` resumes it in
+/// the monster's own roster position: the override is cleared, `next` is
+/// pushed onto the log again, and nothing is drawn
+/// (`turn::resume_stunned_random_ai`).
+///
+/// A kind is listed once its log readers accept the duplicated shapes
+/// (`admission::valid_random_ai_state`, the Strangler's and the Hunter
+/// Killer's private validators) and its native traces match
+/// (`engine::native_stun_traces`).
+///
+/// `TwoTailedRat` is listed with one more consequence, which is the roster's
+/// and not the machine's. `TwoTailedRat::CanSummon` `0xc42c8` IL_0082-IL_009b
+/// compares each teammate's `NextMove.Id` with CALL_FOR_BACKUP_MOVE, and a
+/// stunned teammate's `NextMove` is STUNNED. A rat rolled while a teammate is
+/// stunned over a parked CALL_FOR_BACKUP can therefore roll the call too, and
+/// both perform it (`<CallForBackup>d__41::MoveNext` `0x373d98` does not ask
+/// `CanSummon` again; it skips the Add only when no slot is free,
+/// IL_00d5-IL_010f, and still raises the counts, IL_01e1-IL_025d). So more
+/// than one living rat may hold the call, more than three calls may complete,
+/// and a call may complete without a summon: [`rat_roster_is_valid`] and
+/// [`spawn_rat`] hold all three.
+///
+/// Not listed, and so still refused by name:
+///
+/// * `Fabricator` (its `fabricateBranch` is a `ConditionalBranchState`) and
+///   `FakeMerchantMonster` (not an admitted random AI).
+/// * `TheObscura`, whose ILLUSION_MOVE summons a `Parafright`, a bespoke
+///   owner ([`GENERIC_STUN_BESPOKE_KINDS`]): a root that admitted the
+///   summoner would refuse mid-line once the minion stood beside it.
+pub(crate) const GENERIC_STUN_RANDOM_TABLE_KINDS: [MonsterKind; 15] = [
+    MonsterKind::Exoskeleton,
+    MonsterKind::FlailKnight,
+    MonsterKind::Flyconid,
+    MonsterKind::FossilStalker,
+    MonsterKind::HunterKiller,
+    MonsterKind::Inklet,
+    MonsterKind::LeafSlimeS,
+    MonsterKind::Mawler,
+    MonsterKind::MysteriousKnight,
+    MonsterKind::SlitheringStrangler,
+    MonsterKind::SludgeSpinner,
+    MonsterKind::SoulNexus,
+    MonsterKind::SpectralKnight,
+    MonsterKind::TwigSlimeM,
+    MonsterKind::TwoTailedRat,
+];
+
+/// Kinds whose loop holds a `Repeats::Conditional` row and that take the
+/// generic stun (#3823).
+///
+/// What a stun does to a machine with a `ConditionalBranchState`, from IL:
+/// the parked state is the `MoveState` the last walk landed on
+/// (`ConditionalBranchState::get_ShouldAppearInLogs` `0x78d8f` is false, see
+/// [`parked_telegraph`]), and the roll after the STUNNED turn re-enters it by
+/// `States[FollowUpStateId]` (`FindNextMoveState` `0x78e94` IL_0045-IL_008f)
+/// without evaluating any condition. The condition is evaluated when the
+/// parked move has performed and the next roll leaves it, as in an
+/// unstunned fight. Nothing reads the log in such a machine, so the second
+/// log entry has no reader.
+///
+/// * `LivingShield` (`GenerateMoveStateMachine` `0xb8c70`): SHIELD_SLAM
+///   follows to `SHIELD_SLAM_BRANCH` (IL_007b-IL_007d), which holds
+///   SHIELD_SLAM under `b__15_0` and SMASH under `b__15_1`
+///   (IL_0082-IL_00a3); SMASH follows to itself (IL_00a8-IL_00aa); the
+///   machine opens on SHIELD_SLAM (IL_00c4-IL_00c6). A stun over SHIELD_SLAM
+///   resumes SHIELD_SLAM whether or not the Turret Operator died meanwhile,
+///   and the ally count is read by the roll after that SLAM, which is the
+///   engine's completed-Slam receipt (`turn::monster_act`,
+///   `turn::prepare_random_ai`): the stunned action writes no receipt and
+///   leaves `loop_pos`, so the receipt is written by the SLAM that performs
+///   a turn later. A stun over SMASH resumes SMASH. `RampartPower` is a
+///   player-side-start listener on the Shield (`turn::
+///   rampart_after_player_side_start`) and reads no move state.
+/// * `FrogKnight` (`GenerateMoveStateMachine` `0xb53bc`): FOR_THE_QUEEN
+///   follows to `HALF_HEALTH` (IL_00f7-IL_00fa), which holds TONGUE_LASH
+///   under `b__25_0` (IL_00ce-IL_00dd; `0xb574b` is `HasBeetleCharged ||
+///   !(CurrentHp < MaxHp / 2)`) and BEETLE_CHARGE under `b__25_1`
+///   (IL_00e2-IL_00f2; `0xb5774`, the complement). STRIKE_DOWN_EVIL follows
+///   to FOR_THE_QUEEN, TONGUE_LASH to STRIKE_DOWN_EVIL and BEETLE_CHARGE to
+///   TONGUE_LASH (IL_00ff-IL_0110); the machine opens on TONGUE_LASH
+///   (IL_013a-IL_013b). A stun over FOR_THE_QUEEN resumes FOR_THE_QUEEN, and
+///   the HP is read by the roll after it performs: the engine's successor is
+///   chosen in the tail of the move that performed (`turn::monster_act`),
+///   which the stunned action never reaches. So a Frog Knight below half HP
+///   only while stunned does not charge, and one that falls below half after
+///   the stun does (native cases `frog_low_only_while_stunned`,
+///   `frog_low_after_stun`). `PlatingPower` counts rounds, not moves
+///   ([`frog_knight_state_is_valid`]).
+const GENERIC_STUN_CONDITIONAL_KINDS: [MonsterKind; 2] =
+    [MonsterKind::FrogKnight, MonsterKind::LivingShield];
 
 /// May `kind` carry the generic `STUNNED` + parked-telegraph state?
 ///
-/// Deliberately narrow. Beyond the bespoke owners above this refuses any kind
-/// whose loop carries a `Repeats::Conditional` successor: that is a
-/// `ConditionalBranchState` in the native machine, and #2647 open question 2
-/// is exactly whether `StateLog.Last()` still names the `loop_pos` row once
-/// the walk passes through a branch state. A revive-staged or randomly
-/// telegraphing owner is refused by [`parked_telegraph`] returning `None`.
+/// A random table in [`GENERIC_STUN_RANDOM_TABLE_KINDS`], or a kind with a
+/// generated loop, except (#3823):
+///
+/// * the bespoke owners above;
+/// * a kind whose native machine **re-enters a branch state after a move**.
+///   The stun itself neither re-rolls nor re-evaluates the branch (the parked
+///   state is the `MoveState` the walk landed on, see [`parked_telegraph`]),
+///   but the resume logs that move a second time
+///   (`FindNextMoveState` `0x78e94` IL_00c3-IL_00d1 on the walk out of
+///   STUNNED), and `RandomBranchState::GetStateWeight` `0x79380` reads the
+///   log; a conditional successor is deferred past the stunned turn. Those
+///   are their own slices. In the generated tables such a machine is a
+///   `random_moves` table outside [`GENERIC_STUN_RANDOM_TABLE_KINDS`], a
+///   `Repeats::Conditional` row, or one of the two move kinds that carry the
+///   branch inside the row:
+///   `AttackStrengthBranch` (`Fogmog` `0xb4cb8`, SWIPE_MOVE -> `BRANCH`) and
+///   `AttackVulnerableDeferredOvicopter` (`Ovicopter` `0xbab10`,
+///   TENDERIZER_MOVE -> `SUMMON_BRANCH_STATE`).
+///
+/// `AttackScrollBranch` (`ScrollOfBiting` `0xbcde4`, CHEW -> `rand`) is the
+/// third such move kind and **is** eligible. The one weight of its `rand`
+/// that a duplicated log entry can move is CHEW's `maxRepeats = 2`
+/// (IL_00b9-IL_00bd), whose whole dependence on the log is the
+/// `scroll_chew_repeated` latch, and the generic arm of `monster_act` sets
+/// that latch when it resumes a parked CHEW (the reading and the native trace
+/// are cited there). CHOMP's CannotRepeat (IL_00b0-IL_00b4) reads the last
+/// entry alone, which a duplicate does not change.
+///
+/// A branch state that is only the machine's **initial** state is not a
+/// re-entry: `Toadpole` `0xc2798`, `Myte` `0xba07c`, `Nibbit` `0xba3cc` and
+/// `PhantasmalGardener` `0xbb890` open on a `ConditionalBranchState`
+/// `INIT_MOVE` that no `MoveState` follows into, so after the opening roll
+/// (which the root already carries as `loop_pos`) each is a plain cycle.
+/// `PhrogParasite` `0xbbdac` registers a `RandomBranchState` `RAND` that
+/// nothing follows into at all (IL_006f-IL_0078 wire INFECT_MOVE and
+/// LASH_MOVE to each other, and INFECT_MOVE is the initial state, IL_00a3).
+/// `Wriggler` `0xc5630` enters its `INIT_MOVE` once, from SPAWNED_MOVE
+/// (IL_00ec-IL_00ef), and the spawn has already written the outcome to
+/// `loop_pos`; while SPAWNED_MOVE is showing the instance carries
+/// `spawn_noop` ([`generic_stun_owner_state_is_representable`]).
+///
+/// The set is pinned by `the_generic_stun_owner_set_is_pinned`.
 pub(crate) fn generic_stun_owner_is_eligible(kind: MonsterKind) -> bool {
     if GENERIC_STUN_BESPOKE_KINDS.contains(&kind) {
         return false;
     }
+    if crate::content_tables::random_moves(kind).is_some() {
+        return GENERIC_STUN_RANDOM_TABLE_KINDS.contains(&kind);
+    }
     let Some(rows) = crate::content_tables::monster_loop(kind) else {
         return false;
     };
-    crate::content_tables::random_moves(kind).is_none()
-        && !rows
-            .iter()
-            .any(|row| matches!(row.repeats, crate::content_tables::Repeats::Conditional(_)))
+    !rows.iter().any(|row| {
+        (matches!(row.repeats, crate::content_tables::Repeats::Conditional(_))
+            && !GENERIC_STUN_CONDITIONAL_KINDS.contains(&kind))
+            || matches!(
+                row.kind,
+                crate::ids::MoveKind::AttackStrengthBranch
+                    | crate::ids::MoveKind::AttackVulnerableDeferredOvicopter
+            )
+    })
+}
+
+/// Is this monster's move machine undisturbed, or carrying exactly the
+/// generic stun ([`generic_stun_parks_this_row`])?
+///
+/// The condition every per-kind lifecycle validator of a generic stun owner
+/// asks of its machine (#3823). Before #3823 each of them asked for
+/// `override_state == None` and `forced_follow_up == None`, which was the
+/// whole truth while no such kind could be stunned. They are read at runtime
+/// (a move body, a card step, a death, the projection), not only at
+/// admission, so a root admitted with a Whistle refused mid-line the moment
+/// the stun landed: Soul Fysh, The Insatiable, Aeonglass, Gremlin Merc, The
+/// Lost and Forgotten, Entomancer and The Kin did. The stun changes nothing
+/// those validators guard: `Creature::StunInternal` `0x11d7cc` writes the
+/// move state alone (IL_0057-IL_0087), no power, no HP, no roster slot.
+///
+/// A kind outside the generic set gets no new state from this: its stunned
+/// state still fails here.
+///
+/// Liveness is not asked. A lethal hit commits the HP before the death
+/// callback runs, and the validators are read in between (a Kin death starts
+/// from `kin_roster_shape_is_exact`); the callback then drops the stun with
+/// the creature ([`clear_generic_stun_at_death`]).
+pub(crate) fn machine_is_undisturbed_or_generic_stun(monster: &HotMonster) -> bool {
+    (monster.override_state == MonsterOverride::None
+        && monster.forced_follow_up == MonsterFollowUp::None)
+        || generic_stun_shape_parks_this_row(monster)
+}
+
+/// `STUNNED` over the follow-up [`parked_telegraph`] names for this
+/// `loop_pos`, on an eligible kind, alive or not.
+fn generic_stun_shape_parks_this_row(monster: &HotMonster) -> bool {
+    generic_stun_owner_is_eligible(monster.kind)
+        && monster.override_state == MonsterOverride::Stunned
+        && parked_telegraph(monster.kind, monster.loop_pos) == Some(monster.forced_follow_up)
+        && (crate::content_tables::random_moves(monster.kind).is_none()
+            || monster.random_ai.next().is_some())
+}
+
+/// The generic stun's document state on one monster: an eligible kind,
+/// alive, `STUNNED`, and the follow-up [`parked_telegraph`] names for its
+/// `loop_pos`.
+pub(crate) fn generic_stun_parks_this_row(monster: &HotMonster) -> bool {
+    monster.hp > 0 && generic_stun_shape_parks_this_row(monster)
+}
+
+/// A dying monster's generic stun goes with it.
+///
+/// Native removes the creature from combat (`CombatState::RemoveCreature`
+/// `0x1371d0` IL_0029-IL_0043), so nothing reads its move state again; the
+/// retained corpse row must therefore not depend on whether it died stunned.
+/// No generic stun owner revives (the reviving kinds are all in
+/// [`GENERIC_STUN_BESPOKE_KINDS`]).
+pub(crate) fn clear_generic_stun_at_death(monster: &mut HotMonster) {
+    if generic_stun_shape_parks_this_row(monster) {
+        monster.override_state = MonsterOverride::None;
+        monster.forced_follow_up = MonsterFollowUp::None;
+    }
 }
 
 /// Is `owner`'s generic stun state the one [`parked_telegraph`] determines?
@@ -1671,11 +2035,7 @@ pub(crate) fn generic_stun_owner_is_eligible(kind: MonsterKind) -> bool {
 /// because its one executable row is ROLL_OUT itself.
 pub(crate) fn generic_stun_state_is_exact(state: &HotState, owner: usize) -> bool {
     state.monsters.get(owner).is_some_and(|monster| {
-        (generic_stun_owner_is_eligible(monster.kind)
-            && monster.hp > 0
-            && monster.override_state == MonsterOverride::Stunned
-            && parked_telegraph(monster.kind, monster.loop_pos) == Some(monster.forced_follow_up))
-            || beetle_rollout_stun_is_exact(monster)
+        generic_stun_parks_this_row(monster) || beetle_rollout_stun_is_exact(monster)
     })
 }
 
@@ -1769,14 +2129,13 @@ pub(crate) fn install_imbalanced_self_stun(
 /// body, so the three cannot grow separate opinions. #2647 slice A (A-opt)
 /// widens it from "the Queen roster and nothing else" — which is all
 /// [`queen_amalgam_follow_up`]'s two-kind table could express — to any owner
-/// whose parked telegraph is uniquely determined.
+/// whose parked telegraph is uniquely determined, and #3823 to every owner
+/// whose machine is a plain cycle after its opening roll
+/// ([`generic_stun_owner_is_eligible`]).
 ///
 /// **Every** position of the loop must resolve, not just the current one:
 /// `loop_pos` advances during the fight and a root is admitted for the whole
-/// fight. That, plus [`MonsterFollowUp`] being a closed vocabulary of move
-/// names, is what keeps the widening self-limiting — a kind whose rows are
-/// outside the vocabulary (Toadpole's `SPIKE_SPIT`/`WHIRL`/`SPIKEN`, say) is
-/// still refused.
+/// fight.
 pub(crate) fn whistle_stun_target_is_representable(
     state: &HotState,
     catalog: &Catalog,
@@ -1797,6 +2156,48 @@ pub(crate) fn whistle_stun_target_is_representable(
     generic_stun_owner_state_is_representable(catalog, monster)
 }
 
+/// Why Whistle's stun cannot be represented on this monster, by name (#3209,
+/// #3823), or `None` when [`whistle_stun_target_is_representable`].
+///
+/// Before #3823 every such root refused as `"Whistle Queen/Amalgam
+/// lifecycle"`, whatever the roster held: the five site fights that carried
+/// the name held a Scroll of Biting, a Living Shield with its Turret Operator,
+/// an Owl Magistrate and a Mecha Knight, and no Queen.
+pub(crate) fn whistle_stun_target_refusal(
+    state: &HotState,
+    catalog: &Catalog,
+    monster: &HotMonster,
+) -> Option<&'static str> {
+    if whistle_stun_target_is_representable(state, catalog, monster) {
+        return None;
+    }
+    Some(
+        if matches!(
+            monster.kind,
+            MonsterKind::Queen | MonsterKind::TorchHeadAmalgam
+        ) {
+            WHISTLE_QUEEN_AMALGAM
+        } else if GENERIC_STUN_BESPOKE_KINDS.contains(&monster.kind) {
+            WHISTLE_STUN_BESPOKE
+        } else if !generic_stun_owner_is_eligible(monster.kind) {
+            WHISTLE_STUN_BRANCH
+        } else {
+            WHISTLE_STUN_INSTANCE
+        },
+    )
+}
+
+/// The Queen roster's own lifecycle, and a multiplayer roster.
+pub(crate) const WHISTLE_QUEEN_AMALGAM: &str = "Whistle Queen/Amalgam lifecycle";
+/// A kind in [`GENERIC_STUN_BESPOKE_KINDS`]: its stun state has its own reader.
+pub(crate) const WHISTLE_STUN_BESPOKE: &str = "Whistle stun target with a bespoke move machine";
+/// Random AI, a private loop, a conditional successor or a branch move kind:
+/// `StateLog.Last()` is not established to name the `loop_pos` row.
+pub(crate) const WHISTLE_STUN_BRANCH: &str = "Whistle stun target whose move machine branches";
+/// An eligible kind whose instance is off its generated loop (a revive stage,
+/// a random walk, or a catalog table of another length).
+pub(crate) const WHISTLE_STUN_INSTANCE: &str = "Whistle stun target off its generated loop";
+
 /// Is every position of `kind`'s loop a resolvable parked telegraph?
 ///
 /// The *kind*-level half of generic-stun representability: not bespoke, no
@@ -1810,36 +2211,62 @@ pub(crate) fn whistle_stun_target_is_representable(
 /// [`whistle_stun_target_is_representable`], the admission gate for an
 /// Imbalanced attachment (#2693 B1 — a carrier is admissible only if the
 /// stun its listener installs is representable at every position it could
-/// reach), and the pin
-/// `the_generic_stun_owner_set_is_exactly_the_three_bowlbug_workers`, which asserts
-/// this set is exactly `{BowlbugEgg, BowlbugNectar, BowlbugSilk}`. The pin is the
+/// reach), and the pin `the_generic_stun_owner_set_is_pinned`. The pin is the
 /// tripwire for the new-reader-invalidates-old-shortcut class (#1432): the
-/// set is *derived* from matching generated loop row names against the
-/// [`MonsterFollowUp`] vocabulary, so a variant added for an unrelated
-/// purpose could widen all three readers at once.
+/// set is *derived* from the generated tables, so a table change could widen
+/// all three readers at once.
 pub(crate) fn generic_stun_owner_loop_is_fully_resolvable(kind: MonsterKind) -> bool {
-    generic_stun_owner_is_eligible(kind)
-        && crate::content_tables::monster_loop(kind).is_some_and(|rows| {
-            (0..rows.len()).all(|index| parked_telegraph(kind, index as i32).is_some())
-        })
+    if !generic_stun_owner_is_eligible(kind) {
+        return false;
+    }
+    if crate::content_tables::random_moves(kind).is_some() {
+        // Every row of a random table parks the same way: `random_ai.next`.
+        return parked_telegraph(kind, 0).is_some();
+    }
+    crate::content_tables::monster_loop(kind).is_some_and(|rows| {
+        (0..rows.len()).all(|index| parked_telegraph(kind, index as i32).is_some())
+    })
 }
 
 /// The kind-level gate above, plus the per-instance conditions that decide
 /// whether *this* monster's `loop_pos` still indexes the loop.
 ///
-/// `random_ai` must be empty, `revive_stage` zero and `spawn_noop` false —
-/// each of those is a machine whose current row is not the generated loop's
-/// — and the catalog's executable table must agree in length with the
-/// generated loop, since the catalog compiles it from that same loop in row
-/// order and `loop_pos` indexes both only while the two agree.
+/// For a loop kind `random_ai` must be empty and `revive_stage` zero — each
+/// of those is a machine whose current row is not the generated loop's — and
+/// the catalog's executable table must agree in length with the generated
+/// loop, since the catalog compiles it from that same loop in row order and
+/// `loop_pos` indexes both only while the two agree. For a random table the
+/// machine must be the exact one admission accepts
+/// (`admission::random_ai_state_is_exact`).
+///
+/// `spawn_noop` is **not** a bar (#3823). It is the native `SPAWNED_MOVE`
+/// `MoveState` of the three kinds admission lets carry it (`FatGremlin`
+/// `0xb4504` IL_0012-IL_0031, `SneakyGremlin` `0xbea48`, `Wriggler`
+/// `0xc5630`): each machine's initial state, so the constructor logs it
+/// (`MonsterMoveStateMachine::.ctor` `0x78da4` IL_006b-IL_0084) and a stun
+/// parks it like any other telegraph. The stunned action then clears only
+/// the override; the action after it spends `spawn_noop`; the one after
+/// that performs the `loop_pos` row. `monster_act` resolves the override
+/// before `spawn_noop`, which is that order. Native trace: a Fat Gremlin
+/// spawned and stunned in the same player turn performs STUNNED,
+/// SPAWNED_MOVE, FLEE_MOVE on the next three enemy turns.
 pub(crate) fn generic_stun_owner_state_is_representable(
     catalog: &Catalog,
     monster: &HotMonster,
 ) -> bool {
-    generic_stun_owner_loop_is_fully_resolvable(monster.kind)
-        && monster.random_ai.is_empty()
-        && monster.revive_stage == 0
-        && !monster.spawn_noop
+    if !generic_stun_owner_loop_is_fully_resolvable(monster.kind) || monster.revive_stage != 0 {
+        return false;
+    }
+    if let Some(rows) = crate::content_tables::random_moves(monster.kind) {
+        // A random table (#3823): the telegraph is `random_ai.next`, so the
+        // instance is representable exactly when its machine is the one
+        // admission accepts. A rat published without an intent
+        // (`rat_spawn_fresh`, #3747) has no `StateLog` entry yet and is
+        // reachable only inside an enemy side, where no Whistle lands.
+        return catalog.moves(monster.kind).len() == rows.len()
+            && super::admission::random_ai_state_is_exact(monster, rows.len());
+    }
+    monster.random_ai.is_empty()
         && crate::content_tables::monster_loop(monster.kind)
             .is_some_and(|rows| catalog.moves(monster.kind).len() == rows.len())
 }
@@ -2628,8 +3055,7 @@ pub(crate) fn kin_roster_shape_is_exact(state: &HotState) -> bool {
         usize::try_from(monster.loop_pos).is_ok_and(|pos| pos < len)
             && monster.hp <= monster.max_hp
             && monster.random_ai.is_empty()
-            && monster.override_state == MonsterOverride::None
-            && monster.forced_follow_up == MonsterFollowUp::None
+            && machine_is_undisturbed_or_generic_stun(monster)
             && !monster.spawn_noop
             && monster.last_spawned.is_none()
             && monster.revive_stage == 0
@@ -2713,7 +3139,7 @@ pub(crate) fn kin_roster_reachable(state: &HotState) -> bool {
 /// `EndTurn` can publish a stable state; accepting it from canonical input
 /// would turn a forged transient into a public branch selector.
 pub(crate) fn turret_operator_state_is_valid(state: &HotState) -> bool {
-    turret_operator_roster_is_exact(state, false)
+    turret_operator_roster_is_exact(state)
 }
 
 /// [`turret_operator_state_is_valid`] for the in-phase Living Shield
@@ -2732,30 +3158,46 @@ pub(crate) fn turret_operator_state_is_valid(state: &HotState) -> bool {
 /// b__15_1` (RVA `0xb8e02` `IL_0002`-`IL_0008`, `GetAllyCount() == 0`) select
 /// `SMASH_MOVE` (`GenerateMoveStateMachine` RVA `0xb8c70` `IL_0095`-`IL_00a3`).
 /// Every other field keeps the public check.
+///
+/// Since #3823 the public check has no HP floor either (a corpse's HP is
+/// read by nobody, see [`turret_operator_roster_is_exact`]), so the two
+/// forms are the same predicate; the name stays for the receipt's call site.
 pub(crate) fn turret_operator_slam_roster_is_exact(state: &HotState) -> bool {
-    turret_operator_roster_is_exact(state, true)
+    turret_operator_roster_is_exact(state)
 }
 
-fn turret_operator_roster_is_exact(state: &HotState, overkilled_operator: bool) -> bool {
+fn turret_operator_roster_is_exact(state: &HotState) -> bool {
     let [shield, operator] = state.monsters.as_slice() else {
         return false;
     };
     let shield_live = shield.hp > 0;
-    let operator_hp_floor = if overkilled_operator { i32::MIN } else { 0 };
+    // #3823: a corpse keeps the HP its killing hit left, which is below zero
+    // after an overkill, and the document carries it. Nothing reads a
+    // corpse's HP but liveness (`hp > 0`): Rampart's owner check below, the
+    // Shield's ally count (`turn::prepare_random_ai`), the grant
+    // (`turn::rampart_after_player_side_start`). So neither member has an HP
+    // floor at the public boundary. Before this the public form refused an
+    // overkilled corpse, which made every state after such a kill fail to
+    // reload (the Shield or the Operator killed by more than its remaining
+    // HP, with or without a stun in the fight). The in-phase receipt form
+    // had lifted the floor for the Operator alone (#3287).
     shield.kind == MonsterKind::LivingShield
         && operator.kind == MonsterKind::TurretOperator
         && (shield.slot, shield.uid, Some(shield.max_hp))
             == (0, 0, native_fixed_hp(state, MonsterKind::LivingShield))
         && (operator.slot, operator.uid, Some(operator.max_hp))
             == (1, 1, native_fixed_hp(state, MonsterKind::TurretOperator))
-        && (0..=shield.max_hp).contains(&shield.hp)
-        && (operator_hp_floor..=operator.max_hp).contains(&operator.hp)
+        && shield.hp <= shield.max_hp
+        && operator.hp <= operator.max_hp
         && (0..=MONSTER_BLOCK_CAP).contains(&shield.block)
         && (0..=MONSTER_BLOCK_CAP).contains(&operator.block)
         && shield.random_ai.is_empty()
         && operator.random_ai.is_empty()
-        && shield.override_state == MonsterOverride::None
-        && operator.override_state == MonsterOverride::None
+        // #3823: either member may carry exactly the generic stun. The
+        // Shield's completed-Slam receipt is a follow-up without an override,
+        // which this still refuses.
+        && machine_is_undisturbed_or_generic_stun(shield)
+        && machine_is_undisturbed_or_generic_stun(operator)
         && !shield.spawn_noop
         && !operator.spawn_noop
         && shield.last_spawned.is_none()
@@ -2766,8 +3208,6 @@ fn turret_operator_roster_is_exact(state: &HotState, overkilled_operator: bool) 
         && matches!(operator.loop_pos, 0..=2)
         && shield.powers.value(PowerId::Rampart) == if shield_live { 25 } else { 0 }
         && operator.powers.value(PowerId::Rampart) == 0
-        && shield.forced_follow_up == MonsterFollowUp::None
-        && operator.forced_follow_up == MonsterFollowUp::None
 }
 
 /// The complete fixed Frog Knight encounter at a serialized player-action
@@ -2793,7 +3233,9 @@ pub(crate) fn frog_knight_state_is_valid(state: &HotState) -> bool {
         && (1..=frog.max_hp).contains(&frog.hp)
         && matches!(frog.loop_pos, 0..=3)
         && frog.random_ai.is_empty()
-        && frog.override_state == crate::hot::MonsterOverride::None
+        // #3823: the Frog Knight takes the generic stun, which writes the
+        // move state alone.
+        && machine_is_undisturbed_or_generic_stun(frog)
         && !frog.spawn_noop
         && frog.revive_stage == 0
         && frog.powers.value(PowerId::Mplating) == expected_plating
@@ -2815,6 +3257,39 @@ fn axebot_expected_uid(state: &HotState, respawn_count: i32) -> Option<u32> {
         None => Some(respawn_count),
         Some(last) => last.filter(|uid| *uid >= respawn_count),
     }
+}
+
+/// The roster index of the Axebot body that REPLACED the Creature a persisted
+/// CardPlay froze as `(slot, uid)`, or `None` when that identity is not an
+/// earlier body of this fight's Axebot (#3747).
+///
+/// `StockPower/<AfterDeath>d__4::MoveNext` RVA `0x346280` adds the fresh
+/// Axebot in the dead owner's slot (IL_0073-IL_0090) and the corpse then
+/// leaves combat (see [`crate::steps::templates::stock_replaced_target_is_current`]
+/// for the removal IL), so a play that killed a Stock body still holds a
+/// target that no roster row carries. The roster must be the valid singleton
+/// ([`axebot_state_is_valid`]) after at least one respawn, the slot must be
+/// its slot, and the uid must be the body the live one replaced: exactly 0
+/// after the first respawn; after the second, exactly 1 while creation uids
+/// are untracked, and otherwise (a tracked counter, where a combat-start pet
+/// sits between the bodies and the first respawn's uid is no longer
+/// derivable) any uid from 1 up to but excluding the live body's. A target
+/// two bodies back (one play that saw two respawns) is not admitted.
+pub(crate) fn axebot_replacement_of(state: &HotState, slot: i32, uid: u32) -> Option<usize> {
+    if !axebot_state_is_valid(state) {
+        return None;
+    }
+    let owner = &state.monsters[0];
+    let respawn_count = AXEBOT_STOCK - owner.powers.value(PowerId::Stock);
+    let replaced_body = match respawn_count {
+        1 => uid == 0,
+        2 => match tracked_lineage_start(state, 1) {
+            None => uid == 1,
+            Some(_) => (1..owner.uid).contains(&uid) && !is_osty_creature_uid(state, uid),
+        },
+        _ => false,
+    };
+    (slot == owner.slot && replaced_body).then_some(0)
 }
 
 /// The exact singleton Stock state after zero, one, or two Axebot creations.
@@ -2845,7 +3320,7 @@ pub(crate) fn axebot_state_is_valid(state: &HotState) -> bool {
         && matches!(owner.loop_pos, 0..=2)
         && !(stock == AXEBOT_STOCK && owner.loop_pos == 2)
         && owner.random_ai.is_empty()
-        && owner.override_state == crate::hot::MonsterOverride::None
+        && machine_is_undisturbed_or_generic_stun(owner)
         && !owner.spawn_noop
         && owner.revive_stage == 0
         && !owner.louse_curled()
@@ -2903,8 +3378,7 @@ fn soul_fysh_owner_is_valid(state: &HotState, actor: usize) -> bool {
             == (0, 0, native_fixed_hp(state, MonsterKind::SoulFysh))
         && (1..=owner.max_hp).contains(&owner.hp)
         && owner.random_ai.is_empty()
-        && owner.override_state == MonsterOverride::None
-        && owner.forced_follow_up == MonsterFollowUp::None
+        && machine_is_undisturbed_or_generic_stun(owner)
         && !owner.spawn_noop
         && owner.revive_stage == 0
         && !owner.louse_curled()
@@ -2916,6 +3390,12 @@ fn soul_fysh_owner_is_valid(state: &HotState, actor: usize) -> bool {
 /// FADE applies Intangible 2 during its action; the same enemy-side end ticks
 /// it to one before publication. SCREAM then executes under that one stack
 /// and its side end removes it as the loop returns to BECKON.
+///
+/// #3823: a stun over SCREAM_MOVE spends that enemy turn on STUNNED while the
+/// side end still ticks the stack, so the parked SCREAM stands at Intangible
+/// 0 and performs without it. Native (harness, `SOUL_FYSH_BOSS` A10,
+/// `CreatureCmd.Stun` in player turn 5): Intangible 1 after FADE, none after
+/// the stunned turn, SCREAM_MOVE on turn 6. Hence `(4, 0)`.
 pub(crate) fn soul_fysh_state_is_valid(state: &HotState) -> bool {
     if !soul_fysh_owner_is_valid(state, 0) {
         return false;
@@ -2923,7 +3403,7 @@ pub(crate) fn soul_fysh_state_is_valid(state: &HotState) -> bool {
     let owner = &state.monsters[0];
     matches!(
         (owner.loop_pos, owner.powers.value(PowerId::Intangible)),
-        (0..=3, 0) | (4, 1)
+        (0..=3, 0) | (4, 0 | 1)
     )
 }
 
@@ -2940,6 +3420,11 @@ pub(crate) fn soul_fysh_move_state_is_valid(
 }
 
 /// Validate the post-move, pre-duration-tick transient at enemy side end.
+///
+/// After a move: `(1..=3, 0)`, `(4, 2)` after FADE, `(0, 1)` after a SCREAM
+/// under its stack, `(0, 0)` after a SCREAM a stun delayed. After a stunned
+/// turn (#3823) the row has not moved, so the transient is the entry state
+/// itself: `(0..=3, 0)` or `(4, 0 | 1)`.
 pub(crate) fn soul_fysh_side_end_state_is_valid(state: &HotState) -> bool {
     if !soul_fysh_owner_is_valid(state, 0) {
         return false;
@@ -2947,7 +3432,7 @@ pub(crate) fn soul_fysh_side_end_state_is_valid(state: &HotState) -> bool {
     let owner = &state.monsters[0];
     matches!(
         (owner.loop_pos, owner.powers.value(PowerId::Intangible)),
-        (1..=3, 0) | (4, 2) | (0, 1)
+        (0..=3, 0) | (4, 0..=2) | (0, 1)
     )
 }
 
@@ -2967,8 +3452,7 @@ pub(crate) fn entomancer_state_is_valid(state: &HotState) -> bool {
         && (1..=owner.max_hp).contains(&owner.hp)
         && matches!(owner.loop_pos, 0..=2)
         && owner.random_ai.is_empty()
-        && owner.override_state == MonsterOverride::None
-        && owner.forced_follow_up == MonsterFollowUp::None
+        && machine_is_undisturbed_or_generic_stun(owner)
         && !owner.spawn_noop
         && owner.revive_stage == 0
         && !owner.louse_curled()
@@ -2990,8 +3474,7 @@ pub(crate) fn insatiable_state_is_valid(state: &HotState) -> bool {
             == (0, 0, native_fixed_hp(state, MonsterKind::TheInsatiable))
         && (1..=owner.max_hp).contains(&owner.hp)
         && owner.random_ai.is_empty()
-        && owner.override_state == MonsterOverride::None
-        && owner.forced_follow_up == MonsterFollowUp::None
+        && machine_is_undisturbed_or_generic_stun(owner)
         && !owner.spawn_noop
         && owner.revive_stage == 0
         && !owner.louse_curled()
@@ -3393,8 +3876,8 @@ pub(crate) fn possess_roster_is_valid(state: &HotState) -> bool {
         || !(0..2).contains(&forgotten.loop_pos)
         || !lost.random_ai.is_empty()
         || !forgotten.random_ai.is_empty()
-        || lost.override_state != crate::hot::MonsterOverride::None
-        || forgotten.override_state != crate::hot::MonsterOverride::None
+        || !machine_is_undisturbed_or_generic_stun(lost)
+        || !machine_is_undisturbed_or_generic_stun(forgotten)
         || lost.spawn_noop
         || forgotten.spawn_noop
         || lost.revive_stage != 0
@@ -3445,8 +3928,7 @@ fn gremlin_member_shape_is_exact(
         && monster.block >= 0
         && monster.loop_pos == 0
         && monster.random_ai.is_empty()
-        && monster.override_state == MonsterOverride::None
-        && monster.forced_follow_up == MonsterFollowUp::None
+        && machine_is_undisturbed_or_generic_stun(monster)
         && monster.revive_stage == 0
         && monster.last_spawned.is_none()
         && monster.curl_up_card_uid == -1
@@ -3466,8 +3948,7 @@ fn gremlin_merc_owner_shape_is_exact(state: &HotState, merc: &HotMonster) -> boo
         && merc.block >= 0
         && matches!(merc.loop_pos, 0..=2)
         && merc.random_ai.is_empty()
-        && merc.override_state == MonsterOverride::None
-        && merc.forced_follow_up == MonsterFollowUp::None
+        && machine_is_undisturbed_or_generic_stun(merc)
         && !merc.spawn_noop
         && merc.revive_stage == 0
         && merc.last_spawned.is_none()
@@ -3590,14 +4071,12 @@ pub(crate) fn gremlin_merc_public_state_is_valid(state: &HotState) -> bool {
         && state.frames.is_empty()
         && (state.history.over || state.monsters.iter().any(|monster| monster.hp > 0))
         && gremlin_merc_state_is_valid(state)
-        && match state.monsters.as_slice() {
-            [_merc, sneaky, fat] => {
-                sneaky.spawn_noop == fat.spawn_noop
-                    || (sneaky.spawn_noop && sneaky.hp <= 0)
-                    || (fat.spawn_noop && fat.hp <= 0)
-            }
-            _ => true,
-        }
+    // #3823: the two gremlins' SPAWNED_MOVE flags are independent. Until a
+    // gremlin could be stunned, two live siblings always spent the state on
+    // the same enemy turn, and this boundary asked for equal flags. A stun
+    // over SPAWNED_MOVE spends that turn on STUNNED and leaves the spawn for
+    // the next one (native: STUNNED, SPAWNED_MOVE, FLEE_MOVE against the
+    // sibling's SPAWNED_MOVE first), so every pair of flags is reachable.
 }
 
 /// Projectable Gremlin Merc boundary: the stable public boundary above, or a
@@ -3631,6 +4110,22 @@ pub(crate) fn gremlin_merc_public_state_is_valid(state: &HotState) -> bool {
 /// park, and a rootless park keeps the public rule. A transient lineage (a dead lone Merc whose
 /// Surprise has not run) still fails [`gremlin_merc_state_is_valid`] and
 /// refuses by name. Every other continuation keeps the public rule.
+///
+/// #3756: a generation potion's own choose-a-card screen is the same kind of
+/// park. `AttackPotion/<OnUse>d__6::MoveNext` (RVA `0x34bdb4`) draws its
+/// offers (`CardFactory::GetDistinctForCombat` IL_0095), awaits
+/// `CardSelectCmd::FromChooseACardScreen` (IL_00a9) and adds the pick to
+/// Hand (`CardPileCmd::AddGeneratedCardToCombat` IL_0121);
+/// `ColorlessPotion/<OnUse>d__6::MoveNext` (RVA `0x34c784`) is the same body
+/// at IL_006b / IL_007f / IL_00f7. `PotionModel/<OnUseWrapper>d__75::MoveNext`
+/// (RVA `0x31dd20`) has finished `Hook::BeforePotionUsed` (IL_00db) before it
+/// calls `OnUse` (IL_0397), and `Hook::AfterPotionUsed` (IL_0515) runs only
+/// after the body returns. So while the screen is open no damage, death or
+/// listener walk is suspended under it, and the body itself touches no
+/// creature. The accepted stack is exactly the root `ActionReplay` witness
+/// and the one `PotionFinish` frame whose record is the open
+/// `GenerationSelecting` choice; a potion parked on any other selection keeps
+/// the public rule.
 pub(crate) fn gremlin_merc_projection_state_is_valid(state: &HotState) -> bool {
     if gremlin_merc_public_state_is_valid(state) {
         return true;
@@ -3642,22 +4137,23 @@ pub(crate) fn gremlin_merc_projection_state_is_valid(state: &HotState) -> bool {
     let [Frame::ActionReplay { .. }, frames @ ..] = state.frames.as_slice() else {
         return false;
     };
-    pending.record(&state.frames).is_some()
+    let card_selection = pending.record(&state.frames).is_some()
         && !frames.is_empty()
         && frames
             .iter()
-            .all(|frame| matches!(frame, Frame::CardPlay { .. }))
+            .all(|frame| matches!(frame, Frame::CardPlay { .. }));
+    let generation_potion_choice = matches!(frames, [Frame::PotionFinish { .. }])
+        && pending.generation_potion_record(&state.frames).is_some();
+    (card_selection || generation_potion_choice)
         && !state.history.over
         && state.monsters.iter().any(|monster| monster.hp > 0)
         && gremlin_merc_state_is_valid(state)
-        && match state.monsters.as_slice() {
-            [_merc, sneaky, fat] => {
-                sneaky.spawn_noop == fat.spawn_noop
-                    || (sneaky.spawn_noop && sneaky.hp <= 0)
-                    || (fat.spawn_noop && fat.hp <= 0)
-            }
-            _ => true,
-        }
+    // #3823: the two gremlins' SPAWNED_MOVE flags are independent. Until a
+    // gremlin could be stunned, two live siblings always spent the state on
+    // the same enemy turn, and this boundary asked for equal flags. A stun
+    // over SPAWNED_MOVE spends that turn on STUNNED and leaves the spawn for
+    // the next one (native: STUNNED, SPAWNED_MOVE, FLEE_MOVE against the
+    // sibling's SPAWNED_MOVE first), so every pair of flags is reachable.
 }
 
 /// Stable canonical projection of `CalculateGoldProportion`, in half-units.
@@ -3764,16 +4260,15 @@ pub(crate) fn spawn_gremlin_merc_pair(
 /// Python `_roll_unique_hp` (frozen, deleted #2827): ascending candidates after
 /// excluding every existing max HP, falling back to the full range when all
 /// candidates collide, and exactly one Niche draw in either case.
-fn roll_unique_hp_excluding(
-    state: &mut HotState,
-    low: i32,
-    high: i32,
-    excluded_uid: Option<u32>,
-) -> Result<i32, EngineRefusal> {
+///
+/// Every roster row reserves its max HP, a corpse included. The two callers
+/// (Gremlin Merc's Surprise and Axebot's Stock) both run inside the dying
+/// owner's `Hook.AfterDeath`, where that owner is still in `_enemies`; see
+/// [`respawn_axebot`] for the IL.
+fn roll_unique_hp(state: &mut HotState, low: i32, high: i32) -> Result<i32, EngineRefusal> {
     let taken: Vec<i32> = state
         .monsters
         .iter()
-        .filter(|monster| Some(monster.uid) != excluded_uid)
         .map(|monster| monster.max_hp)
         .collect();
     roll_unique_hp_over(state, low, high, &taken)
@@ -3888,10 +4383,6 @@ fn roll_unique_hp_over(
     Ok(candidates[pick])
 }
 
-fn roll_unique_hp(state: &mut HotState, low: i32, high: i32) -> Result<i32, EngineRefusal> {
-    roll_unique_hp_excluding(state, low, high, None)
-}
-
 /// One ordinary inclusive Niche HP roll. Tough Egg's retained-object hatch
 /// does not enter `SetUniqueMonsterHpValue`; equal hatched HP is observable.
 fn roll_hp(state: &mut HotState, low: i32, high: i32) -> Result<i32, EngineRefusal> {
@@ -3991,17 +4482,44 @@ pub(crate) fn allocate_creature_uid(state: &mut HotState) -> Result<u32, EngineR
     allocate_creature_uids(state, 1)
 }
 
-/// The first uid of the last `created` creations when the counter is
+/// The first uid of the last `created` enemy creations when the counter is
 /// tracked (`Some(None)` if that underflows), and `None` when it is not.
 ///
 /// Validators of a spawn lineage read the counter backwards: after a
-/// complete spawn nothing else in those encounters creates a creature, so
-/// the lineage's first uid is `counter - created`.
+/// complete spawn no other ENEMY is created in those encounters, so the
+/// lineage ends at the last id handed out.
+///
+/// One creature can still be created after it: the player's Osty (#3904).
+/// `CombatState::AttachCreature` (`0x13718f` `IL_0009`-`IL_0022`) numbers
+/// creatures in creation order whatever they are, and a first
+/// `OstyCmd.Summon` (`<Summon>d__0` `0x3ee040` `IL_01e9`) creates one whenever
+/// it runs. On the game itself an Afterlife played after Gremlin Merc's
+/// Surprise gives Fat 2, Sneaky 3 and the Osty 4, and played before it gives
+/// the Osty 2, Fat 3 and Sneaky 4; around Fabricator's bots it is the same
+/// (`tests/native/osty_*.native.json`). So when the recorded Osty id
+/// ([`crate::hot::FanoutState::osty_creature_uid`]) is the last id handed
+/// out, the lineage ends one earlier. An Osty created before the lineage, or
+/// at combat start, sits below it and changes nothing here.
 pub(crate) fn tracked_lineage_start(state: &HotState, created: u32) -> Option<Option<u32>> {
     match state.fanouts.next_creature_uid() {
         0 => None,
-        tracked => Some(tracked.checked_sub(created)),
+        tracked => {
+            let osty = state.fanouts.osty_creature_uid();
+            let end = if osty != 0 && osty.checked_add(1) == Some(tracked) {
+                osty
+            } else {
+                tracked
+            };
+            Some(end.checked_sub(created))
+        }
     }
+}
+
+/// Whether `uid` is the recorded mid-fight Osty's creature id (#3904), which
+/// no enemy holds.
+pub(crate) fn is_osty_creature_uid(state: &HotState, uid: u32) -> bool {
+    let osty = state.fanouts.osty_creature_uid();
+    osty != 0 && osty == uid
 }
 
 /// Validate the complete pre-mutation Stock replacement boundary.
@@ -4046,6 +4564,25 @@ pub(crate) fn require_axebot_respawn(
 /// creates a fresh creature identity: Stock decrements first, one Niche draw
 /// chooses unique HP from the respawn-adjusted inclusive range, and the fresh
 /// owner opens on BOOT_UP with every other power/private field reset.
+///
+/// The dying body's max HP is reserved in that draw (#3756). v0.111.0
+/// `sts2.dll` (SHA-256 `9cb4f1ad…12b4`):
+/// `StockPower/<AfterDeath>d__4::MoveNext` RVA `0x346280` calls
+/// `CreatureCmd.Add<Axebot>` (IL_0090), whose `ICombatState::CreateCreature`
+/// (`CreatureCmd/<Add>d__1::MoveNext` RVA `0x3e9130` IL_003a) hands
+/// `_enemies` to `Creature::SetUniqueMonsterHpValue` (RVA `0x11d3ec`). That
+/// builds `Range(MinInitialHp, MaxInitialHp + 1 - MinInitialHp)`
+/// (IL_001f-IL_0042), removes the `MaxHp` of every listed creature but the
+/// new one (`Except` IL_0050, `ExceptWith` IL_0079) and draws
+/// `NextItem` over what is left (IL_0089). `Hook.AfterDeath` is awaited at
+/// IL_03bc of `CreatureCmd/<KillWithoutCheckingWinCondition>d__15::MoveNext`
+/// (RVA `0x3ebe90`), before `ICombatState::RemoveCreature` at IL_04d5, so the
+/// dying Axebot is still listed. The bands of consecutive bodies share one
+/// value (86 and 96 at A8+, 78 and 88 below: `get_MaxInitialHp` of one is
+/// `get_MinInitialHp` of the next), so a body rolled at its band's top
+/// narrows its successor's draw from eleven candidates to ten. Until #3756
+/// this excluded the dying body, which is the same thing Surprise got wrong
+/// before #3146.
 pub(crate) fn respawn_axebot(
     state: &mut HotState,
     owner_uid: u32,
@@ -4067,7 +4604,7 @@ pub(crate) fn respawn_axebot(
         .checked_add(hp_bonus)
         .ok_or(EngineRefusal::CounterOverflow("Axebot respawn HP"))?;
     let next_uid = allocate_creature_uid(state)?;
-    let hp = roll_unique_hp_excluding(state, low, high, Some(owner_uid))?;
+    let hp = roll_unique_hp(state, low, high)?;
 
     let mut replacement = HotMonster::new(MonsterKind::Axebot, hp);
     replacement.max_hp = hp;
@@ -4099,6 +4636,86 @@ fn insert_slot_ordered(state: &mut HotState, monster: HotMonster) {
     roster.insert(position, monster);
 }
 
+/// Fur Coat's `BeforeCombatStart` in a marked room: every hittable enemy of
+/// the initial roster starts at 1 HP (#3634).
+///
+/// # The native contract
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`).
+/// `FurCoat/<BeforeCombatStart>d__26::MoveNext` (RVA `0x325360`):
+///
+/// * leaves unless `GetMarkedCoords` is non-null and holds
+///   `Owner.RunState.CurrentMapPoint.coord` (`IL_0021`-`IL_0047`). That
+///   membership is the entry's (`entry::relics::fur_coat_membership`), carried
+///   here as the `fur_coat_active` state flag;
+/// * `CurrentMapPointHistoryEntry.GetEntry(Owner.NetId).IsAffectedByFurCoat =
+///   true` (`IL_004d`-`IL_0072`), run history only, and `Flash`;
+/// * `Owner.Creature.CombatState.HittableEnemies` (`IL_007e`-`IL_008d`), a VFX
+///   call over them, and per enemy `CreatureCmd::SetCurrentHp(enemy,
+///   Decimal::One)` (`IL_00b9`-`IL_00c7`), awaited one at a time.
+///
+/// `CreatureCmd/<SetCurrentHp>d__21::MoveNext` (`0x3ecbe8`) calls
+/// `Creature::SetCurrentHpInternal` (`0x11d734`: `CurrentHp = Math.Min(amount,
+/// MaxHp)`, so max HP is untouched and an enemy with less than one max HP
+/// would keep it) and, when the value changed, `Hook::AfterCurrentHpChanged`.
+///
+/// # Which enemies
+///
+/// `Creature::get_IsHittable` (`0x11d298`) is `!IsDead &&
+/// Hook.ShouldAllowHitting`. The hook's overriders in the assembly are
+/// `AdaptablePower`, `IllusionPower` and `ReattachPower`, each of which
+/// vetoes only its own owner while that owner is reviving after a death, and
+/// `DieForYouPower`, which vetoes dead creatures (the two `Mock…` powers are
+/// test fixtures). No creature of an initial roster has died yet, so at this
+/// hook the hittable enemies are exactly the living ones.
+///
+/// # What the HP write wakes
+///
+/// The overriders of `AfterCurrentHpChanged` in the assembly:
+///
+/// * `MeatOnTheBone` (`0x96af0`) returns unless the creature is its owner's
+///   (`IL_0001`-`IL_000d`), and then only sets its display status;
+/// * `Crusher` (`0xb203b`) and `Rocket` (`0xbcabb`) act only on their own
+///   creature (`IL_0001`-`IL_0008`) and only play a hurt animation;
+/// * `NecroMasteryPower` is a combat power, and none exists at combat start;
+/// * `RedSkull` (`<AfterCurrentHpChanged>d__13` `0x32f5ec`) has **no**
+///   creature test: once `CombatManager.IsInProgress` (`IL_001d`-`IL_0027`,
+///   already true at this hook) it awaits `ModifyStrengthIfNecessary`
+///   (`IL_002c`), which re-reads its owner's HP against its latch.
+///
+/// So the write itself is the whole effect, with one exception. It is not
+/// damage, so no damage hook, threshold power or death check runs, and every
+/// enemy is still alive at 1. The exception is Red Skull's re-check. It is a
+/// no-op whenever the latch already agrees with the owner's HP, which the
+/// relic's own room-entry body has just made true, except where this crate
+/// deliberately left the latch stale (Planisphere's heal crossing half HP
+/// after Red Skull applied, `entry::opening`'s
+/// `RedSkullRoomEntry::BeforeCrossingHeal`): there native would settle the
+/// latch here rather than on turn one, so the opening refuses a marked Fur
+/// Coat room in that case
+/// (`entry::opening::fur_coat_red_skull_recheck_is_inert`).
+///
+/// # Position
+///
+/// A first-walk `BeforeCombatStart` listener, ordered among its peers by
+/// relic acquisition in native. No other listener of the hook reads or
+/// writes an enemy's HP (the represented ones are the combat-start pets and
+/// summons, Vambrace's reset, Belt Buckle's latch, Delicate Frond's belt fill
+/// and the compiled templates, none of which touches a monster), so the fixed
+/// place is not observable. Enemies added later take the same write in
+/// [`fur_coat_after_opponent_added`].
+pub(crate) fn fur_coat_before_combat_start(state: &mut HotState) {
+    if !state.fur_coat_active() {
+        return;
+    }
+    for monster in state.monsters_mut().iter_mut() {
+        if monster.hp > 0 {
+            monster.hp = monster.max_hp.min(1);
+        }
+    }
+    crate::coverage::record_relic(crate::ids::RelicId::RelicFurCoat);
+}
+
 /// Fur Coat's global enemy-add listener. Initial enemies have already passed
 /// this hook before canonical projection; every represented mid-combat enemy
 /// creation converges here immediately after publication.
@@ -4108,7 +4725,8 @@ pub(crate) fn fur_coat_after_opponent_added(
 ) -> Result<(), EngineRefusal> {
     let fur_coat = state.fur_coat_active();
     let philosophers_stone = state.philosophers_stone_owned() && !state.history.over;
-    if !fur_coat && !philosophers_stone {
+    let murderous = state.fanouts.murderous() && !state.history.over;
+    if !fur_coat && !philosophers_stone && !murderous {
         return Ok(());
     }
     let upkeep = state.fanouts.misery_attachment_upkeep();
@@ -4138,8 +4756,32 @@ pub(crate) fn fur_coat_after_opponent_added(
         super::damage::write_monster_strength(monster, strength, crate::hot::Applier::None, upkeep);
         crate::coverage::record_relic(crate::ids::RelicId::RelicPhilosophersStone);
     }
+    // The Murderous run modifier (#3934). `Murderous::
+    // AfterCreatureAddedToCombat` (v0.111.0 RVA `0xc666f`) returns for a
+    // creature whose `Side` is `CombatSide.Player` (`ldc.i4.1`,
+    // IL_0002-IL_000f) and otherwise calls `PowerCmd.Apply<StrengthPower>`
+    // of `ldc.i4.3` with a null applier and a null card (IL_0010-IL_001f).
+    // It runs after the relic rows above: modifiers follow the player's
+    // relics in `CombatState/<IterateHookListeners>d__69::MoveNext`
+    // (`0x3f9720`, IL_0219-IL_0225). Both rows only add Strength, so the
+    // order is not observable here. Only opponents reach this function.
+    if murderous && monster.hp > 0 {
+        let strength = monster
+            .powers
+            .value(PowerId::Strength)
+            .checked_add(MURDEROUS_STRENGTH)
+            .ok_or(EngineRefusal::CounterOverflow("Murderous strength"))?;
+        super::damage::write_monster_strength(monster, strength, crate::hot::Applier::None, upkeep);
+    }
     Ok(())
 }
+
+/// The Murderous run modifier's Strength: `ldc.i4.3` in both of its bodies
+/// (`Murderous/<AfterRoomEntered>d__1::MoveNext` RVA `0x377cf8` IL_003a and
+/// `Murderous::AfterCreatureAddedToCombat` RVA `0xc666f` IL_0016). The type's
+/// `_strengthAmount` field is a constant with no initializer body: the type
+/// has no static constructor, and neither body loads a field.
+pub(crate) const MURDEROUS_STRENGTH: i32 = 3;
 
 /// Fabricator's bot spawn: filter the selected pool by the one shared
 /// `_lastSpawned`, spend one AI draw even for a singleton, take the first
@@ -4518,11 +5160,13 @@ pub(crate) fn spawn_illusion(
 
 /// Whether one rat carries an exact generated four-branch AI state. The empty
 /// form exists only between spawn publication and the immediate starter roll.
-/// Otherwise current intent is the StateLog tail; Disease Bite and Screech
-/// cannot repeat, Screech appears at most once in the trailing cooldown
-/// window, and CALL_FOR_BACKUP is coupled to its UseOnlyOnce record. Scratch
-/// is the native first-branch exact-zero exception and may repeat when a zero
-/// RNG roll lands on its zero-weight boundary.
+/// Otherwise current intent is the StateLog tail; Screech is rolled at most
+/// once in the trailing cooldown window, and CALL_FOR_BACKUP is coupled to
+/// its UseOnlyOnce record. No roll repeats Disease Bite or Screech (Scratch,
+/// the first branch, repeats on the exact-zero roll), but a stun logs any
+/// parked move a second time (#3823, `turn::resume_stunned_random_ai`), so
+/// adjacent entries may be equal and the Screech window is asked of the log
+/// with each run of equal entries read as one.
 pub(crate) fn rat_ai_state_is_valid(monster: &HotMonster, allow_spawn_empty: bool) -> bool {
     if monster.kind != MonsterKind::TwoTailedRat || monster.loop_pos != 0 {
         return false;
@@ -4541,6 +5185,14 @@ pub(crate) fn rat_ai_state_is_valid(monster: &HotMonster, allow_spawn_empty: boo
         .collect();
     let used = machine.once_len() == 1
         && machine.once_at(0) == Some(super::turn::RAT_CALL_FOR_BACKUP_INDEX);
+    let screech_runs = log
+        .iter()
+        .enumerate()
+        .filter(|(position, entry)| {
+            **entry == super::turn::RAT_SCREECH_INDEX
+                && (*position == 0 || log[*position - 1] != super::turn::RAT_SCREECH_INDEX)
+        })
+        .count();
     if machine.once_len() > usize::from(used)
         || log.len() != machine.log_len()
         || !(1..=3).contains(&log.len())
@@ -4548,14 +5200,7 @@ pub(crate) fn rat_ai_state_is_valid(monster: &HotMonster, allow_spawn_empty: boo
         || log
             .iter()
             .any(|entry| *entry > super::turn::RAT_CALL_FOR_BACKUP_INDEX)
-        || log
-            .windows(2)
-            .any(|pair| pair[0] == pair[1] && pair[0] != super::turn::RAT_SCRATCH_INDEX)
-        || log
-            .iter()
-            .filter(|entry| **entry == super::turn::RAT_SCREECH_INDEX)
-            .count()
-            > 1
+        || screech_runs > 1
         || (log.contains(&super::turn::RAT_CALL_FOR_BACKUP_INDEX) && !used)
         || (log.len() < 3 && used)
         || (next == super::turn::RAT_CALL_FOR_BACKUP_INDEX
@@ -4589,10 +5234,32 @@ fn rat_slot_label(native: i32) -> i32 {
 }
 
 /// The most CALL_FOR_BACKUP summons a Two-Tailed Rat fight can complete.
+///
 /// `TwoTailedRat::CanSummon` (RVA `0xc42c8`, `IL_0017`-`IL_001e`) refuses
-/// once `CallForBackupCount >= 3`, and every completed summon raises every
-/// living rat's count by one (see [`spawn_rat`]).
-const RAT_MAX_SUMMONS: usize = 3;
+/// once `CallForBackupCount >= 3`, and every completed call raises every
+/// living rat's count by one (see [`spawn_rat`]). With no stun at most one
+/// call is pending at a time (`IL_0048`-`IL_009b`), so three calls complete
+/// and each is a summon.
+///
+/// A stun hides a parked call from that teammate test (#3823,
+/// `GENERIC_STUN_RANDOM_TABLE_KINDS`), so calls can be pending on several
+/// living rats at once. A call is still only ever *rolled* while the count is
+/// below 3, so when the count reaches 3 the calls still to come are the ones
+/// already pending on the other living rats, at most four of them (five
+/// slots, `TwoTailedRatsNormal::get_Slots` `0xd59f2`): seven calls in all,
+/// and so at most seven summons.
+const RAT_MAX_SUMMONS: usize = 7;
+
+/// The value `CallForBackupCount` is held at.
+///
+/// The count's one reader is `CanSummon`'s `CallForBackupCount < 3`
+/// (`0xc42c8` `IL_0017`-`IL_001e`); its one writer is the synchronization in
+/// `<CallForBackup>d__41::MoveNext` (`0x373d98` `IL_01e1`-`IL_025d`), `max +
+/// 1` over the living rats. Native's count can pass 3 once a stun has let two
+/// calls be pending together (#3823); every value from 3 up reads the same,
+/// so the hot count saturates here and the document's `cfb` is
+/// `min(CallForBackupCount, 3)`.
+pub(crate) const RAT_CALL_COUNT_CAP: u8 = 3;
 
 /// Whether this is a reachable Two-Tailed Rat roster at a serialized command
 /// boundary (#3146).
@@ -4600,14 +5267,21 @@ const RAT_MAX_SUMMONS: usize = 3;
 /// Three initial rats hold labels 0/1/2 (native `third`..`fifth`, see
 /// [`rat_native_slot`]) with uids 0/1/2 and pairwise distinct max HP. Each
 /// completed CALL_FOR_BACKUP ([`spawn_rat`]) appends one row, retained after
-/// death for uid identity, so a roster has three to six rows. Removed
+/// death for uid identity, so a roster has three to ten rows
+/// ([`RAT_MAX_SUMMONS`]). Removed
 /// corpses have left native `Enemies`, so native slot choice, unique HP and
 /// the count synchronization never see them, and the hot roster cannot be
 /// checked against one fixed identity table. The retained counts date every
-/// death instead: every living rat's call count equals the completed summon
-/// count `S`, and a corpse keeps the count it died with, so an older rat was
-/// in `Enemies` at the k-th summon exactly when it is alive or its count is
-/// at least `k`. On that footing this validator checks:
+/// death instead: every living rat's call count is the completed call count
+/// (held at [`RAT_CALL_COUNT_CAP`]), and a corpse keeps the count it died
+/// with. The first two calls are always the first two summons (a call
+/// completes without a summon only when all five slots are held,
+/// `<CallForBackup>d__41` `0x373d98` IL_00d5-IL_010f, which takes two
+/// summons), so an older rat was in `Enemies` at the first or second summon
+/// exactly when it is alive or its count is at least that ordinal. From the
+/// third summon on the capped count cannot date a corpse that reached 3: it
+/// may have died before or after that summon. On that footing this validator
+/// checks, with `S` the number of summoned rows:
 ///
 /// * rows are sorted by (native slot index, uid): `SortEnemiesBySlotName`
 ///   orders `Enemies` by index, and a summon that reuses a corpse's slot is
@@ -4617,13 +5291,26 @@ const RAT_MAX_SUMMONS: usize = 3;
 ///   (below the counter when it is tracked);
 /// * the k-th summon took the LAST native slot no rat present at it held,
 ///   and its max HP differs from every rat present at it; every max HP is in
-///   band;
-/// * an initial corpse's count is at most `S`, and the k-th summon's corpse
-///   holds `k..=S`;
+///   band. For the third summon and later, a corpse whose count reached the
+///   cap may or may not have been present: it may hold a later slot, and is
+///   not asked for a distinct max HP;
+/// * every living rat holds one count: `S` while `S < 2`, 2 or 3 when
+///   `S == 2` (3 only after a call that found no slot), 3 from there on. No
+///   corpse's count is above the living bound, and the k-th summon's corpse
+///   holds at least `min(k, 3)`;
 /// * UseOnlyOnce records selection rather than execution, so a rat killed
 ///   after selecting CALL_FOR_BACKUP can make that census exceed `S`; it may
-///   never be lower, and at most one living rat may have the call pending.
+///   never be lower. Any number of living rats may hold the call pending
+///   (#3823: before the stun this was at most one).
 pub(crate) fn rat_roster_is_valid(state: &HotState) -> bool {
+    rat_roster_is_valid_within(state, false)
+}
+
+/// [`rat_roster_is_valid`], or with `mid_side` the same roster inside an
+/// enemy side, where a rat summoned earlier in the side stands with no
+/// intent yet (`rat_spawn_fresh`, #3747). Only a second CALL_FOR_BACKUP in
+/// one side reads it that way (#3823, [`spawn_rat`]).
+fn rat_roster_is_valid_within(state: &HotState, mid_side: bool) -> bool {
     let rats: Vec<&HotMonster> = state
         .monsters
         .iter()
@@ -4635,6 +5322,14 @@ pub(crate) fn rat_roster_is_valid(state: &HotState) -> bool {
     let Ok(call_count) = u8::try_from(rats.len() - 3) else {
         return false;
     };
+    // The highest count any rat of this roster can hold, and the lowest a
+    // living one can.
+    let count_top = if call_count < 2 {
+        call_count
+    } else {
+        RAT_CALL_COUNT_CAP
+    };
+    let count_floor = call_count.min(RAT_CALL_COUNT_CAP);
     let mut keys = Vec::with_capacity(rats.len());
     for rat in &rats {
         let Some(native) = rat_native_slot(rat.slot) else {
@@ -4693,12 +5388,25 @@ pub(crate) fn rat_roster_is_valid(state: &HotState) -> bool {
         let Ok(ordinal) = u8::try_from(ordinal + 1) else {
             return false;
         };
-        // An older rat was in `Enemies` at this summon exactly when it is
-        // alive now or its retained count reached this summon's ordinal.
+        // An older rat was in `Enemies` at this summon when it is alive now
+        // or, for the first two summons, its retained count reached this
+        // summon's ordinal. From the third on a corpse at the cap is only
+        // possibly present.
+        let dated = ordinal < RAT_CALL_COUNT_CAP;
         let present: Vec<&&HotMonster> = rats
             .iter()
             .filter(|other| {
-                other.uid < uid && (other.hp > 0 || other.rat_call_for_backup_count() >= ordinal)
+                other.uid < uid
+                    && (other.hp > 0 || (dated && other.rat_call_for_backup_count() >= ordinal))
+            })
+            .collect();
+        let possibly: Vec<&&HotMonster> = rats
+            .iter()
+            .filter(|other| {
+                other.uid < uid
+                    && other.hp <= 0
+                    && !dated
+                    && other.rat_call_for_backup_count() >= RAT_CALL_COUNT_CAP
             })
             .collect();
         if present
@@ -4710,38 +5418,38 @@ pub(crate) fn rat_roster_is_valid(state: &HotState) -> bool {
         if ((native + 1)..RAT_SLOTS).any(|later| {
             !present
                 .iter()
+                .chain(possibly.iter())
                 .any(|other| rat_native_slot(other.slot) == Some(later))
         }) {
             return false;
         }
         let count = rat.rat_call_for_backup_count();
-        if rat.hp <= 0 && !(ordinal..=call_count).contains(&count) {
+        if rat.hp <= 0 && count < ordinal.min(RAT_CALL_COUNT_CAP) {
             return false;
         }
     }
 
     let mut used_calls = 0_u8;
-    let mut living_pending_calls = 0_u8;
+    let mut living_count = None;
     for &rat in &rats {
-        if !rat_ai_state_is_valid(rat, false) {
+        if !rat_ai_state_is_valid(rat, mid_side) {
             return false;
         }
         let machine = rat.random_ai;
-        let next = machine.next().expect("validated rat intent");
         let used = machine.once_len() == 1
             && machine.once_at(0) == Some(super::turn::RAT_CALL_FOR_BACKUP_INDEX);
         if used {
             used_calls += 1;
         }
-        if rat.hp > 0 && next == super::turn::RAT_CALL_FOR_BACKUP_INDEX {
-            living_pending_calls += 1;
-        }
         let count = rat.rat_call_for_backup_count();
-        if (rat.hp > 0 && count != call_count)
-            || count > call_count
+        if rat.hp > 0 && *living_count.get_or_insert(count) != count {
+            return false;
+        }
+        if (rat.hp > 0 && count < count_floor)
+            || count > count_top
             || rat.rat_turns_until_summonable() > 2
             || rat.rat_turns_until_summonable() == i32::MIN
-            || rat.rat_spawn_fresh()
+            || (rat.rat_spawn_fresh() && !mid_side)
         {
             return false;
         }
@@ -4779,11 +5487,11 @@ pub(crate) fn rat_roster_is_valid(state: &HotState) -> bool {
             return false;
         }
     }
-    used_calls >= call_count && living_pending_calls <= 1
+    used_calls >= call_count
 }
 
 fn require_rat_roster(state: &HotState, owner_uid: u32) -> Result<(), EngineRefusal> {
-    if !rat_roster_is_valid(state)
+    if !rat_roster_is_valid_within(state, true)
         || state
             .monsters
             .iter()
@@ -4825,16 +5533,37 @@ fn require_rat_roster(state: &HotState, owner_uid: u32) -> Result<(), EngineRefu
 ///   Only living rats (and the newcomer) are synchronized; a corpse keeps the
 ///   count it died with.
 ///
-/// When `nextSlot` is empty (`IL_010f`) native skips the Add but still runs
-/// the synchronization. That path is unreachable from a validated roster:
+/// When `nextSlot` is empty (`IL_010a`-`IL_010f` branches to `IL_01e1`)
+/// native skips the Wait and the Add and still runs the synchronization.
 /// `TwoTailedRat::CanSummon` (`0xc42c8`, `IL_0022`-`IL_0044`) selects
-/// CALL_FOR_BACKUP only while `GetNextSlot` is non-empty, only a summon fills
-/// a slot, and no teammate may hold the call pending (`IL_0048`-`IL_009b`).
-/// It refuses by name rather than advance the counts without a summon.
+/// CALL_FOR_BACKUP only while `GetNextSlot` is non-empty and only a summon
+/// fills a slot, so with no stun the path is unreachable: no teammate may
+/// hold the call pending (`IL_0048`-`IL_009b`). A stunned teammate's parked
+/// call is hidden from that test (#3823), so two rats can hold the call
+/// together, the first fills the last slot and the second finds none. The
+/// counts then rise with no newcomer, as native's do.
 ///
-/// After publication the newcomer (TurnsUntilSummonable 2) spends one
-/// MonsterAi draw for its initial intent; the fresh-roll latch prevents a
-/// second roll at this same enemy side end.
+/// The count is held at [`RAT_CALL_COUNT_CAP`].
+///
+/// The newcomer (TurnsUntilSummonable 2) does NOT roll its first intent here
+/// (#3747). `CombatManager/<AfterCreatureAdded>d__113::MoveNext` (RVA
+/// `0x3f2dfc`) awaits `Creature::AfterAddedToRoom` (IL_0017-IL_001c) and
+/// then calls `MonsterModel::RollMove` (IL_00cb) only for an enemy
+/// (IL_0077-IL_0081) added while `CombatState.CurrentSide == 1`
+/// (IL_0084-IL_008f); `CombatSide` is `None` 0, `Player` 1, `Enemy` 2, and
+/// CALL_FOR_BACKUP is a monster move, performed on the enemy side. So the rat
+/// is published with no intent, and its first `MonsterAi` draw is the one
+/// every enemy takes in `CombatManager/<StartTurn>d__100::MoveNext`'s
+/// `Enemies` walk (`0x3f781c` IL_036b-IL_03a0 ->
+/// `Creature::PrepareForNextTurn` `0x11d85c` IL_002a), at its own slot
+/// position: [`super::turn::prepare_random_ai`]. The fresh latch marks that
+/// intent-less form until the walk rolls it.
+///
+/// Rolling at spawn instead is the same draw only while the newcomer sorts
+/// ahead of every living rat, which holds for a first summon into native
+/// `second`. A newcomer that takes a corpse's later slot rolls AFTER the
+/// rats ahead of it (census witness `4SAVTZ7KQ8NW` node 13: the summoner in
+/// `fourth` drew first, the newcomer in `fifth` second).
 pub(crate) fn spawn_rat(state: &mut HotState, owner_uid: u32) -> Result<(), EngineRefusal> {
     require_rat_roster(state, owner_uid)?;
     let owner = state
@@ -4864,28 +5593,30 @@ pub(crate) fn spawn_rat(state: &mut HotState, owner_uid: u32) -> Result<(), Engi
             );
         }
     }
-    let Some(native) = (0..RAT_SLOTS).rev().find(|slot| !held.contains(slot)) else {
-        return Err(EngineRefusal::MalformedArgs(
-            "Two-Tailed Rat CALL_FOR_BACKUP with no free slot",
-        ));
-    };
-    let (low, high) = native_hp_band(state, MonsterKind::TwoTailedRat)?;
-    let hp = roll_unique_hp_native_enemies(state, low, high)?;
-    let uid = allocate_creature_uid(state)?;
-    let mut rat = HotMonster::new(MonsterKind::TwoTailedRat, hp);
-    rat.max_hp = hp;
-    rat.slot = rat_slot_label(native);
-    rat.uid = uid;
-    rat.set_rat_turns_until_summonable(2);
-    rat.set_rat_spawn_fresh(true);
-    insert_rat_native_ordered(state, rat);
-    fur_coat_after_opponent_added(state, uid)?;
-    let index = state
-        .monsters
-        .iter()
-        .position(|monster| monster.uid == uid)
-        .expect("new rat was inserted by uid");
-    super::turn::roll_rat_intent(state, index)?;
+    if let Some(native) = (0..RAT_SLOTS).rev().find(|slot| !held.contains(slot)) {
+        if state
+            .monsters
+            .iter()
+            .filter(|monster| monster.kind == MonsterKind::TwoTailedRat)
+            .count()
+            >= 3 + RAT_MAX_SUMMONS
+        {
+            return Err(EngineRefusal::MalformedArgs(
+                "Two-Tailed Rat roster/AI lifecycle",
+            ));
+        }
+        let (low, high) = native_hp_band(state, MonsterKind::TwoTailedRat)?;
+        let hp = roll_unique_hp_native_enemies(state, low, high)?;
+        let uid = allocate_creature_uid(state)?;
+        let mut rat = HotMonster::new(MonsterKind::TwoTailedRat, hp);
+        rat.max_hp = hp;
+        rat.slot = rat_slot_label(native);
+        rat.uid = uid;
+        rat.set_rat_turns_until_summonable(2);
+        rat.set_rat_spawn_fresh(true);
+        insert_rat_native_ordered(state, rat);
+        fur_coat_after_opponent_added(state, uid)?;
+    }
 
     let mut top = 0_u8;
     for monster in state.monsters.iter() {
@@ -4898,6 +5629,7 @@ pub(crate) fn spawn_rat(state: &mut HotState, owner_uid: u32) -> Result<(), Engi
             );
         }
     }
+    let top = top.min(RAT_CALL_COUNT_CAP);
     for monster in state.monsters_mut().iter_mut() {
         if monster.kind == MonsterKind::TwoTailedRat
             && monster.hp > 0
@@ -5155,6 +5887,39 @@ pub(crate) fn battleworn_time_limit_after_enemy_side_end(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// #3856: `note_hopper_transformed`, one arm at a time. Only a uid that
+    /// owns a master row is recorded, once, in ascending order; a generated
+    /// card and a fight with no Hopper deck record nothing.
+    #[test]
+    fn note_hopper_transformed_records_only_master_rows_in_ascending_order() {
+        let row = |uid| HopperDeckRow {
+            card: crate::hot::HotCard {
+                uid,
+                atom: crate::catalog::CardAtom::default(),
+                flags: 0,
+            },
+            state: crate::hot::CardInstanceState::default(),
+        };
+        let mut state = HotState::at_defaults();
+        note_hopper_transformed(&mut state, 3);
+        assert!(state.card_states.hopper().is_none());
+
+        state
+            .card_states
+            .set_hopper(Some(crate::hot::HopperDeckState {
+                master: vec![row(1), row(3), row(5)],
+                history: Vec::new(),
+                transformed: Vec::new(),
+            }));
+        note_hopper_transformed(&mut state, 40);
+        assert!(state.card_states.hopper().unwrap().transformed.is_empty());
+        for uid in [5, 1, 5, 40, 1] {
+            note_hopper_transformed(&mut state, uid);
+        }
+        assert_eq!(state.card_states.hopper().unwrap().transformed, [1, 5]);
+        assert_eq!(state.card_states.hopper().unwrap().master.len(), 3);
+    }
 
     fn lone_battle_friend(kind: MonsterKind, timer: i32) -> HotState {
         let mut state = HotState::at_defaults();
@@ -6224,9 +6989,15 @@ mod tests {
         );
     }
 
+    /// The newcomer's part of the `StartTurn` walk (#3747): a fresh rat was
+    /// published without an intent, rolls its first one here, and the latch
+    /// clears. The other rats keep the intents these tests hand them.
     fn clear_fresh(state: &mut HotState) {
-        for rat in state.monsters_mut().iter_mut() {
-            rat.set_rat_spawn_fresh(false);
+        for index in 0..state.monsters.len() {
+            if state.monsters[index].rat_spawn_fresh() {
+                super::super::turn::roll_rat_intent(state, index).unwrap();
+                state.monsters_mut()[index].set_rat_spawn_fresh(false);
+            }
         }
     }
 
@@ -6260,7 +7031,11 @@ mod tests {
         spawn_rat(&mut state, 0).unwrap();
 
         assert_eq!(state.rng.get(RngStream::Niche).counter, niche_before + 1);
-        assert_eq!(state.rng.get(RngStream::Ai).counter, ai_before + 1);
+        assert_eq!(
+            state.rng.get(RngStream::Ai).counter,
+            ai_before,
+            "an enemy-side Add rolls no intent (#3747)"
+        );
         assert_eq!(
             rat_identity(&state),
             [
@@ -6275,6 +7050,17 @@ mod tests {
         assert!(![18, 19, 20].contains(&spawned.max_hp));
         assert_eq!(spawned.rat_turns_until_summonable(), 2);
         assert!(spawned.rat_spawn_fresh());
+        assert_eq!(spawned.random_ai.next(), None);
+        assert_eq!(spawned.random_ai.log_len(), 0);
+        assert!(rat_ai_state_is_valid(spawned, true));
+        assert!(!rat_ai_state_is_valid(spawned, false));
+
+        // `fresh_roll` is an in-phase latch. The `StartTurn` walk rolls the
+        // newcomer's first intent and clears it, which returns to an
+        // admissible roster.
+        clear_fresh(&mut state);
+        assert_eq!(state.rng.get(RngStream::Ai).counter, ai_before + 1);
+        let spawned = &state.monsters[0];
         assert!(matches!(
             spawned.random_ai.next(),
             Some(
@@ -6285,10 +7071,6 @@ mod tests {
         ));
         assert_eq!(spawned.random_ai.log_len(), 1);
         assert_eq!(spawned.random_ai.once_len(), 0);
-
-        // `fresh_roll` is an in-phase latch. Clearing it models the exact
-        // PrepareForNextTurn boundary and returns to an admissible roster.
-        clear_fresh(&mut state);
         assert!(rat_roster_is_valid(&state));
     }
 
@@ -6356,11 +7138,13 @@ mod tests {
     }
 
     /// Five living rats hold every slot. CALL_FOR_BACKUP cannot be selected
-    /// then (`CanSummon`), so the native no-slot path — skip the Add but still
-    /// synchronize the counts — is unreachable; a roster that reaches it
-    /// refuses by name instead of advancing counts without a summon.
+    /// then (`CanSummon`), but a call parked under a stun is still performed
+    /// (#3823): native skips the Add and still synchronizes the counts
+    /// (`<CallForBackup>d__41` `0x373d98` IL_010a-IL_010f, IL_01e1-IL_025d).
+    /// No row is added, no stream is drawn, the count rises to the cap, and
+    /// the roster is one the validator accepts with two summons and count 3.
     #[test]
-    fn rat_spawn_with_every_slot_held_refuses() {
+    fn rat_call_with_every_slot_held_raises_the_counts_and_summons_nobody() {
         let mut state = rat_state();
         spawn_rat(&mut state, 0).unwrap();
         clear_fresh(&mut state);
@@ -6394,13 +7178,111 @@ mod tests {
         );
         assert!(rat_roster_is_valid(&state));
         let before = state.clone();
-        assert_eq!(
-            spawn_rat(&mut state, 3),
-            Err(EngineRefusal::MalformedArgs(
-                "Two-Tailed Rat CALL_FOR_BACKUP with no free slot"
-            ))
+        spawn_rat(&mut state, 3).unwrap();
+        assert_eq!(state.monsters.len(), 5);
+        assert_eq!(state.rng, before.rng);
+        assert!(
+            state
+                .monsters
+                .iter()
+                .all(|rat| rat.rat_call_for_backup_count() == RAT_CALL_COUNT_CAP)
         );
-        assert_eq!(state, before);
+        assert!(rat_roster_is_valid(&state));
+
+        // A further call (one more rat was parked under a stun) leaves the
+        // count at the cap: every value from 3 up reads the same in
+        // `CanSummon`.
+        rat_retires_call(&mut state, 3);
+        rat_calls(
+            &mut state,
+            4,
+            [
+                super::super::turn::RAT_SCRATCH_INDEX,
+                super::super::turn::RAT_DISEASE_BITE_INDEX,
+            ],
+        );
+        spawn_rat(&mut state, 4).unwrap();
+        assert!(
+            state
+                .monsters
+                .iter()
+                .all(|rat| rat.rat_call_for_backup_count() == RAT_CALL_COUNT_CAP)
+        );
+        assert!(rat_roster_is_valid(&state));
+    }
+
+    /// #3823: two rats hold CALL_FOR_BACKUP together (one was parked under a
+    /// stun while the other rolled), and both perform it in one enemy side.
+    /// The second call reads a roster that holds the first call's newcomer
+    /// with no intent yet, summons into the next free slot, and the counts
+    /// go to 2. After the `StartTurn` walk the roster is admissible.
+    #[test]
+    fn two_rats_call_for_backup_in_one_enemy_side() {
+        let mut state = rat_state();
+        let log = [
+            super::super::turn::RAT_DISEASE_BITE_INDEX,
+            super::super::turn::RAT_SCRATCH_INDEX,
+        ];
+        rat_calls(&mut state, 0, log);
+        rat_calls(&mut state, 1, log);
+        assert!(
+            rat_roster_is_valid(&state),
+            "two living rats may hold the call"
+        );
+        spawn_rat(&mut state, 0).unwrap();
+        assert!(!rat_roster_is_valid(&state), "a fresh rat is mid-side only");
+        spawn_rat(&mut state, 1).unwrap();
+        assert_eq!(
+            rat_identity(&state),
+            [
+                (3, 4, true, 2),
+                (4, 3, true, 2),
+                (0, 0, true, 2),
+                (1, 1, true, 2),
+                (2, 2, true, 2)
+            ]
+        );
+        clear_fresh(&mut state);
+        rat_retires_call(&mut state, 0);
+        rat_retires_call(&mut state, 1);
+        assert!(rat_roster_is_valid(&state));
+    }
+
+    /// #3823: the living rats hold one count, inside the band the number of
+    /// summoned rows allows, and a corpse that reached the cap is not dated
+    /// against the third summon or a later one.
+    #[test]
+    fn rat_roster_counts_follow_the_summoned_rows() {
+        let mut state = rat_state();
+        // No summon: every count is 0.
+        assert!(state.monsters_mut()[0].set_rat_call_for_backup_count(1));
+        assert!(!rat_roster_is_valid(&state));
+        let mut state = rat_state();
+        spawn_rat(&mut state, 0).unwrap();
+        clear_fresh(&mut state);
+        rat_retires_call(&mut state, 0);
+        assert!(rat_roster_is_valid(&state));
+        // One summon: 1, never 2, and never two different living counts.
+        for index in 0..4 {
+            let mut changed = state.clone();
+            assert!(changed.monsters_mut()[index].set_rat_call_for_backup_count(2));
+            assert!(!rat_roster_is_valid(&changed), "rat {index}");
+        }
+        let mut all = state.clone();
+        for rat in all.monsters_mut().iter_mut() {
+            assert!(rat.set_rat_call_for_backup_count(2));
+        }
+        assert!(!rat_roster_is_valid(&all));
+        // A rat that died after the summon keeps the count it died with: 1
+        // here. 0 would date its death before the summon, which then took a
+        // slot that was not the last free one; 2 is above the living bound.
+        let mut dead = state.clone();
+        dead.monsters_mut()[2].hp = 0;
+        assert!(rat_roster_is_valid(&dead));
+        assert!(dead.monsters_mut()[2].set_rat_call_for_backup_count(0));
+        assert!(!rat_roster_is_valid(&dead));
+        assert!(dead.monsters_mut()[2].set_rat_call_for_backup_count(2));
+        assert!(!rat_roster_is_valid(&dead));
     }
 
     /// Each necessary condition the reworked validator enforces on a summoned
@@ -6591,6 +7473,34 @@ mod tests {
         assert_eq!(stunned.monsters[1].loop_pos, 2);
     }
 
+    /// `FurCoat/<BeforeCombatStart>d__26::MoveNext` (`0x325360`): in a marked
+    /// room every hittable enemy goes to 1 HP through
+    /// `SetCurrentHpInternal` (`0x11d734`, `Math.Min(amount, MaxHp)`), with
+    /// max HP untouched. Witnesses each arm of
+    /// [`fur_coat_before_combat_start`]: an inactive flag writes nothing, a
+    /// living enemy goes to 1 whatever its HP, and a dead one is not hittable.
+    #[test]
+    fn fur_coat_sets_every_living_enemy_to_one_hp_only_in_a_marked_room() {
+        let roster = |active: bool| {
+            let mut state = HotState::at_defaults();
+            state.set_fur_coat_active(active);
+            for (uid, hp) in [(0, 40), (1, 0), (2, 1)] {
+                let mut monster = HotMonster::new(MonsterKind::Toadpole, hp);
+                monster.uid = uid;
+                monster.max_hp = 40;
+                state.monsters_mut().push(monster);
+            }
+            fur_coat_before_combat_start(&mut state);
+            state
+                .monsters
+                .iter()
+                .map(|monster| (monster.hp, monster.max_hp))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(roster(true), [(1, 40), (0, 40), (1, 40)]);
+        assert_eq!(roster(false), [(40, 40), (0, 40), (1, 40)]);
+    }
+
     #[test]
     fn philosophers_stone_buffs_each_new_living_opponent_once() {
         let mut state = HotState::at_defaults();
@@ -6608,6 +7518,44 @@ mod tests {
         state.monsters_mut().push(ended);
         fur_coat_after_opponent_added(&mut state, 10).unwrap();
         assert_eq!(state.monsters[1].powers.value(PowerId::Strength), 0);
+    }
+
+    /// #3934: the Murderous modifier's `AfterCreatureAddedToCombat`. A living
+    /// added opponent takes three Strength with a null applier, on top of
+    /// Philosopher's Stone's one when both are held; a dead one, and any one
+    /// added to a combat that is over, takes nothing; without the modifier
+    /// the row is absent.
+    #[test]
+    fn murderous_gives_each_new_living_opponent_three_strength() {
+        let added = |state: &mut HotState, uid: u32, hp: i32| {
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, 20);
+            monster.uid = uid;
+            monster.hp = hp;
+            state.monsters_mut().push(monster);
+            fur_coat_after_opponent_added(state, uid).unwrap();
+            state
+                .monsters
+                .last()
+                .unwrap()
+                .powers
+                .value(PowerId::Strength)
+        };
+        let mut state = HotState::at_defaults();
+        assert_eq!(added(&mut state, 9, 20), 0);
+
+        state.fanouts.set_murderous(true);
+        assert_eq!(added(&mut state, 10, 20), MURDEROUS_STRENGTH);
+        assert_eq!(MURDEROUS_STRENGTH, 3);
+        // Dead on arrival: nothing to apply to.
+        assert_eq!(added(&mut state, 11, 0), 0);
+
+        state.set_philosophers_stone_owned(true);
+        assert_eq!(added(&mut state, 12, 20), 4);
+        // The earlier arrivals are not buffed again.
+        assert_eq!(state.monsters[1].powers.value(PowerId::Strength), 3);
+
+        state.history.over = true;
+        assert_eq!(added(&mut state, 13, 20), 0);
     }
 
     // ---- #2647 slice A: the generic recipient stun -------------------------
@@ -6644,9 +7592,22 @@ mod tests {
     /// Every `None` reason, one case each (#2647 §5.5).
     #[test]
     fn parked_telegraph_refuses_every_ambiguous_telegraph() {
-        // A random-AI kind has no deterministic loop to index at all.
+        // A random-AI kind has no deterministic loop to index at all. One
+        // outside `GENERIC_STUN_RANDOM_TABLE_KINDS` has no parked telegraph;
+        // one inside parks the row `random_ai.next` names, at `loop_pos` 0
+        // only (#3823).
         assert!(crate::content_tables::monster_loop(MonsterKind::Mawler).is_none());
-        assert_eq!(parked_telegraph(MonsterKind::Mawler, 0), None);
+        assert_eq!(parked_telegraph(MonsterKind::TheObscura, 0), None);
+        assert_eq!(
+            parked_telegraph(MonsterKind::TwoTailedRat, 0),
+            Some(MonsterFollowUp::ParkedTelegraph)
+        );
+        assert_eq!(parked_telegraph(MonsterKind::TwoTailedRat, 1), None);
+        assert_eq!(
+            parked_telegraph(MonsterKind::Mawler, 0),
+            Some(MonsterFollowUp::ParkedTelegraph)
+        );
+        assert_eq!(parked_telegraph(MonsterKind::Mawler, 1), None);
         // Slumbering Beetle's executable table is the private native loop the
         // catalog synthesizes, not a generated one.
         assert_eq!(parked_telegraph(MonsterKind::SlumberingBeetle, 0), None);
@@ -6657,11 +7618,19 @@ mod tests {
             parked_telegraph(MonsterKind::BowlbugEgg, 0),
             Some(MonsterFollowUp::EggBite)
         );
-        // A row whose name is outside the closed vocabulary. (Bowlbug Silk
-        // was this case until #2647 put its two rows in the vocabulary.)
+        // A row whose name is outside the closed vocabulary is no longer a
+        // refusal (#3823): the loop parks the generic token, in range only.
         let toadpole = crate::content_tables::monster_loop(MonsterKind::Toadpole).unwrap();
         assert!(MonsterFollowUp::from_str(toadpole[0].name).is_none());
-        assert_eq!(parked_telegraph(MonsterKind::Toadpole, 0), None);
+        assert_eq!(
+            parked_telegraph(MonsterKind::Toadpole, 0),
+            Some(MonsterFollowUp::ParkedTelegraph)
+        );
+        assert_eq!(
+            parked_telegraph(MonsterKind::Toadpole, toadpole.len() as i32),
+            None
+        );
+        assert_eq!(parked_telegraph(MonsterKind::Toadpole, -1), None);
         assert_eq!(
             parked_telegraph(MonsterKind::BowlbugSilk, 0),
             Some(MonsterFollowUp::SilkToxicSpit)
@@ -6742,6 +7711,12 @@ mod tests {
             if name.is_empty() || name == "LIVING_SHIELD_SLAM_RECEIPT" {
                 continue;
             }
+            // #3823: the generic token names "the row `loop_pos` names", not
+            // a row; `the_named_parked_telegraph_kinds_are_pinned` pins that
+            // no generated row is spelled like it.
+            if follow_up == MonsterFollowUp::ParkedTelegraph {
+                continue;
+            }
             // Slumbering Beetle's ROLL_OUT_MOVE is its catalog-private
             // executable row (`catalog.rs` `BEETLE_ROLLOUT`); pin it there.
             if follow_up == MonsterFollowUp::BeetleRollOut {
@@ -6782,12 +7757,14 @@ mod tests {
             Err(EngineRefusal::MalformedArgs("generic stun owner"))
         );
         assert_eq!(state.monsters[0].override_state, MonsterOverride::None);
-        // A kind whose loop branches conditionally is refused too, until #2647
-        // open question 2 settles `StateLog.Last()` through a branch state.
+        // A kind whose loop branches conditionally is refused too, until the
+        // conditional-branch slice of #3823 (the parked state is settled; the
+        // successor deferred past the stunned turn is what is left).
         let branching = crate::content_tables::LOOPS
             .iter()
             .find(|(kind, rows)| {
                 !GENERIC_STUN_BESPOKE_KINDS.contains(kind)
+                    && !GENERIC_STUN_CONDITIONAL_KINDS.contains(kind)
                     && rows.iter().any(|row| {
                         matches!(row.repeats, crate::content_tables::Repeats::Conditional(_))
                     })
@@ -6797,31 +7774,21 @@ mod tests {
         assert!(!generic_stun_owner_is_eligible(branching), "{branching:?}");
     }
 
-    /// The exact set of owners Whistle's generic stun admits today.
+    /// The exact set of owners the generic stun admits (#3823).
     ///
-    /// Eligibility is **derived**, not declared: a kind qualifies when it is
-    /// not bespoke and every row of its generated loop resolves through
-    /// [`parked_telegraph`], which matches row names against the shared
-    /// [`MonsterFollowUp`] vocabulary. So adding a variant to that enum for an
-    /// unrelated purpose can silently widen Whistle's admission wall and
-    /// `monster_act`'s generic arm — the new-reader-invalidates-old-shortcut
-    /// class (#1432). Three vocabulary names are already carried by more than
-    /// one kind's loop: `BITE` (BowlbugEgg, PhantasmalGardener, Tunneler),
-    /// `THRASH` (BowlbugNectar, TerrorEel) and `BEAM_MOVE` (TorchHeadAmalgam,
-    /// KinPriest). Each of those other kinds is excluded today only because
-    /// some *other* row of its loop is outside the vocabulary — Tunneler's
-    /// `BURROW`/`BELOW`, PhantasmalGardener's `LASH`/`FLAIL`/`ENLARGE`,
-    /// KinPriest's three `ORB_*`/`RITUAL_MOVE` rows, TerrorEel's `CRASH` (and
-    /// TerrorEel is bespoke besides). One more variant is all it would take.
-    ///
-    /// The name match is kind-agnostic but not therefore unsound: native
-    /// resolves `nextMoveId` inside the **owner's** machine (`StunInternal`
-    /// `0x11d7cc` IL_0031–IL_0055 reads `StateLog.Last().Id`, and the walk
-    /// enters `States[id]`), and `parked_telegraph` likewise only ever indexes
-    /// `monster_loop(kind)` for one kind, so a shared name always denotes that
-    /// kind's own row. What needs pinning is the SET, not the mapping.
+    /// Eligibility is **derived** from the generated tables
+    /// ([`generic_stun_owner_is_eligible`]): a generated loop, no random
+    /// table, no conditional successor, no branch move kind, and not a bespoke
+    /// owner. So a table change can widen Whistle's admission wall, the
+    /// Imbalanced-recipient gate and `monster_act`'s generic arm at once: the
+    /// new-reader-invalidates-old-shortcut class (#1432). This pin is the
+    /// tripwire. The native side of every member is the classification table
+    /// in `solver/invariant-walks/2026-10-12-issue3823-plain-cycle.md`: each
+    /// machine is a cycle of `MoveState`s after its opening roll, with no
+    /// second writer of the move.
     #[test]
-    fn the_generic_stun_owner_set_is_exactly_the_three_bowlbug_workers() {
+    fn the_generic_stun_owner_set_is_pinned() {
+        use MonsterKind::*;
         // Read through the shared predicate rather than re-deriving the
         // conjunction here: #2693 B1 made this same set the gate on which
         // creatures may carry an Imbalanced attachment, and a pin that
@@ -6833,31 +7800,170 @@ mod tests {
             .collect();
         assert_eq!(
             eligible,
-            // #2647: `BowlbugSilk` joined when its two rows entered the
-            // `MonsterFollowUp` vocabulary. Its witnesses are
-            // `an_imbalanced_self_stun_parks_the_move_that_was_running` (both
-            // rows, the two-hit THRASH), the cold-reload round trip in
-            // `boundary.rs`, and the admitted `BOWLBUGS_NORMAL` census root.
+            vec![
+                Aeonglass,
+                AssassinRubyRaider,
+                Axebot,
+                AxeRubyRaider,
+                BattleFriendV1,
+                BattleFriendV2,
+                BattleFriendV3,
+                BowlbugEgg,
+                BowlbugNectar,
+                BowlbugSilk,
+                BruteRubyRaider,
+                BygoneEffigy,
+                Byrdonis,
+                CalcifiedCultist,
+                Chomper,
+                CrossbowRubyRaider,
+                Crusher,
+                CubexConstruct,
+                DampCultist,
+                DevotedSculptor,
+                Entomancer,
+                Exoskeleton,
+                FatGremlin,
+                FlailKnight,
+                Flyconid,
+                FossilStalker,
+                FrogKnight,
+                FuzzyWurmCrawler,
+                GasBomb,
+                GlobeHead,
+                GremlinMerc,
+                Guardbot,
+                HauntedShip,
+                HunterKiller,
+                InfestedPrism,
+                Inklet,
+                KinFollower,
+                KinPriest,
+                LeafSlimeM,
+                LeafSlimeS,
+                LivingFog,
+                LivingShield,
+                LouseProgenitor,
+                MagiKnight,
+                Mawler,
+                MechaKnight,
+                MysteriousKnight,
+                Myte,
+                Nibbit,
+                Noisebot,
+                OwlMagistrate,
+                PhantasmalGardener,
+                PhrogParasite,
+                PunchConstruct,
+                Rocket,
+                ScrollOfBiting,
+                Seapunk,
+                SewerClam,
+                ShrinkerBeetle,
+                SkulkingColony,
+                SlimedBerserker,
+                SlitheringStrangler,
+                SludgeSpinner,
+                SnappingJaxfruit,
+                SneakyGremlin,
+                SoulFysh,
+                SoulNexus,
+                SpectralKnight,
+                SpinyToad,
+                Stabbot,
+                TheForgotten,
+                TheInsatiable,
+                TheLost,
+                Toadpole,
+                TrackerRubyRaider,
+                TurretOperator,
+                TwigSlimeM,
+                TwigSlimeS,
+                TwoTailedRat,
+                Vantom,
+                VineShambler,
+                Wriggler,
+                Zapbot,
+            ],
+            "The set of owners the generic stun admits has changed.\n\
+             This is an ADMISSION WIDENING, not a refactor: every kind in this \
+             set becomes reachable by `stun_target`, by `valid_override`'s \
+             generic disjunct, by the Imbalanced-recipient gate and by \
+             `monster_act`'s generic arm. A new member owes the native reading \
+             of its machine (a cycle of `MoveState`s after the opening roll, \
+             or a random table whose log readers accept a move logged twice; \
+             no `SetMoveImmediate`/`ForceCurrentState`/`Stun` writer, no \
+             must-perform state), a row in the stun sweep witness and its \
+             native traces in `engine::native_stun_traces`."
+        );
+        // Every eligible kind resolves at every row. A random table (#3823)
+        // has one answer, at `loop_pos` 0: the row `random_ai.next` names.
+        for kind in eligible {
+            let Some(rows) = crate::content_tables::monster_loop(kind) else {
+                assert!(GENERIC_STUN_RANDOM_TABLE_KINDS.contains(&kind), "{kind:?}");
+                assert_eq!(
+                    parked_telegraph(kind, 0),
+                    Some(MonsterFollowUp::ParkedTelegraph)
+                );
+                assert_eq!(parked_telegraph(kind, 1), None);
+                assert_eq!(parked_telegraph(kind, -1), None);
+                continue;
+            };
+            for index in 0..rows.len() as i32 {
+                assert!(parked_telegraph(kind, index).is_some(), "{kind:?} {index}");
+            }
+            assert_eq!(parked_telegraph(kind, rows.len() as i32), None);
+            assert_eq!(parked_telegraph(kind, -1), None);
+        }
+    }
+
+    /// Which loops keep a named follow-up on the wire (#3823).
+    ///
+    /// A loop whose every row is in the named vocabulary parks the row's
+    /// name, as it did before the generic token existed, so no document
+    /// written before this change reads differently. Every other loop parks
+    /// [`MonsterFollowUp::ParkedTelegraph`]. Adding a name to the vocabulary
+    /// can move a kind from the token to its names, which would change that
+    /// kind's wire spelling; this pin is where that shows.
+    #[test]
+    fn the_named_parked_telegraph_kinds_are_pinned() {
+        let named: Vec<MonsterKind> = crate::content_tables::LOOPS
+            .iter()
+            .filter(|(_, rows)| loop_rows_are_all_named(rows))
+            .map(|(kind, _)| *kind)
+            .collect();
+        assert_eq!(
+            named,
             vec![
                 MonsterKind::BowlbugEgg,
                 MonsterKind::BowlbugNectar,
                 MonsterKind::BowlbugSilk,
-            ],
-            "The set of owners Whistle's generic stun admits has changed.\n\
-             This is an ADMISSION WIDENING, not a refactor: every kind in this \
-             set becomes reachable by `stun_target`, by `valid_override`'s \
-             generic disjunct, and by `monster_act`'s generic arm. It widens \
-             silently, because eligibility is derived from matching generated \
-             loop row names against the shared `MonsterFollowUp` vocabulary — \
-             so adding a variant for an unrelated bespoke purpose can pull a \
-             new kind in (`BITE`, `THRASH` and `BEAM_MOVE` are each already \
-             carried by more than one kind's loop). If you meant to widen it, \
-             the new owners owe their own root-level witnesses: a public-root \
-             stun, a cold reload that resumes the parked move, and the §5.5/§5.7 \
-             refusals for anything their machine makes ambiguous. If you did \
-             not, give the new variant a name no eligible loop carries, or add \
-             the kind to GENERIC_STUN_BESPOKE_KINDS."
+                // Bespoke (the Ravenous stun restores by name), so never a
+                // generic owner; listed because its three rows are named.
+                MonsterKind::CorpseSlug,
+                MonsterKind::MechaKnight,
+                MonsterKind::OwlMagistrate,
+                MonsterKind::Queen,
+                MonsterKind::TorchHeadAmalgam,
+            ]
         );
+        // No generated row is spelled like the token, so the token can never
+        // be read as a row name.
+        assert!(
+            crate::content_tables::LOOPS
+                .iter()
+                .all(|(_, rows)| rows.iter().all(|row| row.name != "PARKED_TELEGRAPH"))
+        );
+        // A token loop: the same answer at every row, and none out of range.
+        assert_eq!(
+            parked_telegraph(MonsterKind::Toadpole, 0),
+            Some(MonsterFollowUp::ParkedTelegraph)
+        );
+        assert_eq!(
+            parked_telegraph(MonsterKind::Toadpole, 2),
+            Some(MonsterFollowUp::ParkedTelegraph)
+        );
+        assert_eq!(parked_telegraph(MonsterKind::Toadpole, 3), None);
     }
 
     /// #2647 open question 6 / §5.10, re-derived for the widened carrier set.
@@ -6871,10 +7977,11 @@ mod tests {
     /// is `SCROLL_OF_BITING`'s `initial_powers` and nothing else's, carried
     /// **by kind** with no `PowerId` and therefore no wire field a document
     /// could use to put it on another creature — and Scroll of Biting is not
-    /// an Imbalanced carrier. The carrier set is the same derived set
-    /// `the_generic_stun_owner_set_is_exactly_the_three_bowlbug_workers` pins, so if a
-    /// future change ever pulled Scroll of Biting into it, that pin fails
-    /// first and loudly.
+    /// an Imbalanced carrier. The carrier set is
+    /// [`IMBALANCED_GENERIC_CARRIER_KINDS`], its own list since #3823 and no
+    /// longer the generic stun owner set: Scroll of Biting takes Whistle's
+    /// stun (a player-side `CreatureCmd::Stun`, which is no
+    /// `AfterDamageGiven` listener) and must still never carry Imbalanced.
     ///
     /// This lives in `monsters.rs` rather than beside the listener because
     /// `engine/damage.rs` is a hot module, and reading a generated content
@@ -6898,7 +8005,7 @@ mod tests {
 
         assert_ne!(MonsterKind::ScrollOfBiting, MonsterKind::BowlbugRock);
         assert!(
-            !generic_stun_owner_loop_is_fully_resolvable(MonsterKind::ScrollOfBiting),
+            !IMBALANCED_GENERIC_CARRIER_KINDS.contains(&MonsterKind::ScrollOfBiting),
             "Scroll of Biting became an eligible Imbalanced carrier: #2647 \
              open question 6 reopens, because one creature could then own two \
              AfterDamageGiven listeners and their order would be observable.",
@@ -7040,6 +8147,95 @@ mod tests {
             Err(EngineRefusal::MalformedArgs("generic stun target machine"))
         );
         assert_eq!(state, before);
+    }
+
+    /// #3823 / #3209: each reason Whistle's stun is not representable has its
+    /// own name, and a branch move kind is ineligible whatever the vocabulary
+    /// holds.
+    #[test]
+    fn whistle_stun_refusals_are_named_by_reason() {
+        let refusal = |kind: MonsterKind, edit: &dyn Fn(&mut HotMonster)| {
+            let mut builder = crate::catalog::CatalogBuilder::new();
+            builder.intern_monster(kind).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            let mut monster = HotMonster::new(kind, 40);
+            edit(&mut monster);
+            state.monsters_mut().push(monster);
+            whistle_stun_target_refusal(&state, &catalog, &state.monsters[0])
+        };
+        let plain = |_: &mut HotMonster| {};
+        for kind in [MonsterKind::OwlMagistrate, MonsterKind::MechaKnight] {
+            assert_eq!(refusal(kind, &plain), None, "{kind:?}");
+            assert_eq!(
+                refusal(kind, &|monster| monster.revive_stage = 1),
+                Some(WHISTLE_STUN_INSTANCE),
+                "{kind:?}"
+            );
+            // #3823: `spawn_noop` is the SPAWNED_MOVE telegraph and parks
+            // like any other. (On a kind that cannot carry it, admission's
+            // own `spawn_noop owner` wall is what refuses.)
+            assert_eq!(refusal(kind, &|monster| monster.spawn_noop = true), None);
+            // A corpse is a silent no-op, never a state to represent.
+            assert_eq!(refusal(kind, &|monster| monster.hp = 0), None);
+        }
+        assert_eq!(
+            refusal(MonsterKind::TerrorEel, &plain),
+            Some(WHISTLE_STUN_BESPOKE)
+        );
+        // Random AI outside the stun's list, a conditional successor, and a
+        // branch move kind.
+        for kind in [
+            MonsterKind::TheObscura,
+            MonsterKind::Fabricator,
+            MonsterKind::FakeMerchantMonster,
+            MonsterKind::KnowledgeDemon,
+            MonsterKind::Fogmog,
+        ] {
+            assert!(!generic_stun_owner_is_eligible(kind), "{kind:?}");
+            assert_eq!(refusal(kind, &plain), Some(WHISTLE_STUN_BRANCH), "{kind:?}");
+        }
+        // #3823: Living Shield's conditional successor is read by the roll
+        // after SHIELD_SLAM performs, never by a stun, so it is a generic
+        // owner (`GENERIC_STUN_CONDITIONAL_KINDS`).
+        assert!(generic_stun_owner_is_eligible(MonsterKind::LivingShield));
+        assert!(generic_stun_owner_is_eligible(MonsterKind::FrogKnight));
+        assert_eq!(refusal(MonsterKind::FrogKnight, &plain), None);
+        assert_eq!(refusal(MonsterKind::LivingShield, &plain), None);
+        // #3823: Scroll of Biting's CHEW -> `rand` is a branch move kind the
+        // generic stun does cover (the resume sets `scroll_chew_repeated`).
+        assert!(generic_stun_owner_is_eligible(MonsterKind::ScrollOfBiting));
+        assert_eq!(refusal(MonsterKind::ScrollOfBiting, &plain), None);
+        // #3823: a plain loop needs no vocabulary. Turret Operator
+        // (`GenerateMoveStateMachine` RVA `0xc3ab8` is three plain
+        // `MoveState`s) is representable by itself; the roots that hold it
+        // still refuse on the Living Shield beside it.
+        assert!(generic_stun_owner_is_eligible(MonsterKind::TurretOperator));
+        assert_eq!(refusal(MonsterKind::TurretOperator, &plain), None);
+        // The Ovicopter's deferred conditional rides inside a move kind.
+        assert_eq!(
+            refusal(MonsterKind::Ovicopter, &plain),
+            Some(WHISTLE_STUN_BRANCH)
+        );
+        // A second writer of the move: its own reading, not the generic one.
+        for kind in [
+            MonsterKind::Tunneler,
+            MonsterKind::WaterfallGiant,
+            MonsterKind::TestSubject,
+            MonsterKind::ToughEgg,
+            MonsterKind::EyeWithTeeth,
+            MonsterKind::Parafright,
+        ] {
+            assert_eq!(
+                refusal(kind, &plain),
+                Some(WHISTLE_STUN_BESPOKE),
+                "{kind:?}"
+            );
+        }
+        assert_eq!(
+            refusal(MonsterKind::Queen, &plain),
+            Some(WHISTLE_QUEEN_AMALGAM)
+        );
     }
 
     /// The exactness twin refuses a corpse and a mismatched parked successor,
@@ -7399,6 +8595,24 @@ mod tests {
                 "Frog Knight {hp}/{plating} at A{ascension}"
             );
         }
+
+        // #3823: the Frog Knight's machine may carry exactly the generic
+        // stun, on any of its four rows; any other override, or a stun over
+        // a follow-up the row does not name, is still refused.
+        for loop_pos in 0..4 {
+            let mut state = singleton(8, MonsterKind::FrogKnight, 199);
+            state.monsters_mut()[0]
+                .powers
+                .set(PowerId::Mplating, SlotWire::Int, 19);
+            state.monsters_mut()[0].loop_pos = loop_pos;
+            assert!(frog_knight_state_is_valid(&state), "row {loop_pos}");
+            state.monsters_mut()[0].override_state = MonsterOverride::Stunned;
+            assert!(!frog_knight_state_is_valid(&state), "row {loop_pos}");
+            state.monsters_mut()[0].forced_follow_up = MonsterFollowUp::ParkedTelegraph;
+            assert!(frog_knight_state_is_valid(&state), "row {loop_pos}");
+            state.monsters_mut()[0].override_state = MonsterOverride::None;
+            assert!(!frog_knight_state_is_valid(&state), "row {loop_pos}");
+        }
     }
 
     #[test]
@@ -7491,6 +8705,37 @@ mod tests {
             "first A7 respawn rolls 70+10..78+10, got {}",
             replacement.max_hp
         );
+    }
+
+    /// #3756, site witness `AUNPC3BZ101H` node 37: the dying Axebot is still
+    /// in `_enemies` when Stock creates its replacement, so its max HP is not
+    /// a candidate. A first respawn after a body at the top of the A8+ band
+    /// (86) draws from 87..=96, ten values; a body below the next band (80)
+    /// leaves all eleven.
+    #[test]
+    fn a_stock_respawn_reserves_the_dying_bodys_max_hp() {
+        for seed in 0..64_u64 {
+            for (corpse_max, low, count) in [(86, 87, 10), (80, 86, 11)] {
+                let mut state = singleton(8, MonsterKind::Axebot, corpse_max);
+                state.monsters_mut()[0].hp = 0;
+                state.monsters_mut()[0]
+                    .powers
+                    .set(PowerId::Stock, SlotWire::Int, AXEBOT_STOCK);
+                seeded_niche(&mut state, seed);
+                let mut expected = Xoshiro256StarStar::from_seed(seed);
+                let pick = expected.next_bounded(count).unwrap();
+                respawn_axebot(&mut state, 0, &mut Vec::new()).unwrap();
+                let replacement = &state.monsters[0];
+                assert_eq!(
+                    replacement.max_hp,
+                    low + pick,
+                    "seed {seed}, corpse {corpse_max}"
+                );
+                assert_eq!(replacement.hp, replacement.max_hp);
+                assert_ne!(replacement.max_hp, corpse_max);
+                assert_eq!(state.rng.get(RngStream::Niche).counter, 1);
+            }
+        }
     }
 
     /// Two-Tailed Rat `GetValueIfAscension(8, 18..22, 17..21)`: the roster
@@ -7820,6 +9065,110 @@ mod tests {
         let mut forged = state.clone();
         forged.fanouts.set_next_creature_uid(0);
         assert!(!axebot_state_is_valid(&forged), "uid 3 after two respawns");
+    }
+
+    /// #3904: an Osty created after a spawned lineage holds the last id the
+    /// counter handed out, so the lineage ends one earlier; one created
+    /// before it changes nothing. Native numbers both orders in creation
+    /// order (`tests/mid_fight_osty_creature_id.rs`).
+    #[test]
+    fn a_mid_fight_osty_above_a_lineage_moves_the_lineage_down_one() {
+        // Surprise under an untracked counter: Fat 1, Sneaky 2.
+        let mut state = surprise_state(11, 0);
+        spawn_gremlin_merc_pair(&mut state, 0).unwrap();
+        // Then a first Osty: creature uid 3, counter 4.
+        state.fanouts.set_next_creature_uid(4);
+        assert_eq!(tracked_lineage_start(&state, 2), Some(Some(2)));
+        assert!(
+            !gremlin_merc_state_is_valid(&state),
+            "without the Osty's id the pair reads one too high"
+        );
+        state.fanouts.set_osty_creature_uid(3);
+        assert!(is_osty_creature_uid(&state, 3) && !is_osty_creature_uid(&state, 2));
+        assert_eq!(tracked_lineage_start(&state, 2), Some(Some(1)));
+        assert_eq!(gremlin_merc_fat_uid(&state), Some(1));
+        assert!(gremlin_merc_state_is_valid(&state));
+
+        // An Osty created before the pair (uid 1, counter 2) sits below it.
+        let mut below = surprise_state(11, 2);
+        below.fanouts.set_osty_creature_uid(1);
+        spawn_gremlin_merc_pair(&mut below, 0).unwrap();
+        assert_eq!(tracked_lineage_start(&below, 2), Some(Some(2)));
+        assert!(gremlin_merc_state_is_valid(&below));
+
+        // No recorded Osty: uid 0 is an enemy's, never an Osty's.
+        assert!(!is_osty_creature_uid(&surprise_state(11, 0), 0));
+    }
+
+    /// #3904: the same for Axebot's bodies. An Osty created after the first
+    /// respawn is not the live body, and an Osty's id between two bodies is
+    /// not a body a frozen target can name.
+    #[test]
+    fn a_mid_fight_osty_is_never_an_axebot_body() {
+        // First respawn untracked: the body is uid 1. Then the Osty: uid 2.
+        let mut state = stocked_axebot();
+        let mut events = Vec::new();
+        crate::engine::damage::finish_monster_death(&mut state, 0, &mut events).unwrap();
+        assert_eq!(state.monsters[0].uid, 1);
+        state.fanouts.set_next_creature_uid(3);
+        assert!(
+            !axebot_state_is_valid(&state),
+            "the counter alone says uid 2"
+        );
+        state.fanouts.set_osty_creature_uid(2);
+        assert!(axebot_state_is_valid(&state));
+        // The second respawn takes uid 3; the body it replaced is 1, and the
+        // Osty's 2 is not a body.
+        state.monsters_mut()[0].hp = 0;
+        crate::engine::damage::finish_monster_death(&mut state, 0, &mut events).unwrap();
+        assert_eq!(state.monsters[0].uid, 3);
+        assert!(axebot_state_is_valid(&state));
+        assert_eq!(axebot_replacement_of(&state, 0, 1), Some(0));
+        assert_eq!(axebot_replacement_of(&state, 0, 2), None, "the Osty");
+    }
+
+    /// #3747: a frozen CardPlay target resolves to the live Axebot only when
+    /// it names the body that Axebot replaced.
+    #[test]
+    fn axebot_replacement_of_names_only_the_body_the_live_one_replaced() {
+        for tracked in [false, true] {
+            let mut state = stocked_axebot();
+            if tracked {
+                state.fanouts.set_next_creature_uid(2);
+            }
+            // A corpse awaiting its respawn is not a valid singleton.
+            assert_eq!(axebot_replacement_of(&state, 0, 0), None);
+            // The first body alive: nothing has been replaced.
+            let mut first = state.clone();
+            first.monsters_mut()[0].hp = first.monsters[0].max_hp;
+            assert!(axebot_state_is_valid(&first));
+            assert_eq!(axebot_replacement_of(&first, 0, 0), None);
+            assert_eq!(axebot_replacement_of(&first, 0, 5), None);
+
+            let mut events = Vec::new();
+            crate::engine::damage::finish_monster_death(&mut state, 0, &mut events).unwrap();
+            let second = state.monsters[0].uid;
+            assert_eq!(second, if tracked { 2 } else { 1 });
+            assert_eq!(axebot_replacement_of(&state, 0, 0), Some(0));
+            assert_eq!(axebot_replacement_of(&state, 1, 0), None, "another slot");
+            assert_eq!(axebot_replacement_of(&state, 0, second), None);
+            assert_eq!(axebot_replacement_of(&state, 0, 7), None);
+
+            state.monsters_mut()[0].hp = 0;
+            crate::engine::damage::finish_monster_death(&mut state, 0, &mut events).unwrap();
+            let third = state.monsters[0].uid;
+            assert_eq!(third, second + 1);
+            assert_eq!(axebot_replacement_of(&state, 0, second), Some(0));
+            assert_eq!(axebot_replacement_of(&state, 0, 0), None, "two bodies back");
+            assert_eq!(axebot_replacement_of(&state, 0, third), None);
+            assert_eq!(axebot_replacement_of(&state, 0, third + 1), None);
+            // A tracked counter cannot place the second body exactly: any
+            // uid between the first body's and the live one's is admitted.
+            assert_eq!(
+                axebot_replacement_of(&state, 0, 1),
+                (tracked || second == 1).then_some(0)
+            );
+        }
     }
 
     /// #3039 (I5): a root serialized before the counter existed carries a

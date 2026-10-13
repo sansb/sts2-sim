@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "KQFAZH480H1Q",
+ "node": 13,
+ "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "0c84330af31ea27fa6ff5fabccd0da94f8cc7ea7de6cd6241ed957c5e21b3cfd",
+ "save_sha256": "5e82e039cafbffdc9b62bd944bc2da5ff15c782e9cb3bf4d9071b38e0815064a",
+ "entry_digest": "4da6170cdb59a9aa96467e19cb9df960d504e51abb0e0a0785df40f76031f318",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

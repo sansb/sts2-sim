@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "WQXLUF17VCRY",
+ "node": 32,
+ "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "dc386114ebb60ee12d9960cd8b3d0e379d5fd83080cbed5eb77d59ef6eb03a31",
+ "save_sha256": "c50488740142baf59d27834ac59c6cef4305d78cd57253216f787942184e5eb0",
+ "entry_digest": "97fcc8cc02889ebd4d3735cf0292531f0ea3b407d9c9ba4d2cf571d5130bcdfe",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

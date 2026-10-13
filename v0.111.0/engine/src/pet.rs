@@ -37,9 +37,6 @@ pub(crate) enum PetStateError {
     InvalidAttackCount,
     NegativeAmount,
     CounterOverflow,
-    /// A summon reached a dead or absent Osty while the combat is ending
-    /// (the unrepresented add/revive branch of [`SoloPetState::summon_ending`]).
-    EndingSummonNotLive,
 }
 
 impl SoloPetState {
@@ -152,9 +149,35 @@ impl SoloPetState {
     /// CurrentHp to the new MaxHp) then the same gated `Heal` (`IL_03f7`),
     /// followed by `AfterOstyRevived` for a revive (`IL_0468`). While ending,
     /// a revived corpse therefore stays dead with a new MaxHp and a fresh Osty
-    /// keeps its initial 1 HP (`Osty::get_MinInitialHp` `0xba86b`). Neither
-    /// the dead pet's re-added MaxHp nor a fresh pet's Add path while ending is
-    /// represented, so that branch refuses by name.
+    /// keeps its initial 1 HP (`Osty::get_MinInitialHp` `0xba86b`).
+    ///
+    /// Both are built (#3635), and both were recorded on the game (headless
+    /// harness, archived v0.111.0 DLL; Rolling Boulder ends the combat ahead
+    /// of `SummonNextTurnPower` in the same `AfterPlayerTurnStart` pass):
+    ///
+    /// * **A corpse stays a corpse.** A 2/2 Osty killed on turn one, then a
+    ///   summon of 3 on the ended combat: `CurrentHp` 0, `MaxHp` 3, not
+    ///   alive (live control: 3/3). The corpse's MaxHp is not part of this
+    ///   value (a corpse is stored as 0/0, and the next live summon sets
+    ///   MaxHp to its own amount at `IL_0387`), so nothing is written.
+    ///   `AfterOstyRevived` has one override in the DLL,
+    ///   `SandpitPower::AfterOstyRevived` RVA `0xa714c`, whose body
+    ///   (`<AfterOstyRevived>d__16`, `IL_001e`) is `UpdateCreaturePositions`:
+    ///   presentation only.
+    /// * **An absent Osty is created alive at 1 HP.** A summon of 2 with no
+    ///   Osty on the ended combat: `CurrentHp` 1, `MaxHp` 2, alive, the next
+    ///   creature id taken (live control: 2/2). `PlayerCmd.AddPet<Osty>`
+    ///   (`IL_01e9`) has no ending gate. The new Osty has no `DieForYouPower`:
+    ///   the `Apply<DieForYouPower>` at `IL_02f5` returns on an ending combat.
+    ///   This value does not store that power apart from the creature
+    ///   ([`Self::has_die_for_you`]). By reading, nothing can see the
+    ///   difference: the power redirects the unblocked damage of a powered
+    ///   attack on the owner (`DieForYouPower::ModifyUnblockedDamageTarget`
+    ///   RVA `0xa181c`, `IsPoweredAttack` at `IL_002d`) and keeps the corpse
+    ///   in combat (`ShouldCreatureBeRemovedFromCombatAfterDeath` RVA
+    ///   `0xa1861`). A combat is ending because every enemy is dead or the
+    ///   owner is, so no powered attack on a live owner follows, and an over
+    ///   combat is never loaded as a root.
     pub(crate) fn summon_ending(
         &mut self,
         amount: i32,
@@ -167,7 +190,13 @@ impl SoloPetState {
             return Ok(());
         }
         let next = match self.osty() {
-            None if combat_ending => return Err(PetStateError::EndingSummonNotLive),
+            // The revive of a corpse: MaxHp only, and the Heal is skipped.
+            None if combat_ending && self.corpse() => return Ok(()),
+            // The add: the initial 1 HP under the new MaxHp, no Heal.
+            None if combat_ending => Osty {
+                hp: 1,
+                max_hp: amount,
+            },
             None => Osty {
                 hp: amount,
                 max_hp: amount,
@@ -293,10 +322,12 @@ mod tests {
     }
 
     /// #3246: while ending, a living re-summon grows MaxHp only (the
-    /// GainMaxHp Heal returns early for a non-player); a dead or absent Osty
-    /// refuses atomically; zero stays a no-op and MaxHp overflow still refuses.
+    /// GainMaxHp Heal returns early for a non-player); zero stays a no-op and
+    /// MaxHp overflow still refuses. #3635: a corpse stays a corpse, and an
+    /// absent Osty is created at 1 HP under the summoned MaxHp (the game's
+    /// 0/3 and 1/2 in the runs cited on `summon_ending`).
     #[test]
-    fn ending_summon_grows_max_hp_only_and_refuses_the_add_revive_branch() {
+    fn ending_summon_grows_max_hp_only_keeps_a_corpse_and_adds_at_one_hp() {
         let mut state = SoloPetState::from_canonical(Some((16, 23)), 0).unwrap();
         state.summon_ending(3, true).unwrap();
         assert_eq!(state.osty(), Some(Osty { hp: 16, max_hp: 26 }));
@@ -305,16 +336,28 @@ mod tests {
 
         let mut corpse = SoloPetState::from_canonical(Some((3, 9)), 1).unwrap();
         corpse.kill();
-        for mut dead in [SoloPetState::default(), corpse] {
-            let before = dead;
-            assert_eq!(
-                dead.summon_ending(5, true),
-                Err(PetStateError::EndingSummonNotLive)
-            );
-            assert_eq!(dead, before);
-            dead.summon_ending(0, true).unwrap();
-            assert_eq!(dead, before);
-        }
+        let before = corpse;
+        corpse.summon_ending(0, true).unwrap();
+        corpse.summon_ending(3, true).unwrap();
+        assert_eq!(corpse, before, "still dead, attack history kept");
+        assert!(corpse.corpse() && corpse.osty().is_none());
+        // The same corpse on a live combat is revived at the amount.
+        let mut revived = before;
+        revived.summon_ending(3, false).unwrap();
+        assert_eq!(revived.osty(), Some(Osty { hp: 3, max_hp: 3 }));
+
+        let mut absent = SoloPetState::default();
+        absent.summon_ending(0, true).unwrap();
+        assert_eq!(absent, SoloPetState::default());
+        absent.summon_ending(2, true).unwrap();
+        assert_eq!(absent.osty(), Some(Osty { hp: 1, max_hp: 2 }));
+        assert!(absent.has_die_for_you(), "the creature exists");
+        // A second ending summon finds it alive: MaxHp only.
+        absent.summon_ending(2, true).unwrap();
+        assert_eq!(absent.osty(), Some(Osty { hp: 1, max_hp: 4 }));
+        let mut one = SoloPetState::default();
+        one.summon_ending(1, true).unwrap();
+        assert_eq!(one.osty(), Some(Osty { hp: 1, max_hp: 1 }));
 
         let mut overflow = SoloPetState::from_canonical(Some((1, i32::MAX)), 0).unwrap();
         let before = overflow;

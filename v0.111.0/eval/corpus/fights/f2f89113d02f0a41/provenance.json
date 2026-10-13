@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "2V9CEL0VBUKB",
+ "node": 14,
+ "encounter": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "addb864be489d6235bcc14c7ac45699f3f7179fe840d75133ba72ff102ba1f68",
+ "save_sha256": "0c264a38ebd1fa5a4c42dde5d4c2271a7e6e9cda1e19af6066341efb5347c6cf",
+ "entry_digest": "9a27dab46504b3853bc39af3a48a47be8d51c98fb7bdaae2b7b291b27639550b",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

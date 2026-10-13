@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Y0P022HKT81G",
+ "node": 19,
+ "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "700e06a37adbf16a1b0c77f6ab98f0dc6c5e53f486a67f026484d907da43bbcc",
+ "save_sha256": "431a762e61a95d59f655961df26544e3053320c0ff3c80d79a2d94eb5e8ce392",
+ "entry_digest": "462c4f2bada33d33927bee3c75697d209efac966701d3c3edf86b22b7776c426",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

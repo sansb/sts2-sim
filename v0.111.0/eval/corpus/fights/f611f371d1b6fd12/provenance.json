@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "DTRRXWQSHGV5",
+ "node": 7,
+ "encounter": "ENCOUNTER.NIBBITS_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "5be218fded6481006c13e9c4b44b3eae2957e0d6b94a2fd206378fd239d839c0",
+ "save_sha256": "ca7527dd5d1e99f940fa907a656569139d9aa871dbbe9417ecfcac4903012827",
+ "entry_digest": "296cdba6fe1d404e63b51df706d21627e2cbcc416a34b6246ba79aca9ef2cde7",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

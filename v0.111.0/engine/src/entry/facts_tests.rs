@@ -140,6 +140,29 @@ fn the_optional_map_point_and_next_encounter_keys_round_trip_and_validate() {
         parse(&named.facts_json().to_string(), GameBuild::V0_111_0).unwrap(),
         named
     );
+    // `murderous` (#3934): absent, `null` and `false` are all "no modifier"
+    // and are not written back; `true` round-trips; anything else refuses.
+    assert!(!named.murderous);
+    assert!(named.facts_json().get("murderous").is_none());
+    let mut murderous = value.clone();
+    for absent in [json!(null), json!(false)] {
+        murderous["murderous"] = absent;
+        assert!(
+            !parse(&murderous.to_string(), GameBuild::V0_111_0)
+                .unwrap()
+                .murderous
+        );
+    }
+    murderous["murderous"] = json!(true);
+    let carried = parse(&murderous.to_string(), GameBuild::V0_111_0).expect("the flag parses");
+    assert!(carried.murderous);
+    assert_eq!(carried.facts_json()["murderous"], json!(true));
+    assert_eq!(
+        parse(&carried.facts_json().to_string(), GameBuild::V0_111_0).unwrap(),
+        carried
+    );
+    murderous["murderous"] = json!(1);
+    assert!(parse(&murderous.to_string(), GameBuild::V0_111_0).is_err());
     let mut bad_point = value.clone();
     bad_point["map_point_type"] = json!("dungeon");
     assert_eq!(refusal_of(&bad_point).class(), "facts_inconsistent");
@@ -642,4 +665,86 @@ fn event_roots_are_admitted_only_through_the_allow_list() {
     let mut facts = valid();
     facts["entry"]["encounter_id"] = json!(bw);
     assert_eq!(refusal_of(&facts).class(), "event_combat_facts_unvouched");
+}
+
+/// #3760 on the real save builder: a run modifier whose hooks run inside a
+/// combat refuses every root by name, an unread id refuses, and the modifiers
+/// with no combat hook leave a map combat's entry exactly as it was.
+#[test]
+fn run_modifiers_gate_every_combat_root() {
+    let (save, _, node_type) = saves().swap_remove(1);
+    let map_combat = "ENCOUNTER.TOADPOLES_WEAK";
+    let event_combat = "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER";
+    let with = |modifiers: Value| {
+        let mut modded: Value = serde_json::from_str(&save).unwrap();
+        modded["modifiers"] = modifiers;
+        modded.to_string()
+    };
+    let refused = |save: &str, encounter: &str| match build(&request(save, encounter, &node_type)) {
+        EntryOutcome::Refused(refusal) => refusal,
+        EntryOutcome::Built(_) => panic!("{encounter} refuses"),
+    };
+    let plain = build(&request(&save, map_combat, &node_type)).to_json();
+    assert!(matches!(
+        build(&request(&save, map_combat, &node_type)),
+        EntryOutcome::Built(_)
+    ));
+
+    // The daily run of #3756: Flight and Insanity are inert and Murderous is
+    // modeled (#3934), so the root is built, with the wire document the save
+    // builds without them and the off-wire flag the opening reads.
+    let daily = with(json!([
+        {"id": "MODIFIER.FLIGHT"}, {"id": "MODIFIER.INSANITY"}, {"id": "MODIFIER.MURDEROUS"}
+    ]));
+    let EntryOutcome::Built(built) = build(&request(&daily, map_combat, &node_type)) else {
+        panic!("a Murderous map combat is built");
+    };
+    assert!(built.murderous);
+    assert_eq!(built.to_json(), plain);
+    let EntryOutcome::Built(without) = build(&request(&save, map_combat, &node_type)) else {
+        panic!("built above");
+    };
+    assert!(!without.murderous);
+    // An event root still refuses it, by the event path's any-modifier rule.
+    assert_eq!(
+        refused(&daily, event_combat).class(),
+        "event_combat_run_modifiers"
+    );
+    for (id, hook) in [
+        ("MODIFIER.TERMINAL", "AfterRoomEntered"),
+        ("MODIFIER.HOARDER", "AfterCardChangedPiles"),
+    ] {
+        let refusal = refused(&with(json!([{ "id": id }])), map_combat);
+        assert_eq!(refusal.class(), "run_modifier_not_modeled", "{id}");
+        assert!(refusal.to_string().contains(id), "{id}");
+        assert!(refusal.to_string().contains(hook), "{id}");
+    }
+
+    // A modifier the table has not read, and a row with no id at all.
+    let refusal = refused(&with(json!([{"id": "MODIFIER.NOT_READ"}])), map_combat);
+    assert_eq!(refusal.class(), "run_modifier_unknown");
+    assert!(refusal.to_string().contains("MODIFIER.NOT_READ"));
+    assert_eq!(
+        refused(&with(json!([{}])), map_combat).class(),
+        "run_modifier_unknown"
+    );
+
+    // Every modifier with no combat hook, all at once: the entry document is
+    // the one the save builds without them.
+    let inert: Vec<Value> = crate::entry::modifiers::RUN_MODIFIERS
+        .iter()
+        .filter(|row| row.verdict == crate::entry::modifiers::CombatVerdict::Inert)
+        .map(|row| json!({"id": format!("MODIFIER.{}", row.entry)}))
+        .collect();
+    assert_eq!(inert.len(), 14);
+    let admitted = with(Value::Array(inert));
+    assert_eq!(
+        build(&request(&admitted, map_combat, &node_type)).to_json(),
+        plain
+    );
+    // On an event root they still meet the event path's wider rule.
+    assert_eq!(
+        refused(&admitted, event_combat).class(),
+        "event_combat_run_modifiers"
+    );
 }

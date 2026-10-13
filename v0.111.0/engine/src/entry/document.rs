@@ -108,6 +108,13 @@ pub struct EntryDocument {
     /// An `unknown` (`?`) point whose fight IS this encounter resolved
     /// straight into its monster room, which is then the point's first room.
     pub next_normal_encounter: Option<String>,
+    /// The run carries the Murderous modifier
+    /// ([`crate::entry::modifiers::murderous`], #3934). Off the wire like
+    /// [`Self::map_point_type`]: the `build_entry` dictionary has no
+    /// modifiers key, and the opening is built from this struct in the same
+    /// process. A facts document carries no run modifiers (#3774), so that
+    /// path leaves it `false`.
+    pub murderous: bool,
 }
 
 fn optional_bool(value: Option<bool>) -> Value {
@@ -340,6 +347,7 @@ mod tests {
             streams: BTreeMap::new(),
             map_point_type: None,
             next_normal_encounter: None,
+            murderous: false,
         };
         let value = document.to_json();
         assert_eq!(value["schema"], Value::from(ENTRY_SCHEMA_V1));

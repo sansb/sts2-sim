@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MW6WGHZ9XF82",
+ "node": 18,
+ "encounter": "ENCOUNTER.BOWLBUGS_WEAK",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "5d0b7e32296b4103ac5d8b00327f685117666f31efd53212b3d44135009bbef5",
+ "save_sha256": "a0f4651c4920cb013abb90961c68b206d64c67f68b1b161f420bc1507f06781d",
+ "entry_digest": "2dd53768f0a9ba4104202811393fb35938f2b3dabbe8b6df365212624fe12d2b",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

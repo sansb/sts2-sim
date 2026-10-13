@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "8M2X57B83DNY",
+ "node": 24,
+ "encounter": "ENCOUNTER.DECIMILLIPEDE_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "14f793abfae878539e3abb0c3fa958c8a95c92728d89bf43bf52940b6e8902ca",
+ "save_sha256": "adb0b0d6569b8ea41f557bd0092b47503bef3077f44b072f942a1a0677eab20e",
+ "entry_digest": "696d031f37ffcf8175308213248323c4883e477ca6707b9d4bada9e49d81d012",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

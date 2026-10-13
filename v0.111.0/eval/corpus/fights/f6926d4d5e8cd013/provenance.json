@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Q2BEDKXQDES1",
+ "node": 12,
+ "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "7f429fe802da14161cdee9f5d2cb18f80215c8d09b907bed559786a97fabcafe",
+ "save_sha256": "3e421ea9ad175e0dd1378ee7f87e913c73f0eb222ca807dfa809c15a91ec81ca",
+ "entry_digest": "0fb267ef20018b397b1775b05d43f8123abdcb3389144598c3d390a245854ee8",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

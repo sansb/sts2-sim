@@ -277,6 +277,10 @@ fn monster_strength_writer_census_is_exact() {
             // with that sibling as the applier (#2654).
             "src/engine/monsters.rs:crate::engine::damage::write_monster_strength(",
             "src/engine/monsters.rs:super::damage::write_monster_strength(monster, strength, crate::hot::Applier::None, upkeep);",
+            // #3934: the Murderous modifier's `AfterCreatureAddedToCombat`
+            // (`0xc666f` IL_0010-IL_001f), the same null-applier write as
+            // Philosopher's Stone's row above it, in the same listener.
+            "src/engine/monsters.rs:super::damage::write_monster_strength(monster, strength, crate::hot::Applier::None, upkeep);",
             "src/engine/play.rs:super::damage::write_monster_strength(owner, strength, applier, upkeep);",
             "src/engine/turn.rs:super::damage::write_monster_strength(monster, strength, owner, upkeep);",
             "src/engine/turn.rs:super::damage::write_monster_strength(monster, strength, owner, upkeep);",

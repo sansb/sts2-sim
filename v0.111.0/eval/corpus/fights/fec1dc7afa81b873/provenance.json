@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "EXPZBNCDRDQ4",
+ "node": 14,
+ "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+ "node_type": "elite",
+ "character": "NECROBINDER",
+ "ascension": 9,
+ "capture_sha256": "9d73a0b176b7fa41b79c2ecb2b3f854e6b578b7a349bfa1aa0d72db337c3b88d",
+ "save_sha256": "d1a499f6c58d62d24bb23ace6c93a20a7adc6cd4b774bb4b9f49316e1ac1b6f5",
+ "entry_digest": "b4f5b53e468075580fd07842e03fbe2f2983cd8bb3d6f95640468daa44e7f6ed",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

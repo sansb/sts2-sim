@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "0KPA7UA3BF5V",
+ "node": 20,
+ "encounter": "ENCOUNTER.THIEVING_HOPPER_WEAK",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "c46e62d7437499c410952e49d2736cd5a9a9529094fd9f70a9c1ad52fb7d47cc",
+ "save_sha256": "7da4dd43b1e8c933ba5225f1ecbf83c5adb179f45b57f093df082422ba287add",
+ "entry_digest": "2af39b8b6fcc4d5ebbadecc902d112f7b167b9bb4623024e3eb846ea4ad0d0fd",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

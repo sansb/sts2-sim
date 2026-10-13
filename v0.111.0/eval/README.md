@@ -2,333 +2,384 @@
 
 ![eval coverage](coverage-badge.svg)
 
-Real captured fights, build-keyed like the simulator (`sim/meta/SIM_VERSIONING.md`).
-This is the standing input to solver-quality work: sub-issue B writes optima
-(`expected.json`) here, sub-issue C measures perf on the same roots, and the
-port programme reads the census for its demand map (#2048, #1283, #1282).
+This directory contains real fights that players recorded in the game.
+Each fight is for game build v0.111.0 (refer to `sim/meta/SIM_VERSIONING.md`).
 
-**Since the 2026-09-16 authority flip (#1282, D1) this tree is the
-certification, not a sample of it: Rust engine correctness means lockstep
-against the capture's own per-action checksums, measured on the release
-binary** — not parity with Python, which is advisory on v0.111.0 only.
+The directory has two sets:
+
+* **The fixture set** (`fights/`, `manifest.json`). CI checks this set on each engine change.
+* **The corpus** (`corpus/`). This is a larger set of certified fights. CI does not run it.
+
+The engine is correct when it agrees with the checksums in the capture.
+The game writes one checksum after each action.
+The tools measure this agreement with the release binary of the engine.
 
 ## Coverage
 
 ![Eval suite coverage: boss and elite by character grid, and per-axis bars](COVERAGE.svg)
 
-`eval_coverage.py` measures how much of fight-space the **certified** lines
-cover. Each axis has one rule for "exercised": a card counts once it is
-**played**, a relic when **held** entering a fight, and a potion when **used**.
-Encounters are counted per tier.
+`eval_coverage.py` measures how much of the game the **certified** fights use.
+It counts the certified fixtures and the corpus fights together.
+Each axis has one rule:
 
-The grid crosses every boss and elite with every character, empty or not;
-that is the one cross product tracked, because the same boss plays
-differently per class. An empty cell is coloured by why it is empty:
+* A card counts when a player **plays** it.
+* A relic counts when the player **holds** it at the start of a fight.
+* A potion counts when a player **uses** it.
+* An encounter counts for its tier.
 
-* **amber:** an A9/A10 capture exists but doesn't certify yet (engine work);
-* **grey:** nobody has captured it at A9/A10 yet (a fight to play).
+The grid shows each boss and each elite for each character.
+The grid shows empty cells also. The color of an empty cell gives the cause:
 
-The amber/grey split comes from the census the tree was seeded from. It needs
-the local corpus, so it is stored in `coverage.json` and carried forward.
+* **Amber:** an A9 or A10 capture exists, but it is not certified. This is engine work.
+* **Grey:** no A9 or A10 capture exists. A player must record this fight.
 
-Outputs: `coverage.json`, `COVERAGE.svg`, `coverage-badge.svg`. `seed`
-regenerates all three, re-measuring the split from its census, and `add`
-regenerates them from the stored split. `test_coverage_artifacts_are_fresh`
-fails when they are stale.
+The amber and grey data comes from a census of the capture collection.
+The capture collection is not in this repository.
+Thus `coverage.json` keeps this data, and the tool uses it again.
 
-The reference lists are a snapshot, `coverage_universe.json`, because their
-sources sit outside the solver trigger set:
+The tool writes three files: `coverage.json`, `COVERAGE.svg` and `coverage-badge.svg`.
+`seed` writes the three files and measures the amber and grey data again.
+`add` writes the three files from the data in `coverage.json`.
+The test `test_coverage_artifacts_are_fresh` fails when the files are not current.
 
-* cards and their owning pool: `data/cards.json`, and
-  `data/game_values.json` `colors`, from the game's `AllCardPools`;
-* relics: `data/relics.json`;
-* potions and encounter titles: `data/loc_en.json`;
-* encounters and tiers: `engine/ENCOUNTER_COVERAGE_CENSUS.json`.
+`coverage_universe.json` is a copy of the reference lists.
+The sources of these lists are:
 
-Refresh the snapshot on a version bump:
+* Cards and their pools: `data/cards.json` and the `colors` list in `data/game_values.json`.
+* Relics: `data/relics.json`.
+* Potions and encounter titles: `data/loc_en.json`.
+* Encounters and tiers: `engine/ENCOUNTER_COVERAGE_CENSUS.json`.
+
+Make the copy again when the game build changes:
 
 ```bash
-python3 sim/v0.111.0/eval/eval_coverage.py                    # regenerate
-python3 sim/v0.111.0/eval/eval_coverage.py --census C.json    # and re-measure the split
-python3 sim/v0.111.0/eval/eval_coverage.py --refresh-universe # new build's lists
-python3 sim/v0.111.0/eval/eval_coverage.py --check
+python3 sim/v0.111.0/eval/eval_coverage.py                    # write the files
+python3 sim/v0.111.0/eval/eval_coverage.py --census C.json    # also measure amber and grey
+python3 sim/v0.111.0/eval/eval_coverage.py --refresh-universe # copy the reference lists
+python3 sim/v0.111.0/eval/eval_coverage.py --check            # fail if a file is not current
 ```
 
 ## Layout
 
 ```
-manifest.json                       every fixture: id, kind, categories, provenance, outcomes
-fights/<opaque-id>/provenance.json  seed, node, encounter, character, ascension, build, sha256 pair
-fights/<opaque-id>/entry.canonical.json   the sts-sim-canonical-v2 root
-fights/<opaque-id>/human_line.json  canonical wire actions + a digest after each + terminal state
-fights/<opaque-id>/refusal.json     for a refusal fixture: surface, class, verbatim detail, full blocker set
-fights/<opaque-id>/capture.mcr.gz   the game's own replay of the fight, gzipped
-fights/<opaque-id>/entry.save.gz    the save the fight is rooted from, gzipped
+manifest.json                       all fixtures: id, kind, categories, provenance, results
+fights/<id>/provenance.json         seed, node, encounter, character, ascension, build, two sha256 values
+fights/<id>/entry.canonical.json    the initial state of the fight (sts-sim-canonical-v2)
+fights/<id>/human_line.json         the actions of the player, a digest after each action, the final state
+fights/<id>/refusal.json            for a refusal fixture: surface, class, the refusal text, all blockers
+fights/<id>/capture.mcr.gz          the replay file of the game for the fight, with gzip compression
+fights/<id>/entry.save.gz           the save that gives the initial state, with gzip compression
+corpus/index.json                   all certified A9 and A10 fights, with a path for each
+corpus/fights/<id>/provenance.json  the same fields as a fixture
+corpus/fights/<id>/capture.mcr.gz   the replay file of the game for the fight
+corpus/fights/<id>/entry.save.gz    the save that gives the initial state
 ```
 
-**The raw captures are published (#3592).** Every fixture stores the pair it
-was built from: `capture.mcr.gz` is the game's `.mcr` replay, with the game's
-checksum after every action, and `entry.save.gz` is the entry save. Each is
-the exact file `provenance.json` names by sha256 (`capture_sha256`,
-`save_sha256`, both of the uncompressed bytes), so `gunzip -c capture.mcr.gz |
-shasum -a 256` prints the recorded hash. All 597 fixtures are Sean's own
-fights. A fixture is still keyed by an opaque id rather than a file name.
-`test_eval_suite.py` pins the contract: every line fixture has its pair, and
-every stored file matches its recorded hash.
+An `<id>` is an opaque identifier. It is not a file name.
 
-A save whose provenance carries `"entry_input": "--capture-run"` is an
-imported upload's capture run (see `import-uploads` below), which the engine
-roots with `--capture-run` instead of `--save`. An unpaired-capture refusal
-has no entry save, so it stores the capture alone.
+### The capture pair
 
-The 597 pairs are 75.1 MB raw and 14.1 MB gzipped.
+Each fixture keeps the two files that made it:
 
-## Re-checking against the game
+* `capture.mcr.gz` is the `.mcr` replay of the game. It contains a checksum after each action.
+* `entry.save.gz` is the entry save.
+
+`provenance.json` gives the sha256 of each file before compression.
+The fields are `capture_sha256` and `save_sha256`.
+This command prints the recorded value: `gunzip -c capture.mcr.gz | shasum -a 256`.
+
+`test_eval_suite.py` makes sure that each line fixture has its pair.
+It also makes sure that each file agrees with its recorded sha256.
+
+Some saves have `"entry_input": "--capture-run"` in the provenance.
+Such a save comes from an uploaded capture (refer to `import-uploads`).
+The engine reads it with `--capture-run`, not `--save`.
+
+A refusal fixture for a capture with no save keeps only the capture.
+
+The 597 fixture pairs use 14.1 MB after compression.
+
+## The corpus
+
+The corpus contains each A9 and A10 fight from the site uploads that is certified.
+A fight is certified when the engine agrees with all checksums in the capture.
+The corpus does not contain a fight that fails.
+
+The corpus is a resource for work on the engine and on the solver.
+CI does not run the corpus. Run it when you need it.
+
+`corpus/index.json` lists 4,205 fights:
+
+* 3,655 fights are in `corpus/fights/`.
+* 550 fights are fixtures. The index gives their path in `fights/`.
+
+The fights were certified at monorepo commit `d0b2bc633`.
+The 3,655 corpus pairs use 87.2 MB after compression.
+
+For each fight, the index gives these fields:
+
+* `id`, `character`, `ascension`, `encounter`, `node_type`, `turns`, `won`
+* `path`: the directory of the fight
+* `cards_played`, `relics_held`, `potions_used`: the data that `eval_coverage.py` counts
+
+The index does not give these three fields for a fight that is a fixture.
+A corpus fight has no `entry.canonical.json` and no `human_line.json`.
+The engine makes them again from the pair.
+
+### How to run the corpus
+
+1. Build the engine:
+
+   ```bash
+   cargo build --locked --release --manifest-path sim/v0.111.0/engine/Cargo.toml --bin sts-sim
+   ```
+
+2. Put the pairs in a work directory:
+
+   ```bash
+   python3 - <<'PY'
+   import json, pathlib, sys
+   sys.path.insert(0, "sim/v0.111.0/engine/tools")
+   import eval_suite
+   corpus = pathlib.Path("sim/v0.111.0/eval/corpus")
+   out = pathlib.Path("/tmp/sts2-corpus/uploads")
+   out.mkdir(parents=True, exist_ok=True)
+   for fight in json.loads((corpus / "index.json").read_text())["fights"]:
+       directory = (corpus / fight["path"]).resolve()
+       provenance = json.loads((directory / "provenance.json").read_text())
+       eval_suite.materialize_pair(directory, provenance, out)
+   PY
+   ```
+
+3. Run the census on the work directory:
+
+   ```bash
+   python3 sim/v0.111.0/engine/tools/eval_suite.py census --captures /tmp/sts2-corpus/uploads
+   ```
+
+The census must certify each fight. If a fight is not certified, the engine has a defect.
+
+## How to check the fixtures against the game
 
 ```bash
 cargo build --locked --release --manifest-path sim/v0.111.0/engine/Cargo.toml --bin sts-sim
 python3 sim/v0.111.0/engine/tools/eval_suite.py census --fixtures
 ```
 
-`census --fixtures` checks each stored file against its recorded hash, then
-runs the census over the stored pairs: Rust's own entry and opening from the
-save, the recorded line from the capture, and every native checkpoint the
-capture carries. It reads nothing from `entry.canonical.json` or
-`human_line.json`, so the result is the engine against the game's checksums,
-not the engine against its own stored output. It prints the usual census
-table, then one line comparing the result with the manifest, and exits
-non-zero if any fixture misses the `lockstep` verdict the manifest records or
-any stored file is missing or the wrong bytes:
+`census --fixtures` does these steps:
+
+1. It compares each stored file with its recorded sha256.
+2. It builds the initial state from the save with the engine.
+3. It plays the recorded actions from the capture.
+4. It compares the engine with each checksum in the capture.
+
+It does not read `entry.canonical.json` or `human_line.json`.
+Thus the result compares the engine with the game, not with stored engine output.
+
+The command prints the census table and then one line:
 
 ```
 stored pairs: 594 certified of 597 fixtures; the manifest records 594 certified: reproduced
 ```
 
-The run takes about six and a half minutes, five of them in one Knights
-fight (`f88b91747240e7af`, #3581); `--progress` reports every 50 fixtures.
+The command fails in these conditions:
 
-That is the number a clone can reproduce. The manifest's own `census` block
-(1,196 of 1,201 eligible, 1,206 fights) is the measurement over Sean's full
-local corpus, which the fixtures were selected from and which is not
-published. The 19 fixtures of run `ZXJ7WX1JHA04` were `add`ed afterwards from
-an `import-uploads` of that run alone, so that block does not count them.
+* A fixture does not get the `lockstep` result that the manifest records.
+* A stored file is absent.
+* A stored file has incorrect bytes.
 
-One thing the pair alone cannot say: an event-room fight's encounter is
-recorded by a later save at the same node. For those fixtures (19 today) the
-census takes the encounter from the fixture's `provenance.json`. A save that
-can name its own encounter always does.
+The command takes approximately seven minutes.
+One Knights fight (`f88b91747240e7af`, #3581) takes five of these minutes.
+`--progress` prints a report after each 50 fixtures.
+
+The `census` block in the manifest gives a different number.
+That number is for the capture collection from which `seed` made the fixtures.
+You cannot reproduce it from this repository.
+
+For an event fight, a later save at the same node records the encounter.
+The pair cannot give the encounter.
+For these fixtures, the census reads the encounter from `provenance.json`.
 
 ## Kinds and categories
 
-* `line` — Rust admits the root and the recorded human line replays exactly
-  through it. The `certified` category is the subset whose every native
-  checkpoint agrees (below); the rest are the acceptance set for the slices
-  that still disagree with the game.
-* `refusal` — the fight refuses, and the fixture records where, earliest
-  surface first: `capture-pairing`, `rust-entry`, `rust-opening`,
-  `rust-load`, `rust-line` (a recorded input with no exact Rust action) or
-  `rust-lockstep` (a native checkpoint disagrees). These are pins in both
-  directions: a slice that lands one of these classes turns
-  `test_uncertified_roots_still_refuse_for_the_recorded_reason` red and the
-  set is re-seeded. Since the #2915 re-seed every refusal names a Rust
-  surface; the frozen oracle's `python-entry` / `python-line` are gone.
-* `node:monster` / `node:elite` / `node:boss` name the room kind, so a
-  harness can pick the hard fights without reading provenance. Every
-  character carries a boss and an elite human line, except the named gaps in
-  `test_eval_suite.KNOWN_LINE_GAPS` (today: the Regent boss, #3020).
-* `human` is the baseline tag that licenses a solver-versus-human statement.
-  It covers every A9/A10 human line, for all five characters (Sean,
-  2026-09-23, #2915). From 2026-09-05 until then it was A10 Ironclad only,
-  because the other characters' captures were low-ascension. Every fixture
-  carries its ascension, so a low-ascension gap can never be reported as a
-  baseline.
+* `line`: the engine accepts the initial state, and the recorded actions play correctly.
+* `certified`: a `line` fixture for which all checksums agree.
+* `refusal`: the engine refuses the fight. The fixture records the surface and the cause.
 
-## How a fight is certified (#2999)
+The refusal surfaces are, in sequence: `capture-pairing`, `rust-entry`, `rust-opening`,
+`rust-load`, `rust-line` and `rust-lockstep`.
 
-Everything below runs on the Rust engine alone; `eval_suite.py` imports no
-part of the Python simulator.
+* `rust-line`: a recorded input has no exact engine action.
+* `rust-lockstep`: a checksum does not agree.
 
-1. **Root.** `sts-sim entry --save --opening` builds the whole root — entry
-   facts and the opening. It is never spliced: the capture's first checksum
-   (`After player turn start`) is *compared* with it (`opening_checkpoint`,
-   plus the per-stream `opening_rng_drift` / `opening_counter_drift` the I6
-   net reads), so an opening that consumed the wrong draws shows up rather
-   than being overwritten.
-2. **Recorded line.** Every recorded input is resolved to one of Rust's own
-   wire actions, in order, by the production review's resolver
-   (`python/rust_replay.py`, #2988): the capture's own deal
-   (`python/mcr_native.py`) authenticates each `combat_card_index`, target
-   ids are creation ordinals, a non-representative uid is applied as
-   recorded, and every PlayerChoice goes through `_selection`. The census
-   adds the SetupPlayerTurn Innate/IMBUED deal inversion the frozen
-   `mcr_replay._deal_uid_map` made, multi-card choices, and exact state
-   restoration between trial selections. `human` is `exact` when every input
-   resolves and the combat ends exactly where the inputs do.
+A refusal fixture is a test in two directions.
+When the engine starts to accept the fight, the test
+`test_uncertified_roots_still_refuse_for_the_recorded_reason` fails.
+Then you must run `seed` or `add` again.
 
-   `human` is `truncated` (`human_class` `capture_truncated`, #3277) when the
-   capture itself stops mid-fight. The inputs run out with Rust's combat
-   still live, every completed-action checkpoint agreed and was consumed,
-   and the capture's final checksum shows a living player and a living
-   enemy. Then one of two shapes (`truncation_shape`) must hold.
-   `after_completed_action`: that final checksum is the completed-action
-   checkpoint of the last recorded input, compared against Rust's state
-   after it. `inside_player_decision`: the last input is a card play or
-   potion that Rust leaves pending a choice, and its completed-action
-   checkpoint is absent from the file. Either way, natively the game was
-   waiting on a decision the file does not carry. The row carries
-   `prefix_lockstep` in place of a `lockstep` verdict: a partial line is
-   never certified. A combat Rust keeps alive after a final checkpoint that
-   shows every enemy (or the player) dead stays
-   `diverged:combat_not_complete`, and so does one whose last input is an
-   end turn or whose checkpoints disagreed: an end turn runs a native enemy
-   turn the file does not show, and a disagreeing line is not proved to have
-   reached the capture's final state.
-3. **Lockstep.** Every completed-action checkpoint the capture carries is
-   compared as the line goes (`rust_replay.NativeChecks`): player resources,
-   the live monster roster, each pile's ids and upgrades, and all nine RNG
-   streams, with the player's pets — Osty against `player.ally`, relic pets
-   against their fixed 9999-HP state — compared rather than miscounted as
-   monsters. `lockstep_ok` is the certification; `checkpoint_mismatch` names
-   the step and the field; `no_native_checkpoints` marks a capture that
-   predates them.
+The other categories are:
 
-`human_line.json` records Rust's wire actions and the engine's own
-`differential_digest` after each. The tree was re-seeded from the Rust
-census by #2915, including the two hand-added Insatiable fixtures, which were
-re-`add`ed. Every root, line and step digest is therefore Rust's own, and
-`verify` reproduces all of them.
+* `node:monster`, `node:elite`, `node:boss`: the room type.
+* `human`: the fight is an A9 or A10 fight with the actions of a player.
+  Use only these fights to compare a solver with a player.
 
-## Selection policy: A9/A10 only (#2915)
+Each character has a boss line and an elite line.
+The exceptions are in `test_eval_suite.KNOWN_LINE_GAPS`.
 
-Sean, 2026-09-23: **the suite holds A9 and A10 fights only.** A low-ascension
-human line is too easy a target to say anything about solver quality. The
-A0–A1 Defect set had no certified boss, and it hid a review-search weakness
-that a single A10 Defect run exposed. `seed` applies `SEED_MIN_ASCENSION` to
-line and refusal fixtures alike, then selects:
+## How the tools certify a fight (#2999)
 
-1. certified fights, at most `SEED_CERTIFIED_PER_ENCOUNTER` per
-   (character, encounter), plus any further certified fight whose root holds
-   a card, enchantment, relic, potion or monster kind no fixture so far
-   certifies (`content_kinds`), so the cap never drops the only witness of a
-   kind;
-2. every recorded death;
-3. every boss and elite encounter per character that has an exact line
-   (certified first), then the potion, per-character and per-node quotas;
-4. one refusal fixture per surface/class.
+All steps use only the Rust engine.
 
-A `truncated` capture (#3277) is neither: it has no exact line, and no engine
-surface refused it. `seed` leaves it out, and `add` refuses to write it.
+1. **Initial state.** `sts-sim entry --save --opening` builds the initial state.
+   The tool compares it with the first checksum in the capture.
+   The fields `opening_checkpoint`, `opening_rng_drift` and `opening_counter_drift` give the result.
+2. **Recorded actions.** The tool changes each recorded input into one engine action.
+   It uses the same code as the fight review (`python/rust_replay.py`, #2988).
+   The result `human` is `exact` when each input has an action and the fight stops at the last input.
+3. **Checksums.** The tool compares the engine with each checksum in the capture.
+   It compares the player data, the monsters, each card pile and the nine RNG streams.
+   * `lockstep_ok`: all checksums agree. The fight is certified.
+   * `checkpoint_mismatch`: one checksum does not agree. The result gives the step and the field.
+   * `no_native_checkpoints`: the capture has no checksums for actions.
 
-Fixtures `add`ed with an explicit `--encounter` are kept across a re-seed
-when they meet the floor, since the census cannot re-derive them.
+### Captures that stop before the end (#3277)
 
-## Upload source: `import-uploads` (#2915)
+A capture can stop before the fight ends. Then `human` is `truncated`.
+All these conditions must be true:
 
-The mod's uploader keeps every uploaded capture locally, in
-`~/Library/Application Support/SlayTheSpire2/relay_the_spire_uploader/review_provenance/`,
-together with the entry projection the review pipeline resolves it against.
-`import-uploads` writes each resolved room fight into the corpus as a
-watcher-shaped triple under `<captures>/uploads/`:
+* The inputs stop while the fight continues in the engine.
+* Each checksum agreed.
+* The last checksum shows a player that is alive and an enemy that is alive.
 
-* `SEED-NNN_mcr_<sha>.mcr` holds the capture's exact bytes;
-* `SEED-NNN_save_<sha>.save` holds the capture's own embedded run with the
-  uploader's unlock state, built by `rust_review.replay_capture_run`. This is
-  the same input prod reviews root with `sts-sim entry --capture-run`;
-* `SEED-NNN_upload_<sha>.json` names the `.run` fight's encounter.
-  `derive_encounter` reads it first, and its presence makes `entry_input`
-  root the pair with `--capture-run` rather than `--save`.
+The field `truncation_shape` gives one of two shapes:
 
-Fights the watcher corpus already holds are skipped, as are event combats,
-unresolved provenance, and entry projections the review adapter rejects
-(`deck_props`, `deck_upgrade`, `relic_membership`…). Each is counted by name
-in the report. Friends' uploads live only in prod `fight_review_provenance`
-rows, which Sean exports; agents do not read them.
+* `after_completed_action`: the last checksum is the checksum of the last input.
+* `inside_player_decision`: the last input waits for a selection, and its checksum is absent.
+
+A fight with this result is not certified. The row has `prefix_lockstep`, not `lockstep`.
+
+The result stays `diverged:combat_not_complete` in these conditions:
+
+* The last checksum shows that all enemies are dead, or that the player is dead.
+* The last input is an end of turn.
+* A checksum did not agree.
+
+`human_line.json` records the engine actions and the engine digest after each action.
+`verify` makes each digest again.
+
+## Selection policy: A9 and A10 only (#2915)
+
+The fixture set contains only A9 and A10 fights.
+A fight at a low ascension is too easy to measure the quality of a solver.
+
+`seed` uses `SEED_MIN_ASCENSION` for all fixtures. Then it selects fights in this sequence:
+
+1. Certified fights. It takes a maximum of `SEED_CERTIFIED_PER_ENCOUNTER` for each character and encounter.
+   It also takes a certified fight that has a new card, enchantment, relic, potion or monster.
+2. Each fight in which the player died.
+3. Each boss and each elite for each character, certified fights first.
+   Then it fills the quotas for potions, characters and room types.
+4. One refusal fixture for each surface and class.
+
+`seed` does not select a `truncated` capture. `add` refuses to write one.
+
+`seed` keeps a fixture that `add` wrote with `--encounter`, if the fixture is A9 or A10.
+
+The corpus does not use these limits. It contains all certified A9 and A10 fights.
+
+## Uploaded captures: `import-uploads` (#2915)
+
+The game mod keeps each uploaded capture in this directory:
+`~/Library/Application Support/SlayTheSpire2/relay_the_spire_uploader/review_provenance/`.
+
+`import-uploads` writes each fight into `<captures>/uploads/` as three files:
+
+* `SEED-NNN_mcr_<sha>.mcr`: the bytes of the capture.
+* `SEED-NNN_save_<sha>.save`: the run data from the capture, with the unlock state of the player.
+* `SEED-NNN_upload_<sha>.json`: the encounter of the fight.
+
+The engine reads such a save with `--capture-run`.
+
+A fight at an `unknown` map point gets its encounter from the `.run` file (#3756).
+The node must have exactly one combat room.
+
+`import-uploads` does not write these fights. It counts each by name in its report:
+
+* A fight that the capture collection already contains.
+* A fight at an `unknown` point with no combat room or with more than one.
+* A fight with provenance that it cannot resolve.
+* A fight with entry data that the review code rejects.
 
 ```bash
 python3 sim/v0.111.0/engine/tools/eval_suite.py import-uploads
 ```
 
-## Regenerating
+## How to make the files again
+
+Each command needs the release binary of the engine.
+Use `--binary` to give a different binary.
 
 ```bash
-# the standing corpus report (the "done per encounter" table)
+# Print the census report for a capture collection.
 python3 sim/v0.111.0/engine/tools/eval_suite.py census \
     --captures ~/sts2-captures --census-json /tmp/census.json
 
-# re-seed this tree from the corpus, by the documented breadth policy
+# Make the fixture set again from a capture collection.
 python3 sim/v0.111.0/engine/tools/eval_suite.py seed --captures ~/sts2-captures
 
-# one fixture from one capture pair
+# Make one fixture from one capture pair.
 python3 sim/v0.111.0/engine/tools/eval_suite.py add \
     --mcr PATH.mcr --entry-save PATH.save
 
-# check every stored pair against its recorded sha256, re-derive every
-# fixture from it, and check every fixture's labels against the current
-# census (#3270)
+# Check each stored pair, each fixture and each label.
 python3 sim/v0.111.0/engine/tools/eval_suite.py verify
 
-# store every fixture's pair from a corpus, found by sha256 (the #3592
-# backfill; `add` and `seed` store the pair themselves)
+# Store the pair of each fixture from a capture collection.
 python3 sim/v0.111.0/engine/tools/eval_suite.py store-captures --captures ~/sts2-captures
 ```
 
-`add` and `seed` write `capture.mcr.gz` and `entry.save.gz` with the
-fixture's documents.
+`add` and `seed` write `capture.mcr.gz` and `entry.save.gz` with the other fixture files.
 
-`verify` makes three passes, and any finding from any of them exits non-zero.
-It reads the stored pairs; `--captures DIR` locates each pair in a corpus by
-sha256 instead, which also derives an event-room encounter from the corpus's
-later save rather than from provenance.
+### `verify`
 
-0. **Stored pairs (#3592).** Every stored file must exist and be the bytes
-   `provenance.json` records the sha256 of; a file provenance does not name
-   is a finding too. Listed under `stored_pair_problems`. This pass needs no
-   engine, and `test_eval_suite.py` runs it on every checkout.
-1. **Digests. It re-derives each rooted fixture's root, recorded line,
-   step digests and terminal state. This pass skips any fixture with no
-   `entry.canonical.json`, so on its own it cannot see a stale label.
-2. **Labels (#3270).** It rebuilds each fixture's census row through the
-   code `add` uses (`pair_row`), then compares the fixture with what `add`
-   would write from that row. The manifest entry is checked field by field:
-   kind, categories, `rust_root`, `rust_refusal_class`, `lockstep`,
-   `entry_digest`, the refusal's class/surface/detail, and the
-   turns/actions/HP/won summary. Every fixture file is compared too.
+`verify` does three checks. It fails if one check finds a problem.
 
-The label pass covers every fixture, including explicit-capture-pair
-fixtures (re-rooted with their recorded `--encounter`), refusal fixtures with
-no root, and unpaired captures. It lists each difference as `id: file.field:
-committed X != census Y` under `label_differences`. It never repairs a
-fixture: refresh the ones it names with `add`, then regenerate the roster
-pins and coverage census as below.
+1. **Stored pairs (#3592).** Each stored file must exist and must agree with its sha256.
+   A file that the provenance does not name is a problem.
+   The result is in `stored_pair_problems`. This check needs no engine.
+2. **Digests.** It makes the initial state, the actions, the digests and the final state again.
+   It does not check a fixture that has no `entry.canonical.json`.
+3. **Labels (#3270).** It makes the census row of each fixture again.
+   Then it compares the fixture with the data that `add` writes for that row.
+   The result is in `label_differences`, in the form `id: file.field: committed X != census Y`.
 
-One kind follows `seed` rather than `add`. A fight whose line replays but
-whose checkpoints disagree stays a `rust-lockstep` refusal while the census
-still names that refusal. Once it certifies, the refusal label is a
-difference.
+`verify` does not repair a fixture. Use `add` to write the fixture again.
 
-`--no-labels` skips the label pass. `verify` needs a built engine, so the
-fast gate does not run it: run it with your head's release binary before
-opening any PR that can move a verdict. `STS2_EVAL_REDERIVE=1` runs it, the
-`census --fixtures` comparison and an `add` round trip from
-`test_eval_suite.py`.
+The options are:
 
-Every command needs a built engine
-(`cargo build --locked --release --bin sts-sim`; pass `--binary` to name
-another), since `verify` now re-derives the root and the line through Rust
-too. The `--root-with` flag is gone: the `python` and `rust` (Rust entry,
-Python opening) root sources were retired with the simulator (#2999), and
-Rust's own opening is the only root.
+* `--captures DIR`: find each pair in a capture collection by sha256.
+* `--no-labels`: do not do the label check.
+* `--no-digests`: do only the label check. The label check compares the same data in one pass.
 
-Anything that rewrites `manifest.json` (`seed`, `add`) relabels the Rust
-crate's roster pins, which record each corpus fight's fixture id keyed on
-`(seed, node)`, and moves the `fixtures` column of the encounter coverage
-census. The `rust port` lane checks both against the committed manifest, so
-regenerate them in the same PR. The roster pins' cases are frozen Python
-`make_monsters` measurements since #2999, so only their labels move:
-`gen_roster_pins.py --relabel` rewrites them from the manifest with no
-simulator. A pooled fixture that no pinned case covers (a fight the re-seed
-added after the freeze) is listed in that pool's `unpinned_fixtures`; the
-`.mcr` census, not a Python roster, certifies it.
+The `rust port` CI lane runs `verify --no-digests` on each engine change (#3756).
+If a change moves a fixture, the lane fails.
+Then write the fixture again with `add` in the same pull request.
+
+Run `verify` with your release binary before you open a pull request that can change a result.
+`STS2_EVAL_REDERIVE=1` runs the full `verify` from `test_eval_suite.py`.
+
+To write a fixture again from its stored pair:
+
+1. Call `eval_suite.materialize_pair` to put the pair in a work directory.
+2. Run `add` with `--mcr` and `--entry-save` on the two files.
+
+### After a change to `manifest.json`
+
+`seed` and `add` change `manifest.json`.
+Then two other files must change in the same pull request:
+
+* The roster pins of the engine. They record the fixture id for each seed and node.
+* The `fixtures` column of the encounter coverage census.
 
 ```bash
 python3 sim/v0.111.0/engine/tools/gen_roster_pins.py --relabel
@@ -337,38 +388,26 @@ python3 sim/v0.111.0/engine/tools/encounter_coverage_census.py \
     --markdown sim/v0.111.0/engine/ENCOUNTER_COVERAGE_CENSUS.md
 ```
 
-[`../engine/OPENING_CENSUS.md`](../engine/OPENING_CENSUS.md) is the last run of
-the Python-vs-Rust opening parity census, retired with its tool by #2999 and
-kept as frozen data. Per-fight opening coverage on the Rust root alone is the
-census's own `stage` column (`opening_refused` rows name why).
+A change to the corpus does not change `manifest.json`.
+After a change to the corpus, run only `eval_coverage.py`.
+
+[`../engine/OPENING_CENSUS.md`](../engine/OPENING_CENSUS.md) is an old report. No tool writes it now.
+
+## A save with no room type
+
+Some saves do not record the room type.
+For such a save, give `add` the two options together:
+`--encounter ENCOUNTER.THE_INSATIABLE_BOSS --node-type boss`.
+
+Get the two values from the capture or from the run data.
+`add` records them in the provenance.
+`add` refuses the options if the save gives a different encounter.
 
 ## Solver research pilot (2026-09-17)
 
-`search/` contains frozen development manifests, per-seed results, replay
-validation, and a Rust/Python transition-throughput comparison. See
-[`search/README.md`](search/README.md) for commands, selection policy, and
-limits. Insatiable fixture `f143c7e6993ed27c` is now included.
+`search/` contains old solver results. Refer to [`search/README.md`](search/README.md).
 
-The result files there are **historical**: they record what the 2026-09-17
-engine found and are not regenerated, so their witnesses no longer replay on
-the current engine. `search/historical-reports.json` lists them, and
-`../engine/tools/verify_search_suite.py` checks that each is still the frozen
-file instead of replaying it.
-
-**Terminology correction:** in the tree seeded before #2999 the `certified`
-category and `provenance.checksummed` boolean do **not** establish complete
-native checksum agreement. The former records Rust/Python digest lockstep;
-the latter records use of the capture's opening checksum. A tree seeded by
-the #2999 census means what "How a fight is certified" above says. Native certification remains the
-required authority, but its result must be read separately. For Insatiable,
-full native projection still refuses unprojected fields; the original human
-line agrees on 33 limited numeric checkpoints and every Python/Rust action.
-The generated alternatives still await in-game replay. An admitted root and
-a passing human line do not guarantee coverage of every counterfactual path.
-
-For a save missing the map's room kind, `add` accepts a paired, explicit
-`--encounter ENCOUNTER.THE_INSATIABLE_BOSS --node-type boss`. Supply both from
-capture/run evidence. The override is recorded in provenance and refuses a
-conflicting encounter that can already be derived. With `--captures`,
-verification locates capture pairs by content hash, including descriptively
-named files.
+These result files are a record. No tool makes them again.
+Their action lines do not play correctly on the engine of today.
+`search/historical-reports.json` lists the files.
+`../engine/tools/verify_search_suite.py` makes sure that each file did not change.

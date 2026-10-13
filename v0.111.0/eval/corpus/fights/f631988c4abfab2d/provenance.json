@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "F8GKB1DJ96L1",
+ "node": 20,
+ "encounter": "ENCOUNTER.CHOMPERS_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "d1e0811637792b683d968efb0c9b13292d329adef79858dc2c78889de788fb46",
+ "save_sha256": "dc69813a1bcec7943e9be80ff4722d4ba157f25b4103355b7be1156c3c9a5da5",
+ "entry_digest": "2454500c4eee9efd20fa61a07229db8d3b4052f1aa97ddfc56b987b9d39b446e",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

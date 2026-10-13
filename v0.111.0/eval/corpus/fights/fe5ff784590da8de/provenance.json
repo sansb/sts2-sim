@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 5,
+ "encounter": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "4a488aabd21942e2223cbd768253bf3e8b461f0c9f45180cddaddfac04b3bc59",
+ "save_sha256": "b7b59975ca0215d319a41699efae77bfe9d69e81124a2a07a8eb53f8cc766df7",
+ "entry_digest": "3e90e05de3f2c17bdd242a03c1865641335c90dbf1ee52d41fbfb1bb497e6511",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

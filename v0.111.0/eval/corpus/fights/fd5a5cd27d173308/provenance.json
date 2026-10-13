@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "J5LLBQ6N0KN4",
+ "node": 16,
+ "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "de726524524c7a14925dda525c33b472a408c0791f699ff0f538406ce663370a",
+ "save_sha256": "64ed99a52cd95b0184729f9ad52e0e7389f1ec6e99258cad26a23d39f55b3cd4",
+ "entry_digest": "dd9d8ff266cc9ae7c13a4d10ca7c36b5f73a3f984f7cc6f3bbdd1341d7cba500",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 29,
+ "encounter": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "70c550e784b6b8548711b7ebf5522109dcb091854ef534342f0be976818ab2e0",
+ "save_sha256": "1af5d049bd603081488b186aa2e8981884a8ba08a5c41afbe72d88344f1cacda",
+ "entry_digest": "cbe8c89c06e76439b68a9d2ced7ce127860e4be16a5d56c8e02ea8f641f303ce",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

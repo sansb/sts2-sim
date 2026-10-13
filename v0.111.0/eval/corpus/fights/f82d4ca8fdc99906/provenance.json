@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "QF89PUW7MNBC",
+ "node": 32,
+ "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "85209189cfe0a9f57cb4d34147d21fca6f0fa9eb5140929bc453a2a00a874c02",
+ "save_sha256": "c063f95c6856ba87de764f06b1d975fa6233ed5b16e7e4b2a10407b6a502906a",
+ "entry_digest": "c99e5a956ff753473b5263174c7739ef8a3ce3a05e30b09ae797e75e82a18970",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

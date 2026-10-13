@@ -43,7 +43,7 @@ use crate::engine::{
 use crate::hot::{
     CARD_FLAG_LEGACY, CardInstanceState, HotCard, HotState, PileId, RngStream, RngStreamState,
 };
-use crate::ids::{CardId, PowerId, StepKind, StepWord};
+use crate::ids::{CardId, EnchantmentId, PowerId, RelicId, StepKind, StepWord};
 use crate::powers::SlotWire;
 use crate::rng::Xoshiro256StarStar;
 
@@ -693,10 +693,12 @@ fn transform_primal_force_hand(
         .collect::<Vec<(HotCard, CardInstanceState)>>();
 
     // A Dampen-tracked Attack is transformed like any other (#2982): see
-    // `forget_transformed_dampen_card` below. Hopper's persistent deck row
-    // still refuses.
+    // `forget_transformed_dampen_card` below. So is one that owns a Hopper
+    // master row (#3856): this is the same plural `CardCmd::Transform`
+    // (IL_0124), which leaves the run-deck object alone. The Scythe's
+    // ordinary-fight `DeckVersion` link still refuses.
     if frozen.iter().any(|(original, _)| {
-        crate::engine::monsters::deck_version_link_owns_uid(state, original.uid)
+        crate::engine::monsters::deck_version_link_refuses_transform(state, original.uid)
     }) {
         return Err(EngineRefusal::MalformedArgs(
             "persistent encounter-card transform",
@@ -744,6 +746,7 @@ fn transform_primal_force_hand(
         state
             .card_states
             .set(original.uid, CardInstanceState::default());
+        crate::engine::monsters::note_hopper_transformed(state, original.uid);
         forget_transformed_dampen_card(state, original.uid);
         if original_spec.strike_tag {
             state.ps_strikes = state
@@ -1341,11 +1344,21 @@ fn exact_active_thrash(
 /// only, +0 damage); Tear Asunder 0xee238 (5) / 0xee307 (+2), whose
 /// CalculatedVar is `CalculatedHits`, not the CalculatedDamage Thrash reads
 /// first; Whirlwind 0xf01ff (5) / 0xf0267 (+3).
-const THRASH_DAMAGE_VAR_BODIES: [(CardId, StepKind, i64, i64); 9] = [
+///
+/// #3756, two bodies a Thrash met outside the Ironclad pool, each a single
+/// `DamageVar` with no `CalculatedDamage` key (so IL_0170-IL_0187 of the
+/// `OnPlay` above reads its `BaseValue`): Momentum Strike 0xe5db3
+/// (`ldc.i4.s 11`, `DamageVar::.ctor`) / 0xe5e1b (`get_Damage`,
+/// `UpgradeValueBy(4)`), whose cost row is a separate write that the damage
+/// var never sees; Rip and Tear 0xe9c34 (`ldc.i4.7`) / 0xe9ca3
+/// (`UpgradeValueBy(2)`), whose two hits are a hit count, not the var.
+const THRASH_DAMAGE_VAR_BODIES: [(CardId, StepKind, i64, i64); 11] = [
     (CardId::Anger, StepKind::AngerExact, 6, 2),
     (CardId::Breakthrough, StepKind::AttackAll, 9, 4),
     (CardId::Dismantle, StepKind::CalculatedHits, 8, 2),
     (CardId::FiendFire, StepKind::FiendFireExact, 7, 3),
+    (CardId::MomentumStrike, StepKind::MomentumStrikeExact, 11, 4),
+    (CardId::RipAndTear, StepKind::AttackRandom, 7, 2),
     (CardId::PactsEnd, StepKind::PactsEndExact, 18, 6),
     (CardId::Stomp, StepKind::StompExact, 12, 3),
     (CardId::SwordBoomerang, StepKind::AttackRandom, 3, 0),
@@ -1379,7 +1392,14 @@ fn thrash_candidate_base(
     let spec = *catalog
         .spec(card.atom)
         .ok_or(EngineRefusal::UnknownAtom(card.atom))?;
-    if !spec.is_attack || !crate::engine::play::body_enchantment_is_exact(&spec) {
+    // An Inky Shiv is the one enchanted identity outside
+    // `body_enchantment_is_exact`: its suffix is a post-body Weak, which a
+    // card Thrash exhausts from the Hand never runs, and `Inky` overrides
+    // neither damage term (see `thrash_null_target_damage`).
+    if !spec.is_attack
+        || !(crate::engine::play::body_enchantment_is_exact(&spec)
+            || crate::engine::play::inky_shiv_identity_is_exact(&spec))
+    {
         return Err(EngineRefusal::MalformedArgs("Thrash damage candidate"));
     }
     let steps = catalog.steps(&spec);
@@ -1413,6 +1433,19 @@ fn thrash_candidate_base(
                     if *repeat == 2 + i64::from(spec.identity.upgrade)) =>
             {
                 Some(5)
+            }
+            // #3756. `Shiv::get_CanonicalVars` RVA `0xeb02f` is one
+            // `DamageVar(4, ValueProp 8)` and no `CalculatedDamage` key, so
+            // IL_0170-IL_0187 of the `OnPlay` above reads its `BaseValue`;
+            // `Shiv::OnUpgrade` RVA `0xeb09f` is `Damage.UpgradeValueBy(2)`.
+            // Fan of Knives changes the Shiv's target type, never this var.
+            (CardId::Shiv, [step])
+                if step.kind == StepKind::ShivAttack
+                    && crate::steps::silent_special::shiv_program_is_exact(spec.row)
+                    && matches!(catalog.args(step.args), [CompiledArg::I(base), CompiledArg::I(1)]
+                    if *base == 4 + 2 * i64::from(spec.identity.upgrade)) =>
+            {
+                Some(4 + 2 * i64::from(spec.identity.upgrade))
             }
             _ => thrash_damage_var_body(catalog, &spec, steps),
         };
@@ -1833,15 +1866,107 @@ fn thrash_candidate_base(
 /// GetWithModifiers(-1), never the active Thrash's paid energy. DoubleDamage
 /// 0xa1ca8 contributes one x2 for this powered owner/source regardless of
 /// duration. Keep the exact Decimal through the existing Weak/Shrink fold.
+///
+/// #3756, the rest of that call, re-read from the v0.111.0 DLL for a source
+/// that is a Hand card, a dealer that is the owner, no target and no CardPlay.
+///
+/// `Hook::ModifyDamage` (RVA `0x10511c`) is called with hook type 14 and
+/// preview mode 0 (IL_020d, IL_020f of the `OnPlay`). Its first two terms are
+/// the SOURCE card's enchantment: `EnchantDamageAdditive` is added at
+/// IL_0037-IL_0046 and `EnchantDamageMultiplicative` multiplied at
+/// IL_0061-IL_0070, both before `ModifyDamageInternal` (`0x106aa0`) folds
+/// every listener's additive and then every listener's factor. The additive
+/// is [`crate::engine::damage::enchant_damage_additive`]; the factor has two
+/// overrides, Corrupted `0xd5eb5` (`3/2`) and Instinct `0xd61ad` (`2`). `Inky`
+/// declares `OnPlay` (`0xd614c`) and no damage member, so an Inky Shiv reads
+/// as a plain Shiv here. With preview mode 0 the `HittableEnemies` loop at
+/// IL_0076-IL_018e is skipped, so nothing target-owned is read.
+///
+/// Listeners that answer for this call (each tests `IsPoweredAttack`, a
+/// non-null card source, and the dealer or the source's owner):
+///
+/// - additive: Strength `0xa894c`; Accuracy `0x9f514` and Phantom Blades
+///   `0xa59c8` for a `Shiv`-tagged source (tag 5); One For All `0xa52d8`;
+///   Strike Dummy `0x9c18c` and Fake Strike Dummy `0x93754` for a
+///   `Strike`-tagged source (tag 1, IL_0024-IL_0031); Miniature Cannon
+///   `0x96ec8` for an upgraded source (IL_0024-IL_002b); Mystic Lighter
+///   `0x973c4` for an enchanted source (IL_0021-IL_0028).
+/// - factors: Double Damage `0xa1ca8`; Weak `0xaafb8`; Shrink `0xa784c`;
+///   Vitruvian Minion `0x9dbd8` for a `Minion`-tagged source (tag 3); Pen Nib
+///   `0x9917c`, which with no `AttackToDouble` doubles a source outside the
+///   Play pile while `AttacksPlayed == 9` (IL_0048-IL_007b), and otherwise
+///   doubles only the `AttackToDouble` card, which is the Thrash being played
+///   and never the Hand card (IL_0082-IL_0092); Gigantification `0xa2ebc`,
+///   which triples any owner card while no command is bound (IL_0045-IL_004b)
+///   and only the bound command's own source otherwise.
+///
+/// Listeners that answer One or Zero: everything gated on `target ==
+/// Owner` (Vulnerable, Tainted, Colossus, Covered, Flanking, Flutter, Guarded,
+/// Hang, Intercept, Knockdown, Slow, Soar, Surrounded, Tank, Conqueror, Mock
+/// Revive, and both caps); Tracking `0xaa2f8` (a null target has no Weak,
+/// IL_0049-IL_0053); Undying Sigil `0x9d400` (`target == Owner.Creature`);
+/// Calcify `0xa0278` (the dealer is not Osty); Leadership `0xa45d4` (the
+/// dealer is its owner); Lethality `0xa4634`, because the Thrash's own
+/// CardPlayStarted entry is already an Attack this turn (IL_0066-IL_00ab).
+/// Weak's Paper Krane and Debilitate arms read the null target and the
+/// dealer's Debilitate, which a player never holds.
+///
+/// Vigor answers Zero. `VigorPower::ModifyDamageAdditive` (`0xaa83c`) returns
+/// Zero while a command is bound and the card source is not that command's
+/// source (IL_002a-IL_0051), and the Hand card is never the Thrash. A Vigor
+/// still live here is still bound: Thrash's own attack bound it at
+/// `BeforeAttack` (`0xaa7ac` IL_0076-IL_0084) and its `AfterAttack` would have
+/// removed it, unless a hit of that attack ended the combat, in which case
+/// `Hook.AfterAttack` reaches no listener and the binding stays (#3495, cited
+/// at `damage::player_attack_inner`). Witnessed on the game itself
+/// (`tests/native/thrash_vigor_lethal.native.json`): Vigor 2, the first hit
+/// kills, the Vigor is kept and Thrash grows by the Strike's 6, not 8.
+///
+/// `vigor_entering_attack` is the owner's Vigor when Thrash's attack began.
+/// The amount cannot change inside a command (the writer xref at
+/// `damage::VigorCommand`), so a live Vigor after an attack that entered with
+/// none has no producer and is refused by name as an inconsistent state.
 fn thrash_null_target_damage(
     state: &HotState,
     catalog: &Catalog,
     selected: HotCard,
     raw: DotNetDecimal,
+    vigor_entering_attack: i32,
 ) -> Result<DotNetDecimal, EngineRefusal> {
     let spec = catalog
         .spec(selected.atom)
         .ok_or(EngineRefusal::UnknownAtom(selected.atom))?;
+    if state.powers.value(PowerId::Vigor) != 0 && vigor_entering_attack == 0 {
+        return Err(EngineRefusal::MalformedArgs(
+            "Thrash candidate preview beside live Vigor",
+        ));
+    }
+    let overflow = || EngineRefusal::CounterOverflow("Thrash damage preview");
+    let enchant_additive =
+        crate::engine::damage::enchant_damage_additive(state, spec, Some(selected.uid))?;
+    let mut value = raw
+        .checked_add(DotNetDecimal::from_i64(enchant_additive))
+        .map_err(|_| overflow())?;
+    match spec.identity.enchantment.map(|enchantment| enchantment.id) {
+        Some(EnchantmentId::Corrupted)
+            if crate::engine::play::onplay_enchantment_identity_is_exact(spec) =>
+        {
+            value = value
+                .checked_mul(DotNetDecimal::ratio(3, 2).map_err(|_| overflow())?)
+                .map_err(|_| overflow())?;
+        }
+        Some(EnchantmentId::Instinct) if crate::engine::play::instinct_identity_is_exact(spec) => {
+            value = value
+                .checked_mul(DotNetDecimal::from_i64(2))
+                .map_err(|_| overflow())?;
+        }
+        Some(EnchantmentId::Corrupted | EnchantmentId::Instinct) => {
+            return Err(EngineRefusal::MalformedArgs(
+                "Thrash candidate enchantment factor",
+            ));
+        }
+        _ => {}
+    }
     let shiv = if spec.row.tags.contains(&"Shiv") {
         state
             .powers
@@ -1861,20 +1986,55 @@ fn thrash_null_target_damage(
         } else {
             0
         };
+    // The owner is alive here (`thrash_exact` returns before the selection
+    // when the attack killed it), so its relics still listen.
+    let owns = |relic| catalog.hooks().owns(relic);
+    let mut relics = 0_i32;
+    if spec.strike_tag && owns(RelicId::RelicStrikeDummy) {
+        relics += 3;
+    }
+    if spec.strike_tag && owns(RelicId::RelicFakeStrikeDummy) {
+        relics += 1;
+    }
+    if spec.identity.upgrade > 0 && owns(RelicId::RelicMiniatureCannon) {
+        relics += 3;
+    }
+    if spec.identity.enchantment.is_some() && owns(RelicId::RelicMysticLighter) {
+        relics += 9;
+    }
     let additive = state
         .powers
         .value(PowerId::Strength)
         .checked_add(state.temp_strength)
         .and_then(|value| value.checked_add(shiv))
         .and_then(|value| value.checked_add(one_for_all))
+        .and_then(|value| value.checked_add(relics))
         .ok_or(EngineRefusal::CounterOverflow("Thrash damage additive"))?;
-    let mut value = raw
+    value = value
         .checked_add(DotNetDecimal::from_i64(i64::from(additive)))
-        .map_err(|_| EngineRefusal::CounterOverflow("Thrash damage preview"))?;
+        .map_err(|_| overflow())?;
     if state.powers.value(PowerId::DoubleDamage) > 0 {
         value = value
             .checked_mul(DotNetDecimal::from_i64(2))
             .map_err(|_| EngineRefusal::CounterOverflow("Thrash Double Damage"))?;
+    }
+    if spec.row.tags.contains(&"Minion") && owns(RelicId::RelicVitruvianMinion) {
+        value = value
+            .checked_mul(DotNetDecimal::from_i64(2))
+            .map_err(|_| overflow())?;
+    }
+    // The counter already holds this Thrash (`relics::before_card_played_hand`
+    // ran at its BeforeCardPlayed). At 9 no card is `AttackToDouble`, so the
+    // Hand card reads the next-attack preview; at 0 the Thrash itself is.
+    if owns(RelicId::RelicPenNib) && state.fanouts.pen_nib() == 9 {
+        value = value
+            .checked_mul(DotNetDecimal::from_i64(2))
+            .map_err(|_| overflow())?;
+    }
+    if state.fanouts.gigantification() > 0 && !state.fanouts.gigantification_bound() {
+        value = value
+            .checked_mul(DotNetDecimal::from_i64(3))
+            .map_err(|_| overflow())?;
     }
     if state.powers.value(PowerId::PlayerWeak) > 0 {
         value = value
@@ -1882,7 +2042,7 @@ fn thrash_null_target_damage(
                 DotNetDecimal::ratio(3, 4)
                     .map_err(|_| EngineRefusal::CounterOverflow("Thrash Weak"))?,
             )
-            .map_err(|_| EngineRefusal::CounterOverflow("Thrash damage preview"))?;
+            .map_err(|_| overflow())?;
     }
     if state.powers.value(PowerId::PlayerShrink) > 0 {
         value = value
@@ -1890,7 +2050,7 @@ fn thrash_null_target_damage(
                 DotNetDecimal::ratio(7, 10)
                     .map_err(|_| EngineRefusal::CounterOverflow("Thrash Shrink"))?,
             )
-            .map_err(|_| EngineRefusal::CounterOverflow("Thrash damage preview"))?;
+            .map_err(|_| overflow())?;
     }
     Ok(value.max(DotNetDecimal::zero()))
 }
@@ -1945,6 +2105,7 @@ pub(crate) fn thrash_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let base = growth
         .checked_add(DotNetDecimal::from_i64(printed))
         .map_err(|_| EngineRefusal::CounterOverflow("Thrash damage"))?;
+    let vigor_entering_attack = ctx.state.powers.value(PowerId::Vigor);
     player_attack_decimal_from_card(
         ctx.state,
         (ctx.catalog, ctx.spec, ctx.source_uid),
@@ -2004,7 +2165,8 @@ pub(crate) fn thrash_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         },
     );
     let raw = thrash_candidate_base(ctx.state, ctx.catalog, selected)?;
-    let increase = thrash_null_target_damage(ctx.state, ctx.catalog, selected, raw)?;
+    let increase =
+        thrash_null_target_damage(ctx.state, ctx.catalog, selected, raw, vigor_entering_attack)?;
     let active = exact_active_thrash(ctx.state, ctx.catalog, ctx.source_uid, ctx.spec)?;
     let mut instance = ctx.state.card_states.get(active.uid);
     if increase != DotNetDecimal::zero() {
@@ -2992,6 +3154,270 @@ mod tests {
         }
     }
 
+    /// A Thrash fixture whose one Hand candidate is an arbitrary identity,
+    /// with `relics` owned.
+    fn thrash_fixture_identity(
+        candidate: CardIdentity,
+        relics: &[RelicId],
+    ) -> (HotState, Catalog, HotCard, HotCard) {
+        let mut builder = CatalogBuilder::new();
+        let source_atom = builder.intern(identity(CardId::Thrash, 0)).unwrap();
+        let candidate_atom = builder.intern(candidate).unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics(relics).unwrap();
+        let catalog = builder.build();
+        let source = HotCard {
+            uid: 90,
+            atom: source_atom,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        };
+        let candidate = HotCard {
+            uid: 7,
+            atom: candidate_atom,
+            flags: 0,
+        };
+        let mut state = HotState::at_defaults();
+        crate::engine::give_a_real_root_s_current_build_provenance(&mut state);
+        state.hp = 50;
+        state.max_hp = 50;
+        state.energy = 3;
+        state.next_card_uid = 100;
+        state.rng.set(
+            RngStream::Sel,
+            RngStreamState {
+                words: [13, 14, 15, 16],
+                counter: 0,
+            },
+        );
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 1_000));
+        state.piles.get_mut(PileId::Hand).make_mut().push(source);
+        state.piles.get_mut(PileId::Hand).make_mut().push(candidate);
+        (state, catalog, source, candidate)
+    }
+
+    fn enchanted(id: CardId, upgrade: u8, enchantment: EnchantmentId, amount: i32) -> CardIdentity {
+        CardIdentity {
+            id,
+            upgrade,
+            enchantment: Some(crate::catalog::CardEnchantment {
+                id: enchantment,
+                amount,
+            }),
+        }
+    }
+
+    fn thrash_growth_after_play(
+        mut state: HotState,
+        catalog: &Catalog,
+        source: HotCard,
+    ) -> Result<DotNetDecimal, EngineRefusal> {
+        crate::engine::play::play_card(
+            &mut state,
+            catalog,
+            source.uid,
+            Some(0),
+            None,
+            &mut Vec::new(),
+        )?;
+        Ok(exact_growth(&state, source.uid))
+    }
+
+    #[test]
+    fn thrash_reads_a_shiv_s_damage_var_plain_and_inky() {
+        // Shiv::get_CanonicalVars 0xeb02f (4) and OnUpgrade 0xeb09f (+2).
+        for (upgrade, expected) in [(0_u8, 4_i64), (1, 6)] {
+            for candidate in [
+                identity(CardId::Shiv, upgrade),
+                enchanted(CardId::Shiv, upgrade, EnchantmentId::Inky, 1),
+            ] {
+                let (mut state, catalog, source, hand) = thrash_fixture_identity(candidate, &[]);
+                assert_eq!(
+                    thrash_candidate_base(&mut state, &catalog, hand),
+                    Ok(DotNetDecimal::from_i64(expected)),
+                    "{candidate:?}"
+                );
+                let monster_before = state.monsters[0].clone();
+                let mut played = state.clone();
+                crate::engine::play::play_card(
+                    &mut played,
+                    &catalog,
+                    source.uid,
+                    Some(0),
+                    None,
+                    &mut Vec::new(),
+                )
+                .unwrap();
+                assert_eq!(
+                    exact_growth(&played, source.uid),
+                    DotNetDecimal::from_i64(expected),
+                    "{candidate:?}"
+                );
+                // The Shiv is exhausted from the Hand unplayed: Inky's Weak
+                // is its OnPlay suffix and never runs.
+                assert_eq!(played.piles.get(PileId::Exhaust).as_slice(), &[hand]);
+                assert_eq!(
+                    played.monsters[0].powers.value(PowerId::Weak),
+                    monster_before.powers.value(PowerId::Weak)
+                );
+                state.monsters_mut()[0] = monster_before;
+            }
+        }
+    }
+
+    #[test]
+    fn thrash_folds_accuracy_and_phantom_blades_for_a_shiv_candidate() {
+        let inky = enchanted(CardId::Shiv, 0, EnchantmentId::Inky, 1);
+        let (mut state, catalog, source, _) = thrash_fixture_identity(inky, &[]);
+        state.powers.set(PowerId::Accuracy, SlotWire::Int, 4);
+        state.powers.set(PowerId::PhantomBlades, SlotWire::Int, 9);
+        // 4 + Accuracy 4 + Phantom Blades 9: no Shiv play finished this turn.
+        assert_eq!(
+            thrash_growth_after_play(state.clone(), &catalog, source),
+            Ok(DotNetDecimal::from_i64(17))
+        );
+        state.history.shiv_plays_finished_this_turn = 1;
+        assert_eq!(
+            thrash_growth_after_play(state, &catalog, source),
+            Ok(DotNetDecimal::from_i64(8))
+        );
+    }
+
+    #[test]
+    fn thrash_folds_the_candidate_s_enchantment_damage_terms() {
+        // Hook::ModifyDamage 0x10511c IL_0037-IL_0070: the source card's own
+        // EnchantDamageAdditive, then its EnchantDamageMultiplicative.
+        for (candidate, expected) in [
+            (
+                enchanted(CardId::StrikeIronclad, 0, EnchantmentId::Sharp, 2),
+                (8, 1),
+            ),
+            (
+                enchanted(CardId::StrikeIronclad, 0, EnchantmentId::Corrupted, 1),
+                (9, 1),
+            ),
+            (
+                enchanted(CardId::StrikeIronclad, 1, EnchantmentId::Corrupted, 1),
+                (27, 2),
+            ),
+            (
+                enchanted(CardId::StrikeIronclad, 0, EnchantmentId::Instinct, 1),
+                (12, 1),
+            ),
+            (
+                enchanted(CardId::StrikeIronclad, 0, EnchantmentId::Glam, 1),
+                (6, 1),
+            ),
+        ] {
+            let (state, catalog, source, _) = thrash_fixture_identity(candidate, &[]);
+            assert_eq!(
+                thrash_growth_after_play(state, &catalog, source),
+                Ok(DotNetDecimal::ratio(expected.0, expected.1).unwrap()),
+                "{candidate:?}"
+            );
+        }
+        // Strength is a listener additive: it lands after the factor.
+        let corrupted = enchanted(CardId::StrikeIronclad, 0, EnchantmentId::Corrupted, 1);
+        let (mut state, catalog, source, _) = thrash_fixture_identity(corrupted, &[]);
+        state.powers.set(PowerId::Strength, SlotWire::Int, 3);
+        assert_eq!(
+            thrash_null_target_damage(
+                &state,
+                &catalog,
+                state.piles.get(PileId::Hand).as_slice()[1],
+                DotNetDecimal::from_i64(6),
+                0
+            ),
+            Ok(DotNetDecimal::from_i64(12))
+        );
+        let _ = source;
+    }
+
+    #[test]
+    fn thrash_folds_the_owner_s_source_gated_relics() {
+        let strike = identity(CardId::StrikeIronclad, 0);
+        let strike_plus = identity(CardId::StrikeIronclad, 1);
+        let shiv = identity(CardId::Shiv, 0);
+        let inky = enchanted(CardId::Shiv, 0, EnchantmentId::Inky, 1);
+        for (candidate, relics, expected) in [
+            // Strike Dummy 0x9c18c / Fake Strike Dummy 0x93754: a Strike tag.
+            (strike, &[RelicId::RelicStrikeDummy][..], 9),
+            (strike, &[RelicId::RelicFakeStrikeDummy][..], 7),
+            (
+                shiv,
+                &[RelicId::RelicStrikeDummy, RelicId::RelicFakeStrikeDummy][..],
+                4,
+            ),
+            // Miniature Cannon 0x96ec8: an upgraded source.
+            (strike, &[RelicId::RelicMiniatureCannon][..], 6),
+            (strike_plus, &[RelicId::RelicMiniatureCannon][..], 12),
+            // Mystic Lighter 0x973c4: an enchanted source.
+            (shiv, &[RelicId::RelicMysticLighter][..], 4),
+            (inky, &[RelicId::RelicMysticLighter][..], 13),
+            // Vitruvian Minion 0x9dbd8: a Minion tag only.
+            (strike, &[RelicId::RelicVitruvianMinion][..], 6),
+        ] {
+            let (state, catalog, source, _) = thrash_fixture_identity(candidate, relics);
+            assert_eq!(
+                thrash_growth_after_play(state, &catalog, source),
+                Ok(DotNetDecimal::from_i64(expected)),
+                "{candidate:?} {relics:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn thrash_doubles_the_candidate_while_pen_nib_previews_the_next_attack() {
+        // PenNib::ModifyDamageMultiplicative 0x9917c IL_0048-IL_007b. The
+        // Thrash's own BeforeCardPlayed moves the counter first, so entering
+        // at 8 the Hand card is read at 9 with no AttackToDouble.
+        let strike = identity(CardId::StrikeIronclad, 0);
+        for (entering, expected) in [(7_u8, 6_i64), (8, 12), (9, 6)] {
+            let (mut state, catalog, source, _) =
+                thrash_fixture_identity(strike, &[RelicId::RelicPenNib]);
+            assert!(state.fanouts.set_pen_nib(entering));
+            assert_eq!(
+                thrash_growth_after_play(state, &catalog, source),
+                Ok(DotNetDecimal::from_i64(expected)),
+                "entering at {entering}"
+            );
+        }
+    }
+
+    #[test]
+    fn thrash_candidate_preview_reads_an_unbound_gigantification_and_no_bound_vigor() {
+        let strike = identity(CardId::StrikeIronclad, 0);
+        let (mut state, catalog, _, hand) = thrash_fixture_identity(strike, &[]);
+        let raw = DotNetDecimal::from_i64(6);
+        assert!(state.fanouts.set_gigantification(1));
+        assert_eq!(
+            thrash_null_target_damage(&state, &catalog, hand, raw, 0),
+            Ok(DotNetDecimal::from_i64(18))
+        );
+        assert!(state.fanouts.set_gigantification_bound(true));
+        assert_eq!(
+            thrash_null_target_damage(&state, &catalog, hand, raw, 0),
+            Ok(raw)
+        );
+        assert!(state.fanouts.set_gigantification_bound(false));
+        assert!(state.fanouts.set_gigantification(0));
+        // A Vigor the attack entered with and did not consume is still bound
+        // to that attack: Zero for any other card (#3877).
+        state.powers.set(PowerId::Vigor, SlotWire::Int, 5);
+        assert_eq!(
+            thrash_null_target_damage(&state, &catalog, hand, raw, 5),
+            Ok(raw)
+        );
+        // A Vigor with no attack behind it has no producer.
+        assert_eq!(
+            thrash_null_target_damage(&state, &catalog, hand, raw, 0),
+            Err(EngineRefusal::MalformedArgs(
+                "Thrash candidate preview beside live Vigor"
+            ))
+        );
+    }
+
     #[test]
     fn queen_blockers_thrash_reads_native_damage_vars_for_special_attack_bodies() {
         for (id, expected) in [
@@ -3083,7 +3509,8 @@ mod tests {
                         &state,
                         &catalog,
                         selected,
-                        DotNetDecimal::from_i64(6)
+                        DotNetDecimal::from_i64(6),
+                        0
                     )
                     .unwrap(),
                     DotNetDecimal::ratio(expected * factor * 21, 40).unwrap(),
@@ -3736,8 +4163,12 @@ mod tests {
         assert!(events.is_empty());
     }
 
+    /// #3856: Primal Force's plural `CardCmd::Transform` (`<OnPlay>d__3` RVA
+    /// `0x3b3990`, IL_0124) over an Attack that owns a Thieving Hopper master
+    /// row. The row stays in the run deck with no combat object, and the
+    /// Giant Rock that replaced it owns none.
     #[test]
-    fn primal_force_refuses_a_hopper_master_attack_before_public_play_mutation() {
+    fn primal_force_transforms_a_hopper_master_attack_and_leaves_its_deck_row() {
         let (mut state, catalog, source, strike, _defend, _sovereign) = primal_fixture(0);
         state.exact_piles = true;
         state
@@ -3751,6 +4182,7 @@ mod tests {
                 state: state.card_states.get(strike.uid),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         let mut hopper = HotMonster::new(
             MonsterKind::ThievingHopper,
@@ -3765,28 +4197,24 @@ mod tests {
         state.monsters_mut()[0] = hopper;
         assert!(crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&state, &catalog,));
 
-        let before = state.clone();
-        let mut events = vec![Event::TurnBegan { turn: 99 }];
-        let events_before = events.clone();
-        assert_eq!(
-            crate::engine::play::play_card(
-                &mut state,
-                &catalog,
-                source.uid,
-                None,
-                None,
-                &mut events,
-            ),
-            Err(EngineRefusal::MalformedArgs(
-                "persistent encounter-card transform"
-            ))
-        );
-        assert_eq!(state, before);
-        assert_eq!(events, events_before);
+        let master = state.card_states.hopper().unwrap().master.clone();
+        let mut events = Vec::new();
+        crate::engine::play::play_card(&mut state, &catalog, source.uid, None, None, &mut events)
+            .unwrap();
+        assert!(PileId::ALL.into_iter().all(|pile| {
+            state
+                .piles
+                .get(pile)
+                .as_slice()
+                .iter()
+                .all(|card| card.uid != strike.uid)
+        }));
+        assert_eq!(state.card_states.hopper().unwrap().master, master);
+        assert!(crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&state, &catalog));
     }
 
     /// #2941: Primal Force refuses an Attack still linked to an ordinary
-    /// fight's `DeckVersion` (`monsters::deck_version_link_owns_uid`); the gate
+    /// fight's `DeckVersion` (`monsters::deck_version_link_refuses_transform`); the gate
     /// reads the link, not the card id.
     #[test]
     fn primal_force_refuses_a_deck_version_linked_attack_before_public_play_mutation() {

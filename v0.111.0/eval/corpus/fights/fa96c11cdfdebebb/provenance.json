@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "59T4CR59L7KU",
+ "node": 41,
+ "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+ "node_type": "elite",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "c4311f02063d3a9fe9e85aa7f19586ae112f144c2aeb78707e371cdc19c2d493",
+ "save_sha256": "3bd98f02f36906764a0cd455dc995185a303b4f295797dbb3095bb22d2d1869e",
+ "entry_digest": "6a11c5f4f5433fc8b9a4cf729ff4b3a2bf80120c015bbc44b85cd7721a5efd0f",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -278,6 +278,19 @@ int32 n + n × ReplayChecksumData
 zero padding to byte boundary
 ```
 
+End of the file (#3756; v0.111.0 `sts2.dll`). `CombatReplay::Serialize`
+(RVA 0x69248) ends at the checksum list (IL_0115), and
+`CombatReplayWriter::WriteReplay` (RVA 0x69c7c) writes the first
+`PacketWriter::get_BytePosition` bytes (IL_0082..0091), which is
+`CeilToInt(BitPosition / 8f)` (RVA 0x683b6): zero to seven padding bits.
+Some uploaded captures are `floor(bits / 8) + 1` bytes instead, which is one
+whole zero byte when the stream ends on a byte boundary and the same file
+otherwise. On 2026-10-10 that was every capture of 33 of the 393 uploaded
+runs (105 byte-aligned ones, each with the byte), and no capture of the
+others (709 byte-aligned, none with it). The IL does not explain it and the
+cause is unknown. The decoders accept at most eight trailing bits, all zero;
+the stream itself must still decode to its last field.
+
 ### SerializableRun (the snapshot)
 
 In order: schemaVersion int32; acts `List<SerializableActModel>`;
@@ -290,6 +303,21 @@ relic grab bag; visited MapCoords (2×8 bits each); map-point history
 (int32 n × `List<MapPointHistoryEntry>`); save/start/run/win times int64;
 ascension int8; nullable map drawings; extra fields (bool startedWithNeow,
 int32 testSubjectKills, bool freedRepy); numReloads int32.
+
+Map drawings (#2103; v0.111.0 `sts2.dll`). `SerializableMapDrawings`
+(Deserialize RVA 0x46400) is `List<SerializablePlayerMapDrawings>` with an
+int32 count. `SerializablePlayerMapDrawings` (RVA 0x465ee) is playerId u64,
+then `List<SerializableMapDrawingLine>` with an int32 count.
+`SerializableMapDrawingLine` (RVA 0x4635c) is isEraser bool, a point count
+int16, then that many `ReadVector2`: x quantized to 13 bits over [-3, 3], y
+to 16 bits over [-2, 2] (the params are set in the static constructor, RVA
+0x463c2). A quantized float is `ReadUInt(bits)` through
+`PacketReader::Unquantize` (RVA 0x6818e): `min + q / 2^bits * (max - min)`,
+narrowed to float32. Every value on those two grids is exact in float32. The
+decoded shape is `[{player_id, lines: [{is_eraser, points: [[x, y], ...]}]}]`
+in normalized map space; lines are in creation order and an erased stroke
+stays in the list, followed by the eraser strokes over it. This is the same
+bit layout the floor save carries gzipped and base64-encoded.
 
 `SerializablePlayer`: netId u64, character entry, hp/maxHp int32, energy
 int16, potion slots int8, gold int32, orb slots int16, deck/relics/

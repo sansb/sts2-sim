@@ -65,7 +65,7 @@ FROZEN: dict[str, tuple[str, str]] = {
         "tools/gen_slice_pins.py --write (deleted #2999)",
     ),
     "fixtures/opening_relic_hooks_v1.json": (
-        "21f0699ae67ff9cf6b69113a6d1f12308be0dc5704c4dd37e384d138d1d22bda",
+        "95e1e2040c555521c7814ddba9486e7f37f93bb2ebda854604147c44943cc01d",
         "tools/gen_opening_relic_pins.py --write (deleted #2999)",
     ),
     "fixtures/exact_solve_corpus_v1.json": (

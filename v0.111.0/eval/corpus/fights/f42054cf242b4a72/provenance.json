@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "JRFB25RZGTA0",
+ "node": 36,
+ "encounter": "ENCOUNTER.DEVOTED_SCULPTOR_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "e4aa2e5227f8347a68a7887126a499a854b54d0306eed32c22f00dabec49e056",
+ "save_sha256": "26fb7f50bfd666e65d293d522b40abfc392eb6189cc9bcc2f510ef790ad80dec",
+ "entry_digest": "b527ecfc9bc251b21250619a568967b95ffc0876ba2e8430e95df5446cb58b7a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

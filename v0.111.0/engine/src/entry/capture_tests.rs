@@ -240,6 +240,63 @@ fn the_node_and_its_encounter_derive_from_the_mapped_run() {
     assert_eq!(document.ascension, Some(0));
 }
 
+/// #3760: a capture's run carries a modifier's bare entry (`MURDEROUS`), which
+/// the mapping gives its category, and the combat gate reads it like a
+/// save's.
+#[test]
+fn a_capture_runs_modifiers_reach_the_combat_gate() {
+    let built = |modifiers: Value| {
+        let mut capture = minimal();
+        capture["modifiers"] = modifiers;
+        let capture = text(&capture);
+        build(&EntryRequest {
+            input: EntryInput::CaptureRun(&capture),
+            encounter_id: None,
+            node_type: None,
+            game_build: GameBuild::V0_111_0,
+            mcr_splice: false,
+        })
+    };
+    let plain = built(json!([]));
+    assert!(matches!(plain, EntryOutcome::Built(_)));
+    // Two of the site census's three daily runs: nothing in them acts in a
+    // fight, and the entry is the one built without them.
+    for inert in [
+        json!([{"id": "ALL_STAR", "props": null}, {"id": "SEALED_DECK", "props": null},
+               {"id": "BIG_GAME_HUNTER", "props": null}]),
+        json!([{"id": "BIG_GAME_HUNTER", "props": null},
+               {"id": "CHARACTER_CARDS", "props": null}, {"id": "DRAFT", "props": null}]),
+    ] {
+        assert_eq!(built(inert).to_json(), plain.to_json());
+    }
+    // The third (#3934): Murderous is modeled, so the root is built, its wire
+    // document is the one built without modifiers, and the opening is told.
+    let EntryOutcome::Built(murderous) = built(json!([
+        {"id": "FLIGHT", "props": null}, {"id": "INSANITY", "props": null},
+        {"id": "MURDEROUS", "props": null}
+    ])) else {
+        panic!("a Murderous run is built");
+    };
+    assert!(murderous.murderous);
+    assert_eq!(murderous.to_json(), plain.to_json());
+    let EntryOutcome::Built(plain_document) = &plain else {
+        panic!("built above");
+    };
+    assert!(!plain_document.murderous);
+    // A modifier that is still not modeled refuses beside it.
+    let EntryOutcome::Refused(refusal) = built(json!([
+        {"id": "MURDEROUS", "props": null}, {"id": "TERMINAL", "props": null}
+    ])) else {
+        panic!("a Terminal run refuses");
+    };
+    assert_eq!(refusal.class(), "run_modifier_not_modeled");
+    assert!(refusal.to_string().contains("MODIFIER.TERMINAL"));
+    let EntryOutcome::Refused(refusal) = built(json!([{"id": "NOT_READ", "props": null}])) else {
+        panic!("an unread modifier refuses");
+    };
+    assert_eq!(refusal.class(), "run_modifier_unknown");
+}
+
 fn pair_request<'a>(input: EntryInput<'a>, meta: &'a Value) -> EntryRequest<'a> {
     EntryRequest {
         input,

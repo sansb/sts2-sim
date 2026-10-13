@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "XE4A8Y2668XW",
+ "node": 34,
+ "encounter": "ENCOUNTER.TURRET_OPERATOR_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "7a285a2af00459b246558d9f3610bd98c8ec916fca1b5c2a82200172590774f1",
+ "save_sha256": "ce2901533c74b49b1c0d154f48985a90e7c309e2edc680a060b247939edb6d04",
+ "entry_digest": "ae4d88ce358dc5b523f64fa03035f4524cf923fcf2e4b7862e4e666bf81f1f76",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

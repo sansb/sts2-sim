@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "UZP5NVGBG0N8",
+ "node": 8,
+ "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "9511802603ad77d866f12ecaf658939c1438737306615ba8844cf7161165585c",
+ "save_sha256": "c69538a7b4dca67ff9354b90c5e9e739b678bd1e157a0cf30e62bed97096f585",
+ "entry_digest": "5b1d151cec06ea0ee60ee05a6f370ddb3c750a734001802c582709f715807051",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

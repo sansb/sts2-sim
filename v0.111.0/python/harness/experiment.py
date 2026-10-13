@@ -375,15 +375,52 @@ class _Fight:
             if str(prop(self.pcs, "Phase")) == "Play":
                 break
             call(self.ex, "Unpause")
-            call(self.ex, "ExecuteActions")
-            time.sleep(0.05)
+            self._pump()      # `_Fight.waits` set on the class runs the opening with real waits
+            self._idle(0.05)
         assert str(prop(self.pcs, "Phase")) == "Play", \
             f"opening turn never reached Play: {prop(self.pcs, 'Phase')}"
 
-    def _drain(self):
+    # `real_waits.RealWaits` once a probe turns real waits on (#3931); None is
+    # the harness's own behaviour, where `Cmd.Wait` returns at once and every
+    # pump below is the plain `ExecuteActions` it always was.
+    waits = None
+    # `one_thread.PumpContext` once a probe puts the game on its own thread
+    # (#3931): every continuation the game posts (`Task.Yield`, a `Task.Delay`
+    # that ran out) then runs from `_pump`, and `_idle` waits for a post
+    # instead of sleeping. None is the harness's own behaviour: those
+    # continuations run on the thread pool and the loops below sleep for them.
+    posted = None
+
+    def _pump(self):
+        if self.waits is not None:
+            self.waits.pump(self.ex)        # runs what was posted itself
+            return
+        call(self.ex, "ExecuteActions")
+        if self.posted is not None:
+            self.posted.run_posted()
+
+    def _idle(self, seconds):
+        if self.posted is None:
+            time.sleep(seconds)
+        else:
+            self.posted.idle(seconds)
+
+    def _drain(self, timeout_s=60.0):
         call(self.ex, "Unpause")
+        if self.waits is not None:
+            # A blocking GetResult would never see a timer fire: pump instead.
+            self.waits.pump(self.ex)
+            self.waits.drain(self.ex)
+            return
         call(self.ex, "ExecuteActions")
         t = call(self.ex, "FinishedExecutingActions")
+        if self.posted is not None:
+            # Nor would it run a posted continuation: this thread is the one that runs them.
+            t0 = time.time()
+            while not bool(t.IsCompleted):
+                if not self.posted.run_posted():
+                    self.posted.idle(0.01)
+                assert time.time() - t0 < timeout_s, "the executor never finished its actions"
         call(call(t, "GetAwaiter"), "GetResult")
 
     @property
@@ -404,13 +441,20 @@ class _Fight:
     def _run_action(self, action, timeout_s=15.0):
         call(self.aqs, "EnqueueAction", action, UInt64(int(str(prop(self.player, "NetId")))))
         call(self.ex, "Unpause")
-        call(self.ex, "ExecuteActions")
+        self._pump()
         t0 = time.time()
         while time.time() - t0 < timeout_s:
             st = str(prop(action, "State"))
             if st in ("Finished", "Cancelled"):
                 return st
-            time.sleep(0.02)
+            if self.waits is not None:
+                call(self.ex, "Unpause")
+                self.waits.pump(self.ex)
+            elif self.posted is not None:
+                self.posted.run_posted()
+            self._idle(0.02)
+        if self.waits is not None:
+            self.waits.stalled_on(f"action timed out in state {prop(action, 'State')}")
         return f"timeout:{prop(action, 'State')}"
 
     def play(self, hand_index, target_id):
@@ -477,8 +521,16 @@ class _Fight:
             if side == "Player" and phase == "Play":
                 break
             call(self.ex, "Unpause")
-            call(self.ex, "ExecuteActions")
-            time.sleep(0.05)
+            self._pump()
+            self._idle(0.05)
+        else:
+            if self.waits is not None and not self.over:
+                # Ran out of time short of the next Play phase: never a trace.
+                self.waits.stalled_on(
+                    f"the turn end timed out on side {prop(self.cs, 'CurrentSide')}, "
+                    f"phase {prop(self.pcs, 'Phase')}")
+        if self.waits is not None:
+            self.waits.drain(self.ex)
         return {"state": st, "over": self.over}
 
     def history(self):

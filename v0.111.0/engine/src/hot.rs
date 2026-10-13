@@ -282,7 +282,7 @@ const INTERCEPT_COVERED_ORDER_SHIFT: u32 = 2;
 const INTERCEPT_COVERED_ORDER_MASK: u8 = 0b0001_1100;
 const IMITATION_LEARNING_ORDER_SHIFT: u32 = 5;
 const IMITATION_LEARNING_ORDER_MASK: u8 = 0b1110_0000;
-const MAX_AFTER_PLAYER_TURN_START_POWERS: usize = 8;
+const MAX_AFTER_PLAYER_TURN_START_POWERS: usize = 9;
 const MAX_STORED_AFTER_PLAYER_TURN_START_POWERS: usize = 7;
 const MAX_AFTER_DAMAGE_RECEIVED_POWERS: usize = 3;
 const AFTER_SIDE_TURN_START_LEN_MASK: u8 = 0b0001_1111;
@@ -362,7 +362,7 @@ impl<const N: usize> PartialEq<&[PowerId; N]> for PowerAmountChangedOrder {
     }
 }
 
-/// Stack-only decoded view of the complete compact eight-member listener order.
+/// Stack-only decoded view of the complete compact nine-member listener order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct AfterPlayerTurnStartOrder {
     powers: [PowerId; MAX_AFTER_PLAYER_TURN_START_POWERS],
@@ -670,12 +670,62 @@ pub(crate) struct TheBombInstance {
     pub(crate) damage: i32,
 }
 
-/// The one keyed native `ToricToughnessPower`, including its lossless
-/// retained `DynamicVars.Block` Decimal.
+/// The first live native `ToricToughnessPower` object, including its
+/// lossless retained `DynamicVars.Block` Decimal. Objects acquired while it
+/// lives are [`ToricToughnessLaterInstance`] rows (#3756).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct ToricToughnessInstance {
     pub(crate) duration: i32,
     pub(crate) block: DotNetDecimal,
+}
+
+/// One independently-instanced native `ToricToughnessPower` acquired while an
+/// earlier one is still live (#3756).
+///
+/// v0.111.0 (DLL `9cb4f1ad`): `ToricToughnessPower::get_InstanceType` RVA
+/// `0xaa24b` IL_0001 returns 1 (`PowerInstanceType.Instanced`), so
+/// `PowerCmd::FindExistingInstanceForStacking` RVA `0x1338d8` IL_0021-0036
+/// answers `null` and every Toric Toughness play attaches a new power object
+/// at the end of the owner's power list. Each object's own
+/// `<AfterBlockCleared>d__11::MoveNext` RVA `0x349e3c` gains its own Block
+/// var (IL_003d-0050) and then decrements its own Amount (IL_00ab-00ac).
+///
+/// The FIRST live object keeps the keyed [`ToricToughnessInstance`] record
+/// and its `PowerId::ToricToughness` entry in the after-block-cleared order,
+/// so a one-object state is byte-identical to the earlier representation.
+/// `listeners_before` is this object's place in that walk: the number of
+/// entries of the after-block-cleared order that run before it. Rows keep
+/// acquisition order among themselves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct ToricToughnessLaterInstance {
+    pub(crate) block: DotNetDecimal,
+    pub(crate) duration: u8,
+    pub(crate) listeners_before: u8,
+}
+
+/// One independently-instanced native `RollingBoulderPower` acquired while an
+/// earlier one is still live (#3756).
+///
+/// v0.111.0 (DLL `9cb4f1ad`): `RollingBoulderPower::get_InstanceType` RVA
+/// `0xa6da1` IL_0001 returns 1 (`PowerInstanceType.Instanced`), so
+/// `PowerCmd::FindExistingInstanceForStacking` RVA `0x1338d8` IL_0021-0036
+/// answers `null` and every Rolling Boulder play attaches a new power object
+/// at the end of the owner's power list (`Creature::ApplyPowerInternal` RVA
+/// `0x11da0c` IL_0063-006f). Each object's own
+/// `<AfterPlayerTurnStart>d__8::MoveNext` RVA `0x342bdc` damages the
+/// hittable enemies for its own `Amount` (`DoDamage` RVA `0xa6e0b`) and then
+/// grows its own `Amount` by its `DynamicVars.Damage` (5, `get_CanonicalVars`
+/// RVA `0xa6da4`; `SetAmount` at IL_0263). Nothing removes one.
+///
+/// The FIRST object keeps the `PowerId::RollingBoulder` slot and its entry in
+/// the after-player-turn-start order, so a one-object state is byte-identical
+/// to the earlier representation. `listeners_before` is this object's place
+/// in that walk: the number of entries of the order that run before it. Rows
+/// keep acquisition order among themselves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct RollingBoulderLaterInstance {
+    pub(crate) amount: i32,
+    pub(crate) listeners_before: u8,
 }
 
 /// SlothPower's private number of owner CardPlay iterations started in the
@@ -732,9 +782,10 @@ pub(crate) struct MonologueInstance {
 }
 
 /// Cold concrete power records sharing the vector header first paid for by
-/// The Bomb. Bomb, Panache, and Monologue are truly instanced; Toric and Sloth
-/// are keyed singletons. Keeping the tag explicit permits all five families
-/// to coexist without encoding a false mutual exclusion.
+/// The Bomb. Bomb, Panache, and Monologue are truly instanced; Sloth is a
+/// keyed singleton, and so is the first Toric object (later ones are their
+/// own rows, #3756). Keeping the tag explicit permits the families to
+/// coexist without encoding a false mutual exclusion.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum ColdPowerRecord {
     TheBomb(TheBombInstance),
@@ -746,6 +797,14 @@ enum ColdPowerRecord {
     /// These rows keep their relative acquisition order and are otherwise
     /// independent of the other families' placement rules.
     Automation(AutomationInstance),
+    /// A native ToricToughnessPower object after the first live one (#3756).
+    /// Like the Automation rows, these keep their relative acquisition order
+    /// and are independent of the other families' placement rules.
+    ToricToughnessLater(ToricToughnessLaterInstance),
+    /// A native RollingBoulderPower object after the first one (#3756).
+    /// These rows keep their relative acquisition order and are independent
+    /// of the other families' placement rules.
+    RollingBoulderLater(RollingBoulderLaterInstance),
 }
 
 /// Typed acquisition token for the ordinary player-power turn-end walk.
@@ -1143,6 +1202,9 @@ struct ColdFanoutState {
     hello_world_snapshot_extra_delta: i32,
     fetch_finished_uids: Vec<u32>,
     power_records: Vec<ColdPowerRecord>,
+    /// Live NightmarePower objects in acquisition order (#3794). The held
+    /// card payload is not `Copy`, so these rows cannot ride `power_records`.
+    nightmares: Vec<NightmareInstance>,
     next_the_bomb_uid: u32,
     /// Spill for native side-end object ledgers of length two or greater.
     /// The one-entry case stays inline in `FanoutState`, so the common first
@@ -1211,6 +1273,19 @@ struct BatchNineRelicState {
     paels_legion_triggered_last_turn: bool,
     paels_eye_used: bool,
     paels_eye_was_owner_part_last_player_turn: bool,
+    /// A Sculpting Strike has written Ethereal on a card this combat (#3877).
+    ///
+    /// `SculptingStrike/<OnPlay>d__7::MoveNext` (RVA `0x3b8cec` IL_0187/IL_0189)
+    /// writes the keyword on the chosen card through `CardCmd::ApplyKeyword`
+    /// (`0x12fd98`, `CardModel::AddKeyword` at IL_0018), and nothing ties it
+    /// to the Strike afterwards: the game keeps it when the Strike is
+    /// transformed out of combat (`CardCmd/<Transform>d__13::MoveNext`
+    /// `0x3e0ae0`, `Original.RemoveFromCurrentPile()` at IL_018c). So the mark
+    /// can outlive its writer, and this latch is the fact that it was made:
+    /// set where the keyword is written, never cleared, and carried by the
+    /// document (`player.sculpting_strike_marked_combat`). It lives in this
+    /// layer because it is written at most once a fight.
+    sculpting_strike_marked: bool,
     /// Native `CombatTurnState.PlayersTakingExtraTurn` is non-empty (#3049).
     players_taking_extra_turn: bool,
     regalite_used_this_turn: bool,
@@ -1219,6 +1294,10 @@ struct BatchNineRelicState {
     /// The queued deferred hook action of the running public transaction
     /// (#3387). Never serialized: the boundary refuses a state carrying it.
     deferred_hook_action: Option<Arc<DeferredHookAction>>,
+    /// The state is inside a hook action that is running on its listener's
+    /// re-run stack (#3903, `hook_action::receipt_choice_in_listener`).
+    /// Never serialized: it is cleared before any state is published.
+    hook_action_running: bool,
     /// Immutable Red Skull ownership, cached so every player-HP writer can
     /// run its `AfterCurrentHpChanged` Strength transition without a
     /// catalog (#3044, `engine::damage::red_skull_after_player_hp_changed`).
@@ -1229,6 +1308,16 @@ struct BatchNineRelicState {
     /// this separately shared layer so batch eight's cold record, which the
     /// turn path copies, does not widen.
     spiked_gauntlets_owned: bool,
+    /// CuriousPower was attached while a BorrowedTimePower was live, so it
+    /// follows it in the owner's power list (#3756). Meaningful only while
+    /// both are live; see [`HotFanouts::curious_follows_borrowed_time`].
+    curious_follows_borrowed_time: bool,
+    /// The run carries the Murderous modifier (#3934): immutable for the
+    /// fight, and cached here because the enemy-add listener
+    /// (`engine::monsters::fur_coat_after_opponent_added`) has no catalog,
+    /// exactly as Philosopher's Stone's ownership is cached in the batch-six
+    /// word. Carried by the document as `player.murderous`.
+    murderous: bool,
     /// Red Skull's native `StrengthApplied` latch disagrees with the HP
     /// quotient (#3044). Only the opening sets it — a Red Skull that ran
     /// before Planisphere's crossing heal — and the next player HP write
@@ -1259,6 +1348,35 @@ struct BatchNineRelicState {
     /// creation: the inline cold record every fanout copy-on-write clones
     /// stays at its measured size.
     next_creature_uid: u32,
+    /// The creature uid of an Osty created in the middle of the fight, or
+    /// zero (#3904).
+    ///
+    /// `CombatState::AttachCreature` (`0x13718f` `IL_0009`-`IL_0022`) hands
+    /// creature ids out in creation order, and a first `OstyCmd.Summon`
+    /// creates a creature whenever it runs (`<Summon>d__0` `0x3ee040`
+    /// `IL_01e9`). So an Osty can sit after a spawned lineage as well as
+    /// before it, and a validator that reads `next_creature_uid` backwards
+    /// ([`crate::engine::monsters::tracked_lineage_start`]) has to know which.
+    /// This is the id the Osty took, written at that creation.
+    ///
+    /// Zero is "none recorded": no Osty creature, or one created at combat
+    /// start (Bound Phylactery, Phylactery Unbound), which precedes every
+    /// spawn and whose place among the combat-start pets only its count
+    /// decides (`engine::seed_creature_uid_counter`). Uid 0 is always an
+    /// encounter enemy, so it is never an Osty's.
+    osty_creature_uid: u32,
+    /// `HellraiserPower/Data::infiniteAutoPlaysThisTurn`, held as
+    /// `min(count, 9)` (#3929).
+    ///
+    /// v0.111.0 (SHA-256 `9cb4f1ad…`)
+    /// `HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` RVA `0x33c1a8`
+    /// reads the field only at IL_0099-00a6 (`>= 9`), increments it at
+    /// IL_00e6-00f4 on both sides of that test, and
+    /// `HellraiserPower::ResetInfiniteAutoPlayData` RVA `0xa3718` zeroes it
+    /// (IL_0013-0015). Nothing else reads it, so every value from nine up
+    /// is one state and the engine stores nine for all of them. The rule
+    /// is [`crate::engine::draw::hellraiser_should_auto_play`].
+    hellraiser_infinite_auto_plays: u8,
     /// How many passive relic pets (Byrdpip, Pael's Legion) this fight's
     /// player has (#3039). Each is a creature holding a native creature id
     /// (`<AddPet>d__14`1::MoveNext` `0x3ee68c` `IL_0054`).
@@ -1314,11 +1432,17 @@ impl Default for BatchNineRelicState {
             self_forming_clay_owned: false,
             gremlin_horn_owned: false,
             deferred_hook_action: None,
+            hook_action_running: false,
             red_skull_owned: false,
+            sculpting_strike_marked: false,
             spiked_gauntlets_owned: false,
+            curious_follows_borrowed_time: false,
+            murderous: false,
             red_skull_latch_stale: false,
             pending: None,
             next_creature_uid: 0,
+            osty_creature_uid: 0,
+            hellraiser_infinite_auto_plays: 0,
             relic_pet_creatures: 0,
             replay_tape_cursor: 0,
         }
@@ -1358,9 +1482,15 @@ struct PotionBeltState {
     radiance: i32,
     regen: i32,
     gigantification_bound: bool,
-    /// Retained padding byte after Clarity's insertion ordinal moved into the
-    /// complete compact listener lane.
-    reserved_after_side_turn_start: u8,
+    /// Live `AmbergrisPower` amount (#3756): the extra player turns still
+    /// owed. One more byte of existing padding; the record stays 56 bytes.
+    ambergris: u8,
+    /// Hibernate's place in the `AfterPlayerTurnStart` player-power order
+    /// (#3877): how many of the other eight ordered listeners were applied
+    /// before it, `0..=8`. Zero whenever Hibernate is not live. It occupies
+    /// the padding byte Clarity's insertion ordinal once used, so the record
+    /// stays 56 bytes.
+    hibernate_turn_start_ordinal: u8,
     /// Zero for an absent/singleton hit-listener set; otherwise the
     /// factoradic permutation rank plus one for the complete live set.
     /// This consumes one more byte of existing padding without widening the
@@ -1667,6 +1797,52 @@ pub struct ImitationClone {
     /// in the correlation record until the clone enters Play.
     pub flags: u16,
     pub instance: CardInstanceState,
+}
+
+/// One native `NightmarePower` object and the card it holds (#3794).
+///
+/// v0.111.0 (`sts2.dll` sha256 `9cb4f1ad…`): `NightmarePower::get_InstanceType`
+/// RVA `0xa4dba` IL_0001 returns 1 (`PowerInstanceType.Instanced`), and
+/// `PowerCmd::FindExistingInstanceForStacking` RVA `0x1338d8` IL_0034 answers
+/// `null` for that case, so every Nightmare play attaches a new power object
+/// with its own `NightmarePower/Data` (`InitInternalData` RVA `0xa4dc0`).
+/// `SetSelectedCard` RVA `0xa4e2c` takes `selected.CreateClone()` (IL_000d),
+/// calls `CardCmd::ClearAffliction` on that clone (IL_0014) and stores it in
+/// `Data.selectedCard` (IL_0020).
+///
+/// The held clone is a card outside every pile. `CardModel::CreateClone` RVA
+/// `0x7e1e0` goes through `CombatState::CloneCard` RVA `0x137004`
+/// (`ClonePreservingMutability`, which for a mutable model is
+/// `AbstractModel::MutableClone` RVA `0x79f0c`: `MemberwiseClone`,
+/// `DeepCloneFields`, `AfterCloned`), so it carries the selected card's
+/// complete payload: upgrade level, enchantment and its counter, local
+/// keywords, the single-turn Retain/Sly fields, every local Energy-cost row
+/// (`CardEnergyCost::Clone` RVA `0x11e41c` copies `_localModifiers` whole,
+/// IL_000d-IL_0036) and the temporary Star-cost rows
+/// (`CardModel::DeepCloneFields` RVA `0x7d21c` IL_0076-IL_0082).
+///
+/// Nothing rewrites it while it is held.
+/// `PlayerCombatState::EndOfTurnCleanup` RVA `0x1183cc` walks `get_AllCards`
+/// (RVA `0x117e3c`, `AllPiles.SelectMany(Cards)`), and
+/// `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`
+/// reaches cards only through `PlayerCombatState::get_AllPiles`
+/// (IL_0168-IL_01c7). A turn-scoped cost row or single-turn keyword on the
+/// selected card is therefore still on the copies that arrive next turn, and
+/// a combat-long row a pile resident would have gained meanwhile is not.
+/// `flags` and `instance` are that frozen payload with the affliction bits
+/// cleared.
+///
+/// `listeners_before` is this object's place in the owner's
+/// `Creature.Powers` among the BeforeHandDraw power listeners: the length of
+/// the BeforeHandDraw fanout order when the object was attached. Objects are
+/// kept in acquisition order, so the field is non-decreasing across the list.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct NightmareInstance {
+    pub(crate) amount: i32,
+    pub(crate) listeners_before: u8,
+    pub(crate) atom: CardAtom,
+    pub(crate) flags: u16,
+    pub(crate) instance: CardInstanceState,
 }
 
 /// Copy-on-write card-event listener state.
@@ -2356,6 +2532,18 @@ impl HotFanouts {
         self.mutate_batch_nine().paels_eye_used = value;
     }
 
+    /// See `BatchNineRelicState::sculpting_strike_marked` (#3877).
+    pub(crate) fn sculpting_strike_marked(&self) -> bool {
+        self.batch_nine().sculpting_strike_marked
+    }
+
+    pub(crate) fn set_sculpting_strike_marked(&mut self, value: bool) {
+        if self.batch_nine().sculpting_strike_marked == value {
+            return;
+        }
+        self.mutate_batch_nine().sculpting_strike_marked = value;
+    }
+
     pub(crate) fn paels_eye_was_owner_part_last_player_turn(&self) -> bool {
         self.batch_nine().paels_eye_was_owner_part_last_player_turn
     }
@@ -2424,6 +2612,24 @@ impl HotFanouts {
         self.take_deferred_hook_action();
     }
 
+    /// Whether the state is inside a running hook action (#3903).
+    pub(crate) fn hook_action_is_running(&self) -> bool {
+        self.batch_nine().hook_action_running
+    }
+
+    pub(crate) fn set_hook_action_running(&mut self, value: bool) {
+        if self.hook_action_is_running() != value {
+            self.mutate_batch_nine().hook_action_running = value;
+        }
+    }
+
+    /// Drop the queued hook action from a parked snapshot (#3903): the
+    /// receipt's re-execution forms it again
+    /// (`engine::hook_action`, "A choice of the enclosing action").
+    pub(crate) fn discard_deferred_hook_action(&mut self) {
+        self.take_deferred_hook_action();
+    }
+
     fn queue_deferred_hook_action(&mut self, action: DeferredHookAction) {
         self.mutate_batch_nine().deferred_hook_action = Some(Arc::new(action));
     }
@@ -2440,6 +2646,32 @@ impl HotFanouts {
         }
     }
 
+    /// Whether the owner's CuriousPower sits AFTER its BorrowedTimePower in
+    /// `Creature.Powers`, the list `Hook::ModifyEnergyCostInCombat` walks
+    /// (#3756).
+    ///
+    /// v0.111.0 (DLL `9cb4f1ad`): `Creature::ApplyPowerInternal` RVA
+    /// `0x11da0c` appends a newly attached power (IL_0063-IL_006f) and a
+    /// stack keeps its place, so the order of the two is the order of their
+    /// attachments. Borrowed Time is removed at every owner side end
+    /// (`BorrowedTimePower/<AfterSideTurnEnd>d__7` RVA `0x336090`,
+    /// `PowerCmd::Remove` at IL_0033) and Curious is never removed, so
+    /// Curious is first unless it was first attached while a Borrowed Time
+    /// was live that same turn. That one case is this bit. Each attachment of
+    /// either power rewrites it (`steps::templates::borrowed_time`,
+    /// `mad_science_curious`), so a value left over from an expired Borrowed
+    /// Time can never be read for a new one.
+    pub(crate) fn curious_follows_borrowed_time(&self) -> bool {
+        self.batch_nine().curious_follows_borrowed_time
+    }
+
+    /// An unchanged value never forces a copy-on-write of the cold fanout.
+    pub(crate) fn set_curious_follows_borrowed_time(&mut self, value: bool) {
+        if self.curious_follows_borrowed_time() != value {
+            self.mutate_batch_nine().curious_follows_borrowed_time = value;
+        }
+    }
+
     pub(crate) fn red_skull_owned(&self) -> bool {
         self.batch_nine().red_skull_owned
     }
@@ -2449,6 +2681,17 @@ impl HotFanouts {
     pub(crate) fn set_red_skull_owned(&mut self, value: bool) {
         if self.red_skull_owned() != value {
             self.mutate_batch_nine().red_skull_owned = value;
+        }
+    }
+
+    /// See `BatchNineRelicState::murderous` (#3934).
+    pub(crate) fn murderous(&self) -> bool {
+        self.batch_nine().murderous
+    }
+
+    pub(crate) fn set_murderous(&mut self, value: bool) {
+        if self.murderous() != value {
+            self.mutate_batch_nine().murderous = value;
         }
     }
 
@@ -2568,7 +2811,7 @@ impl HotFanouts {
             && belt.regen >= 0
             && belt.after_damage_received_order_code <= 6
             && (!belt.gigantification_bound || belt.gigantification > 0)
-            && belt.reserved_after_side_turn_start == 0
+            && usize::from(belt.hibernate_turn_start_ordinal) < MAX_AFTER_PLAYER_TURN_START_POWERS
     }
 
     fn potion_belt_mut(&mut self) -> &mut PotionBeltState {
@@ -2620,6 +2863,15 @@ impl HotFanouts {
     pub(crate) fn gigantification_bound(&self) -> bool {
         self.0.cold.potion_belt.gigantification_bound
     }
+    /// The player's `AmbergrisPower` amount: Ambergris's `OnUse` applies one
+    /// (`Ambergris/<OnUse>d__9::MoveNext` RVA `0x34b9cc` IL_010e), and each
+    /// extra turn taken decrements it
+    /// (`AmbergrisPower/<AfterTakingExtraTurn>d__7::MoveNext` RVA `0x334df0`
+    /// IL_0033). The power is invisible (`get_IsVisibleInternal` RVA
+    /// `0x9f741` returns false) and overrides no other hook.
+    pub(crate) fn ambergris(&self) -> u8 {
+        self.0.cold.potion_belt.ambergris
+    }
 
     pub(crate) fn set_duplication(&mut self, value: i32) -> bool {
         if value < 0 {
@@ -2650,6 +2902,15 @@ impl HotFanouts {
     }
     fn set_after_damage_received_order_code(&mut self, code: u8) {
         self.potion_belt_mut().after_damage_received_order_code = code;
+    }
+    fn hibernate_turn_start_ordinal(&self) -> usize {
+        usize::from(self.0.cold.potion_belt.hibernate_turn_start_ordinal)
+    }
+    fn set_hibernate_turn_start_ordinal(&mut self, ordinal: usize) {
+        debug_assert!(ordinal < MAX_AFTER_PLAYER_TURN_START_POWERS);
+        if self.hibernate_turn_start_ordinal() != ordinal {
+            self.potion_belt_mut().hibernate_turn_start_ordinal = ordinal as u8;
+        }
     }
     pub(crate) fn set_player_ritual(&mut self, value: i32) -> bool {
         if value < 0 {
@@ -2699,6 +2960,11 @@ impl HotFanouts {
         self.potion_belt_mut().regen = value;
         true
     }
+    pub(crate) fn set_ambergris(&mut self, value: u8) {
+        if self.ambergris() != value {
+            self.potion_belt_mut().ambergris = value;
+        }
+    }
 
     #[cfg(test)]
     pub(crate) fn potion_belt_shares_store_with(&self, other: &Self) -> bool {
@@ -2739,7 +3005,9 @@ impl HotFanouts {
                 | ColdPowerRecord::Sloth(_)
                 | ColdPowerRecord::Panache(_)
                 | ColdPowerRecord::Monologue(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
     }
     pub(crate) fn panache_instances(&self) -> impl Iterator<Item = PanacheInstance> + '_ {
@@ -2753,7 +3021,9 @@ impl HotFanouts {
                 | ColdPowerRecord::ToricToughness(_)
                 | ColdPowerRecord::Sloth(_)
                 | ColdPowerRecord::Monologue(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
     }
     pub(crate) fn monologue_instances(&self) -> impl Iterator<Item = MonologueInstance> + '_ {
@@ -2767,7 +3037,9 @@ impl HotFanouts {
                 | ColdPowerRecord::ToricToughness(_)
                 | ColdPowerRecord::Sloth(_)
                 | ColdPowerRecord::Panache(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
     }
     pub(crate) fn toric_toughness(&self) -> Option<ToricToughnessInstance> {
@@ -2781,7 +3053,9 @@ impl HotFanouts {
                 ColdPowerRecord::Sloth(_)
                 | ColdPowerRecord::Panache(_)
                 | ColdPowerRecord::Monologue(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
     }
     pub(crate) fn sloth(&self) -> Option<SlothInstance> {
@@ -2795,7 +3069,9 @@ impl HotFanouts {
                 | ColdPowerRecord::ToricToughness(_)
                 | ColdPowerRecord::Panache(_)
                 | ColdPowerRecord::Monologue(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
     }
     pub(crate) fn the_bomb_instances_are_empty(&self) -> bool {
@@ -3183,6 +3459,36 @@ impl HotFanouts {
             return;
         }
         self.mutate_batch_nine().next_creature_uid = next_uid;
+    }
+
+    /// See `BatchNineRelicState::osty_creature_uid` (#3904); zero is none.
+    pub(crate) fn osty_creature_uid(&self) -> u32 {
+        self.batch_nine().osty_creature_uid
+    }
+
+    pub(crate) fn set_osty_creature_uid(&mut self, uid: u32) {
+        if self.batch_nine().osty_creature_uid == uid {
+            return;
+        }
+        self.mutate_batch_nine().osty_creature_uid = uid;
+    }
+
+    /// See `BatchNineRelicState::hellraiser_infinite_auto_plays` (#3929):
+    /// `0..=HELLRAISER_INFINITE_AUTO_PLAY_CAP`.
+    pub(crate) fn hellraiser_infinite_auto_plays(&self) -> u8 {
+        self.batch_nine().hellraiser_infinite_auto_plays
+    }
+
+    /// Store the count, saturated at the cap. Returns whether `count` was
+    /// in range; an out-of-range value is not stored.
+    pub(crate) fn set_hellraiser_infinite_auto_plays(&mut self, count: u8) -> bool {
+        if count > HELLRAISER_INFINITE_AUTO_PLAY_CAP {
+            return false;
+        }
+        if self.batch_nine().hellraiser_infinite_auto_plays != count {
+            self.mutate_batch_nine().hellraiser_infinite_auto_plays = count;
+        }
+        true
     }
 
     pub(crate) fn set_next_after_side_turn_end_power_uid(&mut self, next_uid: u32) {
@@ -3704,6 +4010,20 @@ impl HotFanouts {
         {
             state.after_block_cleared.copy_within(index + 1..len, index);
             state.after_block_cleared_len -= 1;
+            // #3756: a later Toric object that ran after the removed listener
+            // now has one fewer listener before it.
+            if state.cold.power_records.iter().any(|record| {
+                matches!(record, ColdPowerRecord::ToricToughnessLater(later)
+                    if usize::from(later.listeners_before) > index)
+            }) {
+                for record in &mut Arc::make_mut(&mut state.cold).power_records {
+                    if let ColdPowerRecord::ToricToughnessLater(later) = record
+                        && usize::from(later.listeners_before) > index
+                    {
+                        later.listeners_before -= 1;
+                    }
+                }
+            }
         }
     }
     pub(crate) fn register_after_power_amount_changed(&mut self, power: PowerId) -> bool {
@@ -4182,6 +4502,8 @@ impl HotFanouts {
                     .checked_add(1)
                     .ok_or(PetStateError::CounterOverflow)?;
                 self.set_next_creature_uid(next);
+                // The Osty took `tracked` (#3904).
+                self.set_osty_creature_uid(tracked);
             }
             Arc::make_mut(&mut self.0).pet = pet;
             return Ok(());
@@ -4321,7 +4643,60 @@ impl HotFanouts {
             ColdPowerRecord::Automation(instance) => {
                 instance.amount >= 1 && (1..=10).contains(&instance.cards_left)
             }
+            ColdPowerRecord::ToricToughnessLater(instance) => {
+                Self::toric_toughness_later_instance_is_exact(*instance)
+            }
+            ColdPowerRecord::RollingBoulderLater(instance) => instance.amount >= 1,
         })
+    }
+
+    /// Rolling Boulder objects after the first one, in acquisition order
+    /// (#3756).
+    pub(crate) fn rolling_boulder_later_instances(&self) -> Vec<RollingBoulderLaterInstance> {
+        self.rolling_boulder_later_rows().collect()
+    }
+    pub(crate) fn has_rolling_boulder_later_instances(&self) -> bool {
+        self.rolling_boulder_later_rows().next().is_some()
+    }
+    fn rolling_boulder_later_rows(&self) -> impl Iterator<Item = RollingBoulderLaterInstance> + '_ {
+        self.0
+            .cold
+            .power_records
+            .iter()
+            .filter_map(|record| match record {
+                ColdPowerRecord::RollingBoulderLater(instance) => Some(*instance),
+                _ => None,
+            })
+    }
+
+    /// Replace the later Rolling Boulder objects. Each row must be a live
+    /// object; its relation to the first object and to the
+    /// after-player-turn-start order is authenticated by
+    /// [`HotState::rolling_boulder_later_state_is_exact`].
+    pub(crate) fn set_rolling_boulder_later_instances(
+        &mut self,
+        instances: &[RollingBoulderLaterInstance],
+    ) -> bool {
+        if instances.iter().any(|instance| instance.amount < 1) {
+            return false;
+        }
+        if self
+            .rolling_boulder_later_rows()
+            .eq(instances.iter().copied())
+        {
+            return true;
+        }
+        let state = Arc::make_mut(&mut self.0);
+        let cold = Arc::make_mut(&mut state.cold);
+        cold.power_records
+            .retain(|record| !matches!(record, ColdPowerRecord::RollingBoulderLater(_)));
+        cold.power_records.extend(
+            instances
+                .iter()
+                .copied()
+                .map(ColdPowerRecord::RollingBoulderLater),
+        );
+        true
     }
 
     pub(crate) fn instanced_player_power_records_are_exact(&self) -> bool {
@@ -4350,7 +4725,141 @@ impl HotFanouts {
     }
 
     pub(crate) fn toric_toughness_state_is_exact(&self) -> bool {
-        self.cold_power_records_are_exact()
+        self.cold_power_records_are_exact() && self.toric_toughness_later_state_is_exact()
+    }
+
+    fn toric_toughness_later_instance_is_exact(instance: ToricToughnessLaterInstance) -> bool {
+        Self::toric_toughness_instance_is_exact(ToricToughnessInstance {
+            duration: i32::from(instance.duration),
+            block: instance.block,
+        })
+    }
+
+    /// Toric objects after the first live one, in acquisition order (#3756).
+    pub(crate) fn toric_toughness_later_instances(&self) -> Vec<ToricToughnessLaterInstance> {
+        self.toric_toughness_later_rows().collect()
+    }
+    fn toric_toughness_later_rows(&self) -> impl Iterator<Item = ToricToughnessLaterInstance> + '_ {
+        self.0
+            .cold
+            .power_records
+            .iter()
+            .filter_map(|record| match record {
+                ColdPowerRecord::ToricToughnessLater(instance) => Some(*instance),
+                _ => None,
+            })
+    }
+
+    /// The later Toric rows agree with the first object and the walk order.
+    ///
+    /// A later object exists only beside a first one, runs after it, and
+    /// after every earlier later object: `listeners_before` is past the first
+    /// object's own entry, inside the order, and nondecreasing. Every object
+    /// is applied with the same duration and all of them decrement in the
+    /// same walks (`<AfterBlockCleared>d__11::MoveNext` RVA `0x349e3c`
+    /// IL_00ab-00ac), so an older object never outlasts a newer one: the
+    /// durations are nondecreasing from the first object on. That is what
+    /// lets the walk promote the oldest later row when the first expires.
+    pub(crate) fn toric_toughness_later_state_is_exact(&self) -> bool {
+        let mut later = self.toric_toughness_later_rows().peekable();
+        if later.peek().is_none() {
+            return true;
+        }
+        let order = self.after_block_cleared_order();
+        let (Some(first), Some(first_index)) = (
+            self.toric_toughness(),
+            order
+                .iter()
+                .position(|power| *power == PowerId::ToricToughness),
+        ) else {
+            return false;
+        };
+        let mut previous_place = first_index + 1;
+        let mut previous_duration = first.duration;
+        later.all(|instance| {
+            let place = usize::from(instance.listeners_before);
+            let duration = i32::from(instance.duration);
+            let exact =
+                place >= previous_place && place <= order.len() && duration >= previous_duration;
+            previous_place = place;
+            previous_duration = duration;
+            exact
+        })
+    }
+
+    /// Replace the later Toric objects. Each row must be a live object with
+    /// a reachable Block payload; the relation to the first object and to the
+    /// after-block-cleared order is authenticated by
+    /// [`Self::toric_toughness_state_is_exact`], which admission requires.
+    pub(crate) fn set_toric_toughness_later_instances(
+        &mut self,
+        instances: &[ToricToughnessLaterInstance],
+    ) -> bool {
+        if instances
+            .iter()
+            .any(|instance| !Self::toric_toughness_later_instance_is_exact(*instance))
+        {
+            return false;
+        }
+        if self
+            .toric_toughness_later_rows()
+            .eq(instances.iter().copied())
+        {
+            return true;
+        }
+        let state = Arc::make_mut(&mut self.0);
+        let cold = Arc::make_mut(&mut state.cold);
+        cold.power_records
+            .retain(|record| !matches!(record, ColdPowerRecord::ToricToughnessLater(_)));
+        cold.power_records.extend(
+            instances
+                .iter()
+                .copied()
+                .map(ColdPowerRecord::ToricToughnessLater),
+        );
+        true
+    }
+
+    /// Attach one more Toric object behind a live first one (#3756). It is
+    /// the newest power, so every current after-block-cleared listener runs
+    /// before it. Returns the number of live Toric objects.
+    pub(crate) fn push_toric_toughness_later(
+        &mut self,
+        duration: i32,
+        block: DotNetDecimal,
+    ) -> Result<usize, ()> {
+        if !self.toric_toughness_state_is_exact() || self.toric_toughness().is_none() {
+            return Err(());
+        }
+        let mut later = self.toric_toughness_later_instances();
+        later.push(ToricToughnessLaterInstance {
+            block,
+            duration: u8::try_from(duration).map_err(|_| ())?,
+            listeners_before: u8::try_from(self.after_block_cleared_order().len())
+                .map_err(|_| ())?,
+        });
+        if !self.set_toric_toughness_later_instances(&later)
+            || !self.toric_toughness_state_is_exact()
+        {
+            return Err(());
+        }
+        Ok(later.len() + 1)
+    }
+
+    /// Decrement the later Toric object at `index`. It cannot expire here:
+    /// the first object is at least as old and has already run in this walk,
+    /// so a later row reaching zero is not a native state.
+    pub(crate) fn decrement_toric_toughness_later(&mut self, index: usize) -> Result<i32, ()> {
+        let mut later = self.toric_toughness_later_instances();
+        let row = later.get_mut(index).ok_or(())?;
+        if row.duration <= 1 {
+            return Err(());
+        }
+        row.duration -= 1;
+        let remaining = i32::from(row.duration);
+        self.set_toric_toughness_later_instances(&later)
+            .then_some(remaining)
+            .ok_or(())
     }
 
     pub(crate) fn set_toric_toughness(&mut self, instance: Option<ToricToughnessInstance>) -> bool {
@@ -4466,6 +4975,7 @@ impl HotFanouts {
                 return Err(());
             }
             self.unregister_after_block_cleared(PowerId::ToricToughness);
+            self.promote_toric_toughness_later()?;
         } else if !self.set_toric_toughness(Some(ToricToughnessInstance {
             duration: updated,
             block: current.block,
@@ -4473,6 +4983,46 @@ impl HotFanouts {
             return Err(());
         }
         Ok(updated)
+    }
+
+    /// The first Toric object just expired: the oldest later object, if any,
+    /// becomes the keyed first object and takes an after-block-cleared entry
+    /// at its own place (#3756). The rows behind it then have that one more
+    /// listener before them. The expired entry was removed first, so the
+    /// two-entry order has room.
+    fn promote_toric_toughness_later(&mut self) -> Result<(), ()> {
+        let mut later = self.toric_toughness_later_instances();
+        if later.is_empty() {
+            return Ok(());
+        }
+        let promoted = later.remove(0);
+        let place = usize::from(promoted.listeners_before);
+        for row in &mut later {
+            row.listeners_before = row.listeners_before.checked_add(1).ok_or(())?;
+        }
+        {
+            let state = Arc::make_mut(&mut self.0);
+            let len = usize::from(state.after_block_cleared_len);
+            if place > len
+                || len == MAX_AFTER_BLOCK_CLEARED_POWERS
+                || state.after_block_cleared[..len].contains(&PowerId::ToricToughness)
+            {
+                return Err(());
+            }
+            state.after_block_cleared.copy_within(place..len, place + 1);
+            state.after_block_cleared[place] = PowerId::ToricToughness;
+            state.after_block_cleared_len += 1;
+        }
+        if !self.set_toric_toughness_later_instances(&later)
+            || !self.set_toric_toughness(Some(ToricToughnessInstance {
+                duration: i32::from(promoted.duration),
+                block: promoted.block,
+            }))
+            || !self.toric_toughness_state_is_exact()
+        {
+            return Err(());
+        }
+        Ok(())
     }
 
     /// Allocate one fresh native Panache object. InstanceType 1 makes every
@@ -4799,7 +5349,9 @@ impl HotFanouts {
                 | ColdPowerRecord::Sloth(_)
                 | ColdPowerRecord::Panache(_)
                 | ColdPowerRecord::Monologue(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
             .ok_or(())?;
         if instance.damage != 0 || instance.turns != 3 {
@@ -4829,7 +5381,9 @@ impl HotFanouts {
                 | ColdPowerRecord::Sloth(_)
                 | ColdPowerRecord::Panache(_)
                 | ColdPowerRecord::Monologue(_)
-                | ColdPowerRecord::Automation(_) => None,
+                | ColdPowerRecord::Automation(_)
+                | ColdPowerRecord::ToricToughnessLater(_)
+                | ColdPowerRecord::RollingBoulderLater(_) => None,
             })
             .ok_or(())?;
         if instance.turns <= 1 {
@@ -4864,7 +5418,9 @@ impl HotFanouts {
             | ColdPowerRecord::Sloth(_)
             | ColdPowerRecord::Panache(_)
             | ColdPowerRecord::Monologue(_)
-            | ColdPowerRecord::Automation(_) => Err(()),
+            | ColdPowerRecord::Automation(_)
+            | ColdPowerRecord::ToricToughnessLater(_)
+            | ColdPowerRecord::RollingBoulderLater(_) => Err(()),
         }
     }
 
@@ -4962,6 +5518,19 @@ impl HotFanouts {
         }
         state.imitation_learning[index] = amount;
         true
+    }
+
+    /// Live NightmarePower objects in acquisition order (#3794).
+    pub(crate) fn nightmare_instances(&self) -> &[NightmareInstance] {
+        self.0.cold.nightmares.as_slice()
+    }
+
+    /// Replace the live NightmarePower objects. An equal list does not copy
+    /// the cold block.
+    pub(crate) fn set_nightmare_instances(&mut self, instances: Vec<NightmareInstance>) {
+        if self.0.cold.nightmares != instances {
+            Arc::make_mut(&mut Arc::make_mut(&mut self.0).cold).nightmares = instances;
+        }
     }
 
     pub(crate) fn imitation_clones(&self) -> &[ImitationClone] {
@@ -5202,6 +5771,12 @@ fn append_fanout_power<const N: usize>(
 /// `OrbCmd::AddSlots` caps every live queue at ten slots.
 pub const MAX_ORB_SLOTS: u8 = 10;
 
+/// The AutoPlays a turn Hellraiser makes against an all-infinite HP display
+/// (#3929): `HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` RVA
+/// `0x33c1a8` IL_00a4-00a6 (`ldc.i4.s 9`, `blt.s`), v0.111.0 SHA-256
+/// `9cb4f1ad…`.
+pub const HELLRAISER_INFINITE_AUTO_PLAY_CAP: u8 = 9;
+
 macro_rules! wire_enum {
     // Per-variant attributes are optional, so every pre-#2693 call site that
     // passes none expands exactly as before. They exist so a vocabulary whose
@@ -5340,6 +5915,11 @@ struct OrbQueueState {
     lightning_channeled: i32,
     orbit_energy_spent: i32,
     orbit_trigger_count: i32,
+    /// `Data.energySpent` of every OrbitPower object after the first, in
+    /// acquisition order (#3756). OrbitPower is Instanced, so each
+    /// application is its own object with its own counters; each has
+    /// Amount 1 and `triggerCount == energySpent / 4`.
+    orbit_later_energy_spent: Vec<i32>,
     base_slots: u8,
     slots: u8,
 }
@@ -5355,6 +5935,7 @@ impl Default for OrbQueueState {
             lightning_channeled: -1,
             orbit_energy_spent: 0,
             orbit_trigger_count: 0,
+            orbit_later_energy_spent: Vec::new(),
             base_slots: 0,
             slots: 0,
         }
@@ -5434,6 +6015,7 @@ impl HotOrbs {
             && self.0.lightning_channeled == -1
             && self.0.orbit_energy_spent == 0
             && self.0.orbit_trigger_count == 0
+            && self.0.orbit_later_energy_spent.is_empty()
             && self.0.next_random_orb_progress_uid == 0
             && self.0.next_consuming_shadow_side_end_auth_uid == 0
             && self.0.reset_order.is_empty()
@@ -5469,6 +6051,21 @@ impl HotOrbs {
         let state = Arc::make_mut(&mut self.0);
         state.orbit_energy_spent = energy_spent;
         state.orbit_trigger_count = trigger_count;
+    }
+
+    /// `Data.energySpent` of each OrbitPower object after the first, in
+    /// acquisition order. `OrbitPower::get_InstanceType` RVA `0xa5476`
+    /// returns 1 (Instanced), so every `Apply<OrbitPower>` attaches a new
+    /// object whose `OrbitPower/Data` (`.ctor` RVA `0x33f70e`) starts at 0.
+    pub(crate) fn orbit_later_energy_spent(&self) -> &[i32] {
+        self.0.orbit_later_energy_spent.as_slice()
+    }
+
+    /// Replace the later OrbitPower objects' counters.
+    pub(crate) fn set_orbit_later_energy_spent(&mut self, energy_spent: Vec<i32>) {
+        if self.0.orbit_later_energy_spent != energy_spent {
+            Arc::make_mut(&mut self.0).orbit_later_energy_spent = energy_spent;
+        }
     }
 
     /// Replace the two canonical orb-lifecycle allocators.
@@ -5616,17 +6213,44 @@ wire_enum! {
         (EggBite, "BITE"),
         (NectarBuff, "BUFF"),
         (QueenBurnBright, "BURN_BRIGHT_FOR_ME_MOVE"),
+        // #3823 — Mecha Knight's four rows (`MechaKnight::
+        // GenerateMoveStateMachine` RVA `0xb9970` IL_0012-IL_00e0: four plain
+        // `MoveState`s, CHARGE -> FLAMETHROWER -> WINDUP -> HEAVY_CLEAVE ->
+        // FLAMETHROWER, no branch state). A physical Whistle can park any of
+        // them.
+        (MechaCharge, "CHARGE_MOVE"),
         (QueenEnrage, "ENRAGE_MOVE"),
         (HopperEscape, "ESCAPE_MOVE"),
         (QueenExecution, "EXECUTION_MOVE"),
+        (MechaFlamethrower, "FLAMETHROWER_MOVE"),
         (SlugGlomp, "GLOMP_MOVE"),
         (SlugGoop, "GOOP_MOVE"),
+        (MechaHeavyCleave, "HEAVY_CLEAVE_MOVE"),
+        // #3823 — Owl Magistrate's four rows (`OwlMagistrate::
+        // GenerateMoveStateMachine` RVA `0xbaf54` IL_0012-IL_00dc: four plain
+        // `MoveState`s in one cycle, MAGISTRATE_SCRUTINY -> PECK_ASSAULT ->
+        // JUDICIAL_FLIGHT -> VERDICT -> MAGISTRATE_SCRUTINY, no branch state).
+        (OwlJudicialFlight, "JUDICIAL_FLIGHT"),
         // Living Shield's completed SHIELD_SLAM defers its conditional
         // successor until PrepareForNextTurn, after its later Operator peer
         // has acted. This is a receipt, not an interrupting forced move.
         (LivingShieldSlam, "LIVING_SHIELD_SLAM_RECEIPT"),
+        (OwlMagistrateScrutiny, "MAGISTRATE_SCRUTINY"),
         (HopperNab, "NAB_MOVE"),
         (QueenOffWithYourHead, "OFF_WITH_YOUR_HEAD_MOVE"),
+        // #3823 — the generic stun's follow-up for every owner whose rows are
+        // not all named above: "the move this monster was telegraphing", read
+        // from the machine state the document already carries (`loop_pos`),
+        // not from a move name. `Creature::StunInternal` RVA `0x11d7cc`
+        // IL_0039-IL_0055 parks `StateLog.Last().Id`, and
+        // `crate::engine::monsters::parked_telegraph` is where that is shown
+        // to be the `loop_pos` row. A token rather than one variant per row
+        // name because the generated rows keep the frozen sim's spellings
+        // (`BITE` for native `BITE_MOVE`, `ZAP_MOVE` for native `ZAP`), so a
+        // name here would not be the native state id either, and 80 kinds'
+        // rows would be 80 hand-kept lists.
+        (ParkedTelegraph, "PARKED_TELEGRAPH"),
+        (OwlPeckAssault, "PECK_ASSAULT"),
         (QueenPuppetStrings, "PUPPET_STRINGS_MOVE"),
         // #2647 — an awake Slumbering Beetle's Imbalanced self-stun parks
         // ROLL_OUT_MOVE (`crate::engine::monsters::beetle_rollout_stun_is_exact`).
@@ -5648,7 +6272,9 @@ wire_enum! {
         // its THRASH is a two-hit attack, so either row can be parked.
         (SilkThrash, "THRASH_MOVE"),
         (SilkToxicSpit, "TOXIC_SPIT_MOVE"),
+        (OwlVerdict, "VERDICT"),
         (SlugWhipSlap, "WHIP_SLAP_MOVE"),
+        (MechaWindup, "WINDUP_MOVE"),
         (QueenYoureMine, "YOU_ARE_MINE_MOVE"),
     }
 }
@@ -6914,6 +7540,16 @@ pub(crate) enum DrawCaller {
     /// published at the base of the stack once the enclosing action has
     /// finished (`engine::hook_action`), and its completion owns nothing.
     GremlinHorn = 23,
+    /// Game Piece's one awaited `CardPileCmd.Draw(choiceContext, Cards,
+    /// Owner, false)` (`GamePiece/<AfterCardPlayed>d__6::MoveNext` RVA
+    /// `0x325930` IL_006c-0089), the listener's tail, owned like the
+    /// Puzzle's by the ActionReplay receipt (#3822): see
+    /// `engine::draw::game_piece_draw`.
+    GamePiece = 24,
+    /// Iron Club's one awaited `CardPileCmd.Draw(choiceContext, 1, Owner,
+    /// false)` (`IronClub/<AfterCardPlayed>d__19::MoveNext` RVA `0x326f78`
+    /// IL_0083-0095), the listener's tail, owned the same way (#3822).
+    IronClub = 25,
 }
 
 /// Closed producer continuations which can await an ordinary
@@ -7140,6 +7776,8 @@ impl DrawCaller {
             Self::SwiftEnchantment => "swift_enchantment",
             Self::JossPaper => "joss_paper",
             Self::GremlinHorn => "gremlin_horn",
+            Self::GamePiece => "game_piece",
+            Self::IronClub => "iron_club",
         }
     }
 
@@ -7169,6 +7807,8 @@ impl DrawCaller {
             "swift_enchantment" => Some(Self::SwiftEnchantment),
             "joss_paper" => Some(Self::JossPaper),
             "gremlin_horn" => Some(Self::GremlinHorn),
+            "game_piece" => Some(Self::GamePiece),
+            "iron_club" => Some(Self::IronClub),
             _ => None,
         }
     }
@@ -7199,6 +7839,8 @@ impl DrawCaller {
             21 => Some(Self::SwiftEnchantment),
             22 => Some(Self::JossPaper),
             23 => Some(Self::GremlinHorn),
+            24 => Some(Self::GamePiece),
+            25 => Some(Self::IronClub),
             _ => None,
         }
     }
@@ -7901,6 +8543,9 @@ pub(crate) enum TurnStartHandChoiceKind {
     ToolsOfTheTrade = 5,
     Tyranny = 6,
     Entropy = 7,
+    /// `HibernatePower::AfterPlayerTurnStart` (RVA `0xa3954`): never a Hand
+    /// choice, but a member of the same acquisition-ordered player-power walk.
+    Hibernate = 8,
 }
 
 impl TurnStartHandChoiceKind {
@@ -7914,6 +8559,7 @@ impl TurnStartHandChoiceKind {
             5 => Some(Self::ToolsOfTheTrade),
             6 => Some(Self::Tyranny),
             7 => Some(Self::Entropy),
+            8 => Some(Self::Hibernate),
             _ => None,
         }
     }
@@ -7928,6 +8574,7 @@ impl TurnStartHandChoiceKind {
             Self::ToolsOfTheTrade => PowerId::ToolsOfTheTrade,
             Self::Tyranny => PowerId::Tyranny,
             Self::Entropy => PowerId::Entropy,
+            Self::Hibernate => PowerId::Hibernate,
         }
     }
 
@@ -7941,6 +8588,7 @@ impl TurnStartHandChoiceKind {
             PowerId::ToolsOfTheTrade => Some(Self::ToolsOfTheTrade),
             PowerId::Tyranny => Some(Self::Tyranny),
             PowerId::Entropy => Some(Self::Entropy),
+            PowerId::Hibernate => Some(Self::Hibernate),
             _ => None,
         }
     }
@@ -7948,6 +8596,65 @@ impl TurnStartHandChoiceKind {
     pub(crate) const fn selects_hand(self) -> bool {
         matches!(self, Self::ToolsOfTheTrade | Self::Tyranny | Self::Entropy)
     }
+}
+
+/// The members of a captured turn-start listener order the live order must
+/// still hold once `completed` of them have run.
+///
+/// Two listeners can leave the live order by running: SummonNextTurn removes
+/// itself, and Hibernate's decrement removes the power at zero. A Hibernate
+/// in `appended_suffix` was applied again after that removal (a Tools-owned
+/// Sly play), so it is the appended member, not the captured one.
+pub(crate) fn turn_start_retained_listeners(
+    order: &[TurnStartHandChoiceKind],
+    appended_suffix: &[TurnStartHandChoiceKind],
+    completed: usize,
+    hibernate_is_live: bool,
+) -> Vec<TurnStartHandChoiceKind> {
+    order
+        .iter()
+        .enumerate()
+        .filter_map(|(index, kind)| {
+            let retained = index >= completed
+                || match kind {
+                    TurnStartHandChoiceKind::SummonNextTurn => false,
+                    TurnStartHandChoiceKind::Hibernate => {
+                        hibernate_is_live
+                            && !appended_suffix.contains(&TurnStartHandChoiceKind::Hibernate)
+                    }
+                    _ => true,
+                };
+            retained.then_some(*kind)
+        })
+        .collect()
+}
+
+/// How many of the first `completed` captured listeners have left the live
+/// order: every later live entry sits that many places lower than its
+/// captured index.
+pub(crate) fn turn_start_listeners_gone(
+    order: &[TurnStartHandChoiceKind],
+    appended_suffix: &[TurnStartHandChoiceKind],
+    completed: usize,
+    hibernate_is_live: bool,
+) -> usize {
+    let completed = completed.min(order.len());
+    order.len()
+        - turn_start_retained_listeners(order, appended_suffix, completed, hibernate_is_live).len()
+}
+
+/// Whether a captured listener may be absent from the live powers: only one
+/// that has already run and removes itself by running.
+pub(crate) fn turn_start_listener_may_be_gone(
+    kind: TurnStartHandChoiceKind,
+    index: usize,
+    completed: usize,
+) -> bool {
+    index < completed
+        && matches!(
+            kind,
+            TurnStartHandChoiceKind::SummonNextTurn | TurnStartHandChoiceKind::Hibernate
+        )
 }
 
 #[repr(u8)]
@@ -8031,9 +8738,9 @@ impl<'a> BeforeHandDrawPowerView<'a> {
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct TurnStartHandChoiceView<'a> {
-    pub listener_order: [Option<TurnStartHandChoiceKind>; 8],
+    pub listener_order: [Option<TurnStartHandChoiceKind>; MAX_AFTER_PLAYER_TURN_START_POWERS],
     pub listener_count: usize,
-    pub appended_suffix: [Option<TurnStartHandChoiceKind>; 8],
+    pub appended_suffix: [Option<TurnStartHandChoiceKind>; MAX_AFTER_PLAYER_TURN_START_POWERS],
     pub appended_suffix_count: usize,
     pub kind: TurnStartHandChoiceKind,
     pub amount: u32,
@@ -8286,6 +8993,12 @@ pub(crate) struct CardPlayRecord {
     pub play_index: u32,
     pub x_value: i64,
     pub spent: i32,
+    /// `CardPlay.Resources.EnergyValue` of a play that is not manual: the
+    /// cost its AutoPlay resolved at entry (#3756,
+    /// `engine::play::card_play_energy_value`). `None` for a manual play,
+    /// whose value is `spent`, and for a record written before the value was
+    /// carried, whose readers still refuse.
+    pub energy_value: Option<i16>,
     pub star_spent: u32,
     pub glam: u32,
     pub next_step: u32,
@@ -8351,6 +9064,7 @@ impl CardPlayRecord {
             play_index: 0,
             x_value: 0,
             spent: 0,
+            energy_value: None,
             star_spent: 0,
             glam: 0,
             next_step: 1,
@@ -8405,6 +9119,12 @@ pub(crate) struct CardPlayView<'a> {
     pub play_index: u32,
     pub x_value: i64,
     pub spent: i32,
+    /// `CardPlay.Resources.EnergyValue` of a play that is not manual: the
+    /// cost its AutoPlay resolved at entry (#3756,
+    /// `engine::play::card_play_energy_value`). `None` for a manual play,
+    /// whose value is `spent`, and for a record written before the value was
+    /// carried, whose readers still refuse.
+    pub energy_value: Option<i16>,
     pub star_spent: u32,
     pub glam: u32,
     pub next_step: u32,
@@ -8517,6 +9237,7 @@ impl<'a> CardPlayView<'a> {
             play_index: self.play_index,
             x_value: self.x_value,
             spent: self.spent,
+            energy_value: self.energy_value,
             star_spent: self.star_spent,
             glam: self.glam,
             next_step: self.next_step,
@@ -9239,6 +9960,12 @@ pub(crate) struct HopperLootEvent {
 pub(crate) struct HopperDeckState {
     pub master: Vec<HopperDeckRow>,
     pub history: Vec<HopperLootEvent>,
+    /// The uids, ascending, of the master rows whose combat object a
+    /// transform took out of combat (#3856). The run-deck object stays in
+    /// the deck with nothing in combat pointing at it
+    /// (`engine::monsters::thieving_hopper_deck_payload_is_exact` has the
+    /// IL), so the row is kept and this is its account of having no card.
+    pub transformed: Vec<u32>,
 }
 
 /// One physical card downgraded by Magi Knight's shared Dampen power.
@@ -9877,8 +10604,25 @@ pub(crate) struct DeferredHookAction {
     draw: Vec<(HotCard, CardInstanceState)>,
     /// The Play cards of the segment's own suspended card plays (Hellraiser
     /// AutoPlays), in Play order: once the enclosing action has finished,
-    /// the Play pile must hold exactly these (#3387).
+    /// the Play pile must hold exactly these (#3387). When the choice began
+    /// inside a receipt-owned Draw (#3903) these are every card the listener
+    /// put in Play, which includes a card whose play is suspended on the
+    /// Rust stack rather than on a frame.
     play: Vec<(HotCard, CardInstanceState)>,
+    /// Set when the choice began inside a receipt-owned Draw (#3903,
+    /// `hook_action::receipt_choice_in_listener`).
+    restart: Option<Arc<HookListenerRestart>>,
+}
+
+/// What re-running a deferred-choice listener needs (#3903): the stack
+/// position its Draw was issued at, the state it was issued in, and the
+/// state its first choice began in.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct HookListenerRestart {
+    depth: usize,
+    word_base: usize,
+    entry: HotState,
+    first_choice: HotState,
 }
 
 /// The complete choice-bound continuation store.
@@ -11042,10 +11786,11 @@ impl Frames {
                 return None;
             }
         }
-        if record.ordinary_suffix_invoked
-            && (record.cursor as usize != record.listeners.len()
-                || record.dark_pending_uid.is_none())
-        {
+        // The suffix is invoked only once every captured listener has been
+        // started: behind a parked Dark Embrace child, or by a Constrict
+        // listener whose own choice paused it (`dark_pending_uid` is `None`,
+        // `turn::side_end_prompt_starts_later_listeners`).
+        if record.ordinary_suffix_invoked && record.cursor as usize != record.listeners.len() {
             return None;
         }
         let body_count = 2_usize.checked_add(record.listeners.len().checked_mul(3)?)?;
@@ -11165,9 +11910,7 @@ impl Frames {
                 return None;
             }
         }
-        if view.ordinary_suffix_invoked
-            && (view.cursor as usize != listener_count || view.dark_pending_uid.is_none())
-        {
+        if view.ordinary_suffix_invoked && view.cursor as usize != listener_count {
             return None;
         }
         Some(view)
@@ -11247,7 +11990,7 @@ impl Frames {
         index: WordRecordIndex,
     ) -> Option<()> {
         let view = self.after_side_turn_end_power(index)?;
-        if view.cursor as usize != view.listeners().len() || view.dark_pending_uid.is_none() {
+        if view.cursor as usize != view.listeners().len() {
             return None;
         }
         let control_index = index.offset()?.checked_add(1)?;
@@ -11816,6 +12559,23 @@ impl Frames {
         Some(HookFrameSegment { frames, words })
     }
 
+    /// Drop every frame above `depth` with its words above `word_base`
+    /// (#3903). False, leaving the store untouched, when the store is
+    /// shorter than that.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn truncate_to(&mut self, depth: usize, word_base: usize) -> bool {
+        if depth > self.0.frames.len() || word_base > self.0.words.len() {
+            return false;
+        }
+        if depth < self.0.frames.len() || word_base < self.0.words.len() {
+            let store = Arc::make_mut(&mut self.0);
+            store.words.truncate(word_base);
+            store.frames.truncate(depth);
+        }
+        true
+    }
+
     /// Re-attach a detached segment on top of the stack, returning the word
     /// offset its records were rebased onto.
     #[cold]
@@ -12332,6 +13092,76 @@ impl Frames {
         store.words.truncate(start);
         store.frames.pop();
         Some(dupe_uid)
+    }
+
+    fn encode_auto_pre_imbued_phase(
+        card_uid: u32,
+        destination: Option<&mut Vec<PendingWord>>,
+    ) -> Option<usize> {
+        if card_uid == LEGACY_CARD_UID {
+            return None;
+        }
+        let Some(words) = destination else {
+            return Some(2);
+        };
+        words.reserve(2);
+        words.push(PendingWord::header(WordRecordKind::Phase, 1)?);
+        // meta=4 keeps this single-word record disjoint from the Mayhem
+        // quotient ({1, 1}) and the History Course phase (meta=3); the
+        // AutoPost and Bombardment grammars need at least two body words. A
+        // deck card's uid may be 0, unlike a History Course dupe's.
+        words.push(PendingWord {
+            body: card_uid,
+            meta: 4,
+        });
+        Some(2)
+    }
+
+    /// Append the AutoPre/Normal Imbued phase that owns the awaited turn-one
+    /// `CardCmd.AutoPlay` of the Imbued card `card_uid` (#3817).
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn push_auto_pre_imbued_phase(&mut self, card_uid: u32) -> Option<WordRecordIndex> {
+        let encoded_len = Self::encode_auto_pre_imbued_phase(card_uid, None)?;
+        let start = self.0.words.len();
+        let index = WordRecordIndex::from_offset(start)?;
+        if start.checked_add(encoded_len)? > u32::MAX as usize {
+            return None;
+        }
+        let store = Arc::make_mut(&mut self.0);
+        store.words.reserve(encoded_len);
+        store.frames.reserve(1);
+        Self::encode_auto_pre_imbued_phase(card_uid, Some(&mut store.words))?;
+        store.frames.push(Frame::Phase { record: index });
+        Some(index)
+    }
+
+    /// Decode the Imbued AutoPre phase: the auto-played card's uid.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn auto_pre_imbued_phase(&self, index: WordRecordIndex) -> Option<u32> {
+        let start = index.offset()?;
+        let (kind, count) = self.0.words.get(start)?.parse_header()?;
+        if kind != WordRecordKind::Phase || count != 1 {
+            return None;
+        }
+        let word = *self.0.words.get(start + 1)?;
+        (word.meta == 4 && word.body != LEGACY_CARD_UID).then_some(word.body)
+    }
+
+    /// Pop only the authenticated top Imbued AutoPre phase.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn pop_top_auto_pre_imbued_phase(&mut self) -> Option<u32> {
+        let Frame::Phase { record } = self.top()? else {
+            return None;
+        };
+        let card_uid = self.auto_pre_imbued_phase(record)?;
+        let start = record.offset()?;
+        let store = Arc::make_mut(&mut self.0);
+        store.words.truncate(start);
+        store.frames.pop();
+        Some(card_uid)
     }
 
     fn encode_auto_pre_bombardment_phase(
@@ -13102,19 +13932,16 @@ impl Frames {
     ) -> Option<usize> {
         let order_len = record.listener_order.len();
         let appended_len = record.appended_suffix.len();
-        let retained_order = record
-            .listener_order
-            .iter()
-            .enumerate()
-            .filter_map(|(index, kind)| {
-                (u32::try_from(index).ok()? >= record.next_listener
-                    || *kind != TurnStartHandChoiceKind::SummonNextTurn)
-                    .then_some(*kind)
-            })
-            .collect::<Vec<_>>();
+        let retained_order = turn_start_retained_listeners(
+            &record.listener_order,
+            &record.appended_suffix,
+            usize::try_from(record.next_listener).ok()?,
+            true,
+        );
         let entry_count = u32::try_from(record.entries.len()).ok()?;
-        if !(1..=8).contains(&order_len)
-            || retained_order.len().checked_add(appended_len)? > 8
+        if !(1..=MAX_AFTER_PLAYER_TURN_START_POWERS).contains(&order_len)
+            || appended_len >= MAX_AFTER_PLAYER_TURN_START_POWERS
+            || retained_order.len().checked_add(appended_len)? > MAX_AFTER_PLAYER_TURN_START_POWERS
             || record.listener_order[0..order_len]
                 .iter()
                 .enumerate()
@@ -13160,7 +13987,7 @@ impl Frames {
         {
             return None;
         }
-        let mut body_count = 3_usize;
+        let mut body_count = 4_usize;
         for entry in &record.entries {
             body_count =
                 body_count.checked_add(Self::encode_frozen_auto_batch_entry(entry, None)?)?;
@@ -13173,15 +14000,24 @@ impl Frames {
         let control = u32::from(record.phase as u8)
             | (u32::from(record.kind as u8) << 8)
             | (u32::try_from(order_len).ok()? << 16);
+        // Nine kinds need four bits each. The order's first eight members
+        // fill one body word and a ninth sits in that word's meta, beside the
+        // appended count; the appended suffix (at most eight, since the
+        // Tools of the Trade that owns it is retained) fills a word of its own.
         let mut packed_order = 0_u32;
+        let mut order_tail = 0_u32;
         for (index, kind) in record.listener_order.iter().enumerate() {
-            packed_order |= u32::from(*kind as u8) << (index * 3);
+            if index < 8 {
+                packed_order |= u32::from(*kind as u8) << (index * 4);
+            } else {
+                order_tail = u32::from(*kind as u8);
+            }
         }
         let mut packed_appended = 0_u32;
         for (index, kind) in record.appended_suffix.iter().enumerate() {
-            packed_appended |= u32::from(*kind as u8) << (index * 3);
+            packed_appended |= u32::from(*kind as u8) << (index * 4);
         }
-        packed_appended |= u32::try_from(appended_len).ok()? << 24;
+        let order_meta = order_tail | (u32::try_from(appended_len).ok()? << 8);
         words.reserve(encoded_len);
         words.push(PendingWord::header(
             WordRecordKind::TurnStartHandChoice,
@@ -13197,7 +14033,11 @@ impl Frames {
         });
         words.push(PendingWord {
             body: packed_order,
-            meta: packed_appended,
+            meta: order_meta,
+        });
+        words.push(PendingWord {
+            body: packed_appended,
+            meta: 0,
         });
         for entry in &record.entries {
             Self::encode_frozen_auto_batch_entry(entry, Some(words))?;
@@ -13233,7 +14073,7 @@ impl Frames {
     ) -> Option<TurnStartHandChoiceView<'_>> {
         let start = index.offset()?;
         let (kind, count) = self.0.words.get(start)?.parse_header()?;
-        if kind != WordRecordKind::TurnStartHandChoice || count < 10 {
+        if kind != WordRecordKind::TurnStartHandChoice || count < 11 {
             return None;
         }
         let end = start.checked_add(1)?.checked_add(count as usize)?;
@@ -13241,23 +14081,29 @@ impl Frames {
         let phase = TurnStartHandChoicePhase::from_ordinal(fixed.meta & 0xff)?;
         let selected_kind = TurnStartHandChoiceKind::from_ordinal((fixed.meta >> 8) & 0xff)?;
         let listener_count = usize::try_from((fixed.meta >> 16) & 0xf).ok()?;
-        if !(1..=8).contains(&listener_count) {
+        if !(1..=MAX_AFTER_PLAYER_TURN_START_POWERS).contains(&listener_count) {
             return None;
         }
         let order_word = *self.0.words.get(start + 3)?;
-        let appended_suffix_count = usize::try_from((order_word.meta >> 24) & 0xf).ok()?;
+        let appended_word = *self.0.words.get(start + 4)?;
+        let appended_suffix_count = usize::try_from((order_word.meta >> 8) & 0xf).ok()?;
         if appended_suffix_count > 8
-            || order_word.meta >> 28 != 0
-            || order_word.body >> (listener_count * 3) != 0
-            || (order_word.meta & 0x00ff_ffff) >> (appended_suffix_count * 3) != 0
+            || order_word.meta >> 12 != 0
+            || order_word.meta & 0xf0 != 0
+            || listener_count < 8 && order_word.body >> (listener_count * 4) != 0
+            || listener_count < 9 && order_word.meta & 0xf != 0
+            || appended_word.meta != 0
+            || appended_suffix_count < 8 && appended_word.body >> (appended_suffix_count * 4) != 0
         {
             return None;
         }
-        let mut listener_order = [None; 8];
+        let mut listener_order = [None; MAX_AFTER_PLAYER_TURN_START_POWERS];
         for (index, slot) in listener_order.iter_mut().take(listener_count).enumerate() {
-            *slot = Some(TurnStartHandChoiceKind::from_ordinal(
-                (order_word.body >> (index * 3)) & 0x7,
-            )?);
+            *slot = Some(TurnStartHandChoiceKind::from_ordinal(if index < 8 {
+                (order_word.body >> (index * 4)) & 0xf
+            } else {
+                order_word.meta & 0xf
+            })?);
         }
         if listener_order[..listener_count]
             .iter()
@@ -13266,14 +14112,14 @@ impl Frames {
         {
             return None;
         }
-        let mut appended_suffix = [None; 8];
+        let mut appended_suffix = [None; MAX_AFTER_PLAYER_TURN_START_POWERS];
         for (index, slot) in appended_suffix
             .iter_mut()
             .take(appended_suffix_count)
             .enumerate()
         {
             *slot = Some(TurnStartHandChoiceKind::from_ordinal(
-                (order_word.meta >> (index * 3)) & 0x7,
+                (appended_word.body >> (index * 4)) & 0xf,
             )?);
         }
         let exact_control = u32::from(phase as u8)
@@ -13283,7 +14129,7 @@ impl Frames {
             return None;
         }
         let scalar = *self.0.words.get(start + 2)?;
-        let entry_words = self.0.words.get(start + 4..end)?;
+        let entry_words = self.0.words.get(start + 5..end)?;
         let mut remaining = entry_words;
         let mut entries = Vec::new();
         while !remaining.is_empty() {
@@ -13333,6 +14179,15 @@ impl Frames {
         store.words.truncate(start);
         Self::encode_turn_start_hand_choice(record, Some(&mut store.words))?;
         Some(())
+    }
+
+    /// Whether an AfterPlayerTurnStart Hand-choice walk is parked or running
+    /// its effect: any `TurnStartHandChoice` frame on the stack.
+    pub(crate) fn turn_start_hand_choice_in_flight(&self) -> bool {
+        self.0
+            .frames
+            .iter()
+            .any(|frame| matches!(frame, Frame::TurnStartHandChoice { .. }))
     }
 
     /// Authenticate one listener appended by a Tools-owned Sly CardPlay.
@@ -13652,6 +14507,8 @@ impl Frames {
             || record.play_index >= record.plays
             || record.spent < 0
             || i16::try_from(record.spent).is_err()
+            || record.energy_value.is_some_and(|value| value < 0)
+            || record.source == CardPlaySource::Manual && record.energy_value.is_some()
             || record.source == CardPlaySource::Manual && !record.active_play_member
             || record.source == CardPlaySource::Manual && record.force_exhaust
             || matches!(
@@ -13859,8 +14716,14 @@ impl Frames {
             body: record.x_value as u64 as u32,
             meta: ((record.x_value as u64) >> 32) as u32,
         });
+        // `spent` is authenticated as an `i16` above, so the high half of
+        // its word is free: an AutoPlay's EnergyValue plus one, zero for a
+        // record that carries none.
         words.push(PendingWord {
-            body: record.spent as u32,
+            body: record.spent as u32
+                | record
+                    .energy_value
+                    .map_or(0, |value| (u32::from(value as u16) + 1) << 16),
             meta: record.star_spent,
         });
         words.push(PendingWord {
@@ -14081,11 +14944,16 @@ impl Frames {
         let latch_kind = CardPlayLatchKind::from_ordinal(((control >> 16) & 0x03) as u8)?;
         let plays = fixed[1].body;
         let play_index = fixed[1].meta;
-        let spent = fixed[3].body as i32;
+        let spent = (fixed[3].body & 0xffff) as i32;
+        let energy_value = match fixed[3].body >> 16 {
+            0 => None,
+            carried => Some(i16::try_from(carried - 1).ok()?),
+        };
         if !(1..=256).contains(&plays)
             || play_index >= plays
             || spent < 0
             || i16::try_from(spent).is_err()
+            || source == CardPlaySource::Manual && energy_value.is_some()
         {
             return None;
         }
@@ -14383,6 +15251,7 @@ impl Frames {
             play_index,
             x_value,
             spent,
+            energy_value,
             star_spent: fixed[3].meta,
             glam: fixed[4].body,
             next_step: fixed[4].meta,
@@ -14499,6 +15368,7 @@ impl Frames {
                         && self.auto_pre_mayhem_phase(record).is_none()
                         && self.auto_pre_bombardment_phase(record).is_none()
                         && self.auto_pre_history_course_phase(record).is_none()
+                        && self.auto_pre_imbued_phase(record).is_none()
                     {
                         return false;
                     }
@@ -15641,6 +16511,38 @@ impl HotMonster {
         true
     }
 
+    /// `Creature.HpDisplay.IsInfinite()` for this monster (#3929).
+    ///
+    /// v0.111.0 (SHA-256 `9cb4f1ad…`): `HpDisplayExtensions::IsInfinite` RVA
+    /// `0x11df08` is true for the enum's values 1 and 2 (IL_000c-0010).
+    /// `Creature::set_HpDisplay` RVA `0x11d063` has three callers in the
+    /// whole assembly:
+    ///
+    /// * `HardenedShellPower::AfterDamageReceived` RVA `0xa3368` writes 1 for
+    ///   its owner once a hit that was not fully blocked (IL_001b-0021)
+    ///   brings `damageReceivedThisTurn` to the power's Amount
+    ///   (IL_0052-0071). Only `SkulkingColony/<AfterAddedToRoom>d__27` applies
+    ///   that power. The accumulator is this engine's shell window, which
+    ///   reaches [`crate::engine::damage::HARDENED_SHELL`] only through that
+    ///   listener's own addition.
+    /// * `HardenedShellPower::BeforeSideTurnStart` RVA `0xa33e4` writes 0
+    ///   and zeroes the accumulator (IL_0001-001f) at every side's start;
+    ///   the window is reset at the same two places.
+    /// * `WaterfallGiant/<TriggerAboutToBlowState>d__77::MoveNext` RVA
+    ///   `0x3762a8` writes 2 (IL_009d-00a4) after `set_IsAboutToBlow(true)`
+    ///   (IL_001d-001f) and the awaited `SetMaxAndCurrentHp` (IL_0034-0043).
+    ///   Nothing clears it. `engine::damage` makes that transform in one
+    ///   step.
+    pub fn hp_display_is_infinite(&self) -> bool {
+        match self.kind {
+            crate::ids::MonsterKind::SkulkingColony => {
+                self.skulking_colony_shell_window() >= crate::engine::damage::HARDENED_SHELL
+            }
+            crate::ids::MonsterKind::WaterfallGiant => self.is_about_to_blow(),
+            _ => false,
+        }
+    }
+
     /// Whether the Waterfall Giant has completed its first-death transform.
     pub fn is_about_to_blow(&self) -> bool {
         self.waterfall_phase & (1_u32 << 31) != 0
@@ -16503,7 +17405,7 @@ impl HotState {
         self.flower() <= 2
             && self.fake_flower() <= 4
             && self.pendulum() <= 2
-            && self.pollinous_core() <= 3
+            && self.pollinous_core() <= 6
             && self.ember_tea_combats_left() <= 5
     }
 
@@ -16535,8 +17437,14 @@ impl HotState {
         self.relic_counter(POLLINOUS_CORE_MASK, POLLINOUS_CORE_SHIFT)
     }
 
+    /// Pollinous Core's saved `TurnsSeen`, `-1` (unowned) or `0..=6`. Four is
+    /// `Turns`: the value `BeforeHandDraw` leaves for `ModifyHandDraw` to read
+    /// and reset (`engine::relics::pollinous_core_modify_hand_draw`), which a
+    /// root parked on a choice between the two hooks still holds. A combat
+    /// that ends inside the pass leaves it unreset, and the next pass counts
+    /// on from there; six is what the three-bit field holds.
     pub(crate) fn set_pollinous_core(&mut self, value: i16) -> bool {
-        self.set_relic_counter(POLLINOUS_CORE_MASK, POLLINOUS_CORE_SHIFT, value, 3)
+        self.set_relic_counter(POLLINOUS_CORE_MASK, POLLINOUS_CORE_SHIFT, value, 6)
     }
 
     pub(crate) fn ember_tea_combats_left(&self) -> i16 {
@@ -16922,10 +17830,11 @@ impl HotState {
         }
     }
 
-    /// Reconstruct native's complete eight-token `AfterPlayerTurnStart`
-    /// player-power order. Seven non-Entropy ids occupy the existing fanout
-    /// tail; Entropy's 0..=7 insertion ordinal occupies bits 4..=6 of the
-    /// pre-existing generated-power byte. Its live power distinguishes an
+    /// Reconstruct native's complete nine-token `AfterPlayerTurnStart`
+    /// player-power order. Seven ids occupy the existing fanout tail;
+    /// Entropy's 0..=7 insertion ordinal occupies bits 4..=6 of the
+    /// pre-existing generated-power byte, and Hibernate's 0..=8 ordinal
+    /// among the other eight a cold byte. A live power distinguishes an
     /// absent listener from ordinal zero.
     pub(crate) fn after_player_turn_start_order(&self) -> Option<AfterPlayerTurnStartOrder> {
         if !self.fanouts.after_player_turn_start_order_is_exact()
@@ -16934,10 +17843,14 @@ impl HotState {
             return None;
         }
         let stored = self.fanouts.stored_after_player_turn_start_order();
+        let hibernate_ordinal = self.fanouts.hibernate_turn_start_ordinal();
         // Most ordinary fights have no player power at all. The validation
         // above remains mandatory; once it succeeds, avoid rebuilding the
         // empty fixed-width order.
         if stored.is_empty() && self.powers.is_empty() {
+            if hibernate_ordinal != 0 {
+                return None;
+            }
             return Some(AfterPlayerTurnStartOrder {
                 powers: [PowerId::Accuracy; MAX_AFTER_PLAYER_TURN_START_POWERS],
                 len: 0,
@@ -16964,6 +17877,16 @@ impl HotState {
         if entropy_live && entropy_ordinal == stored.len() {
             powers[cursor] = PowerId::Entropy;
             cursor += 1;
+        }
+        if self.powers.value(PowerId::Hibernate) > 0 {
+            if hibernate_ordinal > cursor {
+                return None;
+            }
+            powers.copy_within(hibernate_ordinal..cursor, hibernate_ordinal + 1);
+            powers[hibernate_ordinal] = PowerId::Hibernate;
+            cursor += 1;
+        } else if hibernate_ordinal != 0 {
+            return None;
         }
         Some(AfterPlayerTurnStartOrder {
             powers,
@@ -17140,11 +18063,17 @@ impl HotState {
         {
             return false;
         }
-        let entropy = order.iter().position(|power| *power == PowerId::Entropy);
+        // Hibernate's ordinal counts the other eight; Entropy's counts the
+        // seven stored ones.
+        let hibernate = order.iter().position(|power| *power == PowerId::Hibernate);
+        let entropy = order
+            .iter()
+            .filter(|power| **power != PowerId::Hibernate)
+            .position(|power| *power == PowerId::Entropy);
         let stored = order
             .iter()
             .copied()
-            .filter(|power| *power != PowerId::Entropy)
+            .filter(|power| !matches!(power, PowerId::Entropy | PowerId::Hibernate))
             .collect::<Vec<_>>();
         if stored.len() > MAX_STORED_AFTER_PLAYER_TURN_START_POWERS
             || !self.fanouts.set_after_player_turn_start_order(&stored)
@@ -17155,6 +18084,8 @@ impl HotState {
         if let Some(ordinal) = entropy {
             self.generated_power_flags |= (ordinal as u8) << ENTROPY_TURN_START_ORDINAL_SHIFT;
         }
+        self.fanouts
+            .set_hibernate_turn_start_ordinal(hibernate.unwrap_or(0));
         true
     }
 
@@ -17194,7 +18125,79 @@ impl HotState {
         let mut order = [PowerId::Accuracy; MAX_AFTER_PLAYER_TURN_START_POWERS];
         order[..current.len()].copy_from_slice(&current);
         order.copy_within(index + 1..current.len(), index);
+        // #3756: a later Rolling Boulder object that ran after the removed
+        // listener now has one fewer listener before it.
+        if self.fanouts.has_rolling_boulder_later_instances() {
+            let mut later = self.fanouts.rolling_boulder_later_instances();
+            for row in &mut later {
+                if usize::from(row.listeners_before) > index {
+                    row.listeners_before -= 1;
+                }
+            }
+            if !self.fanouts.set_rolling_boulder_later_instances(&later) {
+                return false;
+            }
+        }
         self.set_after_player_turn_start_order(&order[..current.len() - 1])
+    }
+
+    /// The later Rolling Boulder rows agree with the first object and the
+    /// after-player-turn-start order (#3756).
+    ///
+    /// A later object exists only beside the first one, runs after it, and
+    /// after every earlier later object: `listeners_before` is past the first
+    /// object's own entry, inside the order, and nondecreasing.
+    pub(crate) fn rolling_boulder_later_state_is_exact(&self) -> bool {
+        if !self.fanouts.has_rolling_boulder_later_instances() {
+            return true;
+        }
+        let Some(order) = self.after_player_turn_start_order() else {
+            return false;
+        };
+        let Some(first_index) = order
+            .iter()
+            .position(|power| *power == PowerId::RollingBoulder)
+        else {
+            return false;
+        };
+        if self.powers.value(PowerId::RollingBoulder) <= 0 {
+            return false;
+        }
+        let mut previous_place = first_index + 1;
+        self.fanouts
+            .rolling_boulder_later_instances()
+            .iter()
+            .all(|instance| {
+                let place = usize::from(instance.listeners_before);
+                let exact = instance.amount >= 1 && place >= previous_place && place <= order.len();
+                previous_place = place;
+                exact
+            })
+    }
+
+    /// Attach one more Rolling Boulder object behind the live first one
+    /// (#3756). It is the newest power, so every current
+    /// after-player-turn-start listener runs before it. Returns the number of
+    /// live Rolling Boulder objects.
+    pub(crate) fn push_rolling_boulder_later(&mut self, amount: i32) -> Result<usize, ()> {
+        if !self.rolling_boulder_later_state_is_exact() {
+            return Err(());
+        }
+        let order = self.after_player_turn_start_order().ok_or(())?;
+        if !order.contains(&PowerId::RollingBoulder) {
+            return Err(());
+        }
+        let mut later = self.fanouts.rolling_boulder_later_instances();
+        later.push(RollingBoulderLaterInstance {
+            amount,
+            listeners_before: u8::try_from(order.len()).map_err(|_| ())?,
+        });
+        if !self.fanouts.set_rolling_boulder_later_instances(&later)
+            || !self.rolling_boulder_later_state_is_exact()
+        {
+            return Err(());
+        }
+        Ok(later.len() + 1)
     }
 
     pub(crate) fn hello_world_generation_pool_is_exact(&self) -> bool {
@@ -17351,10 +18354,19 @@ impl HotState {
         &mut self,
         depth: usize,
         word_base: usize,
+        listener_entry: Option<HotState>,
     ) -> Option<()> {
         if self.fanouts.deferred_hook_action_is_queued() {
             return None;
         }
+        let restart = listener_entry.map(|entry| {
+            Arc::new(HookListenerRestart {
+                depth,
+                word_base,
+                entry,
+                first_choice: self.clone(),
+            })
+        });
         let mut pending = self.pending.as_deref()?.clone();
         let offset = pending.frame_record.offset()?;
         pending.frame_record = WordRecordIndex::from_offset(offset.checked_sub(word_base)?)?;
@@ -17375,9 +18387,23 @@ impl HotState {
         let play = self
             .hook_choice_piles(PileId::Play)
             .into_iter()
-            .filter(|(card, _)| child_uids.contains(&card.uid))
+            .filter(|(card, _)| match &restart {
+                // Every card the listener itself put in Play (#3903).
+                Some(restart) => !restart
+                    .entry
+                    .piles
+                    .get(PileId::Play)
+                    .as_slice()
+                    .iter()
+                    .any(|before| before.uid == card.uid),
+                None => child_uids.contains(&card.uid),
+            })
             .collect::<Vec<_>>();
-        if play.len() != child_uids.len() {
+        if child_uids
+            .iter()
+            .any(|uid| play.iter().filter(|(card, _)| card.uid == *uid).count() != 1)
+            || restart.is_none() && play.len() != child_uids.len()
+        {
             return None;
         }
         let action = DeferredHookAction {
@@ -17386,6 +18412,7 @@ impl HotState {
             hand: self.hook_choice_piles(PileId::Hand),
             draw: self.hook_choice_piles(PileId::Draw),
             play,
+            restart,
         };
         self.frames = frames;
         self.pending = None;
@@ -17406,6 +18433,38 @@ impl HotState {
             })
     }
 
+    /// Narrow the published hook action's Seeker Strike choice to the
+    /// short-listed cards the Draw pile still holds, as they now are
+    /// (#3903, `hook_action::publish_queued`). Returns how many remain;
+    /// `None` when the pending choice is not a Seeker Strike short list.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn narrow_deferred_seeker_short_list(&mut self) -> Option<usize> {
+        let pending = self.pending.as_deref()?;
+        let (play, _) = self.pending_card_play(pending)?;
+        if play.selection_kind != Some(PendingSelectionKind::SeekerStrike) {
+            return None;
+        }
+        let mut record = play.to_owned();
+        let draw = self.piles.get(PileId::Draw).as_slice();
+        let live = record
+            .selection_cards
+            .iter()
+            .filter_map(|frozen| draw.iter().find(|card| card.uid == frozen.uid).copied())
+            .collect::<Vec<_>>();
+        let remaining = live.len();
+        if live != record.selection_cards {
+            record.selection_cards = live;
+            let mut frames = self.frames.clone();
+            frames.replace_top_card_play(&record)?;
+            if !frames.continuation_store_is_valid(Some(pending)) {
+                return None;
+            }
+            self.frames = frames;
+        }
+        Some(remaining)
+    }
+
     /// Whether the Play pile holds exactly the queued hook action's own
     /// suspended card plays, as they were when its choice began: the
     /// enclosing action's card has left and nothing else moved (#3387).
@@ -17415,6 +18474,40 @@ impl HotState {
             .deferred_hook_action
             .as_deref()
             .is_some_and(|action| action.play == self.hook_choice_piles(PileId::Play))
+    }
+
+    /// The states a re-run of the queued hook action's listener starts in
+    /// and must reach at its first choice, both rebased onto this state's
+    /// stack (#3903, `hook_action::receipt_choice_in_listener`). `None` when
+    /// the choice was frame-owned; `Some(None)` when this state's stack is
+    /// not the bottom of the stack the listener's Draw was issued on.
+    #[cold]
+    #[inline(never)]
+    pub(crate) fn deferred_hook_listener_restart(&self) -> Option<Option<(HotState, HotState)>> {
+        let action = self.fanouts.batch_nine().deferred_hook_action.as_deref()?;
+        let restart = action.restart.as_deref()?;
+        let base = (self.frames.len(), self.frames.word_len());
+        let rebased = || {
+            // The listener's entry state, without the frames of the
+            // enclosing action, which have unwound since.
+            let mut entry = restart.entry.clone();
+            if entry.pending.is_some() || !entry.frames.truncate_to(base.0, base.1) {
+                return None;
+            }
+            if entry.frames != self.frames {
+                return None;
+            }
+            // Its first-choice state, with its own frames directly on that
+            // stack, as `publish_deferred_hook_draw` attaches them.
+            let mut first_choice = restart.first_choice.clone();
+            first_choice.queue_deferred_hook_draw(restart.depth, restart.word_base, None)?;
+            if !first_choice.frames.truncate_to(base.0, base.1) {
+                return None;
+            }
+            first_choice.publish_deferred_hook_draw()?;
+            Some((entry, first_choice))
+        };
+        Some(rebased())
     }
 
     /// Re-attach the queued deferred hook action on top of the stack and
@@ -17932,6 +19025,7 @@ mod tests {
             play_index: 0,
             x_value: 0,
             spent: 0,
+            energy_value: None,
             star_spent: 0,
             glam: 0,
             next_step: 1,
@@ -18956,6 +20050,40 @@ mod tests {
         }
     }
 
+    /// #3817: the Imbued AutoPre phase names one card uid (0 included), is
+    /// disjoint from every other phase record, and pops only as itself.
+    #[test]
+    fn imbued_phase_record_round_trips_and_is_disjoint_from_its_siblings() {
+        let mut frames = Frames::new();
+        let mayhem = frames.push_auto_pre_mayhem_phase().unwrap();
+        let history = frames.push_auto_pre_history_course_phase(41).unwrap();
+        let imbued = frames.push_auto_pre_imbued_phase(41).unwrap();
+        assert_eq!(frames.auto_pre_imbued_phase(imbued), Some(41));
+        assert_eq!(frames.auto_pre_history_course_phase(imbued), None);
+        assert_eq!(frames.auto_pre_mayhem_phase(imbued), None);
+        assert!(frames.auto_pre_bombardment_phase(imbued).is_none());
+        assert!(frames.auto_post_phase(imbued).is_none());
+        assert_eq!(frames.auto_pre_imbued_phase(history), None);
+        assert_eq!(frames.auto_pre_imbued_phase(mayhem), None);
+        assert!(frames.continuation_store_is_valid(None));
+        assert_eq!(frames.pop_top_auto_pre_history_course_phase(), None);
+        assert_eq!(frames.pop_top_auto_pre_mayhem_phase(), None);
+        assert_eq!(frames.pop_top_auto_pre_imbued_phase(), Some(41));
+        assert_eq!(frames.pop_top_auto_pre_imbued_phase(), None);
+        assert_eq!(frames.pop_top_auto_pre_history_course_phase(), Some(41));
+        let mut zero = Frames::new();
+        let index = zero.push_auto_pre_imbued_phase(0).unwrap();
+        assert_eq!(zero.auto_pre_imbued_phase(index), Some(0));
+        assert!(zero.continuation_store_is_valid(None));
+        assert_eq!(zero.pop_top_auto_pre_imbued_phase(), Some(0));
+        assert!(zero.is_empty());
+        assert!(
+            Frames::new()
+                .push_auto_pre_imbued_phase(LEGACY_CARD_UID)
+                .is_none()
+        );
+    }
+
     #[test]
     fn restricted_auto_pre_and_frozen_batch_records_are_canonical_cow_suffixes() {
         let mut frames = Frames::new();
@@ -19216,11 +20344,12 @@ mod tests {
                 TurnStartHandChoiceKind::Inferno,
                 TurnStartHandChoiceKind::CrimsonMantle,
                 TurnStartHandChoiceKind::ToolsOfTheTrade,
+                TurnStartHandChoiceKind::Hibernate,
                 TurnStartHandChoiceKind::Tyranny,
                 TurnStartHandChoiceKind::Entropy,
             ],
             kind: TurnStartHandChoiceKind::Entropy,
-            next_listener: 8,
+            next_listener: 9,
             entries: vec![entries[0].clone()],
             cursor: 1,
             phase: TurnStartHandChoicePhase::Effect,
@@ -19247,6 +20376,7 @@ mod tests {
                 TurnStartHandChoiceKind::Inferno,
                 TurnStartHandChoiceKind::CrimsonMantle,
                 TurnStartHandChoiceKind::Entropy,
+                TurnStartHandChoiceKind::Hibernate,
             ],
             appended_suffix: vec![TurnStartHandChoiceKind::SummonNextTurn],
             kind: TurnStartHandChoiceKind::ToolsOfTheTrade,
@@ -19273,6 +20403,51 @@ mod tests {
             max_width_reapplied_summon
         );
         assert!(frames.is_empty());
+
+        // #3877: a Hibernate that ran and left (its decrement reached zero)
+        // may be applied again by a Tools-owned Sly play. It is then the
+        // appended member; one that has not run yet cannot also be appended.
+        let reapplied_hibernate = TurnStartHandChoiceRecord {
+            listener_order: vec![
+                TurnStartHandChoiceKind::Hibernate,
+                TurnStartHandChoiceKind::ToolsOfTheTrade,
+            ],
+            appended_suffix: vec![TurnStartHandChoiceKind::Hibernate],
+            ..max_width_reapplied_summon.clone()
+        };
+        let index = frames
+            .push_turn_start_hand_choice(&reapplied_hibernate)
+            .unwrap();
+        assert_eq!(
+            frames.turn_start_hand_choice(index).unwrap().to_owned(),
+            reapplied_hibernate
+        );
+        assert_eq!(
+            turn_start_retained_listeners(
+                &reapplied_hibernate.listener_order,
+                &reapplied_hibernate.appended_suffix,
+                2,
+                true,
+            ),
+            [TurnStartHandChoiceKind::ToolsOfTheTrade]
+        );
+        assert_eq!(
+            frames.pop_top_turn_start_hand_choice().unwrap(),
+            reapplied_hibernate
+        );
+        let pending_and_appended = TurnStartHandChoiceRecord {
+            listener_order: vec![
+                TurnStartHandChoiceKind::ToolsOfTheTrade,
+                TurnStartHandChoiceKind::Hibernate,
+            ],
+            next_listener: 1,
+            ..reapplied_hibernate
+        };
+        assert!(
+            frames
+                .push_turn_start_hand_choice(&pending_and_appended)
+                .is_none()
+        );
     }
 
     #[test]
@@ -19700,10 +20875,7 @@ mod tests {
         );
 
         let mut stale = state;
-        stale
-            .fanouts
-            .potion_belt_mut()
-            .reserved_after_side_turn_start = 4;
+        stale.fanouts.potion_belt_mut().hibernate_turn_start_ordinal = 9;
         assert!(!stale.fanouts.potion_belt_topology_is_exact());
     }
 
@@ -20283,6 +21455,69 @@ mod tests {
             restacked.push(PowerId::SummonNextTurn);
             assert_eq!(&*state.after_player_turn_start_order().unwrap(), restacked);
         }
+
+        // #3877: Hibernate is the ninth member, at any of the nine places among
+        // the other eight (Entropy included).
+        let mut eight = peers.to_vec();
+        eight.insert(3, PowerId::Entropy);
+        for ordinal in 0..=eight.len() {
+            let mut state = HotState::at_defaults();
+            for power in [PowerId::Entropy, PowerId::Hibernate] {
+                state.powers.set(power, crate::powers::SlotWire::Int, 1);
+            }
+            let mut order = eight.clone();
+            order.insert(ordinal, PowerId::Hibernate);
+            assert!(state.set_after_player_turn_start_order(&order));
+            assert_eq!(&*state.after_player_turn_start_order().unwrap(), order);
+            assert!(state.fanouts.potion_belt_topology_is_exact());
+
+            // A member ahead of Hibernate leaving moves Hibernate up one.
+            assert!(state.unregister_after_player_turn_start(PowerId::SummonNextTurn));
+            let without_summon = order
+                .iter()
+                .copied()
+                .filter(|power| *power != PowerId::SummonNextTurn)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                &*state.after_player_turn_start_order().unwrap(),
+                without_summon
+            );
+            // Hibernate leaving (its decrement reached zero) and coming back
+            // puts it last. The order is read while the stack is live.
+            assert!(state.unregister_after_player_turn_start(PowerId::Hibernate));
+            state
+                .powers
+                .set(PowerId::Hibernate, crate::powers::SlotWire::Int, 0);
+            let without_hibernate = without_summon
+                .iter()
+                .copied()
+                .filter(|power| *power != PowerId::Hibernate)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                &*state.after_player_turn_start_order().unwrap(),
+                without_hibernate
+            );
+            assert!(state.register_after_player_turn_start(PowerId::Hibernate));
+            state
+                .powers
+                .set(PowerId::Hibernate, crate::powers::SlotWire::Int, 1);
+            let mut restacked = without_hibernate;
+            restacked.push(PowerId::Hibernate);
+            assert_eq!(&*state.after_player_turn_start_order().unwrap(), restacked);
+        }
+        // An ordinal with no live stack, or past the other members, is no order.
+        let mut stale = HotState::at_defaults();
+        stale
+            .powers
+            .set(PowerId::Loop, crate::powers::SlotWire::Int, 1);
+        assert!(stale.set_after_player_turn_start_order(&[PowerId::Loop, PowerId::Hibernate]));
+        assert_eq!(stale.after_player_turn_start_order(), None);
+        stale
+            .powers
+            .set(PowerId::Hibernate, crate::powers::SlotWire::Int, 1);
+        assert!(stale.after_player_turn_start_order().is_some());
+        assert!(stale.fanouts.set_after_player_turn_start_order(&[]));
+        assert_eq!(stale.after_player_turn_start_order(), None);
 
         for raw in 0b0001_0000..=u8::MAX {
             let mut forged = HotState::at_defaults();

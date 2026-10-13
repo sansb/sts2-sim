@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "2C2S1SMVEFEP",
+ "node": 47,
+ "encounter": "ENCOUNTER.QUEEN_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "010cce393beebea6f553b9acf4e47c27f7f018303cbd09a00f4ead6c7d23135d",
+ "save_sha256": "2d5db574ce894ed5366f16700e83e96f0130c8633de586796f5e4bb84debc33e",
+ "entry_digest": "690f5595204088373827ad00d21e5955c0740838657a661ebc55f017e282599d",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

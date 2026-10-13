@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "LYE3ZK9FYKKV",
+ "node": 13,
+ "encounter": "ENCOUNTER.RUBY_RAIDERS_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "ad4fba8113f2fa16914ff099ebf3bad683c3a2a0f1e4f2d989ae15309ddd3656",
+ "save_sha256": "8b1202e7377e66e09c85ae5636dfc1f2c9d7b89dc77a66a6dd687a6c1324e1ef",
+ "entry_digest": "1a4252a14d3f8acadd22c76950c92da7bd15158755b1f856ce5f94a2109d68db",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "GVHAZ997RMFY",
+ "node": 6,
+ "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "69a9e30e0f88b23277440bf943ea8f32d30993eeaead411b1b8c68933356ecdf",
+ "save_sha256": "d8fb7cdf20a9dbfa1aed592d84797bfb7616b6be2600c7debdd0a829041e189d",
+ "entry_digest": "fa8c629c1241e8fc25acbdf479f737e632863235e492422ed0184ce236991c3c",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

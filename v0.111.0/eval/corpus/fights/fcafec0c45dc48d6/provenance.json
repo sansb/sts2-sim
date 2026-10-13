@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "VP9DHM4M1XEM",
+ "node": 29,
+ "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "3fe62757ed63124dd65af5e28b539b758a1f834fab2aa2d02404cb22cfe3517c",
+ "save_sha256": "6c41bbe744945679f3237219afcdd71e8315b2899367d4beb1c7742a7b66ba83",
+ "entry_digest": "456e7db88a169200b5f58be9b087e5b6f8435a1397df3ec3233a527359a4b81a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

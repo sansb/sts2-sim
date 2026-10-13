@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "AUNPC3BZ101H",
+ "node": 26,
+ "encounter": "ENCOUNTER.MYTES_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "545f4706672c95f4909e7f7790fe804a8791ae8feb779aabeb13d82cd4f99cf0",
+ "save_sha256": "b7f386f9171595bfcb47b74dfd0827d3b23918c2096d44498253ae7fb7307052",
+ "entry_digest": "76defe2b4d003b55e21b30ba13d6a75bcecac5e76587d6422c9eee893c939724",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

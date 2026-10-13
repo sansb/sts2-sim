@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "87KM4MZ0ZN97",
+ "node": 20,
+ "encounter": "ENCOUNTER.MYTES_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "6c5fd019c1a33e97997df38f51879505c05e8fdb58081a0b6734a005c6269c6e",
+ "save_sha256": "148f22a03d71a91ae0b200acfce61d80237c49ea6c3d5750f512192e208311fc",
+ "entry_digest": "68c4a3c2411b7611549336f83f005fc9b1ce099ae67fe591164f91ed5c8da495",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

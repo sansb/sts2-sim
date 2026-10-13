@@ -1,0 +1,159 @@
+{
+ "thrash_vigor_lethal": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "LOUSE_PROGENITOR_NORMAL",
+  "deck": [
+   "PATTER",
+   "THRASH",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "PATTER",
+      "THRASH",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "hp",
+    1,
+    1
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "PATTER"
+   ],
+   [
+    "play",
+    "THRASH",
+    1
+   ]
+  ]
+ },
+ "thrash_vigor_survives": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "LOUSE_PROGENITOR_NORMAL",
+  "deck": [
+   "PATTER",
+   "THRASH",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "PATTER",
+      "THRASH",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "PATTER"
+   ],
+   [
+    "play",
+    "THRASH",
+    1
+   ]
+  ]
+ },
+ "thrash_plain_lethal": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "LOUSE_PROGENITOR_NORMAL",
+  "deck": [
+   "THRASH",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "THRASH",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "hp",
+    1,
+    1
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "THRASH",
+    1
+   ]
+  ]
+ }
+}

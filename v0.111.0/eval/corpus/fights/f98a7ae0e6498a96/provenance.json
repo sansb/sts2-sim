@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "59T4CR59L7KU",
+ "node": 38,
+ "encounter": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "e7712772c72322a38c8f811ad3c21f93430daf611a6b3d21886edea21b059579",
+ "save_sha256": "1c25a91031498b816ac47d104810fb18ff4227fa7a439bc30b3c056a406397cc",
+ "entry_digest": "b2b984f93c4fd4e4bb7688319eb9b5e1fda224f40f57ca58d0f04e66eb2e953f",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

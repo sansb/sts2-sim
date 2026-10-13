@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MH4WQ4QNVP48",
+ "node": 7,
+ "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+ "node_type": "elite",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "d2d6ff85f31cdfa1e6507294e9846d01042bd4e3e5285185ecabdf6dea7dd29e",
+ "save_sha256": "08829ef26e556d6048a71e408db5907e7d483065c9a24ee5c1c05719de4baec5",
+ "entry_digest": "313802c325a569e072ca3278ae24ea155188808977333c4a5284a8e039d10c84",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

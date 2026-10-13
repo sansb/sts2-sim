@@ -1,0 +1,42 @@
+{
+ "curl_up_razor_tooth": {
+  "character": "Ironclad",
+  "relics": ["RAZOR_TOOTH"],
+  "encounter": "LOUSE_PROGENITOR_NORMAL",
+  "deck": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "TWIN_STRIKE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["energy", 9],
+   ["arrange", {"hand": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "TWIN_STRIKE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"]}],
+   ["snap", "root"],
+   ["play", "STRIKE_IRONCLAD", 1],
+   ["play", "STRIKE_IRONCLAD", 1],
+   ["end"]
+  ]
+ },
+ "curl_up_razor_tooth_twin": {
+  "character": "Ironclad",
+  "relics": ["RAZOR_TOOTH"],
+  "encounter": "LOUSE_PROGENITOR_NORMAL",
+  "deck": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "TWIN_STRIKE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["energy", 9],
+   ["arrange", {"hand": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "TWIN_STRIKE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"]}],
+   ["snap", "root"],
+   ["play", "TWIN_STRIKE", 1],
+   ["play", "STRIKE_IRONCLAD", 1]
+  ]
+ },
+ "curl_up_plain": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "LOUSE_PROGENITOR_NORMAL",
+  "deck": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "TWIN_STRIKE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["energy", 9],
+   ["arrange", {"hand": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "TWIN_STRIKE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"]}],
+   ["snap", "root"],
+   ["play", "STRIKE_IRONCLAD", 1],
+   ["play", "STRIKE_IRONCLAD", 1]
+  ]
+ }
+}

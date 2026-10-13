@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "ETEMQXG0JN2Y",
+ "node": 29,
+ "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "5d836af0f5c30a05bed965d64fb0ec653e24b5bfbd097bc3f19098b2ad630ac4",
+ "save_sha256": "bfafb57621bbe5a5014f66c68851a865c5cf6aec3e72ccddd7726bba89c213c8",
+ "entry_digest": "4c4f0b6312c4c0107f910749fae9e4139b608becd40c42187312a78224a551db",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "T1UFMCZV8EBJ",
+ "node": 47,
+ "encounter": "ENCOUNTER.TEST_SUBJECT_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "772d00cc6a0839c5e994a441c40f6322571452e2a03609cf94027392ead32b10",
+ "save_sha256": "c6312a35cccd3061aaa34366a4faff17605559113097b5850b5642cdd1387d77",
+ "entry_digest": "81d09c2f880a624a2b222db9239191cbf07af2325c548be8dca5c083892cfb62",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

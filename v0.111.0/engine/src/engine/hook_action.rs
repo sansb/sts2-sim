@@ -88,19 +88,53 @@
 //! prompt still signals natively, so Rust refuses it by name
 //! ([`AUTO_RESOLVED_CHOICE`]).
 //!
+//! # A choice of the enclosing action (#3903)
+//!
+//! The enclosing action can pause on a choice of its own while a hook action
+//! is queued behind it. The queued action sits at the back of the owner's
+//! queue and the paused action at its front, so the game asks the action's
+//! choice first and the hook action's after the action has finished. Native
+//! witnesses: `fixtures/issue3822_native/horn_piece_club.json` and
+//! `horn_club_piece.json` (the Horn's Seeker Strike choice is queued, then
+//! Iron Club's Draw pauses the PlayCardAction; the game reports the
+//! PlayCardAction in `GatheringPlayerChoice` first), and
+//! `horn_after_answer.json` (the kill comes after the action's own answer).
+//!
+//! When that choice is a receipt-owned park (`engine::puzzle`), the parked
+//! state does not hold the queue: `puzzle::park` drops it from the snapshot.
+//! Every answer re-executes the action from its receipt, and the listener
+//! queues its hook action again during that execution, in the same state,
+//! so the queue is rebuilt rather than carried. A kill that comes after the
+//! relic's answer queues its choice inside the re-execution the same way.
+//! Once the last answer has finished the action, [`publish_queued`]
+//! publishes the hook action on the same receipt.
+//!
+//! The option list is read when the hook action starts, so cards that left
+//! the Hand or the Draw pile in between are no longer offered, and a choice
+//! left with one option is taken without asking ([`moved_choice`]; native
+//! witnesses `horn_seeker_short.json` and `horn_sculpting_moved.json`).
+//!
+//! A listener's first choice can also begin inside a receipt-owned Draw
+//! nested in its own Draw, where Rust stack rather than frames lies between
+//! them. That hook action runs on a re-run of the listener
+//! ([`receipt_choice_in_listener`]).
+//!
 //! # Not modeled (each refuses by name)
 //!
 //! * **A queue that must cross the boundary** ([`SECOND_HOOK_ACTION`],
 //!   [`BESIDE_A_CHOICE`]). A second hook action queued behind the first, or
-//!   the enclosing action's own choice resolving while a hook action waits,
-//!   parks a state that still owns a continuation that is not on its stack.
-//!   `CanonicalStateV2` has no carrier for a detached segment. The import
-//!   authenticator re-executes only the root, so it cannot rebuild a queue
-//!   that forms after the first answer. Carrying the queue would change the
-//!   boundary format.
+//!   a FRAME-owned choice of the enclosing action resolving while a hook
+//!   action waits, parks a state that still owns a continuation that is not
+//!   on its stack. `CanonicalStateV2` has no carrier for a detached segment,
+//!   and a frame-owned park is answered by resuming its frames, not by
+//!   re-executing the action, so nothing rebuilds the queue. Carrying the
+//!   queue would change the boundary format.
 //! * **EndTurn deaths** ([`OUTSIDE_PLAYER_ACTION`]). The EndTurn flow is
 //!   `CombatManager`'s own, and the hook action would run concurrently with
 //!   it (see above).
+//! * **A moved choice with nothing left to ask** ([`CHOICE_SOURCE_MOVED`]):
+//!   a Stratagem pick whose Draw pile moved, and a Seeker Strike or
+//!   Sculpting Strike choice whose every option has gone.
 //!
 //! [`DrawCaller::GremlinHorn`]: crate::hot::DrawCaller::GremlinHorn
 //! [`HotState::queue_deferred_hook_draw`]: crate::hot::HotState::queue_deferred_hook_draw
@@ -118,9 +152,6 @@ pub(crate) const OUTSIDE_PLAYER_ACTION: &str = "Gremlin Horn Draw choice outside
 /// cannot publish the deferred Draw's ActionReplay root.
 pub(crate) const WITHOUT_RECEIPT: &str =
     "Gremlin Horn Draw choice without an action replay receipt";
-/// A choice from a Gremlin Horn Draw while a receipt re-executes its action.
-pub(crate) const INSIDE_RECEIPT_REEXECUTION: &str =
-    "Gremlin Horn Draw choice inside a receipt re-execution";
 /// A second hook action queued behind the first.
 pub(crate) const SECOND_HOOK_ACTION: &str = "second deferred hook action";
 /// The enclosing action begins its own choice while a hook action is queued.
@@ -255,6 +286,22 @@ pub(crate) fn note_unprompted_select(signals: bool) {
     }
 }
 
+/// The unprompted selects the innermost counted listener has resolved so far
+/// (0 when no counted listener is running).
+pub(crate) fn unprompted_selects_counted() -> u32 {
+    UNPROMPTED_SIGNALS.with(Cell::get).unwrap_or(0)
+}
+
+/// The innermost counted listener has become its own running hook action
+/// (its first prompt was asked in native order,
+/// `puzzle::side_end_deferral_started`): a later select pauses that action
+/// directly (`HookPlayerChoiceContext/<SignalPlayerChoiceBegun>d__37` RVA
+/// `0x3d64f4` IL_00e7-010b, v0.111.0), so it is sequential and no longer
+/// counted.
+pub(crate) fn stop_counting_unprompted_selects() {
+    UNPROMPTED_SIGNALS.with(|cell| cell.set(None));
+}
+
 /// The scope of a replay-capable transaction applying `action`, on a state
 /// whose ActionReplay root (if any) names `root`: a Play or a UsePotion is a
 /// queued player action, and so is a Select that resumes one. Everything
@@ -343,6 +390,216 @@ fn segment_card_plays_are_hellraiser(state: &HotState, depth: usize) -> bool {
         })
 }
 
+/// The re-run of a listener did not reach the state its hook action began in.
+pub(crate) const LISTENER_RERUN_DIVERGED: &str = "deferred hook action listener re-run diverged";
+
+/// The hook action a listener re-run is to start.
+struct HookRun {
+    /// The listener's state at its first choice.
+    expect: HotState,
+    /// The state the hook action starts in: the finished action's state
+    /// with the listener's frames and choice re-attached.
+    replace: HotState,
+    /// The answer the game takes without asking, if any.
+    auto: Option<crate::hot::ActionReplayAnswer>,
+    /// Length of the event list when the re-run began.
+    events: usize,
+    /// How many listener Draws were running when the hook action started.
+    started: Option<u32>,
+}
+
+thread_local! {
+    /// How many deferred-choice listener Draws are running.
+    static LISTENERS: Cell<u32> = const { Cell::new(0) };
+    /// The state a receipt-owned Draw inside the listener suspended in, on
+    /// the pass that only queues the hook action.
+    static FIRST_CHOICE: std::cell::RefCell<Option<HotState>> =
+        const { std::cell::RefCell::new(None) };
+    static HOOK_RUN: std::cell::RefCell<Option<HookRun>> = const { std::cell::RefCell::new(None) };
+    /// The restart states of the hook action [`publish_queued`] has just
+    /// published ([`take_published_restart`]).
+    static PUBLISHED_RESTART: std::cell::RefCell<Option<(HotState, HotState)>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+struct ListenerGuard(());
+
+impl ListenerGuard {
+    fn enter() -> Self {
+        LISTENERS.with(|running| running.set(running.get().saturating_add(1)));
+        Self(())
+    }
+}
+
+impl Drop for ListenerGuard {
+    fn drop(&mut self) {
+        LISTENERS.with(|running| running.set(running.get().saturating_sub(1)));
+    }
+}
+
+struct HookRunGuard(Option<HookRun>);
+
+impl HookRunGuard {
+    fn arm(run: HookRun) -> Self {
+        Self(HOOK_RUN.with(|slot| slot.borrow_mut().replace(run)))
+    }
+
+    fn started(&self) -> bool {
+        HOOK_RUN.with(|slot| {
+            slot.borrow()
+                .as_ref()
+                .is_some_and(|run| run.started.is_some())
+        })
+    }
+}
+
+impl Drop for HookRunGuard {
+    fn drop(&mut self) {
+        HOOK_RUN.with(|slot| *slot.borrow_mut() = self.0.take());
+    }
+}
+
+/// A choice a receipt-owned Draw has suspended on (#3903): if it is the
+/// first choice of a running deferred-choice listener, it starts that
+/// listener's hook action instead of being answered in place.
+///
+/// # Native
+///
+/// A Draw issued inside the listener's own command runs on the listener's
+/// `HookPlayerChoiceContext`, whatever issues it. Hellraiser passes the
+/// Draw's context to the Strike it AutoPlays
+/// (`HellraiserPower/<AfterCardDrawnEarly>d__7` RVA `0x33c1a8` IL_011e-012e,
+/// v0.111.0, SHA-256 `9cb4f1ad…`); that card's wrapper passes it to
+/// `Hook.AfterCardPlayed` (`CardModel/<OnPlayWrapper>d__339` RVA `0x31b8d0`
+/// IL_0874); and that walk hands it to each listener
+/// (`Hook/<AfterCardPlayed>d__16` RVA `0x3ccbf4` IL_004d-0070). So Iron
+/// Club's `CardPileCmd.Draw(choiceContext, 1, Owner, false)`
+/// (`IronClub/<AfterCardPlayed>d__19` RVA `0x326f78` IL_0083-0095) and the
+/// Strike it draws are on it too. The first choice begun there moves the
+/// WHOLE rest of the listener into the queued hook action (the module
+/// docs): the AutoPlayed card's own remainder, the rest of the Strike's
+/// `AfterCardPlayed` walk, its routing, and the rest of the listener's
+/// Draw, all after the enclosing action. Native witness:
+/// `fixtures/issue3822_native/horn_club_nested.json`.
+///
+/// # Model
+///
+/// That remainder is Rust stack between the listener's Draw frame and the
+/// receipt-owned Draw, so no frame carries it.
+///
+/// * **Queueing.** With no hook action started, the choice unwinds to the
+///   listener ([`deferred_listener_draw`]) with the state it suspended in.
+///   The listener detaches its frames and the choice into the queue, as it
+///   does for a frame-owned choice, and the action runs on. The published
+///   park holds a receipt-owned Draw, so its answers re-execute the action
+///   from its receipt.
+/// * **Running.** Once the action has finished and an answer is at hand (a
+///   tape answer, or the one option the game takes unasked),
+///   [`run_started`] re-runs the listener's Draw from the state it was
+///   issued in. When the re-run reaches the same first choice, in the same
+///   state, that state is replaced by the finished action's state with the
+///   listener's frames re-attached, and the choice is answered in place.
+///   The listener's Rust stack then runs on as the hook action: the locals
+///   it holds are the locals the native continuation holds, and the state
+///   it reads is the one the enclosing action left. The enclosing plays
+///   are not on the stack, as they are not in the game by then
+///   (`ActionExecutor/<ExecuteActions>d__28` RVA `0x3d4310` awaits the
+///   running action, IL_0143-0177, before it takes the next ready one,
+///   IL_0472).
+///
+/// The re-run is exact or refused: a re-run that does not reach the
+/// recorded first-choice state refuses by name
+/// ([`LISTENER_RERUN_DIVERGED`]).
+pub(crate) fn receipt_choice_in_listener(
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<Option<crate::hot::ActionReplayAnswer>, EngineRefusal> {
+    let listeners = LISTENERS.with(Cell::get);
+    if listeners == 0 {
+        return Ok(None);
+    }
+    if state.fanouts.hook_action_is_running() {
+        // A later choice of the running hook action is sequential in it. A
+        // listener nested inside it would queue a hook action of its own.
+        let nested = HOOK_RUN.with(|slot| {
+            slot.borrow()
+                .as_ref()
+                .and_then(|run| run.started)
+                .is_some_and(|level| listeners > level)
+        });
+        return if nested {
+            Err(EngineRefusal::PowerOrderNotModeled(SECOND_HOOK_ACTION))
+        } else {
+            Ok(None)
+        };
+    }
+    HOOK_RUN.with(|slot| {
+        let mut slot = slot.borrow_mut();
+        let Some(run) = slot.as_mut() else {
+            #[cfg(test)]
+            hit(|hits| hits.receipt_choices_queued += 1);
+            FIRST_CHOICE.with(|first| *first.borrow_mut() = Some(state.clone()));
+            return Err(EngineRefusal::MalformedArgs(super::puzzle::PARK_SITE));
+        };
+        if run.expect != *state {
+            return Err(EngineRefusal::PowerOrderNotModeled(LISTENER_RERUN_DIVERGED));
+        }
+        *state = run.replace.clone();
+        // The re-run's events up to here were the first pass's.
+        events.truncate(run.events);
+        run.started = Some(listeners);
+        // Later selects of the listener are sequential in its running hook
+        // action (`<SignalPlayerChoiceBegun>d__37` RVA `0x3d64f4`
+        // IL_00e7-010b).
+        UNPROMPTED_SIGNALS.with(|cell| cell.set(None));
+        #[cfg(test)]
+        hit(|hits| hits.hook_actions_started += 1);
+        Ok(run.auto)
+    })
+}
+
+/// Run the published hook action whose first choice began inside a
+/// receipt-owned Draw ([`receipt_choice_in_listener`]): `next` is the
+/// finished action's state with the choice published, `restart` the
+/// listener's entry and first-choice states. On return `next` is the state
+/// the hook action stopped in: finished, or pending a later frame-owned
+/// choice. A later receipt-owned choice unwinds as a park.
+pub(crate) fn run_started(
+    next: &mut HotState,
+    restart: (HotState, HotState),
+    auto: Option<crate::hot::ActionReplayAnswer>,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let (mut listener, expect) = restart;
+    let mut replace = next.clone();
+    replace.fanouts.set_hook_action_running(true);
+    let run = HookRunGuard::arm(HookRun {
+        expect,
+        replace,
+        auto,
+        events: events.len(),
+        started: None,
+    });
+    let outcome = listener_draw(
+        &mut listener,
+        catalog,
+        1,
+        DrawCaller::GremlinHorn,
+        events,
+        true,
+    );
+    let started = run.started();
+    drop(run);
+    outcome?;
+    if !started {
+        return Err(EngineRefusal::PowerOrderNotModeled(LISTENER_RERUN_DIVERGED));
+    }
+    listener.fanouts.set_hook_action_running(false);
+    *next = listener;
+    Ok(())
+}
+
 /// Issue one deferred-choice listener's `CardPileCmd.Draw` of `n` cards on
 /// the resumable frame (#3387). If it completes, the listener continues; if
 /// it begins a choice, the choice is queued as a hook action and the
@@ -356,13 +613,49 @@ pub(crate) fn deferred_listener_draw(
     caller: DrawCaller,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
+    listener_draw(state, catalog, n, caller, events, false)
+}
+
+/// [`deferred_listener_draw`], or (`rerun`) the same Draw re-run to start
+/// its hook action ([`run_started`]).
+fn listener_draw(
+    state: &mut HotState,
+    catalog: &Catalog,
+    n: usize,
+    caller: DrawCaller,
+    events: &mut Vec<Event>,
+    rerun: bool,
+) -> Result<(), EngineRefusal> {
     if caller != DrawCaller::GremlinHorn {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     let depth = state.frames.len();
     let word_base = state.frames.word_len();
+    let entry = state.clone();
+    let running = ListenerGuard::enter();
     let listener = UnsignaledListener::enter();
-    let drawn = super::draw::draw_cards_for_potion(state, catalog, n, caller, events)?;
+    let outcome = super::draw::draw_cards_for_potion(state, catalog, n, caller, events);
+    let first_choice = FIRST_CHOICE.with(|first| first.borrow_mut().take());
+    drop(running);
+    if rerun {
+        // The hook action ran on this stack, or parked, or the re-run
+        // diverged ([`run_started`] tells which).
+        return match (outcome, first_choice) {
+            (_, Some(_)) => Err(EngineRefusal::PowerOrderNotModeled(LISTENER_RERUN_DIVERGED)),
+            (outcome, None) => outcome.map(|_| ()),
+        };
+    }
+    let (drawn, receipt_owned) = match (outcome, first_choice) {
+        (Err(EngineRefusal::MalformedArgs(site)), Some(suspended))
+            if site == super::puzzle::PARK_SITE =>
+        {
+            *state = suspended;
+            (super::draw::PotionDrawResult::Suspended, true)
+        }
+        // A first choice that something swallowed or rewrote.
+        (_, Some(_)) => return Err(EngineRefusal::ContinuationNotModeled),
+        (outcome, None) => (outcome?, false),
+    };
     if listener.unprompted_signals() > 0 {
         return Err(EngineRefusal::PowerOrderNotModeled(AUTO_RESOLVED_CHOICE));
     }
@@ -381,12 +674,9 @@ pub(crate) fn deferred_listener_draw(
         }
         ActionScope::Rootless => return Err(EngineRefusal::PowerOrderNotModeled(WITHOUT_RECEIPT)),
     }
-    if super::puzzle::tape_is_installed() {
-        return Err(EngineRefusal::PowerOrderNotModeled(
-            INSIDE_RECEIPT_REEXECUTION,
-        ));
-    }
-    if state.fanouts.deferred_hook_action_is_queued() {
+    // A second hook action behind a queued one, or one a listener nested in
+    // a running hook action would queue (#3903).
+    if state.fanouts.deferred_hook_action_is_queued() || state.fanouts.hook_action_is_running() {
         return Err(EngineRefusal::PowerOrderNotModeled(SECOND_HOOK_ACTION));
     }
     if !deferred_choice_is_audited(state, catalog) {
@@ -398,16 +688,27 @@ pub(crate) fn deferred_listener_draw(
     #[cfg(test)]
     hit(|hits| hits.queued += 1);
     state
-        .queue_deferred_hook_draw(depth, word_base)
+        .queue_deferred_hook_draw(depth, word_base, receipt_owned.then_some(entry))
         .ok_or(EngineRefusal::ContinuationNotModeled)
+}
+
+/// What [`publish_queued`] did.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Published {
+    /// No hook action was queued.
+    Nothing,
+    /// The hook action's choice is the state's pending choice.
+    Parked,
+    /// As `Parked`, and the Hand or the Draw pile moved since the choice
+    /// began: the caller re-reads the option list ([`moved_choice`]).
+    Moved,
 }
 
 /// Publish the queued hook action once the public transaction's own frames
 /// have drained to its base (#3387): the executor's next ready action.
-/// Returns whether a hook action was published.
-pub(crate) fn publish_queued(state: &mut HotState) -> Result<bool, EngineRefusal> {
+pub(crate) fn publish_queued(state: &mut HotState) -> Result<Published, EngineRefusal> {
     if !state.fanouts.deferred_hook_action_is_queued() {
-        return Ok(false);
+        return Ok(Published::Nothing);
     }
     // The action's own choice resolves first, with the hook action still
     // queued behind it: that queue would have to cross the boundary.
@@ -433,18 +734,86 @@ pub(crate) fn publish_queued(state: &mut HotState) -> Result<bool, EngineRefusal
             BESIDE_VOID_FORM_END_TURN,
         ));
     }
-    if !state.deferred_hook_choice_piles_are_unmoved() {
-        return Err(EngineRefusal::PowerOrderNotModeled(CHOICE_SOURCE_MOVED));
-    }
+    let moved = !state.deferred_hook_choice_piles_are_unmoved();
     if !state.deferred_hook_play_pile_is_the_segments() {
         return Err(EngineRefusal::PowerOrderNotModeled(PLAY_PILE_MOVED));
     }
+    let restart = match state.deferred_hook_listener_restart() {
+        None => None,
+        // The finished action's stack is not the bottom of the one the
+        // listener's Draw was issued on: there is nothing to re-run it on.
+        Some(None) => return Err(EngineRefusal::ContinuationNotModeled),
+        Some(restart) => restart,
+    };
     state
         .publish_deferred_hook_draw()
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    PUBLISHED_RESTART.with(|slot| *slot.borrow_mut() = restart);
     #[cfg(test)]
     hit(|hits| hits.published += 1);
-    Ok(true)
+    if !moved {
+        return Ok(Published::Parked);
+    }
+    moved_choice(state)
+}
+
+/// The published hook action's choice when the Hand or the Draw pile moved
+/// between the choice beginning and the hook action starting (#3903).
+///
+/// The game reads the option list only once the hook action has started
+/// (the module docs): `CardSelectCmd/<FromCombatPile>d__20` RVA `0x3e5e84`
+/// (v0.111.0, SHA-256 `9cb4f1ad…`) reads `pile.Cards` through its filter at
+/// IL_010c-013b, after the signal's await (IL_00ae-0106). It returns nothing
+/// for an empty list (IL_0140-0155), takes the whole list without asking
+/// when it holds no more than `MinSelect` cards and no manual confirmation
+/// is required (IL_015a-017c), and asks otherwise. `<FromHand>d__28` RVA
+/// `0x3e7568` has the same three arms (IL_010d-014c, IL_0152-018d).
+///
+/// * **Seeker Strike.** Its filter is the short list it shuffled before the
+///   signal (`SeekerStrike/<OnPlay>d__5` RVA `0x3b9754` IL_00ed-0172), so the
+///   options are the short-listed cards the Draw pile still holds, and the
+///   record is narrowed to them here.
+/// * **Sculpting Strike.** `FromHand` over the live Hand
+///   (`SculptingStrike/<OnPlay>d__7` RVA `0x3b8cec` IL_00de-0115); this
+///   crate derives that option list from the live Hand at every read.
+/// * **Stratagem** is refused by name: its moved reshuffle pick has no
+///   native witness.
+///
+/// The caller (`engine::apply_action_into_replay`) then counts the legal
+/// answers: two or more are asked for, one is taken unasked (`MinSelect` is
+/// 1 for both cards), and none is refused by name, because the play would
+/// resume with no pick, which no frame cursor carries.
+fn moved_choice(state: &mut HotState) -> Result<Published, EngineRefusal> {
+    let moved = EngineRefusal::PowerOrderNotModeled(CHOICE_SOURCE_MOVED);
+    let Some(pending) = state.pending.as_deref() else {
+        return Err(EngineRefusal::ContinuationNotModeled);
+    };
+    if pending.stratagem_draw_record(&state.frames).is_some() {
+        return Err(moved);
+    }
+    if state.narrow_deferred_seeker_short_list().is_some() {
+        #[cfg(test)]
+        hit(|hits| hits.narrowed += 1);
+    }
+    Ok(Published::Moved)
+}
+
+/// The listener's entry and first-choice states for the hook action
+/// [`publish_queued`] has just published, when its first choice began
+/// inside a receipt-owned Draw ([`run_started`]).
+pub(crate) fn take_published_restart() -> Option<(HotState, HotState)> {
+    PUBLISHED_RESTART.with(|slot| slot.borrow_mut().take())
+}
+
+/// The refusal for a moved choice with no option left ([`moved_choice`]).
+pub(crate) fn moved_choice_is_empty() -> EngineRefusal {
+    EngineRefusal::PowerOrderNotModeled(CHOICE_SOURCE_MOVED)
+}
+
+/// Record a moved choice taken without asking (#2700 branch witness).
+#[cfg(test)]
+pub(crate) fn note_auto_take() {
+    hit(|hits| hits.auto_taken += 1);
 }
 
 /// Test-only branch witnesses (#2700).
@@ -455,12 +824,28 @@ pub(crate) struct BranchHits {
     pub queued: u32,
     /// Queued hook actions published at the end of their transaction.
     pub published: u32,
+    /// Published Seeker Strike choices whose short list was re-read.
+    pub narrowed: u32,
+    /// Published moved choices left with one option, taken unasked.
+    pub auto_taken: u32,
+    /// First choices of a listener that began inside a receipt-owned Draw
+    /// and unwound to the listener to be queued.
+    pub receipt_choices_queued: u32,
+    /// Hook actions started on their listener's re-run stack.
+    pub hook_actions_started: u32,
 }
 
 #[cfg(test)]
 thread_local! {
     static BRANCH_HITS: Cell<BranchHits> = const {
-        Cell::new(BranchHits { queued: 0, published: 0 })
+        Cell::new(BranchHits {
+            queued: 0,
+            published: 0,
+            narrowed: 0,
+            auto_taken: 0,
+            receipt_choices_queued: 0,
+            hook_actions_started: 0,
+        })
     };
 }
 
@@ -677,7 +1062,8 @@ mod tests {
             take_branch_hits(),
             BranchHits {
                 queued: 1,
-                published: 1
+                published: 1,
+                ..BranchHits::default()
             }
         );
         let draw = published_horn_draw(&parked);
@@ -796,7 +1182,8 @@ mod tests {
             take_branch_hits(),
             BranchHits {
                 queued: 1,
-                published: 1
+                published: 1,
+                ..BranchHits::default()
             }
         );
         let draw = published_horn_draw(&parked);
@@ -1112,14 +1499,19 @@ mod tests {
             draw(Some(ActionScope::OtherAction), &state, &catalog),
             Err(EngineRefusal::PowerOrderNotModeled(OUTSIDE_PLAYER_ACTION))
         );
+        // A receipt re-execution queues the choice as the first run did
+        // (#3903): the hook action is formed again on every answer.
+        let mut replayed = state.clone();
+        take_branch_hits();
         assert_eq!(
             super::super::puzzle::with_tape_for_test(Vec::new(), || {
-                draw(Some(ActionScope::PlayerAction), &state, &catalog)
+                let _scope = ScopeGuard::enter(ActionScope::PlayerAction);
+                super::super::draw::gremlin_horn_draw(&mut replayed, &catalog, &mut Vec::new())
             }),
-            Err(EngineRefusal::PowerOrderNotModeled(
-                INSIDE_RECEIPT_REEXECUTION
-            ))
+            Ok(())
         );
+        assert_eq!(take_branch_hits().queued, 1);
+        assert!(replayed.fanouts.deferred_hook_action_is_queued());
         // A caller other than the Horn is not a deferred listener Draw.
         assert_eq!(
             deferred_listener_draw(
@@ -1137,14 +1529,6 @@ mod tests {
         assert_eq!(
             draw(Some(ActionScope::PlayerAction), &queued, &catalog),
             Err(EngineRefusal::PowerOrderNotModeled(SECOND_HOOK_ACTION))
-        );
-        // A receipt-owned park (Centennial Puzzle's Draw reshuffling against
-        // Stratagem) while the hook action is queued.
-        let mut puzzle = queued.clone();
-        puzzle.fanouts.set_puzzle_armed(true);
-        assert_eq!(
-            super::super::draw::centennial_puzzle_draw_one(&mut puzzle, &catalog, &mut Vec::new()),
-            Err(EngineRefusal::PowerOrderNotModeled(BESIDE_A_CHOICE))
         );
     }
 
@@ -1192,6 +1576,276 @@ mod tests {
         assert!(segment_card_plays_are_hellraiser(&parked, 0));
     }
 
+    // ---- #3903: a first choice inside a receipt-owned Draw ------------------
+
+    /// Gremlin Horn and Iron Club with Hellraiser live: the manual Strike
+    /// (uid 1) kills the weak Toadpole, the Horn draws a plain Strike
+    /// (uid 2) that is Iron Club's fourth card, and Iron Club draws
+    /// `club_draw` (uid 3).
+    fn club_nested(club_draw: CardId) -> Fixture {
+        let mut fixture = fixture(
+            &[CardId::StrikeIronclad, club_draw, CardId::DefendIronclad],
+            &[RelicId::RelicIronClub],
+            &[5, 1_000],
+        );
+        let (strike, drawn, defend) = (fixture.atoms[0], fixture.atoms[1], fixture.atoms[2]);
+        fixture
+            .state
+            .powers
+            .set(PowerId::Hellraiser, SlotWire::Int, 1);
+        crate::engine::turn::hydrate_after_side_turn_end_power_order_for_test(&mut fixture.state);
+        assert!(fixture.state.fanouts.set_iron_club_cards(3));
+        push(&mut fixture, PileId::Hand, [card(1, strike)]);
+        push(
+            &mut fixture,
+            PileId::Draw,
+            [card(2, strike), card(3, drawn)],
+        );
+        push(
+            &mut fixture,
+            PileId::Draw,
+            (10..15).map(|uid| card(uid, defend)),
+        );
+        fixture
+    }
+
+    fn draw_callers(state: &HotState) -> Vec<DrawCaller> {
+        state
+            .frames
+            .as_slice()
+            .iter()
+            .filter_map(|frame| match *frame {
+                crate::frame::Frame::Draw { record } => {
+                    state.frames.draw(record).map(|draw| draw.caller)
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The listener's first choice begins inside Iron Club's Draw. The
+    /// first pass queues it from the listener; the published park holds
+    /// Iron Club's receipt-owned Draw above the Horn's, with both
+    /// suspended Strikes in Play and the manual Strike finished. Every
+    /// answer starts the hook action on the listener's re-run stack and
+    /// finishes it: Seeker Strike, Iron Club's Draw, the plain Strike and
+    /// the Horn's Draw, once each. (Native:
+    /// `fixtures/issue3822_native/horn_club_nested.json`, replayed by
+    /// `puzzle::tests::after_card_played`.)
+    #[test]
+    fn a_first_choice_inside_iron_clubs_draw_runs_as_the_listeners_hook_action() {
+        let fixture = club_nested(CardId::SeekerStrike);
+        let (state, catalog) = cold(&fixture.state, &fixture.catalog);
+        take_branch_hits();
+        let parked = apply_action(&state, &catalog, &STRIKE_THE_WEAK_TOADPOLE)
+            .unwrap()
+            .state;
+        let hits = take_branch_hits();
+        assert_eq!(
+            (hits.queued, hits.published, hits.hook_actions_started),
+            (1, 1, 0)
+        );
+        assert!(hits.receipt_choices_queued >= 1);
+        assert_eq!(
+            draw_callers(&parked),
+            vec![DrawCaller::GremlinHorn, DrawCaller::IronClub]
+        );
+        assert!(super::super::puzzle::parked_draw_depth(&parked).is_some());
+        assert_eq!(parked.history.card_plays_finished_combat, 2);
+        assert_eq!(uids(&parked, PileId::Play), vec![2, 3]);
+        assert!(uids(&parked, PileId::Discard).contains(&1));
+        assert!(!parked.fanouts.hook_action_is_running());
+        let (terminals, visited) = every_answer_to_terminal(&parked, &catalog);
+        assert_eq!((terminals.len(), visited), (3, 1));
+        assert!(take_branch_hits().hook_actions_started >= 3);
+        for terminal in &terminals {
+            assert_eq!(terminal.history.card_plays_finished_combat, 3);
+            assert!(uids(terminal, PileId::Play).is_empty());
+            // The manual Strike, the plain Strike and Seeker Strike.
+            for uid in [1, 2, 3] {
+                assert!(uids(terminal, PileId::Discard).contains(&uid));
+            }
+            assert_eq!(terminal.fanouts.iron_club_cards(), 2);
+            assert!(!terminal.fanouts.hook_action_is_running());
+        }
+    }
+
+    /// With no choice inside it, the nested Draw is no hook action at all.
+    #[test]
+    fn iron_clubs_draw_inside_the_listener_without_a_choice_stays_synchronous() {
+        let fixture = club_nested(CardId::DefendIronclad);
+        let (state, catalog) = cold(&fixture.state, &fixture.catalog);
+        take_branch_hits();
+        let done = apply_action(&state, &catalog, &STRIKE_THE_WEAK_TOADPOLE)
+            .unwrap()
+            .state;
+        assert_eq!(take_branch_hits(), BranchHits::default());
+        assert!(done.pending.is_none() && done.frames.is_empty());
+    }
+
+    /// [`receipt_choice_in_listener`] arm by arm.
+    #[test]
+    fn a_receipt_choice_starts_a_hook_action_only_as_a_listeners_first() {
+        let fixture = club_nested(CardId::SeekerStrike);
+        let (state, catalog) = cold(&fixture.state, &fixture.catalog);
+        let parked = apply_action(&state, &catalog, &STRIKE_THE_WEAK_TOADPOLE)
+            .unwrap()
+            .state;
+        let gate = |state: &HotState| {
+            let mut state = state.clone();
+            receipt_choice_in_listener(&mut state, &mut Vec::new()).map(|answer| (answer, state))
+        };
+        // Outside any listener it is an ordinary receipt-owned choice.
+        assert_eq!(gate(&parked), Ok((None, parked.clone())));
+        let _listener = ListenerGuard::enter();
+        // With no hook action to start, it unwinds to the listener.
+        take_branch_hits();
+        assert_eq!(
+            gate(&parked).map(|_| ()),
+            Err(EngineRefusal::MalformedArgs(
+                super::super::puzzle::PARK_SITE
+            ))
+        );
+        assert_eq!(take_branch_hits().receipt_choices_queued, 1);
+        assert_eq!(
+            FIRST_CHOICE.with(|first| first.borrow_mut().take()),
+            Some(parked.clone())
+        );
+        // A re-run that reached another state refuses by name.
+        let mut replace = parked.clone();
+        replace.fanouts.set_hook_action_running(true);
+        let arm = |expect: &HotState, started: Option<u32>| {
+            HookRunGuard::arm(HookRun {
+                expect: expect.clone(),
+                replace: replace.clone(),
+                auto: Some(crate::hot::ActionReplayAnswer::OptionIndex(0)),
+                events: 0,
+                started,
+            })
+        };
+        let run = arm(&state, None);
+        assert_eq!(
+            gate(&parked).map(|_| ()),
+            Err(EngineRefusal::PowerOrderNotModeled(LISTENER_RERUN_DIVERGED))
+        );
+        assert!(!run.started());
+        drop(run);
+        // The matching state is replaced and handed the unasked answer.
+        let run = arm(&parked, None);
+        assert_eq!(
+            gate(&parked),
+            Ok((
+                Some(crate::hot::ActionReplayAnswer::OptionIndex(0)),
+                replace.clone()
+            ))
+        );
+        assert!(run.started());
+        // A later choice of the running hook action is sequential.
+        assert_eq!(gate(&replace), Ok((None, replace.clone())));
+        // One begun by a listener nested in it would queue a second.
+        let _nested = ListenerGuard::enter();
+        assert_eq!(
+            gate(&replace).map(|_| ()),
+            Err(EngineRefusal::PowerOrderNotModeled(SECOND_HOOK_ACTION))
+        );
+        drop(run);
+        assert!(HOOK_RUN.with(|slot| slot.borrow().is_none()));
+    }
+
+    /// [`listener_draw`]'s and [`run_started`]'s refusals.
+    #[test]
+    fn a_listener_re_run_that_does_not_start_its_hook_action_refuses() {
+        // A first choice that did not unwind as a park was swallowed.
+        let plain = hellraiser_kill(CardId::DefendIronclad, true, 0, 0);
+        let (state, catalog) = cold(&plain.state, &plain.catalog);
+        let draw = |rerun: bool, first: Option<HotState>| {
+            let _scope = ScopeGuard::enter(ActionScope::PlayerAction);
+            FIRST_CHOICE.with(|slot| *slot.borrow_mut() = first);
+            let mut state = state.clone();
+            listener_draw(
+                &mut state,
+                &catalog,
+                1,
+                DrawCaller::GremlinHorn,
+                &mut Vec::new(),
+                rerun,
+            )
+        };
+        assert_eq!(draw(false, None), Ok(()));
+        assert_eq!(draw(true, None), Ok(()));
+        assert_eq!(
+            draw(false, Some(state.clone())),
+            Err(EngineRefusal::ContinuationNotModeled)
+        );
+        assert_eq!(
+            draw(true, Some(state.clone())),
+            Err(EngineRefusal::PowerOrderNotModeled(LISTENER_RERUN_DIVERGED))
+        );
+        assert!(FIRST_CHOICE.with(|slot| slot.borrow().is_none()));
+        // A re-run that completes without reaching the first choice.
+        let mut next = state.clone();
+        assert_eq!(
+            run_started(
+                &mut next,
+                (state.clone(), state.clone()),
+                None,
+                &catalog,
+                &mut Vec::new()
+            ),
+            Err(EngineRefusal::PowerOrderNotModeled(LISTENER_RERUN_DIVERGED))
+        );
+        assert_eq!(next, state);
+        // A frame-owned choice a listener nested in a running hook action
+        // begins would be a second hook action.
+        let seeker = hellraiser_kill(CardId::SeekerStrike, true, 0, 0);
+        let (mut running, catalog) = cold(&seeker.state, &seeker.catalog);
+        running.fanouts.set_hook_action_running(true);
+        let _scope = ScopeGuard::enter(ActionScope::PlayerAction);
+        assert_eq!(
+            super::super::draw::gremlin_horn_draw(&mut running, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(SECOND_HOOK_ACTION))
+        );
+    }
+
+    /// The listener is re-run only on the stack its Draw was issued on.
+    #[test]
+    fn a_receipt_owned_hook_action_restarts_only_on_the_stack_it_was_issued_on() {
+        let fixture = club_nested(CardId::SeekerStrike);
+        let (mut state, catalog) = cold(&fixture.state, &fixture.catalog);
+        // The Horn's Draw as the kill issues it, with the plain Strike
+        // already counted as Iron Club's fourth card.
+        state.piles.get_mut(PileId::Hand).make_mut().clear();
+        state.monsters_mut()[0].hp = 0;
+        let queued = {
+            let _scope = ScopeGuard::enter(ActionScope::PlayerAction);
+            super::super::draw::gremlin_horn_draw(&mut state, &catalog, &mut Vec::new()).unwrap();
+            state
+        };
+        assert!(queued.fanouts.deferred_hook_action_is_queued());
+        assert!(queued.pending.is_none() && queued.frames.is_empty());
+        // On the stack it was issued on it publishes with its restart.
+        let mut published = queued.clone();
+        assert_eq!(publish_queued(&mut published), Ok(Published::Parked));
+        let (entry, first_choice) = take_published_restart().unwrap();
+        assert!(entry.pending.is_none() && entry.frames.is_empty());
+        assert_eq!(first_choice.frames, published.frames);
+        assert_eq!(first_choice.pending, published.pending);
+        // A frame-owned hook action publishes none.
+        let (mut plain, _) = queued_stratagem(&[]);
+        assert_eq!(publish_queued(&mut plain), Ok(Published::Parked));
+        assert!(take_published_restart().is_none());
+        // Above another stack there is nothing to re-run it on.
+        let mut moved = queued;
+        moved
+            .frames
+            .push(crate::frame::Frame::ConsumingShadowSideEnd { auth_uid: 0 });
+        assert_eq!(moved.deferred_hook_listener_restart(), Some(None));
+        assert_eq!(
+            publish_queued(&mut moved),
+            Err(EngineRefusal::ContinuationNotModeled)
+        );
+    }
+
     /// #3387 branch witnesses for [`publish_queued`].
     #[test]
     fn publish_queued_refuses_each_unmodeled_boundary_by_name() {
@@ -1206,7 +1860,7 @@ mod tests {
         // Nothing queued: nothing to publish.
         let mut empty = queued.clone();
         empty.fanouts.take_deferred_hook_action_for_test();
-        assert_eq!(publish_queued(&mut empty), Ok(false));
+        assert_eq!(publish_queued(&mut empty), Ok(Published::Nothing));
 
         assert_eq!(
             refusal(&|state| {
@@ -1282,7 +1936,7 @@ mod tests {
                 .push(HotCard { uid: 40, ..card });
         })
         .unwrap();
-        assert!(published);
+        assert_eq!(published, Published::Parked);
         assert!(!state.fanouts.deferred_hook_action_is_queued());
         assert!(
             state
@@ -1314,7 +1968,7 @@ mod tests {
             .unwrap();
         let root_words = rooted.frames.word_len();
         assert!(root_words > 0);
-        assert_eq!(publish_queued(&mut rooted), Ok(true));
+        assert_eq!(publish_queued(&mut rooted), Ok(Published::Parked));
         let [
             crate::frame::Frame::ActionReplay { .. },
             crate::frame::Frame::Draw { record },

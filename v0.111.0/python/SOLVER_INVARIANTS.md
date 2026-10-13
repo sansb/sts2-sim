@@ -103,9 +103,10 @@ Unsafe multiplayer/pet targeting and multiplayer-only card contexts remain
 typed refusals rather than approximations.
 
 **Guards:** Rust `exact_dfs`, `exact_solve_v1`, `solo_v1_authority`, and
-Mawler-admission tests; Python `test_review_summary.py` (the
+Mawler-admission tests; Python `test_exact_solve_adapter.py` (the
 `rust_exact_solve` wire, parser, transport and typed-refusal contracts
-live there — it is the only test module that imports it),
+live there; they were in test_review_summary.py until the Python review
+path was deleted, 2026-10-11),
 test_exact_solve_corpus.py (deleted #2827), `test_python_exact_search_retired.py`, and the
 post-submit Rust/Python trajectory certifications (deleted #2827).
 

@@ -3526,6 +3526,7 @@ mod tests {
                 state: state.card_states.get(source.uid),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         assert!(crate::engine::monsters::thieving_hopper_state_is_valid(
             &state
@@ -3582,6 +3583,7 @@ mod tests {
                 },
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         let before = stale.clone();
         let spec = *catalog.spec(source.atom).unwrap();

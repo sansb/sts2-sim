@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "QMTZUN2HGAQP",
+ "node": 39,
+ "encounter": "ENCOUNTER.AXEBOTS_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "2d95ba9102da4d8ad3f1742058cc2e526f893638371d4a2e025d5893d4a38156",
+ "save_sha256": "577c862a420eafb7ed85f1be1496a2a0f77fe154a0e96fe4bb22bfd5492feafe",
+ "entry_digest": "cd65e180c573f86e4aa835aa2d5eeb908f2fdb3b6c159adce90db10e30d518b8",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "LFTYQNM5AWN0",
+ "node": 11,
+ "encounter": "ENCOUNTER.SNAPPING_JAXFRUIT_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "86c711ee198feaa9669d18734e2040e30cb7cb2813e3baec6022a19238128183",
+ "save_sha256": "7b5b76df4bab1ae28c45392beb4249622074dba40a2f5ce78d715cfdc40e60fb",
+ "entry_digest": "c6738c92425a80aa2cd20e61bd19a89edf26331c48248fa91ec3fa1067f79c13",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -63,7 +63,12 @@
 //! Run modifiers are hook listeners too (`Modifiers.Murderous` and `Terminal`
 //! override `AfterRoomEntered`; `Modifiers.NightTerrors` overrides the rest-site
 //! hooks), and the entry does not otherwise model them, so any modifier on an
-//! event root refuses.
+//! event root refuses. That is the wider of two rules: every combat root
+//! first passes [`crate::entry::modifiers::combat_gate`] (#3760), which
+//! refuses the modifiers whose hooks run inside a fight and admits the rest
+//! for a map combat. An event root still refuses the rest here, because the
+//! event's room entry and option chain fire hooks that table does not read
+//! (the rest-site heal `NightTerrors` listens to is Dense Vegetation's).
 
 use crate::entry::deck::DeckEntry;
 use crate::entry::refusal::EntryRefusal;

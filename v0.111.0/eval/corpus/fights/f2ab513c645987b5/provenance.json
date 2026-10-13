@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "AUNPC3BZ101H",
+ "node": 29,
+ "encounter": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "9e9a6d16cdaa6bde921146b573f5b0c0a978eba20f819dedeca0c7b3c476639f",
+ "save_sha256": "571e926857c69445a28740fda553f1b780c07ca1c29035a49310e235623ba713",
+ "entry_digest": "1a24173b8875322a2b672dc87d4ab594deb687cfcf1786020eec9ca8a081e7fb",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

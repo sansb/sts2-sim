@@ -1,0 +1,2130 @@
+{
+ "auto:BELIEVE_IN_YOU": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.BELIEVE_IN_YOU",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:BELIEVE_IN_YOU",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:BELIEVE_IN_YOU:osty": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.BELIEVE_IN_YOU",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:BELIEVE_IN_YOU:osty",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:BLAZE": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.BLAZE",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:BLAZE",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:BLAZE:osty": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.BLAZE",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:BLAZE:osty",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:DEMONIC_SHIELD": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 1,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.DEMONIC_SHIELD",
+  "card_pile_after": "Exhaust",
+  "card_type": "Skill",
+  "case": "auto:DEMONIC_SHIELD",
+  "history_types": {
+   "CardExhaustedEntry": 1
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:DEMONIC_SHIELD:osty": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 1,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.DEMONIC_SHIELD",
+  "card_pile_after": "Exhaust",
+  "card_type": "Skill",
+  "case": "auto:DEMONIC_SHIELD:osty",
+  "history_types": {
+   "CardExhaustedEntry": 1
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:FADE": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.FADE",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:FADE",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:TUTOR": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.TUTOR",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:TUTOR",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "auto:TUTOR:osty": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 4
+   },
+   "powers": []
+  },
+  "autoplay_params": [
+   "PlayerChoiceContext choiceContext",
+   "CardModel card",
+   "Creature target",
+   "AutoPlayType type",
+   "Boolean skipXCapture",
+   "Boolean skipCardPileVisuals"
+  ],
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.TUTOR",
+  "card_pile_after": "Discard",
+  "card_type": "Skill",
+  "case": "auto:TUTOR:osty",
+  "history_types": {},
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "manualself:BELIEVE_IN_YOU": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.BELIEVE_IN_YOU",
+  "card_type": "Skill",
+  "case": "manualself:BELIEVE_IN_YOU",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:BELIEVE_IN_YOU:osty": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.BELIEVE_IN_YOU",
+  "card_type": "Skill",
+  "case": "manualself:BELIEVE_IN_YOU:osty",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false,
+   "3": true
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:BLAZE": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.BLAZE",
+  "card_type": "Skill",
+  "case": "manualself:BLAZE",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:BLAZE:osty": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.BLAZE",
+  "card_type": "Skill",
+  "case": "manualself:BLAZE:osty",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false,
+   "3": true
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:DEMONIC_SHIELD": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.DEMONIC_SHIELD",
+  "card_type": "Skill",
+  "case": "manualself:DEMONIC_SHIELD",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:DEMONIC_SHIELD:osty": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.DEMONIC_SHIELD",
+  "card_type": "Skill",
+  "case": "manualself:DEMONIC_SHIELD:osty",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false,
+   "3": true
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:FADE": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.FADE",
+  "card_type": "Skill",
+  "case": "manualself:FADE",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:FADE:osty": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.FADE",
+  "card_type": "Skill",
+  "case": "manualself:FADE:osty",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false,
+   "3": true
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:TUTOR": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.TUTOR",
+  "card_type": "Skill",
+  "case": "manualself:TUTOR",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "manualself:TUTOR:osty": {
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "can_play": false,
+  "can_play_with_reason": false,
+  "card": "CARD.TUTOR",
+  "card_type": "Skill",
+  "case": "manualself:TUTOR:osty",
+  "is_valid_target": {
+   "0": true,
+   "1": false,
+   "2": false,
+   "3": true
+  },
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "state": "not attempted: CanPlay is false",
+  "target": 0,
+  "target_type": "AnyAlly",
+  "unplayable_preventer": null,
+  "unplayable_reason": "NoLivingAllies"
+ },
+ "mayhem:BELIEVE_IN_YOU": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 1,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": [
+    [
+     "MayhemPower",
+     1
+    ]
+   ]
+  },
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.BELIEVE_IN_YOU",
+  "card_type": "Skill",
+  "case": "mayhem:BELIEVE_IN_YOU",
+  "end_turn": {
+   "over": false,
+   "state": "Finished"
+  },
+  "history_round2_player": [],
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {
+   "Shuffle": 4
+  },
+  "target_type": "AnyAlly"
+ },
+ "mayhem:BLAZE": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 1,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": [
+    [
+     "MayhemPower",
+     1
+    ]
+   ]
+  },
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.BLAZE",
+  "card_type": "Skill",
+  "case": "mayhem:BLAZE",
+  "end_turn": {
+   "over": false,
+   "state": "Finished"
+  },
+  "history_round2_player": [],
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {
+   "Shuffle": 4
+  },
+  "target_type": "AnyAlly"
+ },
+ "mayhem:DEMONIC_SHIELD": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 1,
+    "ExhaustPile": 1,
+    "Hand": 5
+   },
+   "powers": [
+    [
+     "MayhemPower",
+     1
+    ]
+   ]
+  },
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.DEMONIC_SHIELD",
+  "card_type": "Skill",
+  "case": "mayhem:DEMONIC_SHIELD",
+  "end_turn": {
+   "over": false,
+   "state": "Finished"
+  },
+  "history_round2_player": [
+   [
+    "CardExhaustedEntry",
+    "Rd 2 (Player turn): IRONCLAD exhausted DEMONIC_SHIELD."
+   ]
+  ],
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {
+   "Shuffle": 4
+  },
+  "target_type": "AnyAlly"
+ },
+ "mayhem:DEMONIC_SHIELD:osty": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     2,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 1,
+    "ExhaustPile": 1,
+    "Hand": 5
+   },
+   "powers": [
+    [
+     "MayhemPower",
+     1
+    ]
+   ]
+  },
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     66,
+     0
+    ],
+    [
+     3,
+     "MONSTER.OSTY (58606859)",
+     1,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (57699690)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (49535170)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 66,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.DEMONIC_SHIELD",
+  "card_type": "Skill",
+  "case": "mayhem:DEMONIC_SHIELD:osty",
+  "end_turn": {
+   "over": false,
+   "state": "Finished"
+  },
+  "history_round2_player": [
+   [
+    "SummonedEntry",
+    "Rd 2 (Player turn): NECROBINDER summoned 1."
+   ],
+   [
+    "CardExhaustedEntry",
+    "Rd 2 (Player turn): NECROBINDER exhausted DEMONIC_SHIELD."
+   ]
+  ],
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {
+   "Shuffle": 4
+  },
+  "target_type": "AnyAlly"
+ },
+ "mayhem:FADE": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 0,
+    "ExhaustPile": 0,
+    "Hand": 7
+   },
+   "powers": [
+    [
+     "MayhemPower",
+     1
+    ]
+   ]
+  },
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.FADE",
+  "card_type": "Skill",
+  "case": "mayhem:FADE",
+  "end_turn": {
+   "over": false,
+   "state": "Finished"
+  },
+  "history_round2_player": [],
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {},
+  "target_type": "AnyAlly"
+ },
+ "mayhem:TUTOR": {
+  "after": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 1,
+    "DrawPile": 1,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": [
+    [
+     "MayhemPower",
+     1
+    ]
+   ]
+  },
+  "before": {
+   "block": 0,
+   "creatures": [
+    [
+     0,
+     "PLAYER",
+     80,
+     0
+    ],
+    [
+     1,
+     "MONSTER.CALCIFIED_CULTIST (58606859)",
+     41,
+     0
+    ],
+    [
+     2,
+     "MONSTER.DAMP_CULTIST (57699690)",
+     52,
+     0
+    ]
+   ],
+   "energy": 3,
+   "hp": 80,
+   "piles": {
+    "DiscardPile": 0,
+    "DrawPile": 2,
+    "ExhaustPile": 0,
+    "Hand": 5
+   },
+   "powers": []
+  },
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "card": "CARD.TUTOR",
+  "card_type": "Skill",
+  "case": "mayhem:TUTOR",
+  "end_turn": {
+   "over": false,
+   "state": "Finished"
+  },
+  "history_round2_player": [],
+  "player_side": [
+   [
+    0,
+    true,
+    false
+   ]
+  ],
+  "rng_delta": {
+   "Shuffle": 4
+  },
+  "target_type": "AnyAlly"
+ }
+}

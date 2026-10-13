@@ -63,6 +63,25 @@ def test_curious_power_is_compared_as_its_own_field():
         {"class": "amount", "power": "CURIOUS_POWER", "native": 1, "rust": 0}]
 
 
+def test_confused_is_compared_as_the_number_of_owned_sources():
+    # #3618: Rust's `confused` mirrors owning either Snecko relic; the native
+    # ConfusedPower amount is one per owned source.
+    snecko, fake = "RELIC.SNECKO_EYE", "RELIC.FAKE_SNECKO_EYE"
+    one = _state(confused=True, relics_entering=["RELIC.VAJRA", fake])
+    both = _state(confused=True, relics_entering=[snecko, fake])
+    assert _rows(one, _native(("CONFUSED_POWER", 1))) == []
+    assert _rows(both, _native(("CONFUSED_POWER", 2))) == []
+    assert _rows(both, _native(("CONFUSED_POWER", 1))) == [
+        {"class": "amount", "power": "CONFUSED_POWER", "native": 1, "rust": 2}]
+    # No mirror, no amount, whatever the inventory says; and a native power
+    # Rust does not hold is a disagreement.
+    assert _rows(_state(relics_entering=[snecko]), _native()) == []
+    assert _rows(_state(), _native(("CONFUSED_POWER", 1))) == [
+        {"class": "amount", "power": "CONFUSED_POWER", "native": 1, "rust": 0}]
+    assert _rows(one, _native()) == [
+        {"class": "amount", "power": "CONFUSED_POWER", "native": 0, "rust": 1}]
+
+
 def test_every_native_id_has_exactly_one_comparison():
     groups = [set(replay.NATIVE_PLAYER_POWER_FIELDS),
               set(replay.NATIVE_PLAYER_POWER_PROJECTIONS),
@@ -157,6 +176,38 @@ def test_instanced_powers_compare_per_object_amounts():
                  _native()) == [
         {"class": "instances", "power": "MONOLOGUE_POWER",
          "native": [], "rust": [1]}]
+    # #3794: one row per NightmarePower object, `[amount, listeners_before,
+    # held card payload]`; two Nightmares are two objects of amount 3.
+    held = [[3, 0, ["FOOTWORK", 1]], [3, 0, ["SHIV", 0]]]
+    assert _rows(_state(nightmare_instances=held),
+                 _native(("NIGHTMARE_POWER", 3), ("NIGHTMARE_POWER", 3))) == []
+    assert _rows(_state(nightmare_instances=held[:1]),
+                 _native(("NIGHTMARE_POWER", 3), ("NIGHTMARE_POWER", 3))) == [
+        {"class": "instances", "power": "NIGHTMARE_POWER",
+         "native": [3, 3], "rust": [3]}]
+    # #3756: one ToricToughnessPower object per cast, each with its own
+    # duration: the first is `toric_toughness`, the rest `[duration, block,
+    # listeners_before]` rows.
+    later = [[2, {"__fraction__": [6, 1]}, 1]]
+    two = _native(("TORIC_TOUGHNESS_POWER", 1), ("TORIC_TOUGHNESS_POWER", 2))
+    assert _rows(_state(toric_toughness=1,
+                        toric_toughness_later_instances=later), two) == []
+    assert _rows(_state(toric_toughness=2),
+                 _native(("TORIC_TOUGHNESS_POWER", 2))) == []
+    assert _rows(_state(toric_toughness=3), two) == [
+        {"class": "instances", "power": "TORIC_TOUGHNESS_POWER",
+         "native": [1, 2], "rust": [3]}]
+    # #3756: one RollingBoulderPower object per play, each with its own
+    # amount: the first is `rolling_boulder`, the rest `[amount,
+    # listeners_before]` rows.
+    two = _native(("ROLLING_BOULDER_POWER", 15), ("ROLLING_BOULDER_POWER", 5))
+    assert _rows(_state(rolling_boulder=15,
+                        rolling_boulder_later_instances=[[5, 1]]), two) == []
+    assert _rows(_state(rolling_boulder=10),
+                 _native(("ROLLING_BOULDER_POWER", 10))) == []
+    assert _rows(_state(rolling_boulder=20), two) == [
+        {"class": "instances", "power": "ROLLING_BOULDER_POWER",
+         "native": [15, 5], "rust": [20]}]
 
 
 def test_an_unprojected_power_fails_loudly_by_name():

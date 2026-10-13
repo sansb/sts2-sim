@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "4ZJ81DGLN1HK",
+ "node": 13,
+ "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+ "node_type": "elite",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "d6bb8346a603c1cf3ffc47d0af5dec3f434a8e7c2cd3260ed6001a25acc6737b",
+ "save_sha256": "76f411a4e7a169272a8886735dac137e6e2001706613069dd14c2e723f71bbfa",
+ "entry_digest": "8cb4eb33531066e8d10b05acb6865490636c0f003e09271bda2b2ffc758de4ed",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

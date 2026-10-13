@@ -14,6 +14,10 @@ axis has one rule for "exercised", so a card sitting in a deck never counts:
 * relics: held entering a certified fight, per pool;
 * potions: used in a certified line.
 
+The certified corpus (`corpus/`, see the README) is counted with the fixtures.
+`corpus/index.json` records the cards played, the relics held and the potions
+used in each corpus fight, so this tool needs no engine to count them.
+
 An empty grid cell is coloured by why it is empty, from the census the suite
 was seeded from: *captured* (an A9/A10 capture exists but does not certify
 yet, which is engine work) or *not captured* (nobody has played it at A9/A10
@@ -50,6 +54,7 @@ EVAL_DIR = pathlib.Path(__file__).resolve().parent
 VERSION_DIR = EVAL_DIR.parent
 ROOT_DIR = VERSION_DIR.parent  # `sim/`, or the sts2-sim repo
 MANIFEST = EVAL_DIR / "manifest.json"
+CORPUS_INDEX = EVAL_DIR / "corpus" / "index.json"
 UNIVERSE = EVAL_DIR / "coverage_universe.json"
 OUT_JSON = EVAL_DIR / "coverage.json"
 OUT_SVG = EVAL_DIR / "COVERAGE.svg"
@@ -186,6 +191,22 @@ def measure(manifest: Dict[str, Any], universe: Dict[str, Any],
             per = cells.setdefault(key, {})
             per[fight["character"]] = per.get(fight["character"], 0) + 1
 
+    # The certified corpus (`corpus/index.json`) is counted with the fixtures.
+    # Its index records, per fight, what the loop above reads from a fixture.
+    corpus_fights = 0
+    if CORPUS_INDEX.is_file():
+        for fight in json.loads(CORPUS_INDEX.read_text())["fights"]:
+            if not fight["path"].startswith("fights/"):
+                continue  # a fixture, counted above
+            corpus_fights += 1
+            played.update(fight["cards_played"])
+            held.update(fight["relics_held"])
+            used.update(fight["potions_used"])
+            key = wire_to_key.get(fight["encounter"])
+            if key is not None:
+                per = cells.setdefault(key, {})
+                per[fight["character"]] = per.get(fight["character"], 0) + 1
+
     tiers = {}
     for tier in TIERS:
         keys = [e["key"] for e in universe["encounters"] if e["tier"] == tier]
@@ -236,6 +257,7 @@ def measure(manifest: Dict[str, Any], universe: Dict[str, Any],
         "universe_sha256": hashlib.sha256(UNIVERSE.read_bytes()).hexdigest(),
         "fixtures": len(manifest["fights"]),
         "certified": len(certified),
+        "corpus_fights": corpus_fights,
         "encounters": {"by_tier": tiers, "all": _ratio(
             len([k for k in cells if k in {e["key"] for e in universe["encounters"]}]),
             len(universe["encounters"]))},
@@ -276,7 +298,8 @@ def render_svg(cov: Dict[str, Any]) -> str:
     out: List[str] = []
     y = 24
     out.append(f'<text class="t h" x="0" y="{y}">Eval coverage, {cov["build"]}: '
-               f'{cov["fixtures"]} fixtures, {cov["certified"]} certified (A9/A10)</text>')
+               f'{cov["fixtures"]} fixtures, {cov["certified"]} certified, '
+               f'{cov["corpus_fights"]} corpus fights (A9/A10)</text>')
     y += 34
     top = y
     heights = []
@@ -359,7 +382,7 @@ def render_svg(cov: Dict[str, Any]) -> str:
 
 def render_badge(cov: Dict[str, Any]) -> str:
     left = "eval"
-    right = (f'{cov["certified"]} certified · encounters '
+    right = (f'{cov["certified"] + cov["corpus_fights"]} certified · encounters '
              f'{cov["encounters"]["all"]["covered"]}/{cov["encounters"]["all"]["total"]} · '
              f'boss×class {cov["boss_x_character"]["covered"]}/'
              f'{cov["boss_x_character"]["total"]} · cards '

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "HZ0D5WK0VBHR",
+ "node": 13,
+ "encounter": "ENCOUNTER.SKULKING_COLONY_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "e98fa6cc43ab6c5ad370a4fc0ba73359db861fd439f6b23b7c6ae9e9f3999651",
+ "save_sha256": "939367773f8814d72e05081662ae0409803a06affba4fd7cd0204184da7d2dfe",
+ "entry_digest": "3dcad6f6c17e91f3a9be70dd5ebe903015b4cafbcd1dc80fbcbcaeea373a0e13",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

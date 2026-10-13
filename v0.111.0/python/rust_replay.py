@@ -214,6 +214,54 @@ def _play_is_offered(before, legal, wire):
         for offered in legal)
 
 
+def sole_offered_selection(before, legal, wire):
+    """The one selecting play `legal` offers for a recorded choiceless play.
+
+    A card whose body selects from Hand opens no choice when the candidates
+    do not exceed its minimum. `CardSelectCmd/<FromHand>d__28::MoveNext`
+    (v0.111.0 RVA 0x3e7568) filters the Hand (IL_010d-0151), returns the
+    empty list as it stands (IL_0152-0161), and otherwise, unless the
+    selector's prefs require manual confirmation (IL_0166-0171), returns the
+    candidate list itself when `Count <= MinSelect` (IL_0173-018d): no
+    choice is signalled and no `PlayerChoice` is recorded. Burning Pact with
+    one other card in Hand is the corpus case: the capture has the play and
+    its ResumeAction and nothing between. Rust's `legal` still spells that
+    play with its single possible `selection`.
+
+    Returns the recorded wire with that selection when both hold (#3756):
+
+    * exactly one offered play matches the wire apart from its selection
+      (`_play_is_offered`, so the representative-uid rule applies to the
+      played card as it does everywhere else); and
+    * the selected card is in Hand and no other Hand card has its payload.
+      `legal` lists ONE representative per group of payload-identical Hand
+      cards, so one offered selection can stand for several physical
+      candidates. Several candidates are more than the minimum of one, the
+      game would have asked, and a capture with no recorded answer there is
+      not this case. The census would catch a wrong pick at the next pile
+      checkpoint; the Rust resolver the site runs (`recorded.rs`) replays
+      without checkpoints, so the rule is closed here instead and all three
+      resolvers share it.
+
+    None otherwise, which stays `not_legal`.
+    """
+    hits = [offered for offered in legal
+            if offered.get('kind') == 'play' and 'selection' in offered
+            and _play_is_offered(
+                before,
+                [{k: v for k, v in offered.items() if k != 'selection'}],
+                wire)]
+    if len(hits) != 1:
+        return None
+    selected = hits[0]['selection']
+    hand = {c['uid']: {k: v for k, v in c.items() if k != 'uid'}
+            for c in before['piles'].get('hand', [])}
+    if selected not in hand or sum(
+            1 for payload in hand.values() if payload == hand[selected]) != 1:
+        return None
+    return dict(wire, selection=selected)
+
+
 # Pending modals opened by `CardSelectCmd::FromChooseACardScreen` (RVA
 # 0x1319b0), keyed to the pending slot holding the offered cards. The screen
 # records the pick as `PlayerChoiceResult::FromIndex(cards.IndexOf(result))`
@@ -296,19 +344,34 @@ def _selection(session, before, result, uid_map):
             return wire
     elif result.get('type') == 'CombatCard':
         indexes = result.get('combat_card_indexes')
-        if not isinstance(indexes, list) or len(indexes) != 1 or type(indexes[0]) is not int:
-            raise ValueError('recorded selection needs one physical card')
-        uids = [uid_map(indexes[0])]
+        if not isinstance(indexes, list) or any(type(index) is not int for index in indexes):
+            raise ValueError('recorded selection needs a list of physical cards')
+        uids = [uid_map(index) for index in indexes]
         # Rust runs this very rule in-process (`resolve_selection`,
         # `engine::recorded_selection_answer`, #3125): each offered answer
         # decoded through the transition's own enumerator, kept only if it
-        # names exactly `uids` and applies, refused when two do. An ordered
-        # surface such as Gambling Chip's (326 answers for a 5-card hand)
-        # needs no per-answer round trip. A null answer (no Rust decode names
-        # the card) falls through to the pile-position rules below.
+        # names exactly `uids`, in order, and applies, refused when two do. An
+        # ordered surface such as Gambling Chip's (326 answers for a 5-card
+        # hand) needs no per-answer round trip.
+        #
+        # The recorded list is the player's whole answer, whatever its
+        # length (#3756). `CardSelectCmd/<FromHand>d__28` (v0.111.0 RVA
+        # 0x3e7568) passes the cards `NPlayerHand::SelectCards` returned
+        # (IL_02e8) to `PlayerChoiceResult::FromMutableCombatCards` and
+        # `PlayerChoiceSynchronizer::SyncLocalChoice` (IL_0370-0375), and
+        # `<FromCombatPile>d__20` (RVA 0x3e5e84, IL_0433-0438) does the same
+        # with its screen's result. So a selection whose minimum is zero
+        # that the player confirms empty is recorded as `[]`: Gambling Chip
+        # with nothing discarded, an "up to N" pick left at none. The engine
+        # names that answer the same way, as the one offered answer
+        # selecting no card. A null answer falls through to the
+        # pile-position rules below only for a single card; they cannot
+        # describe any other count.
         resolved = session.ask({'cmd': 'resolve_selection', 'uids': uids})
         if resolved.get('action') is not None:
             return resolved['action']
+        if len(uids) != 1:
+            raise ValueError('recorded selection has no unique supported Rust answer')
         candidates = [w for w in legal if w['kind'] == 'select']
         if len(candidates) > 128:
             raise ValueError('recorded selection exceeds replay option budget')
@@ -341,146 +404,79 @@ def _selection(session, before, result, uid_map):
     raise ValueError('recorded selection has no unique supported Rust answer')
 
 
-def recorded_outcome_matches(actual, won, hp):
-    """Whether a replayed terminal agrees with the recorded result.
+# An input recorded while a turn-start hook's choice is open (#3756).
+#
+# The replay writer records an action when it is ENQUEUED, whatever happens to
+# it next: `CombatReplayWriter::.ctor` (v0.111.0 RVA 0x69828, IL_004b-0056)
+# subscribes `RecordGameAction` to `ActionQueueSet.ActionEnqueued`, and
+# `ActionQueueSet::EnqueueWithoutSynchronizing` (RVA 0x10e970) raises that
+# event (IL_00b7-00c3) before it decides what to do with the action.
+#
+# A hook that needs a choice runs as a `GenericHookGameAction` in the
+# player's own queue, and pauses there. `ActionQueueSet::GetReadyAction`
+# (RVA 0x10ec90) only ever offers the FRONT action of a queue (IL_0128-012e),
+# so nothing enqueued behind a paused action runs until that action has
+# finished. Two cases follow, by what the choice was opened with:
+#
+# * A HAND selection cancels card plays. `CardSelectCmd/<FromHand>d__28`
+#   (RVA 0x3e7568, IL_00b2-00b3) and `<FromHandForUpgrade>d__30` (RVA
+#   0x3e7b6c, IL_00ae-00af) signal the choice with
+#   `PlayerChoiceOptions.CancelPlayCardActions` (1). Then
+#   `ActionQueueSet::PauseActionForPlayerChoice` (RVA 0x10f1e0) cancels the
+#   owner's queued `PlayCardAction`s (IL_0127-0166) and marks the queue
+#   (`actionCancellingPlayCardActions`, IL_016d), and until
+#   `ResumeActionWithoutSynchronizing` (RVA 0x10fb04, IL_0079-007a) clears
+#   the mark, `EnqueueWithoutSynchronizing` cancels every new
+#   `PlayCardAction` on arrival (IL_0113-017c: "currently cancelling all play
+#   card actions due to player choice"). The play is in the capture's event
+#   list and never executes: no completed-action checksum, no effect.
+#   A `UsePotionAction` is not a `PlayCardAction`; it is enqueued (IL_02db-
+#   02e1) and runs once the paused action is done.
+# * Any other selection (`<FromCombatPile>d__20` RVA 0x3e5e84 IL_00ad-00ae,
+#   `<FromChooseACardScreen>d__16` RVA 0x3e58c0 IL_011a-011b: options 0)
+#   cancels nothing. A card play or a potion waits its turn in the queue.
+#
+# The hooks, by the pending modal Rust parks them on, each read in IL:
+# Gambling Chip (`GamblingChip/<AfterPlayerTurnStart>d__2` RVA 0x325788,
+# IL_0071 `FromHandForDiscard`, which is `FromHand`:
+# `<FromHandForDiscard>d__29` RVA 0x3e7a64 IL_005e), Toasty Mittens
+# (`<AfterPlayerTurnStart>d__6` RVA 0x33285c, IL_0068 `FromHand`), and the
+# three `turn_start_hand_choice_select` sources: Tools of the Trade (RVA
+# 0x349cb4, IL_005a `FromHandForDiscard`), Tyranny (RVA 0x34a0f8, IL_005a
+# `FromHand`) and Entropy (RVA 0x339e48, IL_005d `FromHand`). Stratagem
+# (`StratagemPower/<AfterShuffle>d__4` RVA 0x34688c, IL_0078) selects with
+# `FromCombatPile`.
+#
+# Only these modals are named. A choice opened by a card or a potion, or by
+# Foregone Conclusion (which pauses before the hand is drawn), is not read
+# here, and an input recorded during one stays a divergence.
+CANCELLED_BY_OPEN_CHOICE = 'cancelled'
+QUEUED_BEHIND_OPEN_CHOICE = 'queued'
+_HAND_CHOICE_HOOKS = frozenset({
+    'gambling_chip_select', 'toasty_mittens_select',
+    'turn_start_hand_choice_select'})
+_PILE_CHOICE_HOOKS = frozenset({'stratagem_select'})
 
-    A capped post-combat heal leaves `.run` with a band of possible
-    combat-end HPs (`final_hp_range`, #1166) instead of one value; the
-    replayed HP must then land inside it.
+
+def input_behind_open_choice(before, kind):
+    """What the game did with a recorded input enqueued behind a hook choice.
+
+    `CANCELLED_BY_OPEN_CHOICE`: the input never ran and the resolver drops
+    it. `QUEUED_BEHIND_OPEN_CHOICE`: it ran after the hook's action finished,
+    so the resolver applies it once the recorded choice has been answered.
+    None: Rust is not parked on one of the named hook choices, or `kind` is
+    not a card play or a potion, and the input is resolved where it stands.
     """
-    if won != actual['won']:
-        return False
-    band = actual.get('final_hp_range')
-    if band is None:
-        return hp == actual['final_hp']
-    return band[0] <= hp <= band[1]
-
-
-def recorded_witness(binary, entry, replay, actual):
-    """Resolve every recorded decision to a legal Rust action, without search.
-
-    UID equality is accepted only after checking the entire entry deck against
-    the recorded raw shuffle. Generated cards then share the creation allocator.
-    The source capture is already fight-associated by the worker.
-    """
-    import mcr_native
-    from rust_exact_solve import canonical_document
-    if replay.get('version') != 'v0.111.0':
-        raise ValueError('recorded replay build mismatch')
-    events = replay.get('events')
-    if not isinstance(events, list) or not events or len(events) > 2000:
-        raise ValueError('recorded input count outside replay budget')
-    instances = mcr_native.first_cycle_from_replay(replay)
-    cards = {c['uid']: c for pile in entry['piles'].values() for c in pile}
-    # Ordinary roots number the dealt deck by instance index, so recorded
-    # combat_card_index k is uid k. A Thieving Hopper root instead keeps each
-    # deck card's master-deck row as its uid (the frozen `start_combat`'s
-    # `PhysicalCard(card, deck_row)`: DeckVersion is an object relation), and
-    # its projection says so by carrying `hopper_master_deck`. There instance
-    # k is row first_cycle_rows_from_replay(replay)[k] (#2805). Cards created
-    # in combat share the allocator after the deck in both numberings.
-    rows = None
-    if 'hopper_master_deck' in entry['player']:
-        rows = mcr_native.first_cycle_rows_from_replay(replay)
-        master = entry['player']['hopper_master_deck']
-        if (sorted(row for row, _ in master) != list(range(len(rows)))
-                or entry['player'].get('next_card_uid') != len(rows)):
-            raise ValueError('recorded master-deck rows differ from the Rust root')
-
-    def physical_uid(index):
-        return rows[index] if rows is not None and index < len(rows) else index
-    # Whispering Earring's turn-one loop (#3414) AutoPlays dealt cards before
-    # the root, and a played Power leaves every pile. Only there may a deck
-    # uid be absent; every present card is still matched, and a recorded
-    # play of an absent uid fails the per-input identity check below.
-    earring = 'RELIC.WHISPERING_EARRING' in (entry['player'].get('relics_entering') or ())
-    if any((physical_uid(i) not in cards and not earring)
-           or (physical_uid(i) in cards
-               and (cards[physical_uid(i)]['id'], cards[physical_uid(i)].get('upgrade', 0)) != tuple(card[:2]))
-           for i, card in enumerate(instances)):
-        raise ValueError('recorded initial physical card identities differ')
-
-    def uid_map(index):
-        if type(index) is not int or index < 0:
-            raise ValueError('invalid recorded physical card index')
-        return physical_uid(index)
-    native = NativeChecks(replay)
-    wires, consumed = [], set()
-    before = entry
-    with RustReplay(binary, entry) as session:
-        for index, event in enumerate(events):
-            if index in consumed:
-                continue
-            native.start(event)
-            action = event.get('action', {})
-            kind = action.get('type')
-            wire = None
-            if kind in ('NetPlayCardAction', 'NetUsePotionAction'):
-                if kind == 'NetPlayCardAction':
-                    uid = uid_map(action['combat_card_index'])
-                    card = next((c for c in before['piles']['hand'] if c['uid'] == uid), None)
-                    if card is None or card['id'] != action['card_id'].removeprefix('CARD.'):
-                        raise ValueError(f'recorded card identity mismatch at input {index}')
-                    wire = {'kind': 'play', 'uid': uid}
-                else:
-                    wire = {'kind': 'potion', 'slot': action['potion_index']}
-                tid = action.get('target_id')
-                if tid and action.get('target_player_id') is None:
-                    targets = [i for i, m in enumerate(before['monsters']) if m.get('uid', 0) == tid - 1]
-                    if len(targets) != 1:
-                        raise ValueError('recorded target identity mismatch')
-                    wire['target'] = targets[0]
-                legal = session.ask({'cmd': 'legal'})['actions']
-                if kind == 'NetPlayCardAction':
-                    offered = _play_is_offered(before, legal, wire)
-                else:
-                    offered = wire in legal
-                if not offered and kind == 'NetPlayCardAction':
-                    # Immediate exhaust choices (e.g. Burning Pact) belong to
-                    # the play wire. Consume only its adjacent recorded choice.
-                    following = events[index + 1] if index + 1 < len(events) else {}
-                    selected = following.get('result', {}).get('combat_card_indexes', [])
-                    if following.get('event_type') == 'PlayerChoice' and len(selected) == 1:
-                        combined = dict(wire, selection=uid_map(selected[0]))
-                        if _play_is_offered(before, legal, combined):
-                            wire = combined
-                            consumed.add(index + 1)
-                            offered = True
-                if not offered:
-                    raise ValueError(f'recorded action is not legal at input {index}')
-            elif kind == 'NetEndPlayerTurnAction':
-                if action.get('turn_number') != before['player'].get('turn', 1):
-                    raise ValueError('recorded turn number mismatch')
-                wire = {'kind': 'end'}
-            elif event.get('event_type') == 'PlayerChoice':
-                wire = _selection(session, before, event.get('result', {}), uid_map)
-            elif event.get('event_type') in ('HookAction', 'ResumeAction') or kind == 'NetReadyToBeginEnemyTurnAction':
-                native.no_decision(event)
-                continue
-            else:
-                raise ValueError(f'unsupported recorded event at input {index}')
-            if before['player'].get('over'):
-                raise ValueError('recorded inputs continue after simulated combat end')
-            applied = session.ask({'cmd': 'apply', 'action': wire, 'native_checkpoints': True})
-            played = native.stage(applied)
-            before = session.ask({'cmd': 'project'})['state']
-            wires.append(wire)
-            if wire['kind'] != 'end':
-                native.completed(played if played is not None else before)
-    native.finish()
-    # `won` is the combat result, as `.run` records it (`actual_outcome`:
-    # the player survived). A Battleworn Dummy timeout is one: the timer's
-    # escape empties the roster and CheckWinCondition takes the victory path,
-    # while the `.run` shows it only by the event's missing reward (#3369).
-    # So both sides say won here; the kill-over-timeout preference lives in
-    # the scorers, not in this recorded-outcome check.
-    won = before['player'].get('hp', 0) > 0 and all(m.get('hp', 0) <= 0 for m in before['monsters'])
-    if not before['player'].get('over'):
-        raise ValueError('recorded inputs end before combat completes')
-    if not recorded_outcome_matches(actual, won, before['player'].get('hp', 0)):
-        raise ValueError('Rust recorded replay outcome differs from recorded result')
-    return {'native_checkpoints': native.validated, 'actions': wires, 'won': won, 'combat_hp': before['player'].get('hp', 0),
-            'final_digest': canonical_document.differential_digest(before)}
+    if kind not in ('NetPlayCardAction', 'NetUsePotionAction'):
+        return None
+    pending = before['player'].get('pending') or []
+    hook = pending[0] if pending else None
+    if hook in _HAND_CHOICE_HOOKS:
+        return (CANCELLED_BY_OPEN_CHOICE if kind == 'NetPlayCardAction'
+                else QUEUED_BEHIND_OPEN_CHOICE)
+    if hook in _PILE_CHOICE_HOOKS:
+        return QUEUED_BEHIND_OPEN_CHOICE
+    return None
 
 
 # Native MONSTER classes the Rust engine carries as one aggregate MonsterKind,
@@ -522,14 +518,38 @@ _NATIVE_PLAYER_POWER_RENAMES = {
     # #3159: the bare `self_forming_clay` field is the relic-ownership flag,
     # so Rust's `PowerId::SelfFormingClayPower` takes the `*_power` spelling.
     'SELF_FORMING_CLAY_POWER': 'self_forming_clay_power',
+    # #3764: Rust's `PowerId::Foregone` (`ids.rs` canonical name `foregone`,
+    # written by `steps/templates.rs` `StepKind::Foregone`). The native
+    # amount is the card count its BeforeHandDraw selects
+    # (`ForegoneConclusionPower/<BeforeHandDraw>d__4::MoveNext` RVA
+    # `0x33a8e8`: `get_Amount` IL_00dc into `CardSelectCmd::FromCombatPile`
+    # IL_00e6), and the power removes itself there (`PowerCmd::Remove`
+    # IL_01ac), which is when Rust zeroes the slot.
+    'FOREGONE_CONCLUSION_POWER': 'foregone',
 }
+
+#: Native player powers Rust carries NO state for, because nothing they do
+#: happens inside the combat (#3764). Each overrides exactly one hook,
+#: `AfterCombatEnd`, and that body only queues a post-combat reward
+#: (v0.111.0 DLL `9cb4f1ad`): ForbiddenGrimoirePower RVA `0xa2838` adds
+#: `Amount` CardRemovalRewards (`CombatRoom::AddExtraReward` IL_002c);
+#: RoyaltiesPower RVA `0xa6e34` adds one GoldReward of `Amount`
+#: (IL_001f-0024). Their cards are `steps: &[]` rows in the crate's
+#: `content_tables.rs`. There is no Rust value to compare the native amount
+#: with, so these are reported BY NAME as not compared
+#: (`native_player_powers_not_compared`), never as a disagreement and never
+#: silently. A power may join this set only on an IL read showing it has no
+#: hook that runs before the combat ends.
+NATIVE_POST_COMBAT_ONLY_PLAYER_POWERS = frozenset({
+    'FORBIDDEN_GRIMOIRE_POWER', 'ROYALTIES_POWER',
+})
 
 #: Native player power ids Rust carries under the stripped-lowercase name:
 #: every native `PowerModel` subclass (TypeDef `Extends` chain, v0.111.0 DLL
 #: `9cb4f1ad`) whose name is a `PowerId` canonical name (`ids.rs`
 #: `PowerId::NAMES`) or a scalar `boundary.rs` player spec (`clarity`,
 #: `duplication`, `gigantification`, `hammer_time`, `no_energy_gain`,
-#: `radiance`, `regen`, `ringing`, `the_hunt`, `toric_toughness`). Powers
+#: `radiance`, `regen`, `ringing`, `the_hunt`). Powers
 #: only monsters carry are included on purpose: absent on both sides they
 #: compare equal, and should one ever reach the player it is compared rather
 #: than skipped. A Bool slot compares as 0/1. (ImitationLearningPower shares
@@ -573,7 +593,7 @@ _NATIVE_PLAYER_POWER_DIRECT = frozenset({
     'POISON_POWER', 'PREP_TIME_POWER', 'PYRE_POWER', 'RADIANCE_POWER',
     'RAGE_POWER', 'RAMPART_POWER', 'RAVENOUS_POWER', 'REAPER_FORM_POWER',
     'REBOUND_POWER', 'REFLECT_POWER', 'REGEN_POWER', 'RETAIN_HAND_POWER',
-    'RINGING_POWER', 'ROLLING_BOULDER_POWER', 'RUPTURE_POWER',
+    'RINGING_POWER', 'RUPTURE_POWER',
     'SANDPIT_POWER', 'SEEKING_EDGE_POWER', 'SENTRY_MODE_POWER',
     'SERPENT_FORM_POWER', 'SHADOWMELD_POWER', 'SHADOW_STEP_POWER',
     'SHRIEK_POWER', 'SHROUD_POWER', 'SIC_EM_POWER', 'SIGNAL_BOOST_POWER',
@@ -586,7 +606,7 @@ _NATIVE_PLAYER_POWER_DIRECT = frozenset({
     'SUMMON_NEXT_TURN_POWER', 'SWORD_SAGE_POWER', 'TAINTED_POWER',
     'TANGLED_POWER', 'TENDER_POWER', 'TERRITORIAL_POWER', 'THE_GAMBIT_POWER',
     'THE_HUNT_POWER', 'THORNS_POWER', 'THUNDER_POWER',
-    'TOOLS_OF_THE_TRADE_POWER', 'TORIC_TOUGHNESS_POWER', 'TRACKING_POWER',
+    'TOOLS_OF_THE_TRADE_POWER', 'TRACKING_POWER',
     'TRASH_TO_TREASURE_POWER', 'TYRANNY_POWER', 'UNDERWORLD_POWER',
     'UNMOVABLE_POWER', 'VICIOUS_POWER', 'VIGOR_POWER', 'VOID_FORM_POWER',
     'WASTE_AWAY_POWER', 'WELL_LAID_PLANS_POWER', 'WRAITH_FORM_POWER',
@@ -658,6 +678,19 @@ NATIVE_PLAYER_POWER_PROJECTIONS = {
     # amount is 1.
     'SURROUNDED_POWER': lambda player: int(
         _rust_scalar(player, 'kaiser_facing', -1) != -1),
+    # ConfusedPower (#3618). Rust carries it as `confused`, a mirror of
+    # owning Snecko Eye or Fake Snecko Eye, and rolls once per drawn card
+    # whatever the amount (`engine::draw::confused_after_card_drawn`; the
+    # native listener `ConfusedPower::AfterCardDrawn` RVA `0xa07f4` never
+    # reads `Amount`). Natively each owned relic applies 1 at combat start
+    # (`SneckoEye/<ApplyPower>d__10` RVA `0x33153c`,
+    # `FakeSneckoEye/<ApplyPower>d__9` RVA `0x3247cc`, IL_001d-003f) and the
+    # second stacks on the first (`PowerCmd/<Apply>d__1` RVA `0x3ef988`
+    # IL_0117-013b), so the native amount is the number of them owned.
+    'CONFUSED_POWER': lambda player: sum(
+        relic in ('RELIC.SNECKO_EYE', 'RELIC.FAKE_SNECKO_EYE')
+        for relic in player.get('relics_entering') or ()
+    ) if player.get('confused') else 0,
 }
 
 #: The three `Temporary*Power` families, each one canonical signed sum
@@ -703,30 +736,48 @@ def _automation_instances(player):
     return [total - sum(later)] + later
 
 
+def _rolling_boulder_instances(player):
+    """Per-object amounts: the first object, then the later rows (#3756)."""
+    later = [row[0] for row in player.get('rolling_boulder_later_instances', [])]
+    first = player.get('rolling_boulder', 0)
+    return ([first] if first or later else []) + later
+
+
+def _toric_toughness_instances(player):
+    """Per-object durations: the first live object, then the later rows (#3756)."""
+    later = [row[0] for row in player.get('toric_toughness_later_instances', [])]
+    first = player.get('toric_toughness', 0)
+    return ([first] if first or later else []) + later
+
+
 #: Native `PowerInstanceType.Instanced` player powers Rust carries one row
 #: per native object, with that object's amount (v0.111.0 `get_InstanceType`
 #: IL_0001 `ldc.i4.1`: AutomationPower RVA `0x9fa0e`, MonologuePower
-#: `0xa4b15`, PanachePower `0xa5700`, TheBombPower `0xa9edd`). Compared as
-#: the ordered amount list, so the instance count is compared too.
+#: `0xa4b15`, NightmarePower `0xa4dba`, PanachePower `0xa5700`, TheBombPower
+#: `0xa9edd`, ToricToughnessPower `0xaa24b`). Compared as the ordered amount list, so the instance count is
+#: compared too. A `nightmare_instances` row is `[amount, listeners_before,
+#: held card payload]` (#3794, `boundary.rs` `PlayerSlot::NightmareInstances`).
 NATIVE_INSTANCED_PLAYER_POWERS = {
     'AUTOMATION_POWER': _automation_instances,
     'MONOLOGUE_POWER': lambda player: [row[1] for row in player.get('monologue_instances', [])],
+    'NIGHTMARE_POWER': lambda player: [row[0] for row in player.get('nightmare_instances', [])],
     'PANACHE_POWER': lambda player: [row[1] for row in player.get('panache_instances', [])],
     'THE_BOMB_POWER': lambda player: [row[1] for row in player.get('the_bomb_instances', [])],
+    'ROLLING_BOULDER_POWER': _rolling_boulder_instances,
+    'TORIC_TOUGHNESS_POWER': _toric_toughness_instances,
 }
 
 #: Powers with a non-default `get_InstanceType` (IL_0001 `ldc.i4.1`:
 #: CacophonyPower `0xa014b`, KnockdownPower `0xa44d3`, OrbitPower
-#: `0xa5476`, RollingBoulderPower `0xa6da1`, SandpitPower `0xa6fc9`,
-#: ToricToughnessPower `0xaa24b`; `ldc.i4.2`: OblivionPower `0xa51b5`,
+#: `0xa5476`, SandpitPower `0xa6fc9`;
+#: `ldc.i4.2`: OblivionPower `0xa51b5`,
 #: StranglePower `0xa87c5`) that Rust carries as ONE scalar. One native
 #: object compares exactly; two or more cannot be told apart from their
 #: sum, so that checkpoint reports `power_instances_not_projected` rather
 #: than comparing the sum.
 NATIVE_SCALAR_INSTANCED_PLAYER_POWERS = frozenset({
     'CACOPHONY_POWER', 'KNOCKDOWN_POWER', 'OBLIVION_POWER', 'ORBIT_POWER',
-    'ROLLING_BOULDER_POWER', 'SANDPIT_POWER', 'STRANGLE_POWER',
-    'TORIC_TOUGHNESS_POWER',
+    'SANDPIT_POWER', 'STRANGLE_POWER',
 })
 
 
@@ -772,6 +823,9 @@ def native_player_power_mismatches(state, native):
         name, amount = power.get('id'), power.get('amount')
         if not isinstance(amount, int) or isinstance(amount, bool):
             raise ValueError('malformed native player power list')
+        if name in NATIVE_POST_COMBAT_ONLY_PLAYER_POWERS:
+            # Named by `native_player_powers_not_compared`, not compared here.
+            continue
         if name in NATIVE_INSTANCED_PLAYER_POWERS:
             instanced.setdefault(name, []).append(amount)
         elif name in _NATIVE_TEMPORARY_POWER:
@@ -805,6 +859,21 @@ def native_player_power_mismatches(state, native):
         if expected != actual:
             out.append(PowerMismatch('instances', name, expected, actual))
     return out
+
+
+def native_player_powers_not_compared(native):
+    """The hero's native powers this comparison leaves out, by native id (#3764).
+
+    Sorted, each once: the members of `NATIVE_POST_COMBAT_ONLY_PLAYER_POWERS`
+    the checkpoint's hero carries. `native_player_power_mismatches` skips
+    exactly these, so a caller that reports power agreement must report this
+    list beside it. A malformed checkpoint raises `ValueError`, as there.
+    """
+    heroes = [c for c in native['creatures'] if c.get('player_id') is not None]
+    if len(heroes) != 1 or not isinstance(heroes[0].get('powers'), list):
+        raise ValueError('native checkpoint requires one player power list')
+    return sorted({power.get('id') for power in heroes[0]['powers']
+                   if power.get('id') in NATIVE_POST_COMBAT_ONLY_PLAYER_POWERS})
 
 
 def check_native_player_powers(state, native):

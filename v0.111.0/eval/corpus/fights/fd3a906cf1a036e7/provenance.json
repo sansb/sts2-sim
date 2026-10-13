@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "KCW7DF916F19",
+ "node": 29,
+ "encounter": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "27dfc8b8b95e03fb12c1f0807f5728e2ed968c9d894578e7f9732d6dbbfddf9f",
+ "save_sha256": "c9497622a71b7c1243fed005ef2a332bf3c4edd31287a2f7433747bbbcbf311d",
+ "entry_digest": "d1f0d3b5ecf406929e467d0315a6d9de37b8be8489c3dc6b385b0866caf2ad0a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "KC2U95X4YRD0",
+ "node": 16,
+ "encounter": "ENCOUNTER.CEREMONIAL_BEAST_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "9a2d6a6963e8b06ec9cccc3399e9c0e247cd2aaa1c94b85bc2fe1b6a7a44776b",
+ "save_sha256": "1412667177981e913425ba844d08fda29d14ca6eae450cac3a50088f7428f269",
+ "entry_digest": "1a637a07842dac421bf95520dd21f12996d49d2fd333a1c145e181abed503210",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

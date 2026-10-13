@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "KQFAZH480H1Q",
+ "node": 27,
+ "encounter": "ENCOUNTER.INFESTED_PRISMS_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "381b60274003fe67b866523d7208ca82935ef3560e28801e5eaa79350fbb4c48",
+ "save_sha256": "de3a39b308158818aa1dd0b042fdc0b98605d412fb0b79bdffb1fb5df5318bc1",
+ "entry_digest": "bbff0dfc2699164978373f586280676d9d911e963ece613905a65acf901c299c",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

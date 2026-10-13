@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "STGS76WZ6WFA",
+ "node": 16,
+ "encounter": "ENCOUNTER.VANTOM_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "718d95ad8df3756384d8f6bc80d3872bec375ad0e310f4b1ff55762629755eec",
+ "save_sha256": "2998c4f2ebe5b447396318973bfe74553bc4dd24c9f2d82b8ba4e53c10885131",
+ "entry_digest": "bede29994680a68bd57effa5dab321046bf1f5bdb0d9a8367e169ed3e97ebb00",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

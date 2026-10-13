@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "P3NNJFHQ7BNX",
+ "node": 6,
+ "encounter": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "d314121246423c687efd67f565c236185109ac7777f407aedd3520e899f8f083",
+ "save_sha256": "393d0e7a567ffb72892ff847bf8c677e23f8cedd8381d06a92bb40dabdffcd76",
+ "entry_digest": "164dbe9744c29adce5ebaf554e180b7d579ea93eae9f27a664bda5f06115de95",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

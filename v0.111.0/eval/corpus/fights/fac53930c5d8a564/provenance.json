@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "F3C51JD0JVEK",
+ "node": 11,
+ "encounter": "ENCOUNTER.SEAPUNK_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "a4668299c40c67b230ee87c64814563d73a0b5e967ce7c386e49e899e4bb4539",
+ "save_sha256": "5391887e37f4366b0435b50f96924f0ba0a9e78a998c8e0ee68df2de1ac4ffc3",
+ "entry_digest": "18a2bab95cf5ed6d8da2a99ce480d39e99a601b2680e5ae356e1d069c9dd31eb",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

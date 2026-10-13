@@ -280,7 +280,11 @@ pub(crate) fn attack_scroll_branch(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRe
 }
 
 /// `("attack_smoggy", damage, hits, amount)` — Living Fog ADVANCED_GAS:
-/// attack, then stack fresh Smoggy while the actor and combat remain live.
+/// attack, then stack fresh Smoggy while the combat remains live. The Smoggy
+/// does not wait on the Fog's survival (#3827; the `PowerCmd.Apply` gates are
+/// cited at `shared::attack_frail`): `LivingFog/<AdvancedGasMove>d__25::
+/// MoveNext` RVA `0x361f2c` awaits Execute (IL_006b) and calls
+/// `Apply<SmoggyPower>` next (IL_00de).
 /// The damage is `LivingFog::get_AdvancedGasDamage` RVA `0xb88db`,
 /// `GetValueIfAscension(9, 9, 8)` at the fight's tier (#2828).
 pub(crate) fn attack_smoggy(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
@@ -295,7 +299,7 @@ pub(crate) fn attack_smoggy(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> 
         return Err(EngineRefusal::MalformedArgs("attack_smoggy owner"));
     }
     monster_attack_player_with_catalog(ctx.state, ctx.catalog, ctx.actor, damage, 1, ctx.events)?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         apply_player_duration_affliction(
             ctx.state,
             PowerId::Smoggy,
@@ -519,6 +523,10 @@ pub(crate) fn attack_strength_branch(ctx: &mut MoveCtx<'_>) -> Result<(), Engine
 
 /// `("attack_tangle", damage, hits, amount)` — attack, then apply the unique
 /// Tangled instance. A live restack is deliberately typed and refused. The
+/// Tangled does not wait on the Shambler's survival (#3827; the
+/// `PowerCmd.Apply` gates are cited at `shared::attack_frail`):
+/// `VineShambler/<GraspingVinesMove>d__19::MoveNext` RVA `0x37521c` awaits
+/// Execute (IL_0070) and calls `Apply<TangledPower>` next (IL_00e3). The
 /// damage is `VineShambler::get_GraspingVinesDamage` RVA `0xc4a3f`,
 /// `GetValueIfAscension(9, 9, 8)` at the fight's tier (#2828).
 pub(crate) fn attack_tangle(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
@@ -533,7 +541,7 @@ pub(crate) fn attack_tangle(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> 
         return Err(EngineRefusal::MalformedArgs("attack_tangle owner"));
     }
     monster_attack_player_with_catalog(ctx.state, ctx.catalog, ctx.actor, damage, 1, ctx.events)?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         if ctx.state.powers.value(PowerId::Tangled) > 0 {
             return Err(EngineRefusal::PowerRestackNotModeled(PowerId::Tangled));
         }
@@ -560,6 +568,17 @@ pub(crate) fn attack_tangle(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> 
 /// side-end death/duration walk. The damage is
 /// `Ovicopter::get_TenderizerDamage` RVA `0xbaa5d`,
 /// `GetValueIfAscension(9, 8, 7)` at the fight's tier (#2828).
+///
+/// The Vulnerable does not wait on the actor's survival (#3827): a move body
+/// is straight-line, and `PowerCmd.Apply` to the player reads no applier HP
+/// (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988` returns only on
+/// `IsEnding`, IL_0020-IL_002a, and on a target that cannot receive powers,
+/// IL_003a-IL_0044). v0.111.0 `sts2.dll` SHA-256 `9cb4f1ad…12b4`.
+/// `Ovicopter/<TenderizerMove>d__29::MoveNext` RVA `0x365684` awaits
+/// `AttackCommand.Execute` (IL_0064) and makes `Apply<VulnerablePower>` of 2
+/// its next statement (IL_00ca-IL_00d8), with only the await's `IsCompleted`
+/// branch between. The loop park is this engine's bookkeeping for a roll a
+/// dead Ovicopter never makes, so it keeps the owner test.
 pub(crate) fn attack_vulnerable_deferred_ovicopter(
     ctx: &mut MoveCtx<'_>,
 ) -> Result<(), EngineRefusal> {
@@ -589,7 +608,7 @@ pub(crate) fn attack_vulnerable_deferred_ovicopter(
     else {
         return Ok(());
     };
-    if !ctx.state.history.over && ctx.state.monsters[index].hp > 0 {
+    if !ctx.state.history.over {
         apply_player_duration_affliction(
             ctx.state,
             PowerId::PlayerVuln,
@@ -598,7 +617,10 @@ pub(crate) fn attack_vulnerable_deferred_ovicopter(
             true,
             ctx.events,
         )?;
-        ctx.state.monsters_mut()[index].loop_pos = crate::engine::monsters::OVICOPTER_BRANCH_POS;
+        if ctx.state.monsters[index].hp > 0 {
+            ctx.state.monsters_mut()[index].loop_pos =
+                crate::engine::monsters::OVICOPTER_BRANCH_POS;
+        }
     }
     Ok(())
 }
@@ -1188,6 +1210,16 @@ pub(crate) fn louse_web(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
 /// insertion sees the live pile after the first serial command.
 ///
 /// Python `_insert_draw_random` (frozen, deleted #2827) owns the RNG/insertion path.
+///
+/// The two cards take their combat-card numbers in creation order (#3856).
+/// `Noisebot/<NoiseMove>d__9::MoveNext` RVA `0x364d6c` (v0.111.0, SHA-256
+/// `9cb4f1ad…`) is `CombatState.CreateCard<Dazed>` (IL_0105) added to pile 3,
+/// Discard (IL_011a-IL_011d), then a second `CreateCard<Dazed>` (IL_019d)
+/// added to pile 1, Draw (IL_01b2-IL_01b5). So the Discard copy is the lower
+/// number, and a recorded selection that names one of them by number means
+/// that copy. The shared legacy pass numbers uid-less cards in pile order
+/// (Hand, Draw, Discard), which gave the Draw copy the lower one; each copy
+/// is numbered here as it is created, after any older uid-less card.
 pub(crate) fn noise_status(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     if !ctx.args.is_empty()
         || ctx.state.monsters[ctx.actor].kind != MonsterKind::Noisebot
@@ -1203,8 +1235,11 @@ pub(crate) fn noise_status(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     if ctx.catalog.atom(&identity).is_none() {
         return Err(EngineRefusal::UnknownMintIdentity(identity));
     }
+    crate::engine::cards::normalize_card_identities(ctx.state)?;
     inject_legacy_bottom(ctx.state, ctx.catalog, identity, 1, PileId::Discard)?;
-    inject_legacy_draw_random(ctx.state, ctx.catalog, identity, 1)
+    crate::engine::cards::normalize_card_identities(ctx.state)?;
+    inject_legacy_draw_random(ctx.state, ctx.catalog, identity, 1)?;
+    crate::engine::cards::normalize_card_identities(ctx.state)
 }
 
 /// `("pile_inject", (card, upgrade), count, pile, position)` — the generalized
@@ -1525,6 +1560,17 @@ pub(crate) fn summon_rat(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
 /// attack skips both suffix events while retaining the already-cleared flag.
 /// The damage is `OwlMagistrate::get_VerdictDamage` RVA `0xbaed0`,
 /// `GetValueIfAscension(9, 36, 33)` at the fight's tier (#2828).
+///
+/// The Vulnerable does not wait on the actor's survival (#3827): a move body
+/// is straight-line, and `PowerCmd.Apply` to the player reads no applier HP
+/// (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988` returns only on
+/// `IsEnding`, IL_0020-IL_002a, and on a target that cannot receive powers,
+/// IL_003a-IL_0044). v0.111.0 `sts2.dll` SHA-256 `9cb4f1ad…12b4`.
+/// `OwlMagistrate/<VerdictMove>d__32::MoveNext` RVA `0x365c0c` awaits
+/// `AttackCommand.Execute` (IL_007e), then `Apply<VulnerablePower>` on the
+/// target (IL_00d9-IL_00f2), then `Remove<SoarPower>` on itself
+/// (IL_014e-IL_0153). A dead Magistrate's powers are already gone
+/// (`RemoveAllPowersAfterDeath`), so the Soar event keeps the owner test.
 pub(crate) fn verdict(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [CompiledArg::I(damage), CompiledArg::I(1), CompiledArg::I(4)] = ctx.args else {
         return Err(EngineRefusal::MalformedArgs("verdict"));
@@ -1543,7 +1589,7 @@ pub(crate) fn verdict(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
         .powers
         .set(PowerId::Soar, SlotWire::Bool, 0);
     monster_attack_player_with_catalog(ctx.state, ctx.catalog, ctx.actor, damage, 1, ctx.events)?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         apply_player_duration_affliction(
             ctx.state,
             PowerId::PlayerVuln,
@@ -1552,12 +1598,14 @@ pub(crate) fn verdict(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
             true,
             ctx.events,
         )?;
-        note_power(
-            ctx.events,
-            Subject::Monster(ctx.state.monsters[ctx.actor].uid),
-            PowerId::Soar,
-            0,
-        );
+        if ctx.state.monsters[ctx.actor].hp > 0 {
+            note_power(
+                ctx.events,
+                Subject::Monster(ctx.state.monsters[ctx.actor].uid),
+                PowerId::Soar,
+                0,
+            );
+        }
     }
     Ok(())
 }
@@ -2419,6 +2467,71 @@ mod tests {
         );
     }
 
+    /// #3856 section 4 (`7JEJU0P1MBBR` n37): NOISE_MOVE's Discard copy is
+    /// created before its Draw copy (`Noisebot/<NoiseMove>d__9` RVA
+    /// `0x364d6c`, `CreateCard<Dazed>` at IL_0105 and IL_019d), so it carries
+    /// the lower combat-card number. Pile order would number the Draw copy
+    /// first. An older uid-less card is numbered before both.
+    #[test]
+    fn noise_status_numbers_the_discard_copy_before_the_draw_copy() {
+        let (_, catalog) = fabricator_state(crate::engine::monsters::FABRICATOR_STRIKE_INDEX);
+        let dazed = catalog
+            .atom(&CardIdentity {
+                id: CardId::Dazed,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        for older in [false, true] {
+            let mut state = crate::hot::HotState::at_defaults();
+            state.next_card_uid = 40;
+            let mut bot = crate::hot::HotMonster::new(MonsterKind::Noisebot, 19);
+            bot.max_hp = 19;
+            bot.powers.set(PowerId::Secondary, SlotWire::Bool, 1);
+            state.monsters_mut().push(bot);
+            if older {
+                // Left by an earlier move this enemy turn, in Discard: pile
+                // order alone would number it after the new Draw copy.
+                state
+                    .piles
+                    .get_mut(PileId::Discard)
+                    .make_mut()
+                    .push(crate::hot::HotCard {
+                        uid: crate::hot::LEGACY_CARD_UID,
+                        atom: dazed,
+                        flags: crate::hot::CARD_FLAG_LEGACY,
+                    });
+            }
+            let entry = row(&catalog, MonsterKind::Noisebot, MoveKind::NoiseStatus);
+            let mut events = Vec::new();
+            let mut ctx = MoveCtx {
+                state: &mut state,
+                catalog: &catalog,
+                actor: 0,
+                args: catalog.args(entry.args),
+                events: &mut events,
+            };
+            noise_status(&mut ctx).unwrap();
+            let uids = |pile| {
+                state
+                    .piles
+                    .get(pile)
+                    .as_slice()
+                    .iter()
+                    .map(|card| (card.uid, card.flags & crate::hot::CARD_FLAG_LEGACY))
+                    .collect::<Vec<_>>()
+            };
+            let first = if older { 41 } else { 40 };
+            let mut discard = vec![(first, 0)];
+            if older {
+                discard.insert(0, (40, 0));
+            }
+            assert_eq!(uids(PileId::Discard), discard, "older {older}");
+            assert_eq!(uids(PileId::Draw), [(first + 1, 0)], "older {older}");
+            assert_eq!(state.next_card_uid, first + 2);
+        }
+    }
+
     #[test]
     fn lethal_fabricating_strike_short_circuits_before_spawn() {
         let (mut state, catalog) =
@@ -2778,6 +2891,101 @@ mod tests {
             assert_eq!(state.powers.value(fresh), 1);
             if monster == MonsterKind::SlimedBerserker {
                 assert_eq!(state.monsters[0].powers.value(PowerId::Strength), 3);
+            }
+        }
+    }
+
+    /// #3827: Smoggy and Tangled land when the actor died inside its own
+    /// attack and another enemy keeps the combat going; a lone actor's death
+    /// ends the combat and nothing lands.
+    #[test]
+    fn a_smoggy_or_tangle_attacker_killed_by_retaliation_still_applies_it() {
+        for (monster, kind, power) in [
+            (
+                MonsterKind::LivingFog,
+                MoveKind::AttackSmoggy,
+                PowerId::Smoggy,
+            ),
+            (
+                MonsterKind::VineShambler,
+                MoveKind::AttackTangle,
+                PowerId::Tangled,
+            ),
+        ] {
+            for (with_peer, expected) in [(true, 1), (false, 0)] {
+                let (document, catalog) = state_for(monster);
+                let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+                state.hp = 60;
+                state.monsters_mut()[0].hp = 3;
+                state.powers.set(PowerId::Thorns, SlotWire::Int, 50);
+                if with_peer {
+                    let mut peer = state.monsters[0].clone();
+                    peer.hp = 30;
+                    peer.uid += 1;
+                    state.monsters_mut().push(peer);
+                }
+                let entry = row(&catalog, monster, kind);
+                let mut events = Vec::new();
+                let mut ctx = MoveCtx {
+                    state: &mut state,
+                    catalog: &catalog,
+                    actor: 0,
+                    args: catalog.args(entry.args),
+                    events: &mut events,
+                };
+                super::super::apply_move(kind, &mut ctx).unwrap();
+                assert!(state.monsters[0].hp <= 0, "{monster:?}");
+                assert_eq!(state.history.over, !with_peer, "{monster:?}");
+                assert_eq!(state.powers.value(power), expected, "{monster:?}");
+            }
+        }
+    }
+
+    /// #3827: Tenderizer's and Verdict's Vulnerable land when the actor died
+    /// inside its own attack and another enemy keeps the combat going; a
+    /// lone actor's death ends the combat and nothing lands. The dead
+    /// Ovicopter's loop is not parked on its summon branch.
+    #[test]
+    fn a_tenderizer_or_verdict_attacker_killed_by_retaliation_still_applies_vulnerable() {
+        for (monster, kind, amount) in [
+            (
+                MonsterKind::Ovicopter,
+                MoveKind::AttackVulnerableDeferredOvicopter,
+                2,
+            ),
+            (MonsterKind::OwlMagistrate, MoveKind::Verdict, 4),
+        ] {
+            for (with_peer, expected) in [(true, amount), (false, 0)] {
+                let (document, catalog) = state_for(monster);
+                let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+                state.hp = 90;
+                state.monsters_mut()[0].hp = 3;
+                state.powers.set(PowerId::Thorns, SlotWire::Int, 50);
+                let loop_pos = state.monsters[0].loop_pos;
+                if with_peer {
+                    let mut peer = state.monsters[0].clone();
+                    peer.hp = 30;
+                    peer.uid += 1;
+                    state.monsters_mut().push(peer);
+                }
+                let entry = row(&catalog, monster, kind);
+                let mut events = Vec::new();
+                let mut ctx = MoveCtx {
+                    state: &mut state,
+                    catalog: &catalog,
+                    actor: 0,
+                    args: catalog.args(entry.args),
+                    events: &mut events,
+                };
+                super::super::apply_move(kind, &mut ctx).unwrap();
+                assert!(state.monsters[0].hp <= 0, "{monster:?}");
+                assert_eq!(state.history.over, !with_peer, "{monster:?}");
+                assert_eq!(
+                    state.powers.value(PowerId::PlayerVuln),
+                    expected,
+                    "{monster:?}"
+                );
+                assert_eq!(state.monsters[0].loop_pos, loop_pos, "{monster:?}");
             }
         }
     }

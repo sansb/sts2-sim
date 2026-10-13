@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "8ECK1FJDL15L",
+ "node": 16,
+ "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "3e7a98e580bc1d473c1ea9ceb4a679ae23ce546d05b19b01cc66bd836cebed39",
+ "save_sha256": "0993afc23b83bcd9e8d9e573b331df2f8123655e2cfad525ab2741a6c2b8d64f",
+ "entry_digest": "5761536c3cdb5994f81e30364566f376e4b29975cc92342a178648a766afaa71",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

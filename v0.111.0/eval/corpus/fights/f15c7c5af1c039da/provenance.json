@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "SGZU3AGBAK8N",
+ "node": 16,
+ "encounter": "ENCOUNTER.THE_KIN_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "1092f839cf0d74dc0b07d89ab3276b82b4d3f733fb1f7dd98455f89265755960",
+ "save_sha256": "147ec42fc6a9cd33b32f9cf2f8b7a845f6a4893ca9ef733af5ce952fb7883b01",
+ "entry_digest": "ed33c03365fe412e93e2414a41830e7453d692698b20748f12acabc6a0e956c9",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

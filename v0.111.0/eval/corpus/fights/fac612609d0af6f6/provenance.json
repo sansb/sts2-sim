@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "R7NPTLWR6H22",
+ "node": 20,
+ "encounter": "ENCOUNTER.TUNNELER_WEAK",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "33138d984598e7ad4e96ffada69abd5b5ac78675478a3ded23d72ffa4172fa90",
+ "save_sha256": "fc6e0b6d2ccf8dfe45ff373525a2d38e7d07b3432ac46d7c6ae45755a2e4d97d",
+ "entry_digest": "a71a1a8242d2424bda1811ed709bbaa37a05cc37cc0940761ef64fdaf9777c28",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

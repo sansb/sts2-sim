@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "2K87LNEQATRX",
+ "node": 16,
+ "encounter": "ENCOUNTER.SOUL_FYSH_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "97a42d3c8ddc8d1c303bb818c161bca5555d2112bbde69a25cac5f6124a6f710",
+ "save_sha256": "005a8c28ecd136c3cd760da4e66a8bb20fd62a2e48bd8b6fa3869c2636ec2ee5",
+ "entry_digest": "5b61e363e8069504cd92c55f5bf0a2a7ce84451444a8c226b128a745e7574c4a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

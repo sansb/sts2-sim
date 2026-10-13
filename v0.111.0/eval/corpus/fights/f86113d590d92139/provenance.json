@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "1TFX6MH5K031",
+ "node": 5,
+ "encounter": "ENCOUNTER.VINE_SHAMBLER_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "412e4b5f445d59ed63bdd40867d67b1b2af087614c1a70e90840a654b8c3986a",
+ "save_sha256": "87329242ee4fd48a63c409973e1cc435a2aa17ced767c47bec894deadb224266",
+ "entry_digest": "048aa5ee8c5f23dfb3dc0e634a41ee1104f0e0df7d2e09da33385b5af1721756",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

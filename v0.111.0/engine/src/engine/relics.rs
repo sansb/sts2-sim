@@ -467,12 +467,10 @@ pub(crate) fn modifier_total(
 /// The turn-1 all-enemy debuff relics, in the oracle's fixed order.
 ///
 /// `combat_sim._TURN_ONE_ALL_ENEMY_DEBUFF_RELICS` (frozen Python, deleted #2827) names
-/// three relics; the third, `RELIC.TWISTED_FUNNEL`, is still gated by
-/// `entry::opening`'s `TURN_ONE_RELIC_BODIES` and is deliberately absent — its
-/// amount picks up `RELIC.SNECKO_SKULL` and its application allocates a Poison
-/// instance identity, which the oracle's own opening call (made with
-/// `state=None`, so `m.poison_uid = -1`, `_record_misery_debuff_application`) does not,
-/// so it is a different shape and owes its own derivation.
+/// three relics. Red Mask and Bag of Marbles arrived first (#2693);
+/// `RELIC.TWISTED_FUNNEL` joined on 2026-10-10 (#3756), with its own section
+/// below, because its Poison is the one application here that Snecko Skull
+/// modifies and that allocates an instance identity.
 ///
 /// # The native contract, re-read 2026-09-22
 ///
@@ -514,7 +512,54 @@ pub(crate) fn modifier_total(
 /// and so does this port, one stage earlier and by its own name
 /// (`OpeningRefusal::TurnOneDebuffPartialArtifact`) — so the fixed order below
 /// is only ever observed where the outcome does not depend on it.
-const TURN_ONE_ALL_ENEMY_DEBUFFS: [(RelicId, PowerId, MiseryToken, i32); 2] = [
+///
+/// # `RELIC.TWISTED_FUNNEL` (#3756)
+///
+/// `TwistedFunnel/<BeforeSideTurnStart>d__6::MoveNext` (RVA `0x3336e8`), the
+/// type's only hook (beside `get_Rarity` `0x9d2af`, `get_CanonicalVars`
+/// `0x9d2b2`, `get_ExtraHoverTips` `0x9d2c4` and the constructor; no field
+/// and no saved property):
+///
+/// * `Contains<Creature>(participants, Owner.Creature)` at `IL_0027`-`IL_003d`,
+///   else `leave` at `IL_003f`;
+/// * the turn guard `get_TurnNumber; ldc.i4.1; ble.s` at `IL_0044`-`IL_0055`,
+///   else `leave` at `IL_0057`;
+/// * presentation: `Flash` (`IL_005d`), one VFX node per hittable enemy
+///   (`IL_0062`-`IL_00a8`) and `Cmd::CustomScaledWait` (`IL_00ba`-`IL_00cf`);
+/// * a second, fresh `ICombatState::get_HittableEnemies` enumeration
+///   (`IL_012d`-`IL_0147`), and per enemy
+///   `PowerCmd.Apply<PoisonPower>(choiceContext, enemy,
+///   DynamicVars["PoisonPower"].IntValue, Owner.Creature, null, false)` at
+///   `IL_0163`-`IL_0192`, awaited one enemy at a time.
+///
+/// So it is the Red Mask shape with Poison: applier `Owner.Creature`
+/// (`IL_0185`-`IL_018b`), a null card (`IL_0190`), amount
+/// [`TWISTED_FUNNEL_POISON`]. Because the applier is the owner's Creature,
+/// `SneckoSkull::ModifyPowerAmountGivenAdditive` (`0x9bb8d`: `PoisonPower`
+/// test at `IL_0001`-`IL_0007`, `applier == Owner.Creature` at
+/// `IL_000f`-`IL_001b`, `+ DynamicVars.Poison` at `IL_0023`-`IL_002e`) adds
+/// its one, which is the shared seam's Snecko Skull term
+/// (`damage::apply_relic_monster_debuff`); the same seam allocates the fresh
+/// Poison instance identity and runs the Artifact gate. The frozen oracle's
+/// opening applied this Poison without an identity (its call ran before a
+/// `State` existed), which is why the relic stayed gated while Python was the
+/// authority. Native is the authority now, and the `.mcr` census certifies
+/// the seam's allocation on the fights that own the relic.
+///
+/// ## Order among the three
+///
+/// Native awaits the three bodies in `Player.Relics` order. Which debuff an
+/// enemy acquires first is state: it is the Misery acquisition order
+/// (`damage::record_misery_debuff_application`) and, with Artifact between
+/// zero and the number of owned relics, which application is eaten (the
+/// first recorded ones; the opening refuses that only on an unvouched
+/// inventory, #3756). [`turn_one_all_enemy_debuff_rows`] therefore
+/// follows a vouched inventory, and the opening refuses any two of the three
+/// when the inventory is not vouched
+/// (`entry::opening::all_enemy_debuff_order_is_recorded`). Until #3765 only a
+/// Twisted Funnel owner followed the inventory, and Red Mask beside Bag of
+/// Marbles ran in table order whatever the save recorded.
+const TURN_ONE_ALL_ENEMY_DEBUFFS: [(RelicId, PowerId, MiseryToken, i32); 3] = [
     (RelicId::RelicRedMask, PowerId::Weak, MiseryToken::Weak, 1),
     (
         RelicId::RelicBagOfMarbles,
@@ -522,7 +567,42 @@ const TURN_ONE_ALL_ENEMY_DEBUFFS: [(RelicId, PowerId, MiseryToken, i32); 2] = [
         MiseryToken::Vuln,
         1,
     ),
+    (
+        RelicId::RelicTwistedFunnel,
+        PowerId::Poison,
+        MiseryToken::Poison,
+        TWISTED_FUNNEL_POISON,
+    ),
 ];
+
+/// Twisted Funnel's Poison amount.
+///
+/// `TwistedFunnel::get_CanonicalVars` (v0.111.0 RVA `0x9d2b2`) is
+/// `ldc.i4.4; newobj Decimal; newobj PowerVar<PoisonPower>` at
+/// `IL_0001`-`IL_0007`, which the body reads back as
+/// `DynamicVars["PoisonPower"].IntValue` (`IL_016b`-`IL_017b`).
+const TWISTED_FUNNEL_POISON: i32 = 4;
+
+/// The owned rows of [`TURN_ONE_ALL_ENEMY_DEBUFFS`], in the order this engine
+/// runs them.
+///
+/// Under a vouched inventory ([`crate::hooks::HookTable::dispatch_ordered`])
+/// every owned row sits at its relic's first recorded position, which is
+/// native's `Player.Relics` walk (`CombatState::IterateHookListeners`
+/// `0x137409`). Without that provenance the rows keep table order; the
+/// opening refuses two or more of them there, so table order is only ever
+/// applied to a single row. See the table's "Order among the three".
+fn turn_one_all_enemy_debuff_rows(catalog: &Catalog) -> Vec<(RelicId, PowerId, MiseryToken, i32)> {
+    let hooks = catalog.hooks();
+    let mut rows: Vec<_> = TURN_ONE_ALL_ENEMY_DEBUFFS
+        .into_iter()
+        .filter(|(relic, ..)| hooks.owns(*relic))
+        .collect();
+    if hooks.dispatch_ordered() {
+        rows.sort_by_key(|(relic, ..)| hooks.relics().iter().position(|owned| owned == relic));
+    }
+    rows
+}
 
 /// The turn-1 all-enemy debuff relic bodies ([`TURN_ONE_ALL_ENEMY_DEBUFFS`]).
 ///
@@ -546,7 +626,10 @@ const TURN_ONE_ALL_ENEMY_DEBUFFS: [(RelicId, PowerId, MiseryToken, i32); 2] = [
 /// Tongue, Emotion Chip, Pocketwatch, Kunai, Shuriken, Ornamental Fan, Rainbow
 /// Ring), Aggression's Discard-uid freeze, or Power Cell's local-cost-ordered
 /// Draw shuffle — none of which reads a monster's Weak or Vulnerable, and none
-/// of which these two writes can reach.
+/// of which these two writes can reach. Twisted Funnel's Poison is the same:
+/// no peer on this hook reads a monster's Poison, Cracked Core's Lightning
+/// channel evokes nothing on turn one, and Poison first ticks on the enemy's
+/// own side turn.
 fn turn_one_all_enemy_debuffs(
     catalog: &Catalog,
     state: &mut HotState,
@@ -555,12 +638,9 @@ fn turn_one_all_enemy_debuffs(
     if state.turn > 1 {
         return Ok(());
     }
-    for (relic, power, token, amount) in TURN_ONE_ALL_ENEMY_DEBUFFS {
-        if !catalog.hooks().owns(relic) {
-            continue;
-        }
+    for (relic, power, token, amount) in turn_one_all_enemy_debuff_rows(catalog) {
         // `ICombatState::get_HittableEnemies` (`0x1373a5`) is enumerated fresh
-        // per body, and neither Weak nor Vulnerable can change liveness.
+        // per body, and no application here can change liveness.
         for target in super::damage::alive_targets(state) {
             if state.history.over {
                 break;
@@ -811,104 +891,472 @@ pub(crate) fn after_energy_reset(
     Ok(())
 }
 
-/// Persistent relic listeners on `BeforeHandDraw`. Pollinous Core's native
-/// value briefly reaches four; resetting it here is observationally identical
-/// because no represented listener reads the counter before ModifyHandDraw.
+/// Every relic that listens on `BeforeHandDraw`, in the fixed sequence an
+/// unvouched inventory runs ([`relic_walk_order`]).
+///
+/// A v0.111.0 method-table scan of `sts2.dll` (DLL 9cb4f1ad) finds exactly
+/// these eight relic types overriding `AbstractModel::BeforeHandDraw` (base
+/// RVA `0x7a0a9`): BlessedAntler `0x90d60`, FuneraryMask `0x93df4`,
+/// JeweledMask `0x95284`, NinjaScroll `0x97774`, Pendulum `0x98fa0`,
+/// PollinousCore `0x9998c`, RadiantPearl `0x99fd0`, Toolbox `0x9c9f0`. No type
+/// overrides `BeforeHandDrawLate` (base `0x7a0b0`), the hook's second pass
+/// (`Hook/<BeforeHandDraw>d__36::MoveNext` RVA `0x3d2e3c`,
+/// `IterateCombatHookListeners` at `IL_012b`, the call at `IL_017e`).
+///
+/// The other listeners of the first pass are eight player powers
+/// (CallOfTheVoid `0xa02f8`, CreativeAi `0xa0e9c`, ForegoneConclusion
+/// `0xa288c`, HelloWorld `0xa35d0`, InfiniteBlades `0xa4038`, Nightmare
+/// `0xa4de0`, SentryMode `0xa734c`, SpectrumShift `0xa8318`), which the
+/// listener list holds ahead of the relics and `turn::begin_player_turn_walk`
+/// runs first, and two cards, Bolas `0xd9734` and Thrumming Hatchet
+/// `0xeec6c`, which the list holds behind the relics
+/// (`CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`: powers
+/// `IL_0092`-`IL_0097`, relics `IL_00c9`-`IL_00ef`, pile cards
+/// `IL_0163`-`IL_01c7`). This engine returns those two cards before the relic
+/// pass (`cards::complete_self_return_before_hand_draw`). That order cannot
+/// show: each card moves only when it finished a play on the previous owner
+/// turn (`Bolas::<BeforeHandDraw>b__6_0` RVA `0xd9796` and
+/// `ThrummingHatchet::<BeforeHandDraw>b__4_0` RVA `0xeeccf`, each
+/// `CombatHistoryEntry::HappenedLastPlayerTurn` at `IL_0008`), which turn one
+/// does not have, and after turn one the only relic bodies that still act are
+/// Pendulum's and Pollinous Core's counter writes.
+const BEFORE_HAND_DRAW_RELIC_DISPATCH: [RelicId; 8] = [
+    RelicId::RelicPendulum,
+    RelicId::RelicToolbox,
+    RelicId::RelicBlessedAntler,
+    RelicId::RelicFuneraryMask,
+    RelicId::RelicNinjaScroll,
+    RelicId::RelicPollinousCore,
+    RelicId::RelicJeweledMask,
+    RelicId::RelicRadiantPearl,
+];
+
+/// Whether a `BeforeHandDraw` relic body acts this turn, by its own entry
+/// gates (the bodies of [`before_hand_draw_body`]).
+fn before_hand_draw_relic_acts(catalog: &Catalog, state: &HotState, relic: RelicId) -> bool {
+    let owns = catalog.hooks().owns(relic);
+    match relic {
+        // `TurnNumber == 1` (`beq`): Toolbox `0x332adc` `IL_004a`-`IL_004b`,
+        // Blessed Antler `0x31fe64` `IL_004a`-`IL_004b`, Funerary Mask
+        // `0x325000` `IL_0043`-`IL_0044`, Radiant Pearl `0x32f10c`
+        // `IL_0043`-`IL_0044`.
+        RelicId::RelicToolbox
+        | RelicId::RelicBlessedAntler
+        | RelicId::RelicFuneraryMask
+        | RelicId::RelicRadiantPearl => owns && state.turn == 1,
+        // `TurnNumber <= 1` (`ble`): Ninja Scroll `0x32b770` `IL_0043`-`IL_0044`,
+        // Jeweled Mask `0x3272f4` `IL_0043`-`IL_0044`.
+        RelicId::RelicNinjaScroll | RelicId::RelicJeweledMask => owns && state.turn <= 1,
+        // Pendulum and Pollinous Core count every turn.
+        _ => owns,
+    }
+}
+
+/// Toolbox paused `SetupPlayerTurn` inside the `BeforeHandDraw` relic pass, so
+/// native `StartTurn` runs the side-start tail before the rest of that pass
+/// (#3050, `turn::SetupPlayerTurnWindow`). Native walks the pass in
+/// `Player.Relics` order (`Hook/<BeforeHandDraw>d__36::MoveNext` RVA
+/// `0x3d2e3c`, `IterateCombatHookListeners` at `IL_0024`, the call at
+/// `IL_0076`), so exactly the relics recorded before Toolbox ran ahead of the
+/// pause and the tail.
+///
+/// On a vouched inventory the walk is that order. On an unvouched one the
+/// walk is the fixed sequence, and an unrecorded acquisition order cannot
+/// show which relics the pause splits off: any other relic of the pass that
+/// acts this turn refuses by name.
+pub(crate) fn before_hand_draw_pause_order_is_native(
+    catalog: &Catalog,
+    state: &HotState,
+) -> Result<(), EngineRefusal> {
+    if catalog.hooks().dispatch_ordered() {
+        return Ok(());
+    }
+    if BEFORE_HAND_DRAW_RELIC_DISPATCH.into_iter().any(|relic| {
+        relic != RelicId::RelicToolbox && before_hand_draw_relic_acts(catalog, state, relic)
+    }) {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            "BeforeHandDraw relic order around Toolbox's paused choice",
+        ));
+    }
+    Ok(())
+}
+
+/// Whether the turn's `BeforeHandDraw` relic walk can refuse behind earlier
+/// turn-start writes, so the turn rehearses on a clone
+/// (`turn::begin_player_turn`): a turn-one body (a listener of its cards that
+/// parks a choice, Toolbox's pool provenance), or a Pollinous Core counter
+/// the walk cannot advance.
+pub(crate) fn before_hand_draw_walk_can_refuse(catalog: &Catalog, state: &HotState) -> bool {
+    let hooks = catalog.hooks();
+    state.turn <= 1
+        && BEFORE_HAND_DRAW_RELIC_DISPATCH
+            .into_iter()
+            .any(|relic| relic != RelicId::RelicPendulum && hooks.owns(relic))
+        || state.pollinous_core() >= POLLINOUS_CORE_MAX_SEEN
+}
+
+/// The most the stored Pollinous Core counter holds
+/// (`HotState::set_pollinous_core`): `Turns` plus two more passes on combats
+/// that ended before the hand draw could reset it.
+const POLLINOUS_CORE_MAX_SEEN: i16 = 6;
+
+/// Pollinous Core's `Turns` var: `PollinousCore::get_CanonicalVars` (v0.111.0
+/// RVA `0x998d9`) builds `DynamicVar("Turns", 4)` at `IL_0012`-`IL_001d`
+/// beside `CardsVar(2)` at `IL_0009`-`IL_000a`.
+const POLLINOUS_CORE_TURNS: i16 = 4;
+
+/// Pollinous Core's `ModifyHandDraw` and `AfterModifyingHandDraw`.
+///
+/// `PollinousCore::ModifyHandDraw` (v0.111.0 RVA `0x999cc`) returns the count
+/// unchanged while `TurnsSeen < Turns` (`IL_0017`-`IL_0035`) and otherwise
+/// adds `Cards` (`IL_0036`-`IL_004c`). `AfterModifyingHandDraw` (`0x99a19`),
+/// which `Hook::AfterModifyingHandDraw` calls on a relic that changed the
+/// count (`CombatManager/<SetupPlayerTurn>d__102` `0x3f6c6c` `IL_020e`), sets
+/// `TurnsSeen = 0` (`IL_0001`-`IL_0003`). `Hook::ModifyHandDraw` (`0x1055e4`)
+/// takes its listeners from `IterateCombatHookListeners` (`IL_0015`), so on a
+/// combat that is over it runs nobody and the counter keeps what
+/// `BeforeHandDraw` left ([`before_hand_draw_body`]).
+pub(crate) fn pollinous_core_modify_hand_draw(catalog: &Catalog, state: &mut HotState) -> i16 {
+    let activated = !state.history.over
+        && catalog.hooks().owns(RelicId::RelicPollinousCore)
+        && state.pollinous_core() >= POLLINOUS_CORE_TURNS;
+    if activated {
+        let written = state.set_pollinous_core(0);
+        debug_assert!(written);
+        crate::coverage::record_relic(RelicId::RelicPollinousCore);
+    }
+    pollinous_hand_draw_bonus(activated)
+}
+
+/// One relic's `BeforeHandDraw` body, at whichever place the walk reaches it.
+///
+/// Each arm also says what the body does when an earlier listener of the same
+/// pass ended the combat: the pass checks the combat once, before its first
+/// listener, so the body still runs ([`before_hand_draw`]).
+fn before_hand_draw_body(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+    relic: RelicId,
+) -> Result<WalkStep, EngineRefusal> {
+    match relic {
+        // `Pendulum::BeforeHandDraw` (v0.111.0 RVA `0x98fa0`, synchronous):
+        // owner check `IL_000c`-`IL_001a`, then
+        // `set_TurnsSeen((TurnsSeen + 1) % Turns)` at `IL_001b`-`IL_003a` with
+        // `Turns = 3` from `get_CanonicalVars` (`0x98f3a`). Everything after
+        // that write is presentation: `set_Status(TurnsSeen == Turns - 1)` at
+        // `IL_003f`-`IL_0063` and the `DoActivateVisuals` flash at
+        // `IL_0068`-`IL_0076`. `AfterCombatEnd` (`0x99093`) clears only
+        // `Status`, never `TurnsSeen`, which is why the counter is a saved
+        // per-run value the opening seeds. No command and no combat test, so
+        // the write is the same on an ended combat.
+        RelicId::RelicPendulum => {
+            let next = (state.pendulum() + 1) % 3;
+            let written = state.set_pendulum(next);
+            debug_assert!(written);
+        }
+        // `Toolbox/<BeforeHandDraw>d__4::MoveNext` (RVA `0x332adc`): owner
+        // and `TurnNumber == 1` (`IL_0027`-`IL_004d`), a `GetDistinctForCombat`
+        // draw of `Cards` (3, `get_CanonicalVars` `0x9c9e2`) from the Colorless
+        // pool (`IL_005e`-`IL_00a8`), the pause on
+        // `CardSelectCmd::FromChooseACardScreen` (`IL_00c1`), then
+        // `AddGeneratedCardToCombat(pick, Hand, player, Bottom)`
+        // (`IL_0126`-`IL_012f`) in [`resume_relic_selection`].
+        //
+        // On an ended combat the draw still happens and the pass stops at
+        // this body. That is an observation, recorded from the game (a
+        // Smokestack kill inside Blessed Antler's body ahead of Toolbox):
+        // `CombatCardGeneration` moves by the draw, no option is offered (a
+        // pushed selector's source is not dequeued), no card is added, a
+        // Pendulum or Pollinous Core recorded behind Toolbox keeps its count
+        // while one recorded ahead advances, and `StartTurn` goes on to
+        // `CheckWinCondition`. Where exactly the body stops is not
+        // established: `<FromChooseACardScreen>d__16::MoveNext` (RVA
+        // `0x3e58c0`) has no combat test between its count tests
+        // (`IL_0031`-`IL_0063`) and the selector (`IL_0073`-`IL_0087`), so
+        // the stop is not a gate of that command read from IL.
+        RelicId::RelicToolbox => {
+            if state.turn == 1 {
+                if state.history.over {
+                    let pool =
+                        generation_relic_draw_pool(catalog, state, RelicPendingKind::Toolbox)?;
+                    super::cards::shuffle_generation_slice(state, &pool)?;
+                    crate::coverage::record_relic(RelicId::RelicToolbox);
+                    return Ok(WalkStep::Suspended);
+                }
+                begin_generation_relic_selection(state, catalog, RelicPendingKind::Toolbox, 3)?;
+                crate::coverage::record_relic(RelicId::RelicToolbox);
+                return Ok(WalkStep::Paused);
+            }
+        }
+        // `BlessedAntler/<BeforeHandDraw>d__7::MoveNext` (RVA `0x31fe64`):
+        // owner and `TurnNumber == 1` (`IL_0027`-`IL_004d`), `Cards` (3)
+        // `CreateCard<Dazed>` into a list (`IL_005e`-`IL_0092`) and one
+        // `AddGeneratedCardsToCombat(list, Draw, Owner, Random)` at
+        // `IL_0094`-`IL_009d`.
+        //
+        // On an ended combat each card is still recorded as generated and
+        // none enters a pile: `<AddGeneratedCardsToCombat>d__6::MoveNext` (RVA
+        // `0x3e2f0c`) has no combat test of its own past `IsInProgress`
+        // (`IL_0039`-`IL_004b`), and per card writes
+        // `CombatHistory::CardGenerated` (`IL_0104`-`IL_0120`), then calls
+        // `CardPileCmd::Add` (`IL_0155`), whose `<Add>d__10::MoveNext` (RVA
+        // `0x3e1ba4`) returns before any move or position roll when the pile
+        // is a combat pile and `CombatManager.IsEnding` (`IL_0041`-`IL_008a`).
+        // That covers a listener of the first Dazed ending the combat inside
+        // this body too (Smokestack): the first is in Draw, the other two are
+        // recorded only. The same holds for Funerary Mask and Radiant Pearl.
+        RelicId::RelicBlessedAntler => {
+            if state.turn == 1 {
+                turn_one_draw_inserts(catalog, state, events, CardId::Dazed, true)?;
+                crate::coverage::record_relic(RelicId::RelicBlessedAntler);
+            }
+        }
+        // `FuneraryMask/<BeforeHandDraw>d__6::MoveNext` (v0.111.0 RVA
+        // `0x325000`, re-read for #3162): `player == Owner`
+        // (`IL_0020`-`IL_002e`), `TurnNumber == 1` (`IL_0033`-`IL_0046`),
+        // `Flash`, then while `i < DynamicVars.Cards.BaseValue` (`CardsVar(3)`,
+        // `get_CanonicalVars` `0x93ddc`; loop test `IL_00fd`-`IL_011d`) one
+        // `ICombatState::CreateCard(Card<Soul>, Owner)` and
+        // `CardPileCmd::AddGeneratedCardToCombat(card, PileType.Draw, Owner,
+        // CardPilePosition.Random)` (`IL_005d`-`IL_007d`), awaited per card;
+        // `PreviewCardPileAdd` is presentation. No saved property.
+        RelicId::RelicFuneraryMask => {
+            if state.turn == 1 {
+                turn_one_draw_inserts(catalog, state, events, CardId::Soul, false)?;
+                crate::coverage::record_relic(RelicId::RelicFuneraryMask);
+            }
+        }
+        RelicId::RelicNinjaScroll => ninja_scroll_before_hand_draw(catalog, state, events)?,
+        // `PollinousCore::BeforeHandDraw` (RVA `0x9998c`, synchronous): owner
+        // check `IL_000c`-`IL_001a`, then `TurnsSeen = TurnsSeen + 1`
+        // (`IL_001b`-`IL_0026`). No turn test, no command and no combat test,
+        // so the write is the same on an ended combat. The count is read and
+        // reset by [`pollinous_core_modify_hand_draw`], after the whole pass.
+        // A counter that enters the pass already at `Turns` (left there by a
+        // combat that ended inside an earlier pass) counts on:
+        // `ModifyHandDraw` tests `TurnsSeen >= Turns` (`0x999cc`
+        // `IL_0017`-`IL_0032`), so the next live hand draw adds its two and
+        // resets it whatever it reached. The stored counter holds up to
+        // [`POLLINOUS_CORE_MAX_SEEN`]; past that the walk refuses by name.
+        RelicId::RelicPollinousCore => {
+            let seen = state.pollinous_core();
+            if seen >= POLLINOUS_CORE_MAX_SEEN {
+                return Err(EngineRefusal::CounterOverflow(
+                    "Pollinous Core TurnsSeen past its stored range",
+                ));
+            }
+            let written = state.set_pollinous_core(seen + 1);
+            debug_assert!(written);
+        }
+        RelicId::RelicJeweledMask => jeweled_mask_before_hand_draw(catalog, state)?,
+        RelicId::RelicRadiantPearl => radiant_pearl_before_hand_draw(catalog, state, events)?,
+        _ => {}
+    }
+    Ok(WalkStep::Ran)
+}
+
+/// Blessed Antler's three Dazed and Funerary Mask's three Souls: one fresh
+/// card at a time at a random Draw position ([`before_hand_draw_body`]
+/// carries the IL). Each card re-reads the combat: once it is over, the card
+/// is recorded as generated and not added.
+///
+/// `promote_exact_piles` is the solver's pile-identity promotion, not a native
+/// field: each Dazed is a distinct physical card the later listeners must see
+/// as one.
+fn turn_one_draw_inserts(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+    id: CardId,
+    promote_exact_piles: bool,
+) -> Result<(), EngineRefusal> {
+    let identity = crate::catalog::CardIdentity {
+        id,
+        upgrade: 0,
+        enchantment: None,
+    };
+    for _ in 0..3 {
+        if state.history.over {
+            super::cards::inject_generated_record_before_ending_draw_random(
+                state, catalog, identity, events,
+            )?;
+            continue;
+        }
+        if promote_exact_piles {
+            state.exact_piles = true;
+        }
+        super::cards::inject_generated_draw_random(state, catalog, identity, events)?;
+    }
+    Ok(())
+}
+
+/// The `BeforeHandDraw` relic walk (#3635), from the top or from the listener
+/// after `resume_after`, whose parked choice just resolved.
+///
+/// `Hook/<BeforeHandDraw>d__36::MoveNext` (v0.111.0 RVA `0x3d2e3c`) takes the
+/// listener list once (`IterateCombatHookListeners` at `IL_0024`) and awaits
+/// each `AbstractModel::BeforeHandDraw` in turn (`IL_0076`, looping at
+/// `IL_00f9`-`IL_00fe`). The relic segment of that list is
+/// [`relic_walk_order`] over [`BEFORE_HAND_DRAW_RELIC_DISPATCH`]:
+/// `Player.Relics` order on a vouched inventory.
+///
+/// * Toolbox parks a choice and stops the walk. `StartTurn`'s side-start tail
+///   runs at that pause (#3050), and [`resume_relic_selection`] re-enters here
+///   behind Toolbox. On a combat an earlier listener ended it stops the walk
+///   for good ([`WalkStep::Suspended`]).
+/// * A body with no choice of its own whose listener parked one (a
+///   generated-card listener) cannot be resumed inside the body. With a later
+///   relic still to act that refuses by name; with none it returns to the
+///   caller parked, as before.
+fn before_hand_draw_walk(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+    resume_after: Option<RelicId>,
+) -> Result<bool, EngineRefusal> {
+    let mut waiting = resume_after;
+    let mut order = relic_walk_order(catalog, &BEFORE_HAND_DRAW_RELIC_DISPATCH);
+    while let Some(relic) = order.next() {
+        if let Some(paused) = waiting {
+            if relic == paused {
+                waiting = None;
+            }
+            continue;
+        }
+        if before_hand_draw_body(catalog, state, events, relic)? != WalkStep::Ran {
+            return Ok(false);
+        }
+        if state.pending.is_some() {
+            if order
+                .clone()
+                .any(|later| before_hand_draw_relic_acts(catalog, state, later))
+            {
+                return Err(EngineRefusal::PowerOrderNotModeled(
+                    "BeforeHandDraw relic behind a listener choice parked inside an earlier relic body",
+                ));
+            }
+            return Ok(false);
+        }
+    }
+    if waiting.is_some() {
+        return Err(EngineRefusal::MalformedArgs(
+            "BeforeHandDraw relic walk resume point",
+        ));
+    }
+    Ok(true)
+}
+
+/// The owner's `BeforeHandDraw` relics, behind its power listeners: the
+/// recorded-order walk of [`before_hand_draw_walk`].
+///
+/// Returns whether the pass ran to its end, so `SetupPlayerTurn` goes on to
+/// the hand draw. `false` is Toolbox's pause (`state.pending` is set and the
+/// answer resumes the walk), a listener's parked choice, or Toolbox
+/// suspended on an ended combat, where the game never leaves the hook and
+/// nothing behind it in `SetupPlayerTurn` runs.
+///
+/// `pass_started_live` is whether the combat was live when the pass reached
+/// its first listener, which is one of the owner's powers when it has any.
+/// `Hook/<IterateCombatHookListeners>d__0::MoveNext` (RVA `0x3d3bc0`) tests
+/// `IsOverOrEnding && !IsStarting` once, before the first listener
+/// (`IL_0028`-`IL_0042`), and never between listeners (`IL_0064`-`IL_0095`).
+/// So a pass entered on an ended combat runs no relic, and a pass a listener
+/// ended still runs every relic behind it: each body of
+/// [`before_hand_draw_body`] says what it does there.
 pub(crate) fn before_hand_draw(
     catalog: &Catalog,
     state: &mut HotState,
+    pass_started_live: bool,
     events: &mut Vec<Event>,
 ) -> Result<bool, EngineRefusal> {
-    // `Pendulum::BeforeHandDraw` (v0.111.0 RVA `0x98fa0`): owner check
-    // `IL_000c`-`IL_001a`, then `set_TurnsSeen((TurnsSeen + 1) % Turns)` at
-    // `IL_001b`-`IL_003a` with `Turns = 3` from `get_CanonicalVars`
-    // (`0x98f3a`). Everything after that write is presentation —
-    // `set_Status(TurnsSeen == Turns - 1)` at `IL_003f`-`IL_0063` and the
-    // `DoActivateVisuals` flash at `IL_0068`-`IL_0076` — and `AfterCombatEnd`
-    // (`0x99093`) clears only `Status`, never `TurnsSeen`, which is why the
-    // counter is a saved per-run value the opening seeds. The advance happens
-    // once, **before** any Toolbox pause below, so the later ModifyHandDraw
-    // contribution reads the completed value: oracle
-    // `_begin_before_hand_draw_relics`, frozen Python, deleted #2827.
-    if catalog.hooks().owns(RelicId::RelicPendulum) {
-        let next = (state.pendulum() + 1) % 3;
-        let written = state.set_pendulum(next);
-        debug_assert!(written);
+    if !pass_started_live {
+        return Ok(true);
     }
-    if state.turn == 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicToolbox) {
-        begin_generation_relic_selection(state, catalog, RelicPendingKind::Toolbox, 3)?;
-        crate::coverage::record_relic(RelicId::RelicToolbox);
-        return Ok(false);
-    }
-    continue_before_hand_draw_after_toolbox(catalog, state, events)
+    before_hand_draw_walk(catalog, state, events, None)
 }
 
-pub(crate) fn continue_before_hand_draw_after_toolbox(
+/// The rest of the `BeforeHandDraw` relic walk once Toolbox's choice is
+/// answered: every relic recorded behind Toolbox.
+pub(crate) fn resume_before_hand_draw_after_toolbox(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
 ) -> Result<bool, EngineRefusal> {
-    if state.turn == 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicBlessedAntler) {
-        for _ in 0..3 {
-            // The oracle commits each Dazed with `force_exact=True`
-            // (`_add_one_blessed_antler_dazed`, frozen Python, deleted #2827),
-            // and `_commit_live_card_piles` makes exact mode visible before
-            // the card enters Draw, so the listeners below see
-            // it. `exact_piles` is the solver's pile-identity promotion, not a
-            // native field; its safety gate is skipped for Rust-opening roots
-            // (#2952), the only roots that reach this turn-1 row (#2992).
-            if !state.history.over {
-                state.exact_piles = true;
-            }
-            super::cards::inject_generated_draw_random(
-                state,
-                catalog,
-                crate::catalog::CardIdentity {
-                    id: CardId::Dazed,
-                    upgrade: 0,
-                    enchantment: None,
-                },
-                events,
-            )?;
-        }
-        crate::coverage::record_relic(RelicId::RelicBlessedAntler);
+    before_hand_draw_walk(catalog, state, events, Some(RelicId::RelicToolbox))
+}
+
+/// Ninja Scroll's Shiv count.
+///
+/// `NinjaScroll::get_CanonicalVars` (v0.111.0 RVA `0x97752`) builds
+/// `DynamicVar("Shivs", 3)` at `IL_0001`-`IL_0006`, which the body reads back
+/// as `DynamicVars["Shivs"].IntValue` (`IL_0058`-`IL_0067`).
+const NINJA_SCROLL_SHIVS: usize = 3;
+
+/// Ninja Scroll's turn-one Shivs into the Hand (#3619).
+///
+/// # The native contract
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`). The type declares one hook,
+/// `BeforeHandDraw` (RVA `0x97774`, the async stub), no field and no saved
+/// property. The body is `NinjaScroll/<BeforeHandDraw>d__7::MoveNext` (RVA
+/// `0x32b770`):
+///
+/// * `player == Owner` at `IL_0027`-`IL_002c`, else `leave` at `IL_002e`;
+/// * `Owner.PlayerCombatState.TurnNumber; ldc.i4.1; ble.s` at
+///   `IL_0034`-`IL_0044`, else `leave` at `IL_0046`;
+/// * `Flash`, then `Shiv::CreateInHand(Owner, DynamicVars["Shivs"].IntValue,
+///   null)` at `IL_0052`-`IL_0073`, awaited.
+///
+/// `Shiv::CreateInHand`'s count overload is
+/// `Shiv/<CreateInHand>d__12::MoveNext` (RVA `0x3bb20c`): it returns an empty
+/// list while `CombatManager.IsOverOrEnding` (`IL_002c`-`IL_003e`), creates
+/// the Shivs in a loop (`IL_004e`-`IL_0079`), and hands the whole list to one
+/// `CardPileCmd::AddGeneratedCardsToCombat(list, PileType.Hand, …)` at
+/// `IL_0081`-`IL_0093`. That is the plural generated-card transaction every
+/// Shiv card already uses here (`steps::shared::generate_fixed_shivs`, Fan of
+/// Knives and Blade of Ink): [`super::cards::inject_generated_bottom`] with a
+/// level-zero Shiv, which allocates the uids in creation order, records each
+/// generated card, runs the generated-card listeners and redirects past a
+/// full hand. No RNG is drawn.
+///
+/// # Position inside the walk
+///
+/// Native runs relic `BeforeHandDraw` listeners in `Player.Relics` order, all
+/// of them before `ModifyHandDraw` and the turn-one draw
+/// (`CombatManager/<SetupPlayerTurn>d__102` `0x3f6c6c`, `IL_0177` then
+/// `IL_01fd`). On a vouched inventory this body runs at its recorded place
+/// ([`before_hand_draw_walk`], #3635), so the three Shivs sit in the Hand
+/// among the other bodies' cards in that order, ahead of the deal. On an
+/// unvouched one it runs at the fixed place of
+/// [`BEFORE_HAND_DRAW_RELIC_DISPATCH`]. Pendulum and Pollinous Core write
+/// only their counters and commute with it; every other same-hook body moves
+/// a Draw or Hand card or allocates a uid, and the opening refuses each of
+/// those co-ownerships by name on an unvouched inventory (`entry::opening`'s
+/// `refuse_unordered_hand_draw_card_peers`, Blessed Antler's and Toolbox's
+/// gates), as `engine::admission` does for a loaded document.
+fn ninja_scroll_before_hand_draw(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if state.turn > 1 || state.history.over || !catalog.hooks().owns(RelicId::RelicNinjaScroll) {
+        return Ok(());
     }
-    // `FuneraryMask/<BeforeHandDraw>d__6::MoveNext` (v0.111.0 RVA `0x325000`,
-    // re-read for #3162): `player == Owner` (`IL_0020`-`IL_002e`),
-    // `TurnNumber == 1` (`IL_0033`-`IL_0046`), `Flash`, then while
-    // `i < DynamicVars.Cards.BaseValue` (`CardsVar(3)`, `get_CanonicalVars`
-    // `0x93ddc`; loop test `IL_00fd`-`IL_011d`) one
-    // `ICombatState::CreateCard(Card<Soul>, Owner)` and
-    // `CardPileCmd::AddGeneratedCardToCombat(card, PileType.Draw, Owner,
-    // CardPilePosition.Random)` (`IL_005d`-`IL_007d`), awaited per card;
-    // `PreviewCardPileAdd` is presentation. No saved property.
-    if state.turn == 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicFuneraryMask) {
-        for _ in 0..3 {
-            super::cards::inject_generated_draw_random(
-                state,
-                catalog,
-                crate::catalog::CardIdentity {
-                    id: CardId::Soul,
-                    upgrade: 0,
-                    enchantment: None,
-                },
-                events,
-            )?;
-        }
-        crate::coverage::record_relic(RelicId::RelicFuneraryMask);
-    }
-    if catalog.hooks().owns(RelicId::RelicPollinousCore) && !state.history.over {
-        if state.pollinous_core() == 3 {
-            let written = state.set_pollinous_core(0);
-            debug_assert!(written);
-            crate::coverage::record_relic(RelicId::RelicPollinousCore);
-            return Ok(true);
-        }
-        let written = state.set_pollinous_core(state.pollinous_core() + 1);
-        debug_assert!(written);
-    }
-    jeweled_mask_before_hand_draw(catalog, state)?;
-    Ok(false)
+    super::cards::inject_generated_bottom(
+        state,
+        catalog,
+        crate::catalog::CardIdentity {
+            id: CardId::Shiv,
+            upgrade: 0,
+            enchantment: None,
+        },
+        NINJA_SCROLL_SHIVS,
+        PileId::Hand,
+        events,
+    )?;
+    crate::coverage::record_relic(RelicId::RelicNinjaScroll);
+    Ok(())
 }
 
 /// Jeweled Mask's turn-one free Power card (#3162).
@@ -952,9 +1400,12 @@ pub(crate) fn continue_before_hand_draw_after_toolbox(
 /// still carries them. That is why the moved card gets the slot-7 bit: the
 /// boundary projects the rows only for a card that carries it (#3176).
 ///
-/// There is no ending gate in the body; the `history.over` guard here is the
-/// engine's usual one for a hook that cannot be reached once combat ended.
-/// `CardModel.Keywords` is the effective set, and the only combat-local
+/// There is no ending gate in the body. Reached after an earlier listener of
+/// the pass ended the combat, it still draws the stream and frees the card
+/// (the three steps up to `IL_00f3` are not commands), and only the move is
+/// dropped: `CardPileCmd/<Add>d__10::MoveNext` (RVA `0x3e1ba4`) returns before
+/// any move when the pile is a combat pile and `CombatManager.IsEnding`
+/// (`IL_0041`-`IL_008a`). `CardModel.Keywords` is the effective set, and the only combat-local
 /// keywords this crate represents are Ethereal, Retain and Sly
 /// (`hot::CardStates`), none of them Innate, so the spec's `innate` flag is the
 /// whole answer for a Power (`Imbued`, the one Innate-sensitive enchantment in
@@ -963,21 +1414,26 @@ pub(crate) fn continue_before_hand_draw_after_toolbox(
 ///
 /// # Position inside the walk
 ///
-/// Native runs relic `BeforeHandDraw` listeners in `Player.Relics` order.
-/// This body runs after Blessed Antler's and Funerary Mask's Draw inserts and
-/// Pollinous Core's counter, and before the `ModifyHandDraw` fold and Radiant
-/// Pearl's Hand insert. Pendulum's and Pollinous Core's bodies write only their
-/// counters, so they commute with it; every other represented same-hook body
-/// moves a Draw or Hand card, and the opening refuses those co-ownerships by
-/// name (`entry::opening`'s `refuse_unordered_hand_draw_card_peers`, Blessed
-/// Antler's and Toolbox's gates).
+/// Native runs relic `BeforeHandDraw` listeners in `Player.Relics` order, and
+/// so does [`before_hand_draw_walk`] on a vouched inventory (#3635): the
+/// candidates are the Powers in Draw as the bodies recorded ahead left it (a
+/// Funerary Mask or Blessed Antler insert moves the candidates' positions but
+/// not their order), and the lifted card joins the Hand behind what those
+/// bodies put there. On an unvouched inventory it runs at the fixed place of
+/// [`BEFORE_HAND_DRAW_RELIC_DISPATCH`]. Pendulum's and Pollinous Core's bodies
+/// write only their counters, so they commute with it; every other same-hook
+/// body moves a Draw or Hand card, and the opening refuses those
+/// co-ownerships by name on an unvouched inventory (`entry::opening`'s
+/// `refuse_unordered_hand_draw_card_peers`, Blessed Antler's and Toolbox's
+/// gates).
 fn jeweled_mask_before_hand_draw(
     catalog: &Catalog,
     state: &mut HotState,
 ) -> Result<(), EngineRefusal> {
-    if state.turn != 1 || state.history.over || !catalog.hooks().owns(RelicId::RelicJeweledMask) {
+    if state.turn != 1 || !catalog.hooks().owns(RelicId::RelicJeweledMask) {
         return Ok(());
     }
+    let ending = state.history.over;
     let power = |card: &HotCard| catalog.spec(card.atom).is_some_and(|spec| spec.is_power);
     let not_innate = |card: &HotCard| catalog.spec(card.atom).is_some_and(|spec| !spec.innate);
     let powers = state
@@ -1027,7 +1483,6 @@ fn jeweled_mask_before_hand_draw(
         .iter()
         .position(|card| card.uid == chosen.uid)
         .ok_or(EngineRefusal::ContinuationNotModeled)?;
-    let mut chosen = draw.remove(index);
     let spec = catalog
         .spec(chosen.atom)
         .ok_or(EngineRefusal::UnknownAtom(chosen.atom))?;
@@ -1035,6 +1490,16 @@ fn jeweled_mask_before_hand_draw(
         .card_states
         .set_to_free_this_turn(chosen.uid, spec.cost)
         .ok_or(EngineRefusal::MalformedArgs("Jeweled Mask free card"))?;
+    if ending {
+        // The freed card stays where it is in Draw: `Add` returned on the
+        // ending combat. It carries the slot-7 bit all the same.
+        draw[index].flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        state.piles.set(PileId::Draw, HotPile::from_cards(draw));
+        state.exact_piles = true;
+        crate::coverage::record_relic(RelicId::RelicJeweledMask);
+        return Ok(());
+    }
+    let mut chosen = draw.remove(index);
     // The rows `SetToFreeThisTurn` just appended live in the card's slot-7
     // payload, which the boundary emits only for a card carrying this bit
     // (`HotBoundary::card_to_canonical_with_instance`). Without it the rows
@@ -1066,28 +1531,43 @@ fn jeweled_mask_before_hand_draw(
 /// `CombatState.CreateCard<Luminesce>(Owner)` into a list
 /// (`IL_004b`-`IL_008b`) and one `CardPileCmd::AddGeneratedCardsToCombat(list,
 /// PileType.Hand, Owner, …)` at `IL_008d`-`IL_0096`, awaited. No saved
-/// property and no RNG draw. It runs after `ModifyHandDraw` is totalled here
-/// and before the Draw; the total reads no pile, so that is the native order.
-/// Its same-hook Hand/Draw peers are refused in the opening
-/// (`entry::opening`'s `refuse_unordered_hand_draw_card_peers`).
-pub(crate) fn radiant_pearl_before_hand_draw(
+/// property and no RNG draw. It runs at its place in
+/// [`before_hand_draw_walk`] (#3635): the recorded one on a vouched inventory,
+/// the last of [`BEFORE_HAND_DRAW_RELIC_DISPATCH`] otherwise, where its
+/// same-hook Hand/Draw peers are refused in the opening (`entry::opening`'s
+/// `refuse_unordered_hand_draw_card_peers`). On an ended combat the card is
+/// recorded as generated and not added ([`before_hand_draw_body`], Blessed
+/// Antler's arm).
+fn radiant_pearl_before_hand_draw(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if state.turn == 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicRadiantPearl) {
-        super::cards::inject_generated_bottom(
-            state,
-            catalog,
-            crate::catalog::CardIdentity {
-                id: CardId::Luminesce,
-                upgrade: 0,
-                enchantment: None,
-            },
-            1,
-            PileId::Hand,
-            events,
-        )?;
+    if state.turn == 1 && catalog.hooks().owns(RelicId::RelicRadiantPearl) {
+        let identity = crate::catalog::CardIdentity {
+            id: CardId::Luminesce,
+            upgrade: 0,
+            enchantment: None,
+        };
+        if state.history.over {
+            super::cards::inject_generated_record_before_ending_bottom(
+                state,
+                catalog,
+                identity,
+                1,
+                PileId::Hand,
+                events,
+            )?;
+        } else {
+            super::cards::inject_generated_bottom(
+                state,
+                catalog,
+                identity,
+                1,
+                PileId::Hand,
+                events,
+            )?;
+        }
         crate::coverage::record_relic(RelicId::RelicRadiantPearl);
     }
     Ok(())
@@ -1285,15 +1765,12 @@ const FESTIVE_POPPER_DAMAGE: i64 = 9;
 /// 1)` at `IL_003a`-`IL_004c`. `CardCmd.Upgrade` walks the captured Hand
 /// enumeration once and skips what cannot upgrade; nothing else is written.
 ///
-/// The oracle is `_continue_after_toasty_mittens`' `s.turn <= 1 and s.bellows
-/// and not s.over` block (frozen Python, deleted #2827), which calls
-/// `_upgrade_hand_once`. It runs **first** in that fixed
-/// suffix, ahead of Bone Tea, so it is placed first here too. The frozen Hand
-/// snapshot and the atomic transaction are [`super::cards::upgrade_live_cards_once`],
-/// the same command Bone Tea's pass below uses. Bone Tea is the only same-hook
-/// peer admission lets co-own it, because two clipped upgrade passes commute;
-/// every other order-observable pairing is refused by name (admission's Vexing
-/// Puzzlebox list, and `entry::opening`'s `AfterPlayerTurnStart` peer gate).
+/// The frozen Hand snapshot and the atomic transaction are
+/// [`super::cards::upgrade_live_cards_once`], the same command Bone Tea's pass
+/// uses. The body runs at its recorded place in the walk
+/// ([`after_player_turn_start_walk`], #3635), so it upgrades exactly the cards
+/// the earlier listeners left in the Hand: a Vexing Puzzlebox or Choices
+/// Paradox card only when that relic is recorded first.
 fn bellows_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
@@ -1323,26 +1800,15 @@ fn bellows_after_player_turn_start(
 /// DynamicVars.Damage, Owner.Creature)` at `IL_0072`-`IL_0094`. It writes
 /// nothing else.
 ///
-/// The oracle is `s.turn == 1 and s.popper and not s.over`, then
-/// `damage_monster(s, m, 9.0, powered=False, dealer=PLAYER)` for each
-/// `m in s.alive()` (frozen Python `_continue_after_toasty_mittens`, deleted #2827); `s.alive()` is a list
-/// built before the first hit. That is exactly the shape of
-/// Mr Struggles' block below — the same `alive_targets` snapshot and the same
-/// catalog-authenticated unpowered, blockable `damage_monster_with_catalog`
-/// call — and Popper sits between Bone Tea and Mr Struggles in the oracle's
-/// fixed suffix, so it is placed there. The same-hook peers whose order around
-/// it is observable (a second enemy-damage body — Mercury Hourglass, Mr
-/// Struggles — Royal Poison, Bone Tea, and the Hand-choice and generation
-/// relics) are refused by name at the opening
+/// The targets are one `alive_targets` snapshot taken before the first hit,
+/// each hit the catalog-authenticated unpowered, blockable
+/// `damage_monster_with_catalog` call, as for Mr Struggles. The body runs at
+/// its recorded place in the walk ([`after_player_turn_start_walk`], #3635):
+/// ahead of or behind each other enemy hit, each Hand choice and each
+/// generated card, as the inventory has it. On an unvouched inventory the
+/// peers whose order around it shows are refused by name at the opening
 /// (`entry::opening::after_player_turn_start_peers_are_ordered`) and in
-/// admission (`turn_start_damage_relics` and the Bone Tea / Vexing Puzzlebox
-/// lists). The oracle's one recorded-order Queen trio is refused rather than
-/// admitted, which is stricter than the oracle and never wrong. The one
-/// exceptions are Toasty Mittens (#2884) and Gambling Chip under a vouched
-/// inventory: Popper then runs on its recorded side of that relic, ahead of
-/// the Hand choice when it was recorded first
-/// ([`festive_popper_precedes_toasty_mittens`],
-/// [`festive_popper_precedes_gambling_chip`]).
+/// admission.
 fn festive_popper_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
@@ -1367,184 +1833,112 @@ fn festive_popper_after_player_turn_start(
     Ok(())
 }
 
-fn continue_after_toasty_mittens(
+/// Bone Tea's charged turn-one Hand upgrade.
+///
+/// `BoneTea::AfterPlayerTurnStart` (v0.111.0 RVA `0x90ffc`, synchronous):
+/// `IsUsedUp` returns at `IL_000d`-`IL_0014`, `player == Owner` at
+/// `IL_001c`-`IL_0023`, `TurnNumber <= 1` at `IL_002a`-`IL_003c`, then one
+/// `CardCmd::Upgrade` per Hand card (`IL_0042`-`IL_006f`) and
+/// `CombatsLeft - 1` written back (`IL_007e`-`IL_0088`). The Hand snapshot and
+/// the atomic transaction are [`super::cards::upgrade_live_cards_once`], the
+/// command Bellows uses.
+fn bone_tea_after_player_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+) -> Result<(), EngineRefusal> {
+    if state.turn > 1
+        || state.history.over
+        || !catalog.hooks().owns(RelicId::RelicBoneTea)
+        || state.fanouts.bone_tea_combats_left() == 0
+    {
+        return Ok(());
+    }
+    let uids = state
+        .piles
+        .get(PileId::Hand)
+        .as_slice()
+        .iter()
+        .map(|card| card.uid)
+        .collect::<Vec<_>>();
+    super::cards::upgrade_live_cards_once(state, catalog, &uids)?;
+    let written = state.fanouts.set_bone_tea_combats_left(0);
+    debug_assert!(written);
+    crate::coverage::record_relic(RelicId::RelicBoneTea);
+    Ok(())
+}
+
+/// Mr Struggles' hit of `TurnNumber` on every hittable enemy, every turn.
+///
+/// `MrStruggles/<AfterPlayerTurnStart>d__2::MoveNext` (v0.111.0 RVA
+/// `0x32aca4`): `player == Owner` at `IL_0027`-`IL_002e`, no turn gate, then
+/// one awaited `CreatureCmd::Damage(choiceContext, CombatState.HittableEnemies,
+/// (decimal)TurnNumber, ValueProp 4, Owner.Creature)` at `IL_0044`-`IL_0077`.
+fn mr_struggles_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    bellows_after_player_turn_start(catalog, state)?;
-    if state.turn <= 1
-        && !state.history.over
-        && catalog.hooks().owns(RelicId::RelicBoneTea)
-        && state.fanouts.bone_tea_combats_left() > 0
-    {
-        let uids = state
-            .piles
-            .get(PileId::Hand)
-            .as_slice()
-            .iter()
-            .map(|card| card.uid)
-            .collect::<Vec<_>>();
-        super::cards::upgrade_live_cards_once(state, catalog, &uids)?;
-        let written = state.fanouts.set_bone_tea_combats_left(0);
-        debug_assert!(written);
-        crate::coverage::record_relic(RelicId::RelicBoneTea);
+    if state.history.over || !catalog.hooks().owns(RelicId::RelicMrStruggles) {
+        return Ok(());
     }
-    if !festive_popper_precedes_toasty_mittens(catalog)
-        && !festive_popper_precedes_gambling_chip(catalog)
-    {
-        festive_popper_after_player_turn_start(catalog, state, events)?;
+    let targets = super::damage::alive_targets(state);
+    for target in targets {
+        super::damage::damage_monster_with_catalog(
+            state,
+            catalog,
+            target,
+            DotNetDecimal::from_i64(i64::from(state.turn)),
+            false,
+            true,
+            events,
+        )?;
     }
-    if !state.history.over && catalog.hooks().owns(RelicId::RelicMrStruggles) {
-        let targets = super::damage::alive_targets(state);
-        for target in targets {
-            super::damage::damage_monster_with_catalog(
-                state,
-                catalog,
-                target,
-                DotNetDecimal::from_i64(i64::from(state.turn)),
-                false,
-                true,
-                events,
-            )?;
-        }
-        crate::coverage::record_relic(RelicId::RelicMrStruggles);
-    }
-    if state.turn <= 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicRoyalPoison) {
-        super::damage::damage_player_from_power_with_catalog(state, catalog, 4, false, events)?;
-        crate::coverage::record_relic(RelicId::RelicRoyalPoison);
-    }
-    if state.emotion_chip_owned() && state.emotion_damage_previous_turn() && !state.history.over {
-        let orb_count = state.orbs.as_slice().len();
-        for index in 0..orb_count {
-            super::orbs::passive_at_affected_by_hooks(state, catalog, index, events)?;
-        }
-        crate::coverage::record_relic(RelicId::RelicEmotionChip);
-    }
+    crate::coverage::record_relic(RelicId::RelicMrStruggles);
     Ok(())
 }
 
-/// v0.111.0 AfterPlayerTurnStart awaits inventory-order listeners.
-/// VexingPuzzlebox MoveNext (RVA 0x333de0) adds its turn-1 generated card
-/// before ToastyMittens MoveNext (RVA 0x33285c) selects and exhausts from
-/// Hand, then grants Strength. This fixed suffix requires that recorded
-/// order; the reverse would offer a different selection pool.
-pub(crate) fn vexing_toasty_order_is_exact(catalog: &Catalog) -> bool {
-    let hooks = catalog.hooks();
-    if !hooks.owns(RelicId::RelicVexingPuzzlebox) || !hooks.owns(RelicId::RelicToastyMittens) {
-        return true;
+/// Royal Poison's turn-one hit on its owner.
+///
+/// `RoyalPoison/<AfterPlayerTurnStart>d__4::MoveNext` (v0.111.0 RVA
+/// `0x32fcf4`): `player == Owner` at `IL_0027`-`IL_002e`, `TurnNumber <= 1` at
+/// `IL_0034`-`IL_0046`, then one awaited `CreatureCmd::Damage` of
+/// `DynamicVars.Damage` on `Owner.Creature` (`IL_0058`-`IL_0070`).
+fn royal_poison_after_player_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if state.turn > 1 || state.history.over || !catalog.hooks().owns(RelicId::RelicRoyalPoison) {
+        return Ok(());
     }
-    hooks.dispatch_ordered()
-        && hooks
-            .relics()
-            .iter()
-            .position(|r| *r == RelicId::RelicVexingPuzzlebox)
-            < hooks
-                .relics()
-                .iter()
-                .position(|r| *r == RelicId::RelicToastyMittens)
+    super::damage::damage_player_from_power_with_catalog(state, catalog, 4, false, events)?;
+    crate::coverage::record_relic(RelicId::RelicRoyalPoison);
+    Ok(())
 }
 
-/// Whether Festive Popper's turn-one damage runs **ahead of** Toasty Mittens'
-/// Hand choice (#2884): both owned, the inventory vouched for as dispatch
-/// order, and every Festive Popper recorded before every Toasty Mittens.
+/// Emotion Chip's passive pass over the orb queue after a turn in which its
+/// owner lost HP.
 ///
-/// Native awaits `Hook::AfterPlayerTurnStart`'s relic listeners one by one in
-/// `Player.Relics` order (`Hook/<AfterPlayerTurnStart>d__56::MoveNext`, v0.111.0
-/// RVA `0x3cff0c`: `IterateCombatHookListeners` at `IL_012d`, then each
-/// listener's `AbstractModel::AfterPlayerTurnStart` awaited at `IL_017a`, with
-/// no ending check between listeners). The two bodies do not commute:
-///
-/// * `FestivePopper/<AfterPlayerTurnStart>d__4::MoveNext` (RVA `0x324b94`)
-///   deals its 9 to `HittableEnemies` at `IL_0072`-`IL_0094` on
-///   `TurnNumber == 1` (`IL_0044`-`IL_0055`);
-/// * `ToastyMittens/<AfterPlayerTurnStart>d__6::MoveNext` (RVA `0x33285c`) has
-///   no turn gate — only `player == Owner` (`IL_0033`-`IL_0042`) — and pauses
-///   on `CardSelectCmd::FromHand` (`IL_0068`), then `CardCmd::Exhaust`
-///   (`IL_00f2`) and `Apply<StrengthPower>` (`IL_01af`).
-///
-/// Popper first means the enemies are already hit (or dead, ending the fight)
-/// when the Hand choice is offered and when the side-start tail runs at that
-/// pause (#3050); Toasty first means the reverse. So the fixed suffix, which
-/// runs Popper after Toasty, is exact only for the Toasty-first inventory, and
-/// this predicate moves Popper to just before Toasty for the other one. Every
-/// other same-hook peer Popper does not commute with (Choices Paradox,
-/// Vexing Puzzlebox, Bone Tea, Mr Struggles, Mercury Hourglass, Royal Poison)
-/// is refused beside Popper by the opening
-/// (`entry::opening::after_player_turn_start_peers_are_ordered`) and, where
-/// the engine can see them, by admission, so moving Popper past Bellows and
-/// Bone Tea reorders it only against bodies it is never co-owned with here.
-/// [`after_player_turn_start_dispatch`] carries the same move for the pause
-/// order check.
-pub(crate) fn festive_popper_precedes_toasty_mittens(catalog: &Catalog) -> bool {
-    let hooks = catalog.hooks();
-    if !hooks.owns(RelicId::RelicFestivePopper)
-        || !hooks.owns(RelicId::RelicToastyMittens)
-        || !hooks.dispatch_ordered()
-        // Popper already ran, ahead of the earlier Gambling Chip choice.
-        || festive_popper_precedes_gambling_chip(catalog)
-    {
-        return false;
+/// `EmotionChip/<AfterPlayerTurnStart>d__5::MoveNext` (v0.111.0 RVA
+/// `0x323ae8`): `player == Owner` at `IL_0025`-`IL_002c`,
+/// `LostHpInPreviousTurn` at `IL_0039`-`IL_0040`, then one awaited
+/// `OrbCmd::Passive` per orb of `OrbQueue.Orbs` (`IL_004d`-`IL_0090`,
+/// looping at `IL_0153`-`IL_0158`). The body reads the private owner carrier,
+/// which the boundary ties to the inventory.
+fn emotion_chip_after_player_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if !state.emotion_chip_owned() || !state.emotion_damage_previous_turn() || state.history.over {
+        return Ok(());
     }
-    let relics = hooks.relics();
-    let last_popper = relics
-        .iter()
-        .rposition(|relic| *relic == RelicId::RelicFestivePopper);
-    let first_toasty = relics
-        .iter()
-        .position(|relic| *relic == RelicId::RelicToastyMittens);
-    last_popper
-        .zip(first_toasty)
-        .is_some_and(|(popper, toasty)| popper < toasty)
-}
-
-/// Whether Festive Popper's turn-one damage runs **ahead of** Gambling Chip's
-/// Hand choice: both owned, the inventory vouched for as dispatch order, and
-/// every Festive Popper recorded before every Gambling Chip.
-///
-/// The listener walk is [`festive_popper_precedes_toasty_mittens`]'s
-/// (`Hook/<AfterPlayerTurnStart>d__56::MoveNext`, v0.111.0 RVA `0x3cff0c`,
-/// `Player.Relics` order, no ending check between listeners). The two bodies
-/// do not commute:
-///
-/// * `FestivePopper/<AfterPlayerTurnStart>d__4::MoveNext` (RVA `0x324b94`)
-///   gates `player == Owner` (`IL_0027`-`IL_002c`) and `TurnNumber == 1`
-///   (`IL_0045`-`IL_0055`), then awaits `CreatureCmd::Damage` over
-///   `HittableEnemies` (`IL_0079`-`IL_0094`);
-/// * `GamblingChip/<AfterPlayerTurnStart>d__2::MoveNext` (RVA `0x325788`)
-///   gates `player == Owner` (`IL_002e`-`IL_0033`) and `TurnNumber <= 1`
-///   (`IL_003b`-`IL_004b`), then pauses on
-///   `CardSelectCmd::FromHandForDiscard` (`IL_0071`) and awaits
-///   `CardCmd::DiscardAndDraw` (`IL_00f0`).
-///
-/// Popper first means the enemies are already hit (or dead, ending the fight)
-/// when the discard choice is offered and when the side-start tail runs at
-/// that pause (#3050); Chip first means the reverse. The fixed suffix runs
-/// Popper after Chip, so it is exact only for the Chip-first inventory, and
-/// this predicate moves Popper to just before Chip for the other one. The
-/// bodies between the two places (Vexing Puzzlebox, Toasty Mittens, Bellows,
-/// Bone Tea) are either refused beside Popper by the opening
-/// (`entry::opening::after_player_turn_start_peers_are_ordered`) or, for
-/// Toasty Mittens, held to the recorded order at the pause
-/// ([`after_player_turn_start_pause_order_is_native`]).
-pub(crate) fn festive_popper_precedes_gambling_chip(catalog: &Catalog) -> bool {
-    let hooks = catalog.hooks();
-    if !hooks.owns(RelicId::RelicFestivePopper)
-        || !hooks.owns(RelicId::RelicGamblingChip)
-        || !hooks.dispatch_ordered()
-    {
-        return false;
+    let orb_count = state.orbs.as_slice().len();
+    for index in 0..orb_count {
+        super::orbs::passive_at_affected_by_hooks(state, catalog, index, events)?;
     }
-    let relics = hooks.relics();
-    let last_popper = relics
-        .iter()
-        .rposition(|relic| *relic == RelicId::RelicFestivePopper);
-    let first_chip = relics
-        .iter()
-        .position(|relic| *relic == RelicId::RelicGamblingChip);
-    last_popper
-        .zip(first_chip)
-        .is_some_and(|(popper, chip)| popper < chip)
+    crate::coverage::record_relic(RelicId::RelicEmotionChip);
+    Ok(())
 }
 
 /// Vexing Puzzlebox's turn-one card: the first of one full
@@ -1646,44 +2040,34 @@ fn vexing_puzzlebox_after_player_turn_start(
     Ok(())
 }
 
-fn continue_after_gambling_chip(
+/// Toasty Mittens' place in the walk: the side-start tail it owes at its
+/// pause, then the Hand choice ([`toasty_mittens_select`]).
+///
+/// `ToastyMittens/<AfterPlayerTurnStart>d__6` (RVA `0x33285c`) gates only
+/// `player == Owner` (`IL_0033`-`IL_0042`) and has no Hand gate before
+/// `CardSelectCmd::FromHand` (`IL_0068`), which pauses before it reads the
+/// Hand (#3050): the side-start tail runs at that pause and can still hand it
+/// a card. It runs here, ahead of the Hand read, whatever the Hand holds,
+/// because the candidate count decides whether native prompts at all (#3273).
+fn toasty_mittens_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
-) -> Result<(), EngineRefusal> {
-    if !vexing_toasty_order_is_exact(catalog) {
-        return Err(EngineRefusal::MalformedArgs(
-            "Toasty Mittens + Vexing Puzzlebox recorded order",
-        ));
+) -> Result<WalkStep, EngineRefusal> {
+    if state.history.over || !catalog.hooks().owns(RelicId::RelicToastyMittens) {
+        return Ok(WalkStep::Ran);
     }
-    // A Puzzlebox recorded before Choices Paradox already ran ahead of the
-    // Paradox grid (#3321, `after_player_turn_start`).
-    if !vexing_puzzlebox_precedes_choices_paradox(catalog) {
-        vexing_puzzlebox_after_player_turn_start(catalog, state, events)?;
+    super::turn::run_side_start_ahead_of_setup_remainder(
+        state,
+        catalog,
+        RelicId::RelicToastyMittens,
+        events,
+    )?;
+    if toasty_mittens_select(catalog, state, events)? {
+        Ok(WalkStep::Ran)
+    } else {
+        Ok(WalkStep::Paused)
     }
-    // A Festive Popper recorded before Toasty Mittens deals its damage ahead of
-    // the Hand choice, and `continue_after_toasty_mittens` then skips it (#2884).
-    if festive_popper_precedes_toasty_mittens(catalog) {
-        festive_popper_after_player_turn_start(catalog, state, events)?;
-    }
-    if !state.history.over && catalog.hooks().owns(RelicId::RelicToastyMittens) {
-        // `ToastyMittens/<AfterPlayerTurnStart>d__6` (RVA `0x33285c`) has no
-        // Hand gate before `CardSelectCmd::FromHand` (IL_0068), which pauses
-        // before it reads the Hand (#3050): the side-start tail runs at that
-        // pause and can still hand it a card. It runs here, ahead of the Hand
-        // read, whatever the Hand holds, because the candidate count decides
-        // whether native prompts at all (#3273, [`toasty_mittens_select`]).
-        super::turn::run_side_start_ahead_of_setup_remainder(
-            state,
-            catalog,
-            RelicId::RelicToastyMittens,
-            events,
-        )?;
-        if !toasty_mittens_select(catalog, state, events)? {
-            return Ok(());
-        }
-    }
-    continue_after_toasty_mittens(catalog, state, events)
 }
 
 /// Toasty Mittens' `FromHand` over the post-pause Hand (#3273). Returns
@@ -1748,37 +2132,37 @@ fn toasty_mittens_exhaust(
     Ok(())
 }
 
-fn continue_after_choices_paradox(
+/// Gambling Chip's place in the walk: its turn-one discard choice.
+///
+/// `GamblingChip/<AfterPlayerTurnStart>d__2` (RVA `0x325788`) gates only
+/// `player == Owner` (`IL_002e`-`IL_0033`) and `TurnNumber <= 1`
+/// (`IL_003b`-`IL_004b`) before `CardSelectCmd::FromHandForDiscard`
+/// (`IL_0071`), whose `FromHand` pauses before it reads the Hand (#3050): a
+/// side-start tail that runs at that pause can still hand it a card. The
+/// chosen cards go through `CardCmd::DiscardAndDraw` (`IL_00f0`) on resume
+/// ([`resume_relic_selection`]).
+fn gambling_chip_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
-) -> Result<(), EngineRefusal> {
-    // A Festive Popper recorded before Gambling Chip deals its damage ahead of
-    // the discard choice, and the later places then skip it.
-    if festive_popper_precedes_gambling_chip(catalog) {
-        festive_popper_after_player_turn_start(catalog, state, events)?;
+) -> Result<WalkStep, EngineRefusal> {
+    if state.turn > 1 || state.history.over || !catalog.hooks().owns(RelicId::RelicGamblingChip) {
+        return Ok(WalkStep::Ran);
     }
-    if state.turn <= 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicGamblingChip) {
-        if state.piles.get(PileId::Hand).is_empty() {
-            // `GamblingChip/<AfterPlayerTurnStart>d__2` (RVA `0x325788`)
-            // gates only owner and `TurnNumber <= 1` (IL_0045-004b) before
-            // `CardSelectCmd::FromHandForDiscard` (IL_0071), whose `FromHand`
-            // pauses before it reads the Hand (#3050): a side-start tail that
-            // runs at that pause can still hand it a card.
-            super::turn::run_side_start_ahead_of_setup_remainder(
-                state,
-                catalog,
-                RelicId::RelicGamblingChip,
-                events,
-            )?;
-        }
-        if !state.piles.get(PileId::Hand).is_empty() {
-            begin_hand_relic_selection(state, RelicPendingKind::GamblingChip)?;
-            crate::coverage::record_relic(RelicId::RelicGamblingChip);
-            return Ok(());
-        }
+    if state.piles.get(PileId::Hand).is_empty() {
+        super::turn::run_side_start_ahead_of_setup_remainder(
+            state,
+            catalog,
+            RelicId::RelicGamblingChip,
+            events,
+        )?;
     }
-    continue_after_gambling_chip(catalog, state, events)
+    if state.piles.get(PileId::Hand).is_empty() {
+        return Ok(WalkStep::Ran);
+    }
+    begin_hand_relic_selection(state, RelicPendingKind::GamblingChip)?;
+    crate::coverage::record_relic(RelicId::RelicGamblingChip);
+    Ok(WalkStep::Paused)
 }
 
 fn partial_permutations(n: usize, k: usize) -> Option<u32> {
@@ -1889,7 +2273,27 @@ pub(crate) fn resume_relic_selection(
             )?;
             if pending.kind == RelicPendingKind::ChoicesParadox {
                 state.card_states.set_local_retain(uid);
-                continue_after_choices_paradox(catalog, state, events)?;
+                // `ChoicesParadox/<AfterPlayerTurnStart>d__6::MoveNext`
+                // (`0x321b0c`) gives every offered card the Retain keyword
+                // through `CardCmd.ApplyKeyword` (IL_00f2-IL_0105) before the
+                // grid opens, so the chosen copy carries a keyword the same
+                // card from the deck does not. Beside such a twin the two
+                // are different physical cards with one sort key: promote
+                // exact pile identity, as every other payload writer does,
+                // or `legal_actions` collapses them into one play and never
+                // offers the plain copy (#3756, site witness `0KPA7UA3BF5V`
+                // node 34: a Paradox Headbutt beside the deck's Headbutt).
+                if !state.exact_piles && super::cards::live_cards_need_exact_piles(state, catalog)?
+                {
+                    state.exact_piles = true;
+                }
+                after_player_turn_start_walk(
+                    catalog,
+                    state,
+                    events,
+                    Some(RelicId::RelicChoicesParadox),
+                    true,
+                )?;
             } else {
                 super::turn::resume_player_turn_start_after_toolbox(state, catalog, events)?;
             }
@@ -1898,9 +2302,7 @@ pub(crate) fn resume_relic_selection(
             let selected = gambling_selection(&pending.entries, ordinal).ok_or(
                 EngineRefusal::MalformedArgs("Gambling Chip selection ordinal"),
             )?;
-            if selected.is_empty() {
-                continue_after_gambling_chip(catalog, state, events)?;
-            } else {
+            if !selected.is_empty() {
                 let count = selected.len();
                 let hand = state.piles.get(PileId::Hand).as_slice();
                 if selected.iter().any(|selected_card| {
@@ -1918,8 +2320,14 @@ pub(crate) fn resume_relic_selection(
                     count,
                     events,
                 )?;
-                continue_after_gambling_chip(catalog, state, events)?;
             }
+            after_player_turn_start_walk(
+                catalog,
+                state,
+                events,
+                Some(RelicId::RelicGamblingChip),
+                true,
+            )?;
         }
         RelicPendingKind::ToastyMittens => {
             let entry = pending
@@ -1940,7 +2348,13 @@ pub(crate) fn resume_relic_selection(
             toasty_mittens_exhaust(catalog, state, index, events)?;
             super::damage::apply_owner_strength(state, 1, events)?;
             crate::coverage::record_relic(RelicId::RelicToastyMittens);
-            continue_after_toasty_mittens(catalog, state, events)?;
+            after_player_turn_start_walk(
+                catalog,
+                state,
+                events,
+                Some(RelicId::RelicToastyMittens),
+                true,
+            )?;
         }
     }
     if pending.kind != RelicPendingKind::Toolbox && state.pending.is_none() {
@@ -2010,10 +2424,70 @@ pub(crate) fn relic_pending_is_exact(state: &HotState, catalog: &Catalog) -> boo
     }
 }
 
-/// Rust's `AfterPlayerTurnStart` relic dispatch: the hand-authored sequence
-/// ([`after_player_turn_start`] through [`continue_after_toasty_mittens`]),
-/// then the one template subscriber, Mercury Hourglass, in
-/// `fire_hook(AfterPlayerTurnStart)`.
+/// What one listener body did in a relic walk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WalkStep {
+    /// The body finished (or its own gates left at once).
+    Ran,
+    /// The body parked a player choice. The walk stops here, and resuming the
+    /// choice re-enters it at the next listener.
+    Paused,
+    /// The body stopped the pass without offering its choice (Toolbox on a
+    /// combat an earlier listener ended). The walk stops here for good.
+    Suspended,
+}
+
+/// The order this engine runs one hook's relic bodies in (#3635).
+///
+/// `listeners` is every relic whose type overrides the hook, in the fixed
+/// sequence this engine ran before the inventory order was read.
+///
+/// Native builds one listener list per dispatch and awaits it in order
+/// (`CombatState/<IterateHookListeners>d__69::MoveNext`, v0.111.0 RVA
+/// `0x3f9720`): for each ally and then each enemy, the creature's powers
+/// (`IL_0092`-`IL_0097`), and for a player its relics by ascending
+/// `Player.Relics` index, skipping `IsMelted` (`IL_00c9`-`IL_00ef`), then its
+/// potions (`IL_0107`-`IL_0128`), orbs (`IL_014d`-`IL_015c`) and pile cards
+/// (`IL_0163`-`IL_01c7`). `Player::ToSerializable` (RVA `0x116dec`) writes
+/// that relic list in order, so a save- or capture-rooted inventory records
+/// the dispatch order ([`crate::hooks::HookTable::dispatch_ordered`]).
+///
+/// So a vouched inventory yields its owned listeners in recorded order. An
+/// unvouched one (a `.run`-only root) yields the fixed sequence; the pairs
+/// whose order shows there are refused by name at the opening, in admission
+/// and at a pause. The boundary refuses a duplicate relic, so each listener
+/// appears once and "the listener after relic R" is a function of the
+/// catalog.
+pub(crate) fn relic_walk_order<'a>(
+    catalog: &'a Catalog,
+    listeners: &'static [RelicId],
+) -> impl Iterator<Item = RelicId> + Clone + 'a {
+    let hooks = catalog.hooks();
+    let vouched = hooks.dispatch_ordered();
+    let recorded = vouched
+        .then(|| {
+            hooks
+                .relics()
+                .iter()
+                .copied()
+                .filter(move |relic| listeners.contains(relic))
+        })
+        .into_iter()
+        .flatten();
+    let fixed = (!vouched)
+        .then(|| {
+            listeners
+                .iter()
+                .copied()
+                .filter(move |relic| hooks.owns(*relic))
+        })
+        .into_iter()
+        .flatten();
+    recorded.chain(fixed)
+}
+
+/// Every relic that listens on `AfterPlayerTurnStart`, in the fixed sequence
+/// an unvouched inventory runs ([`relic_walk_order`]).
 ///
 /// A v0.111.0 method-table scan of `sts2.dll` (DLL 9cb4f1ad) finds exactly
 /// these eleven relic types overriding `AbstractModel::AfterPlayerTurnStart`
@@ -2023,8 +2497,8 @@ pub(crate) fn relic_pending_is_exact(state: &HotState, catalog: &Catalog) -> boo
 /// `0x9a8dc`, ToastyMittens `0x9c984`, VexingPuzzlebox `0x9db70`. No type
 /// overrides `AfterPlayerTurnStartEarly` (base `0x7a1eb`), and only Blood Vial
 /// and Fake Blood Vial override `AfterPlayerTurnStartLate`, whose pass
-/// (`Hook/<AfterPlayerTurnStart>d__56` IL_027c) follows the whole ordinary
-/// pass and so always lies in a paused remainder.
+/// (`Hook/<AfterPlayerTurnStart>d__56` IL_022f/IL_027c) is a separate walk
+/// behind the whole ordinary one and so always lies in a paused remainder.
 const AFTER_PLAYER_TURN_START_RELIC_DISPATCH: [RelicId; 11] = [
     RelicId::RelicChoicesParadox,
     RelicId::RelicGamblingChip,
@@ -2039,155 +2513,31 @@ const AFTER_PLAYER_TURN_START_RELIC_DISPATCH: [RelicId; 11] = [
     RelicId::RelicMercuryHourglass,
 ];
 
-/// The order this engine runs [`AFTER_PLAYER_TURN_START_RELIC_DISPATCH`] in
-/// for `catalog`: the fixed sequence, except that Festive Popper runs just
-/// before Gambling Chip when the inventory records it first
-/// ([`festive_popper_precedes_gambling_chip`]) or else just before Toasty
-/// Mittens when the inventory records it first
-/// ([`festive_popper_precedes_toasty_mittens`], #2884), Vexing Puzzlebox runs
-/// just before Choices Paradox when recorded first
-/// ([`vexing_puzzlebox_precedes_choices_paradox`], #3321), and a leading
-/// Mercury Hourglass runs first ([`mercury_hourglass_leads`], #3321).
-fn after_player_turn_start_dispatch(catalog: &Catalog) -> [RelicId; 11] {
-    let mut order = AFTER_PLAYER_TURN_START_RELIC_DISPATCH;
-    if festive_popper_precedes_gambling_chip(catalog) {
-        let chip = dispatch_position(&order, RelicId::RelicGamblingChip);
-        let popper = dispatch_position(&order, RelicId::RelicFestivePopper);
-        order[chip..=popper].rotate_right(1);
-    } else if festive_popper_precedes_toasty_mittens(catalog) {
-        let toasty = dispatch_position(&order, RelicId::RelicToastyMittens);
-        let popper = dispatch_position(&order, RelicId::RelicFestivePopper);
-        order[toasty..=popper].rotate_right(1);
+/// Whether `relic`'s `AfterPlayerTurnStart` body is still ahead once the walk
+/// is parked on `paused`'s choice: it sits behind `paused` in
+/// [`relic_walk_order`]. False when either is not in the walk.
+pub(crate) fn after_player_turn_start_relic_follows(
+    catalog: &Catalog,
+    relic: RelicId,
+    paused: RelicId,
+) -> bool {
+    let mut passed = false;
+    for listener in relic_walk_order(catalog, &AFTER_PLAYER_TURN_START_RELIC_DISPATCH) {
+        if listener == paused {
+            passed = true;
+        } else if listener == relic {
+            return passed;
+        }
     }
-    if vexing_puzzlebox_precedes_choices_paradox(catalog) {
-        let paradox = dispatch_position(&order, RelicId::RelicChoicesParadox);
-        let puzzlebox = dispatch_position(&order, RelicId::RelicVexingPuzzlebox);
-        order[paradox..=puzzlebox].rotate_right(1);
-    }
-    if mercury_hourglass_leads(catalog) {
-        let hourglass = dispatch_position(&order, RelicId::RelicMercuryHourglass);
-        order[..=hourglass].rotate_right(1);
-    }
-    order
+    false
 }
 
-fn dispatch_position(order: &[RelicId; 11], relic: RelicId) -> usize {
-    order
-        .iter()
-        .position(|candidate| *candidate == relic)
-        .expect("every moved relic is in the dispatch table")
-}
-
-/// Whether every `first` precedes every `second` in the inventory vouched for
-/// as dispatch order (both owned).
-fn inventory_precedes(catalog: &Catalog, first: RelicId, second: RelicId) -> bool {
-    let hooks = catalog.hooks();
-    if !hooks.dispatch_ordered() {
-        return false;
-    }
-    let relics = hooks.relics();
-    relics
-        .iter()
-        .rposition(|relic| *relic == first)
-        .zip(relics.iter().position(|relic| *relic == second))
-        .is_some_and(|(last_first, first_second)| last_first < first_second)
-}
-
-/// Whether Mercury Hourglass runs **first** in this engine's
-/// `AfterPlayerTurnStart` relic pass (#3321), rather than last as the one
-/// template subscriber of [`super::fire_hook`].
-///
-/// Native awaits the relic listeners in `Player.Relics` order
-/// (`Hook/<AfterPlayerTurnStart>d__56::MoveNext` RVA `0x3cff0c`,
-/// `IterateCombatHookListeners` at `IL_012d`, each listener awaited at
-/// `IL_017a`, no ending check between listeners).
-/// `MercuryHourglass/<AfterPlayerTurnStart>d__4::MoveNext` (v0.111.0 RVA
-/// `0x32a854`) gates only `player == Owner` (`IL_001d`-`IL_002b`), then
-/// awaits one `CreatureCmd::Damage(HittableEnemies, DynamicVars.Damage,
-/// Owner.Creature)` at `IL_0036`-`IL_0067`: no turn gate and no RNG draw. So
-/// the fixed tail position is native exactly when Hourglass is recorded after
-/// every same-hook peer that acts, and the front is native when it is recorded
-/// **before every other owned** member of
-/// [`AFTER_PLAYER_TURN_START_RELIC_DISPATCH`] in a vouched inventory: then no
-/// peer, acting or not, runs ahead of it. That is this predicate. It is false
-/// when Hourglass is the pass's only owned member, where front and tail are
-/// the same place. A mixed position still refuses where it is observable (the
-/// pause check [`after_player_turn_start_pause_order_is_native`], and
-/// admission's Vexing Puzzlebox list through
-/// [`mercury_hourglass_vexing_order_is_exact`]).
-pub(crate) fn mercury_hourglass_leads(catalog: &Catalog) -> bool {
-    if !catalog.hooks().owns(RelicId::RelicMercuryHourglass) {
-        return false;
-    }
-    mercury_hourglass_leads_rare(catalog)
-}
-
-#[cold]
-#[inline(never)]
-fn mercury_hourglass_leads_rare(catalog: &Catalog) -> bool {
-    let hooks = catalog.hooks();
-    let mut peers = AFTER_PLAYER_TURN_START_RELIC_DISPATCH
-        .into_iter()
-        .filter(|relic| *relic != RelicId::RelicMercuryHourglass && hooks.owns(*relic))
-        .peekable();
-    peers.peek().is_some()
-        && peers.all(|peer| inventory_precedes(catalog, RelicId::RelicMercuryHourglass, peer))
-}
-
-/// Whether this engine runs Mercury Hourglass and Vexing Puzzlebox in their
-/// recorded order (#3321): Hourglass ahead of Puzzlebox exactly when it leads
-/// the pass ([`mercury_hourglass_leads`]), and otherwise behind it, which is
-/// native only when every Puzzlebox is recorded before every Hourglass.
-/// Admission read the pair as unordered until this predicate.
-pub(crate) fn mercury_hourglass_vexing_order_is_exact(catalog: &Catalog) -> bool {
-    let hooks = catalog.hooks();
-    if !hooks.owns(RelicId::RelicMercuryHourglass) || !hooks.owns(RelicId::RelicVexingPuzzlebox) {
-        return true;
-    }
-    mercury_hourglass_leads(catalog)
-        || inventory_precedes(
-            catalog,
-            RelicId::RelicVexingPuzzlebox,
-            RelicId::RelicMercuryHourglass,
-        )
-}
-
-/// Whether Vexing Puzzlebox's turn-one card runs **ahead of** Choices
-/// Paradox's grid (#3321): both owned, the inventory vouched for as dispatch
-/// order, every Puzzlebox recorded before every Paradox, and no Gambling Chip,
-/// whose Hand choice sits between them in the fixed sequence and would be
-/// passed over by the move.
-///
-/// The two bodies do not commute. Both draw `RunRngSet.CombatCardGeneration`
-/// through `CardFactory::GetDistinctForCombat`:
-/// `VexingPuzzlebox/<AfterPlayerTurnStart>d__2::MoveNext` (v0.111.0 RVA
-/// `0x333de0`) at `IL_0087`-`IL_009d`, then `AddGeneratedCardToCombat` into
-/// the Hand at `IL_00b7`; `ChoicesParadox/<AfterPlayerTurnStart>d__6::MoveNext`
-/// (RVA `0x321b0c`) at `IL_009e`-`IL_00b3`, then pauses on
-/// `CardSelectCmd::FromSimpleGrid` at `IL_0144`, where the side-start tail runs
-/// (#3050). Each gates only owner and `TurnNumber == 1` (Puzzlebox
-/// `IL_0020`-`IL_0044`, Paradox `IL_0027`-`IL_004b`). Native awaits them in
-/// `Player.Relics` order (`Hook/<AfterPlayerTurnStart>d__56::MoveNext` RVA
-/// `0x3cff0c`, `IL_012d`/`IL_017a`), so a Puzzlebox recorded first draws the
-/// stream first and its card is in the Hand before the pause.
-pub(crate) fn vexing_puzzlebox_precedes_choices_paradox(catalog: &Catalog) -> bool {
-    let hooks = catalog.hooks();
-    hooks.owns(RelicId::RelicVexingPuzzlebox)
-        && hooks.owns(RelicId::RelicChoicesParadox)
-        && !hooks.owns(RelicId::RelicGamblingChip)
-        && inventory_precedes(
-            catalog,
-            RelicId::RelicVexingPuzzlebox,
-            RelicId::RelicChoicesParadox,
-        )
-}
-
-/// The `AfterPlayerTurnStart` template fire point once a leading Mercury
-/// Hourglass already ran ([`mercury_hourglass_lead`]): it records the fire
-/// point, and any other compiled subscriber refuses by name rather than run
-/// out of place (none exists at v0.111.0: Hourglass is this hook's only
-/// template relic).
-pub(crate) fn after_player_turn_start_template_pass_after_leading_hourglass(
+/// The `AfterPlayerTurnStart` template fire point. The walk
+/// ([`after_player_turn_start`]) fires Mercury Hourglass, this hook's one
+/// template relic at v0.111.0, at its own place, so this only records the
+/// fire point. Any other compiled subscriber refuses by name rather than run
+/// out of place.
+pub(crate) fn after_player_turn_start_template_pass(
     catalog: &Catalog,
 ) -> Result<(), EngineRefusal> {
     let event = HookEvent::AfterPlayerTurnStart;
@@ -2199,22 +2549,20 @@ pub(crate) fn after_player_turn_start_template_pass_after_leading_hourglass(
         })
     {
         return Err(EngineRefusal::PowerOrderNotModeled(
-            "AfterPlayerTurnStart template subscriber behind a leading Mercury Hourglass",
+            "AfterPlayerTurnStart template subscriber outside the relic walk",
         ));
     }
     Ok(())
 }
 
-/// Mercury Hourglass's template body, run at the front of the pass when it
-/// leads ([`mercury_hourglass_leads`]); `turn::resume_player_turn_start_after_relics`
-/// then skips the template fire point so it runs once. The compiled rule is
-/// the same one [`super::fire_hook`] interprets.
+/// Mercury Hourglass's body: the compiled template rule, fired at the relic's
+/// place in the walk.
 ///
-/// Native has no ending check between listeners (`IL_017a` awaits the next
-/// listener unconditionally), so a peer still acts after Hourglass kills the
-/// last enemy, where this engine's bodies stop on `history.over`. That shape
-/// is not modeled: it refuses by name when a peer would act this turn.
-fn mercury_hourglass_lead(
+/// `MercuryHourglass/<AfterPlayerTurnStart>d__4::MoveNext` (v0.111.0 RVA
+/// `0x32a854`) gates only `player == Owner` (`IL_001d`-`IL_002b`), then
+/// awaits one `CreatureCmd::Damage(HittableEnemies, DynamicVars.Damage,
+/// Owner.Creature)` at `IL_0036`-`IL_0067`: no turn gate and no RNG draw.
+fn mercury_hourglass_after_player_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
@@ -2239,24 +2587,11 @@ fn mercury_hourglass_lead(
         event,
         state,
         events,
-    )?;
-    if state.history.over
-        && AFTER_PLAYER_TURN_START_RELIC_DISPATCH
-            .into_iter()
-            .any(|relic| {
-                relic != RelicId::RelicMercuryHourglass
-                    && after_player_turn_start_relic_acts(catalog, state, relic)
-            })
-    {
-        return Err(EngineRefusal::PowerOrderNotModeled(
-            "AfterPlayerTurnStart relic peer after a leading Mercury Hourglass ended combat",
-        ));
-    }
-    Ok(())
+    )
 }
 
 /// Whether an `AfterPlayerTurnStart` relic body acts this turn, by its own
-/// entry gates (the bodies below and Mercury Hourglass's `is_owner` template).
+/// entry gates (the bodies of [`after_player_turn_start_body`]).
 fn after_player_turn_start_relic_acts(catalog: &Catalog, state: &HotState, relic: RelicId) -> bool {
     let owns = catalog.hooks().owns(relic);
     match relic {
@@ -2282,10 +2617,12 @@ fn after_player_turn_start_relic_acts(catalog: &Catalog, state: &HotState, relic
 /// `turn::SetupPlayerTurnWindow`). Native walks that pass in `Player.Relics`
 /// order (`Hook/<AfterPlayerTurnStart>d__56::MoveNext` RVA `0x3cff0c`,
 /// `IterateCombatHookListeners` IL_012d then `AfterPlayerTurnStart` IL_017a),
-/// so exactly the relics before the paused one ran ahead of the tail. Rust
-/// ran the prefix of [`after_player_turn_start_dispatch`] instead. The two
-/// sets must agree for every relic that acts this turn, and an unrecorded
-/// acquisition order cannot show that they do: both refuse by name.
+/// so exactly the relics before the paused one ran ahead of the tail.
+///
+/// On a vouched inventory the walk is that order, so the prefix this engine
+/// ran is native's. On an unvouched one the walk is the fixed sequence, and
+/// an unrecorded acquisition order cannot show that its prefix is native's:
+/// any other relic that acts this turn refuses by name.
 pub(crate) fn after_player_turn_start_pause_order_is_native(
     catalog: &Catalog,
     state: &HotState,
@@ -2294,54 +2631,398 @@ pub(crate) fn after_player_turn_start_pause_order_is_native(
     const REFUSAL: EngineRefusal = EngineRefusal::PowerOrderNotModeled(
         "AfterPlayerTurnStart relic order around a paused SetupPlayerTurn choice",
     );
-    let hooks = catalog.hooks();
-    let dispatch = after_player_turn_start_dispatch(catalog);
-    let dispatch_position = |relic| dispatch.iter().position(|candidate| *candidate == relic);
-    let inventory_position = |relic| hooks.relics().iter().position(|owned| *owned == relic);
-    let paused_dispatch = dispatch_position(paused).ok_or(REFUSAL)?;
-    for (position, relic) in dispatch.into_iter().enumerate() {
-        if position == paused_dispatch || !after_player_turn_start_relic_acts(catalog, state, relic)
-        {
-            continue;
-        }
-        if !hooks.dispatch_ordered() {
-            return Err(REFUSAL);
-        }
-        let native_before = inventory_position(relic) < inventory_position(paused);
-        if native_before != (position < paused_dispatch) {
-            return Err(REFUSAL);
-        }
+    if !AFTER_PLAYER_TURN_START_RELIC_DISPATCH.contains(&paused) {
+        return Err(REFUSAL);
+    }
+    if catalog.hooks().dispatch_ordered() {
+        return Ok(());
+    }
+    if AFTER_PLAYER_TURN_START_RELIC_DISPATCH
+        .into_iter()
+        .any(|relic| relic != paused && after_player_turn_start_relic_acts(catalog, state, relic))
+    {
+        return Err(REFUSAL);
     }
     Ok(())
 }
 
-/// Hand-authored owner `AfterPlayerTurnStart` relics in Python's fixed
-/// post-power sequence. Same-hook noncommuting ownership pairs are rejected
-/// by admission because acquisition order is absent from the run payload,
-/// except where a vouched inventory moves a body to its recorded place: a
-/// leading Mercury Hourglass ([`mercury_hourglass_leads`]) and a Vexing
-/// Puzzlebox recorded before Choices Paradox
-/// ([`vexing_puzzlebox_precedes_choices_paradox`]) run here, ahead of the
-/// Paradox grid and in that order (#3321), and Festive Popper runs before
-/// Toasty Mittens (#2884).
-pub(crate) fn after_player_turn_start(
+/// Vexing Puzzlebox beside Toasty Mittens on an unvouched inventory: the
+/// free card is among Toasty's candidates exactly when the Puzzlebox is
+/// recorded first (`VexingPuzzlebox/<AfterPlayerTurnStart>d__2` RVA `0x333de0`
+/// `IL_00b7`; `ToastyMittens/<AfterPlayerTurnStart>d__6` RVA `0x33285c`
+/// `IL_0068`), and that order is unknown. Refused before either body writes.
+fn unvouched_puzzlebox_beside_toasty_mittens(catalog: &Catalog) -> Result<(), EngineRefusal> {
+    let hooks = catalog.hooks();
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicVexingPuzzlebox)
+        && hooks.owns(RelicId::RelicToastyMittens)
+    {
+        return Err(EngineRefusal::MalformedArgs(
+            "Toasty Mittens + Vexing Puzzlebox recorded order",
+        ));
+    }
+    Ok(())
+}
+
+/// One relic's `AfterPlayerTurnStart` body, at whichever place the walk
+/// reaches it. Each body carries its own IL and entry gates.
+fn after_player_turn_start_body(
     catalog: &Catalog,
     state: &mut HotState,
     events: &mut Vec<Event>,
+    relic: RelicId,
+) -> Result<WalkStep, EngineRefusal> {
+    match relic {
+        // `ChoicesParadox/<AfterPlayerTurnStart>d__6::MoveNext` (RVA
+        // `0x321b0c`): owner and `TurnNumber == 1` (`IL_0027`-`IL_004b`), a
+        // `GetDistinctForCombat` draw of five (`IL_009e`-`IL_00b3`), then the
+        // pause on `CardSelectCmd::FromSimpleGrid` (`IL_0144`).
+        RelicId::RelicChoicesParadox => {
+            if state.turn == 1 && !state.history.over {
+                begin_generation_relic_selection(
+                    state,
+                    catalog,
+                    RelicPendingKind::ChoicesParadox,
+                    5,
+                )?;
+                crate::coverage::record_relic(RelicId::RelicChoicesParadox);
+                return Ok(WalkStep::Paused);
+            }
+        }
+        RelicId::RelicGamblingChip => {
+            return gambling_chip_after_player_turn_start(catalog, state, events);
+        }
+        RelicId::RelicVexingPuzzlebox => {
+            unvouched_puzzlebox_beside_toasty_mittens(catalog)?;
+            if !state.history.over {
+                vexing_puzzlebox_after_player_turn_start(catalog, state, events)?;
+            }
+        }
+        RelicId::RelicToastyMittens => {
+            unvouched_puzzlebox_beside_toasty_mittens(catalog)?;
+            return toasty_mittens_after_player_turn_start(catalog, state, events);
+        }
+        RelicId::RelicBellows => bellows_after_player_turn_start(catalog, state)?,
+        RelicId::RelicBoneTea => bone_tea_after_player_turn_start(catalog, state)?,
+        RelicId::RelicFestivePopper => {
+            festive_popper_after_player_turn_start(catalog, state, events)?;
+        }
+        RelicId::RelicMrStruggles => mr_struggles_after_player_turn_start(catalog, state, events)?,
+        RelicId::RelicRoyalPoison => royal_poison_after_player_turn_start(catalog, state, events)?,
+        RelicId::RelicEmotionChip => emotion_chip_after_player_turn_start(catalog, state, events)?,
+        RelicId::RelicMercuryHourglass => {
+            mercury_hourglass_after_player_turn_start(catalog, state, events)?;
+        }
+        _ => {}
+    }
+    Ok(WalkStep::Ran)
+}
+
+/// A relic of the walk reached after an earlier relic of the same walk ended
+/// the combat.
+///
+/// Native checks the combat once, before the first listener
+/// (`Hook/<IterateCombatHookListeners>d__0::MoveNext` RVA `0x3d3bc0`,
+/// `IsOverOrEnding && !IsStarting` at `IL_0028`-`IL_0042`), and then yields
+/// every listener with no further check (`IL_0064`-`IL_0095`). So a later
+/// body still runs on the ended combat.
+///
+/// What each body does there, from its commands' own gates (v0.111.0 DLL
+/// 9cb4f1ad) and from the game run headless on the archived DLL (#3889; the
+/// runs are listed in `solver/invariant-walks/2026-10-12-issue3889-…`):
+///
+/// * **Festive Popper, Mr Struggles, Mercury Hourglass**: nothing.
+///   `CreatureCmd/<Damage>d__12::MoveNext` (RVA `0x3e96c8`) returns its empty
+///   result list when the target list is empty (`IL_00c6`-`IL_00e4`), and
+///   `CombatState::get_HittableEnemies` (RVA `0x1373a5`) keeps only
+///   `Creature.IsHittable` enemies (`b__67_0` RVA `0x3f91ba`). A combat that
+///   is over with an enemy still standing is not modeled for these hits and
+///   refuses by the relic's name.
+/// * **Toasty Mittens**: nothing. `CardSelectCmd/<FromHand>d__28` (RVA
+///   `0x3e7568`) returns no card on `IsOverOrEnding` (`IL_0036`) before it
+///   signals a choice, so nothing is exhausted and no side-start tail runs at
+///   a pause; the Strength goes through ``PowerCmd/<Apply>d__1`1`` (RVA
+///   `0x3ef988`, the `Apply<StrengthPower>` of `IL_01af`), which returns on
+///   `IsEnding` (`IL_0025`-`IL_0034`).
+/// * **Gambling Chip**: nothing. The same `FromHand` gate, then
+///   `CardCmd/<DiscardAndDraw>d__4` (RVA `0x3e0274`) over no card.
+/// * **Bellows**: nothing. `CardCmd::Upgrade` (RVA `0x12f660`) returns on
+///   `IsEnding` (`IL_0011`).
+/// * **Bone Tea**: the same gated `Upgrade`, so the Hand keeps its levels,
+///   but the charge is still written back (`BoneTea::AfterPlayerTurnStart`
+///   RVA `0x90ffc` `IL_007e`-`IL_0088`).
+/// * **Royal Poison**: the hit lands. `CreatureCmd/<Damage>d__12` has no
+///   ending gate ahead of the HP write.
+/// * **Vexing Puzzlebox**: the `GetDistinctForCombat` shuffle still draws
+///   `CombatCardGeneration` (`<AfterPlayerTurnStart>d__2` RVA `0x333de0`
+///   `IL_0087`-`IL_009d`); the card is not added
+///   (`CardPileCmd/<AddGeneratedCardsToCombat>d__6` RVA `0x3e2f0c`,
+///   `IsInProgress` at `IL_003e`).
+/// * **Choices Paradox**: the five-card `GetDistinctForCombat` draw runs
+///   (`<AfterPlayerTurnStart>d__6` RVA `0x321b0c` `IL_00b3`), then
+///   `CardSelectCmd/<FromSimpleGrid>d__18` (RVA `0x3e8044`) returns no card on
+///   `IsEnding` (`IL_0041`): no choice opens and no card is added.
+/// * **Emotion Chip**: nothing. `OrbCmd/<Passive>d__7` (RVA `0x3ede90`)
+///   returns on `IsOverOrEnding` (`IL_0022`) for every orb.
+///
+/// `history.over` implies both `IsEnding` and `IsOverOrEnding`
+/// ([`super::damage::damage_combat_is_ending`]).
+///
+/// These bodies commute with one another: each writes its own counter, the
+/// owner's HP or the generation stream, and two full shuffles advance that
+/// stream by the same count in either order. So a pass a player POWER ended
+/// runs them in any relic order. A pass a RELIC ended needs the killer's
+/// place among them, which an unvouched inventory does not record: that
+/// keeps the refusal by the later relic's name
+/// ([`after_player_turn_start_unvouched_ended_refusal`]).
+fn after_player_turn_start_on_ended_combat(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+    relic: RelicId,
 ) -> Result<(), EngineRefusal> {
-    if mercury_hourglass_leads(catalog) {
-        mercury_hourglass_lead(catalog, state, events)?;
-    }
-    if vexing_puzzlebox_precedes_choices_paradox(catalog) {
-        vexing_puzzlebox_after_player_turn_start(catalog, state, events)?;
-    }
-    if state.turn == 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicChoicesParadox)
-    {
-        begin_generation_relic_selection(state, catalog, RelicPendingKind::ChoicesParadox, 5)?;
-        crate::coverage::record_relic(RelicId::RelicChoicesParadox);
+    if !after_player_turn_start_relic_acts(catalog, state, relic) {
         return Ok(());
     }
-    continue_after_choices_paradox(catalog, state, events)
+    match relic {
+        RelicId::RelicFestivePopper
+        | RelicId::RelicMrStruggles
+        | RelicId::RelicMercuryHourglass => {
+            if !super::damage::alive_targets(state).is_empty() {
+                return Err(after_player_turn_start_unvouched_ended_refusal(relic));
+            }
+        }
+        RelicId::RelicChoicesParadox => {
+            let pool =
+                generation_relic_draw_pool(catalog, state, RelicPendingKind::ChoicesParadox)?;
+            super::cards::shuffle_generation_slice(state, &pool)?;
+            crate::coverage::record_relic(RelicId::RelicChoicesParadox);
+        }
+        RelicId::RelicVexingPuzzlebox => {
+            vexing_puzzlebox_generated_card(catalog, state)?;
+            crate::coverage::record_relic(RelicId::RelicVexingPuzzlebox);
+        }
+        RelicId::RelicBoneTea => {
+            let written = state.fanouts.set_bone_tea_combats_left(0);
+            debug_assert!(written);
+            crate::coverage::record_relic(RelicId::RelicBoneTea);
+        }
+        RelicId::RelicRoyalPoison => {
+            // The owner-damage command without its step-level ending gate,
+            // as Corrupted's hit behind a lethal body takes it. Its listeners
+            // carry their own gates: Rupture's Strength is an ending-gated
+            // `PowerCmd.Apply` and is not applied; a player `CreatureCmd.Heal`
+            // (Demon Tongue) is not gated (`<Heal>d__20` RVA `0x3eb4b0`
+            // returns on `IsEnding` only for a non-player, `IL_0046`-`IL_005f`).
+            //
+            // A hit that takes the owner to 0 on the combat it already won
+            // kills it: the run is over, a loss (#3889). The game, with
+            // Festive Popper's kill ahead of Royal Poison and the owner at 3
+            // or 4 HP: `Creature.IsDead` and `RunState.IsGameOver`; at 5 HP
+            // the owner is left at 1. The death preventers answer as on a
+            // live combat: Fairy in a Bottle is consumed and heals to 30% of
+            // max HP (24 of 80) ahead of Lizard Tail, which is then unused;
+            // Lizard Tail alone heals to half (40 of 80) and is used up, on
+            // either side of the two relics in the inventory. That is the
+            // owner-damage command's own lethal path
+            // (`damage::resolve_player_lethal_with_catalog`,
+            // `KillWithoutCheckingWinCondition` RVA `0x3ebe90`), which reads
+            // no ending flag.
+            //
+            // What stays unmodeled is a choice parked inside the hit (a
+            // listener of it, or Fairy's wrapper suspending): rehearsed on a
+            // clone and refused by name.
+            let mut probe = state.clone();
+            let rehearsed = super::damage::damage_player_from_active_card_even_if_ending(
+                &mut probe,
+                catalog,
+                0,
+                4,
+                false,
+                &mut Vec::new(),
+            );
+            if rehearsed.is_err() || probe.pending.is_some() {
+                return Err(EngineRefusal::PowerOrderNotModeled(
+                    "Royal Poison parked after an AfterPlayerTurnStart listener ended combat",
+                ));
+            }
+            super::damage::damage_player_from_active_card_even_if_ending(
+                state, catalog, 0, 4, false, events,
+            )?;
+            crate::coverage::record_relic(RelicId::RelicRoyalPoison);
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// The refusal for a relic of the walk that would act behind a relic that
+/// ended the combat, where the engine cannot run it: an unvouched inventory
+/// (the killer's place among the relics is unknown), or an enemy hit on a
+/// combat that is over with an enemy still standing.
+fn after_player_turn_start_unvouched_ended_refusal(relic: RelicId) -> EngineRefusal {
+    let name = match relic {
+        RelicId::RelicFestivePopper => {
+            "Festive Popper after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicMrStruggles => {
+            "Mr Struggles after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicMercuryHourglass => {
+            "Mercury Hourglass after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicChoicesParadox => {
+            "Choices Paradox after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicGamblingChip => {
+            "Gambling Chip after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicVexingPuzzlebox => {
+            "Vexing Puzzlebox after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicToastyMittens => {
+            "Toasty Mittens after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicBellows => "Bellows after an earlier AfterPlayerTurnStart relic ended combat",
+        RelicId::RelicBoneTea => {
+            "Bone Tea after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicRoyalPoison => {
+            "Royal Poison after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        RelicId::RelicEmotionChip => {
+            "Emotion Chip after an earlier AfterPlayerTurnStart relic ended combat"
+        }
+        _ => "AfterPlayerTurnStart relic after an earlier relic ended combat",
+    };
+    EngineRefusal::PowerOrderNotModeled(name)
+}
+
+/// The `AfterPlayerTurnStart` relic walk (#3635), from the top or from the
+/// listener after `resume_after`, whose parked choice just resolved.
+///
+/// `Hook/<AfterPlayerTurnStart>d__56::MoveNext` (v0.111.0 RVA `0x3cff0c`)
+/// awaits each listener of the ordinary pass in turn
+/// (`IterateCombatHookListeners` at `IL_012d`, `AbstractModel::AfterPlayerTurnStart`
+/// at `IL_017a`, looping at `IL_01fd`-`IL_0202`). The relic segment of that
+/// list is [`relic_walk_order`]; the owner's powers sit ahead of it and run
+/// before this function, as the list has them.
+///
+/// * A pass entered on an ended combat runs no listener
+///   (`<IterateCombatHookListeners>d__0` `IL_0028`-`IL_0042`). The pass
+///   begins at the owner's first POWER listener, not at the first relic, so
+///   the caller says whether it began live (`pass_started_live`): a power
+///   that ends the combat leaves the relics still to run (#3889).
+/// * A body that parks a choice stops the walk. `StartTurn`'s side-start tail
+///   runs at that pause (#3050), and [`resume_relic_selection`] re-enters
+///   here behind that relic.
+/// * A listener that ends the combat does not stop it:
+///   [`after_player_turn_start_on_ended_combat`] runs each later body as the
+///   game does. A dead owner is the lost fight, where nothing later can show.
+/// * A body with no choice of its own whose listener parked one (an exhaust
+///   or damage listener) cannot be resumed inside the body. With a later
+///   relic still to act that refuses by name; with none it returns to the
+///   caller parked, as before.
+fn after_player_turn_start_walk(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+    resume_after: Option<RelicId>,
+    pass_started_live: bool,
+) -> Result<(), EngineRefusal> {
+    let hooks = catalog.hooks();
+    if resume_after.is_none() && !pass_started_live {
+        return Ok(());
+    }
+    // Ended before any relic of this entry ran: by a power of the pass, or
+    // (on a resume) inside the side-start tail or the resumed body. Otherwise
+    // a relic this entry ran ended it.
+    let entered_over = state.history.over;
+    let mut waiting = resume_after;
+    if AFTER_PLAYER_TURN_START_RELIC_DISPATCH
+        .iter()
+        .any(|relic| hooks.owns(*relic))
+    {
+        let mut order = relic_walk_order(catalog, &AFTER_PLAYER_TURN_START_RELIC_DISPATCH);
+        while let Some(relic) = order.next() {
+            if let Some(paused) = waiting {
+                if relic == paused {
+                    waiting = None;
+                }
+                continue;
+            }
+            if state.history.over {
+                if state.hp <= 0 {
+                    return Ok(());
+                }
+                // A relic of this walk ended the combat and the inventory
+                // does not record its place among the others.
+                let killer_place_unknown = !entered_over && !hooks.dispatch_ordered();
+                let hit_over_no_enemy = matches!(
+                    relic,
+                    RelicId::RelicFestivePopper
+                        | RelicId::RelicMrStruggles
+                        | RelicId::RelicMercuryHourglass
+                ) && super::damage::alive_targets(state).is_empty();
+                if killer_place_unknown
+                    && !hit_over_no_enemy
+                    && after_player_turn_start_relic_acts(catalog, state, relic)
+                {
+                    return Err(after_player_turn_start_unvouched_ended_refusal(relic));
+                }
+                after_player_turn_start_on_ended_combat(catalog, state, events, relic)?;
+                continue;
+            }
+            if after_player_turn_start_body(catalog, state, events, relic)? == WalkStep::Paused {
+                return Ok(());
+            }
+            if state.pending.is_some() {
+                if order
+                    .clone()
+                    .any(|later| after_player_turn_start_relic_acts(catalog, state, later))
+                {
+                    return Err(EngineRefusal::PowerOrderNotModeled(
+                        "AfterPlayerTurnStart relic behind a listener choice parked inside an earlier relic body",
+                    ));
+                }
+                return Ok(());
+            }
+        }
+    }
+    if waiting.is_some() {
+        return Err(EngineRefusal::MalformedArgs(
+            "AfterPlayerTurnStart relic walk resume point",
+        ));
+    }
+    // The carrier is tied to the inventory by the boundary; a state whose
+    // carrier is set without the relic keeps the fixed tail place.
+    if !hooks.owns(RelicId::RelicEmotionChip) && !state.history.over {
+        emotion_chip_after_player_turn_start(catalog, state, events)?;
+    }
+    Ok(())
+}
+
+/// The owner's `AfterPlayerTurnStart` relics, behind its power listeners:
+/// the recorded-order walk of [`after_player_turn_start_walk`].
+/// `pass_started_live` is whether the combat was live when the pass reached
+/// its first listener, the owner's first power.
+pub(crate) fn after_player_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    pass_started_live: bool,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    after_player_turn_start_walk(catalog, state, events, None, pass_started_live)
+}
+
+/// Whether the owner holds a relic of the `AfterPlayerTurnStart` walk, whose
+/// bodies can refuse by name after earlier turn-start writes
+/// (`turn::begin_player_turn` rehearses such a turn on a clone, #3889).
+pub(crate) fn after_player_turn_start_walk_is_reachable(catalog: &Catalog) -> bool {
+    let hooks = catalog.hooks();
+    AFTER_PLAYER_TURN_START_RELIC_DISPATCH
+        .iter()
+        .any(|relic| hooks.owns(*relic))
 }
 
 /// `BloodVial::get_CanonicalVars` (v0.111.0 RVA `0x90e65`) is
@@ -2427,53 +3108,236 @@ pub(crate) fn paels_eye_extra_turn_gate(state: &HotState, catalog: &Catalog) -> 
         && !(state.turn == 1 && catalog.hooks().owns(RelicId::RelicWhisperingEarring))
 }
 
-/// The hand-authored energy relics that run after owner power listeners and
-/// before the generated template tail of `AfterSideTurnStart`.
-pub(crate) fn after_side_turn_start(
+/// The early group of [`AFTER_SIDE_TURN_START_RELIC_DISPATCH`]: the bodies
+/// an unvouched inventory runs ahead of the compiled templates.
+const AFTER_SIDE_TURN_START_EARLY: [RelicId; 10] = [
+    RelicId::RelicLantern,
+    RelicId::RelicPaelsEye,
+    RelicId::RelicBoomingConch,
+    RelicId::RelicCandelabra,
+    RelicId::RelicChandelier,
+    RelicId::RelicHappyFlower,
+    RelicId::RelicFakeHappyFlower,
+    RelicId::RelicBigHat,
+    RelicId::RelicCrossbow,
+    RelicId::RelicOrangeDough,
+];
+
+/// The four compiled-template listeners of the hook
+/// (`content_tables::TEMPLATE_RELIC_STEPS`). An unvouched inventory runs
+/// them between the early and the late group, in the order it lists them.
+const AFTER_SIDE_TURN_START_TEMPLATES: [RelicId; 4] = [
+    RelicId::RelicDiamondDiadem,
+    RelicId::RelicDivineDestiny,
+    RelicId::RelicSai,
+    RelicId::RelicVeryHotCocoa,
+];
+
+/// The late group: the bodies an unvouched inventory runs behind the
+/// compiled templates.
+const AFTER_SIDE_TURN_START_LATE: [RelicId; 10] = [
+    RelicId::RelicPhylacteryUnbound,
+    RelicId::RelicPaelsLegion,
+    RelicId::RelicBread,
+    RelicId::RelicPaelsTears,
+    RelicId::RelicFencingManual,
+    RelicId::RelicRunicCapacitor,
+    RelicId::RelicInfusedCore,
+    RelicId::RelicSymbioticVirus,
+    RelicId::RelicBrimstone,
+    RelicId::RelicSealOfGold,
+];
+
+/// Every relic that listens on `AfterSideTurnStart` (#3635).
+///
+/// A v0.111.0 method-table scan of `sts2.dll` (sha256 `9cb4f1ad…12b4`) finds
+/// exactly these twenty-nine relic types overriding
+/// `AbstractModel::AfterSideTurnStart` (base RVA `0x7a1dd`): Akabeko
+/// `0x8fc44`, BigHat `0x909d8`, BoomingConch `0x91410`, Bread `0x91674`,
+/// Brimstone `0x91930`, Candelabra `0x91ddc`, Chandelier `0x9208c`, Crossbow
+/// `0x9251c`, DiamondDiadem `0x92840`, DivineDestiny `0x929a0`,
+/// FakeHappyFlower `0x93364`, FencingManual `0x938ac`, HappyFlower `0x94c08`,
+/// InfusedCore `0x94f6c`, Lantern `0x95afc`, LetterOpener `0x963b8`,
+/// OrangeDough `0x97b88`, PaelsEye `0x980e4`, PaelsFlesh `0x98384`,
+/// PaelsLegion `0x9875c`, PaelsTears `0x98898`, PhylacteryUnbound `0x99628`,
+/// Pocketwatch `0x99824`, RunicCapacitor `0x9aa9c`, Sai `0x9ab20`, SealOfGold
+/// `0x9b188`, StoneCalendar `0x9be34`, SymbioticVirus `0x9c3fc`, VeryHotCocoa
+/// `0x9db18`.
+///
+/// The first twenty-four are [`AFTER_SIDE_TURN_START_EARLY`],
+/// [`AFTER_SIDE_TURN_START_TEMPLATES`] and [`AFTER_SIDE_TURN_START_LATE`]. The
+/// last five write nothing at this hook that the engine reads at its place
+/// ([`after_side_turn_start_body`] carries each one's IL).
+const AFTER_SIDE_TURN_START_RELIC_DISPATCH: [RelicId; 29] = [
+    RelicId::RelicLantern,
+    RelicId::RelicPaelsEye,
+    RelicId::RelicBoomingConch,
+    RelicId::RelicCandelabra,
+    RelicId::RelicChandelier,
+    RelicId::RelicHappyFlower,
+    RelicId::RelicFakeHappyFlower,
+    RelicId::RelicBigHat,
+    RelicId::RelicCrossbow,
+    RelicId::RelicOrangeDough,
+    RelicId::RelicDiamondDiadem,
+    RelicId::RelicDivineDestiny,
+    RelicId::RelicSai,
+    RelicId::RelicVeryHotCocoa,
+    RelicId::RelicPhylacteryUnbound,
+    RelicId::RelicPaelsLegion,
+    RelicId::RelicBread,
+    RelicId::RelicPaelsTears,
+    RelicId::RelicFencingManual,
+    RelicId::RelicRunicCapacitor,
+    RelicId::RelicInfusedCore,
+    RelicId::RelicSymbioticVirus,
+    RelicId::RelicBrimstone,
+    RelicId::RelicSealOfGold,
+    RelicId::RelicAkabeko,
+    RelicId::RelicLetterOpener,
+    RelicId::RelicPaelsFlesh,
+    RelicId::RelicPocketwatch,
+    RelicId::RelicStoneCalendar,
+];
+
+/// The order this engine runs the `AfterSideTurnStart` relic bodies in.
+///
+/// A vouched inventory: [`relic_walk_order`] over the whole table, which is
+/// the recorded `Player.Relics` order. An unvouched one: the early group,
+/// then the template listeners in the order the inventory lists them (the
+/// order [`super::fire_hook`] ran them in), then the late group. That is the
+/// sequence this engine ran before #3635, and the pairs whose order shows
+/// there are refused by name in `engine::admission` and `entry::opening`.
+fn after_side_turn_start_order(catalog: &Catalog) -> impl Iterator<Item = RelicId> + Clone + '_ {
+    let hooks = catalog.hooks();
+    let vouched = hooks.dispatch_ordered();
+    let recorded = vouched
+        .then(|| relic_walk_order(catalog, &AFTER_SIDE_TURN_START_RELIC_DISPATCH))
+        .into_iter()
+        .flatten();
+    let fixed = (!vouched)
+        .then(|| {
+            relic_walk_order(catalog, &AFTER_SIDE_TURN_START_EARLY)
+                .chain(
+                    hooks
+                        .relics()
+                        .iter()
+                        .copied()
+                        .filter(|relic| AFTER_SIDE_TURN_START_TEMPLATES.contains(relic)),
+                )
+                .chain(relic_walk_order(catalog, &AFTER_SIDE_TURN_START_LATE))
+        })
+        .into_iter()
+        .flatten();
+    recorded.chain(fixed)
+}
+
+/// The `AfterSideTurnStart` template fire point. The walk
+/// ([`after_side_turn_start`]) fires the hook's four template relics at their
+/// own places, so this only records the fire point. Any other compiled
+/// subscriber refuses by name rather than run out of place.
+pub(crate) fn after_side_turn_start_template_pass(catalog: &Catalog) -> Result<(), EngineRefusal> {
+    let event = HookEvent::AfterSideTurnStart;
+    crate::coverage::record_hook(event);
+    let hooks = catalog.hooks();
+    if hooks.has(event)
+        && hooks
+            .subscribers(event)
+            .iter()
+            .any(|subscriber| match subscriber.subject {
+                HookSubject::Relic(relic) => !AFTER_SIDE_TURN_START_TEMPLATES.contains(&relic),
+                HookSubject::Power(_) => true,
+            })
+    {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            "AfterSideTurnStart template subscriber outside the relic walk",
+        ));
+    }
+    Ok(())
+}
+
+/// One of the hook's compiled template rules, fired at the relic's place in
+/// the walk.
+///
+/// The four bodies gate the owner's side, three of them `TurnNumber <= 1`,
+/// and then await one or two commands (v0.111.0):
+///
+/// * `Sai/<AfterSideTurnStart>d__4::MoveNext` (RVA `0x3300c4`):
+///   `CreatureCmd::GainBlock(Owner.Creature, DynamicVars.Block, ..)` at
+///   `IL_0041`-`IL_0058`, every turn;
+/// * `DiamondDiadem/<AfterSideTurnStart>d__6` (RVA `0x322c50`):
+///   `TurnNumber <= 1` (`IL_004f`-`IL_0055`), `GainBlock` (`IL_007a`), then
+///   `Apply<BlurPower>` (`IL_00f7`);
+/// * `DivineDestiny/<AfterSideTurnStart>d__4` (RVA `0x3231b4`):
+///   `TurnNumber <= 1` (`IL_0045`-`IL_004b`), `PlayerCmd::GainStars`
+///   (`IL_0068`);
+/// * `VeryHotCocoa/<AfterSideTurnStart>d__6` (RVA `0x333cc8`):
+///   `TurnNumber <= 1` (`IL_0048`-`IL_004e`), `PlayerCmd::GainEnergy`
+///   (`IL_0071`).
+///
+/// Each of those commands returns at once on an ending combat:
+/// `CreatureCmd/<GainBlock>d__18` (RVA `0x3eaec0`) `IsOverOrEnding` at
+/// `IL_0032`, `PowerCmd/<Apply>d__2` (RVA `0x3efbac`) `IsEnding` at `IL_003e`,
+/// `PlayerCmd/<GainStars>d__6` (RVA `0x3eec94`) `IsEnding` at `IL_001e`,
+/// `PlayerCmd/<GainEnergy>d__3` (RVA `0x3ee8a0`) `IsEnding` at `IL_0035`. So a
+/// template reached after an earlier listener ended the combat writes
+/// nothing, which is the `over` test here.
+fn template_after_side_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
-    hook_started: bool,
     events: &mut Vec<Event>,
+    relic: RelicId,
 ) -> Result<(), EngineRefusal> {
-    if !hook_started {
+    if state.history.over {
         return Ok(());
     }
-    // `RELIC.LANTERN` — one Energy on the owner's first side turn, and the
-    // oracle's **first** relic listener on this hook (frozen Python, deleted #2827; immediately after `_run_after_side_turn_start_power_order`).
-    //
-    // `Lantern/<AfterSideTurnStart>d__6::MoveNext` RVA `0x328268`:
-    // `Contains<Creature>(participants, Owner.Creature)` at `IL_0020`-`IL_0038`,
-    // the turn guard `get_TurnNumber; ldc.i4.1; ble.s` at `IL_0043`-`IL_004e`
-    // whose fall-through `leave`s at `IL_0050`, `RelicModel::Flash` at
-    // `IL_0056` (presentation), and `PlayerCmd::GainEnergy` at `IL_0071` with
-    // `DynamicVars.Energy.BaseValue` (`IL_0061`-`IL_0066`) and `Owner`
-    // (`IL_006c`). `Lantern::get_CanonicalVars` (`0x95adf`) is
-    // `ldc.i4.1; newobj EnergyVar::.ctor`, so the amount is 1 —
-    // `combat_sim.LANTERN_ENERGY` (frozen Python `_relic_templates`, deleted #2827).
-    //
-    // Additive, never exclusive: it is one row beside Booming Conch,
-    // Candelabra / Chandelier, the flowers, Venerable Tea Set's
-    // `AfterEnergyReset` grant and Very Hot Cocoa's compiled template rule,
-    // because `PlayerCmd/<GainEnergy>d__3::MoveNext` (`0x3ee8a0`) is a
-    // per-listener command and `combat_sim._gain_owner_energy` (frozen Python, deleted #2827) is
-    // one statement per relic. The `NoEnergyGainPower::ModifyEnergyGain`
-    // (`0xa4f9d`) suppression and the ending gate are that command's, so they
-    // are spelled here exactly as the peers above spell them.
-    if state.turn <= 1 && catalog.hooks().owns(RelicId::RelicLantern) && !state.history.over {
-        if !state.fanouts.no_energy_gain() {
-            state.energy = state
-                .energy
-                .checked_add(1)
-                .ok_or(EngineRefusal::CounterOverflow("Lantern energy"))?;
-        }
-        crate::coverage::record_relic(RelicId::RelicLantern);
+    let event = HookEvent::AfterSideTurnStart;
+    let subscriber = catalog
+        .hooks()
+        .subscribers(event)
+        .iter()
+        .find(|subscriber| subscriber.subject == HookSubject::Relic(relic))
+        .ok_or(EngineRefusal::HookNotModeled { relic, event })?;
+    fire_template_subscriber(catalog, subscriber, relic, event, state, events)
+}
+
+/// Whether an `AfterSideTurnStart` relic body writes combat state this turn,
+/// by its own entry gates (the bodies of [`after_side_turn_start_body`]).
+fn after_side_turn_start_relic_acts(catalog: &Catalog, state: &HotState, relic: RelicId) -> bool {
+    let owns = catalog.hooks().owns(relic);
+    match relic {
+        RelicId::RelicLantern
+        | RelicId::RelicBigHat
+        | RelicId::RelicOrangeDough
+        | RelicId::RelicDiamondDiadem
+        | RelicId::RelicDivineDestiny
+        | RelicId::RelicVeryHotCocoa
+        | RelicId::RelicFencingManual
+        | RelicId::RelicRunicCapacitor
+        | RelicId::RelicInfusedCore
+        | RelicId::RelicSymbioticVirus => owns && state.turn <= 1,
+        // The body reads the opening's room-type carrier, not the hook table.
+        RelicId::RelicBoomingConch => state.turn <= 1 && state.booming_conch_elite(),
+        RelicId::RelicBread => owns && state.turn == 1,
+        RelicId::RelicCandelabra => owns && state.turn == 2,
+        RelicId::RelicChandelier => owns && state.turn == 3,
+        RelicId::RelicPaelsTears => owns && state.paels_tears_had_leftover_energy(),
+        RelicId::RelicSealOfGold => owns && state.gold >= 3,
+        RelicId::RelicAkabeko
+        | RelicId::RelicLetterOpener
+        | RelicId::RelicPaelsFlesh
+        | RelicId::RelicPocketwatch
+        | RelicId::RelicStoneCalendar => false,
+        _ => owns,
     }
-    if catalog.hooks().owns(RelicId::RelicPaelsEye) {
-        state
-            .fanouts
-            .set_paels_eye_was_owner_part_last_player_turn(true);
-        crate::coverage::record_relic(RelicId::RelicPaelsEye);
-    }
+}
+
+/// Booming Conch's body: one Energy on the first side turn of an elite room.
+///
+/// `BoomingConch::AfterSideTurnStart` (v0.111.0 stub RVA `0x91410`) ends in
+/// `PlayerCmd::GainEnergy`, like Lantern's; the room-type test is the
+/// opening's carrier (`entry::opening::booming_conch_elite`).
+fn booming_conch_after_side_turn_start(state: &mut HotState) -> Result<(), EngineRefusal> {
     if state.turn <= 1 && state.booming_conch_elite() && !state.history.over {
         if !state.fanouts.no_energy_gain() {
             state.energy = state
@@ -2483,100 +3347,335 @@ pub(crate) fn after_side_turn_start(
         }
         crate::coverage::record_relic(RelicId::RelicBoomingConch);
     }
-    if !state.history.over {
-        let gated = match state.turn {
-            2 if catalog.hooks().owns(RelicId::RelicCandelabra) => {
-                Some((RelicId::RelicCandelabra, 2_i16))
+    Ok(())
+}
+
+/// One relic's `AfterSideTurnStart` body, at whichever place the walk
+/// reaches it. Each body carries its own IL and entry gates, including what
+/// it does on a combat an earlier listener ended.
+fn after_side_turn_start_body(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+    relic: RelicId,
+) -> Result<(), EngineRefusal> {
+    match relic {
+        // `RELIC.LANTERN`: one Energy on the owner's first side turn.
+        //
+        // `Lantern/<AfterSideTurnStart>d__6::MoveNext` RVA `0x328268`:
+        // `Contains<Creature>(participants, Owner.Creature)` at `IL_0020`-`IL_0038`,
+        // the turn guard `get_TurnNumber; ldc.i4.1; ble.s` at `IL_0043`-`IL_004e`
+        // whose fall-through `leave`s at `IL_0050`, `RelicModel::Flash` at
+        // `IL_0056` (presentation), and `PlayerCmd::GainEnergy` at `IL_0071` with
+        // `DynamicVars.Energy.BaseValue` (`IL_0061`-`IL_0066`) and `Owner`
+        // (`IL_006c`). `Lantern::get_CanonicalVars` (`0x95adf`) is
+        // `ldc.i4.1; newobj EnergyVar::.ctor`, so the amount is 1.
+        //
+        // Additive, never exclusive: it is one row beside Booming Conch,
+        // Candelabra / Chandelier, the flowers, Venerable Tea Set's
+        // `AfterEnergyReset` grant and Very Hot Cocoa's compiled template rule,
+        // because `PlayerCmd/<GainEnergy>d__3::MoveNext` (`0x3ee8a0`) is a
+        // per-listener command. The `NoEnergyGainPower::ModifyEnergyGain`
+        // (`0xa4f9d`) suppression and the ending gate (`IsEnding` at
+        // `IL_0035`) are that command's, so they are spelled here exactly as
+        // the energy peers below spell them.
+        RelicId::RelicLantern => {
+            if state.turn <= 1 && !state.history.over {
+                if !state.fanouts.no_energy_gain() {
+                    state.energy = state
+                        .energy
+                        .checked_add(1)
+                        .ok_or(EngineRefusal::CounterOverflow("Lantern energy"))?;
+                }
+                crate::coverage::record_relic(RelicId::RelicLantern);
             }
-            3 if catalog.hooks().owns(RelicId::RelicChandelier) => {
-                Some((RelicId::RelicChandelier, 3_i16))
+        }
+        RelicId::RelicPaelsEye => {
+            state
+                .fanouts
+                .set_paels_eye_was_owner_part_last_player_turn(true);
+            crate::coverage::record_relic(RelicId::RelicPaelsEye);
+        }
+        RelicId::RelicBoomingConch => booming_conch_after_side_turn_start(state)?,
+        RelicId::RelicCandelabra | RelicId::RelicChandelier => {
+            let (gated, amount) = if relic == RelicId::RelicCandelabra {
+                (RelicId::RelicCandelabra, 2_i16)
+            } else {
+                (RelicId::RelicChandelier, 3_i16)
+            };
+            // Candelabra on turn two, Chandelier on turn three: each one's
+            // Energy var is also its turn.
+            if state.turn == amount && !state.history.over {
+                state.energy = state
+                    .energy
+                    .checked_add(amount)
+                    .ok_or(EngineRefusal::CounterOverflow("turn-gated relic energy"))?;
+                crate::coverage::record_relic(gated);
             }
-            _ => None,
-        };
-        if let Some((relic, amount)) = gated {
-            state.energy = state
-                .energy
-                .checked_add(amount)
-                .ok_or(EngineRefusal::CounterOverflow("turn-gated relic energy"))?;
-            crate::coverage::record_relic(relic);
+        }
+        RelicId::RelicHappyFlower | RelicId::RelicFakeHappyFlower => {
+            for (flower, current, period, amount) in [
+                (RelicId::RelicHappyFlower, state.flower(), 3_i16, 1_i16),
+                (
+                    RelicId::RelicFakeHappyFlower,
+                    state.fake_flower(),
+                    5_i16,
+                    1_i16,
+                ),
+            ] {
+                if flower != relic {
+                    continue;
+                }
+                let next = (current + 1) % period;
+                let written = match flower {
+                    RelicId::RelicHappyFlower => state.set_flower(next),
+                    _ => state.set_fake_flower(next),
+                };
+                debug_assert!(written);
+                if next == 0 && !state.history.over && !state.fanouts.no_energy_gain() {
+                    state.energy = state
+                        .energy
+                        .checked_add(amount)
+                        .ok_or(EngineRefusal::CounterOverflow("flower energy"))?;
+                }
+                crate::coverage::record_relic(flower);
+            }
+        }
+        RelicId::RelicBigHat => {
+            if state.turn <= 1 {
+                // The fully-unlocked solo-Ironclad Ethereal generation pool is
+                // empty, so native returns before consuming Generation RNG
+                // (`BigHat/<AfterSideTurnStart>d__6::MoveNext` `0x31f64c`
+                // IL_00af-IL_00b8), before `Flash` (IL_00be) and before the
+                // `CombatCardGeneration` getter (IL_00ea): the body writes
+                // nothing, so its place in the walk cannot show. Another
+                // owner's Ethereal pool is not empty, and this body draws
+                // nothing, so it refuses rather than open that fight without
+                // its two cards (#3264: the owner-pool draw is read from IL,
+                // but its oracle digest is not yet reproduced).
+                if state.reward_card_pool != Some(crate::catalog::RewardPool::Ironclad) {
+                    return Err(EngineRefusal::MalformedArgs(
+                        "Big Hat owner Ethereal pool beyond Ironclad (#3264)",
+                    ));
+                }
+                crate::coverage::record_relic(RelicId::RelicBigHat);
+            }
+        }
+        RelicId::RelicCrossbow => crossbow_after_side_turn_start(catalog, state, events)?,
+        RelicId::RelicOrangeDough => {
+            if state.turn <= 1 {
+                orange_dough_after_side_turn_start(catalog, state, events)?;
+            }
+        }
+        RelicId::RelicDiamondDiadem
+        | RelicId::RelicDivineDestiny
+        | RelicId::RelicSai
+        | RelicId::RelicVeryHotCocoa => {
+            template_after_side_turn_start(catalog, state, events, relic)?;
+        }
+        // `PhylacteryUnbound/<AfterSideTurnStart>d__11::MoveNext` (v0.111.0 RVA
+        // `0x32e134`): owner-participates test at `IL_002e`, then
+        // `OstyCmd::Summon(Owner, DynamicVars["StartOfTurn"] = 2)` at `IL_005b`,
+        // with no turn test, so turn one summons too. The opening reaches it
+        // through `engine::deal_opening_hand` (#2827). The body reads no combat
+        // state between the owner test and `Summon` (IL_003a-IL_005b), and
+        // `<Summon>d__0` (`0x3ee040`) gates only its SFX on `IsInProgress`
+        // (IL_00c6-IL_00d0), so a summon after an earlier turn-start peer ended
+        // the combat runs under IsEnding: `summon_osty`'s projection (#3279).
+        RelicId::RelicPhylacteryUnbound => {
+            super::summon_osty(state, 2, "Phylactery Unbound Osty")?;
+            crate::coverage::record_relic(RelicId::RelicPhylacteryUnbound);
+        }
+        RelicId::RelicPaelsLegion => {
+            let cooldown = state.fanouts.paels_legion_cooldown();
+            if cooldown > 0 {
+                let written = state.fanouts.set_paels_legion_cooldown(cooldown - 1);
+                debug_assert!(written);
+                if cooldown == 1 {
+                    state.fanouts.set_paels_legion_triggered_last_turn(false);
+                }
+            }
+            crate::coverage::record_relic(RelicId::RelicPaelsLegion);
+        }
+        // `PlayerCmd::LoseEnergy` (RVA `0x13329b`) returns on `IsEnding`
+        // (`IL_0019`), so an ended combat skips the loss.
+        RelicId::RelicBread => {
+            if state.turn == 1 && !state.history.over {
+                state.energy = state.energy.saturating_sub(2).max(0);
+                crate::coverage::record_relic(RelicId::RelicBread);
+            }
+        }
+        RelicId::RelicPaelsTears => {
+            if state.paels_tears_had_leftover_energy() && !state.history.over {
+                if !state.fanouts.no_energy_gain() {
+                    state.energy = state
+                        .energy
+                        .checked_add(2)
+                        .ok_or(EngineRefusal::CounterOverflow("Pael's Tears energy"))?;
+                }
+                crate::coverage::record_relic(RelicId::RelicPaelsTears);
+            }
+        }
+        RelicId::RelicFencingManual => {
+            fencing_manual_after_side_turn_start(catalog, state, events)?
+        }
+        RelicId::RelicRunicCapacitor => runic_capacitor_after_side_turn_start(catalog, state)?,
+        RelicId::RelicInfusedCore => infused_core_after_side_turn_start(catalog, state, events)?,
+        RelicId::RelicSymbioticVirus => {
+            symbiotic_virus_after_side_turn_start(catalog, state, events)?;
+        }
+        // `PowerCmd/<Apply>d__2::MoveNext` (RVA `0x3efbac`) returns on
+        // `IsEnding` (`IL_003e`), so an ended combat applies nothing.
+        RelicId::RelicBrimstone => {
+            if !state.history.over {
+                brimstone_after_side_turn_start(state, events)?;
+            }
+        }
+        RelicId::RelicSealOfGold => {
+            if state.gold >= 3 {
+                if !state.history.over && !state.fanouts.no_energy_gain() {
+                    state.energy = state
+                        .energy
+                        .checked_add(1)
+                        .ok_or(EngineRefusal::CounterOverflow("Seal of Gold energy"))?;
+                }
+                state.gold = state
+                    .gold
+                    .checked_sub(3)
+                    .ok_or(EngineRefusal::CounterOverflow("Seal of Gold gold"))?;
+                crate::coverage::record_relic(RelicId::RelicSealOfGold);
+            }
+        }
+        // The five listeners that write nothing at this place:
+        //
+        // * `Akabeko/<AfterSideTurnStart>d__6::MoveNext` (RVA `0x31e418`):
+        //   `TurnNumber <= 1` (`IL_003d`-`IL_004e`), then
+        //   `Apply<VigorPower>` on the owner (`IL_005b`-`IL_0092`). The
+        //   opening seeds that Vigor into its document
+        //   (`entry::opening::pre_hook_document`), ahead of the whole walk,
+        //   so this place writes nothing (#3891 tracks running it here).
+        //   Nothing on this hook reads Vigor.
+        // * `LetterOpener::AfterSideTurnStart` (RVA `0x963b8`, synchronous):
+        //   on any turn but the first (`IL_0025`-`IL_0036`) it zeroes its own
+        //   `SkillsPlayedThisTurn` (`IL_003e`-`IL_0040`) and its display
+        //   status. The engine's counter is the per-turn Skill history the
+        //   turn start already reset (`turn::letter_opener_count_is_shared`),
+        //   and no listener of this hook plays a Skill.
+        // * `PaelsFlesh::AfterSideTurnStart` (RVA `0x98384`, synchronous):
+        //   from turn three (`IL_0025`-`IL_0036`) it sets its own display
+        //   `Status` (`IL_004d`-`IL_004f`) and flashes. Its Energy is
+        //   `modifier_total`'s `turn >= 3` row.
+        // * `Pocketwatch::AfterSideTurnStart` (RVA `0x99824`, synchronous):
+        //   `RefreshCounter` (`0x9984a`), a display status from its own
+        //   counters. The counters move on `BeforeSideTurnStart` (`0x997f1`).
+        // * `StoneCalendar::AfterSideTurnStart` (RVA `0x9be34`, synchronous):
+        //   `TurnNumber == DamageTurn` (`IL_0025`-`IL_004a`), then its
+        //   display status (`IL_004c`-`IL_0054`).
+        RelicId::RelicAkabeko
+        | RelicId::RelicLetterOpener
+        | RelicId::RelicPaelsFlesh
+        | RelicId::RelicPocketwatch
+        | RelicId::RelicStoneCalendar => {}
+        _ => {}
+    }
+    Ok(())
+}
+
+/// The owner's `AfterSideTurnStart` relics (#3635): one walk in recorded
+/// order, behind the owner's power listeners and ahead of the enemies'.
+///
+/// `Hook/<AfterSideTurnStart>d__75::MoveNext` (v0.111.0 RVA `0x3d15ac`) takes
+/// the listener list once (`IterateCombatHookListeners` at `IL_0024`) and
+/// awaits each `AbstractModel::AfterSideTurnStart` in turn
+/// (`IL_0065`-`IL_0092`). Its second pass, `AfterSideTurnStartLate`
+/// (`IL_0109`, `IL_014b`), has no relic listener (only `SandpitPower`
+/// overrides it). The relic segment of the first list is
+/// [`after_side_turn_start_order`]: `Player.Relics` order on a vouched
+/// inventory, where a compiled template and a hand-written body interleave as
+/// recorded.
+///
+/// * `hook_started` false: the pass was entered on an ended combat and runs no
+///   listener (`<IterateCombatHookListeners>d__0` `IL_0028`-`IL_0042`).
+/// * A listener that ends the combat does not stop the walk, whether it is
+///   an earlier relic or one of the owner's powers ahead of the relics (the
+///   pass began on a live combat either way). Native checks the combat once,
+///   before the first listener (`Hook/<IterateCombatHookListeners>d__0`
+///   RVA `0x3d3bc0`, `IL_0028`-`IL_0042`), and yields every listener with no
+///   further check (`IL_0064`-`IL_0095`). So each later body still runs, and
+///   each says what it does on an ended combat: it ends in a command that
+///   returns there, writes only its own counter, or (Crossbow, Orange Dough)
+///   still draws the Generation stream and adds no card.
+/// * No body of this hook parks a choice of its own. One whose listener
+///   parked a choice (a generated-card or damage listener) cannot be resumed
+///   inside the body. With a later relic still to act that refuses by name;
+///   with none it returns to the caller parked, as before.
+pub(crate) fn after_side_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    hook_started: bool,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if !hook_started {
+        return Ok(());
+    }
+    let hooks = catalog.hooks();
+    // A `SetupPlayerTurn` choice can already be parked: the side-start tail
+    // runs at that pause (`turn::run_side_start_at_setup_pause`, #3050).
+    let entered_parked = state.pending.is_some();
+    let mut order = after_side_turn_start_order(catalog);
+    while let Some(relic) = order.next() {
+        after_side_turn_start_body(catalog, state, events, relic)?;
+        if !entered_parked && state.pending.is_some() {
+            if order
+                .clone()
+                .any(|later| after_side_turn_start_relic_acts(catalog, state, later))
+            {
+                return Err(EngineRefusal::PowerOrderNotModeled(
+                    "AfterSideTurnStart relic behind a listener choice parked inside an earlier relic body",
+                ));
+            }
+            return Ok(());
         }
     }
-    for (relic, current, period, amount) in [
-        (RelicId::RelicHappyFlower, state.flower(), 3_i16, 1_i16),
-        (
-            RelicId::RelicFakeHappyFlower,
-            state.fake_flower(),
-            5_i16,
-            1_i16,
-        ),
-    ] {
-        if !catalog.hooks().owns(relic) {
-            continue;
-        }
-        let next = (current + 1) % period;
-        let written = match relic {
-            RelicId::RelicHappyFlower => state.set_flower(next),
-            RelicId::RelicFakeHappyFlower => state.set_fake_flower(next),
-            _ => unreachable!(),
-        };
-        debug_assert!(written);
-        if next == 0 && !state.history.over && !state.fanouts.no_energy_gain() {
-            state.energy = state
-                .energy
-                .checked_add(amount)
-                .ok_or(EngineRefusal::CounterOverflow("flower energy"))?;
-        }
-        crate::coverage::record_relic(relic);
+    // Admission ties the room-type carrier to the relic; a state that sets it
+    // without the relic keeps the body.
+    if !hooks.owns(RelicId::RelicBoomingConch) {
+        booming_conch_after_side_turn_start(state)?;
     }
-    if state.turn <= 1 && catalog.hooks().owns(RelicId::RelicBigHat) {
-        // The fully-unlocked solo-Ironclad Ethereal generation pool is empty,
-        // so native returns before consuming Generation RNG
-        // (`BigHat/<AfterSideTurnStart>d__6::MoveNext` `0x31f64c`
-        // IL_00af-IL_00b8). Another owner's Ethereal pool is not, and this
-        // body draws nothing, so it refuses rather than open that fight
-        // without its two cards (#3264: the owner-pool draw is read from IL,
-        // but its oracle digest is not yet reproduced).
-        if state.reward_card_pool != Some(crate::catalog::RewardPool::Ironclad) {
-            return Err(EngineRefusal::MalformedArgs(
-                "Big Hat owner Ethereal pool beyond Ironclad (#3264)",
-            ));
-        }
-        crate::coverage::record_relic(RelicId::RelicBigHat);
-    }
-    if catalog.hooks().owns(RelicId::RelicCrossbow) {
-        // A vouched inventory that records Brimstone ahead of Crossbow runs
-        // Brimstone here, at its native place (#3381); see
-        // [`brimstone_leads_crossbow`].
-        if !state.history.over && brimstone_leads_crossbow(catalog) {
-            brimstone_after_side_turn_start(state, events)?;
-        }
-        if !state.history.over {
-            crossbow_after_side_turn_start(catalog, state, events)?;
-        }
-    }
-    if state.turn <= 1 && !state.history.over && catalog.hooks().owns(RelicId::RelicOrangeDough) {
-        let pool = colorless_generation_relic_pool(
-            catalog,
-            state,
-            "Orange Dough Colorless pool provenance",
-        )?;
-        let shuffled = super::cards::shuffle_generation_slice(state, &pool)?;
-        for id in shuffled.into_iter().take(2) {
-            super::cards::inject_generated_bottom(
-                state,
-                catalog,
-                crate::catalog::CardIdentity {
-                    id,
-                    upgrade: 0,
-                    enchantment: None,
-                },
-                1,
-                PileId::Hand,
-                events,
-            )?;
-        }
+    Ok(())
+}
+
+/// Orange Dough's turn-one body: two cards from the shared Colorless pool
+/// into the Hand ([`colorless_generation_relic_pool`] carries the IL). On an
+/// ended combat it draws and adds nothing, as Crossbow does
+/// ([`crossbow_after_side_turn_start`], "On an ended combat").
+fn orange_dough_after_side_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let pool =
+        colorless_generation_relic_pool(catalog, state, "Orange Dough Colorless pool provenance")?;
+    let shuffled = super::cards::shuffle_generation_slice(state, &pool)?;
+    if state.history.over {
         crate::coverage::record_relic(RelicId::RelicOrangeDough);
+        return Ok(());
     }
+    for id in shuffled.into_iter().take(2) {
+        super::cards::inject_generated_bottom(
+            state,
+            catalog,
+            crate::catalog::CardIdentity {
+                id,
+                upgrade: 0,
+                enchantment: None,
+            },
+            1,
+            PileId::Hand,
+            events,
+        )?;
+    }
+    crate::coverage::record_relic(RelicId::RelicOrangeDough);
     Ok(())
 }
 
@@ -2651,6 +3750,19 @@ fn colorless_generation_relic_pool(
 /// stream. The draw is that owner's pool under that profile, which is the
 /// frozen table for a fully-unlocked Ironclad
 /// (`crossbow_owner_pools_reproduce_the_frozen_table`).
+///
+/// # On an ended combat
+///
+/// A listener earlier in the pass can end the combat, and the game still
+/// runs this body. `CardFactory::GetDistinctForCombat` (RVA `0x112878`) has
+/// no ending gate, so the `CombatCardGeneration` draw happens;
+/// `CardPileCmd/<AddGeneratedCardsToCombat>d__6::MoveNext` (RVA `0x3e2f0c`)
+/// then leaves on `!IsInProgress` (`IL_003e`) and no card enters a pile. The
+/// headless harness shows both: with every enemy at 9 HP and Infused Core
+/// recorded first (its two overflow evokes end the fight), the stream ends
+/// at the same counter as in a live fight (28 for Crossbow, 35 for Orange
+/// Dough) and the Hand holds only the dealt five. That stream outlives the
+/// fight, so the draw is kept.
 fn crossbow_after_side_turn_start(
     catalog: &Catalog,
     state: &mut HotState,
@@ -2666,6 +3778,10 @@ fn crossbow_after_side_turn_start(
         .map(|owner| catalog.crossbow_attack_pool(owner))
         .unwrap_or_default();
     let shuffled = super::cards::shuffle_generation_slice(state, &pool)?;
+    if state.history.over {
+        crate::coverage::record_relic(RelicId::RelicCrossbow);
+        return Ok(());
+    }
     if let Some(&id) = shuffled.first() {
         super::cards::inject_generated_free_this_turn_bottom(
             state,
@@ -2716,113 +3832,6 @@ fn brimstone_after_side_turn_start(
     Ok(())
 }
 
-/// Whether Brimstone runs just ahead of Crossbow in this engine's
-/// `AfterSideTurnStart` relic pass, rather than at its fixed place in
-/// [`after_side_turn_start_late`] (#3381).
-///
-/// Native awaits every `AfterSideTurnStart` listener in the order
-/// `Hook::IterateCombatHookListeners` yields it
-/// (`Hook/<AfterSideTurnStart>d__75::MoveNext` RVA `0x3d15ac`: the iterator at
-/// IL_0024, each `AfterSideTurnStart` awaited at IL_0065-IL_0092), and relics
-/// come in `Player.Relics` order. Beside Crossbow, admission lets only
-/// Lantern, Candelabra, Happy Flower and Pael's Legion share the hook with
-/// Brimstone (every other relic override of `AfterSideTurnStart` in the
-/// assembly is on Crossbow's refused peer list in `engine::admission`,
-/// including the four compiled templates `fire_hook` would run between the
-/// two passes), and those four commute with both bodies. So the one order
-/// that is observable is Crossbow's against Brimstone's, through a live
-/// Arsenal: Crossbow's generated Attack raises `AfterCardGeneratedForCombat`,
-/// whose `ArsenalPower` listener applies Strength
-/// (`<AfterCardGeneratedForCombat>d__6` `0x334ec8` IL_0061) against
-/// Brimstone's own Strength application. The fixed place is Crossbow first,
-/// which is native when the inventory records Crossbow first. A vouched
-/// inventory recording every Brimstone before every Crossbow makes this true,
-/// and Brimstone then runs where native runs it. An unvouched or interleaved
-/// inventory keeps the fixed order, and admission refuses it beside a
-/// reachable Arsenal.
-pub(crate) fn brimstone_leads_crossbow(catalog: &Catalog) -> bool {
-    catalog.hooks().owns(RelicId::RelicCrossbow)
-        && relic_recorded_before(catalog, RelicId::RelicBrimstone, RelicId::RelicCrossbow)
-}
-
-/// Hand-authored relic listeners that Python places after the generated
-/// `AfterSideTurnStart` template group. The immutable inventory order is not
-/// projected; admission rejects the combinations whose results do not
-/// commute.
-pub(crate) fn after_side_turn_start_late(
-    catalog: &Catalog,
-    state: &mut HotState,
-    hook_started: bool,
-    events: &mut Vec<Event>,
-) -> Result<(), EngineRefusal> {
-    if !hook_started {
-        return Ok(());
-    }
-    // `PhylacteryUnbound/<AfterSideTurnStart>d__11::MoveNext` (v0.111.0 RVA
-    // `0x32e134`): owner-participates test at `IL_002e`, then
-    // `OstyCmd::Summon(Owner, DynamicVars["StartOfTurn"] = 2)` at `IL_005b`,
-    // with no turn test, so turn one summons too (the oracle's
-    // frozen Python `_turn_start_after_royal`, deleted #2827). The opening reaches it through
-    // `engine::deal_opening_hand` (#2827). The body reads no combat state
-    // between the owner test and `Summon` (IL_003a-IL_005b), and
-    // `<Summon>d__0` (`0x3ee040`) gates only its SFX on `IsInProgress`
-    // (IL_00c6-IL_00d0), so a summon after an earlier turn-start peer ended
-    // the combat runs under IsEnding: `summon_osty`'s projection (#3279).
-    if catalog.hooks().owns(RelicId::RelicPhylacteryUnbound) {
-        super::summon_osty(state, 2, "Phylactery Unbound Osty")?;
-        crate::coverage::record_relic(RelicId::RelicPhylacteryUnbound);
-    }
-    if catalog.hooks().owns(RelicId::RelicPaelsLegion) {
-        let cooldown = state.fanouts.paels_legion_cooldown();
-        if cooldown > 0 {
-            let written = state.fanouts.set_paels_legion_cooldown(cooldown - 1);
-            debug_assert!(written);
-            if cooldown == 1 {
-                state.fanouts.set_paels_legion_triggered_last_turn(false);
-            }
-        }
-        crate::coverage::record_relic(RelicId::RelicPaelsLegion);
-    }
-    if catalog.hooks().owns(RelicId::RelicBread) && state.turn == 1 && !state.history.over {
-        state.energy = state.energy.saturating_sub(2).max(0);
-        crate::coverage::record_relic(RelicId::RelicBread);
-    }
-    if catalog.hooks().owns(RelicId::RelicPaelsTears)
-        && state.paels_tears_had_leftover_energy()
-        && !state.history.over
-    {
-        if !state.fanouts.no_energy_gain() {
-            state.energy = state
-                .energy
-                .checked_add(2)
-                .ok_or(EngineRefusal::CounterOverflow("Pael's Tears energy"))?;
-        }
-        crate::coverage::record_relic(RelicId::RelicPaelsTears);
-    }
-    fencing_manual_after_side_turn_start(catalog, state, events)?;
-    symbiotic_virus_after_side_turn_start(catalog, state, events)?;
-    if catalog.hooks().owns(RelicId::RelicBrimstone)
-        && !state.history.over
-        && !brimstone_leads_crossbow(catalog)
-    {
-        brimstone_after_side_turn_start(state, events)?;
-    }
-    if catalog.hooks().owns(RelicId::RelicSealOfGold) && state.gold >= 3 {
-        if !state.history.over && !state.fanouts.no_energy_gain() {
-            state.energy = state
-                .energy
-                .checked_add(1)
-                .ok_or(EngineRefusal::CounterOverflow("Seal of Gold energy"))?;
-        }
-        state.gold = state
-            .gold
-            .checked_sub(3)
-            .ok_or(EngineRefusal::CounterOverflow("Seal of Gold gold"))?;
-        crate::coverage::record_relic(RelicId::RelicSealOfGold);
-    }
-    Ok(())
-}
-
 /// Fencing Manual's Forge amount.
 ///
 /// `FencingManual::get_CanonicalVars` (v0.111.0 RVA `0x93896`) is
@@ -2866,23 +3875,17 @@ const FENCING_MANUAL_FORGE: i64 = 10;
 /// # Position inside the walk
 ///
 /// Native walks the relic `AfterSideTurnStart` listeners in `Player.Relics`
-/// order (`CombatState::IterateHookListeners` `0x137409`), which the run
-/// payload does not vouch for. This sits where the frozen oracle ran it
-/// (`begin_player_turn`, between Pael's Tears and Symbiotic Virus, frozen
-/// Python `_turn_start_after_royal`, deleted #2827). The order is unobservable
-/// against every represented same-hook peer except the other turn-one Hand
-/// writers — Crossbow, Big Hat and Orange Dough, whose generated cards and
-/// uids would interleave differently with the Blade — and Infused Core, whose
-/// Lightning channel the oracle refused beside it; `engine::admission`
-/// (`Fencing Manual + Infused Core turn-start order`, and the Crossbow and
-/// Big Hat same-hook lists) and `entry::opening`'s
-/// `fencing_manual_turn_start_peers_are_ordered` refuse those, except Orange
-/// Dough recorded (vouched) before Fencing Manual, where this fixed order —
-/// Dough in the early group, the Forge in the late one — is the native one.
-/// A loaded document carries no inventory order, so `engine::admission`
-/// refuses Fencing Manual + Orange Dough whenever the Forge can still run
-/// (turn one, no Sovereign Blade in any pile: `Fencing Manual + Orange Dough
-/// turn-one Forge order`).
+/// order, and so does [`after_side_turn_start`] on a vouched inventory
+/// (#3635): the Blade lands on its recorded side of Crossbow's and Orange
+/// Dough's cards, in the Hand and in the uid sequence. On an unvouched
+/// inventory this sits in the late group, where the frozen oracle ran it.
+/// There the order is unobservable against every same-hook peer except the
+/// other turn-one Hand writers, Crossbow and Orange Dough, and Infused Core,
+/// whose Lightning channel the oracle refused beside it; `engine::admission`
+/// (`Fencing Manual + Infused Core turn-start order`, `Fencing Manual +
+/// Orange Dough turn-one Forge order`, Crossbow's same-hook list) and
+/// `entry::opening`'s `fencing_manual_turn_start_peers_are_ordered` refuse
+/// those for an unvouched inventory only.
 ///
 /// The turn guard makes the body reachable only from the opening's first
 /// turn-start walk ([`super::deal_opening_hand`]) or a document parked inside
@@ -2898,6 +3901,177 @@ fn fencing_manual_after_side_turn_start(
     }
     crate::steps::regent_forge::forge_exact(state, catalog, FENCING_MANUAL_FORGE, events)?;
     crate::coverage::record_relic(RelicId::RelicFencingManual);
+    Ok(())
+}
+
+/// Runic Capacitor's slot count.
+///
+/// `RunicCapacitor::get_CanonicalVars` (v0.111.0 RVA `0x9aa8f`) is
+/// `ldc.i4.3; newobj RepeatVar::.ctor` at `IL_0001`-`IL_0002`, which the body
+/// reads back as `DynamicVars.Repeat.IntValue` (`IL_0062`-`IL_006c`).
+const RUNIC_CAPACITOR_SLOTS: i64 = 3;
+
+/// Runic Capacitor's turn-one `OrbCmd::AddSlots(Owner, 3)` (#3756).
+///
+/// # The native contract
+///
+/// `sim/dll-archive/v0.111.0/data_sts2_macos_arm64/sts2.dll`, sha256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`
+/// (hash-verified 2026-10-10). The type declares exactly one hook,
+/// `AfterSideTurnStart` (RVA `0x9aa9c`, the async stub), beside `get_Rarity`
+/// (`0x9aa8c`), `get_CanonicalVars` (`0x9aa8f`, see
+/// [`RUNIC_CAPACITOR_SLOTS`]) and the constructor (`0x9aae7`). It has no
+/// fields, no saved property and no counter, so the opening has nothing to
+/// seed. The body is `RunicCapacitor/<AfterSideTurnStart>d__4::MoveNext` (RVA
+/// `0x32ffac`):
+///
+/// * `participants.Contains(Owner.Creature)` at `IL_0020`-`IL_0036`, else
+///   `leave` at `IL_0038` (solo, the owner's side is the only one that reaches
+///   this walk);
+/// * the turn guard `Owner.PlayerCombatState.TurnNumber; ldc.i4.1; ble.s` at
+///   `IL_003d`-`IL_004e`, else `leave` at `IL_0050`, so `state.turn <= 1` is
+///   the literal port;
+/// * `RelicModel::Flash` at `IL_0056` (presentation), then
+///   `OrbCmd::AddSlots(Owner, DynamicVars.Repeat.IntValue)` at
+///   `IL_005b`-`IL_0071`, awaited.
+///
+/// Nothing else is written. `OrbCmd::AddSlots` (RVA `0x132f14`) is the shared
+/// command [`super::orbs::add_slots`] already ports: the `IsOverOrEnding`
+/// return at `IL_000c`-`IL_001d`, `Math.Min(10 - Capacity, amount)` at
+/// `IL_001e`-`IL_0037`, and `OrbQueue::AddCapacity` at `IL_0045` (`0x1184f2`,
+/// `Capacity += amount`). The rest of the method is the slot animation. It
+/// fires no hook and does not read `BaseOrbSlotCount`, so a character with no
+/// base slots simply gains three.
+///
+/// # Position inside the walk
+///
+/// Native walks the relic `AfterSideTurnStart` listeners in `Player.Relics`
+/// order, and so does [`after_side_turn_start`] on a vouched inventory
+/// (#3635). On an unvouched one this call sits at a fixed place in the late
+/// group. A whole-assembly call scan for `get_Capacity` finds these
+/// readers and no others: the slot commands themselves, `OrbQueue`'s own
+/// `AddCapacity`, `RemoveCapacity` and `Insert`, the `NOrbManager` layout
+/// nodes, one potion's `OnUse`, and `OrbCmd/<Channel>d__3` (`0x3ed69c`) with
+/// `OrbQueue/<TryEnqueue>d__13` (`0x3d96fc`). So the only same-hook peer that
+/// can observe this body's position is one that **channels** on the same
+/// walk, and only where the channel reads the capacity:
+///
+/// * at zero `BaseOrbSlotCount` with zero `Capacity`, where `Channel`
+///   bootstraps one slot first (`IL_0066`-`IL_008c`), so channel-then-add
+///   ends at four slots and add-then-channel at three;
+/// * with a full queue, where `Channel` evokes the front orb
+///   (`IL_0102`-`IL_012c`), which three more slots would have avoided.
+///
+/// The turn-one channelers of this hook are Symbiotic Virus (one Dark) and
+/// Infused Core (three Lightning). On an unvouched inventory `entry::opening`
+/// refuses Symbiotic Virus beside this relic at zero base slots
+/// (`OpeningRefusal::SymbioticVirusTurnStartOrder`) and Infused Core where
+/// its three do not fit, and `engine::admission` refuses the same pairs
+/// (`Symbiotic Virus + Runic Capacitor zero-slot order`, `Runic
+/// Capacitor + Infused Core turn-start order`). With base slots, the queue
+/// entering this hook holds at most Cracked Core's one Lightning, channeled
+/// on the earlier `BeforeSideTurnStart` hook, so a single Dark channel never
+/// meets a full queue and the two bodies commute.
+///
+/// Cracked Core itself is on the earlier hook, so its order is fixed in
+/// native too: at zero base slots its channel bootstraps one slot and this
+/// body then makes four.
+///
+/// The turn guard makes the body reachable only from the opening's first
+/// turn-start walk ([`super::deal_opening_hand`]) or a document parked inside
+/// turn one's `SetupPlayerTurn`; a document rooted after that walk already
+/// carries the three slots, so this cannot fire twice.
+fn runic_capacitor_after_side_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+) -> Result<(), EngineRefusal> {
+    if state.turn > 1 || !catalog.hooks().owns(RelicId::RelicRunicCapacitor) {
+        return Ok(());
+    }
+    super::orbs::add_slots(state, RUNIC_CAPACITOR_SLOTS)?;
+    crate::coverage::record_relic(RelicId::RelicRunicCapacitor);
+    Ok(())
+}
+
+/// The number of Lightning orbs `InfusedCore` channels on turn one.
+///
+/// `InfusedCore::get_CanonicalVars` (v0.111.0 RVA `0x94f14`) builds
+/// `DynamicVar("Lightning", Decimal(3))` at `IL_0009`-`IL_0014`, which the
+/// body's loop bound reads (`IL_00d3`-`IL_00f3`). Its second var,
+/// `"ExtraDamage"` = `Decimal::One` (`IL_001c`-`IL_0026`), is the
+/// `ModifyOrbValue` row in `engine::orbs::lightning_orb_value`.
+const INFUSED_CORE_CHANNELS: usize = 3;
+
+/// Infused Core's turn-one `Channel<LightningOrb>` x3 (#3756).
+///
+/// # The native contract
+///
+/// `sim/dll-archive/v0.111.0/data_sts2_macos_arm64/sts2.dll`, sha256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`. The
+/// type declares two hooks and no saved property: `ModifyOrbValue` (RVA
+/// `0x94fb7`, +1 to the owner's Lightning orbs, already
+/// `engine::orbs::lightning_orb_value`) and `AfterSideTurnStart` (`0x94f6c`,
+/// the async stub). The body is
+/// `InfusedCore/<AfterSideTurnStart>d__8::MoveNext` (RVA `0x326d00`):
+///
+/// * `participants.Contains(Owner.Creature)` at `IL_0020`-`IL_0036`, else
+///   `leave` at `IL_0038`;
+/// * the turn guard `Owner.PlayerCombatState.TurnNumber; ldc.i4.1; ble.s` at
+///   `IL_003d`-`IL_004e`, else `leave` at `IL_0050`;
+/// * a loop from `i = 0` (`IL_0055`-`IL_0057`) of
+///   `OrbCmd::Channel<LightningOrb>(BlockingPlayerChoiceContext, Owner)` at
+///   `IL_005e`-`IL_0069`, awaited, while `i < DynamicVars["Lightning"]
+///   .BaseValue` (`IL_00c3`-`IL_00f8`, [`INFUSED_CORE_CHANNELS`]).
+///
+/// There is no `Flash` and nothing else is written. Each channel is the
+/// shared command ([`super::orbs::channel`]): its own `IsOverOrEnding` return,
+/// the zero-base bootstrap, the full-queue evoke of the front orb, and
+/// Metronome's and Voltaic's counters.
+///
+/// # Position inside the walk
+///
+/// Native walks the relic `AfterSideTurnStart` listeners in `Player.Relics`
+/// order, and so does [`after_side_turn_start`] on a vouched inventory
+/// (#3635). On an unvouched one this body has a fixed place in the late
+/// group, after Runic Capacitor and before Symbiotic Virus, and the rest of
+/// this section is about that inventory.
+/// Three channels into an empty three-slot queue write only the queue
+/// (and the channel counters), which no other listener of the hook reads, so
+/// with a Defect's base slots and nothing queued the place is not
+/// observable. It becomes observable when the queue matters to a peer, or
+/// when a channel **evokes**, which happens when the three do not fit: at
+/// zero base slots (one bootstrapped slot, two evokes), or behind Cracked
+/// Core's Lightning from the earlier `BeforeSideTurnStart` hook (one evoke).
+/// An evoke rolls `CombatTargets`, hits an enemy and can kill it. The
+/// co-ownerships where that is observable refuse by name on an unvouched
+/// inventory, in the opening
+/// (`entry::opening::infused_core_turn_start_order_is_recorded`,
+/// `symbiotic_virus_turn_start_order_is_recorded`,
+/// `fencing_manual_turn_start_peers_are_ordered`) and in `engine::admission`:
+///
+/// * Symbiotic Virus, at any capacity (which orb overflows);
+/// * Runic Capacitor, where the three do not fit (six slots or an evoke);
+/// * Fencing Manual, at any capacity (the oracle's refusal, kept);
+/// * Bread or Brimstone, where the three do not fit (the evoke against
+///   Bread's turn-one loss, which an ended combat skips, and against
+///   Brimstone's live-opponent snapshot).
+///
+/// The turn guard makes the body reachable only from the opening's first
+/// turn-start walk ([`super::deal_opening_hand`]) or a document parked inside
+/// turn one's `SetupPlayerTurn`; a document rooted after that walk already
+/// carries the orbs, so this cannot fire twice.
+fn infused_core_after_side_turn_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if state.turn > 1 || !catalog.hooks().owns(RelicId::RelicInfusedCore) {
+        return Ok(());
+    }
+    for _ in 0..INFUSED_CORE_CHANNELS {
+        super::orbs::channel(state, catalog, crate::hot::OrbKind::Lightning, events)?;
+    }
+    crate::coverage::record_relic(RelicId::RelicInfusedCore);
     Ok(())
 }
 
@@ -2925,17 +4099,15 @@ const SYMBIOTIC_VIRUS_CHANNELS: usize = 1;
 /// not s.over` block (frozen Python `_turn_start_after_royal`, deleted #2827), one `channel(s, ORB_DARK)`.
 /// It sits after Pael's Tears (`_turn_start_after_royal`) and before Brimstone
 /// (`_turn_start_after_royal`) among the hand-authored `AfterSideTurnStart` listeners, and so
-/// does this call in [`after_side_turn_start_late`]. The oracle's listeners in
-/// between are Fencing Manual, which runs immediately before this call
-/// ([`fencing_manual_after_side_turn_start`], #3090; its Forge writes no orb),
-/// and Letter Opener's turn>1 reset, Runic Capacitor and Infused Core, which
-/// are either inert on turn one or still gated in the opening.
+/// does this call in the late group of an unvouched inventory
+/// ([`AFTER_SIDE_TURN_START_LATE`]). A vouched inventory runs it at its
+/// recorded place ([`after_side_turn_start`], #3635).
 ///
 /// The same-hook peers whose order around this channel is observable are the
 /// oracle's `start_combat` refusals (frozen Python, deleted #2827: Infused Core; Runic
 /// Capacitor at zero base slots; Cracked Core at zero base slots with Fencing
-/// Manual or Brimstone). `engine::admission` refuses each by name for a loaded
-/// document, beside the Crossbow and Big Hat same-hook refusals that also list
+/// Manual or Brimstone). On an unvouched inventory `engine::admission`
+/// refuses each by name, beside Crossbow's same-hook refusal that also lists
 /// this relic, and because the opening builds its document without admission,
 /// `entry::opening` refuses the same four itself
 /// (`OpeningRefusal::SymbioticVirusTurnStartOrder`).
@@ -2954,6 +4126,73 @@ fn symbiotic_virus_after_side_turn_start(
         super::orbs::channel(state, catalog, crate::hot::OrbKind::Dark, events)?;
     }
     crate::coverage::record_relic(RelicId::RelicSymbioticVirus);
+    Ok(())
+}
+
+/// Tea of Discourtesy's `DazedCount` (`get_CanonicalVars` `0x9c4bc`,
+/// `IL_0039`-`IL_003f`: `DynamicVar("DazedCount", 2)`).
+pub(crate) const TEA_OF_DISCOURTESY_DAZED: usize = 2;
+
+/// `RELIC.TEA_OF_DISCOURTESY`'s charged `BeforeCombatStart` (#3756).
+///
+/// v0.111.0 `sts2.dll` (sha256 `9cb4f1ad…12b4`). The type's one hook is
+/// `BeforeCombatStart` (stub `0x9c56c`), body
+/// `TeaOfDiscourtesy/<BeforeCombatStart>d__16::MoveNext` (RVA `0x3324dc`):
+///
+/// * `CombatsLeft; ldc.i4.0; bgt.s`, else `leave` (`IL_001e`-`IL_0026`): a
+///   spent Tea writes nothing;
+/// * `CardPileCmd::AddToCombatAndPreview<Dazed>(Owner.Creature, PileType 1 =
+///   Draw, DynamicVars["DazedCount"].IntValue, Owner, CardPilePosition 3 =
+///   Random)` (`IL_002c`-`IL_0053`), awaited;
+/// * `set_CombatsLeft(CombatsLeft - 1)` and `Flash` (`IL_00ab`-`IL_00bb`).
+///
+/// The command is `CardPileCmd/<AddToCombatAndPreview>d__27::MoveNext` (RVA
+/// `0x3e334c`): per card, one `CreateCard<T>` (`IL_0094`-`IL_0099`) and one
+/// singular `AddGeneratedCardToCombat(card, pileType, creator, position)`
+/// (`IL_00c4`-`IL_00d5`), awaited before the next (`IL_014d`-`IL_0165`); what
+/// follows is `Cmd::Wait` and `PreviewCardPileAdd`, presentation. The creator
+/// is the owner, so each Dazed is the owner-generated transaction
+/// [`super::cards::inject_generated_draw_random`] runs (Funerary Mask's row
+/// uses it the same way): one index drawn against the growing pile, a fresh
+/// uid, the generated-card listeners.
+///
+/// The saved counter's domain is `0..=1` (constructor `0x9c5af` writes 1; the
+/// decrement is the only other writer), which is the boundary's
+/// `tea_discourtesy_combats_left` and this state's `tea_of_discourtesy_active`.
+///
+/// Native runs this at combat start, before turn one's `SetupPlayerTurn`
+/// moves the Innate and Imbued cards, so the pile it indexes is the shuffled
+/// one; `entry::opening::defers_turn_one_fixup` hands it that pile. Its place
+/// among the other `BeforeCombatStart` bodies is not observable: none of them
+/// reads the Draw pile, the `Rng` stream or the card uid counter. The
+/// co-ownerships that would observe it (a generated-card listener, the
+/// turn-one Draw and Hand movers) refuse by name in the opening
+/// (`entry::opening::tea_of_discourtesy_combats_left`).
+pub(crate) fn tea_of_discourtesy_before_combat_start(
+    catalog: &Catalog,
+    state: &mut HotState,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if !catalog.hooks().owns(RelicId::RelicTeaOfDiscourtesy)
+        || !state.tea_of_discourtesy_active()
+        || state.history.over
+    {
+        return Ok(());
+    }
+    for _ in 0..TEA_OF_DISCOURTESY_DAZED {
+        super::cards::inject_generated_draw_random(
+            state,
+            catalog,
+            crate::catalog::CardIdentity {
+                id: CardId::Dazed,
+                upgrade: 0,
+                enchantment: None,
+            },
+            events,
+        )?;
+    }
+    state.set_tea_of_discourtesy_active(false);
+    crate::coverage::record_relic(RelicId::RelicTeaOfDiscourtesy);
     Ok(())
 }
 
@@ -4150,12 +5389,79 @@ pub(crate) const COUNTER_OUT_OF_WALK_PEERS: [RelicId; 6] = [
 ///   (`IsFinishedTriggering`, `0x9d606` IL_0024-IL_002b) all have in-turn
 ///   readers, so none is covered. Game Piece's draw is Iron Club's command
 ///   (`CardPileCmd::Draw`), and a Hellraiser AutoPlay nested in it is a play
-///   those counts see, so it is held to the same table.
+///   those counts see, so it is held to the same table, narrowed for Velvet
+///   Choker and Unsettling Lamp by
+///   [`game_piece_precedes_out_of_walk_peer_commutes`] (#3756).
 pub(crate) fn counter_precedes_out_of_walk_peer_commutes(counter: RelicId, peer: RelicId) -> bool {
     match peer {
         RelicId::RelicPocketwatch | RelicId::RelicRippleBasin => true,
         RelicId::RelicPenNib => counter != RelicId::RelicIronClub,
         _ => false,
+    }
+}
+
+/// Whether Game Piece recorded *before* an out-of-walk peer commutes with it
+/// (#3756). [`counter_precedes_out_of_walk_peer_commutes`] holds Game Piece to
+/// the counters' table because its body is a draw. Two of that table's
+/// refusals are narrower for Game Piece than for a counter, read from IL
+/// (v0.111.0, DLL 9cb4f1ad):
+///
+/// `GamePiece/<AfterCardPlayed>d__6::MoveNext` (RVA `0x325930`) acts only on
+/// the owner's card (IL_0020-IL_0036) of `Type == Power` (IL_004e-IL_005f),
+/// and its whole body is one `CardPileCmd::Draw(choiceContext, Cards, Owner,
+/// false)` (IL_0089). The hooks a draw raises are `ShouldDraw` and
+/// `AfterPreventingDraw` (`CardPileCmd/<DrawInternal>d__21` `0x3e3a70`
+/// IL_005e, IL_0076), `ModifyShuffleOrder` and `AfterShuffle`
+/// (`<Shuffle>d__22` `0x3e4b74` IL_00e2, IL_04a7), `AfterCardEnteredCombat`
+/// and `AfterCardChangedPiles` (`<Add>d__10` `0x3e1ba4` IL_0659, IL_0887) and
+/// `AfterCardDrawn` (`<DrawInternal>d__21` IL_0330, whose hook runs the
+/// `AfterCardDrawnEarly` pass and then the ordinary one).
+///
+/// - **Velvet Choker.** `AfterCardPlayed` RVA `0x9d9a0` increments
+///   `_cardsPlayedThisTurn` for an owner card (IL_0001-IL_001d). The field's
+///   one game-logic reader is `get_ShouldPreventCardPlay` `0x9d945` (IL_0002),
+///   reached only through `VelvetChoker::ShouldPlay` `0x9d985` (IL_0012), and
+///   `Hook::ShouldPlay` has two callers in the assembly: `CardModel::CanPlay`
+///   `0x7dca8` (IL_00b6) and `CardCmd/<AutoPlay>d__0::MoveNext` `0x3df9d4`
+///   (IL_015c). Of every listener of the draw hooks above, only
+///   `HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` (`0x33c1a8`) calls
+///   either. So the increment's place relative to Game Piece's draw is
+///   observable exactly when a Hellraiser AutoPlay can nest in that draw
+///   (`nested_play`, admission's `hellraiser_can_be_live`). There a vouched
+///   inventory is exact in either order: the nested play asks `ShouldPlay`
+///   against a count that leaves out the Power while the Choker is still to
+///   come in the walk (`play::velvet_choker_cards_played`; native traces
+///   `choker_after_piece`, `choker_before_piece` and their `_fifth` twins).
+/// - **Unsettling Lamp.** `AfterCardPlayed` RVA `0x9d606` sets
+///   `IsFinishedTriggering` when the played card is `TriggeringCard`
+///   (IL_0001-IL_002b). The latch has two readers.
+///   `BeforePowerAmountChanged` `0x9d4fc` returns before it reads the latch
+///   whenever `TriggeringCard` is set (IL_000c-IL_0019), and the latch is
+///   never set while `TriggeringCard` is null, so that reader cannot see the
+///   position. `ModifyPowerAmountGivenMultiplicative` `0x9d5a8` doubles only
+///   for `cardSource == TriggeringCard` (IL_001a-IL_0022), which here is the
+///   Power card just played. Among the draw hooks' listeners exactly one
+///   applies a power, `CorrosiveWavePower/<AfterCardDrawn>d__6::MoveNext`
+///   (`0x3378b8`), and it passes a null `cardSource` (IL_00d8); a nested
+///   Hellraiser AutoPlay plays the drawn card, a different card. No power
+///   change inside Game Piece's draw names the played Power card, so the
+///   position is unobservable with or without a nested play.
+///
+/// Brilliant Scarf stays refused: its count is read by every cost query
+/// (`ShouldModifyCost` `0x91828` IL_0035), and nothing here establishes that a
+/// draw makes none.
+pub(crate) fn game_piece_precedes_out_of_walk_peer_commutes(
+    peer: RelicId,
+    nested_play: bool,
+    vouched: bool,
+) -> bool {
+    match peer {
+        RelicId::RelicUnsettlingLamp => true,
+        // With a nested play the place is observable, and a vouched
+        // inventory runs the Choker's count at its recorded place
+        // (`play::velvet_choker_cards_played`).
+        RelicId::RelicVelvetChoker => !nested_play || vouched,
+        _ => counter_precedes_out_of_walk_peer_commutes(RelicId::RelicGamePiece, peer),
     }
 }
 
@@ -4287,11 +5593,38 @@ fn iron_club_after_card_played(
         let written = state.fanouts.set_iron_club_cards(next);
         debug_assert!(written);
         if next == 0 && !state.history.over {
-            super::draw::draw_cards(state, catalog, 1, super::draw::DrawSource::Command, events)?;
+            // The listener's tail Draw, receipt-owned when it can park
+            // (#3822, `draw::iron_club_draw`).
+            super::draw::iron_club_draw(state, catalog, 1, events)?;
         }
         crate::coverage::record_relic(RelicId::RelicIronClub);
     }
     Ok(())
+}
+
+/// Whether Brilliant Scarf's count of the CardPlay `played_uid` is still to
+/// come when Mummified Hand's body runs (#3756): a vouched inventory records
+/// every Mummified Hand before every Brilliant Scarf, and the play is one the
+/// Scarf counts, a manual one (`BrilliantScarf::AfterCardPlayed` RVA `0x917bc`
+/// skips `CardPlay.IsAutoPlay` at IL_001e-IL_0024). False for any other
+/// inventory, where this engine's count-before-the-walk order stands.
+///
+/// Whether the play is manual is read from the active CardPlay. Outside one,
+/// nothing says whether the play was counted, and the body refuses by name.
+fn brilliant_scarf_counts_after_mummified_hand(
+    catalog: &Catalog,
+    played_uid: u32,
+) -> Result<bool, EngineRefusal> {
+    if !relic_recorded_before(
+        catalog,
+        RelicId::RelicMummifiedHand,
+        RelicId::RelicBrilliantScarf,
+    ) {
+        return Ok(false);
+    }
+    super::play::active_play_is_manual(played_uid).ok_or(EngineRefusal::MalformedArgs(
+        "Mummified Hand recorded before Brilliant Scarf outside an active CardPlay",
+    ))
 }
 
 /// Mummified Hand's `AfterCardPlayed` for an owner Power play: make one Hand
@@ -4329,32 +5662,93 @@ fn iron_club_after_card_played(
 /// advances `CombatCardSelection` (F3C51JD0JVEK n39). During a play, the body
 /// stops only on owner death. [`after_card_played_hand`]'s
 /// `player_hooks_deactivated` return already covers that case.
+///
+/// # The two cost reads (#3756)
+///
+/// The filter's four tiers (IL_0061-IL_010e) are built from two predicates,
+/// and they read the cost differently:
+///
+/// * `b__2_0` (RVA `0x32add6`): `EnergyCost.GetWithModifiers(0)` > 0
+///   (IL_0002-IL_000e) or `BaseStarCost > 0` (IL_0011-IL_0017). The argument
+///   is `CostModifiers` **none**: `CardEnergyCost::GetWithModifiers` RVA
+///   `0x11e044` walks the card-local modifiers only under flag 2
+///   (IL_0037-IL_0048) and calls `Hook::ModifyEnergyCostInCombat` only under
+///   flag 4 (IL_0081-IL_00b8). So this is the base cost, `require_base`.
+/// * `b__2_1` / `b__2_2` (RVA `0x32adf2`, `0x32adfb`):
+///   `CardModel::CostsEnergyOrStars(true)` RVA `0x7db3c`, whose `true` arm is
+///   `GetWithModifiers(-1)` > 0 for a non-X card (IL_000f-IL_0029), every
+///   flag, or `GetStarCostWithModifiers` > 0 (IL_002d-IL_003c), which runs
+///   `Hook::ModifyStarCost` (`0x7dad0` IL_0057). So `require_current` reads
+///   the cost through the card-local modifiers **and** the global cost hooks:
+///   [`super::play::resolved_energy_cost`], not the card-local value alone.
+///   Before #3756 this body read the card-local value, which is the same
+///   answer only while no global cost hook is live (Brilliant Scarf's window,
+///   Void Form, Corruption and the Free powers, Tangled).
+///
+/// # Beside Brilliant Scarf (#3756)
+///
+/// Brilliant Scarf is one of those global hooks:
+/// `TryModifyEnergyCostInCombatLate` RVA `0x9175d` and `TryModifyStarCost`
+/// `0x91779` both ask `ShouldModifyCost` RVA `0x91828`, which zeroes an
+/// owner's Hand or Play card while `CardsPlayedThisTurn == Cards - 1`
+/// (IL_0034-IL_005e, pile test IL_0062-IL_00a2). The Scarf writes that count
+/// in its own `AfterCardPlayed`
+/// RVA `0x917bc`, for an owner play that is not an AutoPlay
+/// (IL_001e-IL_0050). Both are relic listeners of
+/// `Hook/<AfterCardPlayed>d__16::MoveNext` (RVA `0x3ccbf4`), awaited in
+/// `Player.Relics` order, so:
+///
+/// * the Scarf recorded first has counted this play when the filter runs;
+/// * Mummified Hand recorded first reads the count **before** this play.
+///
+/// This engine counts the play before the walk
+/// (`play::record_card_play_finished`, the Scarf being an out-of-walk peer,
+/// [`COUNTER_OUT_OF_WALK_PEERS`]), which is the first case. For the second,
+/// on a vouched inventory, the filter runs against the count less this play
+/// when this play was counted, that is, when it is manual
+/// ([`brilliant_scarf_counts_after_mummified_hand`]). The two differ exactly
+/// on the fourth and fifth manual plays of a turn, where the Scarf's free
+/// window opens and closes. An unvouched inventory keeps the first case, and
+/// admission refuses the pair there.
 fn mummified_hand_after_card_played(
     catalog: &Catalog,
     state: &mut HotState,
+    played_uid: u32,
 ) -> Result<(), EngineRefusal> {
-    let hand = state.piles.get(PileId::Hand).as_slice();
-    let candidates_for = |require_base: bool, require_current: bool| {
-        hand.iter()
-            .copied()
-            .filter(|card| {
-                let Some(candidate) = catalog.spec(card.atom) else {
-                    return false;
-                };
-                let base_positive = candidate.cost > 0 || candidate.row.star_cost > 0;
-                let current_positive =
-                    super::play::resolved_local_energy_cost(state, *card, candidate) > 0
-                        || super::play::resolved_star_cost(state, *card, candidate)
-                            .is_some_and(|cost| cost > 0);
-                (!require_base || base_positive) && (!require_current || current_positive)
-            })
-            .collect::<Vec<_>>()
+    let counted = state.history.manual_card_plays_finished_this_turn;
+    if brilliant_scarf_counts_after_mummified_hand(catalog, played_uid)? {
+        state.history.manual_card_plays_finished_this_turn = counted
+            .checked_sub(1)
+            .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    }
+    let candidates = {
+        let hand = state.piles.get(PileId::Hand).as_slice();
+        let candidates_for = |require_base: bool, require_current: bool| {
+            hand.iter()
+                .copied()
+                .filter(|card| {
+                    let Some(candidate) = catalog.spec(card.atom) else {
+                        return false;
+                    };
+                    let base_positive = candidate.cost > 0 || candidate.row.star_cost > 0;
+                    // `CostsEnergyOrStars(true)`: every modifier, card-local
+                    // and global (see "The two cost reads" above).
+                    let current_positive =
+                        super::play::resolved_energy_cost(state, *card, candidate) > 0
+                            || super::play::resolved_star_cost(state, *card, candidate)
+                                .is_some_and(|cost| cost > 0);
+                    (!require_base || base_positive) && (!require_current || current_positive)
+                })
+                .collect::<Vec<_>>()
+        };
+        [(true, true), (false, true), (true, false), (false, false)]
+            .into_iter()
+            .map(|(base, current)| candidates_for(base, current))
+            .find(|candidates| !candidates.is_empty())
+            .unwrap_or_default()
     };
-    let candidates = [(true, true), (false, true), (true, false), (false, false)]
-        .into_iter()
-        .map(|(base, current)| candidates_for(base, current))
-        .find(|candidates| !candidates.is_empty())
-        .unwrap_or_default();
+    // The Scarf's own body counts the play after this one.
+    state.history.manual_card_plays_finished_this_turn = counted;
     if !candidates.is_empty() {
         let live = state.rng.get(RngStream::Sel);
         let mut rng = Xoshiro256StarStar {
@@ -4622,7 +6016,7 @@ fn after_card_played_peer_segment(
         && catalog.hooks().owns(RelicId::RelicMummifiedHand)
         && runs(RelicId::RelicMummifiedHand)
     {
-        mummified_hand_after_card_played(catalog, state)?;
+        mummified_hand_after_card_played(catalog, state, played_uid)?;
     }
     if spec.is_attack
         && !state.art_of_war_last_attack()
@@ -4696,7 +6090,9 @@ fn after_card_played_peer_segment(
         && catalog.hooks().owns(RelicId::RelicGamePiece)
         && runs(RelicId::RelicGamePiece)
     {
-        super::draw::draw_cards(state, catalog, 1, super::draw::DrawSource::Command, events)?;
+        // The listener's tail Draw, receipt-owned when it can park (#3822,
+        // `draw::game_piece_draw`).
+        super::draw::game_piece_draw(state, catalog, 1, events)?;
         crate::coverage::record_relic(RelicId::RelicGamePiece);
     }
     if spec.row.tags.contains(&"Shiv")
@@ -4865,6 +6261,8 @@ fn after_card_played_peer_segment(
         crate::coverage::record_relic(RelicId::RelicRazorTooth);
     }
     if catalog.hooks().owns(RelicId::RelicVelvetChoker) && runs(RelicId::RelicVelvetChoker) {
+        // The Choker's own count moves here (`play::velvet_choker_cards_played`).
+        super::play::velvet_choker_counts_play(played_uid);
         crate::coverage::record_relic(RelicId::RelicVelvetChoker);
     }
     if state.fanouts.vambrace_available()
@@ -4969,7 +6367,7 @@ mod tests {
             modifier_total(&catalog, HookEvent::ModifyMaxEnergy, &state),
             Ok(1)
         );
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
 
         assert_eq!((state.energy, state.gold), (3, 2));
         assert_eq!(state.powers.value(PowerId::Strength), 2);
@@ -5508,9 +6906,12 @@ mod tests {
 
         before_side_turn_start(&catalog, &mut state, &mut Vec::new()).unwrap();
         state.history.owner_card_plays_finished_this_turn = 0;
-        let pollinous = before_hand_draw(&catalog, &mut state, &mut Vec::new()).unwrap();
+        before_hand_draw(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        // `BeforeHandDraw` leaves the fourth turn counted; the fold reads and
+        // resets it.
+        assert_eq!(state.pollinous_core(), 4);
         let bonus = modifier_total(&catalog, HookEvent::ModifyHandDraw, &state).unwrap()
-            + pollinous_hand_draw_bonus(pollinous);
+            + pollinous_core_modify_hand_draw(&catalog, &mut state);
 
         assert_eq!(state.pocketwatch_last_plays(), 3);
         assert_eq!(state.pendulum(), 0);
@@ -5604,7 +7005,7 @@ mod tests {
         after_before_side_turn_end(&catalog, &mut state);
         assert!(state.paels_tears_had_leftover_energy());
         state.energy = 0;
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert_eq!(state.energy, 2);
 
         state.set_art_of_war_current_attack(true);
@@ -5701,9 +7102,8 @@ mod tests {
         after_energy_reset(&catalog, &mut state).unwrap();
         assert_eq!(state.energy, 6);
         assert!(!state.fake_tea_set_charged());
-        before_hand_draw(&catalog, &mut state, &mut Vec::new()).unwrap();
+        before_hand_draw(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert_eq!(state.piles.get(PileId::Draw).len(), 4);
-        radiant_pearl_before_hand_draw(&catalog, &mut state, &mut Vec::new()).unwrap();
         assert_eq!(state.piles.get(PileId::Hand).len(), 2);
         let pearl = catalog
             .spec(state.piles.get(PileId::Hand).as_slice()[1].atom)
@@ -5736,7 +7136,7 @@ mod tests {
                 counter: seeded.counter,
             },
         );
-        after_player_turn_start(&vexing_catalog, &mut vexing, &mut Vec::new()).unwrap();
+        after_player_turn_start_from_entry(&vexing_catalog, &mut vexing).unwrap();
         assert_eq!(vexing.piles.get(PileId::Hand).len(), 1);
 
         let royal_catalog = catalog(&[RelicId::RelicRoyalPoison]);
@@ -5744,7 +7144,7 @@ mod tests {
         royal.hp = 80;
         royal.max_hp = 80;
         royal.turn = 1;
-        after_player_turn_start(&royal_catalog, &mut royal, &mut Vec::new()).unwrap();
+        after_player_turn_start_from_entry(&royal_catalog, &mut royal).unwrap();
         assert_eq!(royal.hp, 76);
     }
 
@@ -5754,10 +7154,10 @@ mod tests {
     /// application comes first is doubled. Crossbow first: Arsenal's 1 is
     /// doubled to 2, then Brimstone adds 2, for 4. Brimstone first: its 2 is
     /// doubled to 4, then Arsenal adds 1, for 5. A vouched Brimstone-first
-    /// inventory takes the second order. Crossbow-first, and an unvouched
-    /// inventory in either order, keep the fixed Crossbow-first order, which
-    /// admission refuses for the unvouched case. Each enemy gets its 1 Strength
-    /// exactly once in every order.
+    /// inventory takes the second order: the walk runs the two as recorded
+    /// (#3635). An unvouched inventory in either order keeps the fixed
+    /// Crossbow-first order, which admission refuses. Each enemy gets its 1
+    /// Strength exactly once in every order.
     #[test]
     fn brimstone_runs_on_its_recorded_side_of_crossbow() {
         use crate::catalog::RewardPool;
@@ -5803,23 +7203,19 @@ mod tests {
                 .monsters_mut()
                 .push(HotMonster::new(MonsterKind::Toadpole, 20));
             after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
-            after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
             assert_eq!(state.piles.get(PileId::Hand).len(), 1, "one Crossbow card");
             assert_eq!(
                 state.monsters[0].powers.value(PowerId::Strength),
                 1,
                 "Brimstone's enemy Strength, once"
             );
-            (
-                brimstone_leads_crossbow(&catalog),
-                state.powers.value(PowerId::Strength),
-            )
+            state.powers.value(PowerId::Strength)
         };
         use RelicId::{RelicBrimstone as B, RelicCrossbow as C, RelicRuinedHelmet as H};
-        assert_eq!(run([B, C, H], true), (true, 5));
-        assert_eq!(run([C, B, H], true), (false, 4));
-        assert_eq!(run([B, C, H], false), (false, 4));
-        assert_eq!(run([C, B, H], false), (false, 4));
+        assert_eq!(run([B, C, H], true), 5);
+        assert_eq!(run([C, B, H], true), 4);
+        assert_eq!(run([B, C, H], false), 4);
+        assert_eq!(run([C, B, H], false), 4);
     }
 
     /// #2970: every arm of the Crossbow turn-start body, and Big Hat's
@@ -5962,12 +7358,21 @@ mod tests {
                 assert!(pool.len() < full.len(), "the partial profile gates a row");
             }
         }
-        // Ending combat skips the body before any draw.
+        // A pass entered on an ended combat runs no listener.
         let mut over = live.clone();
         over.history.over = true;
         let before = over.clone();
-        after_side_turn_start(&crossbow, &mut over, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&crossbow, &mut over, false, &mut Vec::new()).unwrap();
         assert_eq!(over, before);
+        // A pass that began live and reached Crossbow ended (here a power of
+        // the pass ended it) still runs the body in the game: it draws the
+        // Generation stream and adds no card (#3635).
+        after_side_turn_start(&crossbow, &mut over, true, &mut Vec::new()).unwrap();
+        assert_ne!(
+            over.rng.get(RngStream::Generation),
+            before.rng.get(RngStream::Generation)
+        );
+        assert_eq!(over.piles, before.piles, "no card");
 
         // Big Hat stays Ironclad-only (#3264): a non-Ironclad owner refuses by
         // name, atomically; the Ironclad's empty pool draws nothing on any
@@ -6162,7 +7567,7 @@ mod tests {
             modifier_total(&catalog, HookEvent::ModifyHandDraw, &state),
             Ok(2)
         );
-        before_hand_draw(&catalog, &mut state, &mut Vec::new()).unwrap();
+        before_hand_draw(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert_eq!(state.piles.get(PileId::Draw).len(), 3);
         assert!(
             state
@@ -6373,7 +7778,7 @@ mod tests {
         pet.turn = 2;
         after_energy_reset(&catalog, &mut pet).unwrap();
         assert_eq!(pet.fanouts.pet().osty().map(|osty| osty.hp()), Some(1));
-        after_side_turn_start_late(&catalog, &mut pet, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut pet, true, &mut Vec::new()).unwrap();
         assert_eq!(pet.fanouts.pet().osty().map(|osty| osty.hp()), Some(3));
     }
 
@@ -6575,7 +7980,7 @@ mod tests {
             },
         );
 
-        after_player_turn_start(&catalog, &mut state, &mut Vec::new()).unwrap();
+        after_player_turn_start_from_entry(&catalog, &mut state).unwrap();
         assert_eq!(relic_selection_action_count(&state, &catalog), Ok(5));
         resume_relic_selection(&mut state, &catalog, 0, &mut Vec::new()).unwrap();
 
@@ -6583,6 +7988,88 @@ mod tests {
         assert_eq!(state.piles.get(PileId::Hand).len(), 1);
         let selected = state.piles.get(PileId::Hand).as_slice()[0];
         assert!(state.card_states.get(selected.uid).local_retain);
+    }
+
+    /// #3756, site witness `0KPA7UA3BF5V` node 34. The Paradox's pick keeps
+    /// the Retain it was offered with (`0x321b0c` IL_00f2-IL_0105). When the
+    /// deck already holds the same card, the two copies differ only by that
+    /// keyword, so the fight is promoted to exact pile identity and both are
+    /// offered as plays. With no twin nothing is promoted.
+    #[test]
+    fn choices_paradox_pick_beside_its_twin_promotes_exact_piles() {
+        for twin in [false, true] {
+            let mut builder = CatalogBuilder::new();
+            let pool = generation_relic_pool(RelicPendingKind::ChoicesParadox).unwrap();
+            for id in pool {
+                builder
+                    .intern_reachable(CardIdentity {
+                        id: *id,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+            }
+            builder.set_relics(&[RelicId::RelicChoicesParadox]).unwrap();
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 20;
+            state.max_hp = 20;
+            state.turn = 1;
+            state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 20));
+            let seeded = crate::rng::Xoshiro256StarStar::from_seed(11);
+            state.rng.set(
+                RngStream::Generation,
+                RngStreamState {
+                    words: seeded.words,
+                    counter: seeded.counter,
+                },
+            );
+            // Learn the first option, then put its plain twin in Hand.
+            let mut probe = state.clone();
+            probe.next_card_uid = 1;
+            after_player_turn_start_from_entry(&catalog, &mut probe).unwrap();
+            resume_relic_selection(&mut probe, &catalog, 0, &mut Vec::new()).unwrap();
+            let picked_atom = probe.piles.get(PileId::Hand).as_slice()[0].atom;
+
+            state.next_card_uid = 1;
+            if twin {
+                state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+                    uid: 1,
+                    atom: picked_atom,
+                    flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                });
+                state.next_card_uid = 2;
+            }
+            assert!(!state.exact_piles);
+            after_player_turn_start_from_entry(&catalog, &mut state).unwrap();
+            resume_relic_selection(&mut state, &catalog, 0, &mut Vec::new()).unwrap();
+
+            assert_eq!(state.exact_piles, twin);
+            let hand = state.piles.get(PileId::Hand).as_slice().to_vec();
+            assert_eq!(hand.len(), 1 + usize::from(twin));
+            let retained = hand
+                .iter()
+                .filter(|card| state.card_states.get(card.uid).local_retain)
+                .count();
+            assert_eq!(retained, 1);
+            if twin {
+                assert_eq!(hand[0].atom, hand[1].atom);
+                let offered = crate::engine::legal_actions(&state, &catalog)
+                    .into_iter()
+                    .filter_map(|action| match action {
+                        crate::engine::Action::Play { uid, .. } => Some(uid),
+                        _ => None,
+                    })
+                    .collect::<std::collections::BTreeSet<_>>();
+                for card in &hand {
+                    assert!(offered.contains(&card.uid), "uid {} is offered", card.uid);
+                }
+            }
+        }
     }
 
     #[test]
@@ -7048,7 +8535,7 @@ mod tests {
             ),
             (
                 [RelicId::RelicToastyMittens, RelicId::RelicVexingPuzzlebox],
-                true,
+                false,
             ),
         ] {
             let mut builder = CatalogBuilder::new();
@@ -7056,9 +8543,80 @@ mod tests {
             let catalog = builder.build();
             let mut state = HotState::at_defaults();
             let before = state.clone();
-            assert!(!vexing_toasty_order_is_exact(&catalog));
             assert!(continue_after_gambling_chip(&catalog, &mut state, &mut Vec::new()).is_err());
             assert_eq!(state, before);
+        }
+    }
+
+    /// #3756: `ToastyMittens/<AfterPlayerTurnStart>d__6` (RVA `0x33285c`,
+    /// `FromHand` at IL_0068, `Exhaust` at IL_00f2) and
+    /// `VexingPuzzlebox/<AfterPlayerTurnStart>d__2` (RVA `0x333de0`,
+    /// `AddGeneratedCardToCombat` at IL_00b7) in `Player.Relics` order.
+    /// Recorded Puzzlebox first, the free card is among Toasty's candidates.
+    /// Recorded Toasty first, the choice is over the dealt Hand alone, the
+    /// `CombatCardGeneration` stream is untouched at the pause, and the card
+    /// arrives once the pick is exhausted. Either way one card is generated,
+    /// one exhausted and one Strength gained.
+    #[test]
+    fn toasty_mittens_runs_on_its_recorded_side_of_vexing_puzzlebox() {
+        use RelicId::{RelicToastyMittens as TOASTY, RelicVexingPuzzlebox as PUZZLEBOX};
+        for (relics, toasty_first) in [([TOASTY, PUZZLEBOX], true), ([PUZZLEBOX, TOASTY], false)] {
+            let (catalog, mut state) = popper_puzzlebox_fixture(&relics, 20);
+            // Any two cards the fixture's catalog already holds.
+            let dealt = catalog
+                .specs()
+                .take(2)
+                .map(|spec| catalog.atom(&spec.identity).unwrap())
+                .collect::<Vec<_>>();
+            assert_eq!(dealt.len(), 2);
+            state.piles.set(
+                PileId::Hand,
+                HotPile::from_cards(
+                    dealt
+                        .iter()
+                        .enumerate()
+                        .map(|(uid, atom)| HotCard {
+                            uid: uid as u32,
+                            atom: *atom,
+                            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                        })
+                        .collect(),
+                ),
+            );
+            let stream_before = state.rng.get(RngStream::Generation);
+            let mut events = Vec::new();
+            continue_after_gambling_chip(&catalog, &mut state, &mut events).unwrap();
+            let offered = if toasty_first { 2 } else { 3 };
+            assert_eq!(
+                relic_selection_action_count(&state, &catalog),
+                Ok(offered),
+                "{relics:?}"
+            );
+            assert_eq!(
+                state.rng.get(RngStream::Generation) == stream_before,
+                toasty_first,
+                "{relics:?}: the Puzzlebox has not drawn at a Toasty-first pause"
+            );
+            resume_relic_selection(&mut state, &catalog, 0, &mut events).unwrap();
+            assert!(state.pending.is_none(), "{relics:?}");
+            assert_eq!(state.piles.get(PileId::Exhaust).as_slice()[0].uid, 0);
+            assert_eq!(state.powers.value(PowerId::Strength), 1, "{relics:?}");
+            assert_eq!(
+                state
+                    .piles
+                    .get(PileId::Hand)
+                    .as_slice()
+                    .iter()
+                    .map(|card| card.uid)
+                    .collect::<Vec<_>>(),
+                [1, 41],
+                "{relics:?}: the dealt card, then the generated one"
+            );
+            assert_eq!(
+                state.rng.get(RngStream::Generation).counter,
+                1428,
+                "{relics:?}: one GetDistinctForCombat shuffle"
+            );
         }
     }
 
@@ -7491,7 +9049,8 @@ mod tests {
     /// (`PhylacteryUnbound/<AfterSideTurnStart>d__11` `0x32e134` IL_005b)
     /// reads the IsEnding projection through `summon_osty`: a live enemy
     /// heals, an ending combat grows MaxHp only, and an absent Osty while
-    /// ending refuses by name. Before #3279 every arm healed.
+    /// ending is created at 1 HP under the summoned MaxHp (#3635). Before
+    /// #3279 every arm healed.
     #[test]
     fn phylactery_unbound_turn_start_summon_reads_the_ending_projection() {
         let mut builder = CatalogBuilder::new();
@@ -7501,15 +9060,9 @@ mod tests {
             .unwrap();
         let catalog = builder.build();
         for (live_enemy, osty, expected) in [
-            (true, Some((3, 5)), Ok(Some((5, 7)))),
+            (true, Some((3, 5)), Ok::<_, EngineRefusal>(Some((5, 7)))),
             (false, Some((3, 5)), Ok(Some((3, 7)))),
-            (
-                false,
-                None,
-                Err(EngineRefusal::EndingSummonNotModeled(
-                    "Phylactery Unbound Osty",
-                )),
-            ),
+            (false, None, Ok(Some((1, 2)))),
         ] {
             let mut state = HotState::at_defaults();
             state.hp = 50;
@@ -7520,8 +9073,8 @@ mod tests {
                     .push(HotMonster::new(MonsterKind::Toadpole, 10));
             }
             state.fanouts.set_osty(osty).unwrap();
-            let result = after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new())
-                .map(|()| {
+            let result =
+                after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).map(|()| {
                     state
                         .fanouts
                         .pet()
@@ -7964,7 +9517,7 @@ mod tests {
         ] {
             let (catalog, mut state) = setup(Some(owner), Some(partial.clone()), 0);
             assert_eq!(
-                before_hand_draw(&catalog, &mut state, &mut Vec::new()),
+                before_hand_draw(&catalog, &mut state, true, &mut Vec::new()),
                 Ok(false)
             );
             let drawn = options(&catalog, &state);
@@ -7978,7 +9531,7 @@ mod tests {
         }
         // A pending option the recorded profile hides is not exact.
         let (catalog, mut state) = setup(Some(RewardPool::Silent), Some(partial.clone()), 0);
-        before_hand_draw(&catalog, &mut state, &mut Vec::new()).unwrap();
+        before_hand_draw(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         let mut record = state.fanouts.batch_nine_relic_pending().unwrap().clone();
         record.entries[0].card.atom = catalog
             .atom(&CardIdentity {
@@ -7995,12 +9548,12 @@ mod tests {
         ));
         let (catalog, mut state) = setup(Some(RewardPool::Silent), None, 0);
         assert_eq!(
-            before_hand_draw(&catalog, &mut state, &mut Vec::new()),
+            before_hand_draw(&catalog, &mut state, true, &mut Vec::new()),
             refused
         );
         let (catalog, mut state) = setup(Some(RewardPool::Silent), Some(full), 1);
         assert_eq!(
-            before_hand_draw(&catalog, &mut state, &mut Vec::new()),
+            before_hand_draw(&catalog, &mut state, true, &mut Vec::new()),
             refused
         );
     }
@@ -8404,6 +9957,105 @@ mod tests {
         }
     }
 
+    /// #3756: Mummified Hand's Hand filter reads Brilliant Scarf's play count
+    /// (`MummifiedHand/<>c::<AfterCardPlayed>b__2_0` `0x32add6`,
+    /// `GetWithModifiers` at IL_0008; `BrilliantScarf::ShouldModifyCost`
+    /// `0x91828`), and the Scarf counts the play in its own `AfterCardPlayed`
+    /// (`0x917bc`). The witness is the turn's fifth manual play, a Power,
+    /// with two base-cost-1 cards in the Hand: a Defend at full cost and a
+    /// Strike already free this turn.
+    ///
+    /// * **Scarf recorded first:** it has counted five, its free window is
+    ///   closed, the Defend is the one card that still costs, and Mummified
+    ///   Hand frees it wherever it sits.
+    /// * **Mummified Hand recorded first:** the Scarf still reads four, every
+    ///   Hand card costs zero, the filter falls through to the base-cost
+    ///   tier, and the pick is one of the two by `CombatCardSelection`. The
+    ///   same roll lands on the Defend in one Hand order and on the Strike in
+    ///   the other.
+    ///
+    /// Each root round-trips and is admitted. An unvouched inventory is
+    /// refused by admission
+    /// (`scarf_and_mummified_hand_refuse_only_an_unvouched_inventory`).
+    #[test]
+    fn mummified_hand_reads_brilliant_scarf_on_its_recorded_side_of_the_count() {
+        let scarf = RelicId::RelicBrilliantScarf;
+        let hand_relic = RelicId::RelicMummifiedHand;
+        // Whether the Defend (uid 2) is free once the Power play is done.
+        let defend_freed = |order: [RelicId; 2], defend_first: bool| {
+            let (mut state, catalog, atoms) = latch_fixture(
+                &[
+                    CardId::DemonForm,
+                    CardId::DefendIronclad,
+                    CardId::StrikeIronclad,
+                ],
+                &order,
+                true,
+            );
+            let (power, defend, strike) = (atoms[0], atoms[1], atoms[2]);
+            state
+                .fanouts
+                .set_batch_eight_deep_relic_ownership(false, true, false, false, false);
+            state.history.manual_card_plays_finished_this_turn = 4;
+            state.history.owner_card_plays_finished_this_turn = 4;
+            state.history.card_plays_finished_combat = 4;
+            let rest = if defend_first {
+                [(2, defend), (3, strike)]
+            } else {
+                [(3, strike), (2, defend)]
+            };
+            latch_push(&mut state, PileId::Hand, &[(1, power)]);
+            latch_push(&mut state, PileId::Hand, &rest);
+            state.card_states.set_to_free_this_turn(3, 1).unwrap();
+            let (state, catalog) = latch_cold(&state, &catalog);
+            assert!(state.fanouts.brilliant_scarf_owned(), "{order:?}");
+            assert_eq!(
+                relic_recorded_before(&catalog, hand_relic, scarf),
+                order[0] == hand_relic,
+                "{order:?}: the loaded root keeps its vouched order"
+            );
+            let play = crate::engine::legal_actions(&state, &catalog)
+                .into_iter()
+                .find(|action| matches!(action, crate::engine::Action::Play { uid: 1, .. }))
+                .unwrap_or_else(|| panic!("{order:?}: the Power is playable"));
+            let done = crate::engine::apply_action(&state, &catalog, &play)
+                .unwrap_or_else(|refusal| panic!("{order:?}: {refusal:?}"))
+                .state;
+            assert_eq!(
+                done.history.manual_card_plays_finished_this_turn, 5,
+                "{order:?}: the count is restored and holds this play"
+            );
+            assert_eq!(
+                done.rng.get(RngStream::Sel).counter,
+                1,
+                "{order:?}: one CombatCardSelection roll"
+            );
+            let defend_card = *done
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .find(|card| card.uid == 2)
+                .expect("the Defend stays in the Hand");
+            super::super::play::resolved_local_energy_cost(
+                &done,
+                defend_card,
+                catalog.spec(defend_card.atom).unwrap(),
+            ) == 0
+        };
+        for defend_first in [true, false] {
+            assert!(
+                defend_freed([scarf, hand_relic], defend_first),
+                "Scarf first, Defend first {defend_first}: the one costly card is freed"
+            );
+        }
+        assert_ne!(
+            defend_freed([hand_relic, scarf], true),
+            defend_freed([hand_relic, scarf], false),
+            "Mummified Hand first: the roll picks between both base-cost cards"
+        );
+    }
+
     /// #2909: three walk relics in three recorded orders give three results.
     /// The fixed order is Music Box, Kusarigama, Razor Tooth, which is none of
     /// them.
@@ -8696,13 +10348,13 @@ mod tests {
 
         let mut state = live();
         state.turn = 2;
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert!(state.orbs.as_slice().is_empty(), "turn 2 channels nothing");
 
         let mut state = live();
         state.turn = 1;
         state.history.over = true;
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert!(
             state.orbs.as_slice().is_empty(),
             "an over combat channels nothing"
@@ -8710,8 +10362,482 @@ mod tests {
 
         let mut state = live();
         state.turn = 1;
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert_eq!(state.orbs.as_slice().len(), SYMBIOTIC_VIRUS_CHANNELS);
+    }
+
+    /// `RunicCapacitor/<AfterSideTurnStart>d__4::MoveNext` (`0x32ffac`) leaves
+    /// at `IL_004e`-`IL_0050` once `TurnNumber > 1`, and `OrbCmd::AddSlots`
+    /// (`0x132f14`) returns at `IsOverOrEnding` (`IL_000c`-`IL_001d`) and
+    /// clamps to `10 - Capacity` (`IL_001e`-`IL_0037`). Witnesses the turn
+    /// guard of [`runic_capacitor_after_side_turn_start`], the command's
+    /// ending gate and clamp reached through it, the zero-base case (no
+    /// bootstrap: three slots, not four), and that a non-owner gains nothing.
+    #[test]
+    fn runic_capacitor_adds_three_slots_only_on_turn_one_of_a_live_combat() {
+        let owned = catalog(&[RelicId::RelicRunicCapacitor]);
+        let live = |turn: i16, slots: u8| {
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.turn = turn;
+            state.orbs.set_base_slots(slots.min(3));
+            state.orbs.set_slots(slots);
+            state
+        };
+        let run = |catalog: &Catalog, mut state: HotState| {
+            after_side_turn_start(catalog, &mut state, true, &mut Vec::new()).unwrap();
+            (state.orbs.slots(), state.orbs.base_slots())
+        };
+
+        assert_eq!(run(&owned, live(1, 3)), (6, 3), "Defect: 3 + 3");
+        assert_eq!(run(&owned, live(1, 0)), (3, 0), "no base slots: 0 + 3");
+        assert_eq!(run(&owned, live(1, 9)), (10, 3), "clamped at ten");
+        assert_eq!(run(&owned, live(2, 3)), (3, 3), "turn 2 adds nothing");
+        assert_eq!(
+            run(&catalog(&[]), live(1, 3)),
+            (3, 3),
+            "a non-owner gains nothing"
+        );
+
+        let mut over = live(1, 3);
+        over.history.over = true;
+        assert_eq!(run(&owned, over), (3, 3), "an over combat adds nothing");
+
+        // The hook did not start (another side's walk): nothing runs.
+        let mut state = live(1, 3);
+        after_side_turn_start(&owned, &mut state, false, &mut Vec::new()).unwrap();
+        assert_eq!(state.orbs.slots(), 3);
+    }
+
+    /// Beside Symbiotic Virus with base slots the two bodies commute: the Dark
+    /// channel meets a queue that is not full at three slots or at six, so the
+    /// fixed position of [`runic_capacitor_after_side_turn_start`] is not
+    /// observable. A front Lightning (Cracked Core's, from the earlier hook)
+    /// is still there afterwards, so nothing was evoked.
+    #[test]
+    fn runic_capacitor_beside_symbiotic_virus_keeps_every_orb_at_base_three() {
+        let catalog = catalog(&[RelicId::RelicRunicCapacitor, RelicId::RelicSymbioticVirus]);
+        let mut state = HotState::at_defaults();
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.turn = 1;
+        state.orbs.set_base_slots(3);
+        state.orbs.set_slots(3);
+        state
+            .orbs
+            .push(crate::hot::HotOrb::from_parts(crate::hot::OrbKind::Lightning, None).unwrap());
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        assert_eq!(state.orbs.slots(), 6);
+        let kinds: Vec<_> = state.orbs.as_slice().iter().map(|orb| orb.kind()).collect();
+        assert_eq!(
+            kinds,
+            [crate::hot::OrbKind::Lightning, crate::hot::OrbKind::Dark]
+        );
+        assert_eq!(state.monsters[0].hp, 100, "no evoke hit anything");
+    }
+
+    /// `TwistedFunnel/<BeforeSideTurnStart>d__6::MoveNext` (`0x3336e8`):
+    /// the turn guard leaves at `IL_0055`-`IL_0057` once `TurnNumber > 1`, the
+    /// loop is over `HittableEnemies` (`IL_012d`-`IL_0147`), and each
+    /// `Apply<PoisonPower>` (`IL_0192`) is the shared command, so Artifact
+    /// eats one application and an over combat applies nothing. Witnesses
+    /// each arm of the Funnel's row in [`turn_one_all_enemy_debuffs`].
+    #[test]
+    fn twisted_funnel_poisons_each_living_enemy_only_on_turn_one() {
+        let owned = catalog(&[RelicId::RelicTwistedFunnel]);
+        let roster = |turn: i16| {
+            let mut state = HotState::at_defaults();
+            for (uid, hp, artifact) in [(0, 30, 0), (1, 0, 0), (2, 30, 1)] {
+                let mut monster = HotMonster::new(MonsterKind::Toadpole, hp);
+                monster.uid = uid;
+                if artifact != 0 {
+                    monster
+                        .powers
+                        .set(PowerId::Artifact, SlotWire::Int, artifact);
+                }
+                state.monsters_mut().push(monster);
+            }
+            state.turn = turn;
+            state
+        };
+        let poison = |state: &HotState| {
+            state
+                .monsters
+                .iter()
+                .map(|monster| (monster.powers.value(PowerId::Poison), monster.poison_uid))
+                .collect::<Vec<_>>()
+        };
+
+        let mut state = roster(1);
+        before_side_turn_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        // The living enemy takes 4 and the first identity; the dead one is
+        // not hittable; the third's Artifact eats the application.
+        assert_eq!(poison(&state), [(4, 0), (0, -1), (0, -1)]);
+        assert_eq!(state.next_poison_uid, 1);
+        assert_eq!(state.monsters[2].powers.value(PowerId::Artifact), 0);
+        assert_eq!(
+            state.monsters[0].misery_debuff_order,
+            crate::hot::MiseryOrder::from_tokens(vec![MiseryToken::Poison])
+        );
+
+        let mut state = roster(2);
+        before_side_turn_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(poison(&state), [(0, -1); 3], "turn 2 applies nothing");
+
+        let mut state = roster(1);
+        state.history.over = true;
+        before_side_turn_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(
+            poison(&state),
+            [(0, -1); 3],
+            "an over combat applies nothing"
+        );
+
+        let mut state = roster(1);
+        before_side_turn_start(&catalog(&[]), &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(poison(&state), [(0, -1); 3], "a non-owner applies nothing");
+    }
+
+    /// [`turn_one_all_enemy_debuff_rows`]: a vouched inventory decides the
+    /// order of any of the three, first recorded copy deciding; an unvouched
+    /// one leaves table order (#3765: the Funnel is no longer a condition).
+    #[test]
+    fn the_all_enemy_debuff_rows_follow_a_vouched_inventory() {
+        const MASK: RelicId = RelicId::RelicRedMask;
+        const BAG: RelicId = RelicId::RelicBagOfMarbles;
+        const FUNNEL: RelicId = RelicId::RelicTwistedFunnel;
+        let order = |inventory: &[RelicId], vouched: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder.set_relics_ordered(inventory, vouched).unwrap();
+            turn_one_all_enemy_debuff_rows(&builder.build())
+                .into_iter()
+                .map(|(relic, ..)| relic)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(order(&[BAG, FUNNEL, MASK], true), [BAG, FUNNEL, MASK]);
+        assert_eq!(order(&[FUNNEL, MASK, BAG], true), [FUNNEL, MASK, BAG]);
+        assert_eq!(order(&[BAG, FUNNEL, MASK], false), [MASK, BAG, FUNNEL]);
+        assert_eq!(order(&[FUNNEL, MASK], true), [FUNNEL, MASK]);
+        // An unrelated relic between them does not move anything.
+        assert_eq!(
+            order(&[FUNNEL, RelicId::RelicVajra, BAG], true),
+            [FUNNEL, BAG]
+        );
+        // No Funnel (#3765): the pair follows a vouched inventory too.
+        assert_eq!(order(&[BAG, MASK], true), [BAG, MASK]);
+        assert_eq!(order(&[MASK, BAG], true), [MASK, BAG]);
+        assert_eq!(order(&[BAG, MASK], false), [MASK, BAG]);
+        assert_eq!(order(&[FUNNEL], false), [FUNNEL]);
+        assert!(order(&[RelicId::RelicVajra], true).is_empty());
+    }
+
+    /// The loop applies in the row order: the recorded order becomes each
+    /// enemy's Misery acquisition order.
+    #[test]
+    fn the_all_enemy_debuffs_land_in_the_recorded_order_beside_the_funnel() {
+        let inventory = [
+            RelicId::RelicBagOfMarbles,
+            RelicId::RelicTwistedFunnel,
+            RelicId::RelicRedMask,
+        ];
+        // #3756: an Artifact below the number of owned relics eats the first
+        // recorded applications, one stack each
+        // (`ArtifactPower::TryModifyPowerAmountReceived` `0x9f844`, then one
+        // `PowerCmd::Decrement` in `<AfterModifyingPowerAmountReceived>d__7`
+        // `0x334fd0` IL_001e). Both orders of the pair, and the trio at one
+        // and two stacks; an eaten debuff leaves no Misery token.
+        let landed = |inventory: &[RelicId], artifact: i32| {
+            let mut builder = CatalogBuilder::new();
+            builder.set_relics_ordered(inventory, true).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, 30);
+            monster
+                .powers
+                .set(PowerId::Artifact, SlotWire::Int, artifact);
+            state.monsters_mut().push(monster);
+            state.turn = 1;
+            before_side_turn_start(&catalog, &mut state, &mut Vec::new()).unwrap();
+            let monster = &state.monsters[0];
+            (
+                [
+                    PowerId::Weak,
+                    PowerId::Vuln,
+                    PowerId::Poison,
+                    PowerId::Artifact,
+                ]
+                .map(|power| monster.powers.value(power)),
+                monster.misery_debuff_order.clone(),
+            )
+        };
+        let order = |tokens: &[MiseryToken]| crate::hot::MiseryOrder::from_tokens(tokens.to_vec());
+        const MASK: RelicId = RelicId::RelicRedMask;
+        const BAG: RelicId = RelicId::RelicBagOfMarbles;
+        const FUNNEL: RelicId = RelicId::RelicTwistedFunnel;
+        assert_eq!(
+            landed(&[MASK, BAG], 1),
+            ([0, 1, 0, 0], order(&[MiseryToken::Vuln])),
+            "Red Mask first: its Weak is eaten"
+        );
+        assert_eq!(
+            landed(&[BAG, MASK], 1),
+            ([1, 0, 0, 0], order(&[MiseryToken::Weak])),
+            "Bag of Marbles first: its Vulnerable is eaten"
+        );
+        assert_eq!(
+            landed(&inventory, 1),
+            (
+                [1, 0, 4, 0],
+                order(&[MiseryToken::Poison, MiseryToken::Weak])
+            ),
+        );
+        assert_eq!(
+            landed(&inventory, 2),
+            ([1, 0, 0, 0], order(&[MiseryToken::Weak])),
+        );
+        assert_eq!(
+            landed(&[FUNNEL, MASK, BAG], 2),
+            ([0, 1, 0, 0], order(&[MiseryToken::Vuln])),
+        );
+        assert_eq!(landed(&inventory, 3), ([0, 0, 0, 0], order(&[])));
+        assert_eq!(landed(&inventory, 4), ([0, 0, 0, 1], order(&[])));
+        let tokens = |vouched: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder.set_relics_ordered(&inventory, vouched).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 30));
+            state.turn = 1;
+            before_side_turn_start(&catalog, &mut state, &mut Vec::new()).unwrap();
+            let monster = &state.monsters[0];
+            assert_eq!(monster.powers.value(PowerId::Weak), 1);
+            assert_eq!(monster.powers.value(PowerId::Vuln), 1);
+            assert_eq!(monster.powers.value(PowerId::Poison), 4);
+            monster.misery_debuff_order.clone()
+        };
+        assert_eq!(
+            tokens(true),
+            crate::hot::MiseryOrder::from_tokens(vec![
+                MiseryToken::Vuln,
+                MiseryToken::Poison,
+                MiseryToken::Weak
+            ])
+        );
+        assert_eq!(
+            tokens(false),
+            crate::hot::MiseryOrder::from_tokens(vec![
+                MiseryToken::Weak,
+                MiseryToken::Vuln,
+                MiseryToken::Poison
+            ])
+        );
+    }
+
+    /// `TeaOfDiscourtesy/<BeforeCombatStart>d__16::MoveNext` (`0x3324dc`):
+    /// a charged Tea inserts two fresh Dazed into Draw, one `Rng` draw each,
+    /// and spends the charge; a spent one, a non-owner and an ended combat
+    /// write nothing. Witnesses each return of
+    /// [`tea_of_discourtesy_before_combat_start`] and the charged body.
+    #[test]
+    fn tea_of_discourtesy_inserts_two_dazed_once_and_spends_the_charge() {
+        let build = |relics: &[RelicId]| {
+            let mut builder = CatalogBuilder::new();
+            let strike = builder
+                .intern(CardIdentity {
+                    id: CardId::StrikeIronclad,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            let dazed = builder
+                .intern(CardIdentity {
+                    id: CardId::Dazed,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            builder.set_relics(relics).unwrap();
+            (builder.build(), strike, dazed)
+        };
+        let (owned, strike, dazed) = build(&[RelicId::RelicTeaOfDiscourtesy]);
+        let live = |charged: bool, over: bool| {
+            let mut state = HotState::at_defaults();
+            state.history.over = over;
+            state.next_card_uid = 3;
+            state.set_tea_of_discourtesy_active(charged);
+            state
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .extend((0..3).map(|uid| HotCard {
+                    uid,
+                    atom: strike,
+                    flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                }));
+            state
+        };
+        let draw = |state: &HotState| -> Vec<(u32, bool)> {
+            state
+                .piles
+                .get(PileId::Draw)
+                .as_slice()
+                .iter()
+                .map(|card| (card.uid, card.atom == dazed))
+                .collect()
+        };
+        let untouched = vec![(0, false), (1, false), (2, false)];
+
+        let mut state = live(true, false);
+        let rng_before = state.rng.get(crate::hot::RngStream::Rng).counter;
+        tea_of_discourtesy_before_combat_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        let after = draw(&state);
+        assert_eq!(after.len(), 5);
+        let mut fresh: Vec<u32> = after
+            .iter()
+            .filter(|(_, is_dazed)| *is_dazed)
+            .map(|(uid, _)| *uid)
+            .collect();
+        fresh.sort_unstable();
+        assert_eq!(fresh, [3, 4], "two Dazed on the next two uids");
+        assert_eq!(
+            after
+                .iter()
+                .filter(|(_, is_dazed)| !is_dazed)
+                .copied()
+                .collect::<Vec<_>>(),
+            untouched,
+            "the deck cards keep their order"
+        );
+        assert_eq!(
+            state.rng.get(crate::hot::RngStream::Rng).counter,
+            rng_before + 2
+        );
+        assert_eq!(state.history.owner_generated_cards_combat, 2);
+        assert!(!state.tea_of_discourtesy_active(), "the charge is spent");
+
+        // Spent now: a second walk inserts nothing.
+        let spent = state.clone();
+        tea_of_discourtesy_before_combat_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(state, spent);
+
+        let mut state = live(false, false);
+        tea_of_discourtesy_before_combat_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(draw(&state), untouched, "a spent Tea");
+
+        let mut state = live(true, true);
+        tea_of_discourtesy_before_combat_start(&owned, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(draw(&state), untouched, "an over combat");
+        assert!(state.tea_of_discourtesy_active());
+
+        let (unowned, _, _) = build(&[]);
+        let mut state = live(true, false);
+        tea_of_discourtesy_before_combat_start(&unowned, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(draw(&state), untouched, "non-owner");
+    }
+
+    /// `InfusedCore/<AfterSideTurnStart>d__8::MoveNext` (`0x326d00`) leaves at
+    /// `IL_004e`-`IL_0050` once `TurnNumber > 1` and otherwise channels three
+    /// Lightning through the shared command. Witnesses the turn guard of
+    /// [`infused_core_after_side_turn_start`], the non-owner and
+    /// hook-not-started returns, the command's ending gate, and the three
+    /// queue shapes: three into a Defect's empty queue, an evoke of Cracked
+    /// Core's front Lightning when four do not fit, and two evokes behind a
+    /// zero-base bootstrap.
+    #[test]
+    fn infused_core_channels_three_lightning_only_on_turn_one_of_a_live_combat() {
+        let owned = catalog(&[RelicId::RelicInfusedCore]);
+        let lightning =
+            || crate::hot::HotOrb::from_parts(crate::hot::OrbKind::Lightning, None).unwrap();
+        let live = |turn: i16, base: u8| {
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.turn = turn;
+            state.orbs.set_base_slots(base);
+            state.orbs.set_slots(base);
+            state
+        };
+        let run = |catalog: &Catalog, mut state: HotState| {
+            after_side_turn_start(catalog, &mut state, true, &mut Vec::new()).unwrap();
+            let kinds: Vec<_> = state.orbs.as_slice().iter().map(|orb| orb.kind()).collect();
+            (kinds, state.orbs.slots(), state.monsters[0].hp)
+        };
+        let l = crate::hot::OrbKind::Lightning;
+
+        assert_eq!(run(&owned, live(1, 3)), (vec![l, l, l], 3, 100));
+        assert_eq!(run(&owned, live(2, 3)), (vec![], 3, 100), "turn 2");
+        assert_eq!(
+            run(&catalog(&[]), live(1, 3)),
+            (vec![], 3, 100),
+            "non-owner"
+        );
+
+        let mut over = live(1, 3);
+        over.history.over = true;
+        assert_eq!(run(&owned, over), (vec![], 3, 100), "an over combat");
+
+        let mut state = live(1, 3);
+        after_side_turn_start(&owned, &mut state, false, &mut Vec::new()).unwrap();
+        assert!(state.orbs.as_slice().is_empty(), "the hook did not start");
+
+        // Behind Cracked Core's Lightning the third channel meets a full
+        // queue and evokes the front orb: 8 + Infused Core's 1.
+        let mut queued = live(1, 3);
+        queued.orbs.push(lightning());
+        assert_eq!(run(&owned, queued), (vec![l, l, l], 3, 91));
+
+        // No base slots: the first channel bootstraps one slot, and each of
+        // the next two evokes the Lightning before it.
+        assert_eq!(run(&owned, live(1, 0)), (vec![l], 1, 82));
+    }
+
+    /// `NinjaScroll/<BeforeHandDraw>d__7::MoveNext` (`0x32b770`) leaves at
+    /// `IL_0044`-`IL_0046` once `TurnNumber > 1`, and `Shiv::CreateInHand`
+    /// (`0x3bb20c`) returns nothing while the combat is over or ending
+    /// (`IL_002c`-`IL_003e`). Witnesses each arm of
+    /// [`ninja_scroll_before_hand_draw`]: three level-zero Shivs with fresh
+    /// uids on turn one, and nothing on turn two, in an over combat or for a
+    /// non-owner.
+    #[test]
+    fn ninja_scroll_generates_three_shivs_only_on_turn_one_of_a_live_combat() {
+        let build = |owned: bool| {
+            let mut builder = CatalogBuilder::new();
+            let shiv = builder
+                .intern_reachable(CardIdentity {
+                    id: CardId::Shiv,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            if owned {
+                builder.set_relics(&[RelicId::RelicNinjaScroll]).unwrap();
+            }
+            (builder.build(), shiv)
+        };
+        let run = |owned: bool, turn: i16, over: bool| {
+            let (catalog, shiv) = build(owned);
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.turn = turn;
+            state.history.over = over;
+            state.next_card_uid = 7;
+            ninja_scroll_before_hand_draw(&catalog, &mut state, &mut Vec::new()).unwrap();
+            let hand = state.piles.get(PileId::Hand).as_slice().to_vec();
+            assert!(hand.iter().all(|card| card.atom == shiv));
+            hand.iter().map(|card| card.uid).collect::<Vec<_>>()
+        };
+        assert_eq!(run(true, 1, false), [7, 8, 9]);
+        assert!(run(true, 2, false).is_empty(), "turn 2");
+        assert!(run(true, 1, true).is_empty(), "an over combat");
+        assert!(run(false, 1, false).is_empty(), "a non-owner");
     }
 
     /// `Bellows::AfterPlayerTurnStart` (`0x906dc`) returns `CompletedTask`
@@ -8840,7 +10966,7 @@ mod tests {
     #[test]
     fn fencing_manual_generates_a_twenty_damage_blade_on_turn_one() {
         let (catalog, _, mut state) = fencing_manual_fixture(true);
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         let hand = state.piles.get(PileId::Hand).as_slice();
         assert_eq!(hand.len(), 1);
         let made = hand[0];
@@ -8874,7 +11000,7 @@ mod tests {
                 },
             );
         }
-        after_side_turn_start_late(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+        after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
         assert!(state.piles.get(PileId::Hand).as_slice().is_empty());
         assert_eq!(state.card_states.get(5).damage_growth, 20);
         assert_eq!(state.card_states.get(6).damage_growth, 20);
@@ -8889,7 +11015,7 @@ mod tests {
     fn fencing_manual_is_inert_past_turn_one_when_ending_or_unowned() {
         let untouched = |catalog: &Catalog, state: &mut HotState, started: bool| {
             let before = state.clone();
-            after_side_turn_start_late(catalog, state, started, &mut Vec::new()).unwrap();
+            after_side_turn_start(catalog, state, started, &mut Vec::new()).unwrap();
             assert!(state.piles.get(PileId::Hand).as_slice().is_empty());
             assert_eq!(state.next_card_uid, before.next_card_uid);
             assert_eq!(
@@ -9061,8 +11187,13 @@ mod tests {
     }
 
     /// No Power in Draw leaves before `NextItem` (`IL_0088`-`IL_0090`): no
-    /// Selection draw and no pile change. Past turn one, after the combat
-    /// ended, or unowned, the body is inert.
+    /// Selection draw and no pile change. Past turn one or unowned, the body
+    /// is inert. Reached on a combat an earlier listener ended (#3635) it
+    /// still draws the stream and frees the Power, which stays in Draw: only
+    /// the move is gated (`CardPileCmd/<Add>d__10` `0x3e1ba4`
+    /// `IL_0041`-`IL_008a`). The draw and the unmoved card are the game's
+    /// (`before_hand_draw_relics_behind_a_listener_that_ended_combat_do_what_the_game_does`);
+    /// the free cost is read from IL.
     #[test]
     fn jeweled_mask_is_inert_without_a_power_past_turn_one_ending_or_unowned() {
         let untouched = |catalog: &Catalog, mut state: HotState| {
@@ -9083,11 +11214,27 @@ mod tests {
         let (catalog, _, mut state) = jeweled_mask_fixture(true, &[(CardId::Inflame, 0)]);
         state.turn = 2;
         untouched(&catalog, state);
-        let (catalog, _, mut state) = jeweled_mask_fixture(true, &[(CardId::Inflame, 0)]);
-        state.history.over = true;
-        untouched(&catalog, state);
         let (catalog, _, state) = jeweled_mask_fixture(false, &[(CardId::Inflame, 0)]);
         untouched(&catalog, state);
+        let (catalog, _, mut state) = jeweled_mask_fixture(true, &[(CardId::Inflame, 0)]);
+        state.history.over = true;
+        let before = state.clone();
+        jeweled_mask_before_hand_draw(&catalog, &mut state).unwrap();
+        assert!(state.piles.get(PileId::Hand).as_slice().is_empty());
+        let draw = state.piles.get(PileId::Draw).as_slice();
+        let was = before.piles.get(PileId::Draw).as_slice();
+        assert_eq!(draw.len(), was.len());
+        assert_eq!((draw[0].uid, draw[0].atom), (was[0].uid, was[0].atom));
+        assert_ne!(draw[0].flags & CARD_FLAG_DEFAULT_PHYSICAL_STATE, 0);
+        assert_ne!(
+            state.card_states.get(draw[0].uid),
+            before.card_states.get(was[0].uid),
+            "the Power in Draw is free this turn"
+        );
+        assert_eq!(
+            state.rng.get(RngStream::Sel).counter,
+            before.rng.get(RngStream::Sel).counter + 1
+        );
     }
 
     fn juggernaut_state(monsters: &[i32]) -> HotState {
@@ -9316,110 +11463,324 @@ mod tests {
     // --- #3321: the vouched AfterPlayerTurnStart moves for Mercury Hourglass
     // and Vexing Puzzlebox.
 
+    /// The relic walk as the turn start enters it when no power listener ran:
+    /// the pass began live exactly when the combat is live now.
+    fn after_player_turn_start_from_entry(
+        catalog: &Catalog,
+        state: &mut HotState,
+    ) -> Result<(), EngineRefusal> {
+        let live = !state.history.over;
+        after_player_turn_start(catalog, state, live, &mut Vec::new())
+    }
+
     fn ordered_catalog(relics: &[RelicId], ordered: bool) -> Catalog {
         let mut builder = CatalogBuilder::new();
         builder.set_relics_ordered(relics, ordered).unwrap();
         builder.build()
     }
 
-    #[test]
-    fn mercury_hourglass_leads_only_ahead_of_every_owned_peer_in_a_vouched_inventory() {
-        use RelicId::{
-            RelicAkabeko as AKABEKO, RelicBellows as BELLOWS, RelicMercuryHourglass as HOURGLASS,
-            RelicToastyMittens as TOASTY, RelicVexingPuzzlebox as PUZZLEBOX,
-            RelicWhetstone as UNRELATED,
-        };
-        for (relics, ordered, leads) in [
-            (&[HOURGLASS, PUZZLEBOX][..], true, true),
-            (
-                &[AKABEKO, HOURGLASS, UNRELATED, TOASTY, BELLOWS],
-                true,
-                true,
-            ),
-            // Alone in the pass: front and tail are the same place.
-            (&[HOURGLASS, UNRELATED], true, false),
-            (&[HOURGLASS, PUZZLEBOX], false, false),
-            (&[PUZZLEBOX, HOURGLASS], true, false),
-            (&[TOASTY, HOURGLASS, BELLOWS], true, false),
-            (&[PUZZLEBOX, TOASTY], true, false),
-        ] {
-            let catalog = ordered_catalog(relics, ordered);
-            assert_eq!(
-                mercury_hourglass_leads(&catalog),
-                leads,
-                "{relics:?} vouched {ordered}"
-            );
-        }
+    /// The walk behind Choices Paradox's grid (or from the top without one).
+    fn continue_after_choices_paradox(
+        catalog: &Catalog,
+        state: &mut HotState,
+        events: &mut Vec<Event>,
+    ) -> Result<(), EngineRefusal> {
+        let after = catalog
+            .hooks()
+            .owns(RelicId::RelicChoicesParadox)
+            .then_some(RelicId::RelicChoicesParadox);
+        after_player_turn_start_walk(catalog, state, events, after, true)
     }
 
-    #[test]
-    fn hourglass_and_puzzlebox_are_admitted_only_in_the_order_the_engine_runs() {
-        use RelicId::{
-            RelicMercuryHourglass as HOURGLASS, RelicToastyMittens as TOASTY,
-            RelicVexingPuzzlebox as PUZZLEBOX,
-        };
-        for (relics, ordered, exact) in [
-            // Hourglass leads, so it runs first: native.
-            (&[HOURGLASS, PUZZLEBOX][..], true, true),
-            // Puzzlebox recorded first, Hourglass at its fixed tail: native.
-            (&[PUZZLEBOX, HOURGLASS], true, true),
-            (&[PUZZLEBOX, TOASTY, HOURGLASS], true, true),
-            // Hourglass recorded before Puzzlebox but not leading: the tail
-            // would run it after Puzzlebox.
-            (&[TOASTY, HOURGLASS, PUZZLEBOX], true, false),
-            (&[HOURGLASS, PUZZLEBOX], false, false),
-            (&[PUZZLEBOX, HOURGLASS], false, false),
-            // Either relic alone is not this pair.
-            (&[HOURGLASS], false, true),
-            (&[PUZZLEBOX], false, true),
-        ] {
-            let catalog = ordered_catalog(relics, ordered);
-            assert_eq!(
-                mercury_hourglass_vexing_order_is_exact(&catalog),
-                exact,
-                "{relics:?} vouched {ordered}"
-            );
-        }
+    /// The walk behind Gambling Chip's choice (or behind the Paradox grid, or
+    /// from the top, whichever the inventory has).
+    fn continue_after_gambling_chip(
+        catalog: &Catalog,
+        state: &mut HotState,
+        events: &mut Vec<Event>,
+    ) -> Result<(), EngineRefusal> {
+        let hooks = catalog.hooks();
+        let after = [RelicId::RelicGamblingChip, RelicId::RelicChoicesParadox]
+            .into_iter()
+            .find(|relic| hooks.owns(*relic));
+        after_player_turn_start_walk(catalog, state, events, after, true)
     }
 
+    /// #3635: the walk is the recorded order of a vouched inventory, whatever
+    /// that order is and whatever else the inventory holds, and the fixed
+    /// sequence for an unvouched one. `after_player_turn_start_relic_follows`
+    /// reads the same order.
     #[test]
-    fn puzzlebox_precedes_paradox_only_when_recorded_first_without_gambling_chip() {
-        use RelicId::{
-            RelicChoicesParadox as PARADOX, RelicGamblingChip as CHIP,
-            RelicVexingPuzzlebox as PUZZLEBOX,
-        };
-        for (relics, ordered, precedes) in [
-            (&[PUZZLEBOX, PARADOX][..], true, true),
-            (&[PARADOX, PUZZLEBOX], true, false),
-            (&[PUZZLEBOX, PARADOX], false, false),
-            (&[PUZZLEBOX, PARADOX, CHIP], true, false),
-            (&[PUZZLEBOX], true, false),
-        ] {
-            let catalog = ordered_catalog(relics, ordered);
-            assert_eq!(
-                vexing_puzzlebox_precedes_choices_paradox(&catalog),
-                precedes,
-                "{relics:?} vouched {ordered}"
-            );
+    fn the_walk_runs_a_vouched_inventory_as_recorded_and_an_unvouched_one_as_fixed() {
+        let fixed = AFTER_PLAYER_TURN_START_RELIC_DISPATCH.to_vec();
+        let reversed = fixed.iter().rev().copied().collect::<Vec<_>>();
+        let mut rotated = fixed.clone();
+        rotated.rotate_left(4);
+        for recorded in [&fixed, &reversed, &rotated] {
+            // Relics of other hooks sit between the listeners and do not move
+            // them.
+            let mut inventory = vec![RelicId::RelicAkabeko];
+            for relic in recorded {
+                inventory.push(*relic);
+                if *relic == RelicId::RelicBellows {
+                    inventory.push(RelicId::RelicWhetstone);
+                }
+            }
+            let walk = |vouched| {
+                let catalog = ordered_catalog(&inventory, vouched);
+                relic_walk_order(&catalog, &AFTER_PLAYER_TURN_START_RELIC_DISPATCH)
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(&walk(true), recorded);
+            assert_eq!(walk(false), fixed);
+            let catalog = ordered_catalog(&inventory, true);
+            for (place, relic) in recorded.iter().enumerate() {
+                for (other_place, other) in recorded.iter().enumerate() {
+                    assert_eq!(
+                        after_player_turn_start_relic_follows(&catalog, *relic, *other),
+                        place > other_place,
+                        "{relic:?} behind {other:?} in {recorded:?}"
+                    );
+                }
+            }
         }
-    }
-
-    #[test]
-    fn the_dispatch_carries_both_moves_for_the_pause_check() {
-        use RelicId::{
-            RelicChoicesParadox as PARADOX, RelicMercuryHourglass as HOURGLASS,
-            RelicVexingPuzzlebox as PUZZLEBOX,
-        };
-        let catalog = ordered_catalog(&[HOURGLASS, PUZZLEBOX, PARADOX], true);
-        assert_eq!(
-            after_player_turn_start_dispatch(&catalog)[..3],
-            [HOURGLASS, PUZZLEBOX, PARADOX]
+        // A subset walks in its own recorded order; an absent relic follows
+        // nothing and nothing follows it.
+        let catalog = ordered_catalog(
+            &[RelicId::RelicMercuryHourglass, RelicId::RelicChoicesParadox],
+            true,
         );
-        let catalog = ordered_catalog(&[PARADOX, PUZZLEBOX, HOURGLASS], true);
         assert_eq!(
-            after_player_turn_start_dispatch(&catalog),
-            AFTER_PLAYER_TURN_START_RELIC_DISPATCH
+            relic_walk_order(&catalog, &AFTER_PLAYER_TURN_START_RELIC_DISPATCH).collect::<Vec<_>>(),
+            [RelicId::RelicMercuryHourglass, RelicId::RelicChoicesParadox]
         );
+        assert!(!after_player_turn_start_relic_follows(
+            &catalog,
+            RelicId::RelicVexingPuzzlebox,
+            RelicId::RelicChoicesParadox
+        ));
+        assert!(!after_player_turn_start_relic_follows(
+            &catalog,
+            RelicId::RelicChoicesParadox,
+            RelicId::RelicVexingPuzzlebox
+        ));
+    }
+
+    /// #3635: Bellows and a charged Bone Tea upgrade the Hand as it stands
+    /// when the walk reaches them (`Bellows::AfterPlayerTurnStart` RVA
+    /// `0x906dc` `IL_003a`-`IL_004c`; `BoneTea::AfterPlayerTurnStart` RVA
+    /// `0x90ffc` `IL_0042`-`IL_006f`), so Vexing Puzzlebox's free card
+    /// (`VexingPuzzlebox/<AfterPlayerTurnStart>d__2` RVA `0x333de0`
+    /// `IL_00b7`) is upgraded exactly when the Puzzlebox is recorded first.
+    #[test]
+    fn a_hand_upgrade_relic_upgrades_the_puzzlebox_card_only_when_recorded_behind_it() {
+        use RelicId::{
+            RelicBellows as BELLOWS, RelicBoneTea as BONE_TEA, RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        for upgrader in [BELLOWS, BONE_TEA] {
+            for (relics, upgraded) in [
+                ([PUZZLEBOX, upgrader], true),
+                ([upgrader, PUZZLEBOX], false),
+            ] {
+                let mut builder = CatalogBuilder::new();
+                for identity in crate::boundary::stoke_generation_closure([true, false]) {
+                    builder.intern_reachable(identity).unwrap();
+                }
+                builder.intern_all_card_upgrade_closure().unwrap();
+                builder.intern_monster(MonsterKind::Toadpole).unwrap();
+                builder.set_relics_ordered(&relics, true).unwrap();
+                let catalog = builder.build();
+                let (_, mut state) = popper_puzzlebox_fixture(&relics, 20);
+                assert!(state.fanouts.set_bone_tea_combats_left(1));
+                after_player_turn_start_from_entry(&catalog, &mut state).unwrap();
+                let hand = state.piles.get(PileId::Hand).as_slice();
+                assert_eq!(hand.len(), 1, "{relics:?}: the free card");
+                let identity = catalog.spec(hand[0].atom).unwrap().identity;
+                assert_eq!(
+                    identity.upgrade,
+                    u8::from(upgraded),
+                    "{relics:?}: {identity:?}"
+                );
+                assert_eq!(
+                    state.fanouts.bone_tea_combats_left(),
+                    u8::from(upgrader != BONE_TEA),
+                    "{relics:?}: Bone Tea spends its charge either way"
+                );
+            }
+        }
+    }
+
+    // --- #3756: Festive Popper on its recorded side of Vexing Puzzlebox and
+    // of Mercury Hourglass.
+
+    /// One Toadpole at `hp`, an Ironclad on turn one with a fully unlocked
+    /// profile and a recorded `CombatCardGeneration` stream, holding `relics`
+    /// in a vouched inventory.
+    fn popper_puzzlebox_fixture(relics: &[RelicId], hp: i32) -> (Catalog, HotState) {
+        let mut builder = CatalogBuilder::new();
+        for identity in crate::boundary::stoke_generation_closure([true, false]) {
+            builder.intern_reachable(identity).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics_ordered(relics, true).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 80;
+        state.max_hp = 80;
+        state.turn = 1;
+        state.reward_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.entropy_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.fully_unlocked_card_pool_epochs = true;
+        state.next_card_uid = 41;
+        state.rng.set(
+            RngStream::Generation,
+            RngStreamState {
+                words: [
+                    1213625501689665630,
+                    7582735556604303185,
+                    1987035550902429042,
+                    15673710837299237479,
+                ],
+                counter: 1351,
+            },
+        );
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, hp));
+        (catalog, state)
+    }
+
+    /// `FestivePopper/<AfterPlayerTurnStart>d__4` (RVA `0x324b94`,
+    /// `CreatureCmd::Damage` at `IL_0094`) and
+    /// `VexingPuzzlebox/<AfterPlayerTurnStart>d__2` (RVA `0x333de0`,
+    /// `AddGeneratedCardToCombat` at `IL_00b7`) run in `Player.Relics` order.
+    /// Against a live enemy the two orders reach one state, with the hit and
+    /// the generated card each landing once. They part when Popper is lethal:
+    /// recorded second it ends a combat whose Hand already holds the card;
+    /// recorded first it leaves the Puzzlebox generating into an ended
+    /// combat, where the game still draws the shuffle and adds no card
+    /// (#3889; native run `k_pop_puzzlebox`: `CombatCardGeneration` at 68,
+    /// the count the live run reaches, and the Hand the dealt five).
+    #[test]
+    fn festive_popper_runs_on_its_recorded_side_of_vexing_puzzlebox() {
+        use RelicId::{RelicFestivePopper as POPPER, RelicVexingPuzzlebox as PUZZLEBOX};
+        let mut reached = Vec::new();
+        for relics in [[POPPER, PUZZLEBOX], [PUZZLEBOX, POPPER]] {
+            let (catalog, mut state) = popper_puzzlebox_fixture(&relics, 20);
+            let mut events = Vec::new();
+            continue_after_gambling_chip(&catalog, &mut state, &mut events).unwrap();
+            assert_eq!(state.monsters[0].hp, 11, "{relics:?}: Popper hit once");
+            let hand = state.piles.get(PileId::Hand).as_slice();
+            assert_eq!(hand.len(), 1, "{relics:?}: one generated card");
+            assert_eq!(hand[0].uid, 41, "{relics:?}");
+            assert_eq!(
+                state.rng.get(RngStream::Generation).counter,
+                1428,
+                "{relics:?}: one GetDistinctForCombat shuffle"
+            );
+            reached.push(state);
+        }
+        assert_eq!(reached[0], reached[1], "nothing listens to the hit here");
+
+        let (catalog, mut state) = popper_puzzlebox_fixture(&[PUZZLEBOX, POPPER], 9);
+        continue_after_gambling_chip(&catalog, &mut state, &mut Vec::new()).unwrap();
+        assert!(state.history.over, "Popper recorded second ends the combat");
+        assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+
+        let (catalog, mut state) = popper_puzzlebox_fixture(&[POPPER, PUZZLEBOX], 9);
+        let before = state.clone();
+        continue_after_gambling_chip(&catalog, &mut state, &mut Vec::new()).unwrap();
+        assert!(state.history.over, "Popper recorded first already killed");
+        assert_eq!(
+            state.piles.get(PileId::Hand).as_slice(),
+            before.piles.get(PileId::Hand).as_slice(),
+            "no card was added"
+        );
+        assert_eq!(state.next_card_uid, before.next_card_uid);
+        assert_eq!(
+            state.rng.get(RngStream::Generation).counter,
+            1428,
+            "the shuffle still drew, as on the live combat"
+        );
+    }
+
+    /// #3889: a lethal Popper ahead of Gambling Chip. `FromHandForDiscard`
+    /// returns no card on an ended combat
+    /// (`CardSelectCmd/<FromHand>d__28` RVA `0x3e7568`, `IsOverOrEnding` at
+    /// `IL_0036`, ahead of the choice signal), so no choice opens (native run
+    /// `k_pop_chip`: the selector's pending sources all still queued, Hand
+    /// and Discard untouched) and the walk goes on to the Puzzlebox, which
+    /// draws its shuffle and adds nothing.
+    #[test]
+    fn a_lethal_popper_ahead_of_gambling_chip_opens_no_choice() {
+        use RelicId::{
+            RelicFestivePopper as POPPER, RelicGamblingChip as CHIP,
+            RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        let (catalog, mut state) = popper_puzzlebox_fixture(&[POPPER, CHIP, PUZZLEBOX], 9);
+        let identity = crate::boundary::stoke_generation_closure([true, false])
+            .into_iter()
+            .next()
+            .unwrap();
+        let atom = catalog.atom(&identity).unwrap();
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: 7,
+            atom,
+            flags: 0,
+        });
+        let hand = state.piles.get(PileId::Hand).clone();
+        continue_after_choices_paradox(&catalog, &mut state, &mut Vec::new()).unwrap();
+        assert!(state.history.over);
+        assert!(state.pending.is_none(), "no choice on the ended combat");
+        assert!(state.fanouts.batch_nine_relic_pending().is_none());
+        assert_eq!(state.piles.get(PileId::Hand), &hand);
+        assert!(state.piles.get(PileId::Discard).is_empty());
+        assert_eq!(state.rng.get(RngStream::Generation).counter, 1428);
+
+        let (catalog, mut state) = popper_puzzlebox_fixture(&[POPPER, CHIP, PUZZLEBOX], 20);
+        continue_after_choices_paradox(&catalog, &mut state, &mut Vec::new()).unwrap();
+        assert_eq!(state.monsters[0].hp, 11);
+        assert_eq!(state.piles.get(PileId::Hand).len(), 1);
+    }
+
+    /// #3889: Emotion Chip behind a Mr Struggles kill on turn two.
+    /// `OrbCmd/<Passive>d__7` (RVA `0x3ede90`) returns on `IsOverOrEnding`
+    /// (`IL_0022`) for each orb, so the chip does nothing. Native runs
+    /// (Defect, Royal Poison for the turn-one HP loss, a Coolheaded Frost
+    /// beside the starter Lightning): `k_struggles_emotion` ends with Block 0
+    /// and `CombatTargets` at 1, the count the end of turn one left;
+    /// `c_struggles_emotion`, the same order against live enemies, has Block
+    /// 2 and `CombatTargets` at 2.
+    #[test]
+    fn emotion_chip_behind_a_lethal_mr_struggles_triggers_no_orb() {
+        use RelicId::{RelicEmotionChip as CHIP, RelicMrStruggles as STRUGGLES};
+        for (hp, block, over) in [(2, 0, true), (60, 2, false)] {
+            let mut builder = CatalogBuilder::new();
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder
+                .set_relics_ordered(&[STRUGGLES, CHIP], true)
+                .unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 71;
+            state.max_hp = 75;
+            state.turn = 2;
+            state.set_batch_six_deep_relic_ownership(false, true, false, false);
+            state.set_emotion_damage_previous_turn(true);
+            state.orbs.set_base_slots(3);
+            state.orbs.set_slots(3);
+            state
+                .orbs
+                .push(crate::hot::HotOrb::from_parts(crate::hot::OrbKind::Frost, None).unwrap());
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, hp));
+            let targets = state.rng.get(RngStream::Targets);
+            after_player_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+            assert_eq!(state.history.over, over, "enemy at {hp}");
+            assert_eq!(state.block, block, "enemy at {hp}");
+            assert_eq!(state.rng.get(RngStream::Targets), targets);
+        }
     }
 
     /// The #3640 fixture: one 1,000-HP Toadpole, `relics` recorded in order
@@ -9529,6 +11890,65 @@ mod tests {
             .filter(|card| state.card_states.get(card.uid).local_ethereal())
             .map(|card| catalog.spec(card.atom).unwrap().identity.id)
             .collect()
+    }
+
+    /// #3756: Game Piece's Power-play draw (`GamePiece/<AfterCardPlayed>d__6`
+    /// `0x325930`, `CardPileCmd::Draw` at IL_0089) on either recorded side of
+    /// Velvet Choker's count (`0x9d9a0`) and of Unsettling Lamp's latch
+    /// (`0x9d606`). With no Hellraiser to nest a play in the draw, nothing
+    /// reads either one between the two bodies, so each root is admitted in
+    /// both orders, vouched or not, and all four reach one state: the Power
+    /// played, one card drawn, one play counted.
+    #[test]
+    fn game_piece_draws_on_either_recorded_side_of_velvet_choker_and_unsettling_lamp() {
+        let piece = RelicId::RelicGamePiece;
+        for peer in [RelicId::RelicVelvetChoker, RelicId::RelicUnsettlingLamp] {
+            let mut reached = Vec::new();
+            for (order, vouched) in [
+                ([piece, peer], true),
+                ([peer, piece], true),
+                ([piece, peer], false),
+                ([peer, piece], false),
+            ] {
+                let (mut state, catalog, atoms) = latch_fixture(
+                    &[CardId::DemonForm, CardId::DefendIronclad],
+                    &order,
+                    vouched,
+                );
+                if peer == RelicId::RelicUnsettlingLamp {
+                    state.fanouts.set_unsettling_lamp_available(true);
+                }
+                latch_push(&mut state, PileId::Hand, &[(1, atoms[0])]);
+                latch_push(&mut state, PileId::Draw, &[(2, atoms[1]), (3, atoms[1])]);
+                // `latch_cold` asserts the root is admitted.
+                let (state, catalog) = latch_cold(&state, &catalog);
+                let play = crate::engine::legal_actions(&state, &catalog)
+                    .into_iter()
+                    .find(|action| matches!(action, crate::engine::Action::Play { uid: 1, .. }))
+                    .unwrap_or_else(|| panic!("{order:?}: the Power is playable"));
+                let done = crate::engine::apply_action(&state, &catalog, &play)
+                    .unwrap_or_else(|refusal| panic!("{order:?} vouched={vouched}: {refusal:?}"))
+                    .state;
+                assert!(done.frames.is_empty(), "{order:?}");
+                assert_eq!(
+                    done.piles
+                        .get(PileId::Hand)
+                        .as_slice()
+                        .iter()
+                        .map(|card| card.uid)
+                        .collect::<Vec<_>>(),
+                    [2],
+                    "{order:?} vouched={vouched}: Game Piece drew the top card"
+                );
+                assert_eq!(done.piles.get(PileId::Draw).len(), 1, "{order:?}");
+                assert_eq!(done.history.owner_card_plays_finished_this_turn, 1);
+                assert!(done.powers.value(PowerId::DemonForm) > 0, "{order:?}");
+                reached.push(done);
+            }
+            for other in &reached[1..] {
+                assert_eq!(&reached[0], other, "{peer:?}: one state in every order");
+            }
+        }
     }
 
     /// #3640: `MusicBox::BeforeCardPlayed` (`0x972ac`) latches the turn's
@@ -9765,7 +12185,7 @@ mod tests {
     }
 
     /// The refusal arm of
-    /// [`after_player_turn_start_template_pass_after_leading_hourglass`] is
+    /// [`after_player_turn_start_template_pass`] is
     /// unreachable at v0.111.0, and this pins why: Mercury Hourglass is the
     /// only template relic with an `AfterPlayerTurnStart` hook, and no power
     /// subscribes to it. A second subscriber reddens this test before it can
@@ -9788,9 +12208,1332 @@ mod tests {
                 .iter()
                 .all(|(_, event)| *event != HookEvent::AfterPlayerTurnStart)
         );
+        assert_eq!(after_player_turn_start_template_pass(&catalog), Ok(()));
+    }
+
+    /// #3635: the `AfterSideTurnStart` walk order. A vouched inventory runs
+    /// its listeners as recorded, whatever the order, compiled templates and
+    /// hand-written bodies interleaved. An unvouched one runs the early
+    /// group, the templates in the order it lists them, then the late group.
+    #[test]
+    fn the_side_start_walk_runs_a_vouched_inventory_as_recorded_and_an_unvouched_one_as_fixed() {
+        use RelicId::{
+            RelicAnchor as ANCHOR, RelicBrimstone as BRIMSTONE, RelicCrossbow as CROSSBOW,
+            RelicDiamondDiadem as DIADEM, RelicInfusedCore as INFUSED, RelicLantern as LANTERN,
+            RelicSai as SAI, RelicStoneCalendar as CALENDAR, RelicSymbioticVirus as VIRUS,
+        };
+        let order = |relics: &[RelicId], vouched: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder.set_relics_ordered(relics, vouched).unwrap();
+            let catalog = builder.build();
+            after_side_turn_start_order(&catalog).collect::<Vec<_>>()
+        };
+        let inventory = [
+            VIRUS, SAI, CROSSBOW, ANCHOR, DIADEM, LANTERN, BRIMSTONE, CALENDAR, INFUSED,
+        ];
+        let mut orders = vec![
+            inventory.to_vec(),
+            inventory.iter().rev().copied().collect(),
+        ];
+        for shift in 1..inventory.len() {
+            let mut rotated = inventory.to_vec();
+            rotated.rotate_left(shift);
+            orders.push(rotated);
+        }
+        for recorded in &orders {
+            // Anchor does not listen on this hook.
+            let listeners: Vec<_> = recorded
+                .iter()
+                .copied()
+                .filter(|relic| *relic != ANCHOR)
+                .collect();
+            assert_eq!(order(recorded, true), listeners, "vouched {recorded:?}");
+            let templates: Vec<_> = recorded
+                .iter()
+                .copied()
+                .filter(|relic| [SAI, DIADEM].contains(relic))
+                .collect();
+            let fixed: Vec<_> = [LANTERN, CROSSBOW]
+                .into_iter()
+                .chain(templates)
+                .chain([INFUSED, VIRUS, BRIMSTONE])
+                .collect();
+            assert_eq!(order(recorded, false), fixed, "unvouched {recorded:?}");
+        }
+    }
+
+    /// The listener table is the three groups plus the five listeners that
+    /// write nothing here, twenty-nine distinct relics, and the template group
+    /// is exactly the hook's compiled subscribers.
+    #[test]
+    fn the_side_start_listener_table_is_its_groups_and_the_compiled_subscribers() {
+        let groups: Vec<_> = AFTER_SIDE_TURN_START_EARLY
+            .into_iter()
+            .chain(AFTER_SIDE_TURN_START_TEMPLATES)
+            .chain(AFTER_SIDE_TURN_START_LATE)
+            .collect();
         assert_eq!(
-            after_player_turn_start_template_pass_after_leading_hourglass(&catalog),
+            AFTER_SIDE_TURN_START_RELIC_DISPATCH[..groups.len()],
+            groups[..]
+        );
+        let distinct: std::collections::BTreeSet<_> = AFTER_SIDE_TURN_START_RELIC_DISPATCH
+            .iter()
+            .map(|relic| *relic as u16)
+            .collect();
+        assert_eq!(distinct.len(), 29);
+
+        let catalog = catalog(&AFTER_SIDE_TURN_START_RELIC_DISPATCH);
+        let subscribers: Vec<_> = catalog
+            .hooks()
+            .subscribers(HookEvent::AfterSideTurnStart)
+            .iter()
+            .map(|subscriber| subscriber.subject)
+            .collect();
+        assert_eq!(
+            subscribers,
+            AFTER_SIDE_TURN_START_TEMPLATES.map(HookSubject::Relic)
+        );
+        assert_eq!(after_side_turn_start_template_pass(&catalog), Ok(()));
+        // The five silent listeners never act.
+        let state = HotState::at_defaults();
+        for relic in &AFTER_SIDE_TURN_START_RELIC_DISPATCH[groups.len()..] {
+            assert!(!after_side_turn_start_relic_acts(&catalog, &state, *relic));
+        }
+    }
+
+    /// #3635, native: the turn-one orb relics in each recorded order.
+    ///
+    /// The headless harness on the archived v0.111.0 DLL (Cultists at 42 and
+    /// 53 HP, seed `TESTSEED`, relics granted in the listed order) gives, for
+    /// an Ironclad (no base slots):
+    ///
+    /// * Infused Core, Symbiotic Virus: hits of 9, 9, 9 (the Dark channel
+    ///   evokes the last Lightning); the reverse: 6, 9, 9 (the first Lightning
+    ///   evokes the Dark orb);
+    /// * Runic Capacitor, Infused Core: no hit; the reverse: 9, 9;
+    /// * Symbiotic Virus, Runic Capacitor, Infused Core: no hit (four slots);
+    ///   Runic Capacitor first: one hit of 6 (three slots, the Dark evoked).
+    ///
+    /// and for a Defect entering with two Lightning queued (three base
+    /// slots): Infused Core, Symbiotic Virus 9, 9, 9; the reverse 9, 9, 6;
+    /// Runic Capacitor, Infused Core no hit; the reverse 9, 9.
+    #[test]
+    fn turn_one_orb_relics_overflow_in_the_recorded_order_the_game_runs() {
+        use crate::hot::OrbKind::{Dark as D, Lightning as L};
+        use RelicId::{
+            RelicInfusedCore as INFUSED, RelicRunicCapacitor as CAPACITOR,
+            RelicSymbioticVirus as VIRUS,
+        };
+        let run = |relics: &[RelicId], base: u8, queued: usize| {
+            let mut builder = CatalogBuilder::new();
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder.set_relics_ordered(relics, true).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            state.turn = 1;
+            for hp in [42, 53] {
+                state
+                    .monsters_mut()
+                    .push(HotMonster::new(MonsterKind::Toadpole, hp));
+            }
+            state.orbs.set_base_slots(base);
+            state.orbs.set_slots(base);
+            for _ in 0..queued {
+                state
+                    .orbs
+                    .push(crate::hot::HotOrb::from_parts(L, None).unwrap());
+            }
+            let rng = Xoshiro256StarStar::from_seed(5);
+            state.rng.set(
+                RngStream::Targets,
+                RngStreamState {
+                    words: rng.words,
+                    counter: rng.counter,
+                },
+            );
+            after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+            let kinds: Vec<_> = state.orbs.as_slice().iter().map(|orb| orb.kind()).collect();
+            let lost = 95 - state.monsters.iter().map(|monster| monster.hp).sum::<i32>();
+            (kinds, state.orbs.slots(), lost)
+        };
+        // Ironclad.
+        assert_eq!(run(&[INFUSED, VIRUS], 0, 0), (vec![D], 1, 27));
+        assert_eq!(run(&[VIRUS, INFUSED], 0, 0), (vec![L], 1, 24));
+        assert_eq!(run(&[CAPACITOR, INFUSED], 0, 0), (vec![L, L, L], 3, 0));
+        assert_eq!(run(&[INFUSED, CAPACITOR], 0, 0), (vec![L], 4, 18));
+        assert_eq!(
+            run(&[VIRUS, CAPACITOR, INFUSED], 0, 0),
+            (vec![D, L, L, L], 4, 0)
+        );
+        assert_eq!(
+            run(&[CAPACITOR, VIRUS, INFUSED], 0, 0),
+            (vec![L, L, L], 3, 6)
+        );
+        // Defect, two Lightning queued by the earlier hook.
+        assert_eq!(run(&[INFUSED, VIRUS], 3, 2), (vec![L, L, D], 3, 27));
+        assert_eq!(run(&[VIRUS, INFUSED], 3, 2), (vec![L, L, L], 3, 24));
+        assert_eq!(run(&[CAPACITOR, INFUSED], 3, 2), (vec![L; 5], 6, 0));
+        assert_eq!(run(&[INFUSED, CAPACITOR], 3, 2), (vec![L, L, L], 6, 18));
+    }
+
+    /// #3635, native: the turn-one Hand generators in each recorded order,
+    /// from the game's own `CombatCardGeneration` stream.
+    ///
+    /// The headless harness on the archived v0.111.0 DLL (Ironclad, seed
+    /// `TESTSEED`, relics granted in the listed order) appends, behind the
+    /// dealt five:
+    ///
+    /// * Crossbow, Orange Dough: Thrash, Volley, Fasten; the reverse: Secret
+    ///   Weapon, Panic Button, Perfected Strike (stream counter 63 both ways);
+    /// * Fencing Manual, Crossbow: Sovereign Blade, Thrash; the reverse:
+    ///   Thrash, Sovereign Blade (counter 28);
+    /// * Fencing Manual, Orange Dough: Sovereign Blade, Secret Weapon, Panic
+    ///   Button; the reverse: the Blade last (counter 35);
+    /// * Big Hat with or without Crossbow, either order: nothing of its own
+    ///   and no draw (counter 0 alone, 28 beside Crossbow).
+    ///
+    /// The stream here is the one the game seeds for that run
+    /// (`rng::run_stream_at_zero`), so the cards are the game's.
+    #[test]
+    fn turn_one_hand_generators_fill_the_hand_in_the_recorded_order_the_game_runs() {
+        use crate::catalog::RewardPool;
+        use CardId::{
+            Fasten, PanicButton, PerfectedStrike, SecretWeapon, SovereignBlade, Thrash, Volley,
+        };
+        use RelicId::{
+            RelicBigHat as HAT, RelicCrossbow as CROSSBOW, RelicFencingManual as MANUAL,
+            RelicOrangeDough as DOUGH,
+        };
+        let run = |relics: &[RelicId], vouched: bool| {
+            let mut builder = CatalogBuilder::new();
+            let pools =
+                crate::steps::neutral::crossbow_owner_attack_pool(RewardPool::Ironclad, Some(&[]))
+                    .into_iter()
+                    .chain(crate::steps::neutral::colorless_generation_pool(Some(&[])))
+                    .chain([SovereignBlade]);
+            for id in pools {
+                builder
+                    .intern_reachable(CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+            }
+            // The harness builds its player on an empty `UnlockState`: no
+            // epoch revealed.
+            builder.set_splash_unlock_epochs(Vec::new());
+            builder.set_relics_ordered(relics, vouched).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            state.turn = 1;
+            state.next_card_uid = 10;
+            state.reward_card_pool = Some(RewardPool::Ironclad);
+            state.entropy_card_pool = Some(RewardPool::Ironclad);
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 42));
+            let rng = crate::rng::run_stream_at_zero("TESTSEED", "combat_card_generation");
+            state.rng.set(
+                RngStream::Generation,
+                RngStreamState {
+                    words: rng.words,
+                    counter: rng.counter,
+                },
+            );
+            after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).unwrap();
+            let hand = state.piles.get(PileId::Hand).as_slice();
+            assert!(
+                hand.windows(2).all(|pair| pair[0].uid < pair[1].uid),
+                "{relics:?}: uids in arrival order"
+            );
+            (
+                hand.iter()
+                    .map(|card| catalog.spec(card.atom).unwrap().identity.id)
+                    .collect::<Vec<_>>(),
+                state.rng.get(RngStream::Generation).counter,
+            )
+        };
+        assert_eq!(run(&[CROSSBOW], true), (vec![Thrash], 28));
+        assert_eq!(
+            run(&[CROSSBOW, DOUGH], true),
+            (vec![Thrash, Volley, Fasten], 63)
+        );
+        assert_eq!(
+            run(&[DOUGH, CROSSBOW], true),
+            (vec![SecretWeapon, PanicButton, PerfectedStrike], 63)
+        );
+        assert_eq!(
+            run(&[MANUAL, CROSSBOW], true),
+            (vec![SovereignBlade, Thrash], 28)
+        );
+        assert_eq!(
+            run(&[CROSSBOW, MANUAL], true),
+            (vec![Thrash, SovereignBlade], 28)
+        );
+        assert_eq!(
+            run(&[MANUAL, DOUGH], true),
+            (vec![SovereignBlade, SecretWeapon, PanicButton], 35)
+        );
+        assert_eq!(
+            run(&[DOUGH, MANUAL], true),
+            (vec![SecretWeapon, PanicButton, SovereignBlade], 35)
+        );
+        assert_eq!(run(&[HAT], true), (vec![], 0));
+        for order in [[HAT, CROSSBOW], [CROSSBOW, HAT]] {
+            for vouched in [true, false] {
+                assert_eq!(run(&order, vouched), (vec![Thrash], 28), "{order:?}");
+            }
+        }
+        // An unvouched inventory keeps the fixed sequence whatever it lists:
+        // Crossbow, Orange Dough, then the Forge.
+        for order in [[MANUAL, DOUGH, CROSSBOW], [DOUGH, CROSSBOW, MANUAL]] {
+            assert_eq!(
+                run(&order, false),
+                (vec![Thrash, Volley, Fasten, SovereignBlade], 63),
+                "{order:?}"
+            );
+        }
+    }
+
+    /// #3635: Phylactery Unbound behind the Infused Core that ended the
+    /// combat, through the walk. This is the vouched pair the review of
+    /// #3896 found refusing (`EndingSummonNotModeled`) when the state held
+    /// no Osty.
+    ///
+    /// Native (headless; Necrobinder, both Cultists at 5 HP, no choice
+    /// signalled): Infused Core recorded first leaves the 6/6 Osty at 6/8,
+    /// MaxHp only; Phylactery Unbound recorded first summons live, 8/8. The
+    /// absent and dead rows are the same `OstyCmd.Summon` the game ran behind
+    /// Rolling Boulder (1/2 and a corpse, cited on
+    /// `SoloPetState::summon_ending`), reached here through the relic's body.
+    #[test]
+    fn phylactery_unbound_behind_a_killing_infused_core_summons_on_the_ended_combat() {
+        use RelicId::{RelicInfusedCore as INFUSED, RelicPhylacteryUnbound as UNBOUND};
+        let run = |relics: &[RelicId], osty: Option<(i32, i32)>, corpse: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder.set_relics_ordered(relics, true).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            state.turn = 1;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 9));
+            state.fanouts.set_osty(osty).unwrap();
+            if corpse {
+                let hp = osty.unwrap().0;
+                state
+                    .fanouts
+                    .mutate_pet(|pet| pet.lose_hp(hp).map(|_| ()))
+                    .unwrap();
+                assert!(state.fanouts.pet().corpse());
+            }
+            after_side_turn_start(&catalog, &mut state, true, &mut Vec::new())
+                .unwrap_or_else(|refusal| panic!("{relics:?} with {osty:?}: {refusal}"));
+            assert!(state.history.over, "{relics:?}: the overflow evoke killed");
+            let pet = state.fanouts.pet();
+            (
+                pet.osty().map(|osty| (osty.hp(), osty.max_hp())),
+                pet.corpse(),
+            )
+        };
+        assert_eq!(
+            run(&[INFUSED, UNBOUND], Some((6, 6)), false),
+            (Some((6, 8)), false)
+        );
+        assert_eq!(
+            run(&[UNBOUND, INFUSED], Some((6, 6)), false),
+            (Some((8, 8)), false)
+        );
+        assert_eq!(run(&[INFUSED, UNBOUND], None, false), (Some((1, 2)), false));
+        assert_eq!(run(&[UNBOUND, INFUSED], None, false), (Some((2, 2)), false));
+        assert_eq!(run(&[INFUSED, UNBOUND], Some((2, 2)), true), (None, true));
+        assert_eq!(
+            run(&[UNBOUND, INFUSED], Some((2, 2)), true),
+            (Some((2, 2)), false)
+        );
+    }
+
+    /// #3635, native: the templates fire at their recorded places. The
+    /// harness (Sai, Diamond Diadem, Lantern, Ironclad) records the block of
+    /// 7, then 20, then Blur, for 27 Block and four Energy. Beside a lethal
+    /// first hit they are the witness of the ended-combat rule: a body behind
+    /// the relic that ended the combat is a no-op where its command returns
+    /// on an ending combat, keeps its own counter, and still draws the
+    /// Generation stream (adding no card) where the game does. Native, with
+    /// every enemy at 9 HP and Infused Core first: no Strength, no Blur, no
+    /// Block and no Sovereign Blade behind the kill.
+    #[test]
+    fn a_side_start_relic_behind_one_that_ended_combat_runs_as_the_game_runs_it() {
+        use crate::catalog::RewardPool;
+        use RelicId::{
+            RelicBread as BREAD, RelicBrimstone as BRIMSTONE, RelicCrossbow as CROSSBOW,
+            RelicDiamondDiadem as DIADEM, RelicHappyFlower as FLOWER, RelicInfusedCore as INFUSED,
+            RelicLantern as LANTERN, RelicOrangeDough as DOUGH, RelicSai as SAI,
+            RelicSealOfGold as SEAL,
+        };
+        let run = |relics: &[RelicId], monster_hp: i32| {
+            let mut builder = CatalogBuilder::new();
+            let pools =
+                crate::steps::neutral::crossbow_owner_attack_pool(RewardPool::Ironclad, None)
+                    .into_iter()
+                    .chain(crate::steps::neutral::colorless_generation_pool(None));
+            for id in pools {
+                builder
+                    .intern_reachable(CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+            }
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder.set_splash_unlock_epochs(
+                crate::boundary::FULLY_UNLOCKED_CARD_POOL_EPOCHS.to_vec(),
+            );
+            builder.set_relics_ordered(relics, true).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            state.turn = 1;
+            state.energy = 3;
+            state.gold = 10;
+            state.next_card_uid = 10;
+            state.reward_card_pool = Some(RewardPool::Ironclad);
+            state.fully_unlocked_card_pool_epochs = true;
+            assert!(state.set_flower(2));
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, monster_hp));
+            let rng = Xoshiro256StarStar::from_seed(29);
+            state.rng.set(
+                RngStream::Generation,
+                RngStreamState {
+                    words: rng.words,
+                    counter: rng.counter,
+                },
+            );
+            after_side_turn_start(&catalog, &mut state, true, &mut Vec::new()).map(|()| state)
+        };
+        // A live fight: the harness's Sai, Diadem, Lantern.
+        let live = run(&[SAI, DIADEM, LANTERN], 100).unwrap();
+        assert_eq!((live.block, live.energy), (27, 4));
+        assert_eq!(live.powers.value(PowerId::Blur), 1);
+
+        // Infused Core at no base slots: the second channel evokes the first
+        // Lightning for 9, which kills a 9 HP monster and ends the combat.
+        let quiet = [BREAD, BRIMSTONE, LANTERN, SAI, DIADEM, FLOWER, SEAL];
+        let mut behind = vec![INFUSED];
+        behind.extend(quiet);
+        let state = run(&behind, 9).unwrap();
+        assert!(state.history.over);
+        assert_eq!(state.energy, 3, "no Energy moves on an ended combat");
+        assert_eq!(state.block, 0);
+        assert_eq!(state.powers.value(PowerId::Strength), 0);
+        assert_eq!(state.powers.value(PowerId::Blur), 0);
+        assert_eq!(state.flower(), 0, "Happy Flower still counts its turn");
+        assert_eq!(state.gold, 7, "Seal of Gold still pays");
+        // The same relics ahead of it all act.
+        let mut ahead = quiet.to_vec();
+        ahead.push(INFUSED);
+        let state = run(&ahead, 9).unwrap();
+        assert!(state.history.over);
+        assert_eq!(state.energy, 3 - 2 + 1 + 1 + 1);
+        assert_eq!(state.block, 27);
+        assert_eq!(state.powers.value(PowerId::Strength), 2);
+        assert_eq!(state.gold, 7);
+
+        // The two generation relics still draw on an ended combat and add
+        // no card. Native (every enemy at 9 HP, Infused Core first): the
+        // stream ends where a live fight leaves it, and the Hand is the
+        // dealt five.
+        for relic in [CROSSBOW, DOUGH] {
+            let ended = run(&[INFUSED, relic], 9).unwrap();
+            assert!(ended.history.over);
+            assert!(ended.piles.get(PileId::Hand).is_empty(), "{relic:?}");
+            let first = run(&[relic, INFUSED], 9).unwrap();
+            assert!(first.history.over);
+            assert!(!first.piles.get(PileId::Hand).is_empty(), "{relic:?}");
+            let live = run(&[INFUSED, relic], 100).unwrap();
+            assert!(!live.piles.get(PileId::Hand).is_empty(), "{relic:?}");
+            for other in [&first, &live] {
+                assert_eq!(
+                    ended.rng.get(RngStream::Generation),
+                    other.rng.get(RngStream::Generation),
+                    "{relic:?}: the draw happens either way"
+                );
+            }
+        }
+        // A pass entered on an ended combat runs nobody.
+        let catalog = catalog(&[LANTERN, FLOWER, SEAL]);
+        let mut ended = HotState::at_defaults();
+        ended.turn = 1;
+        ended.gold = 10;
+        ended.history.over = true;
+        let before = (ended.energy, ended.flower(), ended.gold);
+        after_side_turn_start(&catalog, &mut ended, false, &mut Vec::new()).unwrap();
+        assert_eq!((ended.energy, ended.flower(), ended.gold), before);
+    }
+
+    // -----------------------------------------------------------------
+    // #3635: the `BeforeHandDraw` relic walk
+    // -----------------------------------------------------------------
+
+    /// A turn-one start shaped like the headless harness's run on the
+    /// archived v0.111.0 DLL: seed `TESTSEED`, an Ironclad on an empty
+    /// `UnlockState`, the Draw pile in the order the game shuffled it (given,
+    /// top first), and the run's own `Shuffle`, `CombatCardSelection` and
+    /// `CombatCardGeneration` streams. The game's shuffle of an `n`-card deck
+    /// took `n - 1` draws of `Shuffle`, which is where that stream starts.
+    fn harness_turn_one(relics: &[RelicId], draw: &[CardId], vouched: bool) -> (Catalog, HotState) {
+        use crate::catalog::RewardPool;
+        let mut builder = CatalogBuilder::new();
+        let generated = [CardId::Dazed, CardId::Soul, CardId::Shiv, CardId::Luminesce];
+        for id in draw
+            .iter()
+            .copied()
+            .chain(generated)
+            .chain(crate::steps::neutral::colorless_generation_pool(Some(&[])))
+        {
+            builder
+                .intern_reachable(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        builder.set_splash_unlock_epochs(Vec::new());
+        builder.set_relics_ordered(relics, vouched).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 80;
+        state.max_hp = 80;
+        state.turn = 1;
+        state.reward_card_pool = Some(RewardPool::Ironclad);
+        state.entropy_card_pool = Some(RewardPool::Ironclad);
+        for hp in [42, 53] {
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, hp));
+        }
+        let mut uid = 0;
+        for id in draw {
+            uid += 1;
+            let atom = catalog
+                .atom(&CardIdentity {
+                    id: *id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+                uid,
+                atom,
+                flags: 0,
+            });
+        }
+        state.next_card_uid = uid + 1;
+        let mut shuffle = crate::rng::run_stream_at_zero("TESTSEED", "shuffle");
+        shuffle.shuffle(&mut vec![(); draw.len()]).unwrap();
+        for (stream, rng) in [
+            (RngStream::Rng, shuffle),
+            (
+                RngStream::Sel,
+                crate::rng::run_stream_at_zero("TESTSEED", "combat_card_selection"),
+            ),
+            (
+                RngStream::Generation,
+                crate::rng::run_stream_at_zero("TESTSEED", "combat_card_generation"),
+            ),
+        ] {
+            state.rng.set(
+                stream,
+                RngStreamState {
+                    words: rng.words,
+                    counter: rng.counter,
+                },
+            );
+        }
+        if relics.contains(&RelicId::RelicPendulum) {
+            assert!(state.set_pendulum(0));
+        }
+        if relics.contains(&RelicId::RelicPollinousCore) {
+            assert!(state.set_pollinous_core(0));
+        }
+        (catalog, state)
+    }
+
+    fn pile_ids(catalog: &Catalog, state: &HotState, pile: PileId) -> Vec<CardId> {
+        state
+            .piles
+            .get(pile)
+            .as_slice()
+            .iter()
+            .map(|card| catalog.spec(card.atom).unwrap().identity.id)
+            .collect()
+    }
+
+    /// The whole turn-one start, as the game's `StartTurn` runs it.
+    fn harness_start(
+        relics: &[RelicId],
+        draw: &[CardId],
+        vouched: bool,
+    ) -> (Catalog, HotState, Vec<CardId>, Vec<CardId>) {
+        let (catalog, mut state) = harness_turn_one(relics, draw, vouched);
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        let hand = pile_ids(&catalog, &state, PileId::Hand);
+        let rest = pile_ids(&catalog, &state, PileId::Draw);
+        (catalog, state, hand, rest)
+    }
+
+    const S: CardId = CardId::StrikeIronclad;
+    const D: CardId = CardId::DefendIronclad;
+    /// The starter nine as the game shuffled them for `TESTSEED`.
+    const NINE: [CardId; 9] = [S, S, D, D, D, S, S, S, D];
+    /// Four Strikes, four Defends, Inflame, Barricade and Demon Form, as the
+    /// game shuffled them for `TESTSEED`.
+    const ELEVEN: [CardId; 11] = [
+        D,
+        CardId::Barricade,
+        S,
+        D,
+        S,
+        D,
+        CardId::Inflame,
+        S,
+        S,
+        D,
+        CardId::DemonForm,
+    ];
+
+    /// #3635, native: every pair of turn-one `BeforeHandDraw` card writers in
+    /// both recorded orders, and two seven-relic inventories.
+    ///
+    /// Each expected Hand, Draw pile and stream counter is what the headless
+    /// harness recorded from the archived v0.111.0 DLL with the relics
+    /// granted in the listed order (`Player.Relics` order). The engine starts
+    /// from the game's shuffled pile and the run's own streams
+    /// ([`harness_turn_one`]), so the random Draw positions and Jeweled
+    /// Mask's pick are the game's.
+    #[test]
+    fn before_hand_draw_relics_run_in_the_recorded_order_the_game_runs() {
+        use CardId::{Barricade, Dazed, DemonForm, Inflame, Luminesce, Shiv, Soul};
+        use RelicId::{
+            RelicBlessedAntler as ANTLER, RelicFuneraryMask as FUNERARY,
+            RelicJeweledMask as JEWELED, RelicNinjaScroll as SCROLL, RelicPendulum as PENDULUM,
+            RelicPollinousCore as CORE, RelicRadiantPearl as PEARL,
+        };
+        let run = |relics: &[RelicId], draw: &[CardId]| {
+            let (catalog, state, hand, rest) = harness_start(relics, draw, true);
+            assert!(state.pending.is_none(), "{relics:?}");
+            let fresh: Vec<u32> = state
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .filter(|card| {
+                    matches!(
+                        catalog.spec(card.atom).unwrap().identity.id,
+                        Shiv | Luminesce
+                    )
+                })
+                .map(|card| card.uid)
+                .collect();
+            assert!(
+                fresh.windows(2).all(|pair| pair[0] < pair[1]),
+                "{relics:?}: generated Hand cards carry uids in walk order"
+            );
+            (
+                hand,
+                rest,
+                state.rng.get(RngStream::Rng).counter,
+                state.rng.get(RngStream::Sel).counter,
+            )
+        };
+        let dealt_nine = [S, S, D, D, D];
+        let left_nine = vec![S, S, S, D];
+        // Two Hand writers: the Hand holds them in recorded order.
+        assert_eq!(
+            run(&[SCROLL, PEARL], &NINE),
+            (
+                [&[Shiv, Shiv, Shiv, Luminesce][..], &dealt_nine].concat(),
+                left_nine.clone(),
+                8,
+                0
+            )
+        );
+        assert_eq!(
+            run(&[PEARL, SCROLL], &NINE),
+            (
+                [&[Luminesce, Shiv, Shiv, Shiv][..], &dealt_nine].concat(),
+                left_nine.clone(),
+                8,
+                0
+            )
+        );
+        // Two Draw writers: the second three positions are rolled against the
+        // pile the first three left.
+        assert_eq!(
+            run(&[FUNERARY, ANTLER], &NINE),
+            (
+                vec![S, S, D, Soul, D],
+                vec![D, S, S, Soul, S, Soul, D, Dazed, Dazed, Dazed],
+                14,
+                0
+            )
+        );
+        assert_eq!(
+            run(&[ANTLER, FUNERARY], &NINE),
+            (
+                vec![S, S, D, Dazed, D],
+                vec![D, S, S, Dazed, S, Dazed, D, Soul, Soul, Soul],
+                14,
+                0
+            )
+        );
+        // Jeweled Mask beside a Draw writer: the same Power is lifted (the
+        // candidates keep their order), and the inserts are rolled against a
+        // pile that has or has not lost it.
+        let lifted = vec![DemonForm, D, Barricade, S, D, S];
+        assert_eq!(
+            run(&[JEWELED, FUNERARY], &ELEVEN),
+            (
+                lifted.clone(),
+                vec![D, Inflame, S, S, Soul, D, Soul, Soul],
+                13,
+                1
+            )
+        );
+        assert_eq!(
+            run(&[FUNERARY, JEWELED], &ELEVEN),
+            (
+                lifted.clone(),
+                vec![D, Inflame, S, S, D, Soul, Soul, Soul],
+                13,
+                1
+            )
+        );
+        assert_eq!(
+            run(&[JEWELED, ANTLER], &ELEVEN),
+            (
+                lifted.clone(),
+                vec![D, Inflame, S, S, Dazed, D, Dazed, Dazed],
+                13,
+                1
+            )
+        );
+        assert_eq!(
+            run(&[ANTLER, JEWELED], &ELEVEN),
+            (
+                lifted.clone(),
+                vec![D, Inflame, S, S, D, Dazed, Dazed, Dazed],
+                13,
+                1
+            )
+        );
+        // Jeweled Mask beside a Hand writer.
+        let dealt_eleven = [D, Barricade, S, D, S];
+        let left_eleven = vec![D, Inflame, S, S, D];
+        for (relics, head) in [
+            ([JEWELED, SCROLL], vec![DemonForm, Shiv, Shiv, Shiv]),
+            ([SCROLL, JEWELED], vec![Shiv, Shiv, Shiv, DemonForm]),
+            ([JEWELED, PEARL], vec![DemonForm, Luminesce]),
+            ([PEARL, JEWELED], vec![Luminesce, DemonForm]),
+        ] {
+            assert_eq!(
+                run(&relics, &ELEVEN),
+                (
+                    [&head[..], &dealt_eleven].concat(),
+                    left_eleven.clone(),
+                    10,
+                    1
+                ),
+                "{relics:?}"
+            );
+        }
+        // Seven of the eight, two ways round.
+        assert_eq!(
+            run(
+                &[PEARL, ANTLER, JEWELED, SCROLL, FUNERARY, PENDULUM, CORE],
+                &ELEVEN
+            ),
+            (
+                [&[Luminesce, DemonForm, Shiv, Shiv, Shiv][..], &dealt_eleven].concat(),
+                vec![D, Inflame, S, S, D, Dazed, Dazed, Soul, Dazed, Soul, Soul],
+                16,
+                1
+            )
+        );
+        assert_eq!(
+            run(
+                &[FUNERARY, SCROLL, CORE, JEWELED, PENDULUM, ANTLER, PEARL],
+                &ELEVEN
+            ),
+            (
+                [&[Shiv, Shiv, Shiv, DemonForm, Luminesce][..], &dealt_eleven].concat(),
+                vec![D, Inflame, S, S, D, Soul, Soul, Dazed, Soul, Dazed, Dazed],
+                16,
+                1
+            )
+        );
+    }
+
+    /// #3635, native: Toolbox's choice splits the pass at Toolbox's recorded
+    /// place.
+    ///
+    /// The harness pushed the game's `TestCardSelector` with a pending
+    /// source, so the hook really suspended; the first tuple is the game at
+    /// that pause and the second after the first option was picked (Secret
+    /// Weapon, the head of the run's `CombatCardGeneration` draw, counter
+    /// 35). A relic recorded ahead of Toolbox has run at the pause and one
+    /// recorded behind it has not. With Orange Dough owned, `StartTurn`'s
+    /// side-start tail has put its two cards in the Hand at the pause, ahead
+    /// of whatever the relics behind Toolbox add on resume.
+    #[test]
+    fn toolbox_pauses_the_before_hand_draw_walk_where_the_game_does() {
+        use CardId::{
+            Barricade, Dazed, DemonForm, DramaticEntrance, Fisticuffs, Inflame, Luminesce,
+            SecretWeapon, Shiv, Soul,
+        };
+        use RelicId::{
+            RelicBlessedAntler as ANTLER, RelicFuneraryMask as FUNERARY,
+            RelicJeweledMask as JEWELED, RelicNinjaScroll as SCROLL, RelicOrangeDough as DOUGH,
+            RelicPendulum as PENDULUM, RelicPollinousCore as CORE, RelicRadiantPearl as PEARL,
+            RelicToolbox as TOOLBOX,
+        };
+        type Piles = (Vec<CardId>, Vec<CardId>);
+        let run = |relics: &[RelicId], draw: &[CardId], core: i16| -> (Piles, Piles, HotState) {
+            let (catalog, mut state) = harness_turn_one(relics, draw, true);
+            if relics.contains(&CORE) {
+                assert!(state.set_pollinous_core(core));
+            }
+            let mut events = Vec::new();
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(
+                state.fanouts.batch_nine_relic_pending().map(|p| p.kind),
+                Some(RelicPendingKind::Toolbox),
+                "{relics:?}"
+            );
+            let paused = (
+                pile_ids(&catalog, &state, PileId::Hand),
+                pile_ids(&catalog, &state, PileId::Draw),
+            );
+            let parked = state.clone();
+            resume_relic_selection(&mut state, &catalog, 0, &mut events).unwrap();
+            assert!(state.pending.is_none(), "{relics:?}");
+            let done = (
+                pile_ids(&catalog, &state, PileId::Hand),
+                pile_ids(&catalog, &state, PileId::Draw),
+            );
+            assert_eq!(
+                state.rng.get(RngStream::Generation).counter,
+                if relics.contains(&DOUGH) { 70 } else { 35 },
+                "{relics:?}"
+            );
+            (paused, done, parked)
+        };
+        let dealt = [S, S, D, D, D];
+        let left = vec![S, S, S, D];
+        for (relics, at_pause, head) in [
+            (
+                [TOOLBOX, SCROLL],
+                vec![],
+                vec![SecretWeapon, Shiv, Shiv, Shiv],
+            ),
+            (
+                [SCROLL, TOOLBOX],
+                vec![Shiv, Shiv, Shiv],
+                vec![Shiv, Shiv, Shiv, SecretWeapon],
+            ),
+            ([TOOLBOX, PEARL], vec![], vec![SecretWeapon, Luminesce]),
+            (
+                [PEARL, TOOLBOX],
+                vec![Luminesce],
+                vec![Luminesce, SecretWeapon],
+            ),
+        ] {
+            let (paused, done, _) = run(&relics, &NINE, 0);
+            assert_eq!(paused, (at_pause, NINE.to_vec()), "{relics:?}");
+            assert_eq!(
+                done,
+                ([&head[..], &dealt].concat(), left.clone()),
+                "{relics:?}"
+            );
+        }
+        // A Draw writer: behind Toolbox it has not rolled at the pause.
+        for (relics, id) in [
+            ([TOOLBOX, FUNERARY], Soul),
+            ([FUNERARY, TOOLBOX], Soul),
+            ([TOOLBOX, ANTLER], Dazed),
+            ([ANTLER, TOOLBOX], Dazed),
+        ] {
+            let (paused, done, parked) = run(&relics, &NINE, 0);
+            let ahead = relics[1] == TOOLBOX;
+            assert_eq!(
+                paused,
+                (
+                    vec![],
+                    if ahead {
+                        vec![S, S, D, id, D, D, S, S, id, S, id, D]
+                    } else {
+                        NINE.to_vec()
+                    }
+                ),
+                "{relics:?}"
+            );
+            assert_eq!(
+                parked.rng.get(RngStream::Rng).counter,
+                if ahead { 11 } else { 8 }
+            );
+            assert_eq!(
+                done,
+                (
+                    vec![SecretWeapon, S, S, D, id, D],
+                    vec![D, S, S, id, S, id, D]
+                ),
+                "{relics:?}"
+            );
+        }
+        // Jeweled Mask: its Selection draw is on its own side of the pause.
+        let left_eleven = vec![D, Inflame, S, S, D];
+        let (paused, done, parked) = run(&[TOOLBOX, JEWELED], &ELEVEN, 0);
+        assert_eq!(paused, (vec![], ELEVEN.to_vec()));
+        assert_eq!(parked.rng.get(RngStream::Sel).counter, 0);
+        assert_eq!(
+            done,
+            (
+                vec![SecretWeapon, DemonForm, D, Barricade, S, D, S],
+                left_eleven.clone()
+            )
+        );
+        let (paused, done, parked) = run(&[JEWELED, TOOLBOX], &ELEVEN, 0);
+        assert_eq!(paused, (vec![DemonForm], ELEVEN[..10].to_vec()));
+        assert_eq!(parked.rng.get(RngStream::Sel).counter, 1);
+        assert_eq!(
+            done,
+            (
+                vec![DemonForm, SecretWeapon, D, Barricade, S, D, S],
+                left_eleven
+            )
+        );
+        // The counters. Pollinous Core entering at three is at four at the
+        // pause when recorded ahead of Toolbox and still at three behind it;
+        // either way the fourth turn draws two more and resets it.
+        let seven = (vec![SecretWeapon, S, S, D, D, D, S, S], vec![S, D]);
+        let (_, done, parked) = run(&[CORE, TOOLBOX], &NINE, 3);
+        assert_eq!(parked.pollinous_core(), 4);
+        assert_eq!(done, seven);
+        let (_, done, parked) = run(&[TOOLBOX, CORE], &NINE, 3);
+        assert_eq!(parked.pollinous_core(), 3);
+        assert_eq!(done, seven);
+        let (_, _, parked) = run(&[CORE, TOOLBOX], &NINE, 0);
+        assert_eq!(parked.pollinous_core(), 1);
+        let (_, _, parked) = run(&[TOOLBOX, CORE], &NINE, 0);
+        assert_eq!(parked.pollinous_core(), 0);
+        let (_, _, parked) = run(&[PENDULUM, TOOLBOX], &NINE, 0);
+        assert_eq!(parked.pendulum(), 1);
+        let (_, _, parked) = run(&[TOOLBOX, PENDULUM], &NINE, 0);
+        assert_eq!(parked.pendulum(), 0);
+        // The side-start tail at the pause: Orange Dough's two cards are in
+        // the Hand before the Shivs of a Scroll recorded behind Toolbox, and
+        // the deal stops at the ten-card Hand.
+        let (paused, done, _) = run(&[TOOLBOX, SCROLL, DOUGH], &NINE, 0);
+        assert_eq!(paused, (vec![DramaticEntrance, Fisticuffs], NINE.to_vec()));
+        assert_eq!(
+            done,
+            (
+                vec![
+                    DramaticEntrance,
+                    Fisticuffs,
+                    SecretWeapon,
+                    Shiv,
+                    Shiv,
+                    Shiv,
+                    S,
+                    S,
+                    D,
+                    D
+                ],
+                vec![D, S, S, S, D]
+            )
+        );
+        let (paused, done, _) = run(&[SCROLL, TOOLBOX, DOUGH], &NINE, 0);
+        assert_eq!(
+            paused,
+            (
+                vec![Shiv, Shiv, Shiv, DramaticEntrance, Fisticuffs],
+                NINE.to_vec()
+            )
+        );
+        assert_eq!(
+            done,
+            (
+                vec![
+                    Shiv,
+                    Shiv,
+                    Shiv,
+                    DramaticEntrance,
+                    Fisticuffs,
+                    SecretWeapon,
+                    S,
+                    S,
+                    D,
+                    D
+                ],
+                vec![D, S, S, S, D]
+            )
+        );
+    }
+
+    /// #3635, native: Pollinous Core's fourth turn beside Jeweled Mask.
+    ///
+    /// The game, entering with `TurnsSeen` at three, lifts Demon Form and
+    /// deals seven in either order, and leaves the counter at zero. Before
+    /// #3635 this engine returned from the relic pass at Pollinous Core's
+    /// reset and never ran the Jeweled Mask behind it.
+    #[test]
+    fn pollinous_cores_fourth_turn_does_not_skip_the_relics_behind_it() {
+        use CardId::{Barricade, DemonForm, Inflame};
+        use RelicId::{RelicJeweledMask as JEWELED, RelicPollinousCore as CORE};
+        for vouched in [true, false] {
+            for relics in [[CORE, JEWELED], [JEWELED, CORE]] {
+                let (catalog, mut state) = harness_turn_one(&relics, &ELEVEN, vouched);
+                assert!(state.set_pollinous_core(3));
+                crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut Vec::new())
+                    .unwrap();
+                assert_eq!(
+                    pile_ids(&catalog, &state, PileId::Hand),
+                    [DemonForm, D, Barricade, S, D, S, D, Inflame],
+                    "{relics:?} vouched {vouched}"
+                );
+                assert_eq!(pile_ids(&catalog, &state, PileId::Draw), [S, S, D]);
+                assert_eq!(state.pollinous_core(), 0);
+                assert_eq!(state.rng.get(RngStream::Sel).counter, 1);
+            }
+        }
+    }
+
+    /// #3635, native: a listener that ends the combat inside the pass does
+    /// not stop the relics behind it, and each does what the game does there.
+    ///
+    /// Smokestack (60, applied before the combat starts) answers Blessed
+    /// Antler's first Dazed and kills both enemies at 5 HP. The game leaves
+    /// that one Dazed in the Draw pile (one `Shuffle` roll, counter 9), adds
+    /// neither of the other two, and then:
+    ///
+    /// * Ninja Scroll, Radiant Pearl and Funerary Mask add nothing and roll
+    ///   nothing;
+    /// * Pollinous Core entering at three is left at four, Pendulum at one;
+    /// * Jeweled Mask draws `CombatCardSelection` (counter 1) and Demon Form
+    ///   stays in the Draw pile;
+    /// * Toolbox draws `CombatCardGeneration` (counter 35), offers nothing,
+    ///   and nothing recorded behind it runs: a Pendulum behind it stays at
+    ///   zero, one ahead of it is at one.
+    ///
+    /// The Hand is never dealt. With a Smokestack of 1 the enemies live (39
+    /// and 50) and the pass is the ordinary one.
+    #[test]
+    fn before_hand_draw_relics_behind_a_listener_that_ended_combat_do_what_the_game_does() {
+        use CardId::{Barricade, Dazed, DemonForm, Inflame, Shiv};
+        use RelicId::{
+            RelicBlessedAntler as ANTLER, RelicFuneraryMask as FUNERARY,
+            RelicJeweledMask as JEWELED, RelicNinjaScroll as SCROLL, RelicPendulum as PENDULUM,
+            RelicPollinousCore as CORE, RelicRadiantPearl as PEARL, RelicToolbox as TOOLBOX,
+        };
+        let run = |relics: &[RelicId], draw: &[CardId], smokestack: i32, core: i16| {
+            let (catalog, mut state) = harness_turn_one(relics, draw, true);
+            state
+                .powers
+                .set(PowerId::Smokestack, SlotWire::Int, smokestack);
+            assert!(
+                state
+                    .fanouts
+                    .set_local_generated_power_order(&[PowerId::Smokestack])
+            );
+            if smokestack > 1 {
+                for monster in state.monsters_mut().iter_mut() {
+                    monster.hp = 5;
+                }
+            }
+            if relics.contains(&CORE) {
+                assert!(state.set_pollinous_core(core));
+            }
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+            assert!(state.pending.is_none(), "{relics:?}");
+            (catalog, state)
+        };
+        let one_dazed = vec![S, S, D, D, D, S, S, Dazed, S, D];
+        for relics in [
+            vec![ANTLER],
+            vec![ANTLER, SCROLL],
+            vec![ANTLER, PEARL],
+            vec![ANTLER, FUNERARY],
+            vec![ANTLER, CORE],
+            vec![ANTLER, PENDULUM],
+            vec![ANTLER, TOOLBOX],
+            vec![ANTLER, TOOLBOX, PENDULUM, CORE],
+            vec![ANTLER, PENDULUM, TOOLBOX, CORE],
+        ] {
+            let (catalog, state) = run(&relics, &NINE, 60, 3);
+            assert!(state.history.over, "{relics:?}");
+            assert_eq!(pile_ids(&catalog, &state, PileId::Hand), [], "{relics:?}");
+            assert_eq!(
+                pile_ids(&catalog, &state, PileId::Draw),
+                one_dazed,
+                "{relics:?}"
+            );
+            assert_eq!(state.rng.get(RngStream::Rng).counter, 9, "{relics:?}");
+            let toolbox = relics.iter().position(|relic| *relic == TOOLBOX);
+            assert_eq!(
+                state.rng.get(RngStream::Generation).counter,
+                if toolbox.is_some() { 35 } else { 0 },
+                "{relics:?}"
+            );
+            let ran = |relic: RelicId| {
+                relics
+                    .iter()
+                    .position(|owned| *owned == relic)
+                    .is_some_and(|at| toolbox.is_none_or(|toolbox| at < toolbox))
+            };
+            if relics.contains(&PENDULUM) {
+                assert_eq!(state.pendulum(), i16::from(ran(PENDULUM)), "{relics:?}");
+            }
+            if relics.contains(&CORE) {
+                assert_eq!(
+                    state.pollinous_core(),
+                    if ran(CORE) { 4 } else { 3 },
+                    "{relics:?}"
+                );
+            }
+        }
+        // Jeweled Mask: the draw, and the card stays where it was.
+        let (catalog, state) = run(&[ANTLER, JEWELED], &ELEVEN, 60, 0);
+        assert_eq!(pile_ids(&catalog, &state, PileId::Hand), []);
+        assert_eq!(
+            pile_ids(&catalog, &state, PileId::Draw),
+            [D, Barricade, S, D, S, D, Inflame, S, S, D, Dazed, DemonForm]
+        );
+        assert_eq!(state.rng.get(RngStream::Rng).counter, 11);
+        assert_eq!(state.rng.get(RngStream::Sel).counter, 1);
+        // The control: the same listener without the kill.
+        let (catalog, state) = run(&[ANTLER, SCROLL], &NINE, 1, 0);
+        assert!(!state.history.over);
+        assert_eq!(
+            state.monsters.iter().map(|m| m.hp).collect::<Vec<_>>(),
+            [39, 50]
+        );
+        assert_eq!(
+            pile_ids(&catalog, &state, PileId::Hand),
+            [Shiv, Shiv, Shiv, S, S, D, Dazed, D]
+        );
+        assert_eq!(
+            pile_ids(&catalog, &state, PileId::Draw),
+            [D, S, S, Dazed, S, Dazed, D]
+        );
+        assert_eq!(state.rng.get(RngStream::Rng).counter, 11);
+    }
+
+    /// #3635: the walk's own branches, on states no fight is needed for.
+    #[test]
+    fn the_before_hand_draw_walk_gates_orders_and_refuses_by_name() {
+        use RelicId::{
+            RelicBlessedAntler as ANTLER, RelicFuneraryMask as FUNERARY,
+            RelicJeweledMask as JEWELED, RelicNinjaScroll as SCROLL, RelicPendulum as PENDULUM,
+            RelicPollinousCore as CORE, RelicRadiantPearl as PEARL, RelicToolbox as TOOLBOX,
+        };
+        let ordered = |relics: &[RelicId], vouched: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder.set_relics_ordered(relics, vouched).unwrap();
+            builder.build()
+        };
+        let walk = |catalog: &Catalog| {
+            relic_walk_order(catalog, &BEFORE_HAND_DRAW_RELIC_DISPATCH).collect::<Vec<_>>()
+        };
+        // A vouched inventory is walked as recorded, an unvouched one in the
+        // fixed sequence this engine ran before the order was read.
+        let reversed = [
+            PEARL, JEWELED, CORE, SCROLL, FUNERARY, ANTLER, TOOLBOX, PENDULUM,
+        ];
+        assert_eq!(walk(&ordered(&reversed, true)), reversed);
+        assert_eq!(
+            walk(&ordered(&reversed, false)),
+            [
+                PENDULUM, TOOLBOX, ANTLER, FUNERARY, SCROLL, CORE, JEWELED, PEARL
+            ]
+        );
+        // Entry gates: only the two counters act after turn one.
+        let all = ordered(&reversed, true);
+        let mut state = HotState::at_defaults();
+        state.turn = 2;
+        for relic in reversed {
+            assert_eq!(
+                before_hand_draw_relic_acts(&all, &state, relic),
+                matches!(relic, PENDULUM | CORE),
+                "{relic:?}"
+            );
+        }
+        state.turn = 1;
+        assert!(
+            reversed
+                .into_iter()
+                .all(|relic| before_hand_draw_relic_acts(&all, &state, relic))
+        );
+        assert!(!before_hand_draw_relic_acts(
+            &ordered(&[CORE], true),
+            &state,
+            SCROLL
+        ));
+        // A pass entered on an ended combat runs no relic.
+        let counters = ordered(&[PENDULUM, CORE], true);
+        let mut state = HotState::at_defaults();
+        state.turn = 3;
+        assert!(state.set_pendulum(0) && state.set_pollinous_core(0));
+        state.history.over = true;
+        assert_eq!(
+            before_hand_draw(&counters, &mut state, false, &mut Vec::new()),
+            Ok(true)
+        );
+        assert_eq!((state.pendulum(), state.pollinous_core()), (0, 0));
+        // One a listener ended runs both counters.
+        assert_eq!(
+            before_hand_draw(&counters, &mut state, true, &mut Vec::new()),
+            Ok(true)
+        );
+        assert_eq!((state.pendulum(), state.pollinous_core()), (1, 1));
+        // The fold neither reads nor resets Pollinous Core on an ended combat.
+        assert!(state.set_pollinous_core(4));
+        assert_eq!(pollinous_core_modify_hand_draw(&counters, &mut state), 0);
+        assert_eq!(state.pollinous_core(), 4);
+        state.history.over = false;
+        assert_eq!(pollinous_core_modify_hand_draw(&counters, &mut state), 2);
+        assert_eq!(state.pollinous_core(), 0);
+        // A counter that enters a live pass already at `Turns` counts on,
+        // and the fold adds the two cards and resets it (#3915 review).
+        assert!(state.set_pollinous_core(4));
+        assert!(!before_hand_draw_walk_can_refuse(&counters, &state));
+        assert_eq!(
+            before_hand_draw(&counters, &mut state, true, &mut Vec::new()),
+            Ok(true)
+        );
+        assert_eq!(state.pollinous_core(), 5);
+        assert_eq!(pollinous_core_modify_hand_draw(&counters, &mut state), 2);
+        assert_eq!(state.pollinous_core(), 0);
+        // Past what the stored counter holds, the walk refuses by name.
+        assert!(state.set_pollinous_core(6));
+        assert!(!state.set_pollinous_core(7));
+        assert!(before_hand_draw_walk_can_refuse(&counters, &state));
+        let before = state.pendulum();
+        assert_eq!(
+            before_hand_draw(&counters, &mut state, true, &mut Vec::new()),
+            Err(EngineRefusal::CounterOverflow(
+                "Pollinous Core TurnsSeen past its stored range"
+            ))
+        );
+        assert_eq!(
+            state.pendulum(),
+            (before + 1) % 3,
+            "the walk itself is not a rehearsal"
+        );
+        assert!(state.set_pollinous_core(0));
+        assert!(!before_hand_draw_walk_can_refuse(&counters, &state));
+        state.turn = 1;
+        assert!(before_hand_draw_walk_can_refuse(&counters, &state));
+        assert!(!before_hand_draw_walk_can_refuse(
+            &ordered(&[PENDULUM], true),
+            &state
+        ));
+        state.turn = 2;
+        assert!(!before_hand_draw_walk_can_refuse(
+            &ordered(&[SCROLL], true),
+            &state
+        ));
+        // A resume point the walk does not hold.
+        assert_eq!(
+            resume_before_hand_draw_after_toolbox(&counters, &mut state, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "BeforeHandDraw relic walk resume point"
+            ))
+        );
+        // A choice parked inside a body: with a later relic still to act the
+        // walk refuses, with none it returns parked.
+        let mut parked = HotState::at_defaults();
+        parked.turn = 2;
+        assert!(parked.set_pendulum(0) && parked.set_pollinous_core(0));
+        parked.pending = Some(std::sync::Arc::new(PendingSelection::relic_selection()));
+        assert_eq!(
+            before_hand_draw(&counters, &mut parked.clone(), true, &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                "BeforeHandDraw relic behind a listener choice parked inside an earlier relic body"
+            ))
+        );
+        assert_eq!(
+            before_hand_draw(
+                &ordered(&[PENDULUM], true),
+                &mut parked,
+                true,
+                &mut Vec::new()
+            ),
+            Ok(false)
+        );
+        // Toolbox's pause on an unvouched inventory: any other relic of the
+        // pass that acts this turn is on an unknown side of it.
+        let mut turn_one = HotState::at_defaults();
+        turn_one.turn = 1;
+        let refusal = Err(EngineRefusal::PowerOrderNotModeled(
+            "BeforeHandDraw relic order around Toolbox's paused choice",
+        ));
+        for peer in [PENDULUM, ANTLER, FUNERARY, SCROLL, CORE, JEWELED, PEARL] {
+            assert_eq!(
+                before_hand_draw_pause_order_is_native(
+                    &ordered(&[TOOLBOX, peer], false),
+                    &turn_one
+                ),
+                refusal,
+                "{peer:?}"
+            );
+            assert_eq!(
+                before_hand_draw_pause_order_is_native(&ordered(&[peer, TOOLBOX], true), &turn_one),
+                Ok(()),
+                "{peer:?}"
+            );
+        }
+        assert_eq!(
+            before_hand_draw_pause_order_is_native(&ordered(&[TOOLBOX], false), &turn_one),
             Ok(())
         );
+    }
+
+    /// #3635: a refusal inside the turn-one relic walk leaves the state as
+    /// it was, because the turn is rehearsed on a clone.
+    #[test]
+    fn a_refusal_inside_the_before_hand_draw_walk_writes_nothing() {
+        use RelicId::{
+            RelicNinjaScroll as SCROLL, RelicPendulum as PENDULUM, RelicToolbox as TOOLBOX,
+        };
+        // An unvouched Toolbox beside a Scroll and a Pendulum: Pendulum has
+        // counted and Toolbox has drawn when the pause-order refusal fires.
+        let (catalog, mut state) = harness_turn_one(&[SCROLL, PENDULUM, TOOLBOX], &NINE, false);
+        let before = state.clone();
+        assert_eq!(
+            crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                "BeforeHandDraw relic order around Toolbox's paused choice"
+            ))
+        );
+        assert!(state == before);
+        // The same inventory vouched for parks at Toolbox.
+        let (catalog, mut state) = harness_turn_one(&[SCROLL, PENDULUM, TOOLBOX], &NINE, true);
+        crate::engine::turn::begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert!(state.pending.is_some());
+        assert_eq!(state.pendulum(), 1);
     }
 }

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 6,
+ "encounter": "ENCOUNTER.PHROG_PARASITE_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "38c35de52ecab697992f87e5b1cd225f5b7837457bd2a454cb695ea0a96f695b",
+ "save_sha256": "407d0a1bad9242142f9b30ca1b2c85269570d1b516e57d5fe38c00062fe58544",
+ "entry_digest": "8a6b1c68727cd2912325ccd7df6d47206bc1f5538504b440b454004439957119",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

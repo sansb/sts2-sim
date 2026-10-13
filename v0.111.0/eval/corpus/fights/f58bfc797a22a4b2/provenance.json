@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "JFM7VSFALES4",
+ "node": 16,
+ "encounter": "ENCOUNTER.VANTOM_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "dbd9bf73547a26cbaa395c9838c6fa5b569da9395b758cf6524fdc0239f13661",
+ "save_sha256": "d39baf22d6fa9ca54d84c453c0cc51cbb7825bb65b6a1cf3433caf2ba5720315",
+ "entry_digest": "6abd901d113c7978f1cd075140328921006dd31ff114edb1a317233930bc9587",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

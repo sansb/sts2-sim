@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TVHC64H5RQKZ",
+ "node": 29,
+ "encounter": "ENCOUNTER.ENTOMANCER_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "7e61f2d03afbb60365be03b0bc06d6b5f182775222b1160e71a682352f68d761",
+ "save_sha256": "0925fd035ecbb85ee59a63d388d7ab6063c8d1a1c409e4bf7510a91dbaf5c29d",
+ "entry_digest": "c1ea993a801149ca5bceb7655058c6b36c05b26644718020f8cd841c99ee43b6",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "7EDY9AGMSMUM",
+ "node": 22,
+ "encounter": "ENCOUNTER.SLUMBERING_BEETLE_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "0ea1ff17b981200f470c33b4c1d76ae3488adfcfb05140e6bbca3aa779202cba",
+ "save_sha256": "241bff1919898b3bf2673054ee0a6c167ea3240ba0bfb19fc26a5f85f01df33a",
+ "entry_digest": "414e2232a0d75845b717362fe0877b26746af8fd18b996fb04aedf0e08931990",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

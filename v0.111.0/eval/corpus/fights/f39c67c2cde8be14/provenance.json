@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 30,
+ "encounter": "ENCOUNTER.HUNTER_KILLER_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "cd0fd52d01688b0d1b353c1ed66ecbc9bab30bdb8fa68e711e006e4e3e21ea92",
+ "save_sha256": "54924a0a5025861940806c97c4adb5ade4f92a49350382f98bb83250b87e527c",
+ "entry_digest": "c81ef2c7ade9812e6d6c1b41ff49fc8f22989b7a94d1f4a12b685fb87cb9d357",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

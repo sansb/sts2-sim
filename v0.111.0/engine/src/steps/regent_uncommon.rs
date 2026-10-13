@@ -3674,6 +3674,91 @@ mod tests {
         builder.build()
     }
 
+    /// Quasar with Whispering Earring's `VakuuCardSelector` pushed (#3756,
+    /// `selection::vakuu_generated_choice`): the screen is never shown and
+    /// the first of the three shuffled options lands at Hand's bottom,
+    /// upgraded when the Quasar is. Native traces `quasar`, `quasar_plus`
+    /// and `quasar_hand_nine` in the PR; `quasar@local:0` and `@local:1`
+    /// name the options.
+    #[test]
+    fn quasar_under_the_vakuu_selector_takes_the_first_option() {
+        for upgrade in [0, 1] {
+            let source = CardIdentity {
+                id: CardId::Quasar,
+                upgrade,
+                enchantment: None,
+            };
+            let catalog =
+                catalog_for_pool(source, &REGENT_COLORLESS_GENERATION_POOL_V1101, upgrade);
+            let mut state = generation_state(17);
+            state.set_spectrum_shift_generation_pool(false);
+            state.stars = 2;
+            state.next_card_uid = 12;
+            let quasar = catalog.atom(&source).unwrap();
+            let hand = state.piles.get_mut(PileId::Hand).make_mut();
+            hand.push(HotCard {
+                uid: 1,
+                atom: quasar,
+                flags: 0,
+            });
+            // Eight more Quasars: the pick is the tenth Hand card's place.
+            hand.extend((2..10).map(|uid| HotCard {
+                uid,
+                atom: quasar,
+                flags: 0,
+            }));
+            let play = Action::Play {
+                uid: 1,
+                target: None,
+                selection: SelectionRef::NONE,
+            };
+            let mut expected_rng = Xoshiro256StarStar::from_seed(17);
+            let mut expected_pool = REGENT_COLORLESS_GENERATION_POOL_V1101;
+            expected_rng.shuffle(&mut expected_pool).unwrap();
+
+            let outside = apply_action(&state, &catalog, &play).unwrap().state;
+            assert!(outside.pending.is_some(), "the player chooses");
+
+            let next = {
+                let _vakuu = crate::engine::selection::VakuuSelectorScope::enter();
+                apply_action(&state, &catalog, &play).unwrap().state
+            };
+            assert!(next.pending.is_none() && next.frames.is_empty());
+            assert_eq!(next.stars, 0);
+            assert_eq!(next.rng.get(RngStream::Generation).counter, 49);
+            let hand = next.piles.get(PileId::Hand).as_slice();
+            assert_eq!(hand.len(), 9);
+            let minted = hand[8];
+            assert_eq!(minted.uid, 12);
+            assert_eq!(
+                catalog.spec(minted.atom).unwrap().identity,
+                CardIdentity {
+                    id: expected_pool[0],
+                    upgrade,
+                    enchantment: None,
+                }
+            );
+            assert_eq!(
+                next.piles
+                    .get(PileId::Discard)
+                    .as_slice()
+                    .iter()
+                    .map(|card| card.uid)
+                    .collect::<Vec<_>>(),
+                [1]
+            );
+            // The same card the player's first option mints.
+            let answered = apply_action(
+                &outside,
+                &catalog,
+                &crate::engine::legal_actions(&outside, &catalog)[0],
+            )
+            .unwrap()
+            .state;
+            assert_eq!(answered, next);
+        }
+    }
+
     #[test]
     fn quasar_spends_then_freezes_three_options_and_skip_mints_nothing() {
         for owner in [

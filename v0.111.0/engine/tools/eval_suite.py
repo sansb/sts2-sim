@@ -29,6 +29,7 @@ so the certification against the game's own checksums runs from a clone.
 from __future__ import annotations
 
 import argparse
+import collections
 import contextlib
 import gzip
 import hashlib
@@ -654,6 +655,9 @@ def opening_checkpoint(document: Dict[str, Any],
     out["opening_counter_drift"] = sorted(counter_drift)
     out["opening_counters_match"] = not counter_drift
     out["opening_power_mismatches"] = power_mismatch_rows(document, native)
+    left_out = powers_not_compared(native)
+    if left_out:
+        out["opening_powers_not_compared"] = left_out
     if report_error is not None:
         out["opening_checkpoint"] = "mismatch"
         out["opening_checkpoint_detail"] = report_error
@@ -805,6 +809,20 @@ def power_mismatch_rows(state: Dict[str, Any],
                  "native": None, "rust": f"{exc}"[:120]}]
 
 
+def powers_not_compared(native: Dict[str, Any]) -> List[str]:
+    """The checkpoint's hero powers the comparison leaves out, by name (#3764).
+
+    `rust_replay.native_player_powers_not_compared`: powers whose only hook
+    runs after the combat, for which Rust carries no state. A checkpoint
+    whose power list cannot be read names none here; `power_mismatch_rows`
+    already reports it as `malformed_power_list`.
+    """
+    try:
+        return rust_replay.native_player_powers_not_compared(native)
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return []
+
+
 class _CensusChecks(rust_replay.NativeChecks):
     """`rust_replay.NativeChecks`, comparing through `check_native_checkpoint`.
 
@@ -813,10 +831,16 @@ class _CensusChecks(rust_replay.NativeChecks):
     the review's own. Each compared checkpoint's player powers are also
     compared (#3029) and the FIRST disagreeing checkpoint's rows kept in
     `power_mismatch`; that comparison never raises, so it cannot change the
-    certification verdict by itself.
+    certification verdict by itself. `not_compared` collects, over EVERY
+    compared checkpoint, the powers that comparison leaves out (#3764,
+    `powers_not_compared`).
     """
 
     power_mismatch: Optional[List[Dict[str, Any]]] = None
+
+    def __init__(self, replay):
+        super().__init__(replay)
+        self.not_compared: set = set()
 
     def completed(self, state):
         if self.owner is None or state['player'].get('pending'):
@@ -829,6 +853,8 @@ class _CensusChecks(rust_replay.NativeChecks):
                 raise ValueError('recorded checkpoint action identity mismatch')
             self.cursor += 1
             if checkpoint.get('full_state'):
+                self.not_compared.update(
+                    powers_not_compared(checkpoint['full_state']))
                 if self.power_mismatch is None:
                     rows = power_mismatch_rows(state, checkpoint['full_state'])
                     if rows:
@@ -890,6 +916,39 @@ def _multi_card_selection(session: _RestoringSession, before: Dict[str, Any],
     return resolved["action"]
 
 
+def _offered_answer_refusal(session: _RestoringSession) -> str:
+    """Why the engine will not apply a selection answer it offers, or "".
+
+    A recorded choice with no Rust answer usually means the resolver could
+    not name it. It can also mean the engine refuses the very answers
+    `legal` offers (a continuation it cannot resume, a transform it does not
+    carry): `engine::recorded_selection_answer` skips an answer the engine
+    will not apply, so the resolver is left with none (#3756). That is an
+    engine capability, not an unread choice, and the census says which.
+
+    One probe, on the state the choice was recorded in: the first `select`
+    the engine offers. A refusal returns the engine's own detail; an answer
+    that applies, or no offered answer at all, returns "". The line has
+    already diverged, so the probe's effect on the session is never read.
+    """
+    try:
+        session.restore()
+        offered = [wire for wire in session.session.ask({"cmd": "legal"})["actions"]
+                   if wire.get("kind") == "select"]
+        if not offered:
+            return ""
+        response = session.session.request({"cmd": "apply",
+                                            "action": offered[0]})
+    except (RuntimeError, BrokenPipeError):
+        raise  # the engine process died: the census names that itself
+    except Exception:  # noqa: BLE001 - a diagnostic never changes a verdict
+        return ""
+    refusal = response.get("refusal") if isinstance(response, dict) else None
+    if not isinstance(refusal, dict):
+        return ""
+    return str(refusal.get("detail") or refusal.get("kind") or "")
+
+
 class LineDiverged(Exception):
     """One recorded input has no exact Rust counterpart.
 
@@ -903,16 +962,20 @@ class LineDiverged(Exception):
     be wrong against the game several inputs before an input stops
     resolving (#3025); the divergence must not hide that earlier answer.
     `power_mismatch` is the first checkpoint whose player powers disagreed
-    (`{"step", "mismatches"}`, #3029), carried the same way.
+    (`{"step", "mismatches"}`, #3029), carried the same way, and
+    `powers_not_compared` the powers the comparison left out at any
+    checkpoint before the divergence (#3764).
     """
 
     def __init__(self, step: int, turn: Optional[int], check: str,
                  detail: str,
                  checkpoint_mismatch: Optional[Dict[str, Any]] = None,
                  native_checkpoints: int = 0,
-                 power_mismatch: Optional[Dict[str, Any]] = None):
+                 power_mismatch: Optional[Dict[str, Any]] = None,
+                 powers_not_compared: Tuple[str, ...] = ()):
         super().__init__(detail)
         self.power_mismatch = power_mismatch
+        self.powers_not_compared = sorted(powers_not_compared)
         self.step = step
         self.turn = turn
         self.check = check
@@ -930,15 +993,32 @@ class CaptureTruncated(LineDiverged):
     where the file does (`_capture_ends_mid_combat`), so the missing end is
     the capture's, not the engine's. A LineDiverged subclass so every
     caller that only knows divergences still stops; the census names it
-    `human = truncated`, never certified. `shape` names which evidence.
+    `human = truncated`, never certified. `shape` names which evidence. A
+    line that stops after an end turn is truncated on the same terms when
+    the capture's final turn-start checksum agrees with Rust
+    (`_final_player_turn_start`, #3764).
     """
 
     shape: Optional[str] = None
 
 
-#: The two truncation shapes `_capture_ends_mid_combat` names.
+#: The two truncation shapes `_capture_ends_mid_combat` names, and the one
+#: `_final_player_turn_start` finds (#3764).
 TRUNCATED_AFTER_COMPLETED_ACTION = "after_completed_action"
 TRUNCATED_INSIDE_PLAYER_DECISION = "inside_player_decision"
+TRUNCATED_AT_PLAYER_TURN_START = "at_player_turn_start"
+#: #3820: the capture stops because the player abandoned the run inside this
+#: fight (`_run_abandoned_mid_combat`). Unlike the three above it rests on a
+#: fact the capture does not hold, the `.run`'s `was_abandoned`, so it is its
+#: own excluded reason (`UNUSABLE_RUN_ABANDONED`), not `capture_truncated`.
+TRUNCATED_RUN_ABANDONED = "run_abandoned"
+
+#: The checksum `CombatManager/<StartTurn>d__100::MoveNext` (v0.111.0 RVA
+#: `0x3f781c`) writes on the player side at IL_096f-0975: after
+#: `SetupPlayerTurn` (the hand draw, IL_06b9), `Hook::AfterSideTurnStart`
+#: (IL_07bf) and `OrbQueue::AfterTurnStart` (IL_08b5), and BEFORE
+#: `RunAutoPrePlayPhase` (IL_0b1e).
+PLAYER_TURN_START_CONTEXT = "After player turn start"
 
 
 def _native_combat_live(checkpoint: Dict[str, Any]) -> bool:
@@ -957,6 +1037,74 @@ def _native_combat_live(checkpoint: Dict[str, Any]) -> bool:
                and c.get("monster_id") not in pets]
     return (bool(players) and all(c.get("current_hp", 0) > 0 for c in players)
             and any(c.get("current_hp", 0) > 0 for c in enemies))
+
+
+def _inputs_cancelled_at_combat_end(replay: Dict[str, Any], checks: Any,
+                                    state: Dict[str, Any]) -> bool:
+    """Whether recorded inputs after Rust's won combat were never executed.
+
+    The replay writer records a player action when it is ENQUEUED, and a
+    player can queue plays faster than they resolve. When the fight ends,
+    v0.111.0 `ActionQueueSet::CombatEnded` (RVA 0x10f600) walks every queue
+    and, for each combat action that is not already executing, calls
+    `GameAction.Cancel` and removes it (IL_0045-IL_00b3;
+    `ActionQueueSynchronizer::SetCombatState` is its caller). Those inputs
+    stay in the capture's event list with no completed-action checksum.
+
+    So trailing inputs are cancelled queue entries, not a divergence, when
+    the capture itself proves all three (#3756):
+
+    * every recorded completed-action checkpoint has already been matched
+      to a Rust action and compared, with none failing (`checks` is still
+      live, its cursor is at the end and no action is open);
+    * the capture's own final checksum shows a living player and no living
+      enemy, so the game's combat was over too; and
+    * Rust's combat is over and won.
+
+    A capture without completed-action checksums proves nothing here and
+    keeps `premature_combat_end`, as does any earlier checkpoint mismatch.
+    """
+    if checks is None or not getattr(checks, "checks", None) \
+            or checks.cursor != len(checks.checks) \
+            or checks.owner is not None:
+        return False
+    if not _terminal(state)["won"]:
+        return False
+    checksums = replay.get("checksums") or []
+    creatures = ((checksums[-1] if checksums else {}).get("full_state")
+                 or {}).get("creatures")
+    if not isinstance(creatures, list):
+        return False
+    pets = ("OSTY",) + RELIC_PET_MONSTER_IDS
+    players = [c for c in creatures if c.get("player_id") is not None
+               and c.get("monster_id") is None]
+    enemies = [c for c in creatures if c.get("monster_id")
+               and c.get("player_id") is None
+               and c.get("monster_id") not in pets]
+    return (bool(players) and all(c.get("current_hp", 0) > 0 for c in players)
+            and not any(c.get("current_hp", 0) > 0 for c in enemies))
+
+
+def _sole_offered_selection(before: Dict[str, Any], legal: List[Dict[str, Any]],
+                            wire: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """The one selecting play `legal` offers for a recorded choiceless play.
+
+    A card whose body selects from Hand opens no choice when the candidates
+    do not exceed its minimum: `CardSelectCmd/<FromHand>d__28` (RVA
+    0x3e7568) returns the candidate list itself (IL_0152-IL_018d; the engine
+    cites the same lines at `engine/play.rs`'s `auto_resolved`). Burning Pact
+    with one other card in Hand is the corpus case: the capture has the play
+    and its ResumeAction and no PlayerChoice. Rust's `legal` still spells
+    that play with its single possible `selection`.
+
+    Returns the recorded wire with that selection when exactly one offered
+    play matches it apart from the selection and the selected card is the
+    only Hand card of its payload; None otherwise, which stays `not_legal`
+    (#3756). The rule itself is `rust_replay.sole_offered_selection`, shared
+    with the production review, and `recorded::sole_offered_selection` is
+    its Rust port: the three resolvers must agree on it.
+    """
+    return rust_replay.sole_offered_selection(before, legal, wire)
 
 
 def _capture_ends_mid_combat(replay: Dict[str, Any], checks: Any,
@@ -986,9 +1134,10 @@ def _capture_ends_mid_combat(replay: Dict[str, Any], checks: Any,
       without a choice, its checkpoint would be in the file, left
       unconsumed, and this shape would not apply.
 
-    Anything else is not claimed: a final checkpoint that shows every enemy
-    or the player dead, a turn-boundary record after the last compared
-    checkpoint, or a last input that is an end turn. Those rows stay
+    Anything else is not claimed here: a final checkpoint that shows every
+    enemy or the player dead, a turn-boundary record after the last compared
+    checkpoint, or a last input that is an end turn. A line that stops after
+    an end turn is `_final_player_turn_start`'s to read; the rest stay
     `combat_not_complete`.
     """
     checksums = replay.get("checksums") or []
@@ -1006,6 +1155,110 @@ def _capture_ends_mid_combat(replay: Dict[str, Any], checks: Any,
             "PlayCardAction card:", "UsePotionAction "):
         return TRUNCATED_INSIDE_PLAYER_DECISION
     return None
+
+
+def _final_player_turn_start(replay: Dict[str, Any], checks: Any,
+                             actions: List[Dict[str, Any]]
+                             ) -> Optional[Dict[str, Any]]:
+    """The capture's final checksum, when the line stops at a player turn start.
+
+    The third truncation shape (#3764): the recorded line ends with an end
+    turn, and the capture's last checksum is the NEXT player turn's start
+    (`PLAYER_TURN_START_CONTEXT`). Returned only when `checks` is intact with
+    every completed-action checkpoint consumed, the last applied input is
+    the end turn, and that final checksum carries a full state. The caller
+    compares it with Rust's state after that end turn, the same comparison a
+    completed-action checkpoint gets: one Rust `end` runs through the enemy
+    turn to exactly this boundary whenever turn start's AutoPre phase, which
+    follows the checksum natively, does nothing. Only agreement there, on a
+    living player and a living enemy, is `at_player_turn_start`.
+
+    A capture whose last checksum is `After enemy turn start` is NOT claimed,
+    though it stops at a turn boundary too. That is also exactly how a
+    capture of a LOST fight ends (the player dies inside the enemy turn, and
+    no `After enemy turn end` is written), with the player still alive in
+    the checksum. When Rust's player survives that enemy turn, the capture
+    alone cannot tell a file cut short from a death Rust failed to
+    reproduce, so the row stays `combat_not_complete`.
+    """
+    checksums = replay.get("checksums") or []
+    recorded = getattr(checks, "checks", None) or []
+    if not checksums or not actions or actions[-1].get("kind") != "end" \
+            or getattr(checks, "cursor", None) != len(recorded):
+        return None
+    last = checksums[-1]
+    if last.get("context") != PLAYER_TURN_START_CONTEXT \
+            or not isinstance(last.get("full_state"), dict):
+        return None
+    return last
+
+
+def _native_enemies(full_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """The living enemies one native checkpoint lists (pets are the player's)."""
+    pets = ("OSTY",) + RELIC_PET_MONSTER_IDS
+    return [c for c in full_state.get("creatures") or []
+            if c.get("monster_id") and c.get("player_id") is None
+            and c.get("monster_id") not in pets
+            and c.get("current_hp", 0) > 0]
+
+
+def _run_abandoned_mid_combat(replay: Dict[str, Any], checks: Any,
+                              state: Dict[str, Any],
+                              turn_start: Optional[Dict[str, Any]],
+                              turn_start_agreed: bool) -> bool:
+    """Whether a line that ran out is explained by the run's abandonment.
+
+    Called only for a fight whose `.run` says the player abandoned the run
+    at its node (`upload_run_abandoned`, carried by the `_upload_` sidecar),
+    when the recorded inputs ran out with Rust's combat live and none of the
+    capture-only truncation shapes applied. Abandoning ends the combat with
+    no recorded input: v0.111.0 `RunManager/<AbandonInternal>d__216::MoveNext`
+    (RVA 0x30b4c0) sets `IsAbandoned` (IL_0066-0067) and awaits
+    `GuaranteeKillAllPlayers` (IL_006d), so the capture stops wherever the
+    player was, with no combat end for any engine to reproduce.
+
+    The `.run` flag alone is not enough. The capture must still show:
+
+    * every completed-action checkpoint it holds matched to a Rust action
+      and compared, with none failing (`checks` live, its cursor at the end);
+    * a living enemy in its final checksum, so the game's combat was not won
+      there (a fight won and then abandoned at the rewards is a complete
+      capture, and Rust still fighting it is a defect); and
+    * nothing after the last compared checkpoint that Rust contradicts. When
+      the final checksum is the next player turn's start (`turn_start`) and
+      the player lives in it, it is a full checkpoint and must have agreed
+      (`turn_start_agreed`; with a living enemy that is already
+      `at_player_turn_start`, so this function then answers False either
+      way). When the player is at 0 HP in it, the abandon's kill landed
+      first (the hand draw it interrupted is partial), and only the enemy
+      side can be compared: the living enemies' kind, HP, max HP and Block
+      must equal Rust's, in order.
+
+    What stays unchecked is what no capture of an abandoned fight carries:
+    the enemy turn after the last end turn, when the file stops inside it.
+    """
+    recorded = getattr(checks, "checks", None) or []
+    checksums = replay.get("checksums") or []
+    if checks is None or not recorded or checks.cursor != len(recorded) \
+            or not checksums:
+        return False
+    final = checksums[-1].get("full_state")
+    if not isinstance(final, dict) or not _native_enemies(final):
+        return False
+    if turn_start is None:
+        return True
+    players = [c for c in final.get("creatures") or []
+               if c.get("player_id") is not None
+               and c.get("monster_id") is None]
+    if not players or any(c.get("current_hp", 0) > 0 for c in players):
+        return turn_start_agreed
+    native = [(rust_replay._NATIVE_MONSTER_KIND.get(c["monster_id"],
+                                                    c["monster_id"]),
+               c.get("current_hp"), c.get("max_hp"), c.get("block"))
+              for c in _native_enemies(final)]
+    rust = [(m["kind"], m.get("hp", 0), m.get("max_hp", 0), m.get("block", 0))
+            for m in state["monsters"] if m.get("hp", 0) > 0]
+    return native == rust
 
 
 #: The recorded inputs a line consists of. After the engine reports combat
@@ -1113,7 +1366,9 @@ def _dealt_uids(root: Dict[str, Any], instances: list) -> List[int]:
     number of cards pulled to the front, so `dealt[:innate_min_draw]`
     reversed is those cards in their original relative order, and the IMBUED
     tail is read from each card's `enchantment`. Cards the opening created
-    are left out: they are not in the shuffled deck the capture records. The three subsequences each
+    are left out before the split: they are not in the shuffled deck the
+    capture records, and `innate_min_draw` does not count them (#3764). The
+    three subsequences each
     keep their original relative order, so walking the recorded cycle
     against their heads reconstructs the raw order — exactly, because the
     walk must be the ONLY complete reading of the cycle (`_interleavings`):
@@ -1141,9 +1396,8 @@ def _dealt_uids(root: Dict[str, Any], instances: list) -> List[int]:
     # first cycle, which is the shuffled deck only. Created cards take uids
     # after the deck from the shared allocator, so the deck is exactly the
     # dealt cards below `len(instances)`; the created ones are matched later
-    # by that allocator (#3089). The front/tail split is taken first, on the
-    # dealt piles as Rust laid them out, and only then are created cards
-    # dropped, so each queue keeps the deck cards' relative order.
+    # by that allocator (#3089). They are dropped before the front/tail
+    # split (#3764, below), which keeps the deck cards' relative order.
     deck_size = len(instances)
     if "RELIC.WHISPERING_EARRING" in (root["player"].get("relics_entering") or ()):
         # Whispering Earring's turn-one AutoPre loop (#3414,
@@ -1162,18 +1416,35 @@ def _dealt_uids(root: Dict[str, Any], instances: list) -> List[int]:
                    if c["uid"] < deck_size}
         dealt = [present.get(uid, {"uid": uid, "id": None, "vanished": True})
                  for uid in range(deck_size)]
-    elif "RELIC.JEWELED_MASK" in (root["player"].get("relics_entering") or ()):
+    elif {"RELIC.JEWELED_MASK", "RELIC.POWER_CELL"} & set(
+            root["player"].get("relics_entering") or ()):
         # Jeweled Mask's turn-1 BeforeHandDraw (`JeweledMask/<BeforeHandDraw>
         # d__2::MoveNext`, v0.111.0 RVA 0x3272f4) moves one deck Power from
         # mid-Draw to the Hand AFTER the deck was numbered, and the moved card
         # keeps its uid (#3170). So the deck cards in uid order are the layout
         # before the lift, which is the layout the Innate/IMBUED inversion
-        # below undoes. Only this relic takes the reorder; every other root
-        # keeps the layout exactly as Rust laid it out.
+        # below undoes. Power Cell's turn-1 BeforeSideTurnStart
+        # (`PowerCell/<BeforeSideTurnStart>d__4::MoveNext`, RVA 0x32e780) is
+        # the same shape with up to two zero-cost deck cards, lifted to the
+        # Hand before the deal with their uids kept (#3767). Only these two
+        # relics take the reorder; every other root keeps the layout exactly
+        # as Rust laid it out.
         dealt = sorted((c for c in dealt if c["uid"] < deck_size),
                        key=lambda c: c["uid"])
-    front = [c for c in reversed(dealt[:innate]) if c["uid"] < deck_size]
-    tail = [c for c in dealt[innate:] if c["uid"] < deck_size]
+    else:
+        # #3764: drop the opening-created cards BEFORE the split.
+        # `innate_min_draw` counts the DECK's Innate cards
+        # (`entry::opening` writes it from the pile fixup's second group),
+        # so the front is the first `innate` deck cards of `hand ++ draw`. A
+        # created card ahead of them (Radiant Pearl's Luminesce, added to
+        # the Hand before the turn-one draw: Hand index 0) is not one of
+        # them; sliced with them it pushed the last Innate card into the
+        # tail and no reading completed.
+        dealt = [c for c in dealt if c["uid"] < deck_size]
+        if innate > len(dealt):
+            raise ValueError("Rust root innate_min_draw is out of range")
+    front = list(reversed(dealt[:innate]))
+    tail = dealt[innate:]
     if sorted(c["uid"] for c in front + tail) != list(range(deck_size)):
         raise ValueError("recorded deck size differs from the Rust deal")
     queues = [front]
@@ -1252,7 +1523,9 @@ def _interleavings(queues: List[List[Dict[str, Any]]],
     return solutions
 
 
-def _first_cycle_instances(replay: Dict[str, Any]) -> List[Tuple[Any, ...]]:
+def _first_cycle_instances(replay: Dict[str, Any],
+                           root: Optional[Dict[str, Any]] = None
+                           ) -> List[Tuple[Any, ...]]:
     """`mcr_native.first_cycle_from_replay`, extended with each card's own
     enchantment identity: `(id, upgrade, enchantment)` per recorded deck row,
     in first-cycle order.
@@ -1264,9 +1537,14 @@ def _first_cycle_instances(replay: Dict[str, Any]) -> List[Tuple[Any, ...]]:
     `enchantment` is `(id, level)` from the capture's own `card.enchantment`
     (`mcr_parser.McrDecoder.enchantment`), or `None` when the row carries
     none — the same identity `_same_card` now compares.
+
+    The rows index the deck the combat was built from, which is the
+    capture's deck after the one room-entry change it predates
+    (`mcr_native.combat_deck`, #3791: a Dowsing that became an Abundance
+    on entering this room, read off `root`).
     """
     player = mcr_native.require_single_player(replay["run"], "MCR replay")
-    deck = player["deck"]
+    deck = mcr_native.combat_deck(player["deck"], root)
     rows = mcr_native.first_cycle_rows_from_replay(replay)
 
     def enchantment(card: Dict[str, Any]) -> Optional[Tuple[str, int]]:
@@ -1313,7 +1591,7 @@ def _deal_uid_map(root: Dict[str, Any], replay: Dict[str, Any]):
     production rule refuses.  Cards created in combat share the allocator
     after the deck either way.
     """
-    instances = _first_cycle_instances(replay)
+    instances = _first_cycle_instances(replay, root)
     cards = {c["uid"]: c for pile in root["piles"].values() for c in pile}
     if "hopper_master_deck" in root["player"]:
         rows = mcr_native.first_cycle_rows_from_replay(replay)
@@ -1341,7 +1619,8 @@ def _deal_uid_map(root: Dict[str, Any], replay: Dict[str, Any]):
 
 
 def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
-                         replay: Dict[str, Any]) -> Dict[str, Any]:
+                         replay: Dict[str, Any],
+                         run_abandoned: bool = False) -> Dict[str, Any]:
     """Resolve every recorded input to a Rust action and apply it, in order.
 
     This is `rust_replay.recorded_witness` (the production review's replay,
@@ -1352,6 +1631,11 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
     completed-action checkpoint the capture carries is compared as the line
     goes (`rust_replay.NativeChecks`). No outcome from the `.run` is needed:
     the census certifies the replay against the capture alone.
+
+    `run_abandoned` is the one outside fact: the fight's `.run` says the
+    player abandoned the run at this fight's node (#3820). It is read only
+    where the inputs run out with Rust's combat live
+    (`_run_abandoned_mid_combat`).
 
     Returns the wire actions, Rust's own `differential_digest` after each,
     the terminal state, and the checkpoint verdict. Raises `LineDiverged`
@@ -1379,7 +1663,16 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
     actions: List[Dict[str, Any]] = []
     digests: List[str] = []
     nonrepresentative = 0
+    # Inputs the game cancelled: at its own combat end, or on arrival while
+    # a hand choice was open (`rust_replay.input_behind_open_choice`, #3756).
+    cancelled = 0
     consumed: set = set()
+    # Inputs waiting behind an open hook choice, as (index, event), and the
+    # events still to resolve: a waiting input goes back to the front once
+    # the choice is answered.
+    queued: List[Tuple[int, Dict[str, Any]]] = []
+    todo = collections.deque(enumerate(events))
+    not_compared: set = set()
     before = root
     # (step, compared against the post-apply state) of the last checkpoint
     # comparison, for the truncated-capture rule (#3277).
@@ -1393,6 +1686,7 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
         native = None
 
     def note_powers(checks: _CensusChecks) -> None:
+        not_compared.update(getattr(checks, "not_compared", ()))
         powers = getattr(checks, "power_mismatch", None)
         if checkpoint["powers"] is None and powers is not None:
             checkpoint["powers"] = {"step": len(actions),
@@ -1405,16 +1699,29 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
         return LineDiverged(len(actions), _turn(before), check, detail[:220],
                             checkpoint_mismatch=checkpoint["mismatch"],
                             native_checkpoints=validated,
-                            power_mismatch=checkpoint["powers"])
+                            power_mismatch=checkpoint["powers"],
+                            powers_not_compared=tuple(not_compared))
 
-    for index, event in enumerate(events):
+    while todo:
+        index, event = todo.popleft()
         if index in consumed:
             continue
         action = event.get("action", {}) or {}
         kind = action.get("type")
         if before["player"].get("over"):
             if kind in _RECORDED_INPUTS:
+                if _inputs_cancelled_at_combat_end(replay, native, before):
+                    cancelled += 1
+                    continue
                 raise diverged("premature_combat_end", kind)
+            continue
+        behind = rust_replay.input_behind_open_choice(before, kind)
+        if behind == rust_replay.CANCELLED_BY_OPEN_CHOICE:
+            # Never started natively: it owns no checkpoint either.
+            cancelled += 1
+            continue
+        if behind == rust_replay.QUEUED_BEHIND_OPEN_CHOICE:
+            queued.append((index, event))
             continue
         if native is not None:
             native.start(event)
@@ -1450,7 +1757,7 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
             if not offered and kind == "NetPlayCardAction":
                 # An immediate one-card choice belongs to the play wire
                 # (Burning Pact); consume only its adjacent recorded choice.
-                following = events[index + 1] if index + 1 < len(events) else {}
+                following_index, following = todo[0] if todo else (None, {})
                 selected = (following.get("result") or {}).get(
                     "combat_card_indexes", [])
                 if following.get("event_type") == "PlayerChoice" \
@@ -1461,7 +1768,14 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
                         raise diverged("card_identity", str(exc)) from exc
                     if rust_replay._play_is_offered(before, legal, combined):
                         wire = combined
-                        consumed.add(index + 1)
+                        consumed.add(following_index)
+                        offered = True
+                elif following.get("event_type") != "PlayerChoice":
+                    # No choice was recorded at all: the game resolved the
+                    # body's selection without asking.
+                    sole = _sole_offered_selection(before, legal, wire)
+                    if sole is not None:
+                        wire = sole
                         offered = True
             if not offered:
                 raise diverged("not_legal",
@@ -1488,7 +1802,11 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
                     wire = rust_replay._selection(
                         restoring, before, result, uid_map)
             except ValueError as exc:
-                raise diverged("selection", str(exc)) from exc
+                refused = _offered_answer_refusal(restoring)
+                raise diverged(
+                    "selection",
+                    str(exc) + ("; Rust refuses the answers it offers: "
+                                + refused if refused else "")) from exc
         elif event.get("event_type") in _NO_DECISION_EVENTS \
                 or kind == "NetReadyToBeginEnemyTurnAction":
             # A HookAction may name the AutoPost dispatch checkpoint the
@@ -1533,21 +1851,68 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
                 # the state after the whole apply (not a staged one).
                 last_compare = (len(actions), played is None)
             note_powers(checks)
+        if queued:
+            # The choice the inputs waited behind has just been answered.
+            if before["player"].get("pending"):
+                raise diverged(
+                    "not_legal",
+                    f"{queued[0][1]['action']['type']} at input "
+                    f"{queued[0][0]} waits behind a second open choice")
+            todo.extendleft(reversed(queued))
+            queued = []
+    if queued:
+        raise diverged(
+            "not_legal",
+            f"{queued[0][1]['action']['type']} at input {queued[0][0]} waits "
+            "behind a choice the capture never answers")
     if not before["player"].get("over"):
         # #3277: a capture archived mid-fight, proved by its own evidence.
         shape = None if native is None else _capture_ends_mid_combat(
             replay, native, before, last_compare == (len(actions), True))
+        note = ""
+        turn_start = None if native is None or shape is not None \
+            else _final_player_turn_start(replay, native, actions)
+        turn_start_agreed = False
+        if turn_start is not None:
+            # #3764: the line stops after an end turn. The capture's final
+            # turn-start checksum is compared like any other checkpoint;
+            # only agreement on a live combat is a truncation.
+            full_state = turn_start["full_state"]
+            try:
+                check_native_checkpoint(before, full_state)
+            except _CHECKPOINT_ERRORS as exc:
+                note = ("; the capture's final turn-start checksum differs "
+                        f"from Rust's state: {exc}")
+            else:
+                not_compared.update(powers_not_compared(full_state))
+                if checkpoint["powers"] is None:
+                    rows = power_mismatch_rows(before, full_state)
+                    if rows:
+                        checkpoint["powers"] = {"step": len(actions),
+                                                "mismatches": rows}
+                turn_start_agreed = True
+                if _native_combat_live(turn_start):
+                    shape = TRUNCATED_AT_PLAYER_TURN_START
+        if shape is None and run_abandoned and native is not None \
+                and _run_abandoned_mid_combat(replay, native, before,
+                                              turn_start, turn_start_agreed):
+            shape = TRUNCATED_RUN_ABANDONED
         if shape is not None:
             truncated = CaptureTruncated(
                 len(actions), _turn(before), "capture_truncated",
-                f"capture ends mid-fight ({shape}): its final checkpoint "
-                "shows a living enemy and player",
+                ("the run was abandoned inside this fight: the capture "
+                 "stops with a living enemy and every checkpoint it holds "
+                 "agreed" if shape == TRUNCATED_RUN_ABANDONED else
+                 f"capture ends mid-fight ({shape}): its final checkpoint "
+                 "shows a living enemy and player"),
                 checkpoint_mismatch=None, native_checkpoints=native.validated,
-                power_mismatch=checkpoint["powers"])
+                power_mismatch=checkpoint["powers"],
+                powers_not_compared=tuple(not_compared))
             truncated.shape = shape
             raise truncated
         raise diverged("combat_not_complete",
-                       "recorded inputs ended before the engine's combat")
+                       "recorded inputs ended before the engine's combat"
+                       + note)
     if native is not None:
         try:
             native.finish()
@@ -1559,9 +1924,11 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
         "step_digests": digests,
         "terminal": _terminal(before),
         "nonrepresentative_uids": nonrepresentative,
+        "cancelled_inputs": cancelled,
         "native_checkpoints": checkpoint["validated"],
         "checkpoint_mismatch": checkpoint["mismatch"],
         "power_mismatch": checkpoint["powers"],
+        "powers_not_compared": sorted(not_compared),
     }
 
 
@@ -1682,6 +2049,15 @@ def discover_fights(captures: pathlib.Path) -> Dict[str, Any]:
     times; the LAST snapshot per (seed, start_time, global node) is the
     complete one. The FIRST save at that key is the node-entry save — later
     saves at the same node are mid-combat and break the deal map.
+
+    `fights` maps each key to the capture's PATH, not to its decoded replay
+    (#3756). A decoded replay carries a full native state per checksum, a
+    megabyte or so of Python objects, and a census needs one at a time:
+    holding all of them cost about 5.5 GB over the 5,000-fight site corpus,
+    enough for several concurrent censuses to starve the CI runner on the
+    same host. Every capture is still decoded here once, to read its key and
+    to count the ones that do not decode, and `run_census` decodes each
+    fight's own capture again when it reaches it.
     """
     saves = scan_saves(captures)
     first_save: Dict[Tuple[Any, Any, int], pathlib.Path] = {}
@@ -1691,7 +2067,7 @@ def discover_fights(captures: pathlib.Path) -> Dict[str, Any]:
         first_save.setdefault(key, save["path"])
         run_saves.setdefault((save["seed"], save["start_time"]), []).append(save)
 
-    fights: Dict[Tuple[Any, Any, int], Tuple[pathlib.Path, Dict[str, Any]]] = {}
+    fights: Dict[Tuple[Any, Any, int], pathlib.Path] = {}
     skipped: Dict[str, int] = {}
     for path in sorted(captures.glob("*/*_mcr_*.mcr")):
         try:
@@ -1706,7 +2082,7 @@ def discover_fights(captures: pathlib.Path) -> Dict[str, Any]:
             continue
         run = replay["run"]
         key = (run["rng"]["seed"], run["start_time"], global_node_index(run))
-        fights[key] = (path, replay)
+        fights[key] = path
     return {"fights": fights, "first_save": first_save,
             "run_saves": run_saves, "skipped": skipped, "saves": len(saves)}
 
@@ -1715,6 +2091,15 @@ def upload_sidecar_path(save_path: pathlib.Path) -> pathlib.Path:
     """The sidecar `import-uploads` writes beside an upload's capture run."""
     return save_path.with_name(
         save_path.name.replace("_save_", "_upload_", 1)).with_suffix(".json")
+
+
+def upload_sidecar_record(save_path: pathlib.Path) -> Dict[str, Any]:
+    """An imported upload's `_upload_` sidecar, or `{}` for any other save."""
+    sidecar = upload_sidecar_path(save_path)
+    if not sidecar.is_file():
+        return {}
+    recorded = json.loads(sidecar.read_text())
+    return recorded if isinstance(recorded, dict) else {}
 
 
 def entry_input(save_path: pathlib.Path) -> str:
@@ -1737,7 +2122,8 @@ def derive_encounter(save: Dict[str, Any], key, spath: pathlib.Path,
 
     An imported upload (#2915) names its encounter in a sidecar instead: its
     capture run's map does not carry the room kind, and the `.run` the import
-    resolved it against already names the fight.
+    resolved it against already names the fight, an event-room one included
+    (`upload_combat_room`, #3756).
     """
     sidecar = upload_sidecar_path(spath)
     if sidecar.is_file():
@@ -1855,6 +2241,21 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
     row["stage"] = "rooted"
     row["root_source"] = "rust_opening"
     row.update(opening_checkpoint(document, replay, recorded))
+    # #3756: the verdict exists only here, where Rust's opening was built
+    # and compared. A won-at-open capture refused before this point keeps
+    # its refusal and stays eligible: there the engine has shown nothing.
+    won_at_open = capture_won_at_open(replay) and "opening_checkpoint" in row
+    if won_at_open:
+        row["won_at_open"] = (WON_AT_OPEN_MATCH
+                              if row["opening_checkpoint"] == "match"
+                              else WON_AT_OPEN_MISMATCH)
+    # #3820: the same judgement for a capture that stops before the first
+    # input with the fight still on.
+    no_input = capture_has_no_input(replay) and "opening_checkpoint" in row
+    if no_input:
+        row["no_recorded_input"] = (WON_AT_OPEN_MATCH
+                                    if row["opening_checkpoint"] == "match"
+                                    else WON_AT_OPEN_MISMATCH)
     document, row["reset_order"] = with_native_reset_order(document, replay)
     row["entry_digest"] = canonical_document.differential_digest(document)
     row["_document"] = document
@@ -1875,12 +2276,21 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
                    rust_detail=detail[:220], rust_missing=missing,
                    rust_class=rust_refusal_class(refusal, missing))
         return row
+    if won_at_open or no_input:
+        # No recorded input, so no line to replay, whatever admission said.
+        return row
 
+    # #3820: the `.run` fact is offered only to a fight whose opening agreed,
+    # so an opening mismatch stays a failure whatever the run did next.
+    abandoned = (upload_sidecar_record(spath).get(RUN_ABANDONED_KEY) is True
+                 and row.get("opening_checkpoint") == "match")
     try:
-        line = replay_recorded_line(session, document, replay)
+        line = replay_recorded_line(session, document, replay,
+                                    run_abandoned=abandoned)
     except CaptureTruncated as exc:
         row.update(truncated_row_fields(row, exc))
-        row.update(power_check_fields(row, exc.power_mismatch))
+        row.update(power_check_fields(row, exc.power_mismatch,
+                                      exc.powers_not_compared))
         return row
     except LineDiverged as exc:
         row.update(human="diverged",
@@ -1888,7 +2298,8 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
                    human_class=f"diverged:{exc.check}",
                    human_step=exc.step)
         row.update(divergence_checkpoint_verdict(row, exc))
-        row.update(power_check_fields(row, exc.power_mismatch))
+        row.update(power_check_fields(row, exc.power_mismatch,
+                                      exc.powers_not_compared))
         return row
     except Exception as exc:  # noqa: BLE001 - a transport fault is reported
         row.update(human="error",
@@ -1902,8 +2313,11 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
                nonrepresentative_uids=line["nonrepresentative_uids"],
                native_checkpoints=line["native_checkpoints"])
     row["_line"] = line
+    if line.get("cancelled_inputs"):
+        row["cancelled_inputs"] = line["cancelled_inputs"]
 
-    row.update(power_check_fields(row, line["power_mismatch"]))
+    row.update(power_check_fields(row, line["power_mismatch"],
+                                  line.get("powers_not_compared", ())))
     row.update(certification_verdict(row, line, powers_verdict))
     return row
 
@@ -1915,6 +2329,25 @@ def census_row(key, capture: pathlib.Path, replay: Dict[str, Any],
 #: for stays eligible, so the failure shows in the headline.
 UNUSABLE_NO_COMBAT = "no_combat_in_capture"
 UNUSABLE_TRUNCATED = "capture_truncated"
+#: #3756: a fight won before any player input (`capture_won_at_open`) has no
+#: line to certify. The census compares Rust's opening with the capture's one
+#: checksum instead, and records the result as the row's `won_at_open`. Only
+#: a match leaves the eligible count; a mismatch is an engine failure and
+#: stays in it.
+UNUSABLE_WON_AT_OPEN = "won_at_open"
+WON_AT_OPEN_MATCH = "opening_match"
+WON_AT_OPEN_MISMATCH = "opening_mismatch"
+#: #3820: a capture that stops before the first player input with the fight
+#: still on (`capture_has_no_input`) has no line either. It is judged the
+#: same way, on its one checksum, under the row's `no_recorded_input`
+#: (`WON_AT_OPEN_MATCH` / `WON_AT_OPEN_MISMATCH`); only a match is excluded.
+UNUSABLE_NO_INPUT = "no_recorded_input"
+#: #3820: the capture stops because the player abandoned the run inside the
+#: fight, and everything it does hold agreed (`_run_abandoned_mid_combat`).
+UNUSABLE_RUN_ABANDONED = "run_abandoned"
+#: The `_upload_` sidecar key `import-uploads` sets, to true and only then,
+#: for a fight `upload_run_abandoned` names.
+RUN_ABANDONED_KEY = "run_abandoned_at_fight"
 
 
 def capture_holds_no_combat(replay: Dict[str, Any]) -> bool:
@@ -1925,6 +2358,59 @@ def capture_holds_no_combat(replay: Dict[str, Any]) -> bool:
     is a watcher copy taken at a node that held no fight (#3421).
     """
     return not replay.get("events") and not replay.get("checksums")
+
+
+def capture_won_at_open(replay: Dict[str, Any]) -> bool:
+    """True when the fight was won before the player could act (#3756).
+
+    The capture holds no recorded input and exactly one checksum, the opening
+    checkpoint, and in it the player lives and no enemy does: the roster died
+    inside turn one's start (a Fur Coat roster at 1 HP under a turn-start
+    damage relic is the observed case). There is no line to replay, so the
+    fight can never certify; what the capture does carry is the opening
+    state, and the census compares that (`WON_AT_OPEN_*`).
+
+    A capture archived on turn one with an enemy alive has the same shape
+    otherwise and is not this. Pets (Osty, relic pets) are the player's, not
+    enemies, as in the truncation rule's `_native_combat_live`.
+    """
+    checks = replay.get("checksums") or []
+    if replay.get("events") or len(checks) != 1:
+        return False
+    if checks[0].get("context") != OPENING_CHECKPOINT:
+        return False
+    creatures = (checks[0].get("full_state") or {}).get("creatures")
+    if not isinstance(creatures, list):
+        return False
+    pets = ("OSTY",) + RELIC_PET_MONSTER_IDS
+    players = [c for c in creatures if c.get("player_id") is not None
+               and c.get("monster_id") is None]
+    enemies = [c for c in creatures if c.get("monster_id")
+               and c.get("player_id") is None
+               and c.get("monster_id") not in pets]
+    return (bool(players) and all(c.get("current_hp", 0) > 0 for c in players)
+            and not any(c.get("current_hp", 0) > 0 for c in enemies))
+
+
+def capture_has_no_input(replay: Dict[str, Any]) -> bool:
+    """True when the capture stops before the first input of a live fight.
+
+    No recorded event and exactly one checksum, the opening checkpoint, with
+    a living player and a living enemy in it (#3820). A fight cannot end
+    from there without an input the replay records (at the least an end
+    turn), so the capture is incomplete on its own evidence, whatever came
+    next: the file was archived on turn one, the run was abandoned there, or
+    the combat was ended from outside the replay. It is `capture_won_at_open`
+    with the enemy alive, and like it there is no line to replay; the census
+    compares Rust's opening with the one checksum.
+
+    A second checksum of any kind, or any event, is not this shape.
+    """
+    checks = replay.get("checksums") or []
+    if replay.get("events") or len(checks) != 1:
+        return False
+    return (checks[0].get("context") == OPENING_CHECKPOINT
+            and _native_combat_live(checks[0]))
 
 
 def with_unusable_capture(row: Dict[str, Any],
@@ -1944,10 +2430,20 @@ def unusable_reason(row: Dict[str, Any]) -> Optional[str]:
     """Why this fight is out of the eligible count, or None when it is in.
 
     A truncated capture (#3277) is real but incomplete, so it can never
-    certify. A row with an `unusable` mark holds no combat.
+    certify. A row with an `unusable` mark holds no combat. A fight won
+    before any input (#3756) is out once its opening matched the capture,
+    and so is one whose capture stops before the first input (#3820). A
+    capture that stops because the run was abandoned in the fight (#3820) is
+    truncated too, under its own reason: that one rests on the `.run`.
     """
     if row.get("human") == "truncated":
-        return UNUSABLE_TRUNCATED
+        return (UNUSABLE_RUN_ABANDONED
+                if row.get("truncation_shape") == TRUNCATED_RUN_ABANDONED
+                else UNUSABLE_TRUNCATED)
+    if row.get("won_at_open") == WON_AT_OPEN_MATCH:
+        return UNUSABLE_WON_AT_OPEN
+    if row.get("no_recorded_input") == WON_AT_OPEN_MATCH:
+        return UNUSABLE_NO_INPUT
     return row.get("unusable")
 
 
@@ -1980,13 +2476,18 @@ def truncated_row_fields(row: Dict[str, Any],
 
 
 def power_check_fields(row: Dict[str, Any],
-                       power_mismatch: Optional[Dict[str, Any]]
-                       ) -> Dict[str, Any]:
+                       power_mismatch: Optional[Dict[str, Any]],
+                       not_compared: Any = ()) -> Dict[str, Any]:
     """The player-power comparison of a replayed line, as typed row fields.
 
     `power_check` is `match` when every compared checkpoint's hero powers
     agree with Rust's player, `mismatch` at the first that does not, and
-    `no_native_checkpoints` for a capture without them. On a mismatch
+    `no_native_checkpoints` for a capture without them. Whatever the
+    verdict, `player_powers_not_compared` names every native power the
+    comparison left out at any checkpoint it read (#3764: a power whose only
+    hook runs after the combat, which Rust carries no state for); the key is
+    absent when it left none out, so `match` beside it reads "every power
+    that could be compared agrees". On a mismatch
     `power_mismatch_step` is that checkpoint's step (the opening is 0),
     `player_powers` every disagreeing row there (`{"class", "power",
     "native", "rust"}`), and `power_mismatch_class` / `power_mismatch_power`
@@ -1995,16 +2496,20 @@ def power_check_fields(row: Dict[str, Any],
     """
     if not row.get("checksummed"):
         return {"power_check": "no_native_checkpoints"}
+    left_out = sorted(set(not_compared)
+                      | set(row.get("opening_powers_not_compared") or ()))
+    out: Dict[str, Any] = (
+        {"player_powers_not_compared": left_out} if left_out else {})
     if row.get("opening_power_mismatches"):
         step, rows = 0, row["opening_power_mismatches"]
     elif power_mismatch is not None:
         step, rows = power_mismatch["step"], power_mismatch["mismatches"]
     else:
-        return {"power_check": "match"}
-    return {"power_check": "mismatch", "power_mismatch_step": step,
-            "power_mismatch_class": rows[0]["class"],
-            "power_mismatch_power": rows[0]["power"],
-            "player_powers": rows}
+        return dict(out, power_check="match")
+    return dict(out, power_check="mismatch", power_mismatch_step=step,
+                power_mismatch_class=rows[0]["class"],
+                power_mismatch_power=rows[0]["power"],
+                player_powers=rows)
 
 
 def _power_detail(row: Dict[str, Any]) -> str:
@@ -2110,19 +2615,60 @@ def divergence_checkpoint_verdict(row: Dict[str, Any],
     return out
 
 
+#: The in-memory payload a census row carries only for the fixture writers
+#: (`seed`, `add`): the root document and the replayed line.
+FIXTURE_PAYLOAD_KEYS = ("_document", "_line")
+
+
+def drop_fixture_payload(row: Dict[str, Any]) -> Dict[str, Any]:
+    """`row` without the documents only a fixture writer reads (#3756).
+
+    The census verdict is complete without them (`census_json` already
+    leaves every `_` key out of the file), and over a large corpus they are
+    most of what the rows hold.
+    """
+    for key in FIXTURE_PAYLOAD_KEYS:
+        row.pop(key, None)
+    return row
+
+
 def run_census(captures: pathlib.Path, binary: pathlib.Path,
                progress: bool = False,
-               powers_verdict: bool = POWERS_VERDICT_DEFAULT) -> Dict[str, Any]:
-    """Walk the whole corpus and return rows plus an aggregate summary."""
+               powers_verdict: bool = POWERS_VERDICT_DEFAULT,
+               keep_fixture_payload: bool = True) -> Dict[str, Any]:
+    """Walk the whole corpus and return rows plus an aggregate summary.
+
+    One capture is decoded at a time (`discover_fights`). A caller that only
+    reports the census passes `keep_fixture_payload=False`; `seed` needs the
+    payload and keeps the default.
+    """
     state = discover_fights(captures)
     session = EngineSession(binary)
     rows: List[Dict[str, Any]] = []
+    crashed: List[Dict[str, Any]] = []
     started = time.time()
     try:
-        for index, (key, (capture, replay)) in enumerate(
+        for index, (key, capture) in enumerate(
                 sorted(state["fights"].items())):
-            rows.append(census_row(key, capture, replay, state, session,
-                                   binary, powers_verdict=powers_verdict))
+            # Decoded here, one fight at a time, and released with the loop
+            # variable: `discover_fights` already decoded this file once.
+            replay = mcr_parser.decode(capture)
+            try:
+                row = census_row(key, capture, replay, state, session,
+                                 binary, powers_verdict=powers_verdict)
+                rows.append(row if keep_fixture_payload
+                            else drop_fixture_payload(row))
+            except (RuntimeError, BrokenPipeError) as exc:
+                # The engine process died on this fight (a panic or a stack
+                # overflow, not a refusal). Name the fight, start a fresh
+                # process, and carry on: one crash must not hide the corpus.
+                crashed.append({"seed": key[0], "node": key[-1],
+                                "capture": str(capture),
+                                "error": str(exc)[:120]})
+                print(f"  ENGINE CRASHED: seed {key[0]} node {key[-1]} "
+                      f"{capture.name}", file=sys.stderr, flush=True)
+                session.close()
+                session = EngineSession(binary)
             if progress and (index + 1) % 50 == 0:
                 print(f"  {index + 1}/{len(state['fights'])} "
                       f"({time.time() - started:.0f}s)", file=sys.stderr,
@@ -2131,6 +2677,7 @@ def run_census(captures: pathlib.Path, binary: pathlib.Path,
         session.close()
     return {
         "captures": str(captures),
+        "crashed": crashed,
         "build": BUILD_ID,
         "root_with": "rust_opening",
         "powers_verdict": powers_verdict,
@@ -2185,6 +2732,11 @@ def census_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
             "refusal_class"),
         "rooted": len(rooted),
         "opening_checkpoints": _tally(rooted, "opening_checkpoint"),
+        # #3756: fights won before any input, by what their one checksum
+        # said about Rust's opening.
+        "won_at_open": _tally(rooted, "won_at_open"),
+        # #3820: captures that stop before the first input, the same way.
+        "no_recorded_input": _tally(rooted, "no_recorded_input"),
         # I6: the unspliced opening's consumed counters against the capture's.
         "opening_counters_checked": len(checksummed),
         "opening_counters_match": sum(
@@ -2238,6 +2790,14 @@ def census_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         "power_mismatch_powers": _tally(admitted, "power_mismatch_power"),
         "lockstep_ok_with_power_mismatch": sum(
             1 for r in certified if r.get("power_check") == "mismatch"),
+        # #3764: powers the comparison leaves out, by name, per fight.
+        "powers_not_compared": dict(sorted(
+            collections.Counter(
+                name for r in admitted
+                for name in r.get("player_powers_not_compared") or ()
+            ).items(), key=lambda item: (-item[1], item[0]))),
+        "lockstep_ok_with_powers_not_compared": sum(
+            1 for r in certified if r.get("player_powers_not_compared")),
     }
 
 
@@ -2288,18 +2848,37 @@ def census_markdown(census: Dict[str, Any]) -> str:
     lines.append(f"| opening matches the capture's first checkpoint | "
                  f"{summary['opening_checkpoints'].get('match', 0)} / "
                  f"{summary['opening_counters_checked']} |")
+    won = summary.get("won_at_open") or {}
+    if won:
+        lines.append(f"| won before any player input: opening matches its "
+                     f"one checkpoint (not certifiable, #3756) | "
+                     f"{won.get(WON_AT_OPEN_MATCH, 0)} / "
+                     f"{sum(won.values())} |")
+    unplayed = summary.get("no_recorded_input") or {}
+    if unplayed:
+        lines.append(f"| capture stops before the first input: opening "
+                     f"matches its one checkpoint (not certifiable, #3820) | "
+                     f"{unplayed.get(WON_AT_OPEN_MATCH, 0)} / "
+                     f"{sum(unplayed.values())} |")
     lines.append(f"| **Rust admits the root** | "
                  f"**{summary['rust_admitted']}** |")
     lines.append(f"| human line replays exactly through Rust | "
                  f"{summary['human'].get('exact', 0)} |")
     lines.append(f"| capture ends mid-fight (truncated, uncertified, "
                  f"#3277) | {summary.get('capture_truncated', 0)} |")
+    abandoned = (summary.get("capture_truncated_shapes") or {}).get(
+        TRUNCATED_RUN_ABANDONED, 0)
+    if abandoned:
+        lines.append(f"| of those, the run was abandoned inside the fight "
+                     f"(#3820) | {abandoned} |")
     lines.append(f"| **certified: every native checkpoint agrees** | "
                  f"**{summary['lockstep'].get('lockstep_ok', 0)}** |")
     lines.append(f"| completed-action checkpoints validated | "
                  f"{summary['native_checkpoints_validated']} |")
     lines.append(f"| certified, but player powers disagree (#3029) | "
                  f"{summary['lockstep_ok_with_power_mismatch']} |")
+    lines.append(f"| certified, with a player power not compared (#3764) | "
+                 f"{summary.get('lockstep_ok_with_powers_not_compared', 0)} |")
     lines.append(f"| native checkpoint mismatch (exact lines + before a "
                  f"divergence) | "
                  f"{summary['lockstep'].get('checkpoint_mismatch', 0)} + "
@@ -2336,6 +2915,8 @@ def census_markdown(census: Dict[str, Any]) -> str:
           summary["power_mismatch_classes"], "class")
     table("Player-power mismatches, first power",
           summary["power_mismatch_powers"], "power")
+    table("Player powers not compared: post-combat only, no Rust state "
+          "(#3764)", summary.get("powers_not_compared") or {}, "power")
     table("Certified characters", summary["lockstep_characters"], "character")
     table("Certified encounters", summary["lockstep_encounters"], "encounter")
     return "\n".join(lines)
@@ -2878,6 +3459,99 @@ def _upload_records(run_dir: pathlib.Path) -> List[Dict[str, Any]]:
     return records
 
 
+COMBAT_ROOM_TYPES = ("monster", "elite", "boss")
+
+
+def upload_combat_room(point: Dict[str, Any], fight: Any,
+                       ) -> Tuple[Optional[str], Optional[str]]:
+    """`(room type, None)` for the combat an upload's `.run` node names, or
+    `(None, skip reason)` (#3756).
+
+    The room type is what `sts-sim entry --node-type` takes. A fight at a
+    monster, elite or boss map point is that type. A fight at an `unknown`
+    point (`relay_parser` calls it `event`) is not: the point either rolled a
+    plain combat room (`rooms == [monster]`) or hosts an event that starts a
+    fight (`rooms == [event, monster]`), and either way the combat reaches the
+    opening under its own room's type (`entry/node.rs`, `map_point_type`). The
+    watcher census reads that room from a LATER save's `pre_finished_room`,
+    which an upload does not have; the `.run` node records the same room, with
+    the encounter it fought, and `review_provenance._encounter_matches` has
+    already required the capture's first checkpoint to hold only that
+    encounter's monsters.
+
+    So an `unknown` point is imported when its `.run` node names exactly one
+    combat room and that room is the fight `relay_parser` parsed. A node with
+    no combat room, or with several (nothing would say which one a capture
+    recorded), is skipped by name.
+    """
+    if fight.node_type in COMBAT_ROOM_TYPES:
+        return fight.node_type, None
+    if fight.node_type != "event":
+        return None, f"node_type_{fight.node_type}"
+    combats = [room for room in point.get("rooms") or []
+               if isinstance(room, dict)
+               and room.get("room_type") in COMBAT_ROOM_TYPES]
+    if len(combats) != 1:
+        return None, f"event_node_names_{len(combats)}_combat_rooms"
+    if combats[0].get("model_id") != fight.encounter_id:
+        return None, "event_node_room_is_not_the_parsed_fight"
+    return combats[0]["room_type"], None
+
+
+def upload_run_abandoned(raw_run: Dict[str, Any], node_index: int,
+                         fight: Any) -> bool:
+    """Whether the `.run` says the player abandoned the run at this fight.
+
+    Three facts of the run file, all required (#3820): `was_abandoned` is
+    true; the fight's node is the last map point the run reached; and
+    `killed_by_encounter` names the fight's encounter. The game sets the
+    first from `RunManager.IsAbandoned`, which only `AbandonInternal` raises
+    (`<AbandonInternal>d__216::MoveNext`, v0.111.0 RVA 0x30b4c0,
+    IL_0066-0067).
+
+    They place the abandon at the fight's node, not inside the fight: a run
+    abandoned at the rewards of a fight it had just won records the same
+    three (the site corpus has two, both complete captures). Whether the
+    fight was still on is the capture's to say, and the census asks it
+    (`_run_abandoned_mid_combat`).
+
+    The census cannot see the run file: it reads the capture, and the
+    capture of an abandoned fight simply stops. So the import, which already
+    pairs the capture with its `.run`, carries the answer in the sidecar.
+    """
+    points = [point for act in raw_run.get("map_point_history") or []
+              for point in act]
+    return (raw_run.get("was_abandoned") is True
+            and node_index == len(points) - 1
+            and bool(fight.encounter_id)
+            and raw_run.get("killed_by_encounter") == fight.encounter_id)
+
+
+def upload_sidecar(point: Dict[str, Any], fight: Any, kind: str,
+                   run_abandoned: bool = False) -> Dict[str, Any]:
+    """The `_upload_` sidecar for one imported fight.
+
+    `encounter` and `node_type` are what `derive_encounter` returns. A fight
+    at an `unknown` map point also records that point type and the event room
+    beside the combat, if the node has one: its capture run is the node-entry
+    snapshot, taken before the event ran. `run_abandoned`
+    (`upload_run_abandoned`) adds `RUN_ABANDONED_KEY`, and only when true, so
+    every other sidecar is what it was.
+    """
+    sidecar = {"encounter": fight.encounter_id, "node_type": kind,
+               "entry_input": CAPTURE_RUN_INPUT,
+               "source": "uploaded .run (#2915)"}
+    if run_abandoned:
+        sidecar[RUN_ABANDONED_KEY] = True
+    if fight.node_type == "event":
+        sidecar["map_point_type"] = point.get("map_point_type")
+        sidecar["event"] = next(
+            (room.get("model_id") for room in point.get("rooms") or []
+             if isinstance(room, dict) and room.get("room_type") == "event"),
+            None)
+    return sidecar
+
+
 def import_uploads(archive: pathlib.Path, history: pathlib.Path,
                    captures: pathlib.Path) -> Dict[str, Any]:
     """Write the mod uploader's archived fights into the corpus (#2915).
@@ -2896,8 +3570,9 @@ def import_uploads(archive: pathlib.Path, history: pathlib.Path,
     `census` and `seed` then treat an upload like any other capture, and
     `verify` finds it by sha256. Nothing is guessed: a fight is skipped, by
     name, when its provenance does not resolve, when the adapter rejects its
-    entry projection, when it is an event combat, or when the watcher corpus
-    already holds a capture of the same fight.
+    entry projection, when its `.run` node does not name exactly one combat
+    room (`upload_combat_room`), or when the watcher corpus already holds a
+    capture of the same fight.
     """
     import review_provenance  # noqa: PLC0415 - the review pipeline's resolver
     import rust_review  # noqa: PLC0415
@@ -2911,7 +3586,7 @@ def import_uploads(archive: pathlib.Path, history: pathlib.Path,
             continue
         runs.setdefault((raw.get("seed"), raw.get("start_time")), path)
     watcher = {
-        key for key, (path, _replay) in discover_fights(captures)["fights"].items()
+        key for key, path in discover_fights(captures)["fights"].items()
         if path.parent != out}
 
     written: List[Dict[str, Any]] = []
@@ -2937,9 +3612,11 @@ def import_uploads(archive: pathlib.Path, history: pathlib.Path,
         if run_path is None:
             skip("run_file_missing" if identity else "no_decodable_capture")
             continue
+        raw_run = json.loads(run_path.read_text())
+        points = [point for act in raw_run.get("map_point_history") or []
+                  for point in act]
         provenance = review_provenance.analyze_bundle(
-            json.loads(run_path.read_text()),
-            {"schema_version": 2, "fights": records})
+            raw_run, {"schema_version": 2, "fights": records})
         for issue in provenance.issues:
             if issue.reason == "replay_decode_failed":
                 skip(issue.reason)
@@ -2956,10 +3633,11 @@ def import_uploads(archive: pathlib.Path, history: pathlib.Path,
             except (ValueError, KeyError, TypeError, NotImplementedError) as exc:
                 skip(f"translation_refused: {type(exc).__name__}")
                 continue
-            if parsed.node_type not in ("monster", "elite", "boss"):
-                # Event combats need the census's later-save lookup, which an
-                # upload has no saves for; the sidecar names room fights only.
-                skip(f"node_type_{parsed.node_type}")
+            point = (points[parsed.node_index]
+                     if 0 <= parsed.node_index < len(points) else {})
+            kind, reason = upload_combat_room(point, parsed)
+            if kind is None:
+                skip(reason)
                 continue
             node = global_node_index(capture_run)
             key = (capture_run["rng"]["seed"], capture_run["start_time"], node)
@@ -2976,14 +3654,13 @@ def import_uploads(archive: pathlib.Path, history: pathlib.Path,
             save_path = out / f"{stem}_save_{digest}.save"
             save_path.write_text(json.dumps(capture_run, indent=1) + "\n",
                                  encoding="utf-8")
-            upload_sidecar_path(save_path).write_text(json.dumps({
-                "encounter": parsed.encounter_id,
-                "node_type": parsed.node_type,
-                "entry_input": "--capture-run",
-                "source": "uploaded .run (#2915)"}, indent=1) + "\n",
+            upload_sidecar_path(save_path).write_text(json.dumps(
+                upload_sidecar(point, parsed, kind, upload_run_abandoned(
+                    raw_run, parsed.node_index, parsed)), indent=1) + "\n",
                 encoding="utf-8")
             written.append({"id": fixture_id(*key), "character": run.character,
-                            "node_type": parsed.node_type,
+                            "node_type": kind,
+                            "map_point_type": point.get("map_point_type"),
                             "encounter": parsed.encounter_id})
     return {"archive": str(archive), "out": str(out), "written": written,
             "skipped": dict(sorted(skipped.items()))}
@@ -3953,6 +4630,58 @@ def self_test() -> None:
     _expect_divergence([_play(5)], "card_identity")
     _expect_divergence([_play(0)], "combat_not_complete")
     _expect_divergence([_play(0), _play(1), _play(2)], "premature_combat_end")
+
+    # #3756: inputs queued behind the killing blow are cancelled queue
+    # entries only when the capture proves the game's combat ended too.
+    class _Cursor:
+        def __init__(self, total, cursor, owner=None):
+            self.checks, self.cursor, self.owner = [{}] * total, cursor, owner
+
+    def _final(enemy_hp, hero_hp=5):
+        return {"checksums": [{"full_state": {"creatures": [
+            {"player_id": 1, "current_hp": hero_hp},
+            {"monster_id": "OSTY", "current_hp": 3},
+            {"monster_id": "NIBBIT", "current_hp": enemy_hp}]}}]}
+
+    won = {"player": {"hp": 5, "over": True}}
+    assert _inputs_cancelled_at_combat_end(_final(0), _Cursor(2, 2), won)
+    for replay_, checks_, state_ in (
+            (_final(4), _Cursor(2, 2), won),             # an enemy still lives
+            (_final(0, hero_hp=0), _Cursor(2, 2), won),  # the player does not
+            (_final(0), _Cursor(2, 1), won),             # a checkpoint remains
+            (_final(0), _Cursor(0, 0), won),             # no checkpoints at all
+            (_final(0), None, won),                      # an earlier mismatch
+            (_final(0), _Cursor(2, 2, owner=("x",)), won),   # an action is open
+            (_final(0), _Cursor(2, 2), {"player": {"hp": 0, "over": True}}),
+            (_final(0), _Cursor(2, 2), {"player": {"hp": 5}}),
+            ({"checksums": []}, _Cursor(2, 2), won)):
+        assert not _inputs_cancelled_at_combat_end(replay_, checks_, state_)
+    # A recorded play with no recorded choice takes the one selection
+    # `legal` offers for it, and nothing when that is not unique.
+    pact_hand = {"piles": {"hand": [{"id": "BURNING_PACT", "uid": 6},
+                                    {"id": "DEFEND_IRONCLAD", "uid": 5}]}}
+    pact_legal = [{"kind": "play", "uid": 6, "selection": 5},
+                  {"kind": "play", "uid": 5}, {"kind": "end"}]
+    assert _sole_offered_selection(
+        pact_hand, pact_legal, {"kind": "play", "uid": 6}) == {
+            "kind": "play", "uid": 6, "selection": 5}
+    assert _sole_offered_selection(
+        pact_hand, pact_legal + [{"kind": "play", "uid": 6, "selection": 7}],
+        {"kind": "play", "uid": 6}) is None
+    assert _sole_offered_selection(
+        pact_hand, pact_legal, {"kind": "play", "uid": 6, "target": 0}) is None
+    assert _sole_offered_selection(
+        pact_hand, pact_legal, {"kind": "play", "uid": 5}) is None
+    # One offered selection that stands for two identical Hand cards is not
+    # a selection the game made without asking; nor is a card outside Hand.
+    twin_hand = {"piles": {"hand": pact_hand["piles"]["hand"]
+                           + [{"id": "DEFEND_IRONCLAD", "uid": 4}]}}
+    assert _sole_offered_selection(
+        twin_hand, pact_legal, {"kind": "play", "uid": 6}) is None
+    assert _sole_offered_selection(
+        pact_hand, [{"kind": "play", "uid": 6, "selection": 9}],
+        {"kind": "play", "uid": 6}) is None
+    print("self-test: cancelled trailing inputs and sole selections passed")
     _expect_divergence([{"event_type": "Mystery"}], "unsupported_event")
     _expect_divergence([_play(0)], "rust_apply_refused", refuse_apply=True)
     _expect_divergence([_play(0)], "root_refused", refuse_load=True)
@@ -4281,6 +5010,20 @@ def self_test() -> None:
             "`no_combat_in_capture` 1)") in report, report
     assert census_headline({"certified": 0, "eligible": 0}) == \
         "**certified / eligible: 0 / 0**"
+    # 5c. #3820: a capture that stops before the first input is out of the
+    # eligible count only when Rust's opening matched its one checksum, and
+    # an abandoned run is its own reason, apart from `capture_truncated`.
+    unplayed = {"stage": "rooted", "rust": "admitted",
+                "no_recorded_input": WON_AT_OPEN_MATCH}
+    assert unusable_reason(unplayed) == UNUSABLE_NO_INPUT
+    assert unusable_reason(
+        dict(unplayed, no_recorded_input=WON_AT_OPEN_MISMATCH)) is None
+    assert unusable_reason(
+        {"human": "truncated", "truncation_shape": TRUNCATED_RUN_ABANDONED}
+    ) == UNUSABLE_RUN_ABANDONED
+    assert unusable_reason(
+        {"human": "diverged", "truncation_shape": TRUNCATED_RUN_ABANDONED}
+    ) is None
 
     # 6. Each surface a refusal fixture can name, earliest first.
     surfaces = [
@@ -4308,6 +5051,18 @@ def self_test() -> None:
     print("self-test: registry and gate passed")
     print("self-test: recorded line decoder passed")
     print("self-test: certification tallies passed")
+    # #3756: a census holds one decoded capture at a time. The discovery
+    # result names paths, and a reporting census drops the fixture payload.
+    with tempfile.TemporaryDirectory() as raw:
+        empty = discover_fights(pathlib.Path(raw))
+    assert empty["fights"] == {} and empty["skipped"] == {} \
+        and empty["saves"] == 0
+    payload = {"seed": "S", "_document": {"a": 1}, "_line": {"b": 2},
+               "_capture_path": pathlib.Path("c.mcr")}
+    assert drop_fixture_payload(payload) is payload
+    assert payload == {"seed": "S", "_capture_path": pathlib.Path("c.mcr")}
+    assert drop_fixture_payload({"seed": "S"}) == {"seed": "S"}
+    print("self-test: census memory shape passed")
     print("self-test: all checks passed")
 
 
@@ -4357,6 +5112,12 @@ def main():
                              "every fixture's labels and files with what "
                              "`add` writes from the current census, including "
                              "fixtures the digest walk skips (#3270)")
+    parser.add_argument("--no-digests", dest="digests", action="store_false",
+                        help="verify: skip the digest walk and run the label "
+                             "pass alone. The label pass compares the same "
+                             "root, line, step digests and terminal, so this "
+                             "is one walk over the fixtures instead of two "
+                             "(the `rust port` lane's form)")
     parser.add_argument("--progress", action="store_true",
                         help="census: per-50-fight progress on stderr")
     parser.add_argument("--powers-verdict", action="store_true",
@@ -4389,6 +5150,9 @@ def main():
 
     if args.fixtures and (args.command != "census" or args.captures):
         parser.error("--fixtures is `census --fixtures`, without --captures")
+    if not args.digests and not args.labels:
+        parser.error("--no-digests with --no-labels leaves verify nothing "
+                     "that needs an engine")
 
     if args.command == "store-captures":
         report = store_captures(pathlib.Path(args.eval_dir).resolve(), corpus())
@@ -4412,7 +5176,8 @@ def main():
                 progress=args.progress, powers_verdict=args.powers_verdict)
         else:
             census = run_census(corpus(), binary, progress=args.progress,
-                                powers_verdict=args.powers_verdict)
+                                powers_verdict=args.powers_verdict,
+                                keep_fixture_payload=args.command == "seed")
         if args.census_json:
             pathlib.Path(args.census_json).write_text(
                 json.dumps(census_json(census), indent=1) + "\n",
@@ -4441,11 +5206,12 @@ def main():
         report: Dict[str, Any] = {
             "pairs": str(captures) if captures else "stored",
             "stored_pair_problems": stored_pair_problems(eval_dir)}
-        report.update(verify_fixtures(eval_dir, captures, binary))
+        if args.digests:
+            report.update(verify_fixtures(eval_dir, captures, binary))
         if args.labels:
             report.update(verify_labels(eval_dir, captures, binary))
         print(json.dumps(report, indent=1))
-        sys.exit(1 if report["stored_pair_problems"] or report["problems"]
+        sys.exit(1 if report["stored_pair_problems"] or report.get("problems")
                  or report.get("label_differences") else 0)
 
     if args.command == "add":

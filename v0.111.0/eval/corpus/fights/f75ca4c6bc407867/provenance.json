@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Z4B4VQW0HN99",
+ "node": 20,
+ "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "6fb3d12bf379b58f85175a7f32193ac43875d013abd57d3e2a0ed3c414b66f21",
+ "save_sha256": "59b09b3d410aae2154202a26989575210f7540918828071f42473b4041ead46a",
+ "entry_digest": "a0ae1852a2c79184e169b1ee6667064326c4f2ab0a43b345ec2af8cb20f1d0ab",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

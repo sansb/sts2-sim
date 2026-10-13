@@ -15,6 +15,7 @@ Usage:
 
 from __future__ import annotations
 
+import itertools
 import json
 import sys
 from collections import Counter, defaultdict
@@ -220,6 +221,112 @@ def _persistent_card_historical_entry_props(
         # value at every historical entry where that object existed.
         return card.get("props"), False
     return None, False
+
+
+# CardModel::get_MaxUpgradeLevel (v0.111.0 sts2.dll, RVA 0x7ced7) returns 1,
+# and each of its 41 overrides returns 0 (curses, statuses, Byrdonis Egg);
+# CardModel::get_IsUpgradable (RVA 0x7cee5) is CurrentUpgradeLevel <
+# MaxUpgradeLevel. No deck card on this build passes level 1.
+_MAX_UPGRADE_LEVEL = 1
+# Above this many unknown-start copies the ledger refuses to enumerate.
+_LEDGER_UNKNOWN_START_LIMIT = 10
+
+
+def own_node_precedes_entry(point: dict) -> bool | None:
+    """Whether a node's own logged deck events can precede its combat.
+
+    ``False`` for a node with no event room: nothing happens at a combat
+    node before the combat, so every upgrade, downgrade and removal logged
+    there (a Whetstone or War Paint relic reward, an in-combat theft)
+    follows the entry. ``None`` for a node that hosts an event room beside
+    the combat: the `.run` does not order the event's effects against the
+    fight.
+    """
+    rooms = point.get("rooms") or []
+    if any(room.get("room_type") == "event" for room in rooms):
+        return None
+    return False
+
+
+def _ledger_entry_levels(rows: list[dict], events: list[tuple[int, int]],
+                         fight_node: int,
+                         own_node_ordered: bool) -> tuple[int, ...] | None:
+    """Exact entry levels of one card id's present copies, or ``None``.
+
+    ``rows`` are the id's endpoint copies (final deck and dated removals):
+    ``alive_from``/``alive_to`` node bounds (inclusive; ``alive_to`` is
+    ``None`` for a survivor), the endpoint level ``end``, the acquisition
+    level ``start`` (``None`` when the `.run` does not record it) and
+    ``present`` (in the deck entering this fight). ``events`` are the id's
+    dated ``(node, +1 | -1)`` upgrade and downgrade events.
+
+    Every assignment of events to copies that reproduces all endpoint levels
+    is enumerated forward in node order. The answer is exact only when all
+    of them agree on each present copy's level at the fight's entry;
+    otherwise (a fork, or no assignment at all) the caller flags the copies.
+    Same-node events are tried in every order, and at a node whose own
+    events are not ordered against its combat (``own_node_ordered`` false)
+    the entry is tried at every point among them.
+    """
+
+    options = []
+    unknown = 0
+    for row in rows:
+        if row["start"] is None:
+            unknown += 1
+            options.append(tuple(range(_MAX_UPGRADE_LEVEL + 1)))
+        else:
+            options.append((row["start"],))
+    if unknown > _LEDGER_UNKNOWN_START_LIMIT:
+        return None
+    ends = tuple(row["end"] for row in rows)
+    if any(not 0 <= level <= _MAX_UPGRADE_LEVEL
+           for level in ends + tuple(v for o in options for v in o)):
+        return None
+
+    def snapshot(states):
+        return {(levels, levels if entry is None else entry)
+                for levels, entry in states}
+
+    def apply(states, node, delta):
+        out = set()
+        for levels, entry in states:
+            for index, row in enumerate(rows):
+                if row["alive_from"] > node or (
+                        row["alive_to"] is not None
+                        and row["alive_to"] < node):
+                    continue
+                level = levels[index] + delta
+                if not 0 <= level <= _MAX_UPGRADE_LEVEL:
+                    continue
+                out.add((levels[:index] + (level,) + levels[index + 1:],
+                         entry))
+        return out
+
+    states = {(levels, None) for levels in itertools.product(*options)}
+    by_node: dict[int, list[int]] = {}
+    for node, delta in events:
+        by_node.setdefault(node, []).append(delta)
+    for node in sorted(by_node):
+        if node > fight_node or (node == fight_node and own_node_ordered):
+            states = snapshot(states)
+        unordered_own = node == fight_node and not own_node_ordered
+        reached = set()
+        for order in set(itertools.permutations(by_node[node])):
+            current = states
+            for delta in order:
+                if unordered_own:
+                    current = current | snapshot(current)
+                current = apply(current, node, delta)
+            reached |= current
+        states = reached
+    signatures = {
+        tuple(entry[index] for index, row in enumerate(rows)
+              if row["present"])
+        for levels, entry in snapshot(states) if levels == ends}
+    if len(signatures) != 1:
+        return None
+    return next(iter(signatures))
 
 
 def parse_run(path: str) -> RunSummary:
@@ -444,10 +551,12 @@ def parse_run(path: str) -> RunSummary:
     # ---- Upgrade dating (upgraded_cards per node + pick levels) ----
     # card_choices record the level at pick time (badge/pre-upgraded
     # rewards); rest-site smiths log upgraded_cards by id. A fight at node
-    # i sees an upgrade iff its event node < i. When the id has a single
-    # copy the dating is exact; with several copies the ARRAY SLOT that
-    # got upgraded is unknowable => flagged (upgrade level is in
-    # CardModel.CompareTo, so slot assignment changes shuffle order).
+    # i sees an upgrade iff its event node < i (its own node's upgrade is
+    # a reward granted after the combat, `own_node_precedes_entry`). Which
+    # copy each event reached is settled by `_ledger_entry_levels`; when
+    # the copies' entry levels fork, the ARRAY SLOT that got upgraded is
+    # unknowable => flagged (upgrade level is in CardModel.CompareTo, so
+    # slot assignment changes shuffle order).
     pick_level: dict[tuple, int] = {}
     smith_nodes: list[int] = []
     upgrade_events: list = []                    # (node_index, card_id)
@@ -464,6 +573,32 @@ def parse_run(path: str) -> RunSummary:
         for cid in ps.get("upgraded_cards", []):
             upgrade_events.append((i, cid))
     dated_upgrades: Counter = Counter(cid for _, cid in upgrade_events)
+    # Reflections' Touch a Mirror logs `downgraded_cards` by id beside its
+    # `upgraded_cards` (the only source in 1,609 local runs, 50 nodes). A
+    # downgrade is a dated level event exactly like an upgrade.
+    level_events: dict[str, list[tuple[int, int]]] = {}
+    for i, cid in upgrade_events:
+        level_events.setdefault(cid, []).append((i, 1))
+    for i, pt in enumerate(history):
+        for cid in pt["player_stats"][0].get("downgraded_cards", []):
+            level_events.setdefault(cid, []).append((i, -1))
+    # Acquisition-level evidence per (id, node): the picked card_choices
+    # entry, the cards_gained snapshot and a transform's final card each
+    # serialize the level the copy had when it entered the deck.
+    acquired_levels: dict[tuple, set] = {}
+    for i, pt in enumerate(history):
+        ps = pt["player_stats"][0]
+        for ch in ps.get("card_choices", []):
+            if ch.get("was_picked"):
+                acquired_levels.setdefault((ch["card"]["id"], i), set()).add(
+                    ch["card"].get("current_upgrade_level", 0))
+        for c in ps.get("cards_gained", []):
+            acquired_levels.setdefault((c["id"], i), set()).add(
+                c.get("current_upgrade_level", 0))
+        for t in ps.get("cards_transformed", []):
+            c = t["final_card"]
+            acquired_levels.setdefault((c["id"], i), set()).add(
+                c.get("current_upgrade_level", 0))
     # per-id ledger: total final levels must be explained by pick levels
     # plus dated upgrade events; anything left has an unknown floor
     final_lvl: Counter = Counter()
@@ -588,6 +723,46 @@ def parse_run(path: str) -> RunSummary:
                 return e["id"], event_amount, False
         return e["id"], amount, True             # timing/amount ambiguous
 
+    # ---- Upgrade ledger rows (every endpoint copy of an id with events) ----
+    def ledger_start(cid, node):
+        if cid in undated:
+            # An unexplained endpoint level has no dated event to carry it.
+            return None
+        levels = set(acquired_levels.get((cid, node), ()))
+        if node == 0:
+            levels.add(0)                        # the starter deck
+        return next(iter(levels)) if len(levels) == 1 else None
+
+    ledger_rows: dict[str, list[dict]] = {}
+    for card_index, c in enumerate(final_deck):
+        if c["id"] not in level_events:
+            continue
+        if card_index in byrdpip_auto_indexes:
+            # A Swoop only from Byrdpip's acquisition node, created level 1.
+            node = byrdpip_floor - 1
+            start = (None if card_index in byrdpip_malformed_indexes else 1)
+        else:
+            node = c["floor_added_to_deck"] - 1
+            start = ledger_start(c["id"], node)
+        ledger_rows.setdefault(c["id"], []).append({
+            "key": ("final", card_index), "alive_from": node,
+            "alive_to": None, "start": start,
+            "end": c.get("current_upgrade_level", 0)})
+    for removal_index, (j, rc) in enumerate(removal_events):
+        if rc.get("id") not in level_events:
+            continue
+        if removal_index in byrdpip_auto_removal_indexes:
+            node = byrdpip_floor - 1
+            start = (None if removal_index
+                     in byrdpip_malformed_removal_indexes else 1)
+        else:
+            node = rc.get("floor_added_to_deck", 1) - 1
+            start = ledger_start(rc["id"], node)
+        ledger_rows.setdefault(rc["id"], []).append({
+            "key": ("removed", removal_index), "alive_from": node,
+            "alive_to": j, "start": start,
+            "end": rc.get("current_upgrade_level", 0)})
+
     # ---- Walk nodes, maintain running state ----
     # Potions: a full-belt picked reward replaces one occupied slot, but the
     # .run does not say which one.  Carry every ordered belt consistent with
@@ -651,6 +826,7 @@ def parse_run(path: str) -> RunSummary:
             ambiguous_ench = []
             ambiguous_props = []
             ambiguous_undated_upgrades = set()
+            ledger_key: dict[int, tuple] = {}
             fight_caveats = []
             for card_index, c in enumerate(final_deck):
                 if c["floor_added_to_deck"] >= floor_no:
@@ -707,6 +883,7 @@ def parse_run(path: str) -> RunSummary:
                     if ambiguous:
                         entry["enchant_ambiguous"] = True
                         ambiguous_ench.append((c["id"], ench_id))
+                ledger_key[id(entry)] = ("final", card_index)
                 deck_entering.append(entry)
             # cards removed at a LATER node were still in the deck here;
             # re-insert them at their save-array slot. The slot is exact
@@ -801,23 +978,39 @@ def parse_run(path: str) -> RunSummary:
                         f"removed card {rc['id']} re-inserted at an "
                         f"approximate array slot (no identical sibling) — "
                         f"opening-shuffle order may be off")
+                ledger_key[id(entry)] = ("removed", removal_index)
                 deck_entering.insert(pos, entry)
-            # upgrades dated to a LATER node hadn't happened yet: undo
-            # them. Exact when the id has one copy here; with several the
-            # upgraded SLOT is unknowable (level is in the reshuffle sort
-            # key) — flag every copy upgrade_ambiguous.
-            late_ups = Counter(cid for j, cid in upgrade_events if j > i)
-            for cid, n in late_ups.items():
+            # Level events dated at or after this fight had not all
+            # happened yet: undo them through the per-id ledger. An event at
+            # the fight's OWN node follows the entry unless the node also
+            # hosts an event room, where the order is not recorded. Events
+            # strictly before the fight leave the endpoint level standing.
+            own_node_ordered = own_node_precedes_entry(pt) is False
+            for cid, events in level_events.items():
+                if not any(j >= i for j, _delta in events):
+                    continue
                 copies = [e for e in deck_entering if e["id"] == cid]
-                if len(copies) == 1:
-                    copies[0]["upgrade_level"] = max(
-                        0, copies[0]["upgrade_level"] - n)
-                elif copies:
+                if not copies:
+                    continue
+                present = {ledger_key[id(e)] for e in copies}
+                rows = [dict(row, present=row["key"] in present)
+                        for row in ledger_rows.get(cid, [])]
+                levels = _ledger_entry_levels(
+                    rows, events, i, own_node_ordered)
+                if levels is not None:
+                    exact = dict(zip(
+                        (row["key"] for row in rows if row["present"]),
+                        levels))
                     for e in copies:
-                        e["upgrade_ambiguous"] = True
-                    fight_caveats.append(
-                        f"{n} later upgrade(s) of {cid} cannot be assigned "
-                        f"to a copy — upgrade levels ambiguous")
+                        e["upgrade_level"] = exact[ledger_key[id(e)]]
+                    continue
+                for e in copies:
+                    e["upgrade_ambiguous"] = True
+                n = sum(1 for j, delta in events if delta > 0 and (
+                    j > i or (j == i and own_node_ordered)))
+                fight_caveats.append(
+                    f"{n} later upgrade(s) of {cid} cannot be assigned "
+                    f"to a copy — upgrade levels ambiguous")
             relics_entering = [
                 rid for rid, acquired, removed in relic_spans
                 if acquired < floor_no

@@ -460,12 +460,18 @@ pub(crate) fn outbreak_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal>
         || !crate::engine::play::body_enchantment_is_exact(ctx.spec)
         || crate::content_tables::card_row(CardId::Outbreak, ctx.spec.identity.upgrade)
             != Some(ctx.spec.row)
-        || ctx
-            .catalog
-            .hooks()
-            .relics()
-            .iter()
-            .any(|relic| !crate::engine::admission::IMPLEMENTED_RELICS.contains(relic))
+        // The owned relics must be ones admission accepts: a modeled body, or
+        // a census-inert relic with no combat hook at all (#3756). This read
+        // `IMPLEMENTED_RELICS` alone, which is stricter than
+        // `admission::admit` and refused the play mid-line for an owner of
+        // Juzu Bracelet (`ModifyUnknownMapPointRoomTypes` RVA `0x95594` is
+        // its only hook), Silken Tress (`AfterObtained` `0x9b5b0` and the
+        // card-reward hooks `0x9b5f4`/`0x9b6b0`) or Small Capsule
+        // (`AfterObtained` `0x9b988`).
+        || ctx.catalog.hooks().relics().iter().any(|relic| {
+            !crate::engine::admission::IMPLEMENTED_RELICS.contains(relic)
+                && !crate::content_tables::CENSUS_INERT_RELICS.contains(relic)
+        })
         || ctx.state.pending.is_some()
         || !crate::engine::play::synchronous_autoplay_child_context_is_exact(
             ctx.state,
@@ -1055,6 +1061,78 @@ mod tests {
             state.monsters_mut().push(monster);
         }
         (state, catalog, source)
+    }
+
+    /// #3756: the body's relic gate is admission's, not `IMPLEMENTED_RELICS`
+    /// alone. A census-inert relic (Juzu Bracelet, Silken Tress, Small
+    /// Capsule: no combat hook) does not refuse the play; a relic admission
+    /// itself would refuse still would.
+    #[test]
+    fn outbreak_plays_beside_census_inert_relics_and_refuses_only_an_unadmitted_one() {
+        use crate::engine::admission::IMPLEMENTED_RELICS;
+        let with_relics = |relics: &[crate::ids::RelicId]| {
+            let mut builder = CatalogBuilder::new();
+            let atom = builder.intern(identity(CardId::Outbreak, 0)).unwrap();
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder.set_relics(relics).ok()?;
+            let catalog = builder.build();
+            let (mut state, _, mut source) = outbreak_fixture(0, &[100]);
+            source.atom = atom;
+            state.piles.get_mut(PileId::Hand).make_mut()[0] = source;
+            Some((state, catalog, source))
+        };
+        let inert = [
+            crate::ids::RelicId::RelicJuzuBracelet,
+            crate::ids::RelicId::RelicSilkenTress,
+            crate::ids::RelicId::RelicSmallCapsule,
+        ];
+        for relic in inert {
+            assert!(!IMPLEMENTED_RELICS.contains(&relic), "{relic:?}");
+            assert!(crate::content_tables::CENSUS_INERT_RELICS.contains(&relic));
+        }
+        let (mut state, catalog, source) = with_relics(&inert).unwrap();
+        play_card(
+            &mut state,
+            &catalog,
+            source.uid,
+            None,
+            None,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(state.monsters[0].hp, 100 - 9);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Poison), 8);
+
+        let outside: Vec<_> = crate::ids::RelicId::ALL
+            .into_iter()
+            .filter(|relic| {
+                !IMPLEMENTED_RELICS.contains(relic)
+                    && !crate::content_tables::CENSUS_INERT_RELICS.contains(relic)
+            })
+            .collect();
+        let mut refused = 0;
+        for relic in &outside {
+            let Some((mut state, catalog, source)) = with_relics(&[*relic]) else {
+                continue;
+            };
+            assert_eq!(
+                play_card(
+                    &mut state,
+                    &catalog,
+                    source.uid,
+                    None,
+                    None,
+                    &mut Vec::new()
+                ),
+                Err(EngineRefusal::MalformedArgs("outbreak_exact source/state")),
+                "{relic:?}"
+            );
+            refused += 1;
+        }
+        // Every relic id is in one registry or the other today, so the
+        // refusing arm has no inhabitant. A relic that leaves both makes this
+        // pin move, and the loop above is then its witness.
+        assert_eq!((outside.len(), refused), (0, 0));
     }
 
     #[test]

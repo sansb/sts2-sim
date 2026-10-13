@@ -139,6 +139,11 @@ class BitReader:
         return b.decode("utf-8")
 
 
+def _f32(value):
+    """Round a double to the nearest float32 (IL ``conv.r4``)."""
+    return struct.unpack("<f", struct.pack("<f", value))[0]
+
+
 class McrError(ValueError):
     pass
 
@@ -240,11 +245,35 @@ class McrDecoder:
         out["run"] = self.serializable_run()
         out["events"] = self.list_of(self.replay_event)
         out["checksums"] = self.list_of(self.checksum_data)
-        # writer pads the final byte with zero bits
-        left = r.bits_left()
-        if left >= 8 or (left and r.read_bits(left) != 0):
-            raise McrError(f"{left} unconsumed bits after decode")
+        self.end_of_stream()
         return out
+
+    def end_of_stream(self):
+        """Require that only the writer's zero padding is left.
+
+        CombatReplay::Serialize (RVA 0x69248) ends at WriteList of the
+        checksums (IL_0115) and CombatReplay::Deserialize (RVA 0x69380) at
+        the matching ReadList (IL_00ca): the schema has nothing after them.
+        CombatReplayWriter::WriteReplay (RVA 0x69c7c) writes the first
+        PacketWriter::get_BytePosition bytes of the buffer (IL_0082..0091),
+        and get_BytePosition (RVA 0x683b6) is CeilToInt(BitPosition / 8f):
+        up to seven zero bits of padding, none when the stream ends on a
+        byte boundary.  v0.111.0 sts2.dll, sha256 9cb4f1ad...
+
+        One more length is accepted, and it is an OBSERVATION, not that IL:
+        files of floor(bits / 8) + 1 bytes, which differ from the above only
+        when the stream ends on a byte boundary, where they carry one whole
+        zero byte.  Every capture of 33 uploaded runs was written that way
+        (#3756): 105 byte-aligned streams, each with the extra byte, and not
+        one without, against 709 exact ones in the other 360 runs.  The cause
+        is not known.  Nothing the schema defines is in that byte, so it is
+        checked for zero and dropped; a ninth bit, or any set bit, is still
+        refused.
+        """
+        r = self.r
+        left = r.bits_left()
+        if left > 8 or (left and r.read_bits(left) != 0):
+            raise McrError(f"{left} unconsumed bits after decode")
 
     # --- run snapshot -----------------------------------------------------
     def serializable_run(self):
@@ -621,17 +650,44 @@ class McrDecoder:
         return {"from": self.card(), "to": self.card()}
 
     def map_drawings(self):
+        # SerializableMapDrawings::Deserialize (RVA 0x46400, IL_0003..0005):
+        # ReadList<SerializablePlayerMapDrawings> with a 32-bit count.
         return self.list_of(self.player_map_drawings)
 
     def player_map_drawings(self):
+        # SerializablePlayerMapDrawings::Deserialize (RVA 0x465ee):
+        # ReadULong(64) playerId (IL_0003..0005), then
+        # ReadList<SerializableMapDrawingLine> with a 32-bit count
+        # (IL_0011..0013).
         r = self.r
         return {"player_id": r.u(64),
                 "lines": self.list_of(self.map_drawing_line)}
 
     def map_drawing_line(self):
-        # SerializableMapDrawingLine: bool + count(16) + points
-        raise McrError("map drawing decode not implemented "
-                       "(no sample file exercises it)")
+        # SerializableMapDrawingLine::Deserialize (RVA 0x4635c): ReadBool
+        # isEraser (IL_000e), ReadInt(16) point count (IL_0019..001b), then
+        # that many ReadVector2(_quantizeParamsX, _quantizeParamsY)
+        # (IL_002c..0040).  PacketReader::ReadVector2 (RVA 0x680ac) is
+        # ReadFloat(x params) then ReadFloat(y params).  The static
+        # constructor (RVA 0x463c2) sets the params: x is 13 bits over
+        # [-3, 3] (IL_0001..000d), y is 16 bits over [-2, 2] (IL_0017..0023).
+        # v0.111.0 sts2.dll, sha256 9cb4f1ad...
+        r = self.r
+        return {"is_eraser": r.boolean(),
+                "points": [[self.quantized_f32(-3.0, 3.0, 13),
+                            self.quantized_f32(-2.0, 2.0, 16)]
+                           for _ in range(r.i(16))]}
+
+    def quantized_f32(self, lo, hi, bits):
+        # PacketReader::ReadFloat (RVA 0x67f08) with QuantizeParams present:
+        # ReadUInt(bits) (IL_0028..002d), then Unquantize (IL_0058).
+        # PacketReader::Unquantize (RVA 0x6818e): the float32 of
+        # double(q) / 2**bits * double(max - min) + double(min), where
+        # (max - min) is a float32 subtraction (IL_0015..0018) and the
+        # result narrows to float32 (conv.r4, IL_001d).
+        q = self.r.u(bits)
+        span = _f32(hi - lo)
+        return _f32(q / 2.0 ** bits * span + lo)
 
     # --- events ---------------------------------------------------------
     def replay_event(self):

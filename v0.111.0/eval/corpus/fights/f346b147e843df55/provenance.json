@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Y0P022HKT81G",
+ "node": 41,
+ "encounter": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "df9c950ad89331ae8417cc9b78794a976313672db54e41a18c3ac16932ea732d",
+ "save_sha256": "c83ffec88d77f31a70ec571bf2c272484f37ce92fed301fa38d8c5a9c0fc6350",
+ "entry_digest": "b36a15119c20ea9564f7445a2ff71abdf6c2dad06ee37d435bc4edfb2840682f",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

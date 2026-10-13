@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 39,
+ "encounter": "ENCOUNTER.FABRICATOR_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "6104e37ffa9b5e63d8f451ad23e6ae79be15bc70a532f5eef83d25682851800f",
+ "save_sha256": "05a0a0e3db4e683b5c28bce868affc5a698874d352d080ce2685e2957cfe5443",
+ "entry_digest": "3698e9bbb91d9b34566a3b4a27d1591233219e0e0aae63e93b3f651bcd9c8aa6",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

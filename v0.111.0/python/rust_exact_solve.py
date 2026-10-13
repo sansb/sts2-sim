@@ -3,7 +3,7 @@
 The caller hands over one complete ``sts-sim-canonical-v2`` document (built by
 the Rust opening, ``sts-sim entry ... --opening``), the adapter invokes ``sts-sim
 exact-solve`` once, and the returned UID-anchored line is replayed in Rust
-(``rust_review.replay_line``) before anything renders it. It deliberately
+(``live_coach.narrate_rust_line``) before anything renders it. It deliberately
 does not expose legal/apply calls: a DFS that crossed the process boundary per
 node would be both slow and semantically easier to split-brain.
 

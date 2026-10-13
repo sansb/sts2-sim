@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "XB6SMGBDVF2B",
+ "node": 12,
+ "encounter": "ENCOUNTER.SLIMES_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "f0d822532a572e44031178255e8b7936deee6b09b473220e9faf49eade5efa7e",
+ "save_sha256": "358a8d3b13559064bf7f98ab905a3a8666e8cb6076f3e47f7bcf8966049678d3",
+ "entry_digest": "f45102228179cd7b367a126bd43e046bdf059b9ba1106b7f4105f9e776cbe60b",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

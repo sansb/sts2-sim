@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "6LJ305XUAPH2",
+ "node": 12,
+ "encounter": "ENCOUNTER.FOSSIL_STALKER_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "8f5482f5bb9cb558189fe57f88ac6a2bc594c7fdff9ba9507d448bb11a571410",
+ "save_sha256": "dcaaa6f39ec257c67d07ca5cbf71da947818ddef621422522d92a15ceabd0f2e",
+ "entry_digest": "8050e955439d8fa9e8edf11df151a3dbeeed6ef2f0b5309bb0ef07521e612cbb",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

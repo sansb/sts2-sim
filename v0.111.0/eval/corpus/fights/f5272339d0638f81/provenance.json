@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Z2WCCF4NW622",
+ "node": 10,
+ "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+ "node_type": "elite",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "f42dbf6232ce9b5060fafe76a7fcbc348ca9e56685581711577ed7009dbbe0b2",
+ "save_sha256": "2448d4f777c91d6f9191bb3fc2d7913b17cd07e5724e673078f76dbe16236397",
+ "entry_digest": "15abafa7d1009ca67e6d26a76527c7b8e420011dc0feebb7475a04dc492ba4ab",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

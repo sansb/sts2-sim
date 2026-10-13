@@ -225,7 +225,63 @@ fn execute_hellraiser_after_card_drawn_early(
     if !spec.strike_tag {
         return Ok(());
     }
+    if !hellraiser_should_auto_play(state) {
+        return Ok(());
+    }
     super::play::autoplay_hellraiser_strike(state, catalog, card, events)
+}
+
+/// Hellraiser's count of AutoPlays against an all-infinite HP display: run
+/// it for one drawn Strike and say whether the Strike is AutoPlayed (#3929).
+///
+/// v0.111.0 (SHA-256 `9cb4f1ad…`)
+/// `HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` RVA `0x33c1a8`,
+/// past the owner test (IL_0020-0036) and the Strike tag test
+/// (IL_003d-004e), which the callers have made:
+///
+/// * IL_0063-0097: `Owner.CombatState.HittableEnemies.All(c =>
+///   c.HpDisplay.IsInfinite())` (the lambda is `<>c::<AfterCardDrawnEarly>
+///   b__7_0` RVA `0x33c199`). `CombatState::get_HittableEnemies` RVA
+///   `0x1373a5` is `Enemies.Where(IsHittable)`, and `Creature::get_IsHittable`
+///   RVA `0x11d298` is `!IsDead && Hook.ShouldAllowHitting` (a reviving
+///   Test Subject, Illusion or Reattach owner is dead). `All` over no enemy
+///   is true, so the count also runs while no enemy can be hit.
+/// * True: IL_0099-00a6 leaves the AutoPlay on only while
+///   `infiniteAutoPlaysThisTurn < 9`; at nine or more IL_00a8-00a9 turns it
+///   off (and IL_00aa-00e1 shows a speech bubble once, `ThinkCmd.Play`,
+///   which no state reads). Either way IL_00e6-00f4 adds one.
+/// * False: IL_00fb-00fc calls `ResetInfiniteAutoPlayData` (RVA `0xa3718`:
+///   the count and the bubble flag back to zero) and the AutoPlay stays on.
+/// * IL_0101-0102 leaves without playing when it is off: the Strike stays
+///   in Hand as any drawn card does, and the ordinary `AfterCardDrawn`
+///   listeners follow. Otherwise IL_0107-012e is the `CardCmd.AutoPlay`.
+///
+/// The count lives in the power object's `Data` (`InitInternalData` RVA
+/// `0xa3629`); its only other writer is the reset in `AfterSideTurnEnd`
+/// (RVA `0xa3683`, `turn::dispatch_after_side_turn_end_power`).
+///
+/// "Hittable" is `damage::alive_targets`: every enemy this engine keeps
+/// with `hp <= 0` is dead or reviving. Native witnesses:
+/// `tests/issue3929_hellraiser_infinite_auto_play_cap.rs`.
+pub(crate) fn hellraiser_should_auto_play(state: &mut HotState) -> bool {
+    let all_infinite = state
+        .monsters
+        .iter()
+        .filter(|monster| monster.hp > 0)
+        .all(crate::hot::HotMonster::hp_display_is_infinite);
+    if !all_infinite {
+        let written = state.fanouts.set_hellraiser_infinite_auto_plays(0);
+        debug_assert!(written);
+        return true;
+    }
+    let count = state.fanouts.hellraiser_infinite_auto_plays();
+    if count >= crate::hot::HELLRAISER_INFINITE_AUTO_PLAY_CAP {
+        // The game counts on; every value from the cap up is one state.
+        return false;
+    }
+    let written = state.fanouts.set_hellraiser_infinite_auto_plays(count + 1);
+    debug_assert!(written);
+    true
 }
 
 /// HellraiserPower's sole current-build `AfterCardDrawnEarly` override.
@@ -237,9 +293,11 @@ fn execute_hellraiser_after_card_drawn_early(
 /// drawn Strike across one awaited null-target `CardCmd::AutoPlay`. Python
 /// `_hellraiser_after_card_drawn_early` (frozen, deleted #2827) cold-rehearses the outer
 /// chain and keeps an active-uid latch until the child completes. The bounded
-/// Rust quotient admits no selecting Strike and no infinite-HP display, so
-/// the awaited child is synchronous and the existing CardPlay active stack is
-/// the complete latch carrier.
+/// Rust quotient admits no selecting Strike here, so the awaited child is
+/// synchronous and the existing CardPlay active stack is the complete latch
+/// carrier. An infinite HP display is admitted (Skulking Colony, a Waterfall
+/// Giant about to blow): [`hellraiser_should_auto_play`] is the count the
+/// game keeps against it (#3929).
 fn hellraiser_after_card_drawn_early(
     state: &mut HotState,
     catalog: &Catalog,
@@ -275,6 +333,9 @@ fn hellraiser_after_card_drawn_early_resumable(
         .ok_or(EngineRefusal::UnknownAtom(card.atom))?
         .strike_tag
     {
+        return Ok(());
+    }
+    if !hellraiser_should_auto_play(state) {
         return Ok(());
     }
     super::play::autoplay_hellraiser_strike_resumable(state, catalog, card, events)
@@ -1523,7 +1584,11 @@ fn draw_cards_for_potion_from(
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
 
         hellraiser_after_card_drawn_early_resumable(state, catalog, card.uid, events)?;
-        if state.pending.is_some() {
+        if state.pending.is_some() || super::play::top_tail_is_deferred(state) {
+            // Parked on a choice, or the AutoPlayed Strike's wrapper has
+            // handed its own `CheckForEmptyHand` back to the wrapper this
+            // Draw belongs to (`play::defer_top_tail`, #3756). Either way
+            // the awaited child has not returned.
             return Ok((PotionDrawResult::Suspended, Vec::new()));
         }
         if !matches!(state.frames.top(), Some(crate::frame::Frame::Draw { .. })) {
@@ -1736,9 +1801,11 @@ fn resume_completed_draw_caller(
         // A receipt-owned Draw resumes in its Rust caller once
         // `engine::puzzle::receipt_owned_draw` has driven the Draw frame back
         // to its depth; nothing below the frame is owned here.
-        DrawCaller::CentennialPuzzle | DrawCaller::SwiftEnchantment | DrawCaller::JossPaper => {
-            Ok(())
-        }
+        DrawCaller::CentennialPuzzle
+        | DrawCaller::SwiftEnchantment
+        | DrawCaller::JossPaper
+        | DrawCaller::GamePiece
+        | DrawCaller::IronClub => Ok(()),
         // Gremlin Horn's Draw is its listener's tail
         // (`GremlinHorn/<AfterDeath>d__6::MoveNext` RVA `0x326170`: the Draw
         // awaited at IL_00d9 is followed only by `leave` IL_0131), so its
@@ -1917,6 +1984,81 @@ pub(crate) fn joss_paper_draw(
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     receipt_owned_command_draw(state, catalog, n, DrawCaller::JossPaper, events)
+}
+
+/// Game Piece's Draw after an owner Power play (#3822).
+///
+/// `GamePiece/<AfterCardPlayed>d__6::MoveNext` RVA `0x325930` (v0.111.0,
+/// SHA-256 `9cb4f1ad…`) leaves unless the card is its owner's
+/// (IL_0020-0038), the combat is in progress (IL_003d-0049) and the card's
+/// `Type` is Power (IL_004e-0061). It then awaits one
+/// `CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner,
+/// false)` (IL_006c-0089; `Cards` is 1, `get_CanonicalVars` RVA `0x94489`
+/// IL_0001-0002) and its continuation only drops the result and returns
+/// (`GetResult`, `pop`, `leave` at IL_00d9-00e1, `SetResult` IL_0108). The
+/// Draw is the listener's tail.
+///
+/// The listener runs inside `Hook/<AfterCardPlayed>d__16::MoveNext` RVA
+/// `0x3ccbf4`, which hands every listener the play's own `choiceContext`
+/// (IL_004d-0070; the Late pass at IL_014f-0172) and awaits the listener's
+/// task itself (IL_0075-00c5, IL_0177-01c7) before advancing its enumerator
+/// (IL_00ed-00f8). It is not one of the six walks that give a listener its
+/// own `HookPlayerChoiceContext` (`engine::hook_action`). Its one caller,
+/// `CardModel/<OnPlayWrapper>d__339::MoveNext` RVA `0x31b8d0`, awaits it at
+/// IL_0874 with the context it was given. So a choice begun inside the Draw
+/// pauses the action that is playing the Power, and nothing else runs until
+/// the answer: the rest of the listener walk, the Late pass, the card's
+/// routing and `CardPlayFinished` are a pure continuation.
+///
+/// As for the Puzzle, only Hellraiser's AutoPlay of a selecting Strike and
+/// Stratagem's `AfterShuffle` selection can make the await a player choice;
+/// with both absent the certified synchronous command runs, and otherwise
+/// the Draw runs on the resumable frame with [`DrawCaller::GamePiece`] and a
+/// park is owned by the action's ActionReplay receipt
+/// (`engine::puzzle::receipt_owned_draw`), which re-executes that
+/// continuation.
+///
+/// The nested AutoPlay cannot reach Game Piece again through its own
+/// AfterCardPlayed walk: `HellraiserPower/<AfterCardDrawnEarly>d__7` RVA
+/// `0x33c1a8` plays only a card tagged Strike (IL_003d-004e), and every
+/// Strike-tagged card of this build is an Attack
+/// (`puzzle::tests::after_card_played::every_strike_tagged_row_is_an_attack`), which Game Piece's
+/// Power test rejects.
+pub(crate) fn game_piece_draw(
+    state: &mut HotState,
+    catalog: &Catalog,
+    n: usize,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    receipt_owned_command_draw(state, catalog, n, DrawCaller::GamePiece, events)
+}
+
+/// Iron Club's Draw at every fourth owner card (#3822).
+///
+/// `IronClub/<AfterCardPlayed>d__19::MoveNext` RVA `0x326f78` (v0.111.0,
+/// SHA-256 `9cb4f1ad…`) leaves on a foreign card (IL_0020-0038), increments
+/// `CardsPlayed` (IL_003d-0048), and when the combat is in progress and
+/// `CardsPlayed % Cards == 0` (IL_005e-0075) fires its visuals unawaited
+/// (`TaskHelper.RunSafely`, IL_0077-0082) and awaits one
+/// `CardPileCmd.Draw(choiceContext, 1, Owner, false)` (IL_0083-0095). The
+/// continuation drops the result and returns (IL_00e8-00f0, `SetResult`
+/// IL_0119), so the Draw is the listener's tail, and the counter write
+/// precedes it. The listener is awaited by the same `Hook.AfterCardPlayed`
+/// walk on the play's own context as Game Piece's ([`game_piece_draw`]), so
+/// a park is owned by the action's receipt in the same way, with
+/// [`DrawCaller::IronClub`].
+///
+/// Unlike Game Piece's, this Draw can nest under itself: the AutoPlayed
+/// Strike is an owner card, so its own AfterCardPlayed walk counts it, and a
+/// Strike whose body draws can reach a fourth play. Only the innermost
+/// receipt-owned Draw is ever parked on (`puzzle::parked_draw_depth`).
+pub(crate) fn iron_club_draw(
+    state: &mut HotState,
+    catalog: &Catalog,
+    n: usize,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    receipt_owned_command_draw(state, catalog, n, DrawCaller::IronClub, events)
 }
 
 /// Gremlin Horn's one-card Draw (#3387).
@@ -3391,17 +3533,10 @@ fn full_shuffle_after_frozen_hand(
         // placement of equal keys is a function of this physical input order,
         // which `combined` carries by uid, so a payload-divergent tie is as
         // exact here as in every other Shuffle caller.
-        if PileId::ALL.into_iter().any(|pile| {
-            state.piles.get(pile).as_slice().iter().any(|card| {
-                catalog.spec(card.atom).is_some_and(|spec| {
-                    spec.identity
-                        .enchantment
-                        .is_some_and(|value| matches!(value.id, EnchantmentId::PerfectFit))
-                })
-            })
-        }) {
-            return Err(EngineRefusal::ContinuationNotModeled);
-        }
+        //
+        // A Perfect Fit card in the domain moves itself to the top inside
+        // `Hook::ModifyShuffleOrder` (IL_00e2), in the listener order
+        // `shuffle_into_draw_raw` documents: live Draw before live Discard.
         shuffle_into_draw_raw(state, catalog, &combined, discard_len, events)?;
         if bottled && park_stratagem_on_bottled(state, catalog, events)? {
             return Ok(true);
@@ -3560,10 +3695,22 @@ fn shuffle_into_draw_raw(
     };
     rng.shuffle(&mut pile)
         .map_err(|_| EngineRefusal::CounterOverflow("shuffle bound"))?;
-    // `cards` retains the pre-shuffle listener order and physical UIDs. Each
-    // listener moves only itself; duplicate names must never select a sibling.
-    // Full-pile commands reject Perfect Fit before reaching this shared body.
-    for listener in cards {
+    // `cards` retains the pre-shuffle physical order and UIDs. Each listener
+    // moves only itself; duplicate names must never select a sibling.
+    //
+    // Listener order is the hook walk's, not the domain's. The domain is
+    // Discard then Draw (`<Shuffle>d__22` RVA `0x3e4b74`, IL_004b-IL_00a9);
+    // `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`
+    // walks `PlayerCombatState.AllPiles` (IL_0163-IL_01c7), which
+    // `get_AllPiles` RVA `0x117de8` builds as Hand, Draw, Discard, Exhaust,
+    // Play (IL_0015-IL_0048), each pile by ascending index. No card has
+    // moved yet (`CardPileCmd::Add` is IL_015a, after the hook at IL_00e2),
+    // so Draw's listeners fire before Discard's and the last one to fire
+    // ends on top. A listener outside the domain returns without moving
+    // (`PerfectFit::ModifyShuffleOrder` RVA `0xd6259`, IL_0005-IL_0013). The
+    // ordinary reshuffle has an empty Draw, so its order is Discard's alone.
+    let (discard_listeners, draw_listeners) = cards.split_at(discard_prefix_len);
+    for listener in draw_listeners.iter().chain(discard_listeners) {
         if catalog
             .spec(listener.atom)
             .is_some_and(perfect_fit_identity_is_exact)
@@ -7837,6 +7984,171 @@ mod tests {
         assert_eq!(&uids[..2], &[bash.uid, anger.uid]);
     }
 
+    /// Full shuffle (Reboot, Bottled Potential) over the fixed Rng state:
+    /// the Draw uids after it.
+    fn full_shuffle_from(
+        catalog: &Catalog,
+        hand: Vec<HotCard>,
+        draw: Vec<HotCard>,
+        discard: Vec<HotCard>,
+        exhaust: Vec<HotCard>,
+        exact: bool,
+    ) -> Result<Vec<u32>, EngineRefusal> {
+        let mut state = HotState::at_defaults();
+        state.exact_piles = exact;
+        state
+            .piles
+            .set(PileId::Hand, HotPile::from_cards(hand.clone()));
+        state.piles.set(PileId::Draw, HotPile::from_cards(draw));
+        state
+            .piles
+            .set(PileId::Discard, HotPile::from_cards(discard));
+        state
+            .piles
+            .set(PileId::Exhaust, HotPile::from_cards(exhaust.clone()));
+        let before = state.clone();
+        let result = reboot_shuffle(&mut state, catalog, &hand, &mut Vec::new());
+        if let Err(refusal) = result {
+            assert_eq!(state, before, "a refused full shuffle moves nothing");
+            return Err(refusal);
+        }
+        assert!(state.piles.get(PileId::Hand).is_empty());
+        assert!(state.piles.get(PileId::Discard).is_empty());
+        assert_eq!(state.piles.get(PileId::Exhaust).as_slice(), &exhaust[..]);
+        let mut bottled = before;
+        assert_eq!(
+            bottled_potential_shuffle(&mut bottled, catalog, &hand, &mut Vec::new()),
+            Ok(false)
+        );
+        assert_eq!(bottled, state, "both callers run one CardPileCmd.Shuffle");
+        Ok(state
+            .piles
+            .get(PileId::Draw)
+            .as_slice()
+            .iter()
+            .map(|card| card.uid)
+            .collect())
+    }
+
+    /// #3756 (`UABU3Z1QSR3Z` n45): the full shuffle applies Perfect Fit
+    /// instead of refusing every state that holds one.
+    ///
+    /// `Hook::ModifyShuffleOrder` runs before any card moves
+    /// (`<Shuffle>d__22` RVA `0x3e4b74`, IL_00e2 against `CardPileCmd::Add`
+    /// at IL_015a), and the listener walk is `AllPiles` order: Hand, Draw,
+    /// Discard, Exhaust, Play (`get_AllPiles` RVA `0x117de8`). So Draw's
+    /// Perfect Fit cards move to the top first, in Draw order, Discard's
+    /// after them, and the last to move ends on top. The Hand cards the
+    /// caller froze are at Draw's end by then.
+    #[test]
+    fn full_shuffle_tops_perfect_fit_draw_listeners_then_discard_listeners() {
+        let catalog = perfect_fit_catalog();
+        let bash = fit_card(&catalog, CardId::Bash, 0, 5);
+        let anger = fit_card(&catalog, CardId::Anger, 0, 6);
+        let bash_plus = fit_card(&catalog, CardId::Bash, 1, 7);
+        let filler = [
+            card(&catalog, CardId::StrikeIronclad, 1),
+            card(&catalog, CardId::DefendIronclad, 2),
+            card(&catalog, CardId::StrikeIronclad, 3),
+        ];
+
+        // One listener, in Draw: on top whatever the Fisher-Yates did.
+        let uids = full_shuffle_from(
+            &catalog,
+            vec![],
+            vec![filler[0], bash, filler[1]],
+            vec![filler[2]],
+            vec![],
+            true,
+        )
+        .unwrap();
+        assert_eq!(uids.len(), 4);
+        assert_eq!(uids[0], bash.uid);
+
+        // Draw before Discard: the Discard listener fires last.
+        let uids = full_shuffle_from(
+            &catalog,
+            vec![],
+            vec![filler[0], bash],
+            vec![anger, filler[1]],
+            vec![],
+            true,
+        )
+        .unwrap();
+        assert_eq!(&uids[..2], &[anger.uid, bash.uid]);
+        // The domain lists Discard first, so domain order would give the
+        // reverse. Swap the piles and the top swaps with them.
+        let uids = full_shuffle_from(
+            &catalog,
+            vec![],
+            vec![filler[0], anger],
+            vec![bash, filler[1]],
+            vec![],
+            true,
+        )
+        .unwrap();
+        assert_eq!(&uids[..2], &[bash.uid, anger.uid]);
+
+        // Within Draw by ascending index, a frozen Hand card last of them.
+        let uids = full_shuffle_from(
+            &catalog,
+            vec![bash_plus, filler[2]],
+            vec![anger, filler[0], bash],
+            vec![filler[1]],
+            vec![],
+            true,
+        )
+        .unwrap();
+        assert_eq!(&uids[..3], &[bash_plus.uid, bash.uid, anger.uid]);
+
+        // A listener outside the domain moves nothing.
+        let with = full_shuffle_from(
+            &catalog,
+            vec![],
+            vec![filler[0], filler[1]],
+            vec![filler[2]],
+            vec![bash],
+            true,
+        )
+        .unwrap();
+        let without = full_shuffle_from(
+            &catalog,
+            vec![],
+            vec![filler[0], filler[1]],
+            vec![filler[2]],
+            vec![],
+            true,
+        )
+        .unwrap();
+        assert_eq!(with, without);
+
+        // One identity is order-free in an inexact state; two are not.
+        assert!(
+            full_shuffle_from(
+                &catalog,
+                vec![],
+                vec![filler[0], bash],
+                vec![filler[1]],
+                vec![],
+                false,
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            full_shuffle_from(
+                &catalog,
+                vec![],
+                vec![filler[0], bash],
+                vec![anger, filler[1]],
+                vec![],
+                false,
+            ),
+            Err(EngineRefusal::MalformedArgs(
+                "Perfect Fit physical shuffle order"
+            ))
+        );
+    }
+
     #[test]
     fn issue3193_two_distinct_perfect_fits_refuse_inexact_before_any_move() {
         let catalog = perfect_fit_catalog();
@@ -10779,12 +11091,43 @@ mod tests {
         assert_eq!(left, [24, 28]);
     }
 
+    /// A Headbutt child through the public action (#3756), as the live
+    /// engine opened it: the headless harness on v0.111.0 (41cef1ea),
+    /// Ironclad with Whispering Earring and exactly these five cards against
+    /// `ENCOUNTER.CULTISTS_NORMAL`, seed `W3756K1`, whose opening hand is
+    /// this order. The loop played Iron Wave, Bash and Headbutt; the engine
+    /// logged `Player 0 chose cards [IRON_WAVE]`, asked nobody, and reached
+    /// the Play phase with Defend and Strike in Hand, Iron Wave on Draw and
+    /// Bash and Headbutt in Discard: the Discard pile's first card, not the
+    /// one Headbutt's own play had just followed.
+    #[test]
+    fn whispering_earring_headbutt_child_takes_the_first_discard_card() {
+        use CardId::{Bash, DefendIronclad, Headbutt, IronWave, StrikeIronclad};
+        let draw = [IronWave, Bash, Headbutt, DefendIronclad, StrikeIronclad].map(identity);
+        let (state, catalog) = turn_zero(&draw, &[RelicId::RelicWhisperingEarring]);
+        assert_eq!(root_admission(&state, &catalog), Ok(()));
+
+        let next = end_turn_zero(&state, &catalog).unwrap();
+
+        assert!(next.pending.is_none() && next.frames.is_empty());
+        assert_eq!(
+            next.player_phase,
+            crate::engine::admission::PHASE_ORDINARY_ACTIONS
+        );
+        assert_eq!(pile_uids(&next, PileId::Hand), [4, 5]);
+        assert_eq!(pile_uids(&next, PileId::Draw), [1]);
+        assert_eq!(pile_uids(&next, PileId::Discard), [2, 3]);
+        assert_eq!(next.energy, 0);
+        assert_eq!(next.block, 5);
+        assert_eq!(next.history.card_plays_finished_combat, 3);
+    }
+
     /// What #3665 leaves refused under the Earring beside a live Stratagem,
     /// by `Whispering Earring bounded live Hand loop` at admission and
     /// `Whispering Earring playable child` in the loop:
     ///
     /// - a child with a selection the selector was not read for: Burning
-    ///   Pact (it selects before it draws), Acrobatics, Headbutt;
+    ///   Pact (it selects before it draws), Acrobatics, Hologram;
     /// - a child whose discard can AutoPlay a Sly card
     ///   (`admission::autoplay_parent_program_can_spawn_child`): Scrape,
     ///   Calculated Gamble;
@@ -10794,13 +11137,13 @@ mod tests {
     #[test]
     fn whispering_earring_children_still_refused_beside_a_live_stratagem() {
         use CardId::{
-            Acrobatics, BeamCell, BurningPact, CalculatedGamble, Claw, DefendIronclad, Headbutt,
+            Acrobatics, BeamCell, BurningPact, CalculatedGamble, Claw, DefendIronclad, Hologram,
             Scrape, Stratagem,
         };
         for child in [
             BurningPact,
             Acrobatics,
-            Headbutt,
+            Hologram,
             Scrape,
             CalculatedGamble,
             CardId::Fetch,

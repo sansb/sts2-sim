@@ -165,7 +165,8 @@ pub(crate) fn after_player_turn_start_power_order_is_exact(state: &HotState) -> 
         // The getter has already authenticated the empty stored order and
         // generated-power metadata. With no slots, every listener and its
         // paired Inferno/Crimson private member is necessarily absent.
-        return true;
+        // A later Rolling Boulder row has no first object to follow (#3756).
+        return !state.fanouts.has_rolling_boulder_later_instances();
     }
     let active = [
         (PowerId::Loop, state.powers.value(PowerId::Loop) > 0),
@@ -188,8 +189,13 @@ pub(crate) fn after_player_turn_start_power_order_is_exact(state: &HotState) -> 
         ),
         (PowerId::Tyranny, state.powers.value(PowerId::Tyranny) > 0),
         (PowerId::Entropy, state.powers.value(PowerId::Entropy) > 0),
+        (
+            PowerId::Hibernate,
+            state.powers.value(PowerId::Hibernate) > 0,
+        ),
     ];
     state.fanouts.after_player_turn_start_order_is_exact()
+        && state.rolling_boulder_later_state_is_exact()
         && order.len() == active.iter().filter(|(_, live)| *live).count()
         && active
             .iter()
@@ -494,10 +500,12 @@ pub fn end_player_turn(
         }
         super::damage::null_applier_power_amount_changed_is_exact(state)?;
     }
-    if state.fanouts.regen() > 0 {
+    if state.fanouts.regen() > 0 || state.fanouts.ambergris() > 0 {
         // Regen's later Decrement publishes the same null-applier
         // AfterPowerAmountChanged hook as other PowerCmd amount writes. Prove
         // that listener order before TurnEnded, phase, or Plating mutates.
+        // Ambergris's Decrement after the side switch (#3756) is the same
+        // command.
         super::damage::null_applier_power_amount_changed_is_exact(state)?;
     }
     if !after_player_turn_start_power_order_is_exact(state)
@@ -944,7 +952,22 @@ fn ordinary_ethereal_drum_transaction_needed(
 /// (`0x3ee040`) reads `IsInProgress` only for its SFX (IL_00c6-IL_00d0), so a
 /// peer that ended the combat earlier in the walk leaves the summon running
 /// under IsEnding: [`super::summon_osty`] (#3279), which grows a live Osty's
-/// MaxHp only and refuses the add/revive branch by name.
+/// MaxHp only, creates an absent one at 1 HP and leaves a corpse dead.
+///
+/// A dead owner's power is not a listener any more (#3635). An earlier power
+/// of the pass that kills the owner (Inferno's or Crimson Mantle's own hit)
+/// runs `Player.DeactivateHooks` (`<KillWithoutCheckingWinCondition>d__15`
+/// RVA `0x3ebe90` IL_072d), and `CombatState::Contains` RVA `0x137564`, which
+/// the hook walk asks of each listener before calling it, excludes an
+/// inactive owner's powers. Recorded on the game (headless; no choice is
+/// signalled in the pass): with the owner at 1 HP, Inferno or Crimson Mantle
+/// applied ahead of `SummonNextTurnPower` and their self-damage armed, the
+/// owner dies and no Osty exists afterwards (`Player.Osty` null); with a live
+/// 1/1 Osty it is dead at MaxHp 1, where a summon of 2 would have left MaxHp
+/// 2. With the summon applied ahead of the Mantle the Osty is created (MaxHp
+/// 2) and then dies with its owner. In each of those runs the dead owner
+/// holds no power afterwards (`RemoveAllPowersAfterDeath`, IL_04f1 of the same
+/// Kill), so the power and its listener leave here without a summon.
 fn tick_summon_next_turn(
     state: &mut HotState,
     was_live_on_turn_start: bool,
@@ -957,7 +980,9 @@ fn tick_summon_next_turn(
     if summon_amount <= 0 {
         return Err(EngineRefusal::MalformedArgs("summon next turn live amount"));
     }
-    super::summon_osty(state, summon_amount, "summon next turn Osty")?;
+    if !state.fanouts.player_hooks_deactivated() {
+        super::summon_osty(state, summon_amount, "summon next turn Osty")?;
+    }
     state.powers.set(PowerId::SummonNextTurn, SlotWire::Int, 0);
     if !state.unregister_after_player_turn_start(PowerId::SummonNextTurn) {
         return Err(EngineRefusal::PowerOrderNotModeled(
@@ -1004,6 +1029,23 @@ fn tick_rolling_boulder(
     if amount <= 0 {
         return Ok(());
     }
+    let grown = tick_rolling_boulder_object(state, catalog, amount, events)?;
+    state
+        .powers
+        .set(PowerId::RollingBoulder, SlotWire::Int, grown);
+    super::damage::note_power(events, Subject::Player, PowerId::RollingBoulder, grown);
+    Ok(())
+}
+
+/// One RollingBoulderPower object's `AfterPlayerTurnStart`: its AoE for
+/// `amount`, then its own growth. Returns the grown amount for the caller to
+/// store in that object.
+fn tick_rolling_boulder_object(
+    state: &mut HotState,
+    catalog: &Catalog,
+    amount: i32,
+    events: &mut Vec<Event>,
+) -> Result<i32, EngineRefusal> {
     if !state.history.over {
         let targets = super::damage::alive_targets(state);
         super::damage::damage_monsters_after_catalog_auth(
@@ -1018,14 +1060,69 @@ fn tick_rolling_boulder(
             return Err(EngineRefusal::ContinuationNotModeled);
         }
     }
-    let grown = amount
+    amount
         .checked_add(5)
-        .ok_or(EngineRefusal::CounterOverflow("rolling boulder"))?;
-    state
-        .powers
-        .set(PowerId::RollingBoulder, SlotWire::Int, grown);
-    super::damage::note_power(events, Subject::Player, PowerId::RollingBoulder, grown);
-    Ok(())
+        .ok_or(EngineRefusal::CounterOverflow("rolling boulder"))
+}
+
+/// Run the later Rolling Boulder objects whose place in the walk is the
+/// listener about to be entered (#3756).
+///
+/// `order` is the walk's captured listener order and `cursor` the entry about
+/// to run (`order.len()` for the end of the walk). A later object's
+/// `listeners_before` counts LIVE order entries, and the entries the walk
+/// itself removes are Summon Next Turn's, at its own tick
+/// ([`tick_summon_next_turn`]), and a Hibernate whose decrement reached zero
+/// (#3877), so the live place of `cursor` is `cursor` less `gone`, the
+/// passed entries that left ([`crate::hot::turn_start_listeners_gone`]). A
+/// removal also moves the objects behind it down onto the place of the
+/// objects that ran just before it; `skip` is how many rows at this place
+/// already ran, which the removing arm passes on. Rows at one place are in
+/// acquisition order, so the ones that already ran are the first ones.
+///
+/// Each object is `RollingBoulderPower/<AfterPlayerTurnStart>d__8::MoveNext`
+/// RVA `0x342bdc` on its own `Amount`. Returns how many rows sit at this
+/// place and whether one of them ended the combat.
+fn tick_later_rolling_boulders_at(
+    state: &mut HotState,
+    catalog: &Catalog,
+    cursor: usize,
+    gone: usize,
+    skip: usize,
+    events: &mut Vec<Event>,
+) -> Result<(usize, bool), EngineRefusal> {
+    if !state.fanouts.has_rolling_boulder_later_instances() {
+        return Ok((0, false));
+    }
+    let place = cursor - gone;
+    let here = state
+        .fanouts
+        .rolling_boulder_later_instances()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, row)| (usize::from(row.listeners_before) == place).then_some(index))
+        .collect::<Vec<_>>();
+    let mut ended = false;
+    for index in here.iter().copied().skip(skip) {
+        let mut later = state.fanouts.rolling_boulder_later_instances();
+        let amount = later
+            .get(index)
+            .ok_or(EngineRefusal::MalformedArgs(
+                "Rolling Boulder listener state",
+            ))?
+            .amount;
+        let was_over = state.history.over;
+        let grown = tick_rolling_boulder_object(state, catalog, amount, events)?;
+        ended |= !was_over && state.history.over;
+        later[index].amount = grown;
+        if !state.fanouts.set_rolling_boulder_later_instances(&later) {
+            return Err(EngineRefusal::MalformedArgs(
+                "Rolling Boulder listener state",
+            ));
+        }
+        super::damage::note_power(events, Subject::Player, PowerId::RollingBoulder, grown);
+    }
+    Ok((here.len(), ended))
 }
 
 fn tick_inferno(
@@ -1298,15 +1395,11 @@ pub(crate) fn resume_foregone_after_shuffle(
         return Ok(());
     }
     super::cards::complete_self_return_before_hand_draw(state, catalog, events)?;
-    let pollinous_activated = super::relics::before_hand_draw(catalog, state, events)?;
-    if state.pending.is_none() {
-        finish_player_turn_start_after_before_hand_draw_relics(
-            state,
-            catalog,
-            state.powers.value(PowerId::Hibernate) > 0,
-            pollinous_activated,
-            events,
-        )?;
+    // Foregone's listener ran, and the power walk runs no listener of a pass
+    // entered on an ended combat (`begin_player_turn_walk`), so this pass
+    // began on a live one.
+    if super::relics::before_hand_draw(catalog, state, true, events)? {
+        finish_player_turn_start_after_before_hand_draw_relics(state, catalog, events)?;
     }
     Ok(())
 }
@@ -1516,17 +1609,13 @@ pub(crate) fn resume_foregone_before_hand_draw(
         return Ok(());
     }
     super::cards::complete_self_return_before_hand_draw(state, catalog, events)?;
-    let pollinous_activated = super::relics::before_hand_draw(catalog, state, events)?;
-    if state.pending.is_some() {
+    // Foregone's choice was offered inside the pass, and the power walk runs
+    // no listener of a pass entered on an ended combat
+    // (`begin_player_turn_walk`), so this pass began on a live one.
+    if !super::relics::before_hand_draw(catalog, state, true, events)? {
         return Ok(());
     }
-    finish_player_turn_start_after_before_hand_draw_relics(
-        state,
-        catalog,
-        state.powers.value(PowerId::Hibernate) > 0,
-        pollinous_activated,
-        events,
-    )
+    finish_player_turn_start_after_before_hand_draw_relics(state, catalog, events)
 }
 
 #[cold]
@@ -2472,13 +2561,16 @@ fn dispatch_after_side_turn_end_power(
     let mut payload = listener.payload;
     match object.token {
         Token::BorrowedTime => {
-            remove_captured_scalar_power(
+            if remove_captured_scalar_power(
                 state,
                 object,
                 PowerId::BorrowedTime,
                 SlotWire::Int,
                 events,
-            )?;
+            )? {
+                // The order bit describes the object just removed (#3756).
+                state.fanouts.set_curious_follows_borrowed_time(false);
+            }
             payload[0] = 0;
         }
         Token::Burst => {
@@ -2487,11 +2579,28 @@ fn dispatch_after_side_turn_end_power(
         }
         Token::Constrict => {
             if !state.history.over && payload[0] > 0 {
-                // `ConstrictPower/<AfterSideTurnEnd>d__4` damages its owner
-                // through the listener's own choice context, so a Centennial
-                // Puzzle Draw parked here would publish before every later
-                // ordinary side-end listener (#3386).
-                let listener = DeferredChoiceListener::enter(Some(CONSTRICT_PUZZLE_WALL));
+                // An earlier listener's prompt may already wait here (a
+                // parked Dark Embrace child). The hit itself is exact beside
+                // it; the Puzzle firing is not, and refuses where it fires
+                // (`damage::after_owner_damage_received_relics`), so a hit
+                // that is fully blocked runs through (native trace
+                // `fixtures/issue3756_native/r4_blocked_grown.json`).
+                //
+                // `ConstrictPower/<AfterSideTurnEnd>d__4::MoveNext` RVA
+                // `0x3374ac` damages its owner through the listener's own
+                // choice context (`CreatureCmd.Damage(choiceContext, Owner,
+                // Amount, Unpowered, Owner)`, IL_0035-0053) and returns
+                // (IL_00ab). A prompt inside that damage (a Centennial Puzzle
+                // Draw's Stratagem pick or selecting Hellraiser Strike)
+                // pauses this listener: the later ordinary listeners are
+                // started when it is asked
+                // ([`side_end_prompt_starts_later_listeners`]), and the
+                // wall stays the backstop for a park that did not go
+                // through it (#3386, #3756). A select that resolves without
+                // a prompt before the listener's first prompt refuses by
+                // name when the listener settles (#3485, same doc comment).
+                let listener =
+                    DeferredChoiceListener::enter_side_end_deferral(CONSTRICT_PUZZLE_WALL);
                 let result = super::damage::damage_player_from_power_with_catalog(
                     state,
                     catalog,
@@ -2598,6 +2707,15 @@ fn dispatch_after_side_turn_end_power(
             payload[0] = 0;
         }
         Token::Hellraiser => {
+            // `HellraiserPower::AfterSideTurnEnd` RVA `0xa3683` (v0.111.0,
+            // SHA-256 `9cb4f1ad…`): when the ending side holds its owner
+            // (IL_0001-000d) it calls `ResetInfiniteAutoPlayData`
+            // (IL_0015-0016, RVA `0xa3718`), at this object's own place in
+            // the walk and whether or not the combat is over (#3929). No
+            // engine path removes the power, so the captured object is
+            // always the live one; were it gone the count would be dead.
+            let written = state.fanouts.set_hellraiser_infinite_auto_plays(0);
+            debug_assert!(written);
             payload[1] = 0;
             payload[2] = 0;
         }
@@ -2916,6 +3034,12 @@ fn drive_after_side_turn_end_power_listeners(
         let listener_count = record.listeners().len();
         let dark_pending = record.dark_pending_uid.is_some();
         if cursor == listener_count {
+            if record.ordinary_suffix_invoked && !dark_pending {
+                // A paused Constrict listener already started the rest of
+                // the pass, when its choice was asked
+                // ([`side_end_prompt_starts_later_listeners`]).
+                return Ok(false);
+            }
             run_after_side_turn_end_ordinary_nonlocal(state, catalog, events)?;
             if dark_pending {
                 state
@@ -2959,6 +3083,219 @@ fn drive_after_side_turn_end_power_listeners(
         // captured enumerator and invokes all later ordinary callbacks before
         // awaiting the aggregate; each body then meets its own ending gate.
     }
+}
+
+/// Start the rest of the ordinary `AfterSideTurnEnd` pass when a choice
+/// inside Constrict's listener is asked (#3756). Returns whether the combat
+/// ended while the choice waited, in which case it is never answered.
+///
+/// # Native
+///
+/// `Hook/<AfterSideTurnEnd>d__81::MoveNext` RVA `0x3d11c0` (v0.111.0,
+/// SHA-256 `9cb4f1ad…`) gives each ordinary listener its own
+/// `HookPlayerChoiceContext` (IL_0093) and awaits
+/// `AssignTaskAndWaitForPauseOrCompletion` (IL_00bd), not the listener, then
+/// `WhenAll`s the listeners' completions (IL_016c) before the Late pass
+/// (IL_0219). A listener's first choice
+/// (`HookPlayerChoiceContext/<SignalPlayerChoiceBegun>d__37` RVA `0x3d64f4`)
+/// enqueues the rest of the listener as a `GenericHookGameAction`
+/// (IL_0282-028e), releases the paused source (IL_0293-0299), and waits for
+/// that action to start (IL_029e-02f9) before it pauses for the choice
+/// (IL_02fe-0310). A later choice of the same listener pauses its running
+/// hook action directly (IL_00e7-010b).
+///
+/// The EndTurn flow is `CombatManager`'s own and the executor is idle under
+/// it (`engine::hook_action`), so the hook action starts at once. The
+/// headless harness (v0.111.0, `EndPlayerTurnAction`, a Centennial Puzzle
+/// Draw under Constrict 3 with Burst, Lunar Pastry, Dark Embrace, Doom,
+/// Consuming Shadow or Disintegration as the other side-end listeners)
+/// shows what a prompt does:
+///
+/// * **A prompt lets the walk move on.** With a Stratagem pick, or a
+///   Seeker Strike pick, waiting: Burst is gone and the Star is gained
+///   whichever side of Constrict Burst was applied on, the Puzzle has drawn
+///   nothing more, and Disintegration and the enemy turn have not run. The
+///   answer is followed by the rest of the Puzzle's Draws, then
+///   Disintegration, then the enemy turn. The same holds for a prompt in
+///   the Puzzle's second Draw.
+/// * **The options are the ones the prompt was opened with.** A later Dark
+///   Embrace drew the pile's top card while the pick waited, and the pick's
+///   first option was still that card.
+/// * **A later listener that ends the combat leaves the pick unapplied**:
+///   by killing the owner (Doom 99 after Constrict), or by killing the last
+///   enemy (Consuming Shadow evoking a Lightning orb,
+///   `fixtures/issue3756_native/a6_shadow_kill.json`).
+///
+/// `ConstrictPower/<AfterSideTurnEnd>d__4::MoveNext` RVA `0x3374ac` awaits
+/// `CreatureCmd.Damage` on its own context (IL_0035-0053) and returns.
+///
+/// # A select that resolves without a prompt
+///
+/// The signal releases the walk whether or not a prompt follows, once the
+/// listener has suspended at least once. `<SignalPlayerChoiceBegun>d__37`
+/// sets `_pausedCompletionSource` (IL_0294-0299), and that completes the
+/// walk's `WhenAny(task, paused)`
+/// (`HookPlayerChoiceContext/<AssignTaskAndWaitForPauseOrCompletion>d__34`
+/// RVA `0x3d62fc` IL_005c-0070) when the listener's task was already
+/// assigned. Only a listener that never suspended before the signal has no
+/// task yet (`get_Task` null, IL_01df-01e4): the signal then awaits
+/// `_taskAssignedCompletionSource` (IL_01e6-021b) and the listener runs on
+/// inline. In play a listener that reaches a Draw's shuffle or a card play
+/// has suspended: `Cmd/<Wait>d__1` RVA `0x3e8d28` awaits a SceneTree timer
+/// (IL_006e-0096) unless `NonInteractiveMode` is active, `seconds <= 0`,
+/// `FastMode` is 3 or the combat is ending (IL_0019-0069). After the
+/// release the listener's remainder and the later listeners run
+/// concurrently, interleaved by those waits. A prompt holds the listener
+/// until the player answers, which is the order built here. With no prompt
+/// nothing holds it, and the order of its remaining Draws against the later
+/// listeners' work depends on wait durations.
+///
+/// The two native traces of one root disagree accordingly
+/// (`fixtures/issue3756_native/d3_seeker_one_rage.headless.json` and
+/// `.waits.json`: Hellraiser, a Seeker Strike drawn with one candidate,
+/// Rage 3). Headless, where no wait suspends, the listener's three Draws
+/// finish before Rage is removed and the owner is at 71 HP at the next
+/// turn's first prompt. With `Cmd.Wait` running as a timer (the real-waits
+/// probe mode, #3931) the owner is at 65: Rage's listener runs up to its
+/// own first wait, and `PowerCmd/<Remove>d__8` RVA `0x3f09bc` removes the
+/// power (IL_0030) before that wait (IL_0035-0049), so the listener's later
+/// Strikes gain no Block. Past that, the recording shows two gameplay
+/// timers pending at once: the rest is a race between wait durations, and
+/// `Cmd.Wait` returns at once on Instant fast mode (IL_0037-0050), so the
+/// order also depends on the player's setting. The probe's timers are not
+/// the game's frame clock and it has no card tweens, so neither order is
+/// taken as the game's: such a select, before
+/// the listener's first prompt, refuses by
+/// `puzzle::AUTO_RESOLVED_IN_DEFERRED_LISTENER` (#3485), at the prompt that
+/// follows it or when the listener settles. Building the released-walk
+/// order needs waits-mode witnesses (#3932).
+///
+/// # Model
+///
+/// Called by `puzzle::receipt_owned_draw` with its Draw suspended on a
+/// prompt, at `depth` (its words from `word_base`). Under Constrict's
+/// listener (`puzzle::SideEndDeferral`) the first prompt detaches the Draw's
+/// frames and the pending choice, runs the captured listeners after
+/// Constrict and the non-local ordinary suffix on the owner frame, as the
+/// unpaused pass does, re-attaches them, and marks the owner record fully
+/// invoked so the unwinding driver does not run them again. Later prompts of
+/// the listener are no-ops. The listener's remainder is the Rust stack
+/// above, so it follows the answer.
+///
+/// Refused by name: a later listener of the pass pausing on a prompt of its
+/// own ([`hook_action::SECOND_HOOK_ACTION`]); and a later listener that
+/// moves the Hand, Draw or Play pile while the prompt waits, since the
+/// prompt keeps the options it opened with
+/// ([`hook_action::CHOICE_SOURCE_MOVED`]). The mirror case, the Puzzle
+/// firing under Constrict's hit beside an earlier listener's waiting prompt,
+/// refuses under the same name where the Puzzle fires
+/// (`damage::after_owner_damage_received_relics`).
+///
+/// [`hook_action::SECOND_HOOK_ACTION`]: super::hook_action::SECOND_HOOK_ACTION
+/// [`hook_action::CHOICE_SOURCE_MOVED`]: super::hook_action::CHOICE_SOURCE_MOVED
+pub(crate) fn side_end_prompt_starts_later_listeners(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+    depth: usize,
+    word_base: usize,
+) -> Result<bool, EngineRefusal> {
+    use super::puzzle::SideEndDeferral;
+    if super::puzzle::side_end_deferral() == SideEndDeferral::Inactive || state.pending.is_none() {
+        return Ok(false);
+    }
+    if super::puzzle::side_end_deferral_released_unprompted() {
+        // The walk was released at an earlier select of this listener that
+        // resolved without a prompt ("A select that resolves without a
+        // prompt" above).
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            super::puzzle::AUTO_RESOLVED_IN_DEFERRED_LISTENER,
+        ));
+    }
+    let Some(crate::frame::Frame::AfterSideTurnEndPower {
+        record: record_index,
+    }) = depth
+        .checked_sub(1)
+        .and_then(|below| state.frames.as_slice().get(below).copied())
+    else {
+        return Err(EngineRefusal::PowerOrderNotModeled(CONSTRICT_PUZZLE_WALL));
+    };
+    let record = state
+        .frames
+        .after_side_turn_end_power(record_index)
+        .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    if record.ordinary_suffix_invoked {
+        super::puzzle::side_end_deferral_started();
+        return Ok(false);
+    }
+    #[cfg(test)]
+    SIDE_END_DEFERRALS_STARTED.with(|count| count.set(count.get() + 1));
+    let pinned = side_end_prompt_piles(state);
+    let segment = state
+        .frames
+        .detach_hook_segment(depth, word_base)
+        .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    let pending = state.pending.take();
+    let suspended = drive_after_side_turn_end_power(state, catalog, events, record_index)?;
+    if suspended || state.pending.is_some() {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            super::hook_action::SECOND_HOOK_ACTION,
+        ));
+    }
+    if state.frames.len() != depth || state.frames.word_len() != word_base {
+        return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    state
+        .frames
+        .set_after_side_turn_end_power_ordinary_suffix_invoked(record_index)
+        .ok_or(EngineRefusal::ContinuationNotModeled)?;
+    if state.history.over {
+        // The paused listener never resumes: its Draw, the pick and the
+        // rest of the damage command are dropped with the combat.
+        return Ok(true);
+    }
+    if side_end_prompt_piles(state) != pinned {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            super::hook_action::CHOICE_SOURCE_MOVED,
+        ));
+    }
+    if state.frames.attach_hook_segment(&segment) != Some(word_base) {
+        return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    state.pending = pending;
+    super::puzzle::side_end_deferral_started();
+    Ok(false)
+}
+
+/// The piles a prompt opened inside a paused side-end listener reads its
+/// options from, with each card's instance state.
+fn side_end_prompt_piles(
+    state: &HotState,
+) -> Vec<(PileId, crate::hot::HotCard, crate::hot::CardInstanceState)> {
+    [PileId::Hand, PileId::Draw, PileId::Play]
+        .into_iter()
+        .flat_map(|pile| {
+            state
+                .piles
+                .get(pile)
+                .as_slice()
+                .iter()
+                .map(move |card| (pile, *card, state.card_states.get(card.uid)))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How often a paused Constrict listener started its later peers.
+    static SIDE_END_DEFERRALS_STARTED: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+/// Branch witness (#2700): how often a paused Constrict listener started its
+/// later peers since the last call.
+#[cfg(test)]
+pub(crate) fn take_side_end_deferrals_started_for_test() -> u32 {
+    SIDE_END_DEFERRALS_STARTED.with(|count| count.replace(0))
 }
 
 /// Resume Hook/WhenAll after Dark Embrace's exact captured object has
@@ -3087,6 +3424,12 @@ fn finish_player_turn_after_ordinary_side_end(
     }
 
     let paels_eye_extra = super::relics::paels_eye_extra_turn_gate(state, catalog);
+    // `Hook::ShouldTakeExtraTurn` (RVA `0x106928`) returns true at the first
+    // approving listener (IL_0023-002a), so the two represented approvers
+    // are an OR. `AmbergrisPower::ShouldTakeExtraTurn` (RVA `0x9f744`) is
+    // `Amount > 0` (IL_0002-0008) for its owner's player (IL_000c-0016).
+    let ambergris = state.fanouts.ambergris();
+    let extra_turn = paels_eye_extra || ambergris > 0;
 
     // SwitchFromPlayerToEnemySide checks cancellation after the complete
     // ordinary and late hooks. A lethal callback returns before this quotient
@@ -3095,17 +3438,37 @@ fn finish_player_turn_after_ordinary_side_end(
     // `CombatManager/<SwitchFromPlayerToEnemySide>d__141::MoveNext` (RVA
     // `0x3f87dc`) clears `PlayersTakingExtraTurn` (IL_0059-005e) and re-adds
     // each player `Hook::ShouldTakeExtraTurn` approves (IL_0095-010a), before
-    // `SwitchSides`. Pael's Eye is the represented approver (#3049).
-    state.fanouts.set_players_taking_extra_turn(paels_eye_extra);
+    // `SwitchSides`. Pael's Eye (#3049) and `AmbergrisPower` (#3756) are the
+    // represented approvers.
+    state.fanouts.set_players_taking_extra_turn(extra_turn);
 
-    if paels_eye_extra {
+    if extra_turn {
         state.turn = state
             .turn
             .checked_add(1)
             .ok_or(EngineRefusal::CounterOverflow("turn"))?;
-        state.fanouts.set_paels_eye_used(true);
+        // After `SwitchSides` (IL_0153) the same method awaits
+        // `Hook::AfterTakingExtraTurn` per extra-turn player (IL_01a1), and
+        // `Hook/<AfterTakingExtraTurn>d__79::MoveNext` (RVA `0x3d1c50`)
+        // calls every listener (IL_0052), not only the one that approved.
+        // So one extra turn spends both sources when both are live:
+        // `PaelsEye::AfterTakingExtraTurn` (RVA `0x981c7`) sets
+        // `UsedThisCombat` for its owner whatever its own gate said
+        // (IL_0003-001f), and
+        // `AmbergrisPower/<AfterTakingExtraTurn>d__7::MoveNext` (RVA
+        // `0x334df0`) awaits `PowerCmd::Decrement` (IL_0033). The two bodies
+        // commute: one writes a relic flag, the other a power amount whose
+        // `AfterPowerAmountChanged` walk is inert for a player-owned Type-1
+        // power with a null applier (authenticated before the turn end
+        // mutates, in `end_player_turn_inner`).
+        if catalog.hooks().owns(RelicId::RelicPaelsEye) {
+            state.fanouts.set_paels_eye_used(true);
+            crate::coverage::record_relic(RelicId::RelicPaelsEye);
+        }
+        if ambergris > 0 {
+            state.fanouts.set_ambergris(ambergris - 1);
+        }
         state.history.manual_card_plays_finished_this_turn = 0;
-        crate::coverage::record_relic(RelicId::RelicPaelsEye);
         return begin_player_turn_inner(state, catalog, events);
     }
 
@@ -3214,11 +3577,23 @@ fn finish_player_turn_after_ordinary_side_end(
 /// Skipping the walk also leaves native's machine unperformed, so the next
 /// `PrepareForNextTurn` roll does not transition it (`MonsterMoveStateMachine
 /// ::FindNextMoveState` RVA `0x78e94` IL_002d-IL_0042, see
-/// [`advance_segment_dead_states`]). Only the Wriggler's shape is modeled:
-/// its unperformed initial `SPAWNED_MOVE` (`Wriggler::GenerateMoveStateMachine`
-/// RVA `0xc5630` IL_011f-IL_012c when `StartStunned`) is `spawn_noop`, which
-/// the roll never touches and the next act consumes. Any other creature added
-/// here refuses by name.
+/// [`advance_segment_dead_states`]). Only an unperformed initial
+/// `SPAWNED_MOVE` is modeled, which is `spawn_noop`: the roll never touches
+/// it and the next act consumes it. Three kinds start there:
+///
+/// - the Wriggler (`Wriggler::GenerateMoveStateMachine` RVA `0xc5630`
+///   IL_011f-IL_012c when `StartStunned`);
+/// - the Sneaky Gremlin and the Fat Gremlin that Gremlin Merc's Surprise
+///   adds when the Merc dies to this Poison tick (#3756, `QGCEEDLXSWB2` n6).
+///   `SneakyGremlin::GenerateMoveStateMachine` RVA `0xbea48` and
+///   `FatGremlin::GenerateMoveStateMachine` RVA `0xb4504` each build
+///   `SPAWNED_MOVE` first (IL_0012-IL_0031) and hand it to the machine as
+///   the initial state (IL_007e-IL_0080 and IL_0078-IL_007a), and both
+///   `SpawnedMove` bodies (`<SpawnedMove>d__18` RVA `0x36b2bc`,
+///   `<SpawnedMove>d__16` RVA `0x35b4b8`) are one `CreatureCmd::TriggerAnim`
+///   (IL_002d).
+///
+/// Any other creature added here refuses by name.
 fn enemy_side_start_act_roster(
     state: &HotState,
     switched: SwitchedRoster,
@@ -3242,7 +3617,12 @@ fn enemy_side_start_act_roster(
         ));
     }
     for monster in state.monsters.iter() {
-        if added(monster.uid) && !(monster.kind == MonsterKind::Wriggler && monster.spawn_noop) {
+        let unperformed_spawned_move = monster.spawn_noop
+            && matches!(
+                monster.kind,
+                MonsterKind::Wriggler | MonsterKind::SneakyGremlin | MonsterKind::FatGremlin
+            );
+        if added(monster.uid) && !unperformed_spawned_move {
             return Err(EngineRefusal::MonsterLoopNotModeled(monster.kind));
         }
     }
@@ -3454,9 +3834,15 @@ fn run_before_side_turn_end_player_powers(
     for power in order {
         match power {
             BeforeSideTurnEndToken::ChainsOfBinding => {
+                // `ChainsOfBindingPower::BeforeSideTurnEnd` (v0.111.0 RVA
+                // `0xa0440`, DLL 9cb4f1ad) clears `boundCardPlayed`
+                // (IL_0020-IL_0027) and every card's affliction
+                // (IL_004a-IL_0077). It does not touch the number of cards
+                // bound this turn: that is a `HappenedThisTurn` count over
+                // the combat history, which rolls at the side switch
+                // ([`roll_happened_this_turn_counters`], #3756).
                 if state.powers.value(PowerId::ChainsOfBinding) > 0 {
                     state.set_bound_card_played(false);
-                    state.set_bound_afflictions_this_turn(0);
                     for pile in super::cards::CARD_AFFLICTION_PILES {
                         for card in state.piles.get_mut(pile).make_mut() {
                             card.flags &= !crate::hot::CARD_FLAG_BOUND;
@@ -4339,25 +4725,37 @@ fn run_enemy_phase_inner(
             "enemy potion-debuff side-end state",
         ));
     }
-    // Native has six board slots. Freeze the complete Creature listener
-    // identity roster on the stack: a Demise death can insert or replace a
-    // creature, but neither new identity joins this already-started walk.
-    const SIDE_END_ROSTER_CAPACITY: usize = 6;
-    if state.monsters.len() > SIDE_END_ROSTER_CAPACITY {
-        return Err(EngineRefusal::MalformedArgs(
-            "enemy side-end roster capacity",
-        ));
-    }
-    let mut side_end_roster = [(0_i32, 0_u32); SIDE_END_ROSTER_CAPACITY];
+    // Freeze the complete Creature listener identity roster: a Demise death
+    // can insert or replace a creature, but neither new identity joins this
+    // already-started walk. Native has six board slots, so six live
+    // creatures is the most the walk can visit and the common roster fits on
+    // the stack. The roster here also keeps the corpses of creatures native
+    // has already removed (`CombatState::RemoveCreature`), and a summoner
+    // that refills its slots turn after turn (Fabricator) carries more than
+    // six rows with them: `CreatureCmd/<KillWithoutCheckingWinCondition>d__15`
+    // (RVA `0x3ebe90`) drops a dead enemy from the combat at IL_049e-IL_04d5
+    // (`CombatManager::RemoveCreature`, then `ICombatState::RemoveCreature`,
+    // i.e. `CombatState::RemoveCreature` RVA `0x1371d0` removing it from
+    // `_enemies` at IL_0029-IL_003e). Those rows are skipped below like any
+    // other dead row, so a longer roster is frozen whole on the heap (#3756).
+    const SIDE_END_ROSTER_INLINE: usize = 6;
+    let mut inline_roster = [(0_i32, 0_u32); SIDE_END_ROSTER_INLINE];
     let side_end_roster_len = state.monsters.len();
-    for (frozen, monster) in side_end_roster
-        .iter_mut()
-        .zip(state.monsters.iter())
-        .take(side_end_roster_len)
-    {
-        *frozen = (monster.slot, monster.uid);
-    }
-    for (frozen_slot, frozen_uid) in side_end_roster.into_iter().take(side_end_roster_len) {
+    let heap_roster: Vec<(i32, u32)>;
+    let side_end_roster: &[(i32, u32)] = if side_end_roster_len <= SIDE_END_ROSTER_INLINE {
+        for (frozen, monster) in inline_roster.iter_mut().zip(state.monsters.iter()) {
+            *frozen = (monster.slot, monster.uid);
+        }
+        &inline_roster[..side_end_roster_len]
+    } else {
+        heap_roster = state
+            .monsters
+            .iter()
+            .map(|monster| (monster.slot, monster.uid))
+            .collect();
+        &heap_roster
+    };
+    for &(frozen_slot, frozen_uid) in side_end_roster {
         let Some(index) = state
             .monsters
             .iter()
@@ -5687,9 +6085,44 @@ fn monster_act(
         if override_state == MonsterOverride::Stunned
             && super::monsters::generic_stun_state_is_exact(state, index)
         {
+            // #3823, a random table. The STUNNED body is the completed task
+            // (`<Stun>b__26_0` `0x3e8f83`), and the state stays the monster's
+            // `NextMove` until its own roll at `PrepareForNextTurn`
+            // (`MonsterModel/<PerformMove>d__105::MoveNext` `0x31d794`
+            // IL_0173-IL_0184 only marks it performed). The override is
+            // therefore left in place here and resolved by
+            // `resume_stunned_random_ai`, in this monster's position of the
+            // roll walk: a teammate rolled before it still sees STUNNED
+            // (`TwoTailedRat::CanSummon` `0xc42c8` IL_0048-IL_009b reads each
+            // teammate's `NextMove`), one rolled after it sees the parked
+            // move again. A rat's `TurnsUntilSummonable` is not touched: the
+            // decrement is in the three move bodies, none of which ran.
+            if random_moves(kind).is_some() {
+                return Ok(());
+            }
             let monster = &mut state.monsters_mut()[index];
             monster.override_state = MonsterOverride::None;
             monster.forced_follow_up = MonsterFollowUp::None;
+            // #3823, Scroll of Biting. The walk out of STUNNED logs the parked
+            // `MoveState` a second time: `FindNextMoveState` `0x78e94`
+            // IL_0045-IL_008f follows STUNNED to `States[FollowUpStateId]` and
+            // IL_009c-IL_00d1 appends the first loggable state of the walk,
+            // which is that move. For a parked CHEW the two trailing
+            // `StateLog` entries are then both CHEW, whichever way the CHEW
+            // was reached (MORE_TEETH's follow-up, the `rand` after a CHEW, or
+            // the `StarterMoveIdx` opener), and that is the whole fact
+            // `scroll_chew_repeated` carries: the `rand` after this CHEW
+            // weighs CHEW at 0 (`RandomBranchState::GetStateWeight` `0x79380`
+            // IL_00bb-IL_014e, `maxTimes` 2) and lands on CHOMP, still for one
+            // MonsterAi draw. A parked CHOMP or MORE_TEETH is also logged
+            // twice, and no weight reads it: CHOMP is CannotRepeat and is
+            // only rolled after a CHEW, and MORE_TEETH is in no branch.
+            // Native: `SCROLLS_OF_BITING_WEAK` A10, a stun over each of the
+            // five turns of the cycle (the walk
+            // `2026-10-12-issue3823-scroll-of-biting.md` has the traces).
+            if kind == MonsterKind::ScrollOfBiting && monster.loop_pos == 1 {
+                monster.set_scroll_chew_repeated(true);
+            }
             return Ok(());
         }
         if (kind, override_state, forced_follow_up)
@@ -5776,10 +6209,12 @@ fn monster_act(
         MonsterOverride::None => {}
     }
     // Python `monster_act` consumes `spawn_noop` (frozen Python, deleted #2827) BEFORE its override
-    // chain; this function resolves the override first. The transposition
-    // is unobservable only because admission pins `spawn_noop` to its Python
-    // writer kinds (Wriggler, Fat/Sneaky Gremlin), none of which can carry an
-    // override (#1387). Keep that pin if this order is ever revisited.
+    // chain; this function resolves the override first (#1387). That is the
+    // native order (#3823): `spawn_noop` is the SPAWNED_MOVE telegraph of
+    // its three writer kinds (Wriggler, Fat/Sneaky Gremlin), and a generic
+    // stun over it parks SPAWNED_MOVE and performs first, so the stunned
+    // action leaves `spawn_noop` for the next one (`monsters::
+    // generic_stun_owner_state_is_representable`).
     if spawn_noop {
         state.monsters_mut()[index].spawn_noop = false;
         return Ok(());
@@ -6437,7 +6872,19 @@ fn monster_intent(state: &HotState, catalog: &Catalog, monster: &HotMonster) -> 
         damage: None,
         hits: None,
     };
-    if monster.hp <= 0 || monster.spawn_noop {
+    if monster.hp <= 0 {
+        return unknown;
+    }
+    // #3823: a stun over a freshly spawned monster's SPAWNED_MOVE shows the
+    // STUNNED state (`Creature::StunInternal` `0x11d7cc` IL_0057-IL_006b
+    // gives it a `StunIntent`), not the spawn's own.
+    if monster.spawn_noop {
+        if monster.override_state == MonsterOverride::Stunned {
+            return MonsterIntent {
+                intent: Some(monster.override_state.as_str()),
+                ..unknown
+            };
+        }
         return unknown;
     }
     // A sleeping Lagavulin Matriarch's next move is `SLEEP_MOVE`, whose one
@@ -6947,6 +7394,13 @@ fn prepare_random_ai(state: &mut HotState, catalog: &Catalog) -> Result<(), Engi
         if state.monsters[index].hp <= 0 || random_moves(kind).is_none() {
             continue;
         }
+        // #3823: a monster that spent this enemy side on STUNNED rolls back
+        // into its parked move, ahead of every per-kind advance below (none
+        // of them runs for it: its move did not perform).
+        if state.monsters[index].override_state == MonsterOverride::Stunned {
+            resume_stunned_random_ai(state, index)?;
+            continue;
+        }
         if kind == MonsterKind::SlitheringStrangler && state.fanouts.constrict_amount() != 0 {
             advance_slithering_strangler_intent(state, index)?;
             continue;
@@ -6966,7 +7420,12 @@ fn prepare_random_ai(state: &mut HotState, catalog: &Catalog) -> Result<(), Engi
         if !random_ai_is_allowlisted(kind) {
             return Err(EngineRefusal::MonsterLoopNotModeled(kind));
         }
+        // #3747: a rat summoned this enemy side was published without an
+        // intent (`<AfterCreatureAdded>d__113` `0x3f2dfc` IL_0084-IL_008f
+        // rolls only on the player side, see `monsters::spawn_rat`). Its
+        // first roll is this walk's, at its own `Enemies` position.
         if kind == MonsterKind::TwoTailedRat && state.monsters[index].rat_spawn_fresh() {
+            roll_rat_intent(state, index)?;
             state.monsters_mut()[index].set_rat_spawn_fresh(false);
             continue;
         }
@@ -6989,6 +7448,49 @@ fn prepare_random_ai(state: &mut HotState, catalog: &Catalog) -> Result<(), Engi
         }
         roll_random_intent(state, catalog, index)?;
     }
+    Ok(())
+}
+
+/// The roll of a random-table monster whose turn was spent on STUNNED
+/// (#3823).
+///
+/// `CombatManager/<StartTurn>d__100::MoveNext` `0x3f781c` IL_036b-IL_03a0
+/// calls `Creature::PrepareForNextTurn` `0x11d85c` on each enemy in order,
+/// which is `MonsterModel::RollMove` `0x825c8` ->
+/// `MonsterMoveStateMachine::FindNextMoveState` `0x78e94`. With STUNNED
+/// performed, `CanTransitionAway` holds (`0x78ff3`) and the walk takes
+/// `MoveState::GetNextState`, which is `States[FollowUpStateId]`
+/// (IL_0045-IL_008f): the parked `MoveState`, a move, so the walk stops there
+/// without entering any `RandomBranchState` and **draws nothing**. It then
+/// appends that state to `StateLog` (IL_009c-IL_00d1), a second entry for a
+/// move that is logged already.
+///
+/// So: clear the override, keep `next`, push `next` onto the trailing log.
+/// The duplicate is read by the next real roll through the ordinary weight
+/// rules ([`can_repeat_x_times_weight`], [`random_branch_cooldown_weight`]
+/// and the CannotRepeat tests on `next`), which is the whole effect of a stun
+/// on a random machine (`monsters::GENERIC_STUN_RANDOM_TABLE_KINDS`).
+///
+/// A monster that was stunned but did not act this enemy side would keep
+/// STUNNED natively (`FindNextMoveState` IL_001f-IL_002c returns on a
+/// must-perform state that has not performed). That cannot happen here: a
+/// stun lands in the player's turn, and every monster standing at the start
+/// of the enemy side acts in it (`run_enemy_phase_inner`).
+fn resume_stunned_random_ai(state: &mut HotState, index: usize) -> Result<(), EngineRefusal> {
+    if !super::monsters::generic_stun_state_is_exact(state, index) {
+        return Err(EngineRefusal::MalformedArgs("stunned random AI state"));
+    }
+    let mut machine = state.monsters[index].random_ai;
+    let parked = machine
+        .next()
+        .ok_or(EngineRefusal::MalformedArgs("stunned random AI state"))?;
+    if !machine.push_log(parked) {
+        return Err(EngineRefusal::CounterOverflow("random AI StateLog"));
+    }
+    let monster = &mut state.monsters_mut()[index];
+    monster.override_state = MonsterOverride::None;
+    monster.forced_follow_up = MonsterFollowUp::None;
+    monster.random_ai = machine;
     Ok(())
 }
 
@@ -7024,7 +7526,10 @@ pub(crate) fn slithering_strangler_ai_state_is_exact(monster: &HotMonster) -> bo
         if value > STRANGLER_LASH_INDEX {
             return false;
         }
+        // #3823: a stun logs the parked move a second time
+        // (`resume_stunned_random_ai`), so any move may follow itself.
         position == 0
+            || machine.log_at(position - 1) == Some(value)
             || matches!(
                 (machine.log_at(position - 1), value),
                 (Some(STRANGLER_CONSTRICT_INDEX), STRANGLER_THWACK_INDEX)
@@ -7176,8 +7681,9 @@ pub(crate) fn advance_slithering_strangler_intent(
 /// Authenticate Hunter Killer's fixed Goop opener plus the two-branch RAND.
 /// BITE is CannotRepeat but is the first branch, so it repeats on the exact
 /// zero float only. PUNCTURE is `CanRepeatXTimes(2)` (#3026): two in a row are
-/// ordinary, a third is unreachable because BITE is visited first with weight
-/// one once PUNCTURE's weight is zero.
+/// ordinary, and no roll gives a third because BITE is visited first with
+/// weight one once PUNCTURE's weight is zero. A stun does (#3823): it logs the
+/// parked move again, whichever move that is, so any entry may follow itself.
 pub(crate) fn hunter_killer_ai_state_is_exact(monster: &HotMonster) -> bool {
     if monster.kind != MonsterKind::HunterKiller
         || monster.loop_pos != 0
@@ -7199,27 +7705,29 @@ pub(crate) fn hunter_killer_ai_state_is_exact(monster: &HotMonster) -> bool {
     {
         return false;
     }
-    let three_punctures =
-        len == 3 && (0..3).all(|position| machine.log_at(position) == Some(HUNTER_PUNCTURE_INDEX));
-    !three_punctures
-        && (0..len).all(|position| {
-            let Some(value) = machine.log_at(position) else {
-                return false;
-            };
-            if value > HUNTER_PUNCTURE_INDEX {
-                return false;
-            }
-            position == 0
-                || matches!(
-                    (machine.log_at(position - 1), value),
-                    (Some(HUNTER_GOOP_INDEX), HUNTER_BITE_INDEX)
-                        | (Some(HUNTER_GOOP_INDEX), HUNTER_PUNCTURE_INDEX)
-                        | (Some(HUNTER_BITE_INDEX), HUNTER_BITE_INDEX)
-                        | (Some(HUNTER_BITE_INDEX), HUNTER_PUNCTURE_INDEX)
-                        | (Some(HUNTER_PUNCTURE_INDEX), HUNTER_BITE_INDEX)
-                        | (Some(HUNTER_PUNCTURE_INDEX), HUNTER_PUNCTURE_INDEX)
-                )
-        })
+    // #3823: a stun logs the parked move a second time
+    // (`resume_stunned_random_ai`). GOOP may therefore follow itself, and a
+    // stun over a PUNCTURE already shown twice gives three in a row, which no
+    // roll can.
+    (0..len).all(|position| {
+        let Some(value) = machine.log_at(position) else {
+            return false;
+        };
+        if value > HUNTER_PUNCTURE_INDEX {
+            return false;
+        }
+        position == 0
+            || machine.log_at(position - 1) == Some(value)
+            || matches!(
+                (machine.log_at(position - 1), value),
+                (Some(HUNTER_GOOP_INDEX), HUNTER_BITE_INDEX)
+                    | (Some(HUNTER_GOOP_INDEX), HUNTER_PUNCTURE_INDEX)
+                    | (Some(HUNTER_BITE_INDEX), HUNTER_BITE_INDEX)
+                    | (Some(HUNTER_BITE_INDEX), HUNTER_PUNCTURE_INDEX)
+                    | (Some(HUNTER_PUNCTURE_INDEX), HUNTER_BITE_INDEX)
+                    | (Some(HUNTER_PUNCTURE_INDEX), HUNTER_PUNCTURE_INDEX)
+            )
+    })
 }
 
 /// Run the post-move RAND. Every executed Goop/Bite/Puncture consumes one AI
@@ -7691,8 +8199,15 @@ fn rat_can_summon(state: &HotState, index: usize) -> Result<bool, EngineRefusal>
             continue;
         }
         held.push(super::monsters::rat_native_slot(other.slot));
+        // #3823: a teammate still showing STUNNED is not showing
+        // CALL_FOR_BACKUP, whatever it parked (the comparison at IL_0082-
+        // IL_009b is on `NextMove.Id`). It shows the parked move again once
+        // its own roll has run, which `prepare_random_ai` does in this same
+        // roster order, so a rat rolled before a stunned caller can roll the
+        // call too and one rolled after it cannot.
         if other_index != index
             && other.kind == MonsterKind::TwoTailedRat
+            && other.override_state != MonsterOverride::Stunned
             && other.random_ai.next() == Some(RAT_CALL_FOR_BACKUP_INDEX)
         {
             teammate_pending = true;
@@ -7903,16 +8418,24 @@ fn setup_player_turn_pause_is_reachable(state: &HotState, catalog: &Catalog) -> 
 const SENTRY_MODE_TURN_REACHABLE: u8 = 1;
 const FOREGONE_TURN_REACHABLE: u8 = 2;
 const CALL_OF_THE_VOID_TURN_REACHABLE: u8 = 4;
+/// A live `NightmarePower` object (#3794). Unlike the three bits above it has
+/// no ordinary power slot, so it is read from its own instance list.
+const NIGHTMARE_TURN_REACHABLE: u8 = 8;
 
 /// Classify both modeled BeforeHandDraw listeners in one fixed-order scan.
 /// Exact slot lookups preserve malformed live-slot/no-token refusal without
 /// scanning unrelated powers or replacing the certified transaction gates.
 #[inline]
 fn before_hand_draw_turn_reachability(state: &HotState) -> u8 {
-    if state.powers.is_empty() && state.fanouts.before_hand_draw_order().is_empty() {
+    let nightmare = if state.fanouts.nightmare_instances().is_empty() {
         0
     } else {
-        before_hand_draw_turn_reachability_rare(state)
+        NIGHTMARE_TURN_REACHABLE
+    };
+    if state.powers.is_empty() && state.fanouts.before_hand_draw_order().is_empty() {
+        nightmare
+    } else {
+        nightmare | before_hand_draw_turn_reachability_rare(state)
     }
 }
 
@@ -7961,9 +8484,13 @@ fn require_before_hand_draw_turn_entry(
         reachable
             & !(SENTRY_MODE_TURN_REACHABLE
                 | FOREGONE_TURN_REACHABLE
-                | CALL_OF_THE_VOID_TURN_REACHABLE),
+                | CALL_OF_THE_VOID_TURN_REACHABLE
+                | NIGHTMARE_TURN_REACHABLE),
         0
     );
+    if reachable & NIGHTMARE_TURN_REACHABLE != 0 {
+        require_nightmare_turn_entry(state, catalog)?;
+    }
     if reachable & SENTRY_MODE_TURN_REACHABLE != 0 {
         require_sentry_mode_turn_entry(state, catalog)?;
     }
@@ -7974,6 +8501,150 @@ fn require_before_hand_draw_turn_entry(
         require_call_of_the_void_turn_entry(state, catalog)?;
     }
     Ok(())
+}
+
+/// Whether the live `NightmarePower` objects are a state the BeforeHandDraw
+/// walk can run exactly (#3794). Shared by turn entry and admission.
+///
+/// Every object has the one Amount its only writer applies
+/// (`selection::NIGHTMARE_AMOUNT`), holds a card this catalog knows, and
+/// records a place that the BeforeHandDraw fanout order can still express:
+/// places are non-decreasing in acquisition order and none lies past the
+/// order's end. The order itself must be the complete acquisition order
+/// (`templates::before_hand_draw_power_order_is_exact`), because a place is
+/// an index into it.
+///
+/// Foregone Conclusion beside a Nightmare is not modeled, and is refused by
+/// name where this returns `Err`. `ForegoneConclusionPower` can suspend the
+/// walk for a player choice and resumes it from a frozen `PowerId` listener
+/// list (`hot::BeforeHandDrawPowerRecord`), which has no token for a
+/// Nightmare object's place.
+pub(crate) fn nightmare_state_refusal(state: &HotState, catalog: &Catalog) -> Option<&'static str> {
+    let instances = state.fanouts.nightmare_instances();
+    if instances.is_empty() {
+        return None;
+    }
+    let order = state.fanouts.before_hand_draw_order();
+    if state.powers.get(PowerId::Foregone).is_some() || order.contains(&PowerId::Foregone) {
+        return Some("Nightmare beside Foregone Conclusion");
+    }
+    if !crate::steps::templates::before_hand_draw_power_order_is_exact(state) {
+        return Some("Nightmare BeforeHandDraw order");
+    }
+    let mut previous = 0_u8;
+    for instance in instances {
+        if instance.amount != crate::engine::selection::NIGHTMARE_AMOUNT
+            || instance.listeners_before < previous
+            || usize::from(instance.listeners_before) > order.len()
+            || instance.flags
+                & (crate::hot::CARD_FLAG_PICK
+                    | crate::hot::CARD_FLAG_LEGACY
+                    | super::cards::CARD_AFFLICTION_FLAGS)
+                != 0
+            || catalog.spec(instance.atom).is_none()
+        {
+            return Some("Nightmare instance state");
+        }
+        previous = instance.listeners_before;
+    }
+    // `PowerCmd.Remove` of each object is a player-owned Buff change, like
+    // Foregone's (`require_foregone_turn_entry`).
+    if !super::damage::player_type_one_listener_order_is_exact(state) {
+        return Some("Nightmare AfterPowerAmountChanged order");
+    }
+    None
+}
+
+#[cold]
+#[inline(never)]
+fn require_nightmare_turn_entry(state: &HotState, catalog: &Catalog) -> Result<(), EngineRefusal> {
+    match nightmare_state_refusal(state, catalog) {
+        Some(reason) => Err(EngineRefusal::MalformedArgs(reason)),
+        None => Ok(()),
+    }
+}
+
+/// Run every `NightmarePower` object whose place is before BeforeHandDraw
+/// power listener `listener_index` (#3794); `listener_index` equal to the
+/// listener count runs the objects attached after every such power.
+///
+/// Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`):
+///
+/// - Order. `Hook/<BeforeHandDraw>d__36` walks
+///   `CombatState::IterateHookListeners`, whose iterator
+///   (`<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`) adds each
+///   creature's `Creature.Powers` whole (IL_0092-IL_0097) before that
+///   player's relics (IL_00c9), potions (IL_0107), orbs (IL_015c) and pile
+///   cards (IL_0168), and builds the whole list before yielding any of it.
+///   A NightmarePower object therefore runs at its acquisition position
+///   among the owner's powers, before every relic and card listener, and
+///   the objects present when the walk starts are the ones that run.
+/// - Body. `NightmarePower/<BeforeHandDraw>d__11::MoveNext` RVA `0x33ed34`
+///   returns unless `player == Owner.Player` (IL_0027-IL_003a), reads
+///   `Data.selectedCard` (IL_0040-IL_004b), and for `i < Amount` (IL_00e3-
+///   IL_00ef, re-read each pass; nothing in the body writes it) awaits
+///   `CardPileCmd::AddGeneratedCardToCombat(card.CreateClone(), PileType 2
+///   /* Hand */, Owner.Player, position 1 /* Bottom */)` (IL_005c-IL_0076),
+///   the argument tuple Dual Wield passes. Each copy is a clone of the HELD
+///   card, so the copies are equal and none sees a write made to an earlier
+///   one. Then `PowerCmd::Remove(this)` (IL_00f4-IL_00f5), which has no
+///   ending gate (`PowerCmd/<Remove>d__8::MoveNext` RVA `0x3f09bc`).
+///
+/// Each copy is its own generated-card command (history, the ten-card Hand
+/// cap's Discard redirect, `AfterCardGeneratedForCombat`), run through the
+/// shared clone transaction.
+fn run_nightmares_before_listener(
+    state: &mut HotState,
+    catalog: &Catalog,
+    listener_index: usize,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    fn apply(
+        state: &mut HotState,
+        catalog: &Catalog,
+        listener_index: usize,
+        events: &mut Vec<Event>,
+    ) -> Result<(), EngineRefusal> {
+        while let Some(instance) = state
+            .fanouts
+            .nightmare_instances()
+            .first()
+            .filter(|instance| usize::from(instance.listeners_before) <= listener_index)
+            .cloned()
+        {
+            let copies = usize::try_from(instance.amount)
+                .map_err(|_| EngineRefusal::MalformedArgs("Nightmare instance state"))?;
+            for _ in 0..copies {
+                super::cards::inject_nightmare_copy(
+                    state,
+                    catalog,
+                    instance.atom,
+                    instance.flags,
+                    &instance.instance,
+                    events,
+                )?;
+            }
+            let mut remaining = state.fanouts.nightmare_instances().to_vec();
+            remaining.remove(0);
+            state.fanouts.set_nightmare_instances(remaining);
+        }
+        Ok(())
+    }
+    if state
+        .fanouts
+        .nightmare_instances()
+        .first()
+        .is_none_or(|instance| usize::from(instance.listeners_before) > listener_index)
+    {
+        return Ok(());
+    }
+    // A later copy can fail (uid or history capacity, a generated-card
+    // listener) after earlier copies have published; rehearse the complete
+    // loop first, as the other BeforeHandDraw generators do.
+    let mut probe = state.clone();
+    apply(&mut probe, catalog, listener_index, &mut Vec::new())?;
+    apply(state, catalog, listener_index, events)
 }
 
 #[cold]
@@ -8257,6 +8928,9 @@ pub(crate) fn begin_player_turn(
     }
     if furnace_turn_is_reachable(state)
         || before_hand_draw_reachability != 0
+        // The `BeforeHandDraw` relic walk can refuse by name behind earlier
+        // turn-start writes (#3635).
+        || super::relics::before_hand_draw_walk_can_refuse(catalog, state)
         || after_side_turn_start_is_reachable(state)
         || state.after_damage_received_order_is_reachable()
         || aggression_turn_is_reachable(state)
@@ -8266,6 +8940,11 @@ pub(crate) fn begin_player_turn(
             .after_player_turn_start_order()
             .is_some_and(|order| !order.is_empty())
         || setup_player_turn_pause_is_reachable(state, catalog)
+        // The relic walk's bodies can refuse by name behind earlier
+        // turn-start writes (an enemy hit on a combat over with an enemy
+        // standing, a lethal Royal Poison on an ended combat, a parked
+        // listener choice with a relic still to act), #3889.
+        || super::relics::after_player_turn_start_walk_is_reachable(catalog)
     {
         #[cfg(test)]
         FURNACE_TURN_TRANSACTIONS.with(|count| count.set(count.get() + 1));
@@ -8386,6 +9065,16 @@ fn roll_stars_gained_window(state: &mut HotState) {
 /// (1, Player, 1) and count for all of turn one, so the player-side roll
 /// skips it, exactly as [`roll_stars_gained_window`] does.
 fn roll_happened_this_turn_counters(state: &mut HotState) -> Result<(), EngineRefusal> {
+    // Chains of Binding's "bound this turn" count (#3756).
+    // `ChainsOfBindingPower/<AfterCardDrawn>d__8::MoveNext` (v0.111.0 RVA
+    // `0x336cec`, DLL 9cb4f1ad) counts the `CardAfflictedEntry` rows that
+    // `<AfterCardDrawn>b__8_0` (RVA `0xa04f0`) accepts, the first test of
+    // which is `HappenedThisTurn` (IL_0001-IL_000d), against the power's
+    // Amount (IL_0071-IL_009e). So a card drawn on the player's side after
+    // BeforeSideTurnEnd, in the same round, still finds this turn's three
+    // rows and is not bound.
+    let cleared = state.set_bound_afflictions_this_turn(0);
+    debug_assert!(cleared);
     let history = &mut state.history;
     history.attack_plays_finished_this_turn = 0;
     history.skill_plays_finished_this_turn = 0;
@@ -8500,8 +9189,7 @@ fn begin_player_turn_walk(
     // while combat is live. Validate its complete represented environment
     // before hand draw or any earlier callback can publish a prefix; the later
     // ModifyAmount command still rechecks the ending gate.
-    let hibernate_was_captured =
-        crate::steps::defect_uncommon::preflight_hibernate_turn_start(state)?;
+    crate::steps::defect_uncommon::preflight_hibernate_turn_start(state)?;
     // Creature.BeforeTurnStart snapshots every PowerModel Amount into
     // AmountOnTurnStart before any player-turn-start listener can run.
     // SummonNextTurn uses that frozen value as its later
@@ -8627,8 +9315,60 @@ fn begin_player_turn_walk(
                 state.block = 0;
             }
         }
+        // #3756: the walk is the owner's listeners in acquisition order. The
+        // keyed order names BlockNextTurn, Self-Forming Clay and the first
+        // Toric object; a later Toric object (the power is Instanced, see
+        // `ToricToughnessLaterInstance`) runs at its own recorded place
+        // among them. The snapshot is taken before any listener runs, so an
+        // object promoted to the keyed record mid-walk still runs once, at
+        // the place it held.
         let delayed_order = state.fanouts.after_block_cleared_order().to_vec();
-        for power in delayed_order {
+        let later_toric = state.fanouts.toric_toughness_later_instances();
+        let mut delayed_walk = Vec::with_capacity(delayed_order.len() + later_toric.len());
+        for place in 0..=delayed_order.len() {
+            delayed_walk.extend(
+                later_toric
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, later)| usize::from(later.listeners_before) == place)
+                    .map(|(index, _)| (PowerId::ToricToughness, Some(index))),
+            );
+            if let Some(power) = delayed_order.get(place) {
+                delayed_walk.push((*power, None));
+            }
+        }
+        let mut promoted_toric = 0_usize;
+        for (power, later_index) in delayed_walk {
+            // A later Toric object whose every older object has expired in
+            // this walk is the keyed first object by now.
+            let later_index = match later_index {
+                Some(index) if index + 1 == promoted_toric => None,
+                Some(index) => Some(index.checked_sub(promoted_toric).ok_or(
+                    EngineRefusal::MalformedArgs("Toric Toughness listener state"),
+                )?),
+                None => None,
+            };
+            if let Some(index) = later_index {
+                let instance = *state
+                    .fanouts
+                    .toric_toughness_later_instances()
+                    .get(index)
+                    .ok_or(EngineRefusal::MalformedArgs(
+                        "Toric Toughness listener state",
+                    ))?;
+                super::orbs::gain_flat_decimal_block(state, catalog, instance.block, events)?;
+                let remaining = state
+                    .fanouts
+                    .decrement_toric_toughness_later(index)
+                    .map_err(|_| EngineRefusal::MalformedArgs("Toric Toughness listener state"))?;
+                super::damage::note_power(
+                    events,
+                    Subject::Player,
+                    PowerId::ToricToughness,
+                    remaining,
+                );
+                continue;
+            }
             match power {
                 // #3159: BlockNextTurnPower `<AfterBlockCleared>d__6::MoveNext`
                 // RVA `0x335e64` and SelfFormingClayPower's RVA `0x343c60` are
@@ -8660,6 +9400,9 @@ fn begin_player_turn_walk(
                     let remaining = state.fanouts.decrement_toric_toughness().map_err(|_| {
                         EngineRefusal::MalformedArgs("Toric Toughness listener state")
                     })?;
+                    if remaining == 0 && state.fanouts.toric_toughness().is_some() {
+                        promoted_toric += 1;
+                    }
                     super::damage::note_power(
                         events,
                         Subject::Player,
@@ -8823,6 +9566,11 @@ fn begin_player_turn_walk(
     // frozen UID order remains cold canonical state until all earlier
     // BeforeHandDraw callbacks complete.
     super::cards::freeze_self_return_before_hand_draw(state, catalog)?;
+    // `Hook::BeforeHandDraw` tests the combat once, before its first listener
+    // (`Hook/<IterateCombatHookListeners>d__0::MoveNext` RVA `0x3d3bc0`,
+    // `IL_0028`-`IL_0042`): the owner's powers below and its relics behind
+    // them are one listener list.
+    let before_hand_draw_started_live = !state.history.over;
     let mut before_hand_draw = state.fanouts.before_hand_draw_order().to_vec();
     if before_hand_draw.is_empty() {
         for power in [PowerId::InfiniteBlades, PowerId::CreativeAi] {
@@ -8841,7 +9589,26 @@ fn begin_player_turn_walk(
             }
         }
     }
+    // A pass entered on an ended combat yields no listener at all, the
+    // owner's powers included (`<IterateCombatHookListeners>d__0`
+    // `IL_0028`-`IL_0042`). So Foregone Conclusion's frame, and with it
+    // either resume path below it, exists only for a pass that began live.
+    if !before_hand_draw_started_live {
+        before_hand_draw.clear();
+    }
+    // #3794: NightmarePower objects are BeforeHandDraw power listeners too,
+    // each at its own acquisition place among the powers above. Every caller
+    // authenticates them at turn entry; the walk repeats the check so no
+    // other route can run a place it cannot express.
+    let nightmares_live =
+        before_hand_draw_started_live && !state.fanouts.nightmare_instances().is_empty();
+    if nightmares_live {
+        require_nightmare_turn_entry(state, catalog)?;
+    }
     for (listener_index, power) in before_hand_draw.iter().copied().enumerate() {
+        if nightmares_live {
+            run_nightmares_before_listener(state, catalog, listener_index, events)?;
+        }
         match power {
             PowerId::InfiniteBlades => {
                 let amount: usize = state
@@ -8897,20 +9664,18 @@ fn begin_player_turn_walk(
             }
         }
     }
+    if nightmares_live {
+        run_nightmares_before_listener(state, catalog, before_hand_draw.len(), events)?;
+    }
     super::cards::complete_self_return_before_hand_draw(state, catalog, events)?;
 
-    let pollinous_activated = super::relics::before_hand_draw(catalog, state, events)?;
-    if state.pending.is_some() {
+    // The owner's relics, one walk in recorded order behind its powers
+    // (#3635). Toolbox's choice leaves the walk parked.
+    if !super::relics::before_hand_draw(catalog, state, before_hand_draw_started_live, events)? {
         return Ok(());
     }
 
-    finish_player_turn_start_after_before_hand_draw_relics(
-        state,
-        catalog,
-        hibernate_was_captured,
-        pollinous_activated,
-        events,
-    )
+    finish_player_turn_start_after_before_hand_draw_relics(state, catalog, events)
 }
 
 /// `SetupPlayerTurn`'s turn-one Draw fixup, run where native runs it (#3404).
@@ -9062,17 +9827,17 @@ mod deferred_turn_one_fixup_tests {
 fn finish_player_turn_start_after_before_hand_draw_relics(
     state: &mut HotState,
     catalog: &Catalog,
-    hibernate_was_captured: bool,
-    pollinous_activated: bool,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     // `SetupPlayerTurn`'s hand draw — the DLL's sole `fromHandDraw` Draw.
     // `_begin_player_turn_hand_draw` totals the `ModifyHandDraw` relic
     // modifiers into the count, then clamps turn one to the combat-setup
-    // Innate count.
+    // Innate count. Pollinous Core's row reads the counter its
+    // `BeforeHandDraw` body left and resets it
+    // (`relics::pollinous_core_modify_hand_draw`).
     let bonus = modifier_total(catalog, HookEvent::ModifyHandDraw, state)?
-        .checked_add(super::relics::pollinous_hand_draw_bonus(
-            pollinous_activated,
+        .checked_add(super::relics::pollinous_core_modify_hand_draw(
+            catalog, state,
         ))
         .ok_or(EngineRefusal::CounterOverflow("hand draw count"))?;
     let draws_i64 = ordered_hand_draw_count(state, bonus)?;
@@ -9094,7 +9859,6 @@ fn finish_player_turn_start_after_before_hand_draw_relics(
         }
         draws = draws.max(innate_min_draw);
     }
-    super::relics::radiant_pearl_before_hand_draw(catalog, state, events)?;
     // The DLL's sole `fromHandDraw` Draw, and therefore the only one whose
     // cards do not count toward `non_hand_draws_this_turn`.
     let resumable_hand_draw = state.powers.value(PowerId::Stratagem) > 0
@@ -9113,12 +9877,7 @@ fn finish_player_turn_start_after_before_hand_draw_relics(
         draw_cards(state, catalog, draws, DrawSource::HandDraw, events)?;
     }
 
-    finish_player_turn_start_after_resumable_hand_draw(
-        state,
-        catalog,
-        hibernate_was_captured,
-        events,
-    )
+    finish_player_turn_start_after_resumable_hand_draw(state, catalog, events)
 }
 
 pub(crate) fn resume_player_turn_start_after_toolbox(
@@ -9126,15 +9885,10 @@ pub(crate) fn resume_player_turn_start_after_toolbox(
     catalog: &Catalog,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    let pollinous_activated =
-        super::relics::continue_before_hand_draw_after_toolbox(catalog, state, events)?;
-    finish_player_turn_start_after_before_hand_draw_relics(
-        state,
-        catalog,
-        state.powers.value(PowerId::Hibernate) > 0,
-        pollinous_activated,
-        events,
-    )
+    if !super::relics::resume_before_hand_draw_after_toolbox(catalog, state, events)? {
+        return Ok(());
+    }
+    finish_player_turn_start_after_before_hand_draw_relics(state, catalog, events)
 }
 
 pub(crate) fn resume_player_turn_start_after_hand_draw(
@@ -9142,36 +9896,24 @@ pub(crate) fn resume_player_turn_start_after_hand_draw(
     catalog: &Catalog,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    let hibernate_was_captured = state.powers.value(PowerId::Hibernate) > 0;
-    finish_player_turn_start_after_resumable_hand_draw(
-        state,
-        catalog,
-        hibernate_was_captured,
-        events,
-    )
+    finish_player_turn_start_after_resumable_hand_draw(state, catalog, events)
 }
 
 fn finish_player_turn_start_after_resumable_hand_draw(
     state: &mut HotState,
     catalog: &Catalog,
-    hibernate_was_captured: bool,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     // Native captures this power list in first-application order. The compact
     // state carrier is authenticated at the boundary and survives source-card
     // movement, so generated Stoke descendants retain their exact order.
+    // Hibernate is one of its members (#3877).
     if begin_turn_start_hand_choice_listeners(state, catalog, events)? {
         return Ok(());
     }
-    // No represented ordered listener was live. Hibernate remains a
-    // source-derived singleton wall and therefore retains its established
-    // post-list position without another hot-state token.
-    crate::steps::defect_uncommon::tick_hibernate_turn_start(
-        state,
-        hibernate_was_captured,
-        events,
-    )?;
-    finish_player_turn_start_after_hand_choices(state, catalog, events)
+    // No ordered listener was live.
+    let pass_started_live = !state.history.over;
+    finish_player_turn_start_after_hand_choices(state, catalog, pass_started_live, events)
 }
 
 /// Native `ModifyHandDraw` ordering: player powers contribute and clamp their
@@ -9198,16 +9940,31 @@ fn ordered_hand_draw_count(state: &HotState, relic_bonus: i16) -> Result<i64, En
     Ok(draws_i64)
 }
 
+/// The relic segment of the ordinary `AfterPlayerTurnStart` pass, then the
+/// rest of the turn start.
+///
+/// `pass_started_live` is whether the combat was live when the pass reached
+/// its first listener. The owner's powers and relics are one listener list
+/// (`CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`: a
+/// creature's powers at `IL_0092`-`IL_0097`, then a player's relics at
+/// `IL_00c9`-`IL_00ef`), and `Hook/<IterateCombatHookListeners>d__0::MoveNext`
+/// (RVA `0x3d3bc0`) tests `IsOverOrEnding && !IsStarting` once, before the
+/// first of them (`IL_0028`-`IL_0042`), and never between listeners
+/// (`IL_0064`-`IL_0095`). So a power of the pass that ends the combat does
+/// not stop the relics behind it (#3889; recorded natively behind a relic
+/// kill, where the same loop runs Royal Poison, Bone Tea and both generation
+/// draws on the ended combat).
 fn finish_player_turn_start_after_hand_choices(
     state: &mut HotState,
     catalog: &Catalog,
+    pass_started_live: bool,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     // `_turn_start_after_royal` (frozen Python, deleted #2827) fires the three turn-start
     // hooks after the hand draw, in this order. The ordinary-power hook then
     // dispatches the frozen acquisition order through
     // `_run_after_side_turn_start_power_order`.
-    super::relics::after_player_turn_start(catalog, state, events)?;
+    super::relics::after_player_turn_start(catalog, state, pass_started_live, events)?;
     if state.pending.is_some() {
         return Ok(());
     }
@@ -9320,6 +10077,44 @@ pub(crate) fn run_side_start_ahead_of_setup_remainder(
     Ok(())
 }
 
+/// A turn-start Hand-choice power (Tools of the Trade, Tyranny, Entropy) is
+/// about to read the Hand inside the synchronous `StartTurn` frame (#3756).
+///
+/// All three select through `CardSelectCmd::FromHand`:
+/// `ToolsOfTheTradePower/<AfterPlayerTurnStart>d__5::MoveNext` RVA `0x349cb4`
+/// calls `FromHandForDiscard` (IL_005a; `<FromHandForDiscard>d__29` RVA
+/// `0x3e7a64` forwards to `FromHand`),
+/// `TyrannyPower/<AfterPlayerTurnStart>d__7::MoveNext` RVA `0x34a0f8` calls
+/// `FromHand` (IL_005a) and
+/// `EntropyPower/<AfterPlayerTurnStart>d__6::MoveNext` RVA `0x339e48` calls
+/// `FromHand` (IL_005d). `<FromHand>d__28::MoveNext` (RVA `0x3e7568`) signals
+/// the choice context first (`SignalPlayerChoiceBegun`, IL_00a6-IL_00b3,
+/// reached whenever no selector is pushed, IL_007c-IL_0081) and reads
+/// `GetPile(Hand).Cards` only after that await resumes (IL_010d-IL_0119).
+/// The signal is what lets `StartTurn` run its side-start tail
+/// ([`SetupPlayerTurnWindow`]), and it is sent whatever the Hand holds: the
+/// count that decides whether the player is asked is taken from the Hand as
+/// the tail left it (IL_0152-IL_018d). So the tail runs here, ahead of the
+/// Hand read, and the listener's options include a card the tail put in Hand
+/// (Crossbow, Orange Dough, a Furnace-forged Sovereign Blade). Inside a
+/// resumed hook action the tail already ran and this is a no-op.
+///
+/// No relic sits on the wrong side of this pause: the listener walk yields a
+/// creature's powers before the player's relics
+/// (`CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720`), and
+/// the turn-start Hand-choice powers run ahead of
+/// [`super::relics::after_player_turn_start`] here too.
+fn run_side_start_ahead_of_hand_choice_power(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if setup_player_turn_window() == SetupPlayerTurnWindow::Synchronous {
+        run_player_side_start_tail(state, catalog, events)?;
+    }
+    Ok(())
+}
+
 /// `SetupPlayerTurn` paused on a player choice inside the synchronous
 /// `StartTurn` frame: run the side-start tail now, ahead of the remainder
 /// (#3050, see [`SetupPlayerTurnWindow`]).
@@ -9328,11 +10123,16 @@ pub(crate) fn run_side_start_ahead_of_setup_remainder(
 /// hook action resumes. A Hand relic choice (Gambling Chip, Toasty Mittens)
 /// reads the Hand only after the pause, so its snapshot is re-taken. A
 /// generation relic choice (Choices Paradox, Toolbox) fixes its options before
-/// selecting, so the tail cannot touch them. Every other represented
-/// `SetupPlayerTurn` choice (Foregone, Stratagem/Hellraiser hand draw, the
-/// turn-start Hand-choice powers) parks a pile snapshot whose native read
-/// position has not been re-derived for this ordering, so a tail that writes
-/// any pile refuses by name rather than resume against a stale snapshot.
+/// selecting, so the tail cannot touch them. A turn-start Hand-choice power
+/// (Tools of the Trade, Tyranny, Entropy) never reaches here with the tail
+/// still owed: it runs the tail ahead of its own Hand read
+/// ([`run_side_start_ahead_of_hand_choice_power`], #3756). Stratagem's pick
+/// inside the turn-start Hand draw admits a tail that leaves the Draw pile
+/// alone ([`stratagem_hand_draw_pick_survives_tail`], #3756). Every other
+/// represented `SetupPlayerTurn` choice (Foregone, a Hellraiser hand draw)
+/// parks a pile snapshot whose native read position has not been re-derived
+/// for this ordering, so a tail that writes any pile refuses by name rather
+/// than resume against a stale snapshot.
 fn run_side_start_at_setup_pause(
     state: &mut HotState,
     catalog: &Catalog,
@@ -9357,12 +10157,12 @@ fn run_side_start_at_setup_pause(
         Some(RelicPendingKind::ChoicesParadox) => Some(RelicId::RelicChoicesParadox),
         Some(RelicPendingKind::GamblingChip) => Some(RelicId::RelicGamblingChip),
         Some(RelicPendingKind::ToastyMittens) => Some(RelicId::RelicToastyMittens),
-        // Toolbox pauses on turn one only, and the opening refuses every
-        // same-`BeforeHandDraw` relic peer beside it
-        // (`entry::opening::toolbox_provenance_is_recorded`), so no relic of
-        // its pass can sit on the wrong side of this pause. Its card peers
-        // (cards follow relics in the listener walk) move a card only when it
-        // finished a play on the previous owner turn
+        // Toolbox pauses on turn one only, inside the `BeforeHandDraw` relic
+        // walk: the relics recorded ahead of it ran before this tail and the
+        // ones behind it run after, on resume
+        // (`relics::before_hand_draw_pause_order_is_native`, #3635). Its card
+        // peers (cards follow relics in the listener walk) move a card only
+        // when it finished a play on the previous owner turn
         // (`Bolas::<BeforeHandDraw>b__6_0` RVA 0xd9796 and
         // `ThrummingHatchet::<BeforeHandDraw>b__4_0` RVA 0xeeccf, each
         // `CombatHistoryEntry::HappenedLastPlayerTurn` at IL_0008), which
@@ -9372,6 +10172,9 @@ fn run_side_start_at_setup_pause(
     if let Some(paused) = paused_relic {
         super::relics::after_player_turn_start_pause_order_is_native(catalog, state, paused)?;
     }
+    if relic_choice == Some(RelicPendingKind::Toolbox) {
+        super::relics::before_hand_draw_pause_order_is_native(catalog, state)?;
+    }
     let piles_before = relic_choice.is_none().then(|| state.piles.clone());
     run_player_side_start_tail(state, catalog, events)?;
     match relic_choice {
@@ -9380,7 +10183,9 @@ fn run_side_start_at_setup_pause(
         }
         Some(RelicPendingKind::ChoicesParadox | RelicPendingKind::Toolbox) => {}
         None => {
-            if piles_before.is_some_and(|before| before != state.piles) {
+            if piles_before.is_some_and(|before| {
+                before != state.piles && !stratagem_hand_draw_pick_survives_tail(state, &before)
+            }) {
                 return Err(EngineRefusal::PowerOrderNotModeled(
                     "AfterSideTurnStart pile write under a paused SetupPlayerTurn choice",
                 ));
@@ -9388,6 +10193,37 @@ fn run_side_start_at_setup_pause(
         }
     }
     Ok(())
+}
+
+/// Whether the parked choice is Stratagem's pick inside the turn-start Hand
+/// draw and the side-start tail left its options alone (#3756).
+///
+/// `StratagemPower/<AfterShuffle>d__4::MoveNext` (RVA `0x34688c`) selects
+/// through `CardSelectCmd::FromCombatPile(GetPile(Draw), ...)` (IL_004b-IL_0078).
+/// `<FromCombatPile>d__20::MoveNext` (RVA `0x3e5e84`) signals the choice
+/// context first (IL_00a2-IL_00ae) and reads `pile.Cards` only after that
+/// await resumes (IL_0114-IL_0126), i.e. after `StartTurn`'s side-start tail.
+/// The parked candidates were taken from the Draw pile before the tail, so
+/// they are native's exactly when the tail did not write that pile. Whatever
+/// the tail put in Hand (a Furnace-forged Sovereign Blade, a Crossbow card)
+/// is there before the pick is added and before the Draw goes on, in native
+/// and here: the resumed Draw re-reads its drawn prefix, the Hand cap and the
+/// piles live. A tail that writes the Draw pile, and every other parked
+/// `SetupPlayerTurn` choice (Foregone Conclusion's own pile read, a Hand draw
+/// owned by anything but the turn start), keeps the refusal.
+fn stratagem_hand_draw_pick_survives_tail(state: &HotState, before: &crate::hot::HotPiles) -> bool {
+    let Some(pending) = state.pending.as_deref() else {
+        return false;
+    };
+    pending.frame_uid == crate::hot::STRATAGEM_SELECTION_PENDING_UID
+        && matches!(
+            state.frames.top(),
+            Some(crate::frame::Frame::Draw { record })
+                if state.frames.draw(record).is_some_and(|draw| {
+                    draw.caller == crate::hot::DrawCaller::TurnStart
+                })
+        )
+        && before.get(PileId::Draw) == state.piles.get(PileId::Draw)
 }
 
 /// Native `StartTurn`'s player side-start tail: `Hook::AfterSideTurnStart`
@@ -9425,9 +10261,11 @@ fn run_player_side_start_tail(
                 ))?;
         run_after_side_turn_start_player_powers(state, catalog, &order, events)?;
     }
+    // The owner's relics, one walk in recorded order (#3635). The hook's four
+    // template relics fire at their own places in it, so the template fire
+    // point only records itself.
+    super::relics::after_side_turn_start_template_pass(catalog)?;
     super::relics::after_side_turn_start(catalog, state, after_side_hook_started, events)?;
-    fire_hook(catalog, HookEvent::AfterSideTurnStart, state, events)?;
-    super::relics::after_side_turn_start_late(catalog, state, after_side_hook_started, events)?;
     // Enemy powers close the same AfterSideTurnStart walk: the listener list
     // is built ally creatures first (powers, then the player's relics,
     // potions, orbs and cards) and enemy creatures after them
@@ -9459,12 +10297,8 @@ pub(crate) fn resume_player_turn_start_after_relics(
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     // Mercury Hourglass, the one template subscriber of this fire point, ran at
-    // the front of the relic pass when it leads (#3321).
-    if super::relics::mercury_hourglass_leads(catalog) {
-        super::relics::after_player_turn_start_template_pass_after_leading_hourglass(catalog)?;
-    } else {
-        fire_hook(catalog, HookEvent::AfterPlayerTurnStart, state, events)?;
-    }
+    // its recorded place in the relic walk (#3635).
+    super::relics::after_player_turn_start_template_pass(catalog)?;
     // `RELIC.BLOOD_VIAL`'s turn-1 heal, at the oracle's own position: the
     // statement (frozen Python `_run_after_side_turn_start_power_order`, deleted #2827) sits between the two template
     // fires. See `relics::after_player_turn_start_late` for the native contract
@@ -9653,9 +10487,37 @@ pub(crate) fn finish_auto_pre_relic_tail(
     // Card enchantments follow the relics in the AutoPre/Normal listener
     // list: turn one's Imbued AutoPlay (#3381).
     if !state.history.over && state.turn <= 1 {
-        super::play::autoplay_imbued_turn_one(state, catalog, events)?;
+        let window_is_synchronous =
+            setup_player_turn_window() == SetupPlayerTurnWindow::SideStartDone;
+        super::play::autoplay_imbued_turn_one(state, catalog, window_is_synchronous, events)?;
+        if state.pending.is_some() {
+            // The Imbued card's body parked a choice (#3817). The rest of
+            // AutoPre resumes with it, from the Imbued phase frame
+            // (`play::advance_top_replay_phase_one`).
+            return Ok(());
+        }
     }
+    finish_auto_pre_after_imbued(state, catalog, events)
+}
 
+/// The rest of AutoPre after turn one's Imbued AutoPlay: the Late pass and
+/// the phase terminal. It runs synchronously after a child that did not
+/// park, and from the Imbued phase frame once a parked child's choice is
+/// answered (#3817).
+///
+/// `CombatManager/<RunAutoPrePlayPhase>d__101::MoveNext` (v0.111.0
+/// `sts2.dll` SHA-256 `9cb4f1ad…12b4`, RVA `0x3f670c`) awaits
+/// `Hook.AfterAutoPrePlayPhaseEntered` (IL_011c-0171) and only then sets
+/// `PlayerCombatState.Phase = 3` (IL_0177-0182). The hook
+/// (`Hook/<AfterAutoPrePlayPhaseEntered>d__58::MoveNext` RVA `0x3cb930`)
+/// awaits each listener of its plain pass (IL_018e) before it starts the
+/// Late pass (IL_0290). So a choice inside the Imbued listener holds the
+/// Late pass and the phase write until it is answered.
+pub(crate) fn finish_auto_pre_after_imbued(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
     // Whispering Earring is the AutoPre/Late relic listener, on turn one only
     // (#3414, see `whispering_earring_loop_is_ahead`). Its live Hand query is
     // rebuilt after every direct play and is capped at 13 bodies. The loop
@@ -9782,8 +10644,42 @@ fn begin_turn_start_hand_choice_listeners(
     if order.is_empty() {
         return Ok(false);
     }
-    advance_turn_start_hand_choice_listener(state, catalog, &order, &[], 0, false, events)?;
+    let pass_started_live = !state.history.over;
+    advance_turn_start_hand_choice_listener(
+        state,
+        catalog,
+        &order,
+        &[],
+        0,
+        false,
+        pass_started_live,
+        events,
+    )?;
     Ok(true)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn advance_turn_start_hand_choice_listener(
+    state: &mut HotState,
+    catalog: &Catalog,
+    order: &[TurnStartHandChoiceKind],
+    appended_suffix: &[TurnStartHandChoiceKind],
+    cursor: usize,
+    stop_before_later_groups: bool,
+    pass_started_live: bool,
+    events: &mut Vec<Event>,
+) -> Result<bool, EngineRefusal> {
+    advance_turn_start_hand_choice_listener_from(
+        state,
+        catalog,
+        order,
+        appended_suffix,
+        cursor,
+        stop_before_later_groups,
+        pass_started_live,
+        0,
+        events,
+    )
 }
 
 fn validate_captured_hand_choice_order(
@@ -9794,14 +10690,13 @@ fn validate_captured_hand_choice_order(
     completed_listeners: usize,
 ) -> Result<(), EngineRefusal> {
     let live = captured_hand_choice_order(state)?;
-    let retained = order
-        .iter()
-        .enumerate()
-        .filter_map(|(index, kind)| {
-            (index >= cursor || *kind != TurnStartHandChoiceKind::SummonNextTurn).then_some(*kind)
-        })
-        .collect::<Vec<_>>();
-    let proof_is_exact = retained.len().saturating_add(appended_suffix.len()) <= 8
+    let retained = crate::hot::turn_start_retained_listeners(
+        order,
+        appended_suffix,
+        cursor,
+        state.powers.value(PowerId::Hibernate) > 0,
+    );
+    let proof_is_exact = retained.len().saturating_add(appended_suffix.len()) <= 9
         && appended_suffix.iter().enumerate().all(|(index, kind)| {
             !retained.contains(kind) && !appended_suffix[..index].contains(kind)
         })
@@ -9819,7 +10714,7 @@ fn validate_captured_hand_choice_order(
         || order.is_empty()
         || !order_is_current
         || order.iter().enumerate().any(|(index, kind)| {
-            !(index < cursor && *kind == TurnStartHandChoiceKind::SummonNextTurn)
+            !crate::hot::turn_start_listener_may_be_gone(*kind, index, cursor)
                 && state.powers.value(kind.power()) <= 0
         })
     {
@@ -9830,13 +10725,20 @@ fn validate_captured_hand_choice_order(
     Ok(())
 }
 
-fn advance_turn_start_hand_choice_listener(
+/// `later_boulders_done` is the number of later Rolling Boulder rows at this
+/// cursor's place that the previous listener's entry already ran
+/// ([`tick_later_rolling_boulders_at`]); zero from every caller but the
+/// Summon Next Turn arm.
+#[allow(clippy::too_many_arguments)]
+fn advance_turn_start_hand_choice_listener_from(
     state: &mut HotState,
     catalog: &Catalog,
     order: &[TurnStartHandChoiceKind],
     appended_suffix: &[TurnStartHandChoiceKind],
     cursor: usize,
     stop_before_later_groups: bool,
+    pass_started_live: bool,
+    later_boulders_done: usize,
     events: &mut Vec<Event>,
 ) -> Result<bool, EngineRefusal> {
     if order.is_empty() {
@@ -9846,21 +10748,33 @@ fn advance_turn_start_hand_choice_listener(
     // That suffix was not present in this turn's frozen dispatch and must not
     // run until the next turn.
     validate_captured_hand_choice_order(state, order, appended_suffix, cursor, cursor)?;
+    // #3756: a later Rolling Boulder object runs at its own place between
+    // the keyed listeners. This function is entered once per cursor (the
+    // arms below and a resumed choice both continue at `cursor + 1`), so
+    // each object runs once per walk.
+    let gone = crate::hot::turn_start_listeners_gone(
+        order,
+        appended_suffix,
+        cursor,
+        state.powers.value(PowerId::Hibernate) > 0,
+    );
+    let (later_boulders_here, later_boulder_ended) =
+        tick_later_rolling_boulders_at(state, catalog, cursor, gone, later_boulders_done, events)?;
+    let stop_before_later_groups = stop_before_later_groups || later_boulder_ended;
     if cursor == order.len() {
-        // The captured power enumerator itself is already in flight and keeps
-        // visiting its ungated listener commands after combat ends. The later
-        // Hibernate/AfterPlayerTurnStart groups have not begun, so retain
-        // their ordinary entry-ending gate once this frozen walk is complete.
+        // A power of this pass ended the combat (or killed the owner). The
+        // captured enumerator is still in flight: the owner's relics are
+        // later entries of the same listener list and still run
+        // (`finish_player_turn_start_after_hand_choices`, #3889). A dead
+        // owner is the lost fight, and a pass that began on an ended combat
+        // ran nobody.
         if stop_before_later_groups {
+            if pass_started_live && state.hp > 0 && state.history.over {
+                finish_player_turn_start_after_hand_choices(state, catalog, true, events)?;
+            }
             return Ok(false);
         }
-        let hibernate_was_captured = state.powers.value(PowerId::Hibernate) > 0;
-        crate::steps::defect_uncommon::tick_hibernate_turn_start(
-            state,
-            hibernate_was_captured,
-            events,
-        )?;
-        finish_player_turn_start_after_hand_choices(state, catalog, events)?;
+        finish_player_turn_start_after_hand_choices(state, catalog, pass_started_live, events)?;
         return Ok(false);
     }
     let kind = order[cursor];
@@ -9875,6 +10789,7 @@ fn advance_turn_start_hand_choice_listener(
                 appended_suffix,
                 cursor + 1,
                 stop_before_later_groups || (!was_over && state.history.over),
+                pass_started_live,
                 events,
             );
         }
@@ -9888,18 +10803,23 @@ fn advance_turn_start_hand_choice_listener(
                 appended_suffix,
                 cursor + 1,
                 stop_before_later_groups || (!was_over && state.history.over),
+                pass_started_live,
                 events,
             );
         }
         TurnStartHandChoiceKind::SummonNextTurn => {
             tick_summon_next_turn(state, true, events)?;
-            return advance_turn_start_hand_choice_listener(
+            // Its entry is gone, so the next cursor has this one's place:
+            // the rows that ran on entry here must not run again.
+            return advance_turn_start_hand_choice_listener_from(
                 state,
                 catalog,
                 order,
                 appended_suffix,
                 cursor + 1,
                 stop_before_later_groups,
+                pass_started_live,
+                later_boulders_here,
                 events,
             );
         }
@@ -9912,6 +10832,7 @@ fn advance_turn_start_hand_choice_listener(
                 appended_suffix,
                 cursor + 1,
                 stop_before_later_groups || !completed,
+                pass_started_live,
                 events,
             );
         }
@@ -9924,6 +10845,31 @@ fn advance_turn_start_hand_choice_listener(
                 appended_suffix,
                 cursor + 1,
                 stop_before_later_groups || !completed,
+                pass_started_live,
+                events,
+            );
+        }
+        TurnStartHandChoiceKind::Hibernate => {
+            // `HibernatePower/<AfterPlayerTurnStart>d__6` (RVA `0x33c790`
+            // IL_0033) awaits one `PowerCmd.Decrement`, which is
+            // ending-gated: a Hibernate listed before the listener that ends
+            // the combat has already decremented, one listed after it never
+            // does.
+            crate::steps::defect_uncommon::tick_hibernate_turn_start(state, events)?;
+            // A stack that reached zero took its entry with it, as Summon
+            // Next Turn's does: the next cursor has this one's place, and the
+            // later Rolling Boulder rows that ran on entry here must not run
+            // again.
+            let left = state.powers.value(PowerId::Hibernate) <= 0;
+            return advance_turn_start_hand_choice_listener_from(
+                state,
+                catalog,
+                order,
+                appended_suffix,
+                cursor + 1,
+                stop_before_later_groups,
+                pass_started_live,
+                if left { later_boulders_here } else { 0 },
                 events,
             );
         }
@@ -9931,12 +10877,19 @@ fn advance_turn_start_hand_choice_listener(
         | TurnStartHandChoiceKind::Tyranny
         | TurnStartHandChoiceKind::Entropy => {}
     }
+    // `CardSelectCmd::FromHand` leaves with nothing when combat is already
+    // over or ending (`<FromHand>d__28::MoveNext` RVA `0x3e7568`,
+    // IL_0031-IL_0043), before it signals anything.
+    let over_at_entry = state.history.over;
+    if !over_at_entry {
+        run_side_start_ahead_of_hand_choice_power(state, catalog, events)?;
+    }
     let amount: u32 = state
         .powers
         .value(kind.power())
         .try_into()
         .map_err(|_| EngineRefusal::CounterOverflow("turn-start Hand-choice amount"))?;
-    let hand = if state.history.over {
+    let hand = if over_at_entry {
         Vec::new()
     } else {
         state.piles.get(PileId::Hand).as_slice().to_vec()
@@ -9950,6 +10903,7 @@ fn advance_turn_start_hand_choice_listener(
             appended_suffix,
             cursor + 1,
             stop_before_later_groups,
+            pass_started_live,
             events,
         );
     }
@@ -10582,6 +11536,10 @@ fn run_after_side_turn_start_player_powers(
                     state.powers.set(PowerId::Doom, SlotWire::Int, doom);
                     state.history.doom_applied_by_player_this_turn = true;
                     super::damage::note_power(events, Subject::Player, PowerId::Doom, doom);
+                    // #3747: the Apply's own `AfterPowerAmountChanged`
+                    // suffix. `0x33ec34` IL_004c passes `Owner` as applier,
+                    // so Shroud (`0x3446a4`) gains its block here.
+                    super::damage::owner_applied_owner_doom_amount_changed(state, catalog, events)?;
                 }
             }
             T::NoxiousFumes => {
@@ -10716,15 +11674,6 @@ fn entropy_transform_one(
     {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
-    if state.card_states.hopper().is_some_and(|deck| {
-        deck.master
-            .iter()
-            .any(|row| row.card.uid == frozen.card.uid)
-    }) {
-        return Err(EngineRefusal::MalformedArgs(
-            "Hopper persistent DeckVersion transform",
-        ));
-    }
     if state.card_states.scythe_deck_row(frozen.card.uid).is_some() {
         return Err(EngineRefusal::MalformedArgs(
             "The Scythe DeckVersion transform",
@@ -10846,6 +11795,7 @@ fn entropy_transform_one(
     state
         .card_states
         .set(frozen.card.uid, crate::hot::CardInstanceState::default());
+    super::monsters::note_hopper_transformed(state, frozen.card.uid);
     state.exact_piles = true;
     Ok(())
 }
@@ -10949,6 +11899,9 @@ pub(crate) fn finish_turn_start_hand_choice_effect(
         &record.appended_suffix,
         record.next_listener as usize,
         state.history.over,
+        // The frame exists because a Hand-choice power read a live Hand, so
+        // the pass began live.
+        true,
         events,
     )?;
     Ok(())
@@ -12524,8 +13477,15 @@ mod tests {
         // removal. There are no AfterTransformedTo overrides in this build.
     }
 
+    /// #3856 (`E2K4P1SJEP8B` n18): Entropy transforms a card that owns a
+    /// Thieving Hopper master row. `EntropyPower/<AfterPlayerTurnStart>d__6`
+    /// RVA `0x339e48` awaits `CardCmd::TransformToRandom` (IL_00ff), which
+    /// ends in the one `<Transform>d__13` body; that body never reaches the
+    /// run deck for a combat-pile original
+    /// (`monsters::thieving_hopper_deck_payload_is_exact` has the offsets).
+    /// The row stays, with no combat object, and the replacement owns none.
     #[test]
-    fn entropy_refuses_a_hopper_master_card_before_public_selection_rng_or_writes() {
+    fn entropy_transforms_a_hopper_master_card_and_leaves_its_deck_row() {
         let mut builder = CatalogBuilder::new();
         let anger = builder
             .intern(CardIdentity {
@@ -12534,7 +13494,7 @@ mod tests {
                 enchantment: None,
             })
             .unwrap();
-        for id in [CardId::PommelStrike, CardId::Rage] {
+        for id in crate::steps::neutral::owner_generation_pool(RewardPool::Ironclad, None) {
             builder
                 .intern(CardIdentity {
                     id,
@@ -12569,6 +13529,7 @@ mod tests {
                     state: crate::hot::CardInstanceState::default(),
                 }],
                 history: Vec::new(),
+                transformed: Vec::new(),
             }));
         let mut hopper = crate::hot::HotMonster::new(
             MonsterKind::ThievingHopper,
@@ -12591,17 +13552,33 @@ mod tests {
             },
         );
 
-        let before = state.clone();
-        let mut events = vec![Event::TurnBegan { turn: 99 }];
-        let events_before = events.clone();
-        assert_eq!(
-            begin_player_turn(&mut state, &catalog, &mut events),
-            Err(EngineRefusal::MalformedArgs(
-                "Hopper persistent DeckVersion transform"
-            ))
+        let master = state.card_states.hopper().unwrap().master.clone();
+        assert!(crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&state, &catalog));
+        entropy_transform_one(
+            &mut state,
+            &catalog,
+            crate::hot::FrozenAutoBatchEntry {
+                card,
+                state: crate::hot::CardInstanceState::default(),
+            },
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let [minted] = state.piles.get(PileId::Hand).as_slice() else {
+            panic!("one replacement in Hand");
+        };
+        assert_eq!(minted.uid, 11, "a fresh card, not the original");
+        assert_ne!(
+            catalog.spec(minted.atom).unwrap().identity.id,
+            CardId::Anger
         );
-        assert_eq!(state, before);
-        assert_eq!(events, events_before);
+        assert_eq!(state.rng.get(RngStream::Sel).counter, 1);
+        assert_eq!(
+            state.card_states.hopper().unwrap().master,
+            master,
+            "the run-deck row is untouched and names no combat object"
+        );
+        assert!(crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&state, &catalog));
     }
 
     /// #2941: Entropy refuses a The Scythe copy still linked to its
@@ -12686,6 +13663,7 @@ mod tests {
                     state: crate::hot::CardInstanceState::default(),
                 }],
                 history: Vec::new(),
+                transformed: Vec::new(),
             }));
         let mut hopper = crate::hot::HotMonster::new(
             MonsterKind::ThievingHopper,
@@ -13278,6 +14256,96 @@ mod tests {
         );
     }
 
+    /// #3877: Hibernate's decrement runs where the power sits in the player's
+    /// list. Ahead of Tools of the Trade it has happened when the choice
+    /// parks; behind it, only once the choice is answered. Either way it
+    /// happens once, and a stack that reaches zero leaves the order while the
+    /// parked frame still names it.
+    #[test]
+    fn hibernate_ticks_at_its_place_around_a_tools_of_the_trade_choice() {
+        for hibernate_first in [true, false] {
+            for amount in [1, 2] {
+                let (mut state, catalog) = hand_choice_fixture(3);
+                // A live enemy keeps `damage_combat_is_ending` false (#3279).
+                state
+                    .monsters_mut()
+                    .push(HotMonster::new(MonsterKind::Toadpole, 10));
+                state.powers.set(PowerId::ToolsOfTheTrade, SlotWire::Int, 1);
+                state.powers.set(PowerId::Hibernate, SlotWire::Int, amount);
+                let order = if hibernate_first {
+                    [PowerId::Hibernate, PowerId::ToolsOfTheTrade]
+                } else {
+                    [PowerId::ToolsOfTheTrade, PowerId::Hibernate]
+                };
+                assert!(state.set_after_player_turn_start_order(&order));
+                assert!(after_player_turn_start_power_order_is_exact(&state));
+
+                assert!(
+                    begin_turn_start_hand_choice_listeners(&mut state, &catalog, &mut Vec::new())
+                        .unwrap()
+                );
+                assert!(state.pending.is_some(), "Tools of the Trade parks a choice");
+                let parked = state.powers.value(PowerId::Hibernate);
+                assert_eq!(
+                    parked,
+                    if hibernate_first { amount - 1 } else { amount },
+                    "first={hibernate_first} amount={amount}"
+                );
+                let live_order = state.after_player_turn_start_order().unwrap().to_vec();
+                if parked == 0 {
+                    assert_eq!(live_order, [PowerId::ToolsOfTheTrade]);
+                } else {
+                    assert_eq!(live_order, order);
+                }
+
+                let actions = crate::engine::legal_actions(&state, &catalog);
+                assert_eq!(actions.len(), 3);
+                let done = crate::engine::apply_action(&state, &catalog, &actions[0])
+                    .unwrap()
+                    .state;
+                assert!(done.pending.is_none());
+                assert_eq!(done.powers.value(PowerId::Hibernate), amount - 1);
+                let after = done.after_player_turn_start_order().unwrap().to_vec();
+                if amount == 1 {
+                    assert_eq!(after, [PowerId::ToolsOfTheTrade]);
+                } else {
+                    assert_eq!(after, order);
+                }
+            }
+        }
+    }
+
+    /// A parked choice whose frame names a Hibernate that has not run yet
+    /// refuses a state where that stack is gone, and one whose Hibernate has
+    /// run accepts either outcome of the decrement.
+    #[test]
+    fn a_parked_turn_start_choice_authenticates_its_hibernate_member() {
+        let (mut state, catalog) = hand_choice_fixture(3);
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 10));
+        state.powers.set(PowerId::ToolsOfTheTrade, SlotWire::Int, 1);
+        state.powers.set(PowerId::Hibernate, SlotWire::Int, 1);
+        assert!(
+            state
+                .set_after_player_turn_start_order(&[PowerId::ToolsOfTheTrade, PowerId::Hibernate])
+        );
+        begin_turn_start_hand_choice_listeners(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(state.powers.value(PowerId::Hibernate), 1);
+
+        let mut forged = state.clone();
+        assert!(forged.unregister_after_player_turn_start(PowerId::Hibernate));
+        forged.powers.set(PowerId::Hibernate, SlotWire::Int, 0);
+        let before = forged.clone();
+        assert_eq!(
+            resume_turn_start_hand_choice(&mut forged, &catalog, 0, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "stale turn-start Hand-choice listener snapshot"
+            ))
+        );
+        assert_eq!(forged, before);
+    }
+
     #[test]
     fn tyranny_exhausts_in_selected_order_and_awaits_dark_then_fnp() {
         let (mut state, catalog) = hand_choice_fixture(3);
@@ -13659,7 +14727,7 @@ mod tests {
         ] {
             let (mut state, catalog) = hand_choice_fixture(1);
             state.powers.set(power, SlotWire::Int, 1);
-            assert!(state.fanouts.set_turn_start_hand_choice_order(&[power]));
+            assert!(state.set_after_player_turn_start_order(&[power]));
             let card = state.piles.get(PileId::Hand).as_slice()[0];
             let frozen = crate::hot::FrozenAutoBatchEntry::from_current(card, &state.card_states);
             state.piles.get_mut(PileId::Hand).make_mut().clear();
@@ -14719,12 +15787,18 @@ mod tests {
             run_before_side_turn_end_player_powers(&mut state, &catalog, &mut Vec::new()).unwrap();
 
             assert!(state.history.over, "Hailstorm supplies the terminal prefix");
-            assert_eq!(state.bound_afflictions_this_turn(), 0);
+            // #3756: the listener clears the played latch and the cards'
+            // afflictions. The number bound this turn is a HappenedThisTurn
+            // count: it stays until the side switch rolls it, so a card
+            // drawn later on this side is still the fourth and is not bound.
+            assert_eq!(state.bound_afflictions_this_turn(), 2);
             assert!(!state.bound_card_played());
             assert_eq!(
                 state.piles.get(PileId::Hand).as_slice()[0].flags & crate::hot::CARD_FLAG_BOUND,
                 0
             );
+            roll_happened_this_turn_counters(&mut state).unwrap();
+            assert_eq!(state.bound_afflictions_this_turn(), 0);
         }
     }
 
@@ -16699,7 +17773,10 @@ mod tests {
         let mut state = turret_operator_pair(65, 51);
         state.monsters_mut()[1].hp = -18;
         crate::engine::damage::finish_monster_death(&mut state, 1, &mut Vec::new()).unwrap();
-        assert!(!crate::engine::monsters::turret_operator_state_is_valid(
+        // #3823: the public form accepts the overkilled corpse too. Nothing
+        // reads a corpse's HP but liveness, and a state that did not reload
+        // after such a kill was a failed round trip.
+        assert!(crate::engine::monsters::turret_operator_state_is_valid(
             &state
         ));
         assert!(crate::engine::monsters::turret_operator_slam_roster_is_exact(&state));
@@ -16877,6 +17954,122 @@ mod tests {
             0
         );
         assert_eq!(dead_before_side_start.monsters[1].block, 0);
+    }
+
+    /// #3756: `AmbergrisPower::ShouldTakeExtraTurn` (RVA `0x9f744`) approves
+    /// an extra turn while `Amount > 0`, and
+    /// `AmbergrisPower/<AfterTakingExtraTurn>d__7::MoveNext` (RVA `0x334df0`
+    /// IL_0033) decrements it after `SwitchSides`. The enemy side never
+    /// starts: Rampart, whose player-side grant skips extra turns, is the
+    /// observer.
+    #[test]
+    fn ambergris_power_buys_one_extra_player_turn_per_stack_without_paels_eye() {
+        let catalog = turret_operator_catalog();
+        let mut state = turret_operator_pair(65, 51);
+        state.history.round_number = 2;
+        state.fanouts.set_ambergris(2);
+        let hp_before: Vec<_> = state.monsters.iter().map(|monster| monster.hp).collect();
+
+        end_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert!(state.player_side_active);
+        assert!(state.fanouts.players_taking_extra_turn());
+        assert_eq!(state.fanouts.ambergris(), 1);
+        assert!(!state.fanouts.paels_eye_used());
+        assert_eq!((state.turn, state.history.round_number), (2, 2));
+        assert_eq!(state.monsters[1].block, 0);
+        assert_eq!(
+            state
+                .monsters
+                .iter()
+                .map(|monster| monster.hp)
+                .collect::<Vec<_>>(),
+            hp_before
+        );
+        // An extra turn without Pael's Eye is canonical state and reloads.
+        let entry = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(
+            entry.player.get("ambergris"),
+            Some(&serde_json::Value::from(1))
+        );
+        let entry_catalog = HotBoundary::catalog_from_canonical(&entry).unwrap();
+        let reloaded = HotBoundary::from_canonical(&entry, &entry_catalog).unwrap();
+        assert!(reloaded.fanouts.players_taking_extra_turn());
+        assert_eq!(reloaded.fanouts.ambergris(), 1);
+
+        // The second stack buys a second extra turn.
+        end_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert!(state.fanouts.players_taking_extra_turn());
+        assert_eq!(state.fanouts.ambergris(), 0);
+        assert_eq!((state.turn, state.history.round_number), (3, 2));
+        assert_eq!(state.monsters[1].block, 0);
+
+        // With the power spent the enemy side runs and the round moves.
+        end_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert!(!state.fanouts.players_taking_extra_turn());
+        assert_eq!((state.turn, state.history.round_number), (4, 3));
+        assert_eq!(state.monsters[1].block, 25);
+    }
+
+    /// #3756: `Hook/<AfterTakingExtraTurn>d__79::MoveNext` (RVA `0x3d1c50`
+    /// IL_0052) calls every listener, so one extra turn spends an owned
+    /// Pael's Eye and one Ambergris stack together, whichever approved it.
+    #[test]
+    fn one_extra_turn_spends_paels_eye_and_an_ambergris_stack_together() {
+        let mut builder = crate::catalog::CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::LivingShield).unwrap();
+        builder.intern_monster(MonsterKind::TurretOperator).unwrap();
+        builder.set_relics(&[RelicId::RelicPaelsEye]).unwrap();
+        let catalog = builder.build();
+
+        // Pael's Eye's own gate is closed (a card was played this turn,
+        // `PaelsEye::ShouldTakeExtraTurn` RVA `0x9814e` IL_000a-000f):
+        // Ambergris approves, and the relic is still marked used.
+        let mut ambergris_only = turret_operator_pair(65, 51);
+        ambergris_only.history.round_number = 2;
+        ambergris_only.fanouts.set_ambergris(1);
+        ambergris_only.history.manual_card_plays_finished_this_turn = 1;
+        assert!(!crate::engine::relics::paels_eye_extra_turn_gate(
+            &ambergris_only,
+            &catalog
+        ));
+        end_player_turn(&mut ambergris_only, &catalog, &mut Vec::new()).unwrap();
+        assert!(ambergris_only.fanouts.players_taking_extra_turn());
+        assert!(ambergris_only.fanouts.paels_eye_used());
+        assert_eq!(ambergris_only.fanouts.ambergris(), 0);
+        assert_eq!(ambergris_only.turn, 2);
+
+        // Both gates open: still one extra turn, both spent.
+        let mut both = turret_operator_pair(65, 51);
+        both.history.round_number = 2;
+        both.fanouts.set_ambergris(1);
+        both.fanouts
+            .set_paels_eye_was_owner_part_last_player_turn(true);
+        assert!(crate::engine::relics::paels_eye_extra_turn_gate(
+            &both, &catalog
+        ));
+        end_player_turn(&mut both, &catalog, &mut Vec::new()).unwrap();
+        assert!(both.fanouts.players_taking_extra_turn());
+        assert!(both.fanouts.paels_eye_used());
+        assert_eq!(both.fanouts.ambergris(), 0);
+        end_player_turn(&mut both, &catalog, &mut Vec::new()).unwrap();
+        assert!(!both.fanouts.players_taking_extra_turn());
+        assert_eq!((both.turn, both.history.round_number), (3, 3));
+    }
+
+    /// #3756: Ambergris's Decrement is a PowerCmd amount write; a malformed
+    /// `AfterPowerAmountChanged` listener order refuses the turn end.
+    #[test]
+    fn ambergris_turn_end_refuses_a_malformed_power_amount_listener_order() {
+        let catalog = turret_operator_catalog();
+        let mut state = turret_operator_pair(65, 51);
+        state.fanouts.set_ambergris(1);
+        state.powers.set(PowerId::Vicious, SlotWire::Int, 1);
+        assert_eq!(
+            end_player_turn(&mut state, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs(
+                "after-power-amount-changed listener order"
+            ))
+        );
     }
 
     /// #3049: `RampartPower/<AfterSideTurnStart>d__6` (RVA `0x3416a0`)
@@ -19846,6 +21039,284 @@ mod tests {
         );
     }
 
+    /// The amounts of every Rolling Boulder growth event, in event order.
+    fn rolling_boulder_growths(events: &[Event]) -> Vec<i32> {
+        events
+            .iter()
+            .filter_map(|event| match event {
+                Event::PowerChanged {
+                    subject: Subject::Player,
+                    power: PowerId::RollingBoulder,
+                    amount,
+                } => Some(*amount),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn later_boulder(amount: i32, listeners_before: u8) -> crate::hot::RollingBoulderLaterInstance {
+        crate::hot::RollingBoulderLaterInstance {
+            amount,
+            listeners_before,
+        }
+    }
+
+    /// #3877 beside #3756: a Hibernate whose decrement reaches zero leaves
+    /// the order mid-walk, as Summon Next Turn does. The later Rolling Boulder
+    /// objects on either side of it still run once each, in attachment order;
+    /// a Hibernate that stays keeps every place where it was.
+    #[test]
+    fn later_rolling_boulders_run_once_each_around_a_hibernate_that_leaves() {
+        for hibernate in [1, 2] {
+            let catalog = CatalogBuilder::new().build();
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.turn = 2;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.powers.set(PowerId::RollingBoulder, SlotWire::Int, 5);
+            state
+                .powers
+                .set(PowerId::Hibernate, SlotWire::Int, hibernate);
+            assert!(
+                state.set_after_player_turn_start_order(&[
+                    PowerId::RollingBoulder,
+                    PowerId::Hibernate
+                ])
+            );
+            // One object attached before Hibernate, one after it.
+            assert!(
+                state.fanouts.set_rolling_boulder_later_instances(&[
+                    later_boulder(10, 1),
+                    later_boulder(7, 2)
+                ])
+            );
+            assert!(state.rolling_boulder_later_state_is_exact());
+            let mut events = Vec::new();
+
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+            assert_eq!(
+                state.monsters[0].hp,
+                100 - 5 - 10 - 7,
+                "hibernate={hibernate}"
+            );
+            assert_eq!(rolling_boulder_growths(&events), vec![10, 15, 12]);
+            assert_eq!(state.powers.value(PowerId::Hibernate), hibernate - 1);
+            let after_hibernate = if hibernate == 1 { 1 } else { 2 };
+            assert_eq!(
+                state.fanouts.rolling_boulder_later_instances(),
+                vec![later_boulder(15, 1), later_boulder(12, after_hibernate)]
+            );
+            assert!(state.rolling_boulder_later_state_is_exact());
+        }
+    }
+
+    /// #3756, native-witnessed (harness, three `PowerCmd.Apply
+    /// <RollingBoulderPower>` of 5, 10, 5, then end turn): each object deals
+    /// its own AoE in attachment order and grows by 5 on its own.
+    #[test]
+    fn later_rolling_boulder_objects_each_hit_and_grow_in_attachment_order() {
+        let catalog = CatalogBuilder::new().build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.turn = 2;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.powers.set(PowerId::RollingBoulder, SlotWire::Int, 5);
+        assert!(
+            state
+                .fanouts
+                .set_after_player_turn_start_order(&[PowerId::RollingBoulder])
+        );
+        assert!(
+            state
+                .fanouts
+                .set_rolling_boulder_later_instances(&[later_boulder(10, 1), later_boulder(5, 1)])
+        );
+        assert!(state.rolling_boulder_later_state_is_exact());
+        let mut events = Vec::new();
+
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+        assert_eq!(state.monsters[0].hp, 100 - 5 - 10 - 5);
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+        assert_eq!(
+            state.fanouts.rolling_boulder_later_instances(),
+            vec![later_boulder(15, 1), later_boulder(10, 1)]
+        );
+        assert_eq!(rolling_boulder_growths(&events), vec![10, 15, 10]);
+
+        // A second walk runs every object again, once.
+        state.turn = 3;
+        let mut events = Vec::new();
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(state.monsters[0].hp, 80 - 10 - 15 - 10);
+        assert_eq!(rolling_boulder_growths(&events), vec![15, 20, 15]);
+    }
+
+    /// #3756: an object attached before a Summon Next Turn runs before it and
+    /// one attached after runs after it, each once, although the Summon's
+    /// own tick removes its entry and moves the second object down onto the
+    /// first one's place.
+    #[test]
+    fn later_rolling_boulder_objects_keep_their_side_of_summon_next_turn() {
+        let catalog = CatalogBuilder::new().build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.turn = 2;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        state.powers.set(PowerId::RollingBoulder, SlotWire::Int, 5);
+        state.powers.set(PowerId::SummonNextTurn, SlotWire::Int, 2);
+        assert!(state.fanouts.set_after_player_turn_start_order(&[
+            PowerId::RollingBoulder,
+            PowerId::SummonNextTurn,
+        ]));
+        assert!(
+            state
+                .fanouts
+                .set_rolling_boulder_later_instances(&[later_boulder(10, 1), later_boulder(20, 2)])
+        );
+        assert!(state.rolling_boulder_later_state_is_exact());
+        let mut events = Vec::new();
+
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+        assert_eq!(state.monsters[0].hp, 100 - 5 - 10 - 20);
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+        assert_eq!(
+            state.fanouts.rolling_boulder_later_instances(),
+            vec![later_boulder(15, 1), later_boulder(25, 1)]
+        );
+        assert!(state.rolling_boulder_later_state_is_exact());
+        let order = events
+            .iter()
+            .filter_map(|event| match event {
+                Event::PowerChanged {
+                    subject: Subject::Player,
+                    power: power @ (PowerId::RollingBoulder | PowerId::SummonNextTurn),
+                    amount,
+                } => Some((*power, *amount)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            order,
+            vec![
+                (PowerId::RollingBoulder, 10),
+                (PowerId::RollingBoulder, 15),
+                (PowerId::SummonNextTurn, 0),
+                (PowerId::RollingBoulder, 25),
+            ]
+        );
+    }
+
+    /// #3756: a later object that ends the combat still lets the objects
+    /// behind it grow (the captured walk keeps visiting its listeners), with
+    /// no further damage.
+    #[test]
+    fn a_later_rolling_boulder_kill_leaves_the_objects_behind_it_growing() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state.turn = 2;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 12));
+        state.powers.set(PowerId::RollingBoulder, SlotWire::Int, 5);
+        assert!(
+            state
+                .fanouts
+                .set_after_player_turn_start_order(&[PowerId::RollingBoulder])
+        );
+        assert!(
+            state
+                .fanouts
+                .set_rolling_boulder_later_instances(&[later_boulder(10, 1), later_boulder(5, 1)])
+        );
+        let mut events = Vec::new();
+
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+
+        assert!(state.history.over);
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+        assert_eq!(
+            state.fanouts.rolling_boulder_later_instances(),
+            vec![later_boulder(15, 1), later_boulder(10, 1)]
+        );
+    }
+
+    /// #3756: the later rows must follow a live first object inside the walk
+    /// order, in acquisition order.
+    #[test]
+    fn later_rolling_boulder_rows_are_authenticated_against_the_walk_order() {
+        let mut state = HotState::at_defaults();
+        assert!(state.rolling_boulder_later_state_is_exact());
+        assert!(
+            state
+                .fanouts
+                .set_rolling_boulder_later_instances(&[later_boulder(5, 1)])
+        );
+        assert!(
+            !state.rolling_boulder_later_state_is_exact(),
+            "no first object"
+        );
+        assert!(!after_player_turn_start_power_order_is_exact(&state));
+        state.powers.set(PowerId::RollingBoulder, SlotWire::Int, 5);
+        state.powers.set(PowerId::SummonNextTurn, SlotWire::Int, 2);
+        assert!(state.fanouts.set_after_player_turn_start_order(&[
+            PowerId::SummonNextTurn,
+            PowerId::RollingBoulder,
+        ]));
+        assert!(
+            !state.rolling_boulder_later_state_is_exact(),
+            "before the first"
+        );
+        for (rows, exact) in [
+            (vec![later_boulder(5, 2)], true),
+            (vec![later_boulder(5, 2), later_boulder(9, 2)], true),
+            (vec![later_boulder(5, 3)], false),
+            (vec![later_boulder(5, 0)], false),
+        ] {
+            assert!(state.fanouts.set_rolling_boulder_later_instances(&rows));
+            assert_eq!(
+                state.rolling_boulder_later_state_is_exact(),
+                exact,
+                "{rows:?}"
+            );
+        }
+        assert!(
+            !state
+                .fanouts
+                .set_rolling_boulder_later_instances(&[later_boulder(0, 2)])
+        );
+        // Removing a listener in front moves the object down with it.
+        assert!(
+            state
+                .fanouts
+                .set_rolling_boulder_later_instances(&[later_boulder(5, 2)])
+        );
+        state.powers.set(PowerId::SummonNextTurn, SlotWire::Int, 0);
+        assert!(state.unregister_after_player_turn_start(PowerId::SummonNextTurn));
+        assert_eq!(
+            state.fanouts.rolling_boulder_later_instances(),
+            vec![later_boulder(5, 1)]
+        );
+        assert!(state.rolling_boulder_later_state_is_exact());
+        assert_eq!(state.push_rolling_boulder_later(10), Ok(3));
+        assert_eq!(
+            state.fanouts.rolling_boulder_later_instances(),
+            vec![later_boulder(5, 1), later_boulder(10, 1)]
+        );
+    }
+
     #[test]
     fn summon_next_turn_ticks_after_rolling_boulder_then_removes_without_rng() {
         let catalog = CatalogBuilder::new().build();
@@ -19910,10 +21381,12 @@ mod tests {
     /// leaves native `OstyCmd.Summon` (`SummonNextTurnPower/
     /// <AfterPlayerTurnStart>d__6` `0x346ecc` IL_0069) running under
     /// IsEnding: a live Osty gains MaxHp without the `Heal`
-    /// (`<Heal>d__20` `0x3eb4b0` IL_0041-IL_005f), and an absent one refuses
-    /// by name. Before #3279 both arms healed.
+    /// (`<Heal>d__20` `0x3eb4b0` IL_0041-IL_005f). Before #3279 both arms
+    /// healed. #3635: an absent Osty is created at 1 HP under the summoned
+    /// MaxHp and takes the next creature id, and a corpse stays dead (the
+    /// game's 1/2 and 0/3, cited on `SoloPetState::summon_ending`).
     #[test]
-    fn terminal_before_summon_next_turn_grows_max_hp_only_or_refuses_the_add() {
+    fn terminal_before_summon_next_turn_grows_max_hp_only_adds_at_one_hp_and_keeps_a_corpse() {
         let mut builder = CatalogBuilder::new();
         builder.intern_monster(MonsterKind::Toadpole).unwrap();
         let catalog = builder.build();
@@ -19949,22 +21422,44 @@ mod tests {
         assert_eq!(live.powers.value(PowerId::SummonNextTurn), 0);
 
         let mut absent = fixture(None);
+        begin_player_turn(&mut absent, &catalog, &mut Vec::new()).unwrap();
+        assert!(absent.history.over);
         assert_eq!(
-            begin_player_turn(&mut absent, &catalog, &mut Vec::new()),
-            Err(EngineRefusal::EndingSummonNotModeled(
-                "summon next turn Osty"
-            ))
+            absent
+                .fanouts
+                .pet()
+                .osty()
+                .map(|osty| (osty.hp(), osty.max_hp())),
+            Some((1, 2)),
+            "the ending add keeps the initial 1 HP"
         );
+        assert_eq!(absent.powers.value(PowerId::SummonNextTurn), 0);
+        // The one Toadpole holds uid 0, so the new Osty took id 1.
+        assert_eq!(absent.fanouts.osty_creature_uid(), 1);
+        assert_eq!(absent.fanouts.next_creature_uid(), 2);
+
+        let mut corpse = fixture(Some((2, 2)));
+        corpse
+            .fanouts
+            .mutate_pet(|pet| pet.lose_hp(2).map(|_| ()))
+            .unwrap();
+        assert!(corpse.fanouts.pet().corpse());
+        begin_player_turn(&mut corpse, &catalog, &mut Vec::new()).unwrap();
+        assert!(corpse.history.over);
+        assert!(corpse.fanouts.pet().corpse(), "still dead");
+        assert_eq!(corpse.fanouts.pet().osty(), None);
+        assert_eq!(corpse.powers.value(PowerId::SummonNextTurn), 0);
     }
 
     /// Owner death (`PendingLoss`) is IsEnding too
     /// (`CombatManager::IsCombatEnding` `0x135854` IL_0016-IL_0024), and it
     /// kills Osty first (`<KillWithoutCheckingWinCondition>d__15` `0x3ebe90`
-    /// IL_06ad-IL_06ca), so the captured summon that still runs after a
-    /// lethal Inferno or Crimson Mantle self-hit reaches the refused
-    /// add/revive branch (#3279). Before #3279 it created a 2/2 Osty.
+    /// IL_06ad-IL_06ca). The dead owner's SummonNextTurn is then no listener
+    /// at all (#3635, the runs cited on `tick_summon_next_turn`): no Osty is
+    /// created, and a live one is left the corpse its owner's death made.
+    /// #3279 refused here, and before it the engine created a 2/2 Osty.
     #[test]
-    fn lethal_self_damage_before_summon_next_turn_refuses_the_ending_add() {
+    fn lethal_self_damage_before_summon_next_turn_runs_no_summon() {
         let mut builder = CatalogBuilder::new();
         builder.intern_monster(MonsterKind::Toadpole).unwrap();
         let catalog = builder.build();
@@ -19996,12 +21491,20 @@ mod tests {
                     .set_after_player_turn_start_order(&[powers[0].0, PowerId::SummonNextTurn])
             );
 
+            begin_player_turn(&mut state, &catalog, &mut Vec::new())
+                .unwrap_or_else(|refusal| panic!("{powers:?} with Osty {osty:?}: {refusal}"));
+            assert!(state.history.over, "{powers:?} with Osty {osty:?}");
+            assert_eq!(state.hp, 0, "{powers:?} with Osty {osty:?}");
+            assert!(state.fanouts.player_hooks_deactivated());
             assert_eq!(
-                begin_player_turn(&mut state, &catalog, &mut Vec::new()),
-                Err(EngineRefusal::EndingSummonNotModeled(
-                    "summon next turn Osty"
-                )),
+                state.fanouts.pet().osty(),
+                None,
                 "{powers:?} with Osty {osty:?}"
+            );
+            assert_eq!(
+                state.fanouts.pet().corpse(),
+                osty.is_some(),
+                "{powers:?} with Osty {osty:?}: no creature is added for a dead owner"
             );
         }
     }
@@ -20039,7 +21542,7 @@ mod tests {
     }
 
     #[test]
-    fn hibernate_commutes_after_summon_then_decrements_once() {
+    fn hibernate_listed_after_summon_decrements_once_after_it() {
         let catalog = CatalogBuilder::new().build();
         let mut state = HotState::at_defaults();
         state.hp = 50;
@@ -20052,9 +21555,7 @@ mod tests {
         state.powers.set(PowerId::SummonNextTurn, SlotWire::Int, 4);
         state.powers.set(PowerId::Hibernate, SlotWire::Int, 2);
         assert!(
-            state
-                .fanouts
-                .set_after_player_turn_start_order(&[PowerId::SummonNextTurn])
+            state.set_after_player_turn_start_order(&[PowerId::SummonNextTurn, PowerId::Hibernate])
         );
         let mut events = Vec::new();
 
@@ -22712,6 +24213,58 @@ mod tests {
         }
     }
 
+    /// #3756: the side-end roster keeps the corpses native has removed, so a
+    /// summoner that refills its slots (Fabricator) carries more than six
+    /// rows. Every live row is still visited once, wherever it sits, and a
+    /// dead row is skipped: the same result as a roster that fits inline.
+    #[test]
+    fn a_side_end_roster_past_six_rows_visits_every_live_row() {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        for corpses in [2_usize, 3, 7] {
+            let mut state = HotState::at_defaults();
+            state.hp = 500;
+            state.max_hp = 500;
+            // Corpses and live rows interleaved, so live rows sit past the
+            // sixth place once there are more than two corpses.
+            let rows = corpses + 4;
+            let mut live = Vec::new();
+            for index in 0..rows {
+                let alive = index % 2 == 1 && live.len() < 4 || rows - index <= 4 - live.len();
+                let mut monster =
+                    HotMonster::new(MonsterKind::Toadpole, if alive { 20 } else { 0 });
+                monster.max_hp = 20;
+                monster.uid = index as u32 + 1;
+                monster.slot = (index % 6) as i32;
+                monster.powers.set(PowerId::Weak, SlotWire::Int, 3);
+                monster.powers.set(PowerId::Vuln, SlotWire::Int, 2);
+                if alive {
+                    live.push(index);
+                }
+                state.monsters_mut().push(monster);
+            }
+            assert_eq!(live.len(), 4);
+            assert_eq!(live.iter().any(|index| *index >= 6), corpses > 2);
+
+            run_enemy_phase(&mut state, &catalog, &mut Vec::new()).unwrap();
+
+            for (index, monster) in state.monsters.iter().enumerate() {
+                let ticked = live.contains(&index);
+                assert_eq!(
+                    monster.powers.value(PowerId::Weak),
+                    if ticked { 2 } else { 3 },
+                    "{corpses} corpses, row {index}"
+                );
+                assert_eq!(
+                    monster.powers.value(PowerId::Vuln),
+                    if ticked { 1 } else { 2 },
+                    "{corpses} corpses, row {index}"
+                );
+            }
+        }
+    }
+
     /// A pressured Waterfall Giant (#3428) carrying Demise, about to act
     /// PRESSURIZE (loop 0), which only adds Steam Pressure.
     fn waterfall_demise_owner(hp: i32, pressure: i32) -> (HotState, Catalog) {
@@ -23185,6 +24738,155 @@ mod tests {
         assert_eq!(state.block, 15); // Barricade/Blur retain 11; Coolant adds 2 kinds * 2.
     }
 
+    /// #3747: one side-start walk with a live Neurosurge and the given
+    /// `AfterPowerAmountChanged` acquisition order.
+    fn neurosurge_side_start(
+        listeners: &[(PowerId, i32)],
+        prepare: impl FnOnce(&mut HotState),
+    ) -> (HotState, Vec<Event>, Result<(), EngineRefusal>) {
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 30));
+        state.powers.set(PowerId::Neurosurge, SlotWire::Int, 3);
+        assert!(
+            state
+                .fanouts
+                .register_after_side_turn_start(PowerId::Neurosurge)
+        );
+        let order = listeners
+            .iter()
+            .map(|(power, _)| *power)
+            .collect::<Vec<_>>();
+        for (power, amount) in listeners {
+            state.powers.set(*power, SlotWire::Int, *amount);
+        }
+        assert!(state.fanouts.set_after_power_amount_changed_order(&order));
+        prepare(&mut state);
+        let mut events = Vec::new();
+        // The in-frame (unpaused) walk owns the side-start tail (#3050).
+        let _window = SetupPlayerTurnWindowGuard::enter();
+        let result = finish_turn_start_from_entry(&mut state, &catalog, &mut events);
+        (state, events, result)
+    }
+
+    #[test]
+    fn neurosurge_self_doom_gains_shroud_block_after_the_doom_write() {
+        // `NeurosurgePower` `0x33ec34` IL_004c applies Doom with `Owner` as
+        // applier; `ShroudPower` `0x3446a4` tests only that applier and the
+        // power's type, never the changed power's owner.
+        let (state, events, result) = neurosurge_side_start(&[(PowerId::Shroud, 4)], |_| {});
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.powers.value(PowerId::Doom), 3);
+        assert!(state.history.doom_applied_by_player_this_turn);
+        assert_eq!(state.block, 4);
+        assert_eq!(
+            events,
+            [
+                Event::PowerChanged {
+                    subject: Subject::Player,
+                    power: PowerId::Doom,
+                    amount: 3,
+                },
+                Event::PlayerBlockGained {
+                    amount: 4,
+                    block: 4,
+                },
+                Event::TurnBegan { turn: 1 },
+            ]
+        );
+    }
+
+    #[test]
+    fn neurosurge_self_doom_shroud_block_stacks_on_block_already_held() {
+        // The corpus shape (`4SAVTZ7KQ8NW`): block that survived the side
+        // start plus one Shroud amount, with a restacked Doom.
+        let (state, _, result) = neurosurge_side_start(&[(PowerId::Shroud, 3)], |state| {
+            state.block = 10;
+            state.powers.set(PowerId::Doom, SlotWire::Int, 3);
+            assert!(
+                state
+                    .fanouts
+                    .register_after_side_turn_end_power(
+                        crate::hot::AfterSideTurnEndPowerToken::from_power(PowerId::Doom).unwrap()
+                    )
+                    .is_ok()
+            );
+        });
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.powers.value(PowerId::Doom), 6);
+        assert_eq!(state.block, 13);
+    }
+
+    #[test]
+    fn neurosurge_self_doom_is_inert_for_the_three_other_listeners() {
+        // Sleight of Flesh needs an enemy-owned power (`0x344dc4`
+        // IL_0050-IL_0062), Vicious a Vulnerable (`0x34a6f8` IL_004a-IL_0057)
+        // and Sword Sage its own power (`0xa902c` IL_000c-IL_0019).
+        let (state, events, result) = neurosurge_side_start(
+            &[
+                (PowerId::SleightOfFlesh, 9),
+                (PowerId::Vicious, 2),
+                (PowerId::SwordSage, 1),
+            ],
+            |_| {},
+        );
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.powers.value(PowerId::Doom), 3);
+        assert_eq!(state.block, 0);
+        assert_eq!(state.monsters[0].hp, 30);
+        assert!(state.piles.get(PileId::Hand).is_empty());
+        assert_eq!(
+            events,
+            [
+                Event::PowerChanged {
+                    subject: Subject::Player,
+                    power: PowerId::Doom,
+                    amount: 3,
+                },
+                Event::TurnBegan { turn: 1 },
+            ]
+        );
+    }
+
+    #[test]
+    fn neurosurge_self_doom_refuses_a_shroud_listener_without_its_amount() {
+        let (_, _, result) = neurosurge_side_start(&[(PowerId::Shroud, 0)], |_| {});
+
+        assert_eq!(
+            result,
+            Err(EngineRefusal::MalformedArgs(
+                "after-power-amount-changed shroud"
+            ))
+        );
+    }
+
+    #[test]
+    fn neurosurge_self_doom_shroud_block_reaches_juggernaut() {
+        let (state, _, result) = neurosurge_side_start(&[(PowerId::Shroud, 3)], |state| {
+            state.monsters_mut()[0].hp = 1;
+            state.powers.set(PowerId::Juggernaut, SlotWire::Int, 1);
+            assert!(
+                state
+                    .fanouts
+                    .set_after_block_gained_order(&[PowerId::Juggernaut])
+            );
+        });
+
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.block, 3);
+        assert!(state.monsters[0].hp <= 0);
+        assert!(state.history.over);
+    }
+
     #[test]
     fn clarity_adds_one_hand_draw_and_decrements_one_stack_per_side_start() {
         let catalog = crate::catalog::CatalogBuilder::new().build();
@@ -23195,8 +24897,7 @@ mod tests {
             assert_eq!(ordered_hand_draw_count(&state, 0).unwrap(), 6);
             // The in-frame (unpaused) walk owns the side-start tail (#3050).
             let _window = SetupPlayerTurnWindowGuard::enter();
-            finish_player_turn_start_after_hand_choices(&mut state, &catalog, &mut Vec::new())
-                .unwrap();
+            finish_turn_start_from_entry(&mut state, &catalog, &mut Vec::new()).unwrap();
             assert_eq!(state.fanouts.clarity(), expected);
         }
         assert_eq!(ordered_hand_draw_count(&state, 0).unwrap(), 5);
@@ -23227,7 +24928,7 @@ mod tests {
             // The in-frame (unpaused) walk owns the side-start tail (#3050).
             let _window = SetupPlayerTurnWindowGuard::enter();
 
-            finish_player_turn_start_after_hand_choices(&mut state, &catalog, &mut events).unwrap();
+            finish_turn_start_from_entry(&mut state, &catalog, &mut events).unwrap();
 
             assert_eq!(state.fanouts.clarity(), 1);
             assert_eq!(state.powers.value(PowerId::Strength), 3);
@@ -23261,8 +24962,7 @@ mod tests {
                 ending.powers.value(PowerId::Strength),
                 ending.powers.value(PowerId::Vigor),
             );
-            finish_player_turn_start_after_hand_choices(&mut ending, &catalog, &mut Vec::new())
-                .unwrap();
+            finish_turn_start_from_entry(&mut ending, &catalog, &mut Vec::new()).unwrap();
             assert_eq!(
                 (
                     ending.fanouts.clarity(),
@@ -23412,6 +25112,17 @@ mod tests {
     // tail run first (`<StartTurn>d__100` IL_06cf, then IL_07bf/IL_08b5,
     // checksum IL_0975); the resumed hook action runs only the remainder and
     // `RunAutoPrePlayPhase`.
+
+    /// The turn start from its relic segment, as entered when no power
+    /// listener ran: the pass began live exactly when the combat is live now.
+    fn finish_turn_start_from_entry(
+        state: &mut HotState,
+        catalog: &Catalog,
+        events: &mut Vec<Event>,
+    ) -> Result<(), EngineRefusal> {
+        let live = !state.history.over;
+        finish_player_turn_start_after_hand_choices(state, catalog, live, events)
+    }
 
     fn paused_setup_catalog(
         relics: &[RelicId],
@@ -23819,33 +25530,96 @@ mod tests {
         assert_eq!(turn_began(&events), 1);
     }
 
+    /// An unvouched inventory cannot say which relics ran ahead of a paused
+    /// choice, so two acting relics around one refuse by name. A vouched one
+    /// runs them as recorded (#3635): Toasty Mittens and Gambling Chip each
+    /// pause in turn, in either order, and a Mercury Hourglass recorded
+    /// between an idle Bellows and Toasty hits before the pause.
     #[test]
-    fn a_relic_pause_refuses_an_unrecorded_or_non_native_relic_order() {
+    fn a_relic_pause_refuses_an_unrecorded_relic_order_and_runs_a_recorded_one() {
+        use crate::hot::RelicPendingKind;
         const REFUSAL: EngineRefusal = EngineRefusal::PowerOrderNotModeled(
             "AfterPlayerTurnStart relic order around a paused SetupPlayerTurn choice",
         );
-        let pair = [RelicId::RelicGamblingChip, RelicId::RelicToastyMittens];
-        for (relics, ordered) in [
-            (pair, false),
-            (
-                [RelicId::RelicToastyMittens, RelicId::RelicGamblingChip],
-                true,
-            ),
-        ] {
-            let (catalog, strike) = paused_setup_catalog(&relics, ordered);
+        const CHIP: RelicId = RelicId::RelicGamblingChip;
+        const TOASTY: RelicId = RelicId::RelicToastyMittens;
+        for relics in [[CHIP, TOASTY], [TOASTY, CHIP]] {
+            let (catalog, strike) = paused_setup_catalog(&relics, false);
             let mut state = paused_setup_state(strike, 1, 6);
             let before = state.clone();
             assert_eq!(
                 begin_player_turn(&mut state, &catalog, &mut Vec::new()),
                 Err(REFUSAL),
-                "{relics:?} ordered={ordered}"
+                "{relics:?} unvouched"
             );
             assert_eq!(state, before);
         }
-        // A later-turn Toasty pause: Mercury Hourglass ahead of it in
-        // inventory hits before the side-start tail natively. An idle Bellows
-        // recorded first keeps Hourglass from leading the pass (#3321), so
-        // this engine would still run it last.
+        let parked = |state: &HotState| {
+            state
+                .fanouts
+                .batch_nine_relic_pending()
+                .map(|pending| pending.kind)
+        };
+        for (relics, kinds) in [
+            (
+                [CHIP, TOASTY],
+                [
+                    RelicPendingKind::GamblingChip,
+                    RelicPendingKind::ToastyMittens,
+                ],
+            ),
+            (
+                [TOASTY, CHIP],
+                [
+                    RelicPendingKind::ToastyMittens,
+                    RelicPendingKind::GamblingChip,
+                ],
+            ),
+        ] {
+            let (catalog, strike) = paused_setup_catalog(&relics, true);
+            let mut state = paused_setup_state(strike, 1, 6);
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(parked(&state), Some(kinds[0]), "{relics:?}: first pause");
+            let dealt = state.piles.get(PileId::Hand).len();
+            assert!(dealt >= 2, "{relics:?}");
+            let first_options =
+                super::super::relics::relic_selection_action_count(&state, &catalog).unwrap();
+            // Toasty offers each dealt card; the Chip offers every ordered
+            // subset of them.
+            assert_eq!(
+                first_options as usize == dealt,
+                relics[0] == TOASTY,
+                "{relics:?}"
+            );
+            // Ordinal 0 exhausts the first card for Toasty and discards
+            // nothing for the Chip.
+            super::super::relics::resume_relic_selection(&mut state, &catalog, 0, &mut events)
+                .unwrap();
+            assert_eq!(parked(&state), Some(kinds[1]), "{relics:?}: second pause");
+            // The second choice reads the Hand the first one left: one card
+            // fewer behind Toasty's exhaust, all of it behind an empty Chip
+            // discard.
+            let hand = state.piles.get(PileId::Hand).len();
+            assert_eq!(
+                hand,
+                if relics[0] == TOASTY {
+                    dealt - 1
+                } else {
+                    dealt
+                },
+                "{relics:?}"
+            );
+            super::super::relics::resume_relic_selection(&mut state, &catalog, 0, &mut events)
+                .unwrap();
+            assert!(state.pending.is_none(), "{relics:?}");
+            assert_eq!(state.powers.value(PowerId::Strength), 1, "{relics:?}");
+            assert_eq!(exhausted_uids(&state).len(), 1, "{relics:?}");
+            assert_eq!(turn_began(&events), 1, "{relics:?}");
+        }
+        // A later-turn Toasty pause: Mercury Hourglass ahead of it in the
+        // inventory hits before the pause and the side-start tail there, with
+        // an idle Bellows recorded ahead of both.
         let (catalog, strike) = paused_setup_catalog(
             &[
                 RelicId::RelicBellows,
@@ -23855,10 +25629,15 @@ mod tests {
             true,
         );
         let mut state = paused_setup_state(strike, 2, 6);
-        assert_eq!(
-            begin_player_turn(&mut state, &catalog, &mut Vec::new()),
-            Err(REFUSAL)
-        );
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 20));
+        let mut events = Vec::new();
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(parked(&state), Some(RelicPendingKind::ToastyMittens));
+        assert_eq!(state.monsters[0].hp, 17, "Hourglass hit before the pause");
+        super::super::relics::resume_relic_selection(&mut state, &catalog, 0, &mut events).unwrap();
+        assert_eq!(state.monsters[0].hp, 17, "Hourglass hit once");
     }
 
     /// #3321: a Mercury Hourglass recorded before every other owned
@@ -23900,39 +25679,637 @@ mod tests {
         }
     }
 
-    /// #3321: native awaits the next relic listener after a lethal one
-    /// (`Hook/<AfterPlayerTurnStart>d__56` `IL_017a`, no ending check), and
-    /// this engine's bodies stop on `history.over`, so a leading Hourglass
-    /// that ends combat refuses by name when a peer would act this turn. A
-    /// peer that is idle this turn (Bellows on turn two) is the control.
+    /// #3321, #3635: native awaits the next relic listener after a lethal one
+    /// (`Hook/<AfterPlayerTurnStart>d__56` `IL_017a`, no ending check). Toasty
+    /// Mittens behind a Hourglass that ended the combat opens no choice
+    /// (`CardSelectCmd/<FromHand>d__28` RVA `0x3e7568` returns on
+    /// `IsOverOrEnding`, `IL_0036`), exhausts nothing and gains no Strength
+    /// (``PowerCmd/<Apply>d__1`1`` RVA `0x3ef988` returns on `IsEnding`,
+    /// `IL_0025`). Native run `k_pop_toasty` (#3889; Festive Popper as the
+    /// killer): Hand the dealt five, Exhaust empty, no power, and the
+    /// selector's pending sources all still queued, where the live control
+    /// `c_pop_toasty` consumed one.
     #[test]
-    fn a_leading_mercury_hourglass_that_ends_combat_refuses_before_an_acting_peer() {
-        for (peer, refuses) in [
-            (RelicId::RelicToastyMittens, true),
-            (RelicId::RelicBellows, false),
-        ] {
+    fn toasty_mittens_behind_a_lethal_mercury_hourglass_opens_no_choice() {
+        for peer in [RelicId::RelicToastyMittens, RelicId::RelicBellows] {
             let (catalog, strike) =
                 paused_setup_catalog(&[RelicId::RelicMercuryHourglass, peer], true);
             let mut state = paused_setup_state(strike, 2, 6);
             state
                 .monsters_mut()
                 .push(HotMonster::new(MonsterKind::Toadpole, 3));
+            begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+            assert!(state.history.over, "{peer:?}: Hourglass killed");
+            assert!(state.pending.is_none(), "{peer:?}");
+            assert!(state.fanouts.batch_nine_relic_pending().is_none());
+            assert_eq!(state.piles.get(PileId::Hand).len(), 5, "{peer:?}");
+            assert!(state.piles.get(PileId::Exhaust).is_empty(), "{peer:?}");
+            assert_eq!(state.powers.value(PowerId::Strength), 0, "{peer:?}");
+        }
+    }
+
+    /// #3756: Festive Popper and Mercury Hourglass both hit every enemy at
+    /// the player's turn start, in `Player.Relics` order
+    /// (`Hook/<AfterPlayerTurnStart>d__56` RVA `0x3cff0c`, `IL_012d`/`IL_017a`;
+    /// `FestivePopper/<AfterPlayerTurnStart>d__4` RVA `0x324b94` `IL_0094`,
+    /// `MercuryHourglass/<AfterPlayerTurnStart>d__4` RVA `0x32a854` `IL_0067`).
+    /// Popper recorded first is the fixed suffix ahead of Hourglass's template
+    /// pass; Hourglass recorded first leads the pass. Each hits once, and the
+    /// event order is the recorded one.
+    #[test]
+    fn festive_popper_and_mercury_hourglass_hit_in_their_recorded_order() {
+        use RelicId::{RelicFestivePopper as POPPER, RelicMercuryHourglass as HOURGLASS};
+        let hits = |events: &[Event]| {
+            events
+                .iter()
+                .filter_map(|event| match event {
+                    Event::MonsterDamaged { unblocked, .. } => Some(*unblocked),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        for (relics, expected) in [([POPPER, HOURGLASS], [9, 3]), ([HOURGLASS, POPPER], [3, 9])] {
+            let (catalog, strike) = paused_setup_catalog(&relics, true);
+            let mut state = paused_setup_state(strike, 1, 6);
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 20));
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(state.monsters[0].hp, 8, "{relics:?}");
+            assert_eq!(hits(&events), expected, "{relics:?}");
+            assert_eq!(turn_began(&events), 1);
+        }
+        // Later turns: Popper is idle (`TurnNumber == 1`, `IL_0045`-`IL_0055`),
+        // and Hourglass hits once from either place.
+        for relics in [[POPPER, HOURGLASS], [HOURGLASS, POPPER]] {
+            let (catalog, strike) = paused_setup_catalog(&relics, true);
+            let mut state = paused_setup_state(strike, 2, 6);
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 20));
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(hits(&events), [3], "{relics:?}");
+        }
+    }
+
+    /// #3756, #3635: a lethal first hit, in either order. The second hit's
+    /// `CreatureCmd::Damage` walks an empty `HittableEnemies` and returns
+    /// (`CreatureCmd/<Damage>d__12` RVA `0x3e96c8`, `IL_00c6`-`IL_00e4`), so
+    /// the combat ends on the first one both ways round.
+    #[test]
+    fn a_lethal_first_hit_between_popper_and_hourglass_ends_combat_in_either_order() {
+        use RelicId::{RelicFestivePopper as POPPER, RelicMercuryHourglass as HOURGLASS};
+        let hits = |events: &[Event]| {
+            events
+                .iter()
+                .filter_map(|event| match event {
+                    Event::MonsterDamaged { unblocked, .. } => Some(*unblocked),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        for (relics, expected) in [([POPPER, HOURGLASS], [9]), ([HOURGLASS, POPPER], [3])] {
+            let (catalog, strike) = paused_setup_catalog(&relics, true);
+            let mut state = paused_setup_state(strike, 1, 6);
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 3));
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert!(state.history.over, "{relics:?}");
+            assert_eq!(
+                hits(&events),
+                expected,
+                "{relics:?}: the first relic's hit only"
+            );
+        }
+    }
+
+    /// #3635, native witness. The headless harness ran the archived v0.111.0
+    /// `sts2.dll` (commit `41cef1ea`; Ironclad, `ENCOUNTER.CULTISTS_NORMAL`,
+    /// seed `TESTSEED`, empty line) with the relics granted in each order
+    /// below, and the game's own combat history listed the turn-one entries
+    /// in exactly that order: per enemy `9, 1, 3` for Popper, Mr Struggles,
+    /// Hourglass, `3, 1, 9` for Hourglass, Mr Struggles, Popper and `1, 3, 9`
+    /// for Mr Struggles, Hourglass, Popper; `took 4` ahead of the two `9`s
+    /// for Royal Poison, Popper and behind them for Popper, Royal Poison.
+    /// The engine's events carry the same order. An unvouched inventory keeps
+    /// the fixed sequence, which admission refuses for each of these sets.
+    #[test]
+    fn turn_start_hits_land_in_the_recorded_order_the_game_runs() {
+        use RelicId::{
+            RelicFestivePopper as POPPER, RelicMercuryHourglass as HOURGLASS,
+            RelicMrStruggles as STRUGGLES, RelicRoyalPoison as ROYAL_POISON,
+        };
+        // A monster hit as its unblocked damage, the owner's as a negative.
+        let hits = |events: &[Event]| {
+            events
+                .iter()
+                .filter_map(|event| match event {
+                    Event::MonsterDamaged { unblocked, .. } => Some(i64::from(*unblocked)),
+                    Event::PlayerDamaged { hp_lost, .. } => Some(-i64::from(*hp_lost)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        for (relics, vouched, expected) in [
+            (&[POPPER, STRUGGLES, HOURGLASS][..], true, &[9, 1, 3][..]),
+            (&[HOURGLASS, STRUGGLES, POPPER], true, &[3, 1, 9]),
+            (&[STRUGGLES, HOURGLASS, POPPER], true, &[1, 3, 9]),
+            (&[ROYAL_POISON, POPPER], true, &[-4, 9]),
+            (&[POPPER, ROYAL_POISON], true, &[9, -4]),
+            // Unvouched: the fixed sequence, whatever the list says.
+            (&[HOURGLASS, STRUGGLES, POPPER], false, &[9, 1, 3]),
+            (&[ROYAL_POISON, POPPER], false, &[9, -4]),
+        ] {
+            let (catalog, strike) = paused_setup_catalog(relics, vouched);
+            let mut state = paused_setup_state(strike, 1, 6);
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 40));
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+            assert_eq!(hits(&events), expected, "{relics:?} vouched {vouched}");
+            assert_eq!(turn_began(&events), 1, "{relics:?}");
+        }
+    }
+
+    /// The #3889 fixture: `relics` in a vouched or unvouched inventory, with
+    /// the Choices Paradox pool, the Vexing Puzzlebox pool and a Toadpole
+    /// interned. No upgraded Strike is interned, so a Hand upgrade that ran
+    /// would refuse.
+    fn ended_combat_catalog(
+        relics: &[RelicId],
+        vouched: bool,
+    ) -> (Catalog, crate::catalog::CardAtom) {
+        let mut builder = CatalogBuilder::new();
+        let strike = builder
+            .intern_reachable(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        for id in choices_paradox_pool() {
+            builder
+                .intern_reachable(CardIdentity {
+                    id: *id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        for identity in crate::boundary::stoke_generation_closure([true, false]) {
+            builder.intern_reachable(identity).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.set_relics_ordered(relics, vouched).unwrap();
+        (builder.build(), strike)
+    }
+
+    fn choices_paradox_pool() -> &'static [CardId] {
+        let name = "CHOICES_PARADOX";
+        crate::content_tables::GENERATION_RELIC_POOLS
+            .iter()
+            .find_map(|(candidate, pool)| (*candidate == name).then_some(*pool))
+            .unwrap()
+    }
+
+    /// Turn one of the #3889 fixture: an Ironclad at 50 HP with nine Strikes
+    /// to draw, a charged Bone Tea and one Toadpole at `enemy_hp`.
+    fn ended_combat_state(strike: crate::catalog::CardAtom, enemy_hp: i32) -> HotState {
+        let mut state = paused_setup_state(strike, 1, 9);
+        state.reward_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.entropy_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        assert!(state.fanouts.set_bone_tea_combats_left(1));
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, enemy_hp));
+        state
+    }
+
+    /// What the ended-combat bodies of `relics` leave behind a kill, checked
+    /// against `before`: the game's results in the #3889 native runs.
+    fn assert_ended_combat_bodies(before: &HotState, state: &HotState, relics: &[RelicId]) {
+        use RelicId::{
+            RelicBoneTea as BONE_TEA, RelicChoicesParadox as PARADOX,
+            RelicRoyalPoison as ROYAL_POISON, RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        assert!(state.history.over, "{relics:?}");
+        assert!(state.pending.is_none(), "{relics:?}: no choice opens");
+        assert!(state.fanouts.batch_nine_relic_pending().is_none());
+        let hand = state.piles.get(PileId::Hand).as_slice();
+        assert_eq!(hand.len(), 5, "{relics:?}: the dealt five");
+        let strike = before.piles.get(PileId::Draw).as_slice()[0].atom;
+        assert!(
+            hand.iter().all(|card| card.atom == strike),
+            "{relics:?}: no upgrade and no generated card"
+        );
+        assert!(state.piles.get(PileId::Exhaust).is_empty(), "{relics:?}");
+        assert!(state.piles.get(PileId::Discard).is_empty(), "{relics:?}");
+        assert_eq!(state.powers.value(PowerId::Strength), 0, "{relics:?}");
+        assert_eq!(
+            state.hp,
+            before.hp - 4 * i32::from(relics.contains(&ROYAL_POISON)),
+            "{relics:?}: Royal Poison still lands"
+        );
+        assert_eq!(
+            state.fanouts.bone_tea_combats_left(),
+            u8::from(!relics.contains(&BONE_TEA)),
+            "{relics:?}: Bone Tea spends its charge"
+        );
+        // One full shuffle per generation relic, whatever its place.
+        let mut drawn = before.clone();
+        if relics.contains(&PARADOX) {
+            crate::engine::cards::shuffle_generation_slice(&mut drawn, choices_paradox_pool())
+                .unwrap();
+        }
+        if relics.contains(&PUZZLEBOX) {
+            crate::engine::cards::shuffle_generation_pool(
+                &mut drawn,
+                &crate::content_tables::STOKE_CARD_POOL_V109,
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            state.rng.get(crate::hot::RngStream::Generation),
+            drawn.rng.get(crate::hot::RngStream::Generation),
+            "{relics:?}: the generation draws still run"
+        );
+        if relics.contains(&PARADOX) || relics.contains(&PUZZLEBOX) {
+            assert_ne!(
+                state.rng.get(crate::hot::RngStream::Generation),
+                before.rng.get(crate::hot::RngStream::Generation)
+            );
+        }
+    }
+
+    /// #3889, native witnesses. A relic that ends the combat does not stop
+    /// the walk (`Hook/<IterateCombatHookListeners>d__0` RVA `0x3d3bc0`
+    /// checks once, `IL_0028`-`IL_0042`), and each later body runs as its own
+    /// commands allow on an ended combat
+    /// (`relics::after_player_turn_start_on_ended_combat` carries the IL).
+    /// The headless harness ran the archived v0.111.0 `sts2.dll` (Ironclad,
+    /// `ENCOUNTER.CULTISTS_NORMAL`, seed `TESTSEED`, every enemy set to 5 HP
+    /// before `StartCombatInternal`, the game's `TestCardSelector` pushed
+    /// with pending sources) with Festive Popper granted ahead of each relic
+    /// below, and ahead of all of them at once (`k_all`): the Hand stayed the
+    /// dealt five at +0, nothing was exhausted or discarded, no Strength was
+    /// applied, no selector source was consumed, Bone Tea's `CombatsLeft`
+    /// went to 0, Royal Poison took the owner from 80 to 76, and
+    /// `CombatCardGeneration` advanced by one full shuffle for Vexing
+    /// Puzzlebox and one for Choices Paradox (68 each on the harness's
+    /// profile, 136 together; the live Choices Paradox control also reads 68).
+    #[test]
+    fn relics_behind_a_lethal_turn_start_hit_run_as_the_game_runs_them() {
+        use RelicId::{
+            RelicBellows as BELLOWS, RelicBoneTea as BONE_TEA, RelicChoicesParadox as PARADOX,
+            RelicFestivePopper as POPPER, RelicGamblingChip as CHIP,
+            RelicMercuryHourglass as HOURGLASS, RelicMrStruggles as STRUGGLES,
+            RelicRoyalPoison as ROYAL_POISON, RelicToastyMittens as TOASTY,
+            RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        let all = [
+            POPPER,
+            TOASTY,
+            CHIP,
+            PARADOX,
+            PUZZLEBOX,
+            BELLOWS,
+            BONE_TEA,
+            ROYAL_POISON,
+        ];
+        let mut cases = vec![all.to_vec(), vec![POPPER, STRUGGLES, HOURGLASS]];
+        for later in &all[1..] {
+            cases.push(vec![POPPER, *later]);
+        }
+        for relics in cases {
+            let (catalog, strike) = ended_combat_catalog(&relics, true);
+            let mut state = ended_combat_state(strike, 9);
             let before = state.clone();
-            let result = begin_player_turn(&mut state, &catalog, &mut Vec::new());
-            if refuses {
-                assert_eq!(
-                    result,
-                    Err(EngineRefusal::PowerOrderNotModeled(
-                        "AfterPlayerTurnStart relic peer after a leading Mercury Hourglass ended combat",
-                    )),
-                    "{peer:?}"
-                );
-                assert_eq!(state, before);
-            } else {
-                result.unwrap();
-                assert!(state.history.over, "{peer:?}: Hourglass killed");
+            begin_player_turn(&mut state, &catalog, &mut Vec::new())
+                .unwrap_or_else(|refusal| panic!("{relics:?}: {refusal}"));
+            assert_ended_combat_bodies(&before, &state, &relics);
+        }
+
+        // An unvouched inventory runs the fixed sequence, which has Popper
+        // ahead of Royal Poison, but does not record that order: refused by
+        // the later relic's name, with nothing written.
+        let (catalog, strike) = ended_combat_catalog(&[POPPER, ROYAL_POISON], false);
+        let mut state = ended_combat_state(strike, 9);
+        let before = state.clone();
+        assert_eq!(
+            begin_player_turn(&mut state, &catalog, &mut Vec::new()),
+            Err(EngineRefusal::PowerOrderNotModeled(
+                "Royal Poison after an earlier AfterPlayerTurnStart relic ended combat",
+            ))
+        );
+        assert_eq!(state, before);
+    }
+
+    /// #3889: Royal Poison that takes its owner to 0 on a combat an earlier
+    /// relic already won.
+    ///
+    /// Native, the headless harness on the archived v0.111.0 DLL (Ironclad,
+    /// 80 max HP, both Cultists at 5 HP, Festive Popper granted ahead of
+    /// Royal Poison):
+    ///
+    /// * owner at 3 or 4 HP: 0 HP, `Creature.IsDead`, `RunState.IsGameOver`.
+    ///   The combat the Popper won is a loss;
+    /// * owner at 5 HP: 1 HP, alive;
+    /// * with Lizard Tail (granted first or last): 40 HP, `WasUsed`, alive;
+    /// * with Fairy in a Bottle: 24 HP, the potion gone, alive, and a Lizard
+    ///   Tail owned beside it is not used.
+    #[test]
+    fn royal_poison_can_kill_its_owner_on_a_combat_already_won() {
+        use RelicId::{
+            RelicFestivePopper as POPPER, RelicLizardTail as TAIL, RelicRoyalPoison as ROYAL_POISON,
+        };
+        let run = |relics: &[RelicId], hp: i32, fairy: bool| {
+            let (catalog, strike) = ended_combat_catalog(relics, true);
+            let mut state = ended_combat_state(strike, 9);
+            state.max_hp = 80;
+            state.hp = hp;
+            if relics.contains(&TAIL) {
+                state
+                    .fanouts
+                    .set_batch_eight_deep_relic_ownership(false, false, false, true, false);
+            }
+            if fairy {
+                assert!(state.fanouts.set_potion_belt(
+                    vec![Some(crate::ids::PotionId::FairyInABottle)],
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                ));
+            }
+            let mut events = Vec::new();
+            begin_player_turn(&mut state, &catalog, &mut events)
+                .unwrap_or_else(|refusal| panic!("{relics:?} at {hp}: {refusal}"));
+            assert!(state.history.over, "{relics:?}");
+            assert!(state.pending.is_none(), "{relics:?}");
+            assert!(
+                crate::engine::damage::alive_targets(&state).is_empty(),
+                "{relics:?}"
+            );
+            // Every `CombatOver` of the turn, in order: the last one is the
+            // fight's result.
+            let results: Vec<bool> = events
+                .iter()
+                .filter_map(|event| match event {
+                    Event::CombatOver { player_won } => Some(*player_won),
+                    _ => None,
+                })
+                .collect();
+            (state, results)
+        };
+        for hp in [3, 4] {
+            let (state, results) = run(&[POPPER, ROYAL_POISON], hp, false);
+            assert_eq!(state.hp, 0, "owner at {hp}");
+            assert!(
+                state.fanouts.player_hooks_deactivated(),
+                "owner at {hp}: dead, the lost fight"
+            );
+            // The Popper's win, then the owner's death corrects it.
+            assert_eq!(results, [true, false], "owner at {hp}");
+        }
+        let (state, results) = run(&[POPPER, ROYAL_POISON], 5, false);
+        assert_eq!(state.hp, 1);
+        assert!(!state.fanouts.player_hooks_deactivated());
+        assert_eq!(results, [true]);
+        for relics in [[TAIL, POPPER, ROYAL_POISON], [POPPER, ROYAL_POISON, TAIL]] {
+            let (state, results) = run(&relics, 4, false);
+            assert_eq!(state.hp, 40, "{relics:?}");
+            assert!(state.fanouts.lizard_tail_used(), "{relics:?}");
+            assert!(!state.fanouts.player_hooks_deactivated(), "{relics:?}");
+            assert_eq!(results, [true], "{relics:?}: a prevented death is no loss");
+        }
+        let (state, results) = run(&[POPPER, ROYAL_POISON], 4, true);
+        assert_eq!(state.hp, 24);
+        assert!(state.fanouts.potion_slots().iter().all(Option::is_none));
+        assert!(!state.fanouts.player_hooks_deactivated());
+        assert_eq!(results, [true]);
+        let (state, _) = run(&[POPPER, ROYAL_POISON, TAIL], 4, true);
+        assert_eq!(state.hp, 24);
+        assert!(state.fanouts.potion_slots().iter().all(Option::is_none));
+        assert!(!state.fanouts.lizard_tail_used(), "Fairy answers first");
+    }
+
+    /// #3889 item 4: Royal Poison's hit on an ended combat beside the owner's
+    /// HP-loss listeners.
+    ///
+    /// Native, headless on the archived v0.111.0 DLL (Ironclad at 50 of 80
+    /// HP, both Cultists at 5 HP, Festive Popper granted ahead of Royal
+    /// Poison, so the hit lands on a combat the Popper won; no choice is
+    /// signalled in the pass):
+    ///
+    /// * Centennial Puzzle: 46 HP and the dealt five, no Draw (granted before
+    ///   or after the pair). Live control: 46 HP and eight cards.
+    /// * Demon Tongue: 50 HP, the heal runs (before or after the pair). Live
+    ///   control: 50 HP.
+    /// * Rupture 1: 46 HP and no Strength. Live control: one Strength.
+    #[test]
+    fn royal_poison_on_an_ended_combat_beside_its_hp_loss_listeners() {
+        use RelicId::{RelicFestivePopper as POPPER, RelicRoyalPoison as ROYAL_POISON};
+        #[derive(Clone, Copy, Debug, PartialEq)]
+        enum Listener {
+            Puzzle,
+            Tongue,
+            Rupture,
+        }
+        let run = |listener: Listener, enemy_hp: i32| {
+            let (catalog, strike) = ended_combat_catalog(&[POPPER, ROYAL_POISON], true);
+            let mut state = ended_combat_state(strike, enemy_hp);
+            state.max_hp = 80;
+            match listener {
+                Listener::Puzzle => state.fanouts.set_puzzle_armed(true),
+                Listener::Tongue => {
+                    state.set_batch_six_deep_relic_ownership(true, false, false, false)
+                }
+                Listener::Rupture => state.powers.set(PowerId::Rupture, SlotWire::Int, 1),
+            }
+            begin_player_turn(&mut state, &catalog, &mut Vec::new())
+                .unwrap_or_else(|refusal| panic!("{listener:?} at {enemy_hp}: {refusal}"));
+            assert!(state.pending.is_none(), "{listener:?}");
+            assert_eq!(state.history.over, enemy_hp <= 9, "{listener:?}");
+            (
+                state.hp,
+                state.piles.get(PileId::Hand).as_slice().len(),
+                state.powers.value(PowerId::Strength),
+            )
+        };
+        // The combat the Popper won.
+        assert_eq!(run(Listener::Puzzle, 9), (46, 5, 0));
+        assert_eq!(run(Listener::Tongue, 9), (50, 5, 0));
+        assert_eq!(run(Listener::Rupture, 9), (46, 5, 0));
+        // Live controls.
+        assert_eq!(run(Listener::Puzzle, 100), (46, 8, 0));
+        assert_eq!(run(Listener::Tongue, 100), (50, 5, 0));
+        assert_eq!(run(Listener::Rupture, 100), (46, 5, 1));
+    }
+
+    /// #3889 item 4: a player power that ends the combat, and the listeners
+    /// of the same `AfterPlayerTurnStart` pass behind it.
+    ///
+    /// Native, headless on the archived v0.111.0 DLL (no choice is signalled
+    /// in any of these passes):
+    ///
+    /// * Rolling Boulder 5 whose own hit ends the combat: its amount is 10
+    ///   afterwards. Behind a kill by Inferno or by Loop's Lightning it also
+    ///   goes to 10, with no hit left to deal.
+    /// * Loop behind a killing Rolling Boulder: no `CombatTargets` draw, the
+    ///   orb's passive does not run.
+    /// * Inferno 6 (owner at 50, both enemies at 5): its own 1 HP hit ends
+    ///   the combat. Royal Poison behind it still lands (45 HP); with Festive
+    ///   Popper and Bone Tea beside it the Hand keeps its levels and Bone
+    ///   Tea's charge is spent. Live control, Royal Poison's loss fires
+    ///   Inferno again: 45 HP and each enemy 12 down.
+    #[test]
+    fn a_power_that_ends_the_combat_and_the_listeners_behind_it() {
+        use RelicId::{
+            RelicBoneTea as BONE_TEA, RelicFestivePopper as POPPER,
+            RelicRoyalPoison as ROYAL_POISON,
+        };
+        let run = |relics: &[RelicId], powers: &[(PowerId, i32)], enemy_hp: i32, orb: bool| {
+            let (catalog, strike) = ended_combat_catalog(relics, true);
+            let mut state = ended_combat_state(strike, enemy_hp);
+            if orb {
+                state.orbs.set_slots(1);
+                state
+                    .orbs
+                    .set_orbs(vec![HotOrb::from_parts(OrbKind::Lightning, None).unwrap()]);
+            }
+            let mut order = Vec::new();
+            for (power, amount) in powers {
+                state.powers.set(*power, SlotWire::Int, *amount);
+                if *power == PowerId::Inferno {
+                    state.powers.set(PowerId::InfernoSelf, SlotWire::Int, 1);
+                }
+                order.push(*power);
+            }
+            assert!(state.fanouts.set_after_player_turn_start_order(&order));
+            begin_player_turn(&mut state, &catalog, &mut Vec::new())
+                .unwrap_or_else(|refusal| panic!("{relics:?} {powers:?}: {refusal}"));
+            assert!(state.pending.is_none(), "{relics:?} {powers:?}");
+            state
+        };
+        let boulder = (PowerId::RollingBoulder, 5);
+        let inferno = (PowerId::Inferno, 6);
+        let loop_power = (PowerId::Loop, 1);
+        let targets = |state: &HotState| state.rng.get(crate::hot::RngStream::Targets).counter;
+
+        let state = run(&[], &[boulder], 5, false);
+        assert!(state.history.over);
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+
+        let state = run(&[], &[inferno, boulder], 5, false);
+        assert!(state.history.over);
+        assert_eq!(state.hp, 49);
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+
+        let state = run(&[], &[loop_power, boulder], 3, true);
+        assert!(state.history.over, "Loop's Lightning passive killed");
+        assert_eq!(targets(&state), 1);
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+
+        let state = run(&[], &[boulder, loop_power], 5, true);
+        assert!(state.history.over);
+        assert_eq!(targets(&state), 0, "no passive behind the kill");
+        assert_eq!(state.powers.value(PowerId::RollingBoulder), 10);
+
+        let live = run(&[], &[loop_power, boulder], 30, true);
+        assert!(!live.history.over);
+        assert_eq!(live.monsters[0].hp, 30 - 3 - 5);
+        assert_eq!(targets(&live), 1);
+
+        let state = run(&[ROYAL_POISON], &[inferno], 5, false);
+        assert!(state.history.over);
+        assert_eq!(state.hp, 45, "Royal Poison lands behind Inferno's kill");
+
+        let state = run(&[POPPER, BONE_TEA, ROYAL_POISON], &[inferno], 5, false);
+        assert!(state.history.over);
+        assert_eq!(state.hp, 45);
+        assert_eq!(state.fanouts.bone_tea_combats_left(), 0);
+        assert_eq!(state.piles.get(PileId::Hand).as_slice().len(), 5);
+        assert_eq!(state.powers.value(PowerId::Strength), 0);
+
+        let live = run(&[ROYAL_POISON], &[inferno], 42, false);
+        assert!(!live.history.over);
+        assert_eq!(live.hp, 45);
+        assert_eq!(live.monsters[0].hp, 30, "Inferno fires on both losses");
+    }
+
+    /// #3889 item 1: a player POWER that ends the combat sits ahead of the
+    /// owner's relics in the same listener list
+    /// (`CombatState/<IterateHookListeners>d__69` RVA `0x3f9720`: powers at
+    /// `IL_0092`-`IL_0097`, relics at `IL_00c9`-`IL_00ef`), and the pass
+    /// checks the combat only before its first listener
+    /// (`Hook/<IterateCombatHookListeners>d__0` RVA `0x3d3bc0`,
+    /// `IL_0028`-`IL_0042`). So the relics still run, on the ended combat.
+    /// The harness cannot give its player a turn-one power, so the power
+    /// kill itself is IL-only; the bodies are the ones the relic-kill runs
+    /// above recorded. Their order among themselves does not show on an
+    /// ended combat, so an unvouched inventory runs them too. A pass that
+    /// begins on an ended combat runs nobody.
+    #[test]
+    fn relics_behind_a_power_that_ended_the_combat_still_run() {
+        use RelicId::{
+            RelicBellows as BELLOWS, RelicBoneTea as BONE_TEA, RelicChoicesParadox as PARADOX,
+            RelicGamblingChip as CHIP, RelicMercuryHourglass as HOURGLASS,
+            RelicRoyalPoison as ROYAL_POISON, RelicToastyMittens as TOASTY,
+            RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        let relics = [
+            ROYAL_POISON,
+            PUZZLEBOX,
+            BONE_TEA,
+            BELLOWS,
+            TOASTY,
+            HOURGLASS,
+            CHIP,
+            PARADOX,
+        ];
+        for vouched in [true, false] {
+            for power in [PowerId::RollingBoulder, PowerId::Loop] {
+                let (catalog, strike) = ended_combat_catalog(&relics, vouched);
+                let mut state = ended_combat_state(strike, 9);
+                if power == PowerId::RollingBoulder {
+                    state.powers.set(power, SlotWire::Int, 9);
+                } else {
+                    state.powers.set(power, SlotWire::Int, 1);
+                    state.orbs.set_base_slots(3);
+                    state.orbs.set_slots(3);
+                    state
+                        .orbs
+                        .push(crate::hot::HotOrb::from_parts(OrbKind::Lightning, None).unwrap());
+                    state.monsters_mut()[0].hp = 3;
+                }
+                assert!(state.set_after_player_turn_start_order(&[power]));
+                let before = state.clone();
+                begin_player_turn(&mut state, &catalog, &mut Vec::new())
+                    .unwrap_or_else(|refusal| panic!("{power:?} vouched {vouched}: {refusal}"));
+                assert_ended_combat_bodies(&before, &state, &relics);
             }
         }
+
+        // The pass entered on an ended combat: no relic runs.
+        let (catalog, strike) = ended_combat_catalog(&relics, true);
+        let mut state = ended_combat_state(strike, 9);
+        state.monsters_mut()[0].hp = 0;
+        state.history.over = true;
+        let before = state.clone();
+        finish_player_turn_start_after_hand_choices(&mut state, &catalog, false, &mut Vec::new())
+            .unwrap();
+        assert_eq!(state.hp, before.hp);
+        assert_eq!(state.fanouts.bone_tea_combats_left(), 1);
+        assert_eq!(
+            state.rng.get(crate::hot::RngStream::Generation),
+            before.rng.get(crate::hot::RngStream::Generation)
+        );
     }
 
     #[test]
@@ -23960,34 +26337,150 @@ mod tests {
         ));
     }
 
+    /// #3756: Tools of the Trade, Tyranny and Entropy select through
+    /// `CardSelectCmd::FromHand` (`<FromHand>d__28` RVA `0x3e7568`), which
+    /// signals the pause (IL_00b3) before it reads the Hand (IL_010d-IL_0119).
+    /// The side-start tail runs at that signal, so the options are the Hand
+    /// as the tail left it: Orange Dough's two cards are choosable, and
+    /// Lantern's energy is in before the choice is answered.
     #[test]
-    fn a_non_relic_pause_runs_the_side_start_tail_and_refuses_a_pile_write() {
-        for (relic, refuses) in [
-            (RelicId::RelicLantern, false),
-            (RelicId::RelicOrangeDough, true),
-        ] {
-            let (catalog, strike) = paused_setup_catalog(&[relic], false);
-            let mut state = paused_setup_state(strike, 1, 6);
-            state.powers.set(PowerId::Tyranny, SlotWire::Int, 1);
-            assert!(
-                state
-                    .fanouts
-                    .set_turn_start_hand_choice_order(&[PowerId::Tyranny])
-            );
-            let result = begin_player_turn(&mut state, &catalog, &mut Vec::new());
-            if refuses {
+    fn a_hand_choice_power_reads_the_hand_the_side_start_tail_left() {
+        for power in [PowerId::ToolsOfTheTrade, PowerId::Tyranny, PowerId::Entropy] {
+            for relic in [RelicId::RelicLantern, RelicId::RelicOrangeDough] {
+                let (catalog, strike) = paused_setup_catalog(&[relic], false);
+                let mut state = paused_setup_state(strike, 1, 8);
+                state.powers.set(power, SlotWire::Int, 1);
+                assert!(state.set_after_player_turn_start_order(&[power]));
+                let mut events = Vec::new();
+                begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+                let pending = state.pending.as_deref().expect("the power paused");
+                assert_eq!(pending.frame_uid, TURN_START_HAND_CHOICE_PENDING_UID);
+                let record = state
+                    .frames
+                    .turn_start_hand_choice(pending.frame_record)
+                    .unwrap()
+                    .to_owned();
+                assert_eq!(record.phase, TurnStartHandChoicePhase::Selecting);
+                let hand = state.piles.get(PileId::Hand).as_slice().to_vec();
                 assert_eq!(
-                    result,
-                    Err(EngineRefusal::PowerOrderNotModeled(
-                        "AfterSideTurnStart pile write under a paused SetupPlayerTurn choice",
-                    ))
+                    record
+                        .entries
+                        .iter()
+                        .map(|entry| entry.card)
+                        .collect::<Vec<_>>(),
+                    hand,
+                    "{power:?} {relic:?}: the options are the live Hand"
                 );
-            } else {
-                result.unwrap();
-                assert!(state.pending.is_some(), "Tyranny paused SetupPlayerTurn");
-                assert_eq!(state.energy, BASE_ENERGY + 1, "Lantern ran at the pause");
+                let tail_cards = hand.iter().filter(|card| card.atom != strike).count();
+                if relic == RelicId::RelicOrangeDough {
+                    assert_eq!(tail_cards, 2, "{power:?}: both Dough cards are options");
+                } else {
+                    assert_eq!(tail_cards, 0);
+                    assert_eq!(state.energy, BASE_ENERGY + 1, "Lantern ran at the pause");
+                }
+                assert_eq!(turn_began(&events), 0, "AutoPre waits for the answer");
             }
         }
+    }
+
+    /// #3756: `FromHand` signals whatever the Hand holds, and only the Hand
+    /// it reads afterwards decides whether the player is asked
+    /// (IL_0152-IL_018d). Tyranny 20 over a fourteen-card draw is not a
+    /// choice before the tail and still is not after it: the tail's two Dough
+    /// cards are exhausted with the rest. Before this they outlived the
+    /// listener.
+    #[test]
+    fn an_unprompted_hand_choice_power_still_runs_behind_the_side_start_tail() {
+        let (catalog, strike) = paused_setup_catalog(&[RelicId::RelicOrangeDough], false);
+        let mut state = paused_setup_state(strike, 1, 4);
+        state.powers.set(PowerId::Tyranny, SlotWire::Int, 9);
+        assert!(
+            state
+                .fanouts
+                .set_turn_start_hand_choice_order(&[PowerId::Tyranny])
+        );
+        let mut events = Vec::new();
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert!(state.pending.is_none());
+        assert!(state.piles.get(PileId::Hand).is_empty());
+        let exhausted = state.piles.get(PileId::Exhaust).as_slice();
+        assert_eq!(exhausted.len(), 4 + 2);
+        assert_eq!(
+            exhausted.iter().filter(|card| card.atom != strike).count(),
+            2,
+            "the Dough cards were in the Hand Tyranny read"
+        );
+        assert_eq!(turn_began(&events), 1);
+
+        // Tyranny 4 over a four-card Draw pile: four cards are no choice
+        // before the tail and six are one after it, so the player is asked.
+        let mut state = paused_setup_state(strike, 1, 4);
+        state.powers.set(PowerId::Tyranny, SlotWire::Int, 4);
+        assert!(
+            state
+                .fanouts
+                .set_turn_start_hand_choice_order(&[PowerId::Tyranny])
+        );
+        begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        let pending = state.pending.as_deref().expect("six cards over Tyranny 4");
+        assert_eq!(pending.frame_uid, TURN_START_HAND_CHOICE_PENDING_UID);
+        assert_eq!(state.piles.get(PileId::Hand).len(), 6);
+    }
+
+    /// #3756: Stratagem's pick inside the turn-start Hand draw reads the Draw
+    /// pile after the pause (`<FromCombatPile>d__20` RVA `0x3e5e84`, signal
+    /// IL_00ae, `pile.Cards` IL_0114-IL_0126). A tail that writes only the
+    /// Hand leaves the parked candidates native's; one that wrote the Draw
+    /// pile, or any other parked choice, keeps the refusal.
+    #[test]
+    fn a_stratagem_hand_draw_pick_admits_a_tail_that_leaves_the_draw_pile() {
+        let (catalog, strike) = paused_setup_catalog(&[RelicId::RelicOrangeDough], false);
+        let mut state = paused_setup_state(strike, 1, 2);
+        state.next_card_uid = 20;
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .extend((3..=8).map(|uid| HotCard {
+                uid,
+                atom: strike,
+                flags: 0,
+            }));
+        state.powers.set(PowerId::Stratagem, SlotWire::Int, 1);
+        let before = state.piles.clone();
+        begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        let pending = state.pending.as_deref().expect("Stratagem paused the draw");
+        assert_eq!(
+            pending.frame_uid,
+            crate::hot::STRATAGEM_SELECTION_PENDING_UID
+        );
+        let hand = state.piles.get(PileId::Hand).as_slice();
+        assert_eq!(hand.len(), 4, "two drawn Strikes, then the two Dough cards");
+        assert!(hand[..2].iter().all(|card| card.atom == strike));
+        assert!(hand[2..].iter().all(|card| card.atom != strike));
+        assert_eq!(state.piles.get(PileId::Draw).len(), 6);
+
+        // The predicate itself: the same parked pick against a tail that
+        // moved the Draw pile, and a different parked choice.
+        let live = state.piles.clone();
+        assert!(stratagem_hand_draw_pick_survives_tail(&state, &live));
+        assert!(
+            !stratagem_hand_draw_pick_survives_tail(&state, &before),
+            "the Draw pile differs from this snapshot"
+        );
+        let mut tyranny = paused_setup_state(strike, 1, 8);
+        tyranny.powers.set(PowerId::Tyranny, SlotWire::Int, 1);
+        assert!(
+            tyranny
+                .fanouts
+                .set_turn_start_hand_choice_order(&[PowerId::Tyranny])
+        );
+        begin_player_turn(&mut tyranny, &catalog, &mut Vec::new()).unwrap();
+        let piles = tyranny.piles.clone();
+        assert!(tyranny.pending.is_some());
+        assert!(!stratagem_hand_draw_pick_survives_tail(&tyranny, &piles));
+        tyranny.pending = None;
+        assert!(!stratagem_hand_draw_pick_survives_tail(&tyranny, &piles));
     }
 
     #[test]
@@ -24247,6 +26740,363 @@ mod tests {
         );
         assert_eq!(state.history.owner_generated_cards_combat, 2);
         assert_eq!(state.next_card_uid, 42);
+    }
+
+    /// #3635 (review of #3915): a `BeforeHandDraw` pass entered on an ended
+    /// combat yields no listener, the owner's powers included
+    /// (`Hook/<IterateCombatHookListeners>d__0::MoveNext` RVA `0x3d3bc0`,
+    /// `IL_0028`-`IL_0042`). Infinite Blades mints nothing and records
+    /// nothing, and Pendulum behind it does not count.
+    #[test]
+    fn a_pass_entered_on_an_ended_combat_runs_no_before_hand_draw_power() {
+        let mut builder = CatalogBuilder::new();
+        builder
+            .intern(CardIdentity {
+                id: CardId::InfiniteBlades,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder
+            .set_relics_ordered(&[RelicId::RelicPendulum], true)
+            .unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.turn = 2;
+        state.next_card_uid = 40;
+        state.powers.set(PowerId::InfiniteBlades, SlotWire::Int, 2);
+        assert!(
+            state
+                .fanouts
+                .set_before_hand_draw_order(&[PowerId::InfiniteBlades])
+        );
+        assert!(state.set_pendulum(0));
+        state.history.over = true;
+        begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert!(state.piles.get(PileId::Hand).is_empty());
+        assert_eq!(state.history.owner_generated_cards_combat, 0);
+        assert_eq!(state.next_card_uid, 40);
+        assert_eq!(state.pendulum(), 0);
+    }
+
+    /// A turn-start fixture for #3794: Infinite Blades 1 is the one
+    /// BeforeHandDraw power, and `held` are the live NightmarePower objects as
+    /// `(place, card)`.
+    fn nightmare_turn_fixture(held: &[(u8, CardId)]) -> (Catalog, HotState) {
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::InfiniteBlades,
+            CardId::StrikeSilent,
+            CardId::DefendSilent,
+        ] {
+            builder
+                .intern(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.next_card_uid = 40;
+        state.powers.set(PowerId::InfiniteBlades, SlotWire::Int, 1);
+        assert!(
+            state
+                .fanouts
+                .set_before_hand_draw_order(&[PowerId::InfiniteBlades])
+        );
+        state.fanouts.set_nightmare_instances(
+            held.iter()
+                .map(|(listeners_before, id)| crate::hot::NightmareInstance {
+                    amount: 3,
+                    listeners_before: *listeners_before,
+                    atom: plain_atom(&catalog, *id),
+                    flags: 0,
+                    instance: crate::hot::CardInstanceState::default(),
+                })
+                .collect(),
+        );
+        (catalog, state)
+    }
+
+    fn plain_atom(catalog: &Catalog, id: CardId) -> crate::catalog::CardAtom {
+        catalog
+            .atom(&CardIdentity {
+                id,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap()
+    }
+
+    fn pile_ids(catalog: &Catalog, state: &HotState, pile: PileId) -> Vec<CardId> {
+        state
+            .piles
+            .get(pile)
+            .as_slice()
+            .iter()
+            .map(|card| catalog.spec(card.atom).unwrap().identity.id)
+            .collect()
+    }
+
+    /// #3794: each NightmarePower object runs at its own acquisition place
+    /// among the BeforeHandDraw power listeners, so Hand order tells an
+    /// object attached before Infinite Blades from one attached after it.
+    #[test]
+    fn nightmare_objects_run_at_their_places_among_before_hand_draw_powers() {
+        use CardId::{DefendSilent as Defend, Shiv, StrikeSilent as Strike};
+        let (catalog, mut state) = nightmare_turn_fixture(&[(0, Strike), (1, Defend)]);
+        let mut events = Vec::new();
+        begin_player_turn(&mut state, &catalog, &mut events).unwrap();
+        assert_eq!(
+            pile_ids(&catalog, &state, PileId::Hand),
+            [Strike, Strike, Strike, Shiv, Defend, Defend, Defend]
+        );
+        assert_eq!(
+            state
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .collect::<Vec<_>>(),
+            (40..47).collect::<Vec<_>>(),
+            "uids are minted in listener order"
+        );
+        assert!(
+            state.fanouts.nightmare_instances().is_empty(),
+            "PowerCmd.Remove follows each object's copies"
+        );
+        assert_eq!(state.history.owner_generated_cards_combat, 7);
+        assert_eq!(state.powers.value(PowerId::InfiniteBlades), 1);
+
+        // Two objects at one place keep their acquisition order.
+        let (catalog, mut state) = nightmare_turn_fixture(&[(1, Defend), (1, Strike)]);
+        begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(
+            pile_ids(&catalog, &state, PileId::Hand),
+            [Shiv, Defend, Defend, Defend, Strike, Strike, Strike]
+        );
+
+        // With no BeforeHandDraw power at all the objects still run.
+        let (catalog, mut state) = nightmare_turn_fixture(&[(0, Strike)]);
+        state.powers.set(PowerId::InfiniteBlades, SlotWire::Int, 0);
+        assert!(state.fanouts.set_before_hand_draw_order(&[]));
+        begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(
+            pile_ids(&catalog, &state, PileId::Hand),
+            [Strike, Strike, Strike]
+        );
+    }
+
+    /// #3794: every copy is its own generated-card command, so the ten-card
+    /// Hand cap redirects exactly the copies that find Hand full, and the
+    /// object's place decides which cards those are.
+    #[test]
+    fn nightmare_copies_redirect_to_discard_at_the_hand_cap_by_place() {
+        use CardId::{DefendSilent as Defend, Shiv, StrikeSilent as Strike};
+        for (place, hand_tail, discard) in [
+            (0, [Defend, Defend], [Defend, Shiv]),
+            (1, [Shiv, Defend], [Defend, Defend]),
+        ] {
+            let (catalog, mut state) = nightmare_turn_fixture(&[(place, Defend)]);
+            let strike = plain_atom(&catalog, Strike);
+            state
+                .piles
+                .get_mut(PileId::Hand)
+                .make_mut()
+                .extend((1..=8).map(|uid| HotCard {
+                    uid,
+                    atom: strike,
+                    flags: 0,
+                }));
+            begin_player_turn(&mut state, &catalog, &mut Vec::new()).unwrap();
+            let hand = pile_ids(&catalog, &state, PileId::Hand);
+            assert_eq!(hand.len(), 10);
+            assert_eq!(&hand[8..], &hand_tail, "place {place}");
+            assert_eq!(
+                pile_ids(&catalog, &state, PileId::Discard),
+                discard,
+                "place {place}"
+            );
+            assert!(state.fanouts.nightmare_instances().is_empty());
+        }
+    }
+
+    /// #3794: once the combat is over each copy still begins its
+    /// generated-card command (history and the hook epoch), the nested Add
+    /// inserts nothing, and `PowerCmd.Remove`, which has no ending gate, still
+    /// removes the object.
+    #[test]
+    fn nightmare_copies_record_but_do_not_enter_a_finished_combat() {
+        let (catalog, mut state) = nightmare_turn_fixture(&[(0, CardId::StrikeSilent)]);
+        state.history.over = true;
+        let hooks = state.next_generated_hook_uid;
+        run_nightmares_before_listener(&mut state, &catalog, 0, &mut Vec::new()).unwrap();
+        assert!(state.piles.get(PileId::Hand).is_empty());
+        assert_eq!(state.next_card_uid, 40, "no physical card is minted");
+        assert_eq!(state.history.owner_generated_cards_combat, 3);
+        assert_eq!(state.next_generated_hook_uid, hooks + 3);
+        assert!(state.fanouts.nightmare_instances().is_empty());
+    }
+
+    /// #3794: an object whose place is later than the listener being run
+    /// waits, and a failing copy leaves the whole object unrun.
+    #[test]
+    fn nightmare_walk_runs_only_due_objects_and_is_atomic() {
+        let (catalog, mut state) = nightmare_turn_fixture(&[(1, CardId::StrikeSilent)]);
+        let before = state.clone();
+        run_nightmares_before_listener(&mut state, &catalog, 0, &mut Vec::new()).unwrap();
+        assert_eq!(state, before, "place 1 does not run before listener 0");
+
+        // The third copy cannot allocate a uid.
+        state.next_card_uid = u32::MAX - 2;
+        let before = state.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            run_nightmares_before_listener(&mut state, &catalog, 1, &mut events),
+            Err(EngineRefusal::CounterOverflow("next_card_uid"))
+        );
+        assert_eq!(state, before);
+        assert!(events.is_empty());
+    }
+
+    /// #3794: every branch of `nightmare_state_refusal`, and the turn start
+    /// refusing through it before any listener runs.
+    #[test]
+    fn nightmare_turn_entry_refuses_states_it_cannot_run_exactly() {
+        use CardId::StrikeSilent as Strike;
+        let (catalog, clean) = nightmare_turn_fixture(&[(0, Strike), (1, Strike)]);
+        assert_eq!(nightmare_state_refusal(&clean, &catalog), None);
+        let (_, none) = nightmare_turn_fixture(&[]);
+        assert_eq!(nightmare_state_refusal(&none, &catalog), None);
+        assert_eq!(before_hand_draw_turn_reachability(&none), 0);
+        assert_eq!(
+            before_hand_draw_turn_reachability(&clean),
+            NIGHTMARE_TURN_REACHABLE
+        );
+        // No ordinary power slot at all still reports the objects.
+        let mut bare = clean.clone();
+        bare.powers.set(PowerId::InfiniteBlades, SlotWire::Int, 0);
+        assert!(bare.fanouts.set_before_hand_draw_order(&[]));
+        let mut objects = bare.fanouts.nightmare_instances().to_vec();
+        objects[1].listeners_before = 0;
+        bare.fanouts.set_nightmare_instances(objects);
+        assert_eq!(
+            before_hand_draw_turn_reachability(&bare),
+            NIGHTMARE_TURN_REACHABLE
+        );
+        assert_eq!(nightmare_state_refusal(&bare, &catalog), None);
+
+        let mutate = |edit: &dyn Fn(&mut Vec<crate::hot::NightmareInstance>)| {
+            let mut state = clean.clone();
+            let mut objects = state.fanouts.nightmare_instances().to_vec();
+            edit(&mut objects);
+            state.fanouts.set_nightmare_instances(objects);
+            state
+        };
+        let instance_state = "Nightmare instance state";
+        for (label, state, reason) in [
+            (
+                "amount",
+                mutate(&|objects| objects[0].amount = 2),
+                instance_state,
+            ),
+            (
+                "places out of acquisition order",
+                mutate(&|objects| objects.swap(0, 1)),
+                instance_state,
+            ),
+            (
+                "place past the order",
+                mutate(&|objects| objects[1].listeners_before = 2),
+                instance_state,
+            ),
+            (
+                "held affliction",
+                mutate(&|objects| objects[0].flags = crate::hot::CARD_FLAG_RINGING),
+                instance_state,
+            ),
+            (
+                "held legacy card",
+                mutate(&|objects| objects[0].flags = crate::hot::CARD_FLAG_LEGACY),
+                instance_state,
+            ),
+            (
+                "unknown atom",
+                mutate(&|objects| objects[0].atom = crate::catalog::CardAtom::MAX),
+                instance_state,
+            ),
+            (
+                "order is not the acquisition order",
+                {
+                    let mut state = clean.clone();
+                    assert!(state.fanouts.set_before_hand_draw_order(&[]));
+                    state
+                },
+                "Nightmare BeforeHandDraw order",
+            ),
+            (
+                "Foregone slot",
+                {
+                    let mut state = clean.clone();
+                    state.powers.set(PowerId::Foregone, SlotWire::Int, 1);
+                    state
+                },
+                "Nightmare beside Foregone Conclusion",
+            ),
+            (
+                "Foregone token",
+                {
+                    let mut state = clean.clone();
+                    assert!(
+                        state
+                            .fanouts
+                            .set_before_hand_draw_order(&[PowerId::Foregone])
+                    );
+                    state
+                },
+                "Nightmare beside Foregone Conclusion",
+            ),
+            (
+                "amount-changed listener without a place",
+                {
+                    let mut state = clean.clone();
+                    state.powers.set(PowerId::Vicious, SlotWire::Int, 1);
+                    state
+                },
+                "Nightmare AfterPowerAmountChanged order",
+            ),
+        ] {
+            assert_eq!(
+                nightmare_state_refusal(&state, &catalog),
+                Some(reason),
+                "{label}"
+            );
+            assert_eq!(
+                require_before_hand_draw_turn_entry(
+                    &state,
+                    &catalog,
+                    before_hand_draw_turn_reachability(&state)
+                        & (NIGHTMARE_TURN_REACHABLE | SENTRY_MODE_TURN_REACHABLE),
+                ),
+                Err(EngineRefusal::MalformedArgs(reason)),
+                "{label}"
+            );
+            let mut walked = state.clone();
+            assert_eq!(
+                begin_player_turn(&mut walked, &catalog, &mut Vec::new()),
+                Err(EngineRefusal::MalformedArgs(reason)),
+                "{label}"
+            );
+            assert!(
+                walked.piles.get(PileId::Hand).is_empty(),
+                "{label}: no listener ran"
+            );
+        }
     }
 
     fn sentry_before_hand_draw_fixture(random_power: PowerId) -> (Catalog, HotState) {
@@ -25638,7 +28488,12 @@ mod tests {
 
         end_player_turn(&mut state, &catalog, &mut events).unwrap();
 
-        assert_eq!(state.block, 5);
+        // #3763: Plating's Block is `CreatureCmd.GainBlock(Owner, Amount, 4)`
+        // (`PlatingPower/<BeforeSideTurnEndEarly>d__13::MoveNext` RVA
+        // `0x340754` IL_003c-IL_004f), so the still-live Shadowmeld 3
+        // multiplies it by 8: 2 + 3 x 8. This read 5 while the flat helper
+        // skipped the multiplier.
+        assert_eq!(state.block, 26);
         assert_eq!(state.hp, 0);
         // #3628: both later rows belong to the dead owner and are never
         // dispatched (`0x3f9720` IL_02a3-IL_02ab), so neither the wrapper's
@@ -26066,6 +28921,34 @@ mod tests {
             enemy_side_start_act_roster(&state, switched),
             Err(EngineRefusal::MonsterLoopNotModeled(MonsterKind::Wriggler))
         );
+        // The two Surprise gremlins start on the same unperformed
+        // SPAWNED_MOVE (#3756); a kind that does not is refused with or
+        // without the flag.
+        for (kind, modeled) in [
+            (MonsterKind::SneakyGremlin, true),
+            (MonsterKind::FatGremlin, true),
+            (MonsterKind::Toadpole, false),
+        ] {
+            let mut added = state.clone();
+            added.monsters_mut()[1] = HotMonster::new(kind, 10);
+            added.monsters_mut()[1].uid = 1;
+            added.monsters_mut()[1].spawn_noop = true;
+            assert_eq!(
+                enemy_side_start_act_roster(&added, switched),
+                if modeled {
+                    Ok(Some(vec![0]))
+                } else {
+                    Err(EngineRefusal::MonsterLoopNotModeled(kind))
+                },
+                "{kind:?}"
+            );
+            added.monsters_mut()[1].spawn_noop = false;
+            assert_eq!(
+                enemy_side_start_act_roster(&added, switched),
+                Err(EngineRefusal::MonsterLoopNotModeled(kind)),
+                "{kind:?} past its SPAWNED_MOVE"
+            );
+        }
         // A creature removed while another was added cannot hide the add.
         let removed = SwitchedRoster {
             len: 2,
@@ -27047,6 +29930,16 @@ mod tests {
                 .set_log(&[RAT_CALL_FOR_BACKUP_INDEX])
         );
         assert_eq!(rat_can_summon(&state, 0), Ok(false));
+        // #3823: a teammate stunned over its parked call shows STUNNED, not
+        // the call (`CanSummon` `0xc42c8` IL_0082-IL_009b reads
+        // `NextMove.Id`), so it does not block; once its own roll has
+        // resumed it, it blocks again.
+        state.monsters_mut()[1].override_state = MonsterOverride::Stunned;
+        state.monsters_mut()[1].forced_follow_up = MonsterFollowUp::ParkedTelegraph;
+        assert_eq!(rat_can_summon(&state, 0), Ok(true));
+        state.monsters_mut()[1].override_state = MonsterOverride::None;
+        state.monsters_mut()[1].forced_follow_up = MonsterFollowUp::None;
+        assert_eq!(rat_can_summon(&state, 0), Ok(false));
         state.monsters_mut()[1].hp = 0;
         assert_eq!(rat_can_summon(&state, 0), Ok(true));
         state.monsters_mut()[0].set_rat_turns_until_summonable(1);
@@ -27113,7 +30006,7 @@ mod tests {
         assert_eq!(
             state.rng.get(RngStream::Ai).counter,
             ai_before + 4,
-            "one spawn roll plus three original-rat side-end rolls"
+            "four side-end rolls, the newcomer's among them (#3747)"
         );
         assert_eq!(
             state
@@ -27131,6 +30024,114 @@ mod tests {
                 .iter()
                 .all(|rat| rat.rat_call_for_backup_count() == 1 && !rat.rat_spawn_fresh())
         );
+        assert!(super::super::monsters::rat_roster_is_valid(&state));
+    }
+
+    /// #3747 (census witness `4SAVTZ7KQ8NW` node 13). A rat summoned on the
+    /// enemy side is published without an intent
+    /// (`CombatManager/<AfterCreatureAdded>d__113::MoveNext` `0x3f2dfc`
+    /// IL_0084-IL_008f rolls only while `CurrentSide == Player`), so its
+    /// first `MonsterAi` draw is the `StartTurn` walk's, in `Enemies` order.
+    /// Here the newcomer takes a corpse's slot BEHIND the caller and a
+    /// survivor, so it draws third; rolling it at spawn would hand it the
+    /// first draw and shift the other two.
+    #[test]
+    fn rat_summoned_behind_living_rats_takes_its_first_roll_in_enemies_order() {
+        fn pick(rng: &mut Xoshiro256StarStar, weights: [f32; 4]) -> u8 {
+            let mut roll = rng.next_float(weights.iter().sum());
+            for (index, weight) in weights.into_iter().enumerate() {
+                roll -= weight;
+                if roll <= 0.0 {
+                    return index as u8;
+                }
+            }
+            panic!("weights exhausted");
+        }
+        // The caller can summon again in principle (tus 0), so it takes the
+        // 1/12 weights with its used CALL_FOR_BACKUP zeroed. The survivor
+        // (tus 1 after its Scratch) cannot repeat Scratch. The newcomer
+        // (tus 2, empty log) weighs the three moves equally.
+        const TWELFTH: f32 = 0.083_333_336;
+        let caller_weights = [TWELFTH, TWELFTH, TWELFTH, 0.0];
+        let survivor_weights = [0.0, 1.0, 1.0, 0.0];
+        let newcomer_weights = [1.0, 1.0, 1.0, 0.0];
+
+        let mut builder = CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::TwoTailedRat).unwrap();
+        let catalog = builder.build();
+        let seed = (0..64_u64)
+            .find(|seed| {
+                let mut native = Xoshiro256StarStar::from_seed(*seed);
+                let in_enemies_order = [
+                    pick(&mut native, caller_weights),
+                    pick(&mut native, survivor_weights),
+                    pick(&mut native, newcomer_weights),
+                ];
+                let mut spawn_first = Xoshiro256StarStar::from_seed(*seed);
+                let newcomer = pick(&mut spawn_first, newcomer_weights);
+                let at_spawn = [
+                    pick(&mut spawn_first, caller_weights),
+                    pick(&mut spawn_first, survivor_weights),
+                    newcomer,
+                ];
+                in_enemies_order != at_spawn
+            })
+            .expect("a seed that separates the two draw orders");
+
+        let mut state = HotState::at_defaults();
+        state.hp = 100;
+        state.max_hp = 100;
+        let mut caller = rat_for_turn(0, RAT_CALL_FOR_BACKUP_INDEX, 0);
+        assert!(caller.random_ai.set_log(&[
+            RAT_SCRATCH_INDEX,
+            RAT_DISEASE_BITE_INDEX,
+            RAT_CALL_FOR_BACKUP_INDEX,
+        ]));
+        assert!(caller.random_ai.set_once(&[RAT_CALL_FOR_BACKUP_INDEX]));
+        let mut corpse = rat_for_turn(2, RAT_DISEASE_BITE_INDEX, 2);
+        corpse.hp = 0;
+        state
+            .monsters_mut()
+            .extend([caller, rat_for_turn(1, RAT_SCRATCH_INDEX, 2), corpse]);
+        let seeded = Xoshiro256StarStar::from_seed(seed);
+        state.rng.set(
+            RngStream::Ai,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        let mut expected_rng = seeded;
+        let expected = [
+            pick(&mut expected_rng, caller_weights),
+            pick(&mut expected_rng, survivor_weights),
+            pick(&mut expected_rng, newcomer_weights),
+        ];
+        let mut events = Vec::new();
+
+        run_enemy_phase(&mut state, &catalog, &mut events).unwrap();
+
+        assert_eq!(
+            state
+                .monsters
+                .iter()
+                .map(|rat| (rat.slot, rat.uid, rat.hp > 0))
+                .collect::<Vec<_>>(),
+            // The newcomer takes the corpse's native `fifth` (label 2) and
+            // sorts after the older corpse row.
+            [(0, 0, true), (1, 1, true), (2, 2, false), (2, 3, true)]
+        );
+        assert_eq!(
+            [
+                state.monsters[0].random_ai.next(),
+                state.monsters[1].random_ai.next(),
+                state.monsters[3].random_ai.next(),
+            ],
+            expected.map(Some)
+        );
+        assert_eq!(state.rng.get(RngStream::Ai).counter, seeded.counter + 3);
+        assert_eq!(state.monsters[3].random_ai.log_len(), 1);
+        assert!(state.monsters.iter().all(|rat| !rat.rat_spawn_fresh()));
         assert!(super::super::monsters::rat_roster_is_valid(&state));
     }
 
@@ -27433,6 +30434,9 @@ mod tests {
                 state.hp = 3;
                 state.max_hp = 3;
                 state.powers.set(PowerId::BorrowedTime, SlotWire::Int, 1);
+                // #3756: the Curious order bit goes with the removed object.
+                state.powers.set(PowerId::Curious, SlotWire::Int, 1);
+                state.fanouts.set_curious_follows_borrowed_time(true);
                 let killer = if constrict_kill {
                     AfterSideTurnEndPowerToken::Constrict
                 } else {
@@ -27464,6 +30468,10 @@ mod tests {
                 assert_eq!(
                     state.powers.value(PowerId::BorrowedTime),
                     i32::from(!borrowed_first)
+                );
+                assert_eq!(
+                    state.fanouts.curious_follows_borrowed_time(),
+                    !borrowed_first
                 );
                 assert_eq!(
                     state
@@ -27711,7 +30719,7 @@ mod tests {
             [11, 41, 42]
         );
         let mut events = Vec::new();
-        finish_player_turn_start_after_hand_choices(&mut state, &catalog, &mut events).unwrap();
+        finish_turn_start_from_entry(&mut state, &catalog, &mut events).unwrap();
 
         assert_eq!(
             events
@@ -28041,6 +31049,57 @@ mod tests {
             events
                 .iter()
                 .any(|event| matches!(event, Event::TurnBegan { turn: 3 }))
+        );
+    }
+
+    /// #3756: a catalog that reaches Alchemize rehearses every public action
+    /// from an empty frame stack. The rehearsed End Turn passes the AutoPost
+    /// boundary too; only the committed one reports it.
+    #[test]
+    fn a_rehearsed_public_end_turn_reports_the_auto_post_checkpoint_once() {
+        use crate::engine::native_checkpoint::{NativeCheckpointKind, record};
+        let (mut state, _, uid) = howl_auto_post_fixture(0, PileId::Exhaust, &[100]);
+        let mut builder = CatalogBuilder::new();
+        let howl = builder
+            .intern_reachable(CardIdentity {
+                id: CardId::HowlFromBeyond,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder
+            .intern_reachable(CardIdentity {
+                id: CardId::Alchemize,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build().with_action_replay_required();
+        assert!(catalog.terminal_aware_root_step_reachable());
+        state.piles.get_mut(PileId::Exhaust).make_mut()[0].atom = howl;
+        let (result, recorded) = record(|| {
+            crate::engine::apply_action_into(
+                &state,
+                &catalog,
+                &crate::engine::Action::EndTurn,
+                &mut Vec::new(),
+            )
+        });
+        let next = result.unwrap();
+        assert_eq!(next.monsters[0].hp, 82, "Howl's AutoPlay ran once");
+        assert_eq!(recorded.len(), 1);
+        assert_eq!(recorded[0].0, NativeCheckpointKind::AutoPostHookFinished);
+        assert_eq!(
+            recorded[0]
+                .1
+                .piles
+                .get(PileId::Discard)
+                .as_slice()
+                .last()
+                .unwrap()
+                .uid,
+            uid
         );
     }
 
@@ -28552,10 +31611,13 @@ mod tests {
         let allocations = after_allocations - before_allocations;
         let bytes = after_bytes - before_bytes;
         // Measured on aarch64-apple-darwin: eight COW detachments totaling
-        // 432 bytes for the whole lethal turn transaction. This uncommon
-        // power-owned path must not turn into an unbounded per-listener cost.
+        // 456 bytes for the whole lethal turn transaction (432 before #3756,
+        // which added one `Vec` header, 24 bytes, to the orb queue's COW
+        // block for the later OrbitPower objects; the count is unchanged).
+        // This uncommon power-owned path must not turn into an unbounded
+        // per-listener cost.
         assert!(
-            allocations <= 8 && bytes <= 432,
+            allocations <= 8 && bytes <= 456,
             "Consuming Shadow turn transaction allocated {allocations} times ({bytes} bytes)"
         );
     }
@@ -29663,8 +32725,12 @@ mod tests {
         // #2941 added The Scythe's cold `DeckVersion` link slot to the card
         // state store (one `Option<Arc<_>>`), whose one copy-on-write clone
         // here accounts for the +8 bytes over the former 1,684.
+        // #3794 added the NightmarePower object list to the cold fanout
+        // block (one `Vec` header), whose one copy-on-write clone here
+        // accounts for the +24 bytes over the former 1,692. The allocation
+        // count is unchanged.
         assert!(
-            allocations <= 15 && bytes <= 1_692,
+            allocations <= 15 && bytes <= 1_716,
             "Furnace turn transaction allocated {allocations} times ({bytes} bytes)"
         );
     }
@@ -29715,15 +32781,16 @@ mod tests {
         (state, catalog)
     }
 
-    /// #3386 witness: Constrict's side-end damage fires the Centennial
+    /// #3386, #3756 witness: Constrict's side-end damage fires the Centennial
     /// Puzzle, whose Draw reshuffles the flushed Hand against Stratagem 2.
     /// `ConstrictPower/<AfterSideTurnEnd>d__4` damages through its own
     /// deferred-choice listener context, so native starts every later
-    /// ordinary side-end listener before that choice; the receipt carrier
-    /// cannot, and the root and the Draw both refuse by name. The same turn
-    /// with a spent Puzzle resolves.
+    /// ordinary side-end listener before that pick is answered
+    /// ([`side_end_prompt_starts_later_listeners`]). The root is admitted
+    /// and the Draw parks. The same turn with a spent Puzzle resolves.
+    /// `puzzle::tests::constrict_side_end` has the later listeners.
     #[test]
-    fn constrict_side_end_puzzle_draw_refuses_by_name() {
+    fn constrict_side_end_puzzle_draw_parks_inside_the_listener() {
         let mut builder = CatalogBuilder::new();
         builder.intern_private_constrict_strangler().unwrap();
         let defend = builder
@@ -29751,17 +32818,26 @@ mod tests {
                 flags: crate::hot::CARD_FLAG_DEFAULT_PHYSICAL_STATE,
             }));
         state.next_card_uid = 20;
-        assert!(crate::engine::puzzle::root_refuses_under_for_test(
+        assert!(!crate::engine::puzzle::root_refuses_under_for_test(
             &state,
             &catalog,
             CONSTRICT_PUZZLE_WALL
         ));
-        assert_eq!(
-            crate::engine::apply_action(&state, &catalog, &crate::engine::Action::EndTurn)
-                .map(|_| ())
-                .unwrap_err(),
-            EngineRefusal::PowerOrderNotModeled(CONSTRICT_PUZZLE_WALL)
-        );
+        let parked = crate::engine::apply_action(&state, &catalog, &crate::engine::Action::EndTurn)
+            .unwrap()
+            .state;
+        assert!(parked.pending.is_some());
+        assert!(crate::engine::puzzle::parked_draw_depth(&parked).is_some());
+        assert_eq!(parked.hp, state.hp - 3);
+        assert!(parked.player_side_active, "the enemy has not acted");
+        assert!(matches!(
+            parked.frames.as_slice(),
+            [
+                crate::frame::Frame::ActionReplay { .. },
+                crate::frame::Frame::AfterSideTurnEndPower { .. },
+                crate::frame::Frame::Draw { .. },
+            ]
+        ));
         let mut spent = state.clone();
         spent.fanouts.set_puzzle_armed(false);
         let resolved =
@@ -29770,11 +32846,13 @@ mod tests {
                 .state;
         assert!(resolved.hp < state.hp, "Constrict hit without the Puzzle");
 
-        // #3485: against Stratagem 5 the reshuffle of five Defends is taken
-        // without a prompt. `FromCombatPile` (RVA `0x3e5e84`) still signals
-        // Constrict's listener context first (IL_00ae), so native runs the
-        // take behind every later ordinary side-end listener; the inline
-        // take refuses by name.
+        // #3485, #3756: against Stratagem 5 the reshuffle of five Defends is
+        // taken without a prompt. `FromCombatPile` (RVA `0x3e5e84`) still
+        // signals Constrict's listener context first (IL_00ae), which
+        // releases the walk in play; the order of the take against the
+        // later ordinary side-end listeners is not established
+        // ([`side_end_prompt_starts_later_listeners`]), so the inline take
+        // refuses by name.
         let mut taken = state.clone();
         taken.powers.set(PowerId::Stratagem, SlotWire::Int, 5);
         assert_eq!(
@@ -30720,13 +33798,130 @@ mod tests {
         ]));
         assert!(twice.random_ai.set_next(Some(HUNTER_PUNCTURE_INDEX)));
         assert!(hunter_killer_ai_state_is_exact(&twice));
-        let mut impossible = twice.clone();
-        assert!(impossible.random_ai.set_log(&[
+        // #3823: a stun over the second PUNCTURE logs a third, and the roll
+        // after it weighs PUNCTURE at 0.
+        let mut stunned = twice.clone();
+        assert!(stunned.random_ai.set_log(&[
             HUNTER_PUNCTURE_INDEX,
             HUNTER_PUNCTURE_INDEX,
             HUNTER_PUNCTURE_INDEX,
         ]));
+        assert!(hunter_killer_ai_state_is_exact(&stunned));
+        assert_eq!(
+            can_repeat_x_times_weight(stunned.random_ai, HUNTER_PUNCTURE_INDEX, 2),
+            0.0
+        );
+        // GOOP is the opener and in no branch: nothing puts it after a move.
+        let mut impossible = twice.clone();
+        assert!(impossible.random_ai.set_log(&[
+            HUNTER_BITE_INDEX,
+            HUNTER_GOOP_INDEX,
+            HUNTER_PUNCTURE_INDEX,
+        ]));
         assert!(!hunter_killer_ai_state_is_exact(&impossible));
+    }
+
+    /// #3823: every row of every random-table kind that takes the stun.
+    ///
+    /// The stunned action performs nothing and leaves the override standing
+    /// (native's `NextMove` is STUNNED until the roll); the roll walk then
+    /// clears it, keeps `next`, logs `next` a second time and draws nothing.
+    /// A second stun over the re-shown move logs it a third time.
+    ///
+    /// This is row coverage on a bare monster, engine only. The comparison
+    /// with the game, on real rosters with the bodies running, is
+    /// `engine::native_stun_traces`.
+    #[test]
+    fn a_stunned_random_table_monster_logs_its_move_again_and_draws_nothing() {
+        let mut rows_swept = 0;
+        for kind in crate::engine::monsters::GENERIC_STUN_RANDOM_TABLE_KINDS {
+            let mut builder = crate::catalog::CatalogBuilder::new();
+            builder.intern_monster(kind).unwrap();
+            let catalog = builder.build();
+            let rows = random_moves(kind).unwrap();
+            assert!(
+                crate::content_tables::monster_loop(kind).is_none(),
+                "{kind:?}"
+            );
+            for row in 0..rows.len() as u8 {
+                rows_swept += 1;
+                let mut state = HotState::at_defaults();
+                state.hp = 80;
+                state.max_hp = 80;
+                let mut monster = HotMonster::new(kind, 400);
+                assert!(monster.random_ai.set_next(Some(row)));
+                assert!(monster.random_ai.set_log(&[row]));
+                state.monsters_mut().push(monster);
+                let rng_before = state.rng.clone();
+
+                crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+                assert_eq!(state.monsters[0].override_state, MonsterOverride::Stunned);
+                assert_eq!(
+                    state.monsters[0].forced_follow_up,
+                    MonsterFollowUp::ParkedTelegraph
+                );
+                // A second stun before the first performs is dropped.
+                let parked = state.clone();
+                crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+                assert_eq!(state, parked, "{kind:?} {row}");
+
+                let mut events = Vec::new();
+                monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+                assert_eq!(state, parked, "{kind:?} {row}: the stunned action");
+                assert!(events.is_empty(), "{kind:?} {row}");
+
+                prepare_random_ai(&mut state, &catalog).unwrap();
+                let resumed = &state.monsters[0];
+                assert_eq!(resumed.override_state, MonsterOverride::None);
+                assert_eq!(resumed.forced_follow_up, MonsterFollowUp::None);
+                assert_eq!(resumed.random_ai.next(), Some(row));
+                assert_eq!(resumed.random_ai.log_len(), 2);
+                assert_eq!(resumed.random_ai.log_at(0), Some(row));
+                assert_eq!(resumed.random_ai.log_at(1), Some(row));
+                assert_eq!(state.rng, rng_before, "{kind:?} {row}: no draw");
+
+                crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+                monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+                prepare_random_ai(&mut state, &catalog).unwrap();
+                assert_eq!(state.monsters[0].random_ai.log_len(), 3);
+                assert!((0..3).all(|at| state.monsters[0].random_ai.log_at(at) == Some(row)));
+                assert_eq!(state.rng, rng_before, "{kind:?} {row}: no draw");
+
+                // A corpse takes no stun, and a stunned monster that dies
+                // before its roll is not resumed.
+                crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+                state.monsters_mut()[0].hp = 0;
+                crate::engine::monsters::clear_generic_stun_at_death(&mut state.monsters_mut()[0]);
+                let dead = state.clone();
+                crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+                prepare_random_ai(&mut state, &catalog).unwrap();
+                assert_eq!(state, dead, "{kind:?} {row}");
+            }
+        }
+        assert_eq!(
+            rows_swept, 44,
+            "twelve kinds of three rows, two slimes of two, the rat's four"
+        );
+    }
+
+    /// #3823: a stunned monster's roll walk refuses a stun state that is not
+    /// the generic one, by name.
+    #[test]
+    fn a_foreign_stun_state_on_a_random_table_monster_refuses_at_its_roll() {
+        let mut builder = crate::catalog::CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::Mawler).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        let mut monster = HotMonster::new(MonsterKind::Mawler, 70);
+        assert!(monster.random_ai.set_next(Some(MAWLER_CLAW_INDEX)));
+        assert!(monster.random_ai.set_log(&[MAWLER_CLAW_INDEX]));
+        monster.override_state = MonsterOverride::Stunned;
+        monster.forced_follow_up = MonsterFollowUp::None;
+        state.monsters_mut().push(monster);
+        assert_eq!(
+            prepare_random_ai(&mut state, &catalog),
+            Err(EngineRefusal::MalformedArgs("stunned random AI state"))
+        );
     }
 
     /// Native witness for #3026, `.mcr` `192324.722_mcr_0c8c0854`
@@ -30941,6 +34136,65 @@ mod tests {
         );
     }
 
+    /// #3756 (`QGCEEDLXSWB2` n6): the Merc dies to the enemy-side Poison
+    /// tick, so Surprise adds the pair after the side switch. Both carry
+    /// `SpawnedThisTurn` and skip that enemy turn with `SPAWNED_MOVE`
+    /// unperformed ([`enemy_side_start_act_roster`]); they wake on the next
+    /// one and Sneaky tackles on the one after. A pair added on the player's
+    /// turn wakes one enemy turn earlier.
+    #[test]
+    fn gremlins_added_by_the_enemy_side_poison_tick_skip_that_enemy_turn() {
+        let (catalog, mut poisoned) = gremlin_merc_turn_fixture(0, 0);
+        poisoned.monsters_mut()[0].hp = 2;
+        poisoned.monsters_mut()[0]
+            .powers
+            .set(PowerId::Poison, SlotWire::Int, 4);
+        poisoned.monsters_mut()[0].poison_uid = 0;
+        poisoned.monsters_mut()[0]
+            .misery_debuff_order
+            .push(MiseryToken::Poison);
+        poisoned.next_poison_uid = 1;
+        let hp = poisoned.hp;
+        end_player_turn(&mut poisoned, &catalog, &mut Vec::new()).unwrap();
+        assert_eq!(
+            poisoned
+                .monsters
+                .iter()
+                .map(|monster| (monster.kind, monster.hp > 0, monster.spawn_noop))
+                .collect::<Vec<_>>(),
+            [
+                (MonsterKind::GremlinMerc, false, false),
+                (MonsterKind::SneakyGremlin, true, true),
+                (MonsterKind::FatGremlin, true, true),
+            ],
+            "added after the side switch: SPAWNED_MOVE is still unperformed"
+        );
+        assert_eq!(poisoned.hp, hp);
+        end_player_turn(&mut poisoned, &catalog, &mut Vec::new()).unwrap();
+        assert!(
+            poisoned.monsters[1..]
+                .iter()
+                .all(|monster| !monster.spawn_noop)
+        );
+        assert_eq!(poisoned.hp, hp, "the second enemy turn is the wake-up");
+        end_player_turn(&mut poisoned, &catalog, &mut Vec::new()).unwrap();
+        assert!(poisoned.hp < hp, "Sneaky tackles on the third");
+
+        // Control: the same pair added on the player's turn.
+        let (catalog, mut killed) = gremlin_merc_turn_fixture(0, 0);
+        kill_gremlin_merc(&mut killed, &mut Vec::new()).unwrap();
+        let hp = killed.hp;
+        end_player_turn(&mut killed, &catalog, &mut Vec::new()).unwrap();
+        assert!(
+            killed.monsters[1..]
+                .iter()
+                .all(|monster| !monster.spawn_noop)
+        );
+        assert_eq!(killed.hp, hp);
+        end_player_turn(&mut killed, &catalog, &mut Vec::new()).unwrap();
+        assert!(killed.hp < hp);
+    }
+
     #[test]
     fn gremlin_merc_surprise_creates_fat_first_but_publishes_sneaky_first() {
         let (_catalog, mut state) = gremlin_merc_turn_fixture(37, 0);
@@ -31079,11 +34333,14 @@ mod tests {
                 &state
             ));
 
-            let mut forged = state;
-            forged.monsters_mut()[dead_index].spawn_noop = false;
-            forged.monsters_mut()[live_index].spawn_noop = true;
-            assert!(!super::super::monsters::gremlin_merc_public_state_is_valid(
-                &forged
+            // #3823: the mirror image is reachable too. A live gremlin
+            // stunned over SPAWNED_MOVE keeps the flag through the enemy turn
+            // its sibling spent on it, and the sibling may then die.
+            let mut mirrored = state;
+            mirrored.monsters_mut()[dead_index].spawn_noop = false;
+            mirrored.monsters_mut()[live_index].spawn_noop = true;
+            assert!(super::super::monsters::gremlin_merc_public_state_is_valid(
+                &mirrored
             ));
         }
     }
@@ -32008,6 +35265,258 @@ mod tests {
                 "monster forced follow-up owner/state"
             ))
         );
+    }
+
+    /// #3823: the stunned action itself, for every generic owner and row,
+    /// straight through `monster_act` (no root, so the kinds whose bare root
+    /// does not project are covered too).
+    ///
+    /// The STUNNED state's body is the completed task `<Stun>b__26_0`
+    /// `0x3e8f83` and `MonsterModel/<PerformMove>d__105::MoveNext` `0x31d794`
+    /// IL_0173-IL_0184 follows it with `OnMovePerformed` only, so the action
+    /// changes nothing but the machine: the override and its follow-up clear,
+    /// `loop_pos` stays, and no event names a move. The monster shows a
+    /// `StunIntent` while the state stands (`Creature::StunInternal`
+    /// `0x11d7cc` IL_0057-IL_006b), which is not an attack intent
+    /// (`MonsterModel::get_IntendsToAttack` `0x82347`).
+    ///
+    /// Engine against engine, on a bare monster: row coverage (the four
+    /// Fabricator bots have no other witness), not a comparison with the
+    /// game. That is `engine::native_stun_traces`.
+    #[test]
+    fn the_stunned_action_changes_nothing_but_the_machine_for_every_generic_owner() {
+        let mut rows_swept = 0;
+        for kind in MonsterKind::ALL {
+            if !crate::engine::monsters::generic_stun_owner_loop_is_fully_resolvable(kind) {
+                continue;
+            }
+            let mut builder = crate::catalog::CatalogBuilder::new();
+            builder.intern_monster(kind).unwrap();
+            let catalog = builder.build();
+            // A random table has no `loop_pos` row; its rows are swept by
+            // `a_stunned_random_table_monster_logs_its_move_again_and_draws_nothing`.
+            let Some(rows) = crate::content_tables::monster_loop(kind) else {
+                continue;
+            };
+            for loop_pos in 0..rows.len() as i32 {
+                rows_swept += 1;
+                let mut state = HotState::at_defaults();
+                state.hp = 80;
+                state.max_hp = 80;
+                let mut monster = HotMonster::new(kind, 30);
+                monster.max_hp = 30;
+                monster.loop_pos = loop_pos;
+                state.monsters_mut().push(monster);
+                crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+                assert_eq!(
+                    Some(state.monsters[0].forced_follow_up),
+                    crate::engine::monsters::parked_telegraph(kind, loop_pos),
+                    "{kind:?} {loop_pos}"
+                );
+                assert_eq!(
+                    monster_intends_to_attack(&state, &catalog, 0),
+                    Ok(false),
+                    "{kind:?} {loop_pos}"
+                );
+                assert_eq!(
+                    monster_intents(&state, &catalog)[0].intent,
+                    Some("STUNNED"),
+                    "{kind:?} {loop_pos}"
+                );
+                let mut expected = state.clone();
+                expected.monsters_mut()[0].override_state = MonsterOverride::None;
+                expected.monsters_mut()[0].forced_follow_up = MonsterFollowUp::None;
+                // The one row whose resume writes a log fact: a Scroll's
+                // parked CHEW is logged twice.
+                if (kind, loop_pos) == (MonsterKind::ScrollOfBiting, 1) {
+                    expected.monsters_mut()[0].set_scroll_chew_repeated(true);
+                }
+                let mut events = Vec::new();
+                monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+                assert_eq!(state, expected, "{kind:?} {loop_pos}");
+                assert!(events.is_empty(), "{kind:?} {loop_pos}: {events:?}");
+            }
+        }
+        assert_eq!(rows_swept, 180);
+    }
+
+    /// #3823: a stun over a Scroll of Biting's CHEW makes the roll after it
+    /// land on CHOMP.
+    ///
+    /// The resume logs the parked CHEW a second time (`FindNextMoveState`
+    /// `0x78e94` IL_009c-IL_00d1 on the walk out of STUNNED), so when that
+    /// CHEW has performed the two trailing `StateLog` entries are both CHEW
+    /// and `RandomBranchState::GetStateWeight` `0x79380` IL_00bb-IL_014e
+    /// weighs CHEW (`maxTimes` 2) at 0. `GetNextState` `0x792c4` still draws
+    /// once, over CHOMP's weight alone. A stun over CHOMP or MORE_TEETH
+    /// duplicates an entry no weight reads.
+    ///
+    /// Native (harness, `SCROLLS_OF_BITING_WEAK` A10 seed `STUNPROBE`, scroll
+    /// 1): unstunned MORE_TEETH, CHEW, CHEW, CHOMP; stunned over the first
+    /// CHEW it is MORE_TEETH, STUNNED, CHEW, CHOMP, with one `MonsterAi` draw
+    /// for scroll 1 after that CHEW either way.
+    #[test]
+    fn a_stun_over_chew_forces_the_scrolls_next_roll_to_chomp() {
+        let mut builder = crate::catalog::CatalogBuilder::new();
+        builder.intern_monster(MonsterKind::ScrollOfBiting).unwrap();
+        let catalog = builder.build();
+        let scroll = |loop_pos: i32| {
+            let mut state = HotState::at_defaults();
+            state.hp = 500;
+            state.max_hp = 500;
+            let mut monster = HotMonster::new(MonsterKind::ScrollOfBiting, 30);
+            monster.max_hp = 30;
+            monster.loop_pos = loop_pos;
+            state.monsters_mut().push(monster);
+            state
+        };
+        // Some seed for which an unlatched roll after CHEW selects CHEW, so
+        // the forced CHOMP below is the latch's doing and not the draw's.
+        let seeded = (0..64_u64)
+            .map(|seed| {
+                let mut state = scroll(1);
+                let rng = Xoshiro256StarStar::from_seed(seed);
+                state.rng.set(
+                    RngStream::Ai,
+                    RngStreamState {
+                        words: rng.words,
+                        counter: rng.counter,
+                    },
+                );
+                state
+            })
+            .find(|state| {
+                let mut probe = state.clone();
+                roll_scroll_of_biting_branch(&mut probe, 0).unwrap();
+                probe.monsters[0].loop_pos == 1
+            })
+            .expect("some Ai state rolls CHEW after an unrepeated CHEW");
+        let draws = |state: &HotState| state.rng.get(RngStream::Ai).counter;
+
+        // Unstunned: CHEW, then the roll selects CHEW.
+        let mut plain = seeded.clone();
+        let hp = plain.hp;
+        monster_act(&mut plain, &catalog, 0, &mut Vec::new()).unwrap();
+        let chew_damage = hp - plain.hp;
+        assert!(chew_damage > 0);
+        prepare_random_ai(&mut plain, &catalog).unwrap();
+        assert_eq!(plain.monsters[0].loop_pos, 1);
+        assert!(plain.monsters[0].scroll_chew_repeated());
+        assert_eq!(draws(&plain), draws(&seeded) + 1);
+
+        // Stunned over that CHEW: nothing on the stunned action but the
+        // machine and the latch; no roll, no draw.
+        let mut stunned = seeded.clone();
+        crate::engine::monsters::install_generic_stun(&mut stunned, 0).unwrap();
+        monster_act(&mut stunned, &catalog, 0, &mut Vec::new()).unwrap();
+        prepare_random_ai(&mut stunned, &catalog).unwrap();
+        assert_eq!(stunned.hp, hp);
+        assert_eq!(stunned.monsters[0].loop_pos, 1);
+        assert_eq!(stunned.monsters[0].override_state, MonsterOverride::None);
+        assert!(stunned.monsters[0].scroll_chew_repeated());
+        assert_eq!(draws(&stunned), draws(&seeded));
+        // (The latch on a Scroll at row 1 is the state the roll itself
+        // writes, so its document form is the one
+        // `scroll_chew_repeated_latch_round_trips_on_its_owner_only` pins.)
+        // The parked CHEW performs; its roll draws once and is CHOMP.
+        monster_act(&mut stunned, &catalog, 0, &mut Vec::new()).unwrap();
+        assert_eq!(hp - stunned.hp, chew_damage);
+        prepare_random_ai(&mut stunned, &catalog).unwrap();
+        assert_eq!(stunned.monsters[0].loop_pos, 0, "CHOMP");
+        assert!(!stunned.monsters[0].scroll_chew_repeated());
+        assert_eq!(draws(&stunned), draws(&seeded) + 1);
+
+        // A CHEW the roll itself selected is already latched; a stun over it
+        // keeps the latch (three trailing CHEWs) and the roll is CHOMP.
+        let mut repeated = plain.clone();
+        crate::engine::monsters::install_generic_stun(&mut repeated, 0).unwrap();
+        monster_act(&mut repeated, &catalog, 0, &mut Vec::new()).unwrap();
+        assert!(repeated.monsters[0].scroll_chew_repeated());
+        monster_act(&mut repeated, &catalog, 0, &mut Vec::new()).unwrap();
+        prepare_random_ai(&mut repeated, &catalog).unwrap();
+        assert_eq!(repeated.monsters[0].loop_pos, 0);
+
+        // A stun over CHOMP or MORE_TEETH sets nothing.
+        for loop_pos in [0, 2] {
+            let mut other = scroll(loop_pos);
+            crate::engine::monsters::install_generic_stun(&mut other, 0).unwrap();
+            monster_act(&mut other, &catalog, 0, &mut Vec::new()).unwrap();
+            assert!(!other.monsters[0].scroll_chew_repeated(), "{loop_pos}");
+            assert_eq!(other.monsters[0].loop_pos, loop_pos);
+        }
+    }
+
+    /// #3823: a stun over SPAWNED_MOVE.
+    ///
+    /// `spawn_noop` is the native SPAWNED_MOVE `MoveState` (`FatGremlin::
+    /// GenerateMoveStateMachine` `0xb4504` IL_0012-IL_0031, the machine's
+    /// initial state, IL_0079-IL_007a), which the constructor logs
+    /// (`MonsterMoveStateMachine::.ctor` `0x78da4` IL_006b-IL_0084), so
+    /// `Creature::StunInternal` `0x11d7cc` IL_0039-IL_0055 parks it. Native
+    /// (harness, `GREMLIN_MERC_NORMAL`, the Merc killed and the Fat Gremlin
+    /// stunned in player turn 2): the Gremlin performs STUNNED, then
+    /// SPAWNED_MOVE, then FLEE_MOVE on enemy turns 2, 3 and 4, where its
+    /// unstunned sibling performs SPAWNED_MOVE on turn 2.
+    #[test]
+    fn a_stun_over_spawned_move_spends_the_stun_then_the_spawn_then_the_row() {
+        for kind in [
+            MonsterKind::FatGremlin,
+            MonsterKind::SneakyGremlin,
+            MonsterKind::Wriggler,
+        ] {
+            let mut builder = crate::catalog::CatalogBuilder::new();
+            builder.intern_monster(kind).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            let mut monster = HotMonster::new(kind, 30);
+            monster.max_hp = 30;
+            monster.spawn_noop = true;
+            state.monsters_mut().push(monster);
+            assert!(
+                crate::engine::monsters::whistle_stun_target_refusal(
+                    &state,
+                    &catalog,
+                    &state.monsters[0]
+                )
+                .is_none(),
+                "{kind:?}"
+            );
+            crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+            assert_eq!(
+                state.monsters[0].forced_follow_up,
+                MonsterFollowUp::ParkedTelegraph
+            );
+            assert_eq!(
+                monster_intents(&state, &catalog)[0].intent,
+                Some("STUNNED"),
+                "{kind:?}"
+            );
+
+            // The stunned action: the override clears, the spawn stays.
+            let parked = state.clone();
+            monster_act(&mut state, &catalog, 0, &mut Vec::new()).unwrap();
+            let mut expected = parked.clone();
+            expected.monsters_mut()[0].override_state = MonsterOverride::None;
+            expected.monsters_mut()[0].forced_follow_up = MonsterFollowUp::None;
+            assert_eq!(state, expected, "{kind:?}");
+            assert!(state.monsters[0].spawn_noop, "{kind:?}");
+
+            // SPAWNED_MOVE: nothing but the flag.
+            let mut events = Vec::new();
+            monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+            expected.monsters_mut()[0].spawn_noop = false;
+            assert_eq!(state, expected, "{kind:?}");
+            assert!(events.is_empty(), "{kind:?}");
+
+            // A second stun, now over the loop row, parks that row.
+            crate::engine::monsters::install_generic_stun(&mut state, 0).unwrap();
+            assert!(crate::engine::monsters::generic_stun_state_is_exact(
+                &state, 0
+            ));
+            assert!(!state.monsters[0].spawn_noop);
+        }
     }
 }
 

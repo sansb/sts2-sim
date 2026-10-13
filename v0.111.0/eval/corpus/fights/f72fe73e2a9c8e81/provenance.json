@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "HZ0D5WK0VBHR",
+ "node": 16,
+ "encounter": "ENCOUNTER.LAGAVULIN_MATRIARCH_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "5a2a607f3ed3cb82ea7fc8ef6097c024ce5423fb18b2a807f3521b19c5f77bf3",
+ "save_sha256": "af756e022a83f7b815c02637c4b14e38cd802e6bdf13f7a68a610186089922d9",
+ "entry_digest": "7206e05ef4b3da3e93800b3dbcb07edf235129d111c10509e6de6ccde13f6ab4",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

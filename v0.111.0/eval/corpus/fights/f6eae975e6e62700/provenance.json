@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "8ECK1FJDL15L",
+ "node": 14,
+ "encounter": "ENCOUNTER.LIVING_FOG_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "9386c083eaa48c770d97e17111af660de2c8929a5efc30f3fdb3d3aa9c971188",
+ "save_sha256": "15e39b62f63cbd28f2bd8147276949df2bc3449720ad465cd166482934d74099",
+ "entry_digest": "078b6e2068a8c7db70cb56b235cc209458a3fea2f2986fae7232b74da354dbb8",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

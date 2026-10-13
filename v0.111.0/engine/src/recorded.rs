@@ -16,7 +16,8 @@
 //! be traced); the IL citations for the choose-a-card screens and Knowledge
 //! Demon's curse are on `_CHOOSE_A_CARD_OPTIONS` and
 //! `_knowledge_demon_curse_options` in `rust_replay.py`. No IL was re-read for
-//! this port. Its acceptance bar is the eval fixtures: the same actions, step
+//! the original port; a rule ported since cites its own read beside it. Its
+//! acceptance bar is the eval fixtures: the same actions, step
 //! digests and terminal the census wrote to each `human_line.json`
 //! (`tools/recorded_parity.py`).
 //!
@@ -36,7 +37,7 @@ use crate::exact_solve_v1::{ExactSolveActionV1, ExactSolveSelectionV1};
 use crate::hot::HotState;
 use crate::rng::Xoshiro256StarStar;
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 /// The recorded inputs a line may carry (`RECORDED_INPUT_BUDGET`).
 const RECORDED_INPUT_BUDGET: usize = 2000;
@@ -200,8 +201,68 @@ fn first_cycle_rows(replay: &Value) -> Result<(Vec<usize>, &Vec<Value>), String>
     Ok((rows, deck))
 }
 
-fn first_cycle_instances(replay: &Value) -> Result<(Vec<usize>, Vec<Instance>), String> {
+fn is_dowsing(card: &Value) -> bool {
+    card["id"]
+        .as_str()
+        .is_some_and(|id| id.strip_prefix("CARD.").unwrap_or(id) == "DOWSING")
+}
+
+/// The entry snapshot's deck as the combat copies were made from it
+/// (`mcr_native.combat_deck`, #3791).
+///
+/// The snapshot is written on moving onto the node, before the room is
+/// entered. `Dowsing/<BeforeRoomEntered>d__15::MoveNext` (v0.111.0 RVA
+/// 0x399e18) counts the first room of a `?` point (IL_0040-008b), and when
+/// the saved `RoomsEntered` 4 becomes 5 (IL_0091-0097) it replaces the deck
+/// card with an Abundance (`TransformTo<Abundance>`, IL_00a0-00a1), which
+/// `CardCmd/<Transform>d__13::MoveNext` (RVA 0x3e0ae0) adds at the deck's END
+/// (`CardPile::AddInternal(replacement, -1, false)`, IL_03ca-03d8). The
+/// combat deck is cloned afterwards, so combat-card instance k is row k of
+/// THAT deck.
+///
+/// Whether this entry was the counting room is the opening's decision
+/// (`entry::opening::dowsing_before_room_entered`), and it is read off the
+/// root rather than decided a second time here: the saved deck holds Dowsing
+/// rows one room short, and the root holds that many fewer Dowsing cards.
+/// Every instance is still compared with the root's own card afterwards, so a
+/// reading the root does not bear out refuses the deal. When nothing
+/// transformed, the deck is returned as it is.
+fn combat_deck<'a>(deck: &'a [Value], root: &Value) -> std::borrow::Cow<'a, [Value]> {
+    use std::borrow::Cow;
+    let due: Vec<usize> = (0..deck.len())
+        .filter(|&row| {
+            is_dowsing(&deck[row]) && deck[row]["props"]["RoomsEntered"].as_i64() == Some(4)
+        })
+        .collect();
+    if due.is_empty() {
+        return Cow::Borrowed(deck);
+    }
+    let saved = deck.iter().filter(|card| is_dowsing(card)).count();
+    let held = all_cards(root)
+        .filter(|(_, card)| card["id"] == "DOWSING")
+        .count();
+    if held + due.len() != saved {
+        return Cow::Borrowed(deck);
+    }
+    let mut entered: Vec<Value> = deck
+        .iter()
+        .enumerate()
+        .filter(|(row, _)| !due.contains(row))
+        .map(|(_, card)| card.clone())
+        .collect();
+    entered.extend(
+        due.iter()
+            .map(|_| json!({"id": "CARD.ABUNDANCE", "upgrade_level": 0})),
+    );
+    Cow::Owned(entered)
+}
+
+fn first_cycle_instances(
+    root: &Value,
+    replay: &Value,
+) -> Result<(Vec<usize>, Vec<Instance>), String> {
     let (rows, deck) = first_cycle_rows(replay)?;
+    let deck = combat_deck(deck, root);
     let instances = rows
         .iter()
         .map(|&row| {
@@ -320,8 +381,9 @@ fn dealt_uids(root: &Value, instances: &[Instance]) -> Deal {
         .filter_map(|card| Some((uid_of(card)?, Some(card))))
         .collect();
     // Turn one's AutoPre auto-plays an IMBUED deck card out of the Draw
-    // bottom (#3381), so the root holds it in its result pile: put it back at
-    // the end of the Draw, in uid order.
+    // bottom (#3381), so the root holds it in its result pile, or in Play
+    // while its own choice is parked (#3817): put it back at the end of the
+    // Draw, in uid order.
     let mut imbued_played: Vec<Queued<'_>> = all_cards(root)
         .filter(|(name, card)| {
             *name != "hand" && *name != "draw" && is_imbued(card) && in_deck(card)
@@ -351,22 +413,40 @@ fn dealt_uids(root: &Value, instances: &[Instance]) -> Deal {
         dealt = (0..deck_size as u32)
             .map(|uid| (uid, present.get(&uid).copied()))
             .collect();
-    } else if has_relic(root, "RELIC.JEWELED_MASK") {
+    } else if has_relic(root, "RELIC.JEWELED_MASK") || has_relic(root, "RELIC.POWER_CELL") {
         // Jeweled Mask's turn-1 BeforeHandDraw moves one deck Power from
         // mid-Draw to the Hand AFTER the deck was numbered, keeping its uid
         // (#3170): the deck cards in uid order are the layout before the lift.
+        //
+        // Power Cell is the same shape (#3767, the census's `_dealt_uids`).
+        // `PowerCell/<BeforeSideTurnStart>d__4::MoveNext` (v0.111.0 RVA
+        // 0x32e780) runs on turn one only (IL_0043-004d), filters the Draw
+        // pile's cards (IL_005b-0067, PileType 1) to those costing zero
+        // (`<>c::<BeforeSideTurnStart>b__4_0`, RVA 0x32e75e), shuffles them,
+        // takes `Cards` of them (IL_00aa-00bf) and hands those same card
+        // objects to `CardPileCmd::Add` for the Hand (IL_00c6-00ca, PileType
+        // 2). The cards are moved, not created, so each keeps its uid, and
+        // the root's Hand holds them out of uid order (`3T0X1Z8WMBFE` node
+        // 29: uid 6 ahead of uids 0-5).
         dealt.retain(|(uid, _)| (*uid as usize) < deck_size);
         dealt.sort_by_key(|(uid, _)| *uid);
+    } else {
+        // #3764: drop the opening-created cards BEFORE the split.
+        // `innate_min_draw` counts the DECK's Innate cards (`entry::opening`
+        // writes it from the pile fixup's second group), so the front is the
+        // first `innate` deck cards of `hand ++ draw`. A created card ahead
+        // of them (Radiant Pearl's Luminesce, added to the Hand before the
+        // turn-one draw: Hand index 0) is not one of them; sliced with them
+        // it pushed the last Innate card into the tail and no reading
+        // completed.
+        dealt.retain(|(uid, _)| (*uid as usize) < deck_size);
+        if innate > dealt.len() {
+            return Err("Rust root innate_min_draw is out of range".to_owned());
+        }
     }
     let innate = innate.min(dealt.len());
-    let deck_card = |card: &Queued<'_>| (card.0 as usize) < deck_size;
-    let front: Vec<Queued<'_>> = dealt[..innate]
-        .iter()
-        .rev()
-        .copied()
-        .filter(deck_card)
-        .collect();
-    let tail: Vec<Queued<'_>> = dealt[innate..].iter().copied().filter(deck_card).collect();
+    let front: Vec<Queued<'_>> = dealt[..innate].iter().rev().copied().collect();
+    let tail: Vec<Queued<'_>> = dealt[innate..].to_vec();
     let mut seen: Vec<u32> = front.iter().chain(&tail).map(|(uid, _)| *uid).collect();
     seen.sort_unstable();
     if seen != (0..deck_size as u32).collect::<Vec<_>>() {
@@ -407,7 +487,7 @@ fn opening_created_uids_are_exact(root: &Value, deck_size: usize) -> bool {
 /// master-deck row as its uid (#2805) and says so by carrying
 /// `hopper_master_deck`.
 fn deal(root: &Value, replay: &Value) -> Deal {
-    let (rows, instances) = first_cycle_instances(replay)?;
+    let (rows, instances) = first_cycle_instances(root, replay)?;
     if let Some(master) = root["player"].get("hopper_master_deck") {
         let mut master_rows: Vec<u64> = master
             .as_array()
@@ -520,6 +600,227 @@ fn play_is_offered(
         }
         _ => false,
     })
+}
+
+/// The one selecting play `legal` offers for a recorded choiceless play
+/// (`rust_replay.sole_offered_selection`, #3756).
+///
+/// A card whose body selects from Hand opens no choice when the candidates do
+/// not exceed its minimum. `CardSelectCmd/<FromHand>d__28::MoveNext` (v0.111.0
+/// RVA 0x3e7568) filters the Hand (IL_010d-0151), returns the empty list as it
+/// stands (IL_0152-0161), and otherwise, unless the selector's prefs require
+/// manual confirmation (IL_0166-0171), returns the candidate list itself when
+/// `Count <= MinSelect` (IL_0173-018d): no choice is signalled and no
+/// `PlayerChoice` is recorded. Burning Pact with one other card in Hand is the
+/// corpus case. `legal` still spells that play with its single `selection`.
+///
+/// Returns the recorded wire with that selection when both hold:
+///
+/// * exactly one offered play matches the wire apart from its selection
+///   ([`play_is_offered`], so the representative-uid rule applies to the
+///   played card as it does everywhere else); and
+/// * the selected card is in Hand and no other Hand card has its payload.
+///   `legal` lists one representative per group of payload-identical Hand
+///   cards, so one offered selection can stand for several physical
+///   candidates. Several candidates are more than the minimum of one, the
+///   game would have asked, and a capture with no recorded answer there is
+///   not this case.
+///
+/// The census reached the same plays with the first condition alone and let
+/// the next pile checkpoint catch a wrong pick. This module compares no
+/// checkpoint (slice B2), so the second condition closes the rule instead: the
+/// selection applied is the only physical card the engine's own enumerator
+/// offers. The census and the Python review now carry the same two conditions.
+fn sole_offered_selection(
+    before: &Value,
+    legal: &[ExactSolveActionV1],
+    wire: &ExactSolveActionV1,
+) -> Option<ExactSolveActionV1> {
+    let ExactSolveActionV1::Play {
+        uid,
+        target,
+        selection: None,
+    } = wire
+    else {
+        return None;
+    };
+    let mut hits = legal.iter().filter_map(|offered| match offered {
+        ExactSolveActionV1::Play {
+            uid: o_uid,
+            target: o_target,
+            selection: Some(selected),
+        } => {
+            let bare = ExactSolveActionV1::Play {
+                uid: *o_uid,
+                target: *o_target,
+                selection: None,
+            };
+            play_is_offered(before, std::slice::from_ref(&bare), wire).then_some(*selected)
+        }
+        _ => None,
+    });
+    let selected = hits.next()?;
+    if hits.next().is_some() {
+        return None;
+    }
+    let payload = |card: &Value| {
+        let mut payload = card.clone();
+        if let Some(fields) = payload.as_object_mut() {
+            fields.remove("uid");
+        }
+        payload
+    };
+    let hand = cards_of(before, "hand");
+    let chosen = hand
+        .iter()
+        .find(|card| uid_of(card) == Some(selected))
+        .map(payload)?;
+    (hand.iter().filter(|card| payload(card) == chosen).count() == 1).then_some(
+        ExactSolveActionV1::Play {
+            uid: *uid,
+            target: *target,
+            selection: Some(selected),
+        },
+    )
+}
+
+/// What the game did with an input recorded while a turn-start hook's choice
+/// was open (`rust_replay.input_behind_open_choice`, #3756).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BehindOpenChoice {
+    /// It never ran: the resolver drops it.
+    Cancelled,
+    /// It ran after the hook's action finished: the resolver applies it once
+    /// the recorded choice has been answered.
+    Queued,
+}
+
+/// The replay writer records an action when it is enqueued
+/// (`ActionQueueSet::EnqueueWithoutSynchronizing`, v0.111.0 RVA 0x10e970,
+/// raises `ActionEnqueued` at IL_00b7-00c3 before it decides anything), and a
+/// hook's choice pauses its `GenericHookGameAction` at the front of the
+/// player's queue, which is the only action `GetReadyAction` (RVA 0x10ec90,
+/// IL_0128-012e) offers. So an input enqueued behind it waits, with one
+/// exception. A HAND selection is signalled with
+/// `PlayerChoiceOptions.CancelPlayCardActions` (`CardSelectCmd/<FromHand>
+/// d__28` RVA 0x3e7568 IL_00b2-00b3), and while it is open
+/// `PauseActionForPlayerChoice` (RVA 0x10f1e0, IL_0127-016d) and
+/// `EnqueueWithoutSynchronizing` (IL_0113-017c) cancel every `PlayCardAction`
+/// of that player; a potion is still queued (IL_02db-02e1).
+///
+/// The hooks are named by the pending modal the engine parks them on. Hand
+/// selections: Gambling Chip (RVA 0x325788 IL_0071), Toasty Mittens (RVA
+/// 0x33285c IL_0068) and the `turn_start_hand_choice_select` sources Tools of
+/// the Trade (RVA 0x349cb4 IL_005a), Tyranny (RVA 0x34a0f8 IL_005a) and
+/// Entropy (RVA 0x339e48 IL_005d). Stratagem (RVA 0x34688c IL_0078) selects
+/// with `FromCombatPile`, which cancels nothing (RVA 0x3e5e84 IL_00ad-00ae).
+/// The full reading is beside the Python rule; any other open choice is not
+/// read here and the input is resolved where it stands.
+fn input_behind_open_choice(before: &Value, kind: &str) -> Option<BehindOpenChoice> {
+    let play = match kind {
+        "NetPlayCardAction" => true,
+        "NetUsePotionAction" => false,
+        _ => return None,
+    };
+    match before["player"]["pending"][0].as_str()? {
+        "gambling_chip_select" | "toasty_mittens_select" | "turn_start_hand_choice_select" => {
+            Some(if play {
+                BehindOpenChoice::Cancelled
+            } else {
+                BehindOpenChoice::Queued
+            })
+        }
+        "stratagem_select" => Some(BehindOpenChoice::Queued),
+        _ => None,
+    }
+}
+
+/// The native ids of the player's own creatures in a checkpoint's creature
+/// list: Osty and the relic pets (`RELIC_PET_MONSTER_IDS` in
+/// `tools/eval_suite.py`, where the IL is cited). They are not enemies.
+const PLAYER_PETS: [&str; 3] = ["OSTY", "BYRDPIP", "PAELS_LEGION"];
+
+/// Whether the recorded inputs left after the engine's won combat were never
+/// executed (`_inputs_cancelled_at_combat_end` in `tools/eval_suite.py`,
+/// #3756).
+///
+/// A player can queue plays faster than they resolve. When the fight ends,
+/// v0.111.0 `ActionQueueSet::CombatEnded` (RVA 0x10f600, IL_0045-00b3)
+/// cancels every queued combat action that is not already executing. The
+/// input is in the capture's event list and has no completed-action checksum.
+///
+/// The census accepts that reading only on the capture's own evidence, and
+/// so does this, with the one piece of that evidence this module can read
+/// without comparing states (slice B2):
+///
+/// * every completed play or potion the capture holds is accounted for. Each
+///   action that finishes while the combat is in progress writes exactly one
+///   `finished action execution` checksum (`RunManager::SendPostActionChecksum`
+///   RVA 0x4c2c0: the `IsInProgress` gate at IL_000c-0018, the checksum at
+///   IL_0045-005f; `InitializeShared` RVA 0x4bd24 IL_0218-0223 subscribes it
+///   to `ActionExecutor.JustBeforeActionFinishedExecuting`, raised only for a
+///   Finished action, RVA 0x10b9ac IL_0066-007b). A cancelled action writes
+///   none. So the checksums naming a `PlayCardAction` or `UsePotionAction`
+///   must be exactly as many as the plays and potions applied so far, and
+///   there must be at least one. (Measured on 2026-10-11: equal on all 594
+///   eval fixtures.) Fewer applied than recorded as finished means the game's
+///   combat went on past the engine's;
+/// * the capture's final checksum shows a living player and no living enemy,
+///   so the game's combat was over too; and
+/// * the engine's combat is over and won.
+///
+/// Anything else stays `premature_combat_end`.
+fn inputs_cancelled_at_combat_end(
+    replay: &Value,
+    before: &Value,
+    actions: &[ExactSolveActionV1],
+) -> bool {
+    let empty = Vec::new();
+    let checksums = replay["checksums"].as_array().unwrap_or(&empty);
+    let finished = checksums
+        .iter()
+        .filter_map(|checksum| checksum["context"].as_str())
+        .filter(|context| {
+            context.starts_with("finished action execution PlayCardAction ")
+                || context.starts_with("finished action execution UsePotionAction ")
+        })
+        .count();
+    let applied = actions
+        .iter()
+        .filter(|action| {
+            matches!(
+                action,
+                ExactSolveActionV1::Play { .. } | ExactSolveActionV1::Potion { .. }
+            )
+        })
+        .count();
+    if finished == 0 || finished != applied {
+        return false;
+    }
+    if before["player"]["over"] != true || before["player"]["hp"].as_i64().unwrap_or(0) <= 0 {
+        return false;
+    }
+    let Some(creatures) = checksums
+        .last()
+        .and_then(|last| last["full_state"]["creatures"].as_array())
+    else {
+        return false;
+    };
+    let alive = |creature: &&Value| creature["current_hp"].as_i64().unwrap_or(0) > 0;
+    let mut players = creatures
+        .iter()
+        .filter(|c| !c["player_id"].is_null() && c["monster_id"].is_null())
+        .peekable();
+    let enemy_alive = creatures
+        .iter()
+        .filter(|c| {
+            c["player_id"].is_null()
+                && c["monster_id"]
+                    .as_str()
+                    .is_some_and(|id| !PLAYER_PETS.contains(&id))
+        })
+        .any(|c| alive(&c));
+    players.peek().is_some() && players.all(|c| alive(&c)) && !enemy_alive
 }
 
 fn option_index(index: u32) -> ExactSolveActionV1 {
@@ -639,10 +940,14 @@ fn selection_answer(
         return Err(NO_ANSWER.to_owned());
     }
     if kind == "CombatCard" {
+        // The recorded list is the player's whole answer, and it may be
+        // empty: a selection whose minimum is zero, confirmed with nothing
+        // picked (Gambling Chip, an "up to N" pick). The engine names that
+        // answer as the one offered answer selecting no card
+        // (`rust_replay._selection` carries the IL, #3756).
         let indexes = result["combat_card_indexes"]
             .as_array()
-            .filter(|indexes| !indexes.is_empty())
-            .ok_or("recorded selection needs one physical card")?;
+            .ok_or("recorded selection needs a list of physical cards")?;
         let uids = indexes
             .iter()
             .map(|index| uid_map(deck, index))
@@ -736,7 +1041,12 @@ pub fn recorded_line_with(
     let mut nonrepresentative = 0;
     let mut consumed = BTreeSet::new();
     let mut before = root;
-    for (index, event) in events.iter().enumerate() {
+    // Inputs waiting behind an open hook choice, and the events still to
+    // resolve: a waiting input goes back to the front once the choice is
+    // answered (`input_behind_open_choice`).
+    let mut queued: Vec<(usize, &Value)> = Vec::new();
+    let mut todo: VecDeque<(usize, &Value)> = events.iter().enumerate().collect();
+    while let Some((index, event)) = todo.pop_front() {
         if consumed.contains(&index) {
             continue;
         }
@@ -752,9 +1062,20 @@ pub fn recorded_line_with(
         );
         if before["player"]["over"] == true {
             if is_input {
+                if inputs_cancelled_at_combat_end(replay, &before, &actions) {
+                    continue;
+                }
                 return Err(diverged("premature_combat_end", kind.to_owned()));
             }
             continue;
+        }
+        match input_behind_open_choice(&before, kind) {
+            Some(BehindOpenChoice::Cancelled) => continue,
+            Some(BehindOpenChoice::Queued) => {
+                queued.push((index, event));
+                continue;
+            }
+            None => {}
         }
         let wire = if matches!(kind, "NetPlayCardAction" | "NetUsePotionAction") {
             let target = match (action["target_id"].as_u64(), &action["target_player_id"]) {
@@ -822,13 +1143,20 @@ pub fn recorded_line_with(
             if !offered && kind == "NetPlayCardAction" {
                 // An immediate one-card choice belongs to the play wire
                 // (Burning Pact); consume only its adjacent recorded choice.
-                let following = events.get(index + 1);
+                let following = todo.front().copied();
                 let selected = following
-                    .filter(|next| next["event_type"] == "PlayerChoice")
-                    .and_then(|next| next["result"]["combat_card_indexes"].as_array())
-                    .filter(|selected| selected.len() == 1);
-                if let (Some(selected), ExactSolveActionV1::Play { uid, target, .. }) =
-                    (selected, &wire)
+                    .filter(|(_, next)| next["event_type"] == "PlayerChoice")
+                    .and_then(|(next_index, next)| {
+                        Some((
+                            next_index,
+                            next["result"]["combat_card_indexes"].as_array()?,
+                        ))
+                    })
+                    .filter(|(_, selected)| selected.len() == 1);
+                if let (
+                    Some((next_index, selected)),
+                    ExactSolveActionV1::Play { uid, target, .. },
+                ) = (selected, &wire)
                 {
                     let picked = uid_map(&deck, &selected[0])
                         .map_err(|detail| diverged("card_identity", detail))?;
@@ -839,7 +1167,14 @@ pub fn recorded_line_with(
                     };
                     if play_is_offered(&before, &legal, &combined) {
                         wire = combined;
-                        consumed.insert(index + 1);
+                        consumed.insert(next_index);
+                        offered = true;
+                    }
+                } else if following.is_none_or(|(_, next)| next["event_type"] != "PlayerChoice") {
+                    // No choice was recorded at all: the game resolved the
+                    // body's selection without asking.
+                    if let Some(sole) = sole_offered_selection(&before, &legal, &wire) {
+                        wire = sole;
                         offered = true;
                     }
                 }
@@ -892,6 +1227,35 @@ pub fn recorded_line_with(
         before = value;
         actions.push(wire);
         digests.push(document.differential_digest());
+        if !queued.is_empty() {
+            // The choice the inputs waited behind has just been answered.
+            if before["player"]["pending"][0].is_string() {
+                let (waiting, input) = queued[0];
+                return Err(diverged_at(
+                    "not_legal",
+                    format!(
+                        "{} at input {waiting} waits behind a second open choice",
+                        input["action"]["type"].as_str().unwrap_or("")
+                    ),
+                    actions.len(),
+                    turn_of(&before),
+                ));
+            }
+            for waiting in queued.drain(..).rev() {
+                todo.push_front(waiting);
+            }
+        }
+    }
+    if let Some((waiting, input)) = queued.first() {
+        return Err(diverged_at(
+            "not_legal",
+            format!(
+                "{} at input {waiting} waits behind a choice the capture never answers",
+                input["action"]["type"].as_str().unwrap_or("")
+            ),
+            actions.len(),
+            turn_of(&before),
+        ));
     }
     if before["player"]["over"] != true {
         return Err(diverged_at(
@@ -991,4 +1355,370 @@ fn history_depth(run: &Value) -> Result<usize, &'static str> {
         return Err("history_depth_inconsistent");
     }
     Ok(depth)
+}
+
+#[cfg(test)]
+mod deal_tests {
+    //! #3764: the deal map drops opening-created cards before it takes the
+    //! Innate front. Synthetic roots; the Python twin is
+    //! `python/test_issue3764_harness_truth.py`.
+    use super::*;
+
+    fn instances(ids: &[&str]) -> Vec<Instance> {
+        ids.iter()
+            .map(|id| Instance {
+                id: (*id).to_owned(),
+                upgrade: 0,
+                enchantment: None,
+            })
+            .collect()
+    }
+
+    fn card(id: &str, uid: u32) -> Value {
+        json!({"id": id, "uid": uid, "upgrade": 0})
+    }
+
+    /// Radiant Pearl's shape: the created card sits at Hand index 0, ahead of
+    /// the deck's one Innate card.
+    #[test]
+    fn a_created_card_ahead_of_the_innate_front_is_not_counted_in_it() {
+        let root = json!({"player": {"innate_min_draw": 1}, "piles": {
+            "hand": [card("LUMINESCE", 3), card("INNATE", 2), card("A", 0)],
+            "draw": [card("B", 1)]}});
+        assert_eq!(
+            dealt_uids(&root, &instances(&["A", "B", "INNATE"])),
+            Ok(vec![0, 1, 2])
+        );
+        // Two Innate cards behind it keep their reversed relative order.
+        let root = json!({"player": {"innate_min_draw": 2}, "piles": {
+            "hand": [card("LUMINESCE", 4), card("I2", 3), card("I1", 1), card("A", 0)],
+            "draw": [card("B", 2)]}});
+        assert_eq!(
+            dealt_uids(&root, &instances(&["A", "I1", "B", "I2"])),
+            Ok(vec![0, 1, 2, 3])
+        );
+        // A created card inside the Draw's Innate front is dropped the same way.
+        let root = json!({"player": {"innate_min_draw": 2}, "piles": {
+            "hand": [],
+            "draw": [card("I2", 2), card("DAZED", 3), card("I1", 0), card("A", 1)]}});
+        assert_eq!(
+            dealt_uids(&root, &instances(&["I1", "A", "I2"])),
+            Ok(vec![0, 1, 2])
+        );
+    }
+
+    /// #3767: Power Cell lifts zero-cost deck cards from mid-Draw to the front
+    /// of the Hand before the turn-one draw, keeping their uids. The recorded
+    /// cycle is the raw shuffle, which the deck cards in uid order still are.
+    #[test]
+    fn a_power_cell_root_is_read_in_uid_order() {
+        let piles = json!({
+            "hand": [card("ZAP", 3), card("TURBO", 1), card("A", 0)],
+            "draw": [card("B", 2), card("C", 4)]});
+        let cycle = instances(&["A", "TURBO", "B", "ZAP", "C"]);
+        let root = |relics: Value| json!({"player": {"relics_entering": relics}, "piles": piles});
+        assert_eq!(
+            dealt_uids(&root(json!(["RELIC.POWER_CELL"])), &cycle),
+            Ok(vec![0, 1, 2, 3, 4])
+        );
+        // Without the relic the Hand's order is the deal's, and it is not
+        // this cycle.
+        assert_eq!(
+            dealt_uids(&root(json!(["RELIC.ANCHOR"])), &cycle),
+            Err("recorded initial physical card identities differ".to_owned())
+        );
+        // The relic changes the layout read, never the identity check.
+        assert_eq!(
+            dealt_uids(
+                &root(json!(["RELIC.POWER_CELL"])),
+                &instances(&["A", "TURBO", "ZAP", "B", "C"])
+            ),
+            Err("recorded initial physical card identities differ".to_owned())
+        );
+        // Power Cell beside Innate cards: the Innate front is still undone.
+        let innate = json!({"player": {"relics_entering": ["RELIC.POWER_CELL"],
+                                       "innate_min_draw": 1},
+            "piles": {"hand": [card("ZAP", 3), card("INNATE", 0), card("A", 1)],
+                      "draw": [card("B", 2)]}});
+        assert_eq!(
+            dealt_uids(&innate, &instances(&["A", "B", "INNATE", "ZAP"])),
+            Ok(vec![1, 2, 0, 3])
+        );
+    }
+
+    /// The fix reads more deals; it accepts no wrong one.
+    #[test]
+    fn the_deal_still_refuses_what_it_cannot_read() {
+        let root = json!({"player": {"innate_min_draw": 1}, "piles": {
+            "hand": [card("LUMINESCE", 3), card("INNATE", 2), card("A", 0)],
+            "draw": [card("B", 1)]}});
+        assert_eq!(
+            dealt_uids(&root, &instances(&["A", "X", "INNATE"])),
+            Err("recorded initial physical card identities differ".to_owned())
+        );
+        // More Innate cards claimed than deck cards dealt.
+        let over = json!({"player": {"innate_min_draw": 2}, "piles": {
+            "hand": [card("LUMINESCE", 1), card("A", 0)], "draw": []}});
+        assert_eq!(
+            dealt_uids(&over, &instances(&["A"])),
+            Err("Rust root innate_min_draw is out of range".to_owned())
+        );
+        // Two complete readings stay a refusal.
+        let twins = json!({"player": {"innate_min_draw": 1}, "piles": {
+            "hand": [card("LUMINESCE", 2), card("A", 1), card("A", 0)], "draw": []}});
+        assert_eq!(
+            dealt_uids(&twins, &instances(&["A", "A"])),
+            Err("recorded initial physical card identities differ".to_owned())
+        );
+    }
+}
+
+#[cfg(test)]
+mod sole_selection_tests {
+    //! #3756: a recorded play with no recorded choice takes the one selection
+    //! `legal` offers for it, and only when that selection is one physical
+    //! card. Synthetic states; the Python twin is
+    //! `python/test_issue3756_sole_offered_selection.py`.
+    use super::*;
+
+    fn play(uid: u32, target: Option<u8>, selection: Option<u32>) -> ExactSolveActionV1 {
+        ExactSolveActionV1::Play {
+            uid,
+            target,
+            selection,
+        }
+    }
+
+    fn hand(cards: &[(&str, u32)]) -> Value {
+        let hand: Vec<Value> = cards
+            .iter()
+            .map(|(id, uid)| json!({"id": id, "uid": uid, "upgrade": 0}))
+            .collect();
+        json!({"piles": {"hand": hand}})
+    }
+
+    #[test]
+    fn the_one_offered_selection_of_one_physical_card_is_taken() {
+        let before = hand(&[("BURNING_PACT", 6), ("DEFEND_IRONCLAD", 5)]);
+        let legal = [
+            play(6, None, Some(5)),
+            play(5, None, None),
+            ExactSolveActionV1::End,
+        ];
+        assert_eq!(
+            sole_offered_selection(&before, &legal, &play(6, None, None)),
+            Some(play(6, None, Some(5)))
+        );
+        // The played card is a non-representative copy: the offered play
+        // names its twin, and the recorded uid is the one kept.
+        let twins = hand(&[
+            ("BURNING_PACT", 6),
+            ("BURNING_PACT", 7),
+            ("DEFEND_IRONCLAD", 5),
+        ]);
+        let legal = [play(6, None, Some(5)), play(6, None, Some(7))];
+        assert_eq!(
+            sole_offered_selection(&twins, &legal, &play(7, None, None)),
+            None,
+            "two offered selections"
+        );
+        assert_eq!(
+            sole_offered_selection(&twins, &legal[..1], &play(7, None, None)),
+            Some(play(7, None, Some(5)))
+        );
+    }
+
+    #[test]
+    fn anything_else_stays_not_legal() {
+        let before = hand(&[("BURNING_PACT", 6), ("DEFEND_IRONCLAD", 5)]);
+        let legal = [play(6, None, Some(5)), play(5, None, None)];
+        let wire = play(6, None, None);
+        // Two offered selections for the play.
+        let two = [play(6, None, Some(5)), play(6, None, Some(7))];
+        assert_eq!(sole_offered_selection(&before, &two, &wire), None);
+        // The offered play differs in its target.
+        assert_eq!(
+            sole_offered_selection(&before, &legal, &play(6, Some(0), None)),
+            None
+        );
+        // No selecting play is offered for this card.
+        assert_eq!(
+            sole_offered_selection(&before, &legal, &play(5, None, None)),
+            None
+        );
+        // A wire that already carries a selection is not a choiceless play.
+        assert_eq!(
+            sole_offered_selection(&before, &legal, &play(6, None, Some(5))),
+            None
+        );
+        assert_eq!(
+            sole_offered_selection(&before, &legal, &ExactSolveActionV1::End),
+            None
+        );
+        // One offered selection that stands for two identical Hand cards:
+        // the game would have asked which.
+        let twins = hand(&[
+            ("BURNING_PACT", 6),
+            ("DEFEND_IRONCLAD", 5),
+            ("DEFEND_IRONCLAD", 4),
+        ]);
+        assert_eq!(sole_offered_selection(&twins, &legal, &wire), None);
+        // The offered selection is not a Hand card: `FromHand` is the only
+        // selector read.
+        assert_eq!(
+            sole_offered_selection(&before, &[play(6, None, Some(9))], &wire),
+            None
+        );
+    }
+}
+
+#[cfg(test)]
+mod open_choice_tests {
+    //! #3756: which recorded inputs wait behind, or are cancelled by, an open
+    //! hook choice. The Python twin is
+    //! `python/test_issue3756_inputs_behind_open_choice.py`.
+    use super::*;
+
+    fn behind(pending: Value, kind: &str) -> Option<BehindOpenChoice> {
+        input_behind_open_choice(&json!({"player": {"pending": pending}}), kind)
+    }
+
+    #[test]
+    fn a_hand_choice_cancels_a_card_play_and_queues_a_potion() {
+        for hook in [
+            "gambling_chip_select",
+            "toasty_mittens_select",
+            "turn_start_hand_choice_select",
+        ] {
+            assert_eq!(
+                behind(json!([hook]), "NetPlayCardAction"),
+                Some(BehindOpenChoice::Cancelled),
+                "{hook}"
+            );
+            assert_eq!(
+                behind(json!([hook]), "NetUsePotionAction"),
+                Some(BehindOpenChoice::Queued),
+                "{hook}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_pile_choice_queues_both() {
+        for kind in ["NetPlayCardAction", "NetUsePotionAction"] {
+            assert_eq!(
+                behind(json!(["stratagem_select"]), kind),
+                Some(BehindOpenChoice::Queued)
+            );
+        }
+    }
+
+    #[test]
+    fn nothing_else_is_read() {
+        // No open choice, a choice no hook opened, an input that is neither.
+        for pending in [
+            json!([]),
+            Value::Null,
+            json!(["frame_select", 3]),
+            json!(["potion_select", "X"]),
+            json!(["foregone_select"]),
+            json!(["discovery_select"]),
+        ] {
+            for kind in ["NetPlayCardAction", "NetUsePotionAction"] {
+                assert_eq!(behind(pending.clone(), kind), None, "{pending}");
+            }
+        }
+        for kind in [
+            "NetEndPlayerTurnAction",
+            "NetReadyToBeginEnemyTurnAction",
+            "",
+        ] {
+            assert_eq!(behind(json!(["gambling_chip_select"]), kind), None);
+        }
+    }
+}
+
+#[cfg(test)]
+mod combat_deck_tests {
+    //! #3791: the first cycle is read off the deck the combat was built
+    //! from, which is the saved deck after a Dowsing's room-entry transform.
+    //! Synthetic decks; the Python rule is `mcr_native.combat_deck`.
+    use super::*;
+
+    fn row(id: &str) -> Value {
+        json!({"id": format!("CARD.{id}"), "upgrade_level": 0})
+    }
+
+    fn dowsing(rooms: Option<i64>) -> Value {
+        match rooms {
+            Some(rooms) => json!({"id": "CARD.DOWSING", "upgrade_level": 0,
+                                  "props": {"RoomsEntered": rooms}}),
+            None => row("DOWSING"),
+        }
+    }
+
+    fn root(ids: &[&str]) -> Value {
+        let hand: Vec<Value> = ids
+            .iter()
+            .enumerate()
+            .map(|(uid, id)| json!({"id": id, "uid": uid}))
+            .collect();
+        json!({"player": {}, "piles": {"hand": hand, "draw": []}})
+    }
+
+    fn ids(deck: &[Value]) -> Vec<&str> {
+        deck.iter()
+            .map(|card| card["id"].as_str().unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn a_dowsing_on_its_fifth_room_leaves_and_an_abundance_joins_at_the_end() {
+        let deck = [row("A"), dowsing(Some(4)), row("B")];
+        let entered = combat_deck(&deck, &root(&["A", "B", "ABUNDANCE"]));
+        assert_eq!(
+            ids(&entered),
+            ["CARD.A", "CARD.B", "CARD.ABUNDANCE"],
+            "the row leaves its place; the replacement is the last row"
+        );
+        assert_eq!(entered[2]["upgrade_level"], 0);
+        // Two Dowsing rows, one due: only that one transforms, and the root
+        // must hold exactly the other.
+        let deck = [dowsing(Some(4)), row("A"), dowsing(Some(2))];
+        assert_eq!(
+            ids(&combat_deck(&deck, &root(&["A", "DOWSING", "ABUNDANCE"]))),
+            ["CARD.A", "CARD.DOWSING", "CARD.ABUNDANCE"]
+        );
+        // Both due.
+        let deck = [dowsing(Some(4)), row("A"), dowsing(Some(4))];
+        assert_eq!(
+            ids(&combat_deck(&deck, &root(&["A", "ABUNDANCE", "ABUNDANCE"]))),
+            ["CARD.A", "CARD.ABUNDANCE", "CARD.ABUNDANCE"]
+        );
+    }
+
+    #[test]
+    fn the_deck_is_left_alone_unless_the_root_bears_the_transform_out() {
+        let unchanged = |deck: &[Value], root: &Value| {
+            assert_eq!(combat_deck(deck, root).as_ref(), deck);
+        };
+        // The opening did not transform it (not the point's first room): the
+        // root still holds the Dowsing.
+        let due = [row("A"), dowsing(Some(4)), row("B")];
+        unchanged(&due, &root(&["A", "DOWSING", "B"]));
+        // The root holds a Dowsing count the transform does not explain.
+        unchanged(
+            &[dowsing(Some(4)), dowsing(Some(4))],
+            &root(&["DOWSING", "ABUNDANCE"]),
+        );
+        // A count below four changes nothing, whatever the root holds.
+        for rooms in [Some(0), Some(3), Some(5), None] {
+            unchanged(
+                &[row("A"), dowsing(rooms), row("B")],
+                &root(&["A", "B", "ABUNDANCE"]),
+            );
+        }
+        // No Dowsing at all.
+        unchanged(&[row("A"), row("B")], &root(&["A", "B"]));
+    }
 }

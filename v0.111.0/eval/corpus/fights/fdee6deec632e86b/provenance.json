@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 26,
+ "encounter": "ENCOUNTER.THE_OBSCURA_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "250d7f0383dccf19f55bdbe35156b37f563523f5ba85c2f478c5717e73362aaa",
+ "save_sha256": "472c266a1dfac6890006c0a6f97d624ad28ecffb84d7e453b38b3ac2a25f2ed5",
+ "entry_digest": "7617c00f2cd73c0c9a4b005866e5400fce422af8f1151289c0de74c8d55f37fe",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

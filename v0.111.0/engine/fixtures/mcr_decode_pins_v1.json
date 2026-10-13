@@ -3,10 +3,12 @@
  "note": "sha256 of each fixture's decoded document as sts-sim mcr-decode prints it (sorted keys, no spaces). Written by tools/mcr_parity.py --write-pins after the Rust and Python decoders agreed.",
  "game_version": "v0.111.0",
  "fixtures": {
+  "39D29WG6HMEK_d21_map_drawings.mcr": "f1889e5f7293fbc0b419d1a8e7a09c6110d4357bf1ee2e79e7f08d9bc3629f23",
   "6P96T755CNZ3_mawler_win.mcr": "a6a0f31b4cb99b265a7715529ca287ebaa2b611bd4bde8562a23d9699f348b81",
   "LYE3ZK9FYKKV_f04_nibbits.mcr": "a4264280e65bc0fddd7aeaeda75642a3abe57df63e18385bd26c8c8ad2383015",
   "LYE3ZK9FYKKV_f21_bowlbugs.mcr": "9dd680a9b6b35c06606e726246e710f286c366794ddbb6ee2d1e5bced1a9e344",
   "LYE3ZK9FYKKV_f43_soul_nexus.mcr": "cab08c660b52e0ca650faef4a18c77016e0482df598229ee1cd93f654193e457",
+  "WDRG3QZP2Y7G_n02_byte_aligned.mcr": "b22731285891d0a57a8da724db6e9090fe642f35e956c211c4aedab0a8104d52",
   "YLVVPKPH1MTW_f05_sludge_spinner.mcr": "e590239cc78156ebbfdaa4ffa23a267a705fdb77cf790f04b308c4d5421e6ec2",
   "YLVVPKPH1MTW_f09_cultists.mcr": "841ed29f7095c679cb7dab9c0282946412dcab8a8c48cefe1a7a5cabc79a30b2",
   "YLVVPKPH1MTW_f17_lagavulin.mcr": "5632c83c9536a8a45ac95815ac5c97edc7243746feb43ba83eb6451fce7123fa",

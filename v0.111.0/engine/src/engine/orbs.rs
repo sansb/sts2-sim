@@ -852,15 +852,58 @@ fn frost_block(
     gain_flat_block(state, catalog, raw, events)
 }
 
+/// One unpowered, non-card player `CreatureCmd.GainBlock` of an integer
+/// amount: the relic, power and orb Block bodies.
+///
+/// v0.111.0 `sts2.dll` (sha256 9cb4f1ad...). Every Block gain in the game is
+/// `CreatureCmd/<GainBlock>d__18::MoveNext` (RVA `0x3eaec0`): the `BlockVar`
+/// overload (`<GainBlock>d__17`, RVA `0x3eadd8`, IL_0022-IL_003e) forwards to
+/// it, and it is the only caller of `Creature::GainBlockInternal` (IL_0216).
+/// It calls `Hook.ModifyBlock` at IL_0134 for every gain, whatever its props,
+/// and `Hook::ModifyBlock` (RVA `0x104c30`) walks every combat listener's
+/// `ModifyBlockAdditive` (IL_0045-IL_0090) and then
+/// `ModifyBlockMultiplicative` (from IL_009e) with no props test of its own.
+/// `ShadowmeldPower::ModifyBlockMultiplicative` (RVA `0xa74fc`) reads no
+/// props either: `Decimal.One` unless the target is the power's owner
+/// (IL_0001-IL_000f), else `2 ^ Amount` (IL_0010-IL_002a). So a live
+/// Shadowmeld doubles an unpowered gain exactly as it doubles a card's.
+///
+/// Until #3763 this function added the raw amount, while its Decimal sibling
+/// [`gain_flat_power_block_decimal`](super::damage::gain_flat_power_block_decimal)
+/// and the card path folded Shadowmeld. The game's checkpoints show the
+/// doubling on both shapes that reach here: Afterimage's 1 becomes 2 on the
+/// Shadowmeld play itself (the power is applied before the after-play
+/// listener runs), and Tuning Fork's 7 becomes 14. The Shadowmeld range the
+/// sibling accepts is the range accepted here, and a doubled amount past
+/// `i32` refuses.
+///
+/// Unchanged, and still each caller's own: the ending gate (see
+/// [`frost_block`]) and the storage arithmetic (`checked_add`).
 pub(crate) fn gain_flat_block(
     state: &mut HotState,
     catalog: &Catalog,
     raw: i64,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    let amount: i32 = raw
+    let raw: i32 = raw
         .try_into()
         .map_err(|_| EngineRefusal::CounterOverflow("frost block"))?;
+    let shadowmeld = state.powers.value(PowerId::Shadowmeld);
+    let amount = if shadowmeld == 0 || raw <= 0 {
+        raw
+    } else {
+        if !(0..96).contains(&shadowmeld) {
+            return Err(EngineRefusal::MalformedArgs("flat block shadowmeld amount"));
+        }
+        let mut modified = i64::from(raw);
+        for _ in 0..shadowmeld {
+            modified = modified
+                .checked_mul(2)
+                .ok_or(EngineRefusal::CounterOverflow("shadowmeld flat block"))?;
+        }
+        i32::try_from(modified)
+            .map_err(|_| EngineRefusal::CounterOverflow("shadowmeld flat block"))?
+    };
     if amount > 0 {
         state.block = state
             .block
@@ -1843,5 +1886,149 @@ mod tests {
             state.monsters.iter().map(|monster| monster.hp).sum::<i32>(),
             140
         );
+    }
+
+    /// #3763: the helper itself. `ShadowmeldPower::ModifyBlockMultiplicative`
+    /// (`0xa74fc`) is `2 ^ Amount` for any gain on its owner.
+    #[test]
+    fn flat_block_folds_the_live_shadowmeld_multiplier() {
+        for (shadowmeld, raw, gained) in [(0, 7, 7), (1, 7, 14), (2, 7, 28), (1, 1, 2)] {
+            let mut state = live_state(10);
+            state.block = 3;
+            state
+                .powers
+                .set(PowerId::Shadowmeld, SlotWire::Int, shadowmeld);
+            let mut events = Vec::new();
+            gain_flat_block(&mut state, &catalog(), raw, &mut events).unwrap();
+            assert_eq!(state.block, 3 + gained, "Shadowmeld {shadowmeld}");
+            assert_eq!(
+                events,
+                [Event::PlayerBlockGained {
+                    amount: gained,
+                    block: 3 + gained,
+                }]
+            );
+        }
+
+        // Nothing to double: no Block, no event, whatever the power holds.
+        let mut none = live_state(10);
+        none.powers.set(PowerId::Shadowmeld, SlotWire::Int, 3);
+        let before = none.clone();
+        let mut events = Vec::new();
+        gain_flat_block(&mut none, &catalog(), 0, &mut events).unwrap();
+        assert_eq!(none, before);
+        assert!(events.is_empty());
+
+        // The sibling's accepted range, and a doubled amount past i32.
+        let mut malformed = live_state(10);
+        malformed.powers.set(PowerId::Shadowmeld, SlotWire::Int, 96);
+        let before = malformed.clone();
+        assert_eq!(
+            gain_flat_block(&mut malformed, &catalog(), 1, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs("flat block shadowmeld amount"))
+        );
+        assert_eq!(malformed, before);
+        for shadowmeld in [31, 95] {
+            let mut overflow = live_state(10);
+            overflow
+                .powers
+                .set(PowerId::Shadowmeld, SlotWire::Int, shadowmeld);
+            let before = overflow.clone();
+            assert_eq!(
+                gain_flat_block(&mut overflow, &catalog(), 1, &mut Vec::new()),
+                Err(EngineRefusal::CounterOverflow("shadowmeld flat block"))
+            );
+            assert_eq!(overflow, before);
+        }
+    }
+
+    /// #3763, one witness per caller family of [`gain_flat_block`].
+    #[test]
+    fn shadowmeld_doubles_orb_power_and_relic_flat_block() {
+        use crate::catalog::CardIdentity;
+        use crate::hot::{CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotCard, PileId};
+        use crate::ids::CardId;
+
+        // Orb passive: Frost's end-of-turn Block (`frost_block`).
+        let mut frost = live_state(10);
+        frost.block = 4;
+        frost.powers.set(PowerId::Shadowmeld, SlotWire::Int, 1);
+        frost.orbs.set_slots(1);
+        frost
+            .orbs
+            .set_orbs(vec![HotOrb::from_parts(OrbKind::Frost, None).unwrap()]);
+        turn_end_passives(&mut frost, &catalog(), &mut Vec::new()).unwrap();
+        assert_eq!(frost.block, 4 + 2 * FROST_PASSIVE as i32);
+
+        // After-play power: Afterimage on the Shadowmeld play itself. The
+        // power is live before the after-play listener runs, so the 1 is 2
+        // (S30HLX175RNT node 38's shape).
+        let mut builder = CatalogBuilder::new();
+        let shadowmeld = builder
+            .intern_reachable(CardIdentity {
+                id: CardId::Shadowmeld,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let source = HotCard {
+            uid: 1,
+            atom: shadowmeld,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        };
+        for (afterimage, expected) in [(0, 0), (1, 2), (3, 6)] {
+            let mut state = live_state(99);
+            state.energy = 3;
+            state.next_card_uid = 2;
+            state.piles.get_mut(PileId::Hand).make_mut().push(source);
+            state
+                .powers
+                .set(PowerId::Afterimage, SlotWire::Int, afterimage);
+            crate::engine::play::hydrate_after_card_played_power_order_for_test(&mut state);
+            crate::engine::play::play_card(
+                &mut state,
+                &catalog,
+                source.uid,
+                None,
+                None,
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert_eq!(state.powers.value(PowerId::Shadowmeld), 1);
+            assert_eq!(state.block, expected, "Afterimage {afterimage}");
+        }
+
+        // After-play relic: Tuning Fork's tenth Skill, 7 Block (44PVN7PYMPZZ
+        // node 21's shape: 14 under one Shadowmeld).
+        let mut builder = CatalogBuilder::new();
+        let defend = builder
+            .intern_reachable(CardIdentity {
+                id: CardId::DefendIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        builder.set_relics(&[RelicId::RelicTuningFork]).unwrap();
+        let catalog = builder.build();
+        let skill = *catalog.spec(defend).unwrap();
+        for (shadowmeld, expected) in [(0, 7), (1, 14)] {
+            let mut state = live_state(99);
+            state
+                .powers
+                .set(PowerId::Shadowmeld, SlotWire::Int, shadowmeld);
+            assert!(state.fanouts.set_tuning_fork_skills(9));
+            crate::engine::relics::after_card_played_hand(
+                &catalog,
+                &mut state,
+                &skill,
+                7,
+                Some(0),
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert_eq!(state.fanouts.tuning_fork_skills(), 0);
+            assert_eq!(state.block, expected, "Shadowmeld {shadowmeld}");
+        }
     }
 }

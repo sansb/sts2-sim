@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Q2BEDKXQDES1",
+ "node": 6,
+ "encounter": "ENCOUNTER.PHANTASMAL_GARDENERS_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "62c65e9ed4b98af344a09ccf4c3f49264afffdaabea551704716147eb0451ab2",
+ "save_sha256": "cdfb765bbffc898d76ce596b9fc7dd38a1d00b9f2939e53accb04e2b3b367cd9",
+ "entry_digest": "659dc9905a992b8618fa4e351b4993027ce6bd60f12f4af9042b486b9e576268",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

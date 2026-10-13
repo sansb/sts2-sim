@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 8,
+ "encounter": "ENCOUNTER.BYGONE_EFFIGY_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "21eb3c2a5c2f1e243a8933b4d8e4365685f89e5ddd79ea47d770ea91866c44f8",
+ "save_sha256": "f6cd3edfff231af024866c20f41ac1c9e82636023b964312126c661796919c73",
+ "entry_digest": "b73c9f6169f3db3cf7616f5ae219991dfc55b4fa568ecc886010b78be5bdf75a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

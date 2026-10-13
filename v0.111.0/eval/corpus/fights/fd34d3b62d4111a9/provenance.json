@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "CF414FXFHEHM",
+ "node": 1,
+ "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "f97524de5e5bcff61d3c9abc99b0e6b5aa3a62d4a01212e03ad2b4f096e84329",
+ "save_sha256": "ee10c37d707c2d0e2968644365ea35276542131af72fcb1d1f6ae8ac2cf1cd07",
+ "entry_digest": "8999d1a2b1ec651d49e08b7d49d2f6501d821d83b71f03f5b7a0a1f55df001c7",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

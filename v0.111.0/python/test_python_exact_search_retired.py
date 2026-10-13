@@ -96,18 +96,12 @@ def test_guard_detects_assignment_import_alias_and_callback_forms():
     assert _retired_references(module_callback)
 
 
-def test_operator_and_review_paths_name_the_rust_boundary():
-    # #2827 item F1: every review roots, searches and replays in Rust through
-    # `rust_review.search_outcomes`, and the live coach solves its Rust root
-    # through `rust_exact_solve.solve_document`. The Python-state
-    # `solve_state` callers (the retired producer, `infoset_sample`) are gone.
-    callers = {
-        HERE / "rust_review.py": "def search_outcomes(",
-        HERE / "rust_legacy_review.py": "rust_review.search_outcomes(",
-        HERE / "tools/live_coach.py": "rust_exact_solve.solve_document(",
-    }
-    for path, call in callers.items():
-        source = path.read_text(encoding="utf-8")
-        assert call in source, path
+def test_the_operator_path_names_the_rust_boundary():
+    # The live coach solves its Rust root through
+    # `rust_exact_solve.solve_document`. The Python-state `solve_state`
+    # callers (the retired producer, `infoset_sample`) are gone, and so are
+    # the review producers that searched through `rust_review` (2026-10-11).
+    source = (HERE / "tools/live_coach.py").read_text(encoding="utf-8")
+    assert "rust_exact_solve.solve_document(" in source
     assert "def solve_state(" not in (
         HERE / "rust_exact_solve.py").read_text(encoding="utf-8")

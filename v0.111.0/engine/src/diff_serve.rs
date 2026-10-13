@@ -1261,7 +1261,6 @@ fn engine_refusal_kind(refusal: &EngineRefusal) -> RefusalKind {
         | EngineRefusal::MonsterLoopNotModeled(_)
         | EngineRefusal::HookNotModeled { .. }
         | EngineRefusal::PowerHookNotModeled { .. }
-        | EngineRefusal::EndingSummonNotModeled(_)
         | EngineRefusal::EndingDamageNotModeled(_)
         | EngineRefusal::EndingStepNotModeled(_)
         | EngineRefusal::UntrackedCounterNotModeled(_)

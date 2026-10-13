@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Y0P022HKT81G",
+ "node": 39,
+ "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "342de591e51fc5ee19b9f16e455e69a739090903a6eb90101dd79b3d81df0d64",
+ "save_sha256": "87acc6166603ade683d821b293c8a38f6c5a20a8d1245aa19c2df7290e06db4f",
+ "entry_digest": "f83a575af2abfb50b91192b349cad9113685a1998119babe580dbf4ca66c8bec",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

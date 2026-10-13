@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "8TKNMZMQCY29",
+ "node": 6,
+ "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+ "node_type": "elite",
+ "character": "NECROBINDER",
+ "ascension": 9,
+ "capture_sha256": "6afea5dad766254471623bfa385c4ae7bd0aeff0b8ab9ec1f4cfd03149f0672f",
+ "save_sha256": "294178d22cd491f8d634cac873ad780c4278d250a6510a87d10b4678e11cf71c",
+ "entry_digest": "1abc00abc021b84ed3383e7b369cffbf45ce584aa8d3fe888be939c47180ea89",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

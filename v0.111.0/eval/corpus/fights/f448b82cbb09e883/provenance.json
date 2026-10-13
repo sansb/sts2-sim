@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "XTNA1G136DZU",
+ "node": 16,
+ "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+ "node_type": "boss",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "b50643602e9d729b226c4ee5a391a91bb3877b5f071f2feb068fa3ea8f7b45a9",
+ "save_sha256": "bab50116bd49b4d6db3176fd387732d4604573707f90ede279682b29354f3706",
+ "entry_digest": "781f376fa4c605433986f74b217ff2fae39ec655ce0edf3ea20414f41f08590d",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

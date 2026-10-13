@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "9LK521591W4A",
+ "node": 42,
+ "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+ "node_type": "elite",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "dc868cb299dc82b279779aa35d4ed794ff5025d25574759ff1bd17fb7aef1f90",
+ "save_sha256": "28947e5c80ae246ad73e0891b7927438db1070a9fe25b37490e8ac8ec56580fc",
+ "entry_digest": "007d8b104fc78957222bc8b0495351911203e15a28edc4841140f4a7d7a5fd04",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

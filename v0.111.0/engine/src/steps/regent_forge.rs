@@ -712,8 +712,54 @@ pub(crate) fn forge_family_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefu
                 if target.is_some() {
                     return Err(EngineRefusal::TargetMismatch { required: false });
                 }
+                // #3762. v0.111.0 `SummonForth/<OnPlay>d__5::MoveNext` (RVA
+                // `0x3c04ac`): IL_00a7-IL_00da is
+                // `Owner.PlayerCombatState.AllCards.OfType<SovereignBlade>()
+                // .Where(b__5_0)`, with `<OnPlay>b__5_0` (RVA `0x3c0492`,
+                // IL_0001-IL_0018) `card.Pile == null || card.Pile.Type != 2`;
+                // IL_00e1-IL_00e5 is `CardPileCmd.Add(blades, 2, 1, ..,
+                // false)`. `PileType` 2 is the HAND, not the Draw pile: the
+                // enum's constants are None 0, Draw 1, Hand 2, Discard 3,
+                // Exhaust 4, Play 5, Deck 6, and `PlayerCombatState::.ctor`
+                // (RVA `0x117f5c`) builds `Hand` as `CardPile(2)` (IL_001f-
+                // IL_0025) and `DrawPile` as `CardPile(1)` (IL_002b-IL_0031).
+                // `CardPilePosition` 1 is `Bottom`. So every Blade that is not
+                // already in the Hand goes to the Hand, a Draw-pile Blade
+                // included, and a Blade in the Hand stays where it is.
+                //
+                // The enumeration is `AllCards` (RVA `0x117e3c`), a
+                // `SelectMany` over `AllPiles` (RVA `0x117de8`, IL_0015-
+                // IL_0042): Hand, Draw, Discard, Exhaust, Play. With the Hand
+                // filtered out that is the order below. `ForgeCmd.Forge`
+                // follows at IL_0144-IL_015f.
+                //
+                // Until #3762 this moved the Hand/Discard/Exhaust/Play Blades
+                // to the bottom of the Draw pile, reading 2 as Draw.
+                //
+                // A Blade that is itself an active play is refused wherever it
+                // sits. The move helper refuses one it would move; a Hand
+                // Blade is no longer moved, so it is tested here, keeping the
+                // refusal the Draw-pile reading already gave that state.
+                let hand_blades = if ctx.state.history.over {
+                    &[][..]
+                } else {
+                    ctx.state.piles.get(PileId::Hand).as_slice()
+                };
+                for card in hand_blades {
+                    let spec = ctx
+                        .catalog
+                        .spec(card.atom)
+                        .ok_or(EngineRefusal::UnknownAtom(card.atom))?;
+                    if matches!(spec.identity.id, CardId::SovereignBlade)
+                        && crate::engine::play::active_play_stack_contains_uid(card.uid)
+                    {
+                        return Err(EngineRefusal::MalformedArgs(
+                            "physical move frozen identity",
+                        ));
+                    }
+                }
                 let mut frozen = Vec::new();
-                for pile in [PileId::Hand, PileId::Discard, PileId::Exhaust, PileId::Play] {
+                for pile in [PileId::Draw, PileId::Discard, PileId::Exhaust, PileId::Play] {
                     for (source_index, card) in ctx
                         .state
                         .piles
@@ -741,7 +787,7 @@ pub(crate) fn forge_family_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefu
                     ctx.state,
                     ctx.catalog,
                     &frozen,
-                    PileId::Draw,
+                    PileId::Hand,
                     ctx.events,
                 )?;
                 forge_exact(ctx.state, ctx.catalog, *forge_amount, ctx.events)
@@ -3878,9 +3924,22 @@ mod tests {
                     enchantment: None,
                 })
                 .unwrap();
-            let mut expected = Vec::new();
+            // #3762: every Blade outside the Hand moves to the Hand, in
+            // AllCards order (Draw, Discard, Exhaust, Play). The Hand Blade
+            // stays where it is and is forged like the rest.
+            let existing_draw = HotCard {
+                uid: 75,
+                atom: source.atom,
+                flags: 0,
+            };
+            state
+                .piles
+                .get_mut(PileId::Draw)
+                .make_mut()
+                .push(existing_draw);
             for (uid, pile) in [
                 (71, PileId::Hand),
+                (76, PileId::Draw),
                 (72, PileId::Discard),
                 (73, PileId::Exhaust),
                 (74, PileId::Play),
@@ -3898,18 +3957,16 @@ mod tests {
                         ..CardInstanceState::default()
                     },
                 );
-                expected.push(uid);
             }
-            let existing_draw = HotCard {
-                uid: 75,
-                atom: source.atom,
-                flags: 0,
-            };
-            state
+            let moved = [76, 72, 73, 74];
+            let hand_before = state
                 .piles
-                .get_mut(PileId::Draw)
-                .make_mut()
-                .push(existing_draw);
+                .get(PileId::Hand)
+                .as_slice()
+                .iter()
+                .map(|card| card.uid)
+                .filter(|uid| *uid != source.uid)
+                .collect::<Vec<_>>();
             let mut events = Vec::new();
 
             crate::engine::play::play_card(
@@ -3925,25 +3982,34 @@ mod tests {
             assert_eq!(
                 state
                     .piles
+                    .get(PileId::Hand)
+                    .as_slice()
+                    .iter()
+                    .map(|card| card.uid)
+                    .collect::<Vec<_>>(),
+                hand_before.iter().copied().chain(moved).collect::<Vec<_>>()
+            );
+            assert!(hand_before.contains(&71));
+            assert_eq!(
+                state
+                    .piles
                     .get(PileId::Draw)
                     .as_slice()
                     .iter()
                     .map(|card| card.uid)
                     .collect::<Vec<_>>(),
-                std::iter::once(existing_draw.uid)
-                    .chain(expected.iter().copied())
-                    .collect::<Vec<_>>()
+                [existing_draw.uid]
             );
-            for uid in &expected {
-                let moved = state
+            for uid in moved.into_iter().chain([71]) {
+                let blade = state
                     .piles
-                    .get(PileId::Draw)
+                    .get(PileId::Hand)
                     .as_slice()
                     .iter()
-                    .find(|card| card.uid == *uid)
+                    .find(|card| card.uid == uid)
                     .unwrap();
-                assert_eq!(moved.flags, CARD_FLAG_SOVEREIGN_BLADE_STATE);
-                assert_eq!(state.card_states.get(*uid).damage_growth, 10 + forge);
+                assert_eq!(blade.flags, CARD_FLAG_SOVEREIGN_BLADE_STATE);
+                assert_eq!(state.card_states.get(uid).damage_growth, 10 + forge);
             }
             assert_eq!(
                 events
@@ -3951,48 +4017,103 @@ mod tests {
                     .filter_map(|event| match event {
                         crate::engine::Event::CardResolved {
                             uid,
-                            pile: PileId::Draw,
+                            pile: PileId::Hand,
                         } => Some(*uid),
                         _ => None,
                     })
                     .collect::<Vec<_>>(),
-                expected
-            );
-            let first_move = events
-                .iter()
-                .position(|event| {
-                    matches!(
-                        event,
-                        crate::engine::Event::CardResolved {
-                            uid: 71,
-                            pile: PileId::Draw
-                        }
-                    )
-                })
-                .unwrap();
-            assert_eq!(
-                &events[first_move..first_move + 4],
-                &[
-                    crate::engine::Event::CardResolved {
-                        uid: 71,
-                        pile: PileId::Draw,
-                    },
-                    crate::engine::Event::CardResolved {
-                        uid: 72,
-                        pile: PileId::Draw,
-                    },
-                    crate::engine::Event::CardResolved {
-                        uid: 73,
-                        pile: PileId::Draw,
-                    },
-                    crate::engine::Event::CardResolved {
-                        uid: 74,
-                        pile: PileId::Draw,
-                    },
-                ],
-                "one plural command publishes its ordered batch contiguously"
+                moved
             );
         }
+    }
+
+    /// #3762: `CardPileCmd/<Add>d__10` IL_04ef-IL_0531 redirects a member to
+    /// the Discard pile when the Hand is full at that member's turn. The Hand
+    /// holds nine after Summon Forth leaves, so the first Blade lands in it
+    /// and the rest land in the Discard pile, in order.
+    #[test]
+    fn summon_forth_sends_blades_past_a_full_hand_to_discard() {
+        let (mut state, catalog, source) = forge_writer_fixture(CardId::SummonForth, 0);
+        let blade_atom = catalog
+            .atom(&CardIdentity {
+                id: CardId::SovereignBlade,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let blade = |uid| HotCard {
+            uid,
+            atom: blade_atom,
+            flags: CARD_FLAG_SOVEREIGN_BLADE_STATE,
+        };
+        let filler = HotCard {
+            uid: 0,
+            atom: source.atom,
+            flags: 0,
+        };
+        let mut uid = 80;
+        while state.piles.get(PileId::Hand).len() < crate::engine::draw::MAX_CARDS_IN_HAND {
+            state
+                .piles
+                .get_mut(PileId::Hand)
+                .make_mut()
+                .push(HotCard { uid, ..filler });
+            uid += 1;
+        }
+        state.piles.get_mut(PileId::Draw).make_mut().push(blade(71));
+        state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .push(blade(72));
+        state
+            .piles
+            .get_mut(PileId::Exhaust)
+            .make_mut()
+            .push(blade(73));
+        state.next_card_uid = 100;
+        let mut events = Vec::new();
+
+        crate::engine::play::play_card(&mut state, &catalog, source.uid, None, None, &mut events)
+            .unwrap();
+
+        let hand = state.piles.get(PileId::Hand).as_slice();
+        assert_eq!(hand.len(), crate::engine::draw::MAX_CARDS_IN_HAND);
+        assert_eq!(hand.last().unwrap().uid, 71);
+        let discard = state
+            .piles
+            .get(PileId::Discard)
+            .as_slice()
+            .iter()
+            .map(|card| card.uid)
+            .filter(|uid| [71, 72, 73].contains(uid))
+            .collect::<Vec<_>>();
+        assert_eq!(discard, [72, 73]);
+        assert!(
+            state
+                .piles
+                .get(PileId::Exhaust)
+                .as_slice()
+                .iter()
+                .all(|card| card.uid != 73)
+        );
+        let resolved = events
+            .iter()
+            .filter_map(|event| match event {
+                crate::engine::Event::CardResolved { uid, pile } if [71, 72, 73].contains(uid) => {
+                    Some((*uid, *pile))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            resolved,
+            [
+                (71, PileId::Hand),
+                (72, PileId::Discard),
+                (73, PileId::Discard)
+            ]
+        );
     }
 
     #[test]
@@ -4507,7 +4628,7 @@ mod tests {
             .unwrap();
             let blade = generated
                 .piles
-                .get(PileId::Draw)
+                .get(PileId::Hand)
                 .as_slice()
                 .iter()
                 .find(|card| {
@@ -4550,8 +4671,22 @@ mod tests {
         );
         assert!(exhausted.piles.get(PileId::Exhaust).as_slice().is_empty());
         assert_eq!(
-            exhausted.piles.get(PileId::Draw).as_slice()[0].uid,
+            exhausted
+                .piles
+                .get(PileId::Hand)
+                .as_slice()
+                .last()
+                .unwrap()
+                .uid,
             blade.uid
+        );
+        assert!(
+            exhausted
+                .piles
+                .get(PileId::Draw)
+                .as_slice()
+                .iter()
+                .all(|card| card.uid != blade.uid)
         );
         assert_eq!(exhausted.card_states.get(blade.uid).damage_growth, 18);
     }

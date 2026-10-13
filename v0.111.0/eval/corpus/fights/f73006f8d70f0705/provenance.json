@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "1PPV189FQSTT",
+ "node": 21,
+ "encounter": "ENCOUNTER.MYTES_NORMAL",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "c56ce46fc40090ddf1864f22becdf8d742832768956b31fe8a93c4ec6f7d6f23",
+ "save_sha256": "1e5057d8bb67a525227e0757f90f818a5fa644467053a98243d5bf6c7df83446",
+ "entry_digest": "b9bbbd46fe4a7800bd2d728417858aa8ed88f145d5811e914fa6b6c124b391fb",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

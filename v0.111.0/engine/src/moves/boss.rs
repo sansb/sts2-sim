@@ -1146,7 +1146,11 @@ pub(crate) fn scream(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     if damage != ctx.tier(mc::SOUL_FYSH_SCREAM_DAMAGE) {
         return Err(EngineRefusal::MalformedArgs("scream"));
     }
-    if !crate::engine::monsters::soul_fysh_move_state_is_valid(ctx.state, ctx.actor, 4, 1) {
+    // Intangible 1 is the stack FADE left; 0 is a SCREAM a stun delayed past
+    // the stack's last tick (#3823, `soul_fysh_state_is_valid`).
+    if !crate::engine::monsters::soul_fysh_move_state_is_valid(ctx.state, ctx.actor, 4, 1)
+        && !crate::engine::monsters::soul_fysh_move_state_is_valid(ctx.state, ctx.actor, 4, 0)
+    {
         return Err(EngineRefusal::MalformedArgs("scream owner/state"));
     }
     monster_attack_player_with_catalog(ctx.state, ctx.catalog, ctx.actor, damage, 1, ctx.events)?;

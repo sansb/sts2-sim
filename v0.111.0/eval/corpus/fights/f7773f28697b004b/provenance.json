@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "NNL6K3NV22TC",
+ "node": 14,
+ "encounter": "ENCOUNTER.TERROR_EEL_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "7b4cb8e6aa7bb906d0b7a3a53fb74868f83afb6afa2fa384338f21e8de0e5873",
+ "save_sha256": "21e05638c34cdd1a5fb37e267106500b24ffb2d12c692b879ec34ad19547e302",
+ "entry_digest": "5eaa7ec6d5180a4d57434c2b8cc059da9ce356bc7f2aca1b1f1aeaec297df8d5",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

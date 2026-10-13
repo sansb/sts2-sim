@@ -79,7 +79,7 @@ use crate::engine::draw::{
 };
 use crate::engine::{EngineRefusal, Event, Subject, fire_hook};
 use crate::hooks::HookEvent;
-use crate::hot::{CARD_FLAG_LEGACY, HotCard, HotState, MiseryToken, PileId, RngStream};
+use crate::hot::{CARD_FLAG_LEGACY, HotCard, HotState, MiseryToken, PileId};
 use crate::ids::{CardId, PowerId, StepKind};
 use crate::powers::SlotWire;
 
@@ -802,9 +802,7 @@ pub(crate) fn resume_second_wind_after_exhaust(
 pub(crate) fn infernal_blade_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     if !ctx.args.is_empty()
         || ctx.spec.identity.id != CardId::InfernalBlade
-        || ctx.state.reward_card_pool != Some(RewardPool::Ironclad)
-        || ctx.state.entropy_card_pool != Some(RewardPool::Ironclad)
-        || ctx.state.rng.is_vacant(RngStream::Generation)
+        || !crate::engine::cards::infernal_blade_provenance_is_exact(ctx.state, ctx.catalog)
     {
         return Err(EngineRefusal::MalformedArgs("infernal_blade_exact"));
     }
@@ -823,12 +821,31 @@ fn apply_infernal_blade(
     catalog: &Catalog,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    let shuffled = shuffle_generation_pool(state, &INFERNAL_BLADE_ATTACK_POOL_V109)?;
+    // #3816: the owner's Attack pool (`steps::neutral::
+    // infernal_blade_owner_attack_pool` has the IL). The Ironclad arm is the
+    // frozen table through the array shuffle it always used.
+    let id = match state.reward_card_pool {
+        Some(RewardPool::Ironclad) => {
+            shuffle_generation_pool(state, &INFERNAL_BLADE_ATTACK_POOL_V109)?[0]
+        }
+        Some(owner) => {
+            let pool = catalog.infernal_blade_attack_pool(owner);
+            // Native adds nothing when the draw is empty (`FirstOrDefault`
+            // IL_0095, `brfalse` IL_009c). No owner's Attack pool is empty
+            // under any profile, so that arm is refused, not modeled.
+            *crate::engine::cards::shuffle_generation_slice(state, &pool)?
+                .first()
+                .ok_or(EngineRefusal::MalformedArgs(
+                    "infernal blade owner attack pool",
+                ))?
+        }
+        None => return Err(EngineRefusal::MalformedArgs("infernal_blade_exact")),
+    };
     inject_generated_free_this_turn_bottom(
         state,
         catalog,
         CardIdentity {
-            id: shuffled[0],
+            id,
             upgrade: 0,
             enchantment: None,
         },
@@ -1083,7 +1100,8 @@ mod tests {
     use crate::content_tables::{card_row, card_rows};
     use crate::engine::capability_manifest;
     use crate::hot::{
-        CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotState, LocalCostExpiration, PileId, RngStreamState,
+        CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotState, LocalCostExpiration, PileId, RngStream,
+        RngStreamState,
     };
     use crate::ids::CardId;
     use crate::rng::Xoshiro256StarStar;
@@ -1290,6 +1308,113 @@ mod tests {
         );
         assert_eq!(legacy, before);
         assert!(events.is_empty());
+    }
+
+    /// #3816: any owner other than Ironclad draws its own Attack pool under
+    /// the shared owner-pool provenance; an Ironclad's gate is unchanged.
+    #[test]
+    fn infernal_blade_draws_a_foreign_owners_attack_pool() {
+        let pool =
+            crate::steps::neutral::infernal_blade_owner_attack_pool(RewardPool::Defect, None);
+        assert_eq!(
+            pool,
+            crate::steps::neutral::crossbow_owner_attack_pool(RewardPool::Defect, None)
+        );
+        assert!(pool.iter().all(|id| {
+            !INFERNAL_BLADE_ATTACK_POOL_V109.contains(id)
+                && card_row(*id, 0)
+                    .is_some_and(|row| row.card_type == crate::content_tables::CardType::Attack)
+        }));
+        assert_eq!(
+            crate::steps::neutral::infernal_blade_owner_attack_pool(RewardPool::Ironclad, None),
+            INFERNAL_BLADE_ATTACK_POOL_V109.to_vec()
+        );
+
+        let seeded = Xoshiro256StarStar::from_seed(0);
+        let mut state = HotState::at_defaults();
+        state.reward_card_pool = Some(RewardPool::Defect);
+        state.fully_unlocked_card_pool_epochs = true;
+        state.rng.set(
+            RngStream::Generation,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        state.next_card_uid = 41;
+        let mut preview = state.clone();
+        let selected =
+            crate::engine::cards::shuffle_generation_slice(&mut preview, &pool).unwrap()[0];
+        let plain = |id| CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let mut builder = CatalogBuilder::new();
+        let source_atom = builder.intern(plain(CardId::InfernalBlade)).unwrap();
+        builder.intern(plain(selected)).unwrap();
+        let catalog = builder.build();
+        let spec = *catalog.spec(source_atom).unwrap();
+        let run = |state: &mut HotState| {
+            let mut events = Vec::new();
+            let mut ctx = StepCtx {
+                state,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: 7,
+                target: None,
+                selection: None,
+                x_value: 0,
+                args: &[],
+                events: &mut events,
+            };
+            infernal_blade_exact(&mut ctx)
+        };
+
+        // No recorded profile, a contradicting Entropy owner, or a second
+        // player: each refuses and leaves the state alone.
+        for spoil in [0, 1, 2] {
+            let mut refused = state.clone();
+            match spoil {
+                0 => refused.fully_unlocked_card_pool_epochs = false,
+                1 => refused.entropy_card_pool = Some(RewardPool::Ironclad),
+                _ => refused.multiplayer_ally_key = 1,
+            }
+            let before = refused.clone();
+            assert_eq!(
+                run(&mut refused),
+                Err(EngineRefusal::MalformedArgs("infernal_blade_exact")),
+                "{spoil}"
+            );
+            assert_eq!(refused, before, "{spoil}");
+        }
+        // An Ironclad still needs its Entropy owner, recorded profile or not.
+        let mut ironclad = state.clone();
+        ironclad.reward_card_pool = Some(RewardPool::Ironclad);
+        assert_eq!(
+            run(&mut ironclad),
+            Err(EngineRefusal::MalformedArgs("infernal_blade_exact"))
+        );
+
+        run(&mut state).unwrap();
+        assert_eq!(
+            state.rng.get(RngStream::Generation).counter,
+            pool.len() as u64 - 1
+        );
+        let generated = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(generated.uid, 41);
+        assert_eq!(
+            catalog.spec(generated.atom).unwrap().identity,
+            plain(selected)
+        );
+        assert_eq!(
+            state
+                .card_states
+                .get(generated.uid)
+                .local_cost_modifiers
+                .resolve(99),
+            0
+        );
     }
 
     #[test]

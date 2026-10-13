@@ -1,0 +1,59 @@
+{
+ "osty_before_fabricate": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "FABRICATOR_NORMAL",
+  "deck": ["AFTERLIFE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["snap", "root"],
+   ["play", "AFTERLIFE"],
+   ["end"],
+   ["end"],
+   ["end"]
+  ]
+ },
+ "osty_after_fabricate": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "FABRICATOR_NORMAL",
+  "deck": ["AFTERLIFE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["arrange", {"hand": ["DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"], "draw": ["AFTERLIFE", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD", "DEFEND_IRONCLAD"]}],
+   ["snap", "root"],
+   ["end"],
+   ["play", "AFTERLIFE"],
+   ["end"],
+   ["end"]
+  ]
+ },
+ "osty_after_surprise": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "GREMLIN_MERC_NORMAL",
+  "deck": ["AFTERLIFE", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["hp", 1, 1],
+   ["snap", "root"],
+   ["play", "STRIKE_IRONCLAD", 1],
+   ["play", "AFTERLIFE"],
+   ["play", "STRIKE_IRONCLAD", 2],
+   ["end"],
+   ["end"]
+  ]
+ },
+ "osty_before_surprise": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "GREMLIN_MERC_NORMAL",
+  "deck": ["AFTERLIFE", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "DEFEND_IRONCLAD"],
+  "script": [
+   ["hp", 1, 1],
+   ["snap", "root"],
+   ["play", "AFTERLIFE"],
+   ["play", "STRIKE_IRONCLAD", 1],
+   ["play", "STRIKE_IRONCLAD", 3],
+   ["end"],
+   ["end"]
+  ]
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "P6XAS3GPQTUM",
+ "node": 3,
+ "encounter": "ENCOUNTER.SEAPUNK_WEAK",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "8dd34aac4028740c8b17c202e30ea299994fdf45cdd8251d5c8b84d320444554",
+ "save_sha256": "2962de6ca1783f4aa3396cbd2e7f03ea4f9f95dc17810d6154035903bd4420eb",
+ "entry_digest": "abc708986383ba40a338e2088d8148da1994e45058afc46af889486c369106d3",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

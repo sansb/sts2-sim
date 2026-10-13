@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "88GHPEKQUV04",
+ "node": 37,
+ "encounter": "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "5a79eb8a273a5c0cdcc273faa3d3602ef94d472c9f8a7a755559877047aaac6d",
+ "save_sha256": "1d8d022d6616768b26a721f580fdb50397a1dccb35c96dfb195c60ca32d7f29b",
+ "entry_digest": "80a8c001bedf457248a2748d5f887ec5bf0bcaf900c174e6e5a75357710f6b04",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

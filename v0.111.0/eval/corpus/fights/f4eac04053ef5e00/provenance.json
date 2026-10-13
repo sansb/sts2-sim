@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "QF89PUW7MNBC",
+ "node": 16,
+ "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "5ceb93653e10de370287bc6e1b99bfe99003c3aa8483271c5ab8af0f39bb6b6a",
+ "save_sha256": "f31bb4dfa70095b56e9e7fea487e348c74f8656996c47f88258766f404525c20",
+ "entry_digest": "10c02ded342f7832b135bf93a8a7ad46a58c53d9ffc307e1ba01c2536b70a5f9",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "SGZU3AGBAK8N",
+ "node": 8,
+ "encounter": "ENCOUNTER.BYRDONIS_ELITE",
+ "node_type": "elite",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "94eeda8932971cc34f0ab9bedc784dd5e404d81f661b69e592ad9d922b33428a",
+ "save_sha256": "052f65f51e96f2b5a369c5900fe52f43fc03b1f90dab6432a06b68f1dd221187",
+ "entry_digest": "3752e33edeaf8b03033e96e523cbf57cbd6261a36e58124a2c6807c322e902e6",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

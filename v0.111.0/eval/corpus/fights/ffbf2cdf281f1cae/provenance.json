@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "GVHAZ997RMFY",
+ "node": 2,
+ "encounter": "ENCOUNTER.SHRINKER_BEETLE_WEAK",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "b3ba5b70275e3bfca99803031c69d78e7e23a41ced060f629c350ec67d841417",
+ "save_sha256": "e25b9ee7e0ebee41b51850249269ae89c6eb8b52480fc5c14df0721b1e1e4984",
+ "entry_digest": "c0433403d2dda85bb732043aa14e09085dcf897e8517f672b0f0bf5453627177",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

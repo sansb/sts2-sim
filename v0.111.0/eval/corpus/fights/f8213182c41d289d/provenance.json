@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "PF4M0GLX24DG",
+ "node": 13,
+ "encounter": "ENCOUNTER.OVERGROWTH_CRAWLERS",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "394c2bdc7935b8a743452d7003b45fce487769be1fd82a048083aafef2f18e6f",
+ "save_sha256": "c354922a391251daccd2b8c505eec3e1fa6dbfbe2a91b396040f21f5c9849e8d",
+ "entry_digest": "fe72a911a698dd8c594af6253ee0f0e8862ee39299574c4765182ecd0393e492",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

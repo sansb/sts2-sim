@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "S30HLX175RNT",
+ "node": 45,
+ "encounter": "ENCOUNTER.SLIMED_BERSERKER_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "379c7e1d4092ca83d7b8a60340a5d1e4c030928e63127d530aad01a7735b27f7",
+ "save_sha256": "aa42bf489c0afc1d7e603d5cd2ca3bc0dba5f69c9f079fd90ae96f8ded070968",
+ "entry_digest": "9bfa90ac35a319c66397dd81b2f338a1f177ca366f8f222faefe5b267245da2c",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

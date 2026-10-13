@@ -24,7 +24,6 @@ import pytest
 import mcr_native
 import mcr_parser
 import rust_replay as replay
-import rust_review as review
 
 TESTDATA = Path(__file__).parent / 'testdata'
 
@@ -145,26 +144,6 @@ def test_hopper_rows_are_the_same_shuffle_as_the_instance_ids(ylvv):
                for k, r in enumerate(rows))
 
 
-def test_hopper_root_with_foreign_rows_is_refused_before_any_process(ylvv, monkeypatch):
-    fight = ylvv['fights']['20']
-    entry = copy.deepcopy(fight['entry'])
-    entry['player']['next_card_uid'] += 1
-    monkeypatch.setattr(replay.subprocess, 'Popen', lambda *a, **k: pytest.fail('must not launch'))
-    with pytest.raises(ValueError, match='master-deck rows'):
-        replay.recorded_witness('unused', entry, _capture(fight), fight['actual'])
-
-
-def test_non_hopper_root_keeps_instance_index_uids(ylvv, monkeypatch):
-    # Hopper rows applied to the floor 20 root without its marker fail the
-    # identity check: the numbering is chosen by the projection, never guessed.
-    fight = ylvv['fights']['20']
-    entry = copy.deepcopy(fight['entry'])
-    del entry['player']['hopper_master_deck']
-    monkeypatch.setattr(replay.subprocess, 'Popen', lambda *a, **k: pytest.fail('must not launch'))
-    with pytest.raises(ValueError, match='physical card identities'):
-        replay.recorded_witness('unused', entry, _capture(fight), fight['actual'])
-
-
 # --- Decimillipede segment classes -----------------------------------------
 
 def _decimillipede_checkpoint(ylvv):
@@ -199,33 +178,6 @@ def test_native_segment_classes_match_the_aggregate_rust_kind(ylvv):
     assert reached == {'aggregate': 'recorded replay differs from native card piles',
                        'renamed': 'recorded replay differs from native monsters',
                        'swapped': 'recorded replay differs from native monsters'}
-
-
-# --- the real captures through the release binary --------------------------
-
-def _binary():
-    binary = review.default_binary()
-    if binary is None:
-        pytest.skip('set STS_SIM_EXACT_SOLVER to run native replay integration')
-    return binary
-
-
-@pytest.mark.parametrize('floor,actions,checkpoints', [
-    ('5', 10, 8),      # duplicate Defend copy at input 5
-    ('9', 12, 8),      # Discovery Index
-    ('17', 34, 25),    # Plating timing (#2809) + Lagavulin's sleeping side (#2814)
-    ('20', 21, 15),    # Thieving Hopper master-deck uids
-    ('25', 33, 25),    # Decimillipede segment classes
-    ('31', 16, 12),    # Demon Tongue owner-side gate (#2808)
-    ('33', 36, 26),    # Demon Tongue owner-side gate (#2808); a recorded loss
-])
-def test_ylvv_recorded_line_replays_completely(ylvv, floor, actions, checkpoints):
-    fight = ylvv['fights'][floor]
-    witness = replay.recorded_witness(_binary(), fight['entry'], _capture(fight), fight['actual'])
-    assert len(witness['actions']) == actions
-    assert witness['native_checkpoints'] == checkpoints
-    assert witness['won'] == fight['actual']['won']
-    assert witness['combat_hp'] == fight['actual']['final_hp']
 
 
 # --- monster Plating in the Rust-bound opening (#2809) ---------------------

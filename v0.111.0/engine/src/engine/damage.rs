@@ -1619,6 +1619,83 @@ fn player_attack_inner(
     )
 }
 
+/// `EnchantmentModel::EnchantDamageAdditive` for a powered attack whose card
+/// source is `source`: the first term `Hook::ModifyDamage` (v0.111.0 RVA
+/// `0x10511c`) adds, at IL_0037-IL_0046, before any listener runs.
+///
+/// The base (RVA `0x7f745`) is zero, and the DLL has four overrides, each
+/// gated on `IsPoweredAttack`: Sharp `0xd62f4`, Vigorous `0xd66a4`, Momentum
+/// `0xd6208` and Tezcatara's Ember `0xd6673`. Every other enchantment
+/// contributes nothing here. The powered-attack fold reads it once per
+/// receiver; Thrash reads it once for the Hand card it is about to exhaust
+/// (`steps::ironclad_rare::thrash_null_target_damage`).
+#[inline]
+pub(crate) fn enchant_damage_additive(
+    state: &HotState,
+    source: &CardSpec,
+    source_uid: Option<u32>,
+) -> Result<i64, EngineRefusal> {
+    Ok(match source.identity.enchantment {
+        Some(enchantment) if matches!(enchantment.id, EnchantmentId::Sharp) => {
+            i64::from(enchantment.amount)
+        }
+        // `Vigorous::EnchantDamageAdditive` RVA `0xd66a4`: Sharp's
+        // `Amount` behind `Status == 0` (IL_0001-000e), read live per
+        // hit through `Hook::ModifyDamage` RVA `0x10511c` IL_0041. The
+        // Status is slot 5 of the source's physical uid; a source
+        // without one cannot be placed on either side of the gate.
+        // See `play::vigorous_identity_is_exact`.
+        Some(enchantment) if matches!(enchantment.id, EnchantmentId::Vigorous) => {
+            let uid = source_uid.ok_or(EngineRefusal::MalformedArgs("VIGOROUS source uid"))?;
+            if !crate::engine::play::vigorous_identity_is_exact(source) {
+                return Err(EngineRefusal::MalformedArgs("VIGOROUS owner"));
+            }
+            match state
+                .card_states
+                .get_ref(uid)
+                .and_then(|instance| instance.enchantment_state.get())
+            {
+                Some(0) => i64::from(enchantment.amount),
+                Some(1) => 0,
+                _ => return Err(EngineRefusal::MalformedArgs("VIGOROUS status")),
+            }
+        }
+        // `Momentum::EnchantDamageAdditive` RVA `0xd6208`: Sharp's
+        // body with the live `ExtraDamage` in place of `Amount`
+        // (IL_000f-001a), read per hit through `Hook::ModifyDamage`
+        // RVA `0x10511c` IL_0041. The counter is slot 5 of the
+        // source's physical uid and grows only in `Momentum::OnPlay`
+        // after a complete body, so every hit of one body reads the
+        // same value. See `play::momentum_identity_is_exact`.
+        Some(enchantment) if matches!(enchantment.id, EnchantmentId::Momentum) => {
+            let uid = source_uid.ok_or(EngineRefusal::MalformedArgs("MOMENTUM source uid"))?;
+            if !crate::engine::play::momentum_identity_is_exact(source) {
+                return Err(EngineRefusal::MalformedArgs("MOMENTUM owner"));
+            }
+            match state
+                .card_states
+                .get_ref(uid)
+                .and_then(|instance| instance.enchantment_state.get())
+            {
+                Some(extra) => i64::from(extra),
+                None => return Err(EngineRefusal::MalformedArgs("MOMENTUM extra damage")),
+            }
+        }
+        // `TezcatarasEmber::EnchantDamageAdditive` RVA `0xd6673`:
+        // Sharp's body with `DynamicVars.Damage.BaseValue` — the
+        // constant `DamageVar(3m, …)` of `get_CanonicalVars` RVA
+        // `0xd6630` — in place of `Amount` (IL_000f-001f). See
+        // `play::tezcataras_ember_identity_is_exact`.
+        Some(enchantment) if matches!(enchantment.id, EnchantmentId::TezcatarasEmber) => {
+            if !crate::engine::play::tezcataras_ember_identity_is_exact(source) {
+                return Err(EngineRefusal::MalformedArgs("TEZCATARAS_EMBER owner"));
+            }
+            3
+        }
+        _ => 0,
+    })
+}
+
 /// Apply one already-rehearsed powered attack command.
 ///
 /// Personal Hive can publish several fallible physical-card transactions
@@ -1919,46 +1996,7 @@ fn player_attack_inner_apply(
                 } else {
                     (0, 0)
                 };
-            let sharp = match source.identity.enchantment {
-                Some(enchantment) if matches!(enchantment.id, EnchantmentId::Sharp) => {
-                    i64::from(enchantment.amount)
-                }
-                // `Vigorous::EnchantDamageAdditive` RVA `0xd66a4`: Sharp's
-                // `Amount` behind `Status == 0` (IL_0001-000e), read live per
-                // hit through `Hook::ModifyDamage` RVA `0x10511c` IL_0041. The
-                // Status is slot 5 of the source's physical uid; a source
-                // without one cannot be placed on either side of the gate.
-                // See `play::vigorous_identity_is_exact`.
-                Some(enchantment) if matches!(enchantment.id, EnchantmentId::Vigorous) => {
-                    let uid = plan
-                        .source_uid
-                        .ok_or(EngineRefusal::MalformedArgs("VIGOROUS source uid"))?;
-                    if !crate::engine::play::vigorous_identity_is_exact(source) {
-                        return Err(EngineRefusal::MalformedArgs("VIGOROUS owner"));
-                    }
-                    match state
-                        .card_states
-                        .get_ref(uid)
-                        .and_then(|instance| instance.enchantment_state.get())
-                    {
-                        Some(0) => i64::from(enchantment.amount),
-                        Some(1) => 0,
-                        _ => return Err(EngineRefusal::MalformedArgs("VIGOROUS status")),
-                    }
-                }
-                // `TezcatarasEmber::EnchantDamageAdditive` RVA `0xd6673`:
-                // Sharp's body with `DynamicVars.Damage.BaseValue` — the
-                // constant `DamageVar(3m, …)` of `get_CanonicalVars` RVA
-                // `0xd6630` — in place of `Amount` (IL_000f-001f). See
-                // `play::tezcataras_ember_identity_is_exact`.
-                Some(enchantment) if matches!(enchantment.id, EnchantmentId::TezcatarasEmber) => {
-                    if !crate::engine::play::tezcataras_ember_identity_is_exact(source) {
-                        return Err(EngineRefusal::MalformedArgs("TEZCATARAS_EMBER owner"));
-                    }
-                    3
-                }
-                _ => 0,
-            };
+            let sharp = enchant_damage_additive(state, source, plan.source_uid)?;
             let additive = sharp
                 .checked_add(strength)
                 .and_then(|value| value.checked_add(i64::from(temp_strength)))
@@ -1986,9 +2024,24 @@ fn player_attack_inner_apply(
                 .enchantment
                 .is_some_and(|enchantment| matches!(enchantment.id, EnchantmentId::Corrupted))
                 && crate::engine::play::onplay_enchantment_identity_is_exact(source);
+            // `Instinct::EnchantDamageMultiplicative` RVA `0xd61ad` returns
+            // `new Decimal(2)` for a powered Attack (IL_000f-0015) through
+            // the same `Hook::ModifyDamage` call (RVA `0x10511c`
+            // IL_006b-0070), so it takes Corrupted's slot: the base alone,
+            // before every listener's additive (#3756). See
+            // `play::instinct_identity_is_exact`.
+            let instinct = match source.identity.enchantment {
+                Some(enchantment) if matches!(enchantment.id, EnchantmentId::Instinct) => {
+                    if !crate::engine::play::instinct_identity_is_exact(source) {
+                        return Err(EngineRefusal::MalformedArgs("INSTINCT owner"));
+                    }
+                    true
+                }
+                _ => false,
+            };
             let base = match plan.decimal_base {
                 Some(base) => Some(base),
-                None if corrupted => Some(DotNetDecimal::from_i64(plan.base)),
+                None if corrupted || instinct => Some(DotNetDecimal::from_i64(plan.base)),
                 None => None,
             };
             let mut damage = if let Some(base) = base {
@@ -1997,6 +2050,9 @@ fn player_attack_inner_apply(
                         DotNetDecimal::ratio(3, 2).map_err(|_| overflow("attack damage"))?,
                     )
                     .map_err(|_| overflow("attack damage"))?
+                } else if instinct {
+                    base.checked_mul(DotNetDecimal::from_i64(2))
+                        .map_err(|_| overflow("attack damage"))?
                 } else {
                     base
                 };
@@ -5015,8 +5071,9 @@ fn thorns_retaliation(
     let blocked = block_before.min(thorns);
     state.block -= blocked;
     let unblocked = thorns - blocked;
-    let hp_lost = commit_player_hp_loss(state, i64::from(unblocked), blocked, events)?;
-    if resolve_player_lethal_with_catalog(state, catalog, events, true)? {
+    let hp_lost = commit_player_hp_loss(state, catalog, i64::from(unblocked), blocked, events)?;
+    let queued_for_kill = owner_result_is_queued_for_kill(state);
+    if resolve_player_lethal_with_catalog(state, catalog, events, true)? && !queued_for_kill {
         rupture_after_owner_hp_loss(state, hp_lost, events)?;
         inferno_after_player_hp_loss(state, catalog, hp_lost, events)?;
         after_owner_damage_received_relics(state, catalog, hp_lost, events)?;
@@ -5099,6 +5156,47 @@ fn necro_mastery_after_pet_hp_lost_with_catalog(
         )?;
     }
     Ok(())
+}
+
+/// `CreatureCmd.Kill` of the owner's Osty issued by a card body (#3756).
+///
+/// v0.111.0 `sts2.dll` (SHA-256 `9cb4f1ad…12b4`),
+/// `CreatureCmd/<KillWithoutCheckingWinCondition>d__15::MoveNext` RVA
+/// `0x3ebe90`: it reads `creature.CurrentHp` (IL_01bc-IL_01c7) and, when that
+/// is positive (IL_01c8-IL_01ca), takes exactly that much with
+/// `Creature::LoseHpInternal` (IL_01cf-IL_01dc) and raises
+/// `Hook.AfterCurrentHpChanged(runState, combatState, creature, -hp)`
+/// (IL_01e2-IL_0200) before `Hook.BeforeDeath` (IL_026f). A Kill is therefore
+/// an HP loss of the whole current HP as far as listeners are concerned, and
+/// `NecroMasteryPower/<AfterCurrentHpChanged>d__4::MoveNext` RVA `0x33e950`
+/// answers one on the owner's Osty (IL_0021-IL_005f) with
+/// `-delta * Amount` damage to every hittable enemy (IL_0071-IL_00a2).
+///
+/// The two card callers: Bone Shards (`BoneShards/<OnPlay>d__9` RVA
+/// `0x38e33c`, `Kill(Owner.Osty)` at IL_016c-IL_0177 behind `IsOstyAlive` at
+/// IL_0164) and Sacrifice (`Sacrifice/<OnPlay>d__9` RVA `0x3b8170`, IL_00da-
+/// IL_00e5). Returns whether a live Osty was killed. A missing Osty or a
+/// corpse is no command at all. The caller runs the AfterDeath walk
+/// ([`super::cards::physical_cards_after_actual_death`]) after this, as
+/// [`finish_queued_osty_death`] does.
+pub(crate) fn kill_live_osty_by_card(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<bool, EngineRefusal> {
+    let Some(osty) = state.fanouts.pet().osty() else {
+        return Ok(false);
+    };
+    let loss = osty.hp();
+    state
+        .fanouts
+        .mutate_pet(|pet| {
+            pet.kill();
+            Ok(())
+        })
+        .map_err(|_| overflow("Osty kill by card"))?;
+    necro_mastery_after_pet_hp_lost_with_catalog(state, Some(catalog), loss, events)?;
+    Ok(true)
 }
 
 /// Drain a retained solo Osty's queued actual death after all hit results.
@@ -5498,6 +5596,9 @@ fn finish_monster_death_body(
         return Err(EngineRefusal::MalformedArgs("Gremlin Horn death catalog"));
     }
     let dying_kind = state.monsters[target].kind;
+    // #3823: the stun dies with the creature, before any lifecycle check
+    // below reads the roster.
+    super::monsters::clear_generic_stun_at_death(&mut state.monsters_mut()[target]);
     if dying_kind == MonsterKind::ThievingHopper {
         // SwipePower.BeforeDeath is the first Hopper death callback: it
         // restores the exact DeckVersion row before generic power cleanup,
@@ -6695,7 +6796,7 @@ fn monster_attack_player_positive_results_apply(
             pet_died = pet_actual_loss > 0 && state.fanouts.pet().osty().is_none();
         }
 
-        let hp_lost = commit_player_hp_loss(state, unblocked_int, blocked_int, events)?;
+        let hp_lost = commit_player_hp_loss(state, catalog, unblocked_int, blocked_int, events)?;
         // The player result retains pre-interposition WasFullyBlocked
         // (Damage0x3e96c8 IL069f–06d3). EmotionChip's history predicate
         // 0x930d5 reads that flag, not positive player spill: absorbed damage
@@ -7016,12 +7117,14 @@ fn lose_player_max_hp_apply(
         .ok_or_else(|| overflow(site))?;
     if new_max < state.hp {
         let nested = i64::from(state.hp) - i64::from(new_max);
-        let hp_lost = commit_player_hp_loss(state, nested, 0, events)?;
+        let hp_lost = commit_player_hp_loss(state, catalog, nested, 0, events)?;
+        let queued_for_kill = owner_result_is_queued_for_kill(state);
         // LoseMaxHp continues to SetMaxHp even when the nested damage is
         // lethal. Keep the terminal flag, but never return before the cap is
         // published below.
         if resolve_player_lethal_with_catalog(state, catalog, events, true)?
             && current_side_is_owner
+            && !queued_for_kill
         {
             // Props 14 still carries a null card source, so Rupture applies
             // immediately instead of joining CardPlayFrame's source-keyed
@@ -7092,8 +7195,26 @@ pub(crate) fn lose_player_max_hp_from_card(
 /// inputs are integral, so the represented walk is Intangible's cap-to-one
 /// followed by Buffer's zeroing callback. Buffer consumes exactly one stack
 /// only when that callback crosses a nonzero integer boundary.
+///
+/// #3756: Beating Remnant and Tungsten Rod are the two relics of the
+/// `ModifyHpLostAfterOsty` pass, and they do not commute at the cap.
+/// `Hook::ModifyHpLost` (RVA `0x1056b8`) walks `IRunState::IterateHookListeners`
+/// for that pass (IL_00fa) and feeds each listener the amount the one before
+/// it returned (`AbstractModel::ModifyHpLostAfterOsty`, IL_011e), so the
+/// relics fold in `Player.Relics` order.
+/// `BeatingRemnant::ModifyHpLostAfterOsty` (RVA `0x904a8`) returns
+/// `Min(amount, MaxHpLoss - DamageReceivedThisTurn)` (IL_002a-IL_004b, the var
+/// is 20: `get_CanonicalVars` RVA `0x9048e` IL_0006), and
+/// `TungstenRod::ModifyHpLostAfterOsty` (RVA `0x9d0c4`) returns
+/// `Max(0, amount - HpLossReduction)` (IL_0011-IL_0031). Capping first loses
+/// one HP fewer than reducing first whenever the amount exceeds what the cap
+/// has left. A vouched inventory records which relic comes first
+/// ([`super::relics::relic_recorded_before`]) and the fold runs in that order;
+/// without one, or without a catalog, the pair still refuses by name when the
+/// two orders differ.
 fn commit_player_hp_loss(
     state: &mut HotState,
+    catalog: Option<&Catalog>,
     amount: i64,
     blocked: i32,
     events: &mut Vec<Event>,
@@ -7102,23 +7223,37 @@ fn commit_player_hp_loss(
     if state.powers.value(PowerId::Intangible) > 0 {
         evaluated = evaluated.min(1);
     }
-    if state.fanouts.beating_remnant_owned() {
-        if state.tungsten_rod_owned() {
-            let remaining =
-                20_i64.saturating_sub(i64::from(state.fanouts.beating_remnant_damage_received()));
-            let beating_then_tungsten = evaluated.min(remaining).saturating_sub(1).max(0);
-            let tungsten_then_beating = evaluated.saturating_sub(1).max(0).min(remaining);
-            if beating_then_tungsten != tungsten_then_beating {
+    let beating_remnant = state.fanouts.beating_remnant_owned();
+    let tungsten_rod = state.tungsten_rod_owned();
+    let remaining =
+        20_i64.saturating_sub(i64::from(state.fanouts.beating_remnant_damage_received()));
+    if beating_remnant && tungsten_rod {
+        let beating_then_tungsten = evaluated.min(remaining).saturating_sub(1).max(0);
+        let tungsten_then_beating = evaluated.saturating_sub(1).max(0).min(remaining);
+        evaluated = if beating_then_tungsten == tungsten_then_beating {
+            beating_then_tungsten
+        } else {
+            let recorded = |first, second| {
+                catalog.is_some_and(|catalog| {
+                    super::relics::relic_recorded_before(catalog, first, second)
+                })
+            };
+            if recorded(RelicId::RelicBeatingRemnant, RelicId::RelicTungstenRod) {
+                beating_then_tungsten
+            } else if recorded(RelicId::RelicTungstenRod, RelicId::RelicBeatingRemnant) {
+                tungsten_then_beating
+            } else {
                 return Err(EngineRefusal::MalformedArgs(
                     "Beating Remnant and Tungsten Rod listener order",
                 ));
             }
-        }
-        evaluated = evaluated
-            .min(20_i64.saturating_sub(i64::from(state.fanouts.beating_remnant_damage_received())));
+        };
         crate::coverage::record_relic(RelicId::RelicBeatingRemnant);
-    }
-    if state.tungsten_rod_owned() {
+        crate::coverage::record_relic(RelicId::RelicTungstenRod);
+    } else if beating_remnant {
+        evaluated = evaluated.min(remaining);
+        crate::coverage::record_relic(RelicId::RelicBeatingRemnant);
+    } else if tungsten_rod {
         evaluated = evaluated.saturating_sub(1).max(0);
         crate::coverage::record_relic(RelicId::RelicTungstenRod);
     }
@@ -7217,6 +7352,21 @@ fn after_owner_damage_received_relics(
         let catalog = catalog.ok_or(EngineRefusal::MalformedArgs(
             "Centennial Puzzle damage requires catalog",
         ))?;
+        // #3756: the Puzzle fires under Constrict's side-end listener while
+        // an earlier listener's prompt already waits (a parked Dark Embrace
+        // child). Native draws the three cards out of that prompt's
+        // options, which the prompt keeps (headless trace
+        // `strat_dark_before`, `turn::side_end_prompt_starts_later_listeners`);
+        // Rust's prompt reads the live pile. Refused here, where the Puzzle
+        // fires, so a hit that loses no HP beside such a prompt runs
+        // through (`fixtures/issue3756_native/r4_blocked_grown.json`).
+        if state.pending.is_some()
+            && super::puzzle::side_end_deferral() != super::puzzle::SideEndDeferral::Inactive
+        {
+            return Err(EngineRefusal::PowerOrderNotModeled(
+                super::hook_action::CHOICE_SOURCE_MOVED,
+            ));
+        }
         state.fanouts.set_puzzle_armed(false);
         for _ in 0..3 {
             super::draw::centennial_puzzle_draw_one(state, catalog, events)?;
@@ -7224,6 +7374,30 @@ fn after_owner_damage_received_relics(
         crate::coverage::record_relic(RelicId::RelicCentennialPuzzle);
     }
     Ok(())
+}
+
+/// Whether the owner result just committed is one native queues for Kill
+/// instead of walking `Hook.AfterDamageReceived` (#3756).
+///
+/// v0.111.0 `sts2.dll` (SHA-256 `9cb4f1ad…12b4`),
+/// `CreatureCmd/<Damage>d__12::MoveNext` RVA `0x3e96c8`: per result,
+/// `unblockedDamageResult.WasTargetKilled` (IL_0d22-IL_0d2c) and
+/// `originalTarget.IsDead` (IL_0d2f-IL_0d39) send the receiver to
+/// `killedCreatures.Add` (IL_0d3c-IL_0d47) and branch past the
+/// `Hook.AfterDamageReceived` call at IL_0d52-IL_0d86; only the other arm
+/// reaches it. `Hook.ShouldDie`, where Fairy in a Bottle and Lizard Tail
+/// prevent the death, runs later inside `Kill`. So a result that took the
+/// owner to 0 HP reaches no `AfterDamageReceived` listener even when the
+/// player is then revived: not Rupture (`0xa6f04`), not Inferno (`0xa3ed0`),
+/// and none of the relics on that hook (Beating Remnant, Centennial Puzzle,
+/// Demon Tongue, Emotion Chip, Lava Lamp, Self-Forming Clay).
+///
+/// Call it after the HP commit and BEFORE the lethal resolver, which may
+/// restore HP. The monster-hit path makes the same decision from its frozen
+/// result (`player_death_queued`); this is the form for the owner-damage
+/// commands that commit one result.
+fn owner_result_is_queued_for_kill(state: &HotState) -> bool {
+    state.hp <= 0
 }
 
 /// Beating Remnant's side-agnostic `AfterDamageReceived` listener.
@@ -7262,7 +7436,9 @@ fn resolve_player_lethal(
     state: &mut HotState,
     events: &mut Vec<Event>,
 ) -> Result<bool, EngineRefusal> {
-    resolve_player_lethal_inner(state, events, true)
+    // A relic-less catalog: Fairy's AfterPotionUsed walk needs one (#3756).
+    let catalog = crate::catalog::CatalogBuilder::new().build();
+    resolve_player_lethal_with_catalog(state, Some(&catalog), events, true)
 }
 
 fn resolve_player_lethal_inner(
@@ -7367,7 +7543,7 @@ fn resolve_player_lethal_with_catalog(
     // Native LoseHpInternal clamps lethal HP to zero before the preventer
     // walk; the simulator normalises its signed arithmetic the same way.
     state.hp = 0;
-    if run_should_die && super::potions::consume_first_fairy_after_lethal(state, events)? {
+    if run_should_die && super::potions::consume_first_fairy_after_lethal(state, catalog, events)? {
         return Ok(true);
     }
     // Lizard Tail is a `ShouldDieLate` preventer (`LizardTail::ShouldDieLate`
@@ -7477,6 +7653,10 @@ fn resolve_player_lethal_with_catalog(
         if state.fanouts.radiance() != 0 {
             state.fanouts.set_radiance(0);
         }
+        // `AmbergrisPower` keeps the `PowerModel` default
+        // (`ShouldPowerBeRemovedAfterOwnerDeath` RVA `0x840dd` returns true),
+        // so the dead owner's owed extra turns go with the rest (#3756).
+        state.fanouts.set_ambergris(0);
         state
             .fanouts
             .unregister_after_energy_reset(crate::hot::AfterEnergyResetPower::Radiance);
@@ -7493,10 +7673,22 @@ fn resolve_player_lethal_with_catalog(
         finish_queued_osty_death(state, catalog, events)?;
     }
     state.fanouts.set_player_hooks_deactivated(true);
-    if !state.history.over {
-        state.history.over = true;
-        events.push(Event::CombatOver { player_won: false });
-    }
+    // The owner's death is a loss whether or not the combat was already won
+    // (#3889). `CreatureCmd/<Kill>d__14::MoveNext` RVA `0x3ebb88`, which a
+    // lethal `Damage` calls (`<Damage>d__12` RVA `0x3e96c8` IL_0eb4), tests
+    // that every player is dead at IL_0153-IL_0182 and then calls
+    // `RunManager.OnEnded(false)` at IL_01d2-IL_01d8. The only test of the
+    // combat between them gates `CombatManager.LoseCombat`
+    // (IL_0184-IL_0195, `IsInProgress`), not the run's end. Observed on the
+    // game: a Royal Poison hit that takes its owner to 0 behind Festive
+    // Popper's winning hit leaves `RunState.IsGameOver` set.
+    //
+    // This function returned at its first line for an owner that is already
+    // dead, so a combat that is over here was won. The stream then already
+    // holds `CombatOver { player_won: true }`, and the event below is the
+    // correction: the last `CombatOver` of a stream is the fight's result.
+    state.history.over = true;
+    events.push(Event::CombatOver { player_won: false });
     Ok(false)
 }
 
@@ -7600,10 +7792,21 @@ fn damage_player_unpowered_owner_with(
         0
     };
     state.block -= blocked;
-    let hp_lost =
-        commit_player_hp_loss(state, (amount - i64::from(blocked)).max(0), blocked, events)?;
+    let hp_lost = commit_player_hp_loss(
+        state,
+        catalog,
+        (amount - i64::from(blocked)).max(0),
+        blocked,
+        events,
+    )?;
+    let queued_for_kill = owner_result_is_queued_for_kill(state);
     if !resolve_player_lethal_with_catalog(state, catalog, events, true)? {
         return Ok(false);
+    }
+    if queued_for_kill {
+        // Revived by Fairy or Lizard Tail: the result reached no Received
+        // listener (see [`owner_result_is_queued_for_kill`]).
+        return Ok(!state.history.over);
     }
     match rupture_batch {
         None => rupture_after_owner_hp_loss(state, hp_lost, events)?,
@@ -7721,8 +7924,14 @@ pub(crate) fn damage_player_from_active_card_even_if_ending(
         0
     };
     state.block -= blocked;
-    let hp_lost =
-        commit_player_hp_loss(state, (amount - i64::from(blocked)).max(0), blocked, events)?;
+    let hp_lost = commit_player_hp_loss(
+        state,
+        Some(catalog),
+        (amount - i64::from(blocked)).max(0),
+        blocked,
+        events,
+    )?;
+    let queued_for_kill = owner_result_is_queued_for_kill(state);
     if state.hp <= 0
         && state
             .fanouts
@@ -7743,8 +7952,10 @@ pub(crate) fn damage_player_from_active_card_even_if_ending(
     } else if !resolve_player_lethal_with_catalog(state, Some(catalog), events, true)? {
         return Ok((false, hp_lost));
     }
-    inferno_after_player_hp_loss(state, Some(catalog), hp_lost, events)?;
-    after_owner_damage_received_relics(state, Some(catalog), hp_lost, events)?;
+    if !queued_for_kill {
+        inferno_after_player_hp_loss(state, Some(catalog), hp_lost, events)?;
+        after_owner_damage_received_relics(state, Some(catalog), hp_lost, events)?;
+    }
     Ok((!state.history.over, hp_lost))
 }
 
@@ -8317,16 +8528,25 @@ fn modified_card_block_decimal(
             .checked_add(i64::from(amount) - 1)
             .ok_or_else(|| overflow("card block"))?;
     }
+    // #3756: Nimble is the same `EnchantBlockAdditive` call as Goopy's above
+    // and has no props gate either: `Nimble::EnchantBlockAdditive` RVA
+    // `0xd6241` is `(decimal)Amount` and nothing else (IL_0001-IL_000c). So
+    // it is added to an unpowered card gain too. The one admitted unpowered
+    // Nimble carrier is Entrench, whose gain names its `cardPlay` as the
+    // source (`Entrench/<OnPlay>d__5::MoveNext` RVA `0x39bd00`, IL_001d-
+    // IL_0046: `CreatureCmd.GainBlock(creature, creature.Block, 12, cardPlay,
+    // false)`), so `Hook::ModifyBlock` reads the card's enchantment. Until
+    // #3756 this sat inside the powered arm below.
+    if let Some(enchantment) = source
+        .identity
+        .enchantment
+        .filter(|enchantment| matches!(enchantment.id, EnchantmentId::Nimble))
+    {
+        modified = modified
+            .checked_add(i64::from(enchantment.amount))
+            .ok_or_else(|| overflow("card block"))?;
+    }
     if powered {
-        if let Some(enchantment) = source
-            .identity
-            .enchantment
-            .filter(|enchantment| matches!(enchantment.id, EnchantmentId::Nimble))
-        {
-            modified = modified
-                .checked_add(i64::from(enchantment.amount))
-                .ok_or_else(|| overflow("card block"))?;
-        }
         modified = modified
             .checked_add(i64::from(state.powers.value(PowerId::Dexterity)))
             .and_then(|value| {
@@ -10225,8 +10445,9 @@ pub(crate) fn apply_power_monster_debuff(
 /// Apply a **relic-sourced** debuff to one monster.
 ///
 /// The one current family is the turn-1 all-enemy debuff relics
-/// (`engine::relics::turn_one_all_enemy_debuffs`). Each of their bodies calls
-/// `PowerCmd.Apply<T>` with a **null card** and the relic
+/// (`engine::relics::turn_one_all_enemy_debuffs`: Red Mask, Bag of Marbles
+/// and, since #3756, Twisted Funnel, whose citations are on that table). Each
+/// of their bodies calls `PowerCmd.Apply<T>` with a **null card** and the relic
 /// `Owner.get_Creature` as applier —
 /// `RedMask/<BeforeSideTurnStart>d__6::MoveNext` `0x32f4b8` IL_0081-IL_008d
 /// pushes `Owner.Creature`, `ldnull`, `ldc.i4.0` and then
@@ -10265,8 +10486,9 @@ pub(crate) fn apply_relic_monster_debuff(
     )
 }
 
-/// Catalog-aware player-power-sourced debuff seam for Vicious-observable
-/// Vulnerable. Expose is the complete current caller census.
+/// Catalog-aware null-card debuff seam for Vicious-observable Vulnerable.
+/// Callers: Hand Drill's `AfterBlockBroken` and the potion debuff bodies.
+/// Expose left this seam in #3756: its Apply names the card as source.
 pub(crate) fn apply_power_monster_debuff_with_catalog(
     state: &mut HotState,
     catalog: &Catalog,
@@ -10883,6 +11105,79 @@ fn powers_after_power_amount_changed(
             // Sword Sage observes only its own owner-power amount changes;
             // this fanout carries monster Type-2 changes.
             PowerId::SwordSage => {}
+            _ => {
+                return Err(EngineRefusal::MalformedArgs(
+                    "after-power-amount-changed listener order",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The represented `AfterPowerAmountChanged` suffix for a Doom amount change
+/// on the PLAYER that the player itself applied (#3747).
+///
+/// Current-build authority is `sts2.dll` SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
+///
+/// The one producer is `NeurosurgePower/<AfterSideTurnStart>d__6::MoveNext`
+/// RVA `0x33ec34`: IL_003a-IL_0053 call `PowerCmd.Apply<DoomPower>` with
+/// target `Owner` (IL_003b), amount `Amount` (IL_0041), **applier `Owner`**
+/// (IL_004c), a null card source (IL_0051) and `silent = false` (IL_0052).
+/// `PowerCmd/<Apply>d__2::MoveNext` `0x3efbac` IL_05d4-IL_05df hands that
+/// applier verbatim to `Hook::AfterPowerAmountChanged` `0x1045ec`, so every
+/// listener sees a `DoomPower` owned by the player with the player as applier.
+///
+/// **`ShroudPower` fires.** `<AfterPowerAmountChanged>d__6::MoveNext`
+/// `0x3446a4` tests only `applier == this.Owner` (IL_001d-IL_002b) and
+/// `power is DoomPower` (IL_0030-IL_003d); it never reads the changed power's
+/// owner, so the player's own Doom qualifies exactly as an enemy's does. It
+/// then awaits `CreatureCmd.GainBlock(Owner, Amount, ValueProp 4, null,
+/// false)` (IL_0042-IL_0056) — the same props-4 flat block as the monster
+/// walk's Shroud arm.
+///
+/// **Every other override in the assembly is inert for this event**
+/// (the complete list of `AfterPowerAmountChanged` method definitions):
+/// * `SleightOfFleshPower` `0x344dc4` IL_0050-IL_0062 requires
+///   `power.Owner.IsEnemy`;
+/// * `ViciousPower` `0x34a6f8` IL_004a-IL_0057 requires a `VulnerablePower`;
+/// * `SwordSagePower` `0xa902c` IL_000c-IL_0019 requires a `SwordSagePower`;
+/// * `PossessSpeedPower` `0xa5f30` and `PossessStrengthPower` `0xa6074`
+///   IL_000c-IL_001b require their own (monster) owner as applier;
+/// * `VitalSparkPower` `0xaab0c` IL_000c-IL_0015, `SandpitPower` `0x343310`
+///   IL_0029-IL_0032 and the three `Temporary*Power` bodies (`0x348378`,
+///   `0x348700`, `0x348a88`, each IL_003d-IL_0046) require the changed power
+///   to be the listener itself;
+/// * the badge and achievement models write no combat state.
+///
+/// The caller is the applying command, so it owns the command's own gates: a
+/// positive amount and a fight that is not over. The frozen acquisition order
+/// is walked whole. Shroud's block can end the fight through Juggernaut
+/// (`powers_after_block_gained`); a later listener still runs, as native's
+/// does, and `gain_flat_power_block`'s own ending gate
+/// (`CreatureCmd/<GainBlock>d__18::MoveNext` `0x3eaec0` IL_002d-IL_0041) is
+/// what makes it a no-op. The order's carrier can only name the four
+/// represented player listeners, so the last arm is unreachable by
+/// construction and refuses rather than panics.
+pub(crate) fn owner_applied_owner_doom_amount_changed(
+    state: &mut HotState,
+    catalog: &Catalog,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let order = state.fanouts.after_power_amount_changed_order().to_vec();
+    for power in order {
+        match power {
+            PowerId::Shroud => {
+                let block = state.powers.value(power);
+                if block <= 0 {
+                    return Err(EngineRefusal::MalformedArgs(
+                        "after-power-amount-changed shroud",
+                    ));
+                }
+                gain_flat_power_block(state, Some(catalog), block, events)?;
+            }
+            PowerId::Vicious | PowerId::SleightOfFlesh | PowerId::SwordSage => {}
             _ => {
                 return Err(EngineRefusal::MalformedArgs(
                     "after-power-amount-changed listener order",
@@ -12244,6 +12539,7 @@ mod tests {
                 kind: HopperLootKind::Stolen,
                 row,
             }],
+            transformed: Vec::new(),
         }));
         let mut hopper = HotMonster::new(MonsterKind::ThievingHopper, 0);
         hopper.hp = 0;
@@ -13598,9 +13894,10 @@ mod tests {
     /// Sic Em reaches the revive branch of `<Summon>d__0` (`0x3ee040`) while
     /// the combat is ending: `SetMaxHp` (IL_0387) on the corpse, a Heal that
     /// returns early (IL_03f7), then `AfterOstyRevived` (IL_0468) over a
-    /// still-dead pet. That branch is not represented and refuses by name.
+    /// still-dead pet. #3635: the corpse stays a corpse, as the game's does
+    /// (the runs cited on `SoloPetState::summon_ending`).
     #[test]
-    fn sic_em_revive_of_a_thorns_killed_osty_while_ending_refuses_by_name() {
+    fn sic_em_revive_of_a_thorns_killed_osty_while_ending_leaves_the_corpse() {
         let (catalog, source, _) = pet_attack_catalog();
         let mut state = HotState::at_defaults();
         state.hp = 50;
@@ -13609,16 +13906,21 @@ mod tests {
         target.powers.set(PowerId::SicEm, SlotWire::Int, 3);
         state.monsters_mut().push(target);
         state.fanouts.set_osty(Some((2, 2))).unwrap();
+        player_pet_attack_from_card(
+            &mut state,
+            (&catalog, &source, 7),
+            &[0],
+            6,
+            1,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert!(state.history.over, "the hit killed the last enemy");
+        assert!(state.fanouts.pet().corpse(), "Thorns killed Osty");
         assert_eq!(
-            player_pet_attack_from_card(
-                &mut state,
-                (&catalog, &source, 7),
-                &[0],
-                6,
-                1,
-                &mut Vec::new(),
-            ),
-            Err(EngineRefusal::EndingSummonNotModeled("Sic Em summon"))
+            state.fanouts.pet().osty(),
+            None,
+            "and Sic Em did not revive it"
         );
     }
 
@@ -13995,7 +14297,17 @@ mod tests {
                 ));
                 assert!(state.set_after_damage_received_power_order(&order));
                 let mut events = Vec::new();
-                monster_attack_player(&mut state, 0, attack, 1, &mut events).unwrap();
+                // With a catalog: The Gambit's lethal spends the Fairy, whose
+                // AfterPotionUsed walk needs the relic inventory (#3756).
+                monster_attack_player_with_catalog(
+                    &mut state,
+                    &crate::catalog::CatalogBuilder::new().build(),
+                    0,
+                    attack,
+                    1,
+                    &mut events,
+                )
+                .unwrap();
                 assert_eq!(state.hp, expected_hp, "{order:?}/{pet_hp}/{attack}");
                 assert_eq!(state.monsters[0].hp, 94, "each player retaliation once");
                 assert_eq!(state.fanouts.pet().osty().map(|p| p.hp()), expected_pet);
@@ -14058,7 +14370,17 @@ mod tests {
                         true
                     ));
                 }
-                monster_attack_player(&mut state, 0, 8, 1, &mut Vec::new()).unwrap();
+                // With a catalog: Fairy's AfterPotionUsed walk needs the
+                // relic inventory (#3756).
+                monster_attack_player_with_catalog(
+                    &mut state,
+                    &crate::catalog::CatalogBuilder::new().build(),
+                    0,
+                    8,
+                    1,
+                    &mut Vec::new(),
+                )
+                .unwrap();
                 assert_eq!(state.hp, if fairy { 30 } else { 50 });
                 assert_eq!(
                     state.monsters[0].hp, 100,
@@ -17835,6 +18157,94 @@ mod tests {
         assert_eq!(state.monsters[0].hp, 80);
     }
 
+    /// #3756: Beating Remnant caps (`Min(amount, 20 - received)`, RVA
+    /// `0x904a8`) and Tungsten Rod reduces (`Max(amount - 1, 0)`, RVA
+    /// `0x9d0c4`) in `Player.Relics` order (`Hook::ModifyHpLost` RVA
+    /// `0x1056b8`, IL_00fa / IL_011e). With 3 HP left under the cap, a 5 HP
+    /// loss is 2 when the Remnant is recorded first and 3 when the Rod is. An
+    /// unvouched inventory, and a call with no catalog, still refuse; a loss
+    /// the cap does not reach is 1 less in every order.
+    #[test]
+    fn beating_remnant_and_tungsten_rod_fold_in_their_recorded_order() {
+        use RelicId::{RelicBeatingRemnant as REMNANT, RelicTungstenRod as ROD};
+        let owner = || {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.max_hp = 50;
+            state.set_deep_relic_ownership(false, false, false, true);
+            state
+                .fanouts
+                .set_batch_eight_deep_relic_ownership(true, false, false, true, true);
+            assert!(state.fanouts.set_beating_remnant_damage_received(17));
+            assert!(state.fanouts.beating_remnant_owned() && state.tungsten_rod_owned());
+            state
+        };
+        let catalog = |relics: &[RelicId], ordered: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder.set_relics_ordered(relics, ordered).unwrap();
+            builder.build()
+        };
+        const REFUSAL: EngineRefusal =
+            EngineRefusal::MalformedArgs("Beating Remnant and Tungsten Rod listener order");
+        for (relics, lost) in [([REMNANT, ROD], 2), ([ROD, REMNANT], 3)] {
+            let vouched = catalog(&relics, true);
+            let mut state = owner();
+            assert_eq!(
+                commit_player_hp_loss(&mut state, Some(&vouched), 5, 0, &mut Vec::new()),
+                Ok(lost),
+                "{relics:?}"
+            );
+            assert_eq!(state.hp, 50 - lost);
+
+            // The same inventory without the vouch proves no order.
+            let unvouched = catalog(&relics, false);
+            let mut state = owner();
+            let before = state.clone();
+            assert_eq!(
+                commit_player_hp_loss(&mut state, Some(&unvouched), 5, 0, &mut Vec::new()),
+                Err(REFUSAL),
+                "{relics:?}"
+            );
+            assert_eq!(state, before);
+
+            // Below the cap the two orders are one result, vouched or not.
+            for proof in [&vouched, &unvouched] {
+                let mut state = owner();
+                assert_eq!(
+                    commit_player_hp_loss(&mut state, Some(proof), 3, 0, &mut Vec::new()),
+                    Ok(2),
+                    "{relics:?}"
+                );
+            }
+        }
+        let mut state = owner();
+        assert_eq!(
+            commit_player_hp_loss(&mut state, None, 5, 0, &mut Vec::new()),
+            Err(REFUSAL)
+        );
+        let mut state = owner();
+        assert_eq!(
+            commit_player_hp_loss(&mut state, None, 3, 0, &mut Vec::new()),
+            Ok(2)
+        );
+
+        // Either relic alone keeps its own rule.
+        let mut remnant = owner();
+        remnant.set_deep_relic_ownership(false, false, false, false);
+        assert_eq!(
+            commit_player_hp_loss(&mut remnant, None, 5, 0, &mut Vec::new()),
+            Ok(3)
+        );
+        let mut rod = HotState::at_defaults();
+        rod.hp = 50;
+        rod.max_hp = 50;
+        rod.set_deep_relic_ownership(false, false, false, true);
+        assert_eq!(
+            commit_player_hp_loss(&mut rod, None, 5, 0, &mut Vec::new()),
+            Ok(4)
+        );
+    }
+
     #[test]
     fn batch_eight_hp_strength_and_pen_listeners_keep_their_native_receipts() {
         let mut ordered = HotState::at_defaults();
@@ -17846,7 +18256,7 @@ mod tests {
         assert!(ordered.fanouts.set_beating_remnant_damage_received(17));
         let before = ordered.clone();
         assert!(matches!(
-            commit_player_hp_loss(&mut ordered, 5, 0, &mut Vec::new()),
+            commit_player_hp_loss(&mut ordered, None, 5, 0, &mut Vec::new()),
             Err(EngineRefusal::MalformedArgs(
                 "Beating Remnant and Tungsten Rod listener order"
             ))
@@ -18702,6 +19112,74 @@ mod tests {
         );
         assert_eq!(state.block, 80);
         assert_eq!(state.history.card_block_gains, 1);
+    }
+
+    /// #3756: Nimble's `EnchantBlockAdditive` (`0xd6241`) has no props gate,
+    /// so an unpowered card gain takes it: a Nimble Entrench at Block 5 gains
+    /// 5 + N. Dexterity and Fasten still do not reach the unpowered command,
+    /// and an unenchanted Entrench is unchanged.
+    #[test]
+    fn nimble_adds_to_an_unpowered_card_gain_and_entrench_is_its_admitted_carrier() {
+        let catalog = CatalogBuilder::new().build();
+        let entrench = |upgrade, nimble: Option<i32>| {
+            let mut builder = CatalogBuilder::new();
+            let atom = builder
+                .intern(CardIdentity {
+                    id: CardId::Entrench,
+                    upgrade,
+                    enchantment: nimble.map(|amount| crate::catalog::CardEnchantment {
+                        id: EnchantmentId::Nimble,
+                        amount,
+                    }),
+                })
+                .unwrap();
+            *builder.build().spec(atom).unwrap()
+        };
+        for (upgrade, nimble, expected) in [
+            (0, None, 5),
+            (0, Some(1), 6),
+            (0, Some(2), 7),
+            (1, Some(2), 7),
+        ] {
+            let mut state = HotState::at_defaults();
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            state.hp = 100;
+            state.block = 5;
+            state.powers.set(PowerId::Dexterity, SlotWire::Int, 9);
+            state.powers.set(PowerId::Fasten, SlotWire::Int, 9);
+            let spec = entrench(upgrade, nimble);
+            assert_eq!(
+                gain_card_unpowered_block(&mut state, &catalog, &spec, 5, &mut Vec::new()).unwrap(),
+                expected,
+                "L{upgrade} Nimble {nimble:?}"
+            );
+            assert_eq!(state.block, 5 + expected);
+            assert_eq!(
+                crate::engine::play::static_body_enchantment_identity_is_exact(&spec),
+                nimble.is_some()
+            );
+        }
+
+        // The identity is Entrench's alone: Nimble on another card the
+        // generated column does not mark stays outside the predicate.
+        let mut builder = CatalogBuilder::new();
+        let atom = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: Some(crate::catalog::CardEnchantment {
+                    id: EnchantmentId::Nimble,
+                    amount: 2,
+                }),
+            })
+            .unwrap();
+        let strike = *builder.build().spec(atom).unwrap();
+        assert!(!crate::engine::play::nimble_entrench_identity_is_exact(
+            &strike
+        ));
+        assert!(!crate::engine::play::static_body_enchantment_identity_is_exact(&strike));
     }
 
     /// #3502: `CreatureCmd/<GainBlock>d__18::MoveNext` (`0x3eaec0`) returns
@@ -26342,6 +26820,111 @@ mod red_skull_tests {
             .set_batch_eight_deep_relic_ownership(false, false, false, true, false);
         assert!(resolve_player_lethal(&mut ordinary, &mut Vec::new()).unwrap());
         assert_eq!((ordinary.hp, strength(&ordinary)), (40, 3));
+    }
+
+    /// An owner with Inferno 6 and Rupture 2 on their own side, one enemy at
+    /// 50, and a reviver: Lizard Tail, or a Fairy in a Bottle.
+    fn received_listeners_state(hp: i32, fairy: bool) -> (HotState, Catalog) {
+        let catalog = crate::catalog::CatalogBuilder::new().build();
+        let mut state = HotState::at_defaults();
+        state.hp = hp;
+        state.max_hp = 80;
+        state.player_side_active = true;
+        state.powers.set(PowerId::Inferno, SlotWire::Int, 6);
+        state.powers.set(PowerId::Rupture, SlotWire::Int, 2);
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+        if fairy {
+            assert!(state.fanouts.set_potion_belt(
+                vec![Some(PotionId::FairyInABottle)],
+                false,
+                false,
+                false,
+                false,
+                true
+            ));
+        } else {
+            state
+                .fanouts
+                .set_batch_eight_deep_relic_ownership(false, false, false, true, false);
+        }
+        (state, catalog)
+    }
+
+    /// #3756, site witness `0M2W7A43FTJK` node 32: Disintegration's 13 at the
+    /// owner's side end takes a 1-HP owner to 0, Lizard Tail revives, and the
+    /// Knowledge Demon's HP does not move. A result that kills its receiver
+    /// is queued for Kill and never walks `Hook.AfterDamageReceived`
+    /// (`0x3e96c8` IL_0d22-IL_0d4c), so neither Inferno nor Rupture hears it.
+    /// The same command one HP short of lethal reaches both.
+    #[test]
+    fn a_prevented_kill_from_power_damage_reaches_no_received_listener() {
+        for fairy in [false, true] {
+            let (mut state, catalog) = received_listeners_state(5, fairy);
+            assert!(
+                damage_player_from_power_with_catalog(
+                    &mut state,
+                    &catalog,
+                    13,
+                    true,
+                    &mut Vec::new()
+                )
+                .unwrap()
+            );
+            assert_eq!(state.hp, if fairy { 24 } else { 40 }, "revived");
+            assert_eq!(state.monsters[0].hp, 50, "no Inferno");
+            assert_eq!(state.powers.value(PowerId::Strength), 0, "no Rupture");
+        }
+        let (mut survives, catalog) = received_listeners_state(14, false);
+        assert!(
+            damage_player_from_power_with_catalog(
+                &mut survives,
+                &catalog,
+                13,
+                true,
+                &mut Vec::new()
+            )
+            .unwrap()
+        );
+        assert_eq!(survives.hp, 1);
+        assert_eq!(survives.monsters[0].hp, 44, "Inferno 6");
+        assert_eq!(survives.powers.value(PowerId::Strength), 2, "Rupture 2");
+        assert!(!survives.fanouts.lizard_tail_used());
+    }
+
+    /// The same rule on the three other owner-damage commands that commit
+    /// one result: an active card's self-damage, a monster's Thorns answering
+    /// the owner's attack, and the damage nested in a max-HP loss.
+    #[test]
+    fn a_prevented_kill_skips_received_on_every_single_result_owner_command() {
+        for fairy in [false, true] {
+            let (mut card, catalog) = received_listeners_state(5, fairy);
+            let (alive, _) = damage_player_from_active_card_even_if_ending(
+                &mut card,
+                &catalog,
+                7,
+                13,
+                false,
+                &mut Vec::new(),
+            )
+            .unwrap();
+            assert!(alive);
+            assert_eq!(card.monsters[0].hp, 50, "card self-damage, fairy {fairy}");
+        }
+
+        let (mut thorns, catalog) = received_listeners_state(5, false);
+        let uid = thorns.monsters[0].uid;
+        thorns_retaliation(&mut thorns, Some(&catalog), 9, uid, &mut Vec::new()).unwrap();
+        assert_eq!(thorns.hp, 40);
+        assert_eq!(thorns.monsters[0].hp, 50, "Thorns retaliation");
+        assert_eq!(thorns.powers.value(PowerId::Strength), 0);
+
+        let (mut max_hp, catalog) = received_listeners_state(5, false);
+        max_hp.max_hp = 5;
+        lose_player_max_hp_from_card(&mut max_hp, Some(&catalog), 5, &mut Vec::new()).unwrap();
+        assert_eq!(max_hp.monsters[0].hp, 50, "max-HP loss");
+        assert_eq!(max_hp.powers.value(PowerId::Strength), 0);
     }
 
     /// `SetMaxHp`'s clamp raises no `AfterCurrentHpChanged`, so a max-HP loss

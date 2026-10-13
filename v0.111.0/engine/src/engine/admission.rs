@@ -77,6 +77,12 @@ use crate::ids::{
 use crate::powers::SlotWire;
 
 /// Whether Summon Forth makes canonicalized Hand/Discard order observable.
+///
+/// Since #3762 the move is to the Hand, from every pile but the Hand
+/// (`steps::regent_forge`). Discard is the one canonicalized pile it reads in
+/// order: two distinguishable Blades there land in the Hand in that order,
+/// and a full Hand sends the later one back to Discard. The Hand arm of this
+/// test is kept as it was, which is now stricter than the move needs.
 pub(crate) fn summon_forth_needs_exact_piles(state: &HotState, catalog: &Catalog) -> bool {
     let physical_summon_forth = PileId::ALL.into_iter().any(|pile| {
         state.piles.get(pile).as_slice().iter().any(|card| {
@@ -1451,6 +1457,33 @@ fn spec_carries_registry_row(spec: &CardSpec) -> bool {
         .is_some_and(|row| std::ptr::eq(row, spec.row) || row == spec.row)
 }
 
+/// Whether `spec` carries the generated row its identity is interned from in
+/// THIS fight (#3824): [`spec_carries_registry_row`] for every card but Mad
+/// Science, and for Mad Science the row of the fight's recorded Tinker Time
+/// variant at the spec's own level.
+///
+/// A Mad Science spec can never carry its `CARD_ROWS` entry. That entry is
+/// the frozen registry's placeholder, a union body none of the eighteen
+/// variant programs has, and `CatalogBuilder::row_of` interns the fight's
+/// variant row instead (#2942; [`crate::catalog::MadScienceVariant`] has the
+/// IL for why the variant is a fight-level fact: `TinkerTime/<RiderChosen>
+/// d__15::MoveNext` RVA `0x384308` is the only writer of `TinkerTimeType` /
+/// `TinkerTimeRider`, IL_003b / IL_0047, and no combat generator mints an
+/// Event-rarity card). So a test that asks "is this the generated program
+/// for this identity?" has to ask it of the variant row, by pointer, which is
+/// what `crate::catalog::is_mad_science_variant_program` does for the shared
+/// step bodies. A Mad Science spec in a catalog with no recorded variant, or
+/// with any other row, is not its generated row.
+fn spec_carries_fight_row(catalog: &Catalog, spec: &CardSpec) -> bool {
+    if spec.identity.id != CardId::MadScience {
+        return spec_carries_registry_row(spec);
+    }
+    catalog
+        .mad_science_variant()
+        .and_then(|variant| variant.row(spec.identity.upgrade).ok().flatten())
+        .is_some_and(|row| std::ptr::eq(row, spec.row))
+}
+
 pub(crate) fn hellraiser_synchronous_strike_closure_is_exact(catalog: &Catalog) -> bool {
     catalog.reachable_specs().all(|spec| {
         !spec.strike_tag
@@ -1485,43 +1518,6 @@ pub(crate) fn hellraiser_synchronous_strike_closure_is_exact(catalog: &Catalog) 
                     catalog,
                 ))
     })
-}
-
-/// Whether Unceasing Top can redraw the still-active owner card and hand that
-/// same physical uid back to Hellraiser.
-///
-/// Python deliberately refuses this recursive active-card alias rather than
-/// publishing two live CardPlay owners for one uid.  Shining Strike supplies
-/// Draw/Top intrinsically; Rebound and Nostalgia can supply it to any ordinary
-/// non-exhausting Strike later in the admitted trajectory.  Keep the wall
-/// source-derived so a currently absent writer cannot become a late refusal
-/// after its exact card has installed the power.
-pub(crate) fn unceasing_top_same_uid_hellraiser_reentry_is_reachable(
-    state: &HotState,
-    catalog: &Catalog,
-) -> bool {
-    if !state.fanouts.unceasing_top() || !hellraiser_can_be_live(state, catalog) {
-        return false;
-    }
-    let reachable_exact = |id: CardId| {
-        catalog
-            .reachable_specs()
-            .any(|spec| spec.identity.id == id && card_row_is_admitted(catalog, spec))
-    };
-    if reachable_exact(CardId::ShiningStrike) {
-        return true;
-    }
-    let draw_top_writer = state.powers.value(PowerId::Rebound) > 0
-        || state.powers.value(PowerId::Nostalgia) > 0
-        || reachable_exact(CardId::Rebound)
-        || reachable_exact(CardId::Nostalgia);
-    draw_top_writer
-        && catalog.reachable_specs().any(|spec| {
-            card_row_is_admitted(catalog, spec)
-                && spec.strike_tag
-                && !spec.is_power
-                && !spec.exhausts
-        })
 }
 
 fn hellraiser_unconverted_card_draw_source_is_reachable(
@@ -1633,8 +1629,22 @@ fn swift_enchantment_draw_is_reachable(catalog: &Catalog) -> bool {
 /// * Joss Paper's `AfterCardExhausted` Draw under Pael's Eye's
 ///   `BeforeSideTurnEndEarly` Exhausts: Regret, Screaming Flagon and Pael's
 ///   Tears read the Hand and Energy later in the same `WhenAll`.
-/// * Centennial Puzzle's Draw under Constrict's side-end damage, ahead of
-///   every later ordinary side-end listener.
+///
+/// * Iron Club's Draw nested in Centennial Puzzle's Draw under Constrict's
+///   side-end damage (#3756). The Puzzle's own Draw there is not a wall: the
+///   later ordinary side-end listeners are started when its choice is asked
+///   (`turn::side_end_prompt_starts_later_listeners`). A Strike that
+///   Hellraiser AutoPlays out of that Draw can be Iron Club's fourth card,
+///   and Iron Club's Draw runs on the same listener context
+///   (`hook_action::receipt_choice_in_listener` has the IL chain), so a
+///   choice inside it is the listener's too. That park sits above a CardPlay,
+///   not directly above the pass's owner frame, and no native trace of it
+///   exists, so it is not built. As for Joss Paper, Hellraiser is read from
+///   the root as it stands (live, or a physical card that installs it); a
+///   generated-only Hellraiser is left to the runtime backstop of the same
+///   name. Game Piece cannot be reached there: it answers only a Power, and
+///   Hellraiser AutoPlays only Strike-tagged cards, all Attacks
+///   (`draw::game_piece_draw`).
 ///
 /// Disintegration's `AfterSideTurnEndLate` damage reaches the Puzzle too, but
 /// it is the pass's only listener that acts at the player side end
@@ -1649,8 +1659,15 @@ fn deferred_choice_receipt_park_walls(
 ) {
     let hooks = catalog.hooks();
     let joss = hooks.owns(RelicId::RelicJossPaper);
-    let puzzle = state.fanouts.puzzle_armed();
-    if !joss && !puzzle {
+    let club_under_constrict = hooks.owns(RelicId::RelicIronClub)
+        && state.fanouts.puzzle_armed()
+        // Constrict's only applier; `ConstrictPower/<AfterDeath>d__5` RVA
+        // `0x3373cc` removes it when that applier dies.
+        && state
+            .monsters
+            .iter()
+            .any(|monster| monster.kind == MonsterKind::SlitheringStrangler);
+    if !joss && !club_under_constrict {
         return;
     }
     let hellraiser_live = hellraiser_can_be_live(state, catalog);
@@ -1673,21 +1690,27 @@ fn deferred_choice_receipt_park_walls(
     if !hellraiser_park && !stratagem_park {
         return;
     }
-    if joss {
-        // Hellraiser as the root holds it: live, or a physical card whose
-        // program installs it. A generated-only Hellraiser (a Jack of All
-        // Trades or Entropy closure) is left to the runtime refusal.
-        let hellraiser_physical = state.powers.value(PowerId::Hellraiser) > 0
-            || PileId::ALL.into_iter().any(|pile| {
-                state.piles.get(pile).as_slice().iter().any(|card| {
-                    catalog.spec(card.atom).is_some_and(|spec| {
-                        catalog
-                            .steps(spec)
-                            .iter()
-                            .any(|step| step.kind == StepKind::Hellraiser)
-                    })
+    // Hellraiser as the root holds it: live, or a physical card whose
+    // program installs it. A generated-only Hellraiser (a Jack of All
+    // Trades or Entropy closure) is left to the runtime refusal.
+    let hellraiser_physical = state.powers.value(PowerId::Hellraiser) > 0
+        || PileId::ALL.into_iter().any(|pile| {
+            state.piles.get(pile).as_slice().iter().any(|card| {
+                catalog.spec(card.atom).is_some_and(|spec| {
+                    catalog
+                        .steps(spec)
+                        .iter()
+                        .any(|step| step.kind == StepKind::Hellraiser)
                 })
-            });
+            })
+        });
+    // Only a Hellraiser AutoPlay plays a card inside the Puzzle's Draw.
+    if club_under_constrict && hellraiser_physical {
+        missing.insert(MissingCapability::ArgumentShape(
+            crate::engine::puzzle::CONSTRICT_PUZZLE_WALL,
+        ));
+    }
+    if joss {
         // A relic a vouched inventory records before Joss Paper runs before
         // its Draw (#3400), so only the rest are later listeners.
         let later = |relic| {
@@ -1712,18 +1735,6 @@ fn deferred_choice_receipt_park_walls(
                 crate::engine::puzzle::PAELS_EYE_JOSS_WALL,
             ));
         }
-    }
-    if puzzle
-        // Constrict's only applier; `ConstrictPower/<AfterDeath>d__5` RVA
-        // `0x3373cc` removes it when that applier dies.
-        && state
-            .monsters
-            .iter()
-            .any(|monster| monster.kind == MonsterKind::SlitheringStrangler)
-    {
-        missing.insert(MissingCapability::ArgumentShape(
-            crate::engine::puzzle::CONSTRICT_PUZZLE_WALL,
-        ));
     }
 }
 
@@ -1945,9 +1956,18 @@ pub(crate) fn closure_holds_voltaic(catalog: &Catalog) -> bool {
 /// Whether Voltaic's `lightning_channeled` tracking agrees with the fight's
 /// Voltaics (#3389).
 ///
-/// - A tracked count (`>= 0`) needs a Voltaic in the closure. No other
-///   reader exists, so a count without one is not a document the opening
-///   writes.
+/// - A tracked count (`>= 0`) beside no physical Voltaic is admitted whether
+///   or not the closure still holds one (#3877). The opening seeds the count
+///   when the fight's closure holds a Voltaic, and that closure can shrink:
+///   a Colorless Potion, Cosmic Concoction or Skill Potion whose pool held
+///   the Voltaic is used, and a document written afterwards rebuilds a
+///   catalog without it. The count is still the true number of Lightning
+///   channels (`orbs::channel` kept counting) and has no reader left. Before
+///   this, such a state could not reload: a choice parked after the potion
+///   had an ActionReplay predecessor that "needs unsupported orb queue
+///   state" (544 sweep roots).
+/// - A tracked count beside a physical Voltaic needs it in the closure,
+///   which every catalog built from the document gives.
 /// - A physically present Voltaic needs a tracked count. It can be played
 ///   from this state, and an untracked count cannot answer its history read.
 /// - A Voltaic reachable only by generation may stay untracked. Such a
@@ -1960,7 +1980,7 @@ fn lightning_channeled_tracking_is_admissible(
     voltaic_in_closure: bool,
 ) -> bool {
     if tracked {
-        voltaic_in_closure
+        voltaic_in_closure || !voltaic_present
     } else {
         !voltaic_present
     }
@@ -2033,12 +2053,11 @@ fn jack_prefix_result_reads_generation_before_a_later_jack(id: CardId) -> bool {
 ///   A root published at a pause inside it runs the rest of the pass on
 ///   resume. That rest holds a body that has not drawn yet: Paradox and
 ///   Puzzlebox behind a Toolbox pause (a `BeforeHandDraw` body, so earlier)
-///   or any non-relic pause; Puzzlebox behind a Paradox or Gambling Chip
-///   pause, unless it was dispatched ahead of Paradox
-///   (`relics::vexing_puzzlebox_precedes_choices_paradox`). A Paradox, Chip
-///   or Toasty Mittens pause means Paradox already drew; a Mittens pause
-///   means Puzzlebox did too (the fixed dispatch order,
-///   `relics::AFTER_PLAYER_TURN_START_RELIC_DISPATCH`).
+///   or any non-relic pause; behind a Paradox, Gambling Chip or Toasty
+///   Mittens pause, whichever of the two sits behind the paused relic in the
+///   walk (`relics::after_player_turn_start_relic_follows`, #3635): the
+///   recorded order of a vouched inventory, else the fixed sequence
+///   `relics::AFTER_PLAYER_TURN_START_RELIC_DISPATCH`.
 /// * **Toolbox: only from a non-relic pause ahead of it.** `Toolbox/
 ///   <BeforeHandDraw>d__4::MoveNext` RVA `0x332adc` gates `TurnNumber == 1`
 ///   (IL `0x0045-0x004b`) and draws (IL `0x00a3`/`0x00a8`) before its own
@@ -2080,23 +2099,22 @@ fn relic_generation_draw_follows_root(state: &HotState, catalog: &Catalog) -> bo
         })
         .flatten();
     let toolbox_ahead = hooks.owns(RelicId::RelicToolbox) && parked.is_none();
-    let paradox_ahead = hooks.owns(RelicId::RelicChoicesParadox)
-        && !matches!(
-            parked,
-            Some(
-                RelicPendingKind::ChoicesParadox
-                    | RelicPendingKind::GamblingChip
-                    | RelicPendingKind::ToastyMittens
-            )
-        );
-    let puzzlebox_ahead = hooks.owns(RelicId::RelicVexingPuzzlebox)
-        && match parked {
-            Some(RelicPendingKind::ToastyMittens) => false,
-            Some(RelicPendingKind::ChoicesParadox) => {
-                !super::relics::vexing_puzzlebox_precedes_choices_paradox(catalog)
-            }
-            _ => true,
-        };
+    // A pause on an `AfterPlayerTurnStart` relic leaves ahead exactly the
+    // relics behind it in the walk (`relics::relic_walk_order`, #3635).
+    let paused = match parked {
+        Some(RelicPendingKind::ChoicesParadox) => Some(RelicId::RelicChoicesParadox),
+        Some(RelicPendingKind::GamblingChip) => Some(RelicId::RelicGamblingChip),
+        Some(RelicPendingKind::ToastyMittens) => Some(RelicId::RelicToastyMittens),
+        Some(RelicPendingKind::Toolbox) | None => None,
+    };
+    let ahead = |relic: RelicId| {
+        hooks.owns(relic)
+            && paused.is_none_or(|paused| {
+                super::relics::after_player_turn_start_relic_follows(catalog, relic, paused)
+            })
+    };
+    let paradox_ahead = ahead(RelicId::RelicChoicesParadox);
+    let puzzlebox_ahead = ahead(RelicId::RelicVexingPuzzlebox);
     toolbox_ahead || paradox_ahead || puzzlebox_ahead
 }
 
@@ -2224,6 +2242,10 @@ pub fn admit(
                 })
             })
             .count();
+        // #3794: a Nightmare turns one Alchemize into several, so a physical
+        // count of one no longer proves there is no later Alchemize.
+        let future_alchemize_count =
+            nightmare_multiplied_count(state, catalog, future_alchemize_count);
         let mut independent_physical = independently_executable_cards
             .iter()
             .filter_map(|card| catalog.spec(card.atom).map(|spec| spec.identity))
@@ -2576,6 +2598,16 @@ pub fn admit(
             "Cunning Potion Shiv closure",
         ));
     }
+    // #3756: King's Courage forges (`KingsCourage/<OnUse>d__10::MoveNext`
+    // `0x34ea88` IL_0049), and a Forge with no live Sovereign Blade mints the
+    // canonical level-zero one, so that atom must be in the fight's catalog.
+    if potion_reachable(PotionId::KingsCourage)
+        && !crate::steps::regent_forge::furnace_catalog_closure_is_exact(catalog)
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "King's Courage Sovereign Blade closure",
+        ));
+    }
     if state.multiplayer_ally_key != 0
         && (potion_reachable(PotionId::PotOfGhouls) || potion_reachable(PotionId::BoneBrew))
     {
@@ -2782,8 +2814,9 @@ pub fn admit(
     // wall nothing. Ahead of it, a selecting child resolves inline under the
     // pushed VakuuCardSelector when its CardSelectCmd path was read
     // (`selection::VakuuSelectorScope`): Glimmer, Cosmic Indifference,
-    // Thinking Ahead (#3433) and Secret Weapon (#3608). Beside a reachable
-    // Stratagem those four stay resolved, and a drawing child with no
+    // Thinking Ahead (#3433), Secret Weapon (#3608), Headbutt and Quasar
+    // (#3756). Beside a reachable
+    // Stratagem those six stay resolved, and a drawing child with no
     // selection of its own is resolved too, when Hellraiser cannot be live
     // (#3637, #3665): the selector answers the reshuffle's pick.
     if whispering_earring
@@ -2830,11 +2863,6 @@ pub fn admit(
     {
         missing.insert(MissingCapability::ArgumentShape(
             "Hellraiser synchronous Strike closure",
-        ));
-    }
-    if unceasing_top_same_uid_hellraiser_reentry_is_reachable(state, catalog) {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Unceasing Top same-UID Hellraiser reentry",
         ));
     }
     let restricted_frozen_batch =
@@ -2948,10 +2976,17 @@ pub fn admit(
         .as_slice()
         .iter()
         .any(|frame| matches!(frame, crate::frame::Frame::CardPlay { .. }));
+    // #3817: turn one's AutoPre parked on the Imbued card's choice. The
+    // opening is not a player action, so this one CardPlay continuation has
+    // no ActionReplay root in any catalog; `imbued_auto_pre_stack_is_exact`
+    // is its whole grammar (`play::autoplay_imbued_turn_one` carries the IL).
+    let imbued_auto_pre_pending = state.pending.is_some()
+        && crate::engine::play::imbued_auto_pre_stack_is_exact(state, catalog).is_ok();
     let card_play_root_is_exact = !has_card_play_frame
         || restricted_frozen_batch.is_some()
         || potion_action_replay_is_exact
         || foregone_end_turn_action_replay_is_exact
+        || imbued_auto_pre_pending
         || has_action_replay == catalog.requires_action_replay();
     if state.fanouts.player_hooks_deactivated() && (state.hp > 0 || !state.history.over) {
         missing.insert(MissingCapability::ArgumentShape(
@@ -2980,6 +3015,7 @@ pub fn admit(
         && !turn_start_hand_choice_effect_pending
         && !raw_relic_pending
         && !action_replay_is_exact
+        && !imbued_auto_pre_pending
     {
         missing.insert(MissingCapability::PlayerPhase(state.player_phase));
     }
@@ -2990,6 +3026,7 @@ pub fn admit(
         && has_card_play_frame
         && catalog.requires_action_replay()
         && !has_action_replay
+        && !imbued_auto_pre_pending
         || !state
             .frames
             .continuation_store_is_valid(state.pending.as_deref())
@@ -3285,9 +3322,22 @@ pub fn admit(
                 | PowerId::SmogLock => slot.wire == SlotWire::Bool && slot.value == 1,
                 PowerId::Corruption => slot.wire == SlotWire::Bool && slot.value == 1,
                 PowerId::Hellraiser => slot.wire == SlotWire::Int && slot.value == 1,
-                PowerId::SleightOfFlesh | PowerId::Stratagem => {
+                // #3914: a live Entropy is a positive amount (every writer
+                // is `steps::shared`'s Entropy application); its place in the
+                // turn-start walk is authenticated with the order, not here. Without
+                // this arm a parked turn-start Entropy choice could not
+                // reload: its ActionReplay predecessor was "not admitted".
+                PowerId::SleightOfFlesh | PowerId::Stratagem | PowerId::Entropy => {
                     slot.wire == SlotWire::Int && slot.value > 0
                 }
+                // #3877: likewise a live Call of the Void. Its one writer
+                // (`steps::necrobinder_rare`'s Call of the Void body) adds 1
+                // per play to a positive Int; the per-turn generation bound
+                // and the listener's place are checked where they are read
+                // (`Call of the Void generation batch`, the BeforeHandDraw
+                // order). Without this arm no state holding the power could
+                // reload (11 sweep roots at a parked choice).
+                PowerId::CallOfTheVoid => slot.wire == SlotWire::Int && slot.value > 0,
                 PowerId::Dexterity | PowerId::Focus | PowerId::Strength => {
                     slot.wire == SlotWire::Int
                 }
@@ -3301,19 +3351,14 @@ pub fn admit(
             }
         }
     }
-    // #3427: CuriousPower (`TryModifyEnergyCostInCombat` RVA 0xa102c) is an
-    // early Power-card cost listener that does not commute with Borrowed
-    // Time's `+Amount` (RVA 0x9feb6), and the two powers' relative listener
-    // order is unrecorded. The Curious and Borrowed Time writers refuse to
-    // create the pairing; a root that already carries it refuses here.
-    // Spiked Gauntlets' `+1` (RVA 0x9bd30) is a relic, which
+    // #3427, #3756: CuriousPower (`TryModifyEnergyCostInCombat` RVA 0xa102c)
+    // is an early Power-card cost listener that does not commute with
+    // Borrowed Time's `+Amount` (RVA 0x9feb6). Their relative listener order
+    // is the document's `curious_after_borrowed_time`, which the boundary
+    // refuses unless both powers are live, so a root carrying the pair is
+    // exact. Spiked Gauntlets' `+1` (RVA 0x9bd30) is a relic, which
     // `<IterateHookListeners>d__69` RVA 0x3f9720 always lists after the
-    // player's powers, so it folds after Curious and is admitted (#3437).
-    if state.powers.value(PowerId::Curious) > 0 && state.powers.value(PowerId::BorrowedTime) > 0 {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Curious energy-cost listener order",
-        ));
-    }
+    // player's powers, so it folds after both (#3437).
     let knowledge_demon_surface = state
         .monsters
         .iter()
@@ -3517,8 +3562,10 @@ pub fn admit(
             "Furnace uid-free physical card",
         ));
     }
-    // Summon Forth snapshots every Sovereign Blade outside Draw in native
-    // Hand/Discard/Exhaust/Play order. Only Hand and Discard are canonicalized
+    // Summon Forth snapshots every Sovereign Blade outside the Hand in native
+    // Draw/Discard/Exhaust/Play order (#3762; this comment read "outside Draw
+    // in Hand/Discard/Exhaust/Play order" while the step moved Blades to the
+    // Draw pile). Only Hand and Discard are canonicalized
     // by the inexact boundary. A physical live Summon therefore needs exact
     // order only when either such pile contains two uid-free distinguishable
     // Blade payloads; singleton/identical siblings and split piles commute.
@@ -3635,6 +3682,32 @@ pub fn admit(
     if !super::cards::call_local_ethereal_provenance_is_exact(state, catalog) {
         missing.insert(MissingCapability::ArgumentShape(
             "Call of the Void local Ethereal provenance",
+        ));
+    }
+    // #3904: a recorded mid-fight Osty id is one the tracked counter has
+    // handed out, to an Osty that exists (live or a retained corpse), and no
+    // enemy holds it. A forged record would move a spawned lineage's
+    // expected uids (`monsters::tracked_lineage_start`).
+    let osty_creature_uid = state.fanouts.osty_creature_uid();
+    if osty_creature_uid != 0
+        && (osty_creature_uid >= state.fanouts.next_creature_uid()
+            || !state.fanouts.pet().has_die_for_you()
+            || state
+                .monsters
+                .iter()
+                .any(|monster| monster.uid == osty_creature_uid))
+    {
+        missing.insert(MissingCapability::ArgumentShape("Osty creature id"));
+    }
+    // #3929: Hellraiser's count of AutoPlays against an all-infinite HP
+    // display lives in the power object (`HellraiserPower/Data`), so a count
+    // with no Hellraiser is not a state the game has. No engine path removes
+    // the power, so a state this engine reached never trips this.
+    if state.fanouts.hellraiser_infinite_auto_plays() != 0
+        && state.powers.value(PowerId::Hellraiser) <= 0
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "Hellraiser infinite AutoPlay count",
         ));
     }
     // BaseReplayCount is generic physical state. Sword Sage's lower-bound
@@ -3909,6 +3982,47 @@ pub fn admit(
     if !crate::steps::templates::before_hand_draw_power_order_is_exact(state) {
         missing.insert(MissingCapability::ArgumentShape(
             "before-hand-draw power order",
+        ));
+    }
+    // #3794: live NightmarePower objects must be a state the BeforeHandDraw
+    // walk can run (`turn::nightmare_state_refusal`), and a parked Foregone
+    // Conclusion choice has no place for one in its frozen listener list.
+    if let Some(reason) = super::turn::nightmare_state_refusal(state, catalog) {
+        missing.insert(MissingCapability::ArgumentShape(reason));
+    } else if !state.fanouts.nightmare_instances().is_empty()
+        && state
+            .pending
+            .as_ref()
+            .and_then(|pending| pending.foregone_before_hand_draw_record(&state.frames))
+            .is_some()
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "Nightmare beside Foregone Conclusion",
+        ));
+    }
+    // The same pair before either is live: admission is not rerun after each
+    // action, so a root that holds both would otherwise admit and then
+    // refuse inside Nightmare's body or at the next End Turn. Counted from
+    // physical cards and the live power, not from catalog reachability: a
+    // generation closure reaches Foregone Conclusion in fights that never
+    // mint it (two of the 26 census fights behind #3794, both certified),
+    // and the two engine refusals (`selection::apply_nightmare`,
+    // `turn::nightmare_state_refusal`) still name the pair if one is ever
+    // minted and played.
+    if nightmare_copy_is_reachable(state, catalog)
+        && (state.powers.get(PowerId::Foregone).is_some()
+            || [PileId::Hand, PileId::Draw, PileId::Discard, PileId::Play]
+                .into_iter()
+                .flat_map(|pile| state.piles.get(pile).as_slice())
+                .any(|card| {
+                    catalog.spec(card.atom).is_some_and(|spec| {
+                        spec.identity.id == CardId::ForegoneConclusion
+                            && card_row_is_admitted(catalog, spec)
+                    })
+                }))
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "Nightmare beside Foregone Conclusion",
         ));
     }
 
@@ -4361,6 +4475,15 @@ pub fn admit(
         || spinner_ordered != (state.powers.value(PowerId::Spinner) > 0)
         || (state.powers.value(PowerId::Orbit) == 0
             && (state.orbs.orbit_energy_spent() != 0 || state.orbs.orbit_trigger_count() != 0))
+        // #3756: a later OrbitPower object exists only beside a first one,
+        // and every admitted writer applies Amount 1 per object.
+        || (!state.orbs.orbit_later_energy_spent().is_empty()
+            && (state.powers.value(PowerId::Orbit) != 1
+                || state
+                    .orbs
+                    .orbit_later_energy_spent()
+                    .iter()
+                    .any(|spent| *spent < 0)))
     {
         missing.insert(MissingCapability::OrbState);
     }
@@ -4424,6 +4547,7 @@ pub fn admit(
     let mut drain_power_reachable = false;
     let mut apotheosis_reachable = false;
     let mut crash_landings = 0usize;
+    let mut collision_courses = 0usize;
     let mut debris = 0usize;
     let mut bound_cards = 0usize;
     let mut hexed_cards = 0usize;
@@ -4495,6 +4619,7 @@ pub fn admit(
             }
             match spec.identity.id {
                 CardId::CrashLanding => crash_landings += 1,
+                CardId::CollisionCourse => collision_courses += 1,
                 CardId::Debris => debris += 1,
                 CardId::Jackpot => jackpots += 1,
                 _ => {}
@@ -4582,6 +4707,25 @@ pub fn admit(
                 && instance.local_cost_modifiers.as_slice().iter().all(|row| {
                     transfigure_local_cost_row_is_modeled(row)
                         || global_local_cost_row_is_modeled(row)
+                });
+            // #3756: a Slither copy that has been drawn carries the row its
+            // draw-time roll wrote, and a root is taken after the opening
+            // hand is dealt, so a Slither card dealt into it arrives with
+            // one. `Slither::AfterCardDrawn` (v0.111.0 RVA `0xd636c`) hands
+            // `NextEnergyCost` (RVA `0xd63d7`, IL_0011-IL_002c:
+            // `CombatEnergyCosts.NextInt(4)`) to `CardEnergyCost::
+            // SetThisCombat` (RVA `0x11e21c`, IL_000e-IL_001d), which appends
+            // one `LocalCostModifier(amount, Set, ThisCombat, reduceOnly:
+            // false)` row per draw. That is the row
+            // `draw::slither_after_card_drawn` writes, and the whole
+            // vocabulary accepted here: any other row on the card still
+            // needs one of the writers below.
+            let slither_local_cost_rows_are_modeled = super::draw::slither_identity_is_exact(spec)
+                && instance.local_cost_modifiers.as_slice().iter().all(|row| {
+                    row.kind == LocalCostModifierKind::Set
+                        && (0..=3).contains(&row.amount)
+                        && row.expiration == LocalCostExpiration::ThisCombat
+                        && !row.reduce_only
                 });
             let confused_local_cost_rows_are_modeled = (catalog
                 .hooks()
@@ -4837,7 +4981,20 @@ pub fn admit(
                     // refused by name below.
                     || (crate::engine::play::vigorous_identity_is_exact(spec)
                         && matches!(instance.enchantment_state.get(), Some(0 | 1)))
+                    // Momentum (#3745) carries native `_extraDamage` in slot
+                    // 5: any non-negative count (`Momentum::OnPlay` RVA
+                    // `0xd61ee` IL_000f adds `Amount` per body and nothing
+                    // lowers it). An absent row is refused by name below.
+                    || (crate::engine::play::momentum_identity_is_exact(spec)
+                        && instance.enchantment_state.is_some())
             });
+            if crate::engine::play::momentum_identity_is_exact(spec)
+                && instance.enchantment_state.get().is_none()
+            {
+                missing.insert(MissingCapability::ArgumentShape(
+                    "MOMENTUM without its slot-5 ExtraDamage",
+                ));
+            }
             if crate::engine::play::vigorous_identity_is_exact(spec)
                 && instance.enchantment_state.get().is_none()
             {
@@ -4897,6 +5054,43 @@ pub fn admit(
                 // These sources still use finite body-count previews elsewhere.
                 // Removing their Exhaust keyword needs a separate unbounded
                 // closure proof before they can inherit the enchantment grant.
+                //
+                // #3756: White Noise has that proof whenever its whole pool is
+                // interned. `WhiteNoise/<OnPlay>d__3::MoveNext` RVA `0x3c74ac`
+                // draws ONE row of the owner's unlocked Power pool
+                // (`GetUnlockedCards` IL `0x00cf`, filter `<OnPlay>b__3_0`
+                // RVA `0x3c749e`) from the LIVE Generation stream at each
+                // play (`get_CombatCardGeneration` IL `0x0109`,
+                // `GetDistinctForCombat` IL `0x010e`) and adds it at L0 (IL
+                // `0x012b`). `steps::defect_uncommon::white_noise_exact`
+                // performs that draw live, so with every L0 row of the pool
+                // an atom the mint is known at every stream position and for
+                // every replay of the source, which is the #3236 / #3504
+                // complete-closure argument; the body count no longer bounds
+                // anything. The boundary interns that whole pool beside a
+                // Creative AI, a generation potion or an unpreviewed reader
+                // (site census `3T0X1Z8WMBFE`: a Soul's Power White Noise
+                // beside Creative AI). A lone copy keeps its seeded one-row
+                // prefix, which a second play of the same card outruns, and
+                // still refuses here.
+                let white_noise_pool_is_closed = spec.identity.id == CardId::WhiteNoise
+                    && state.reward_card_pool.is_some_and(|owner| {
+                        catalog
+                            .owner_type_generation_pool(
+                                owner,
+                                crate::content_tables::CardType::Power,
+                            )
+                            .into_iter()
+                            .all(|id| {
+                                catalog
+                                    .atom(&CardIdentity {
+                                        id,
+                                        upgrade: 0,
+                                        enchantment: None,
+                                    })
+                                    .is_some()
+                            })
+                    });
                 if matches!(
                     spec.identity.id,
                     CardId::Alchemize
@@ -4907,7 +5101,8 @@ pub fn admit(
                         | CardId::JackOfAllTrades
                         | CardId::Distraction
                         | CardId::WhiteNoise
-                ) {
+                ) && !white_noise_pool_is_closed
+                {
                     missing.insert(MissingCapability::ArgumentShape(
                         "non-exhausting generator closure",
                     ));
@@ -4995,6 +5190,7 @@ pub fn admit(
                             && !banshees_cry_local_cost_rows_are_modeled
                             && !physical_listener_local_cost_rows_are_modeled
                             && !confused_local_cost_rows_are_modeled
+                            && !slither_local_cost_rows_are_modeled
                             && !global_local_cost_rows_are_modeled
                             && !transfigure_local_cost_rows_are_modeled)))
                 || !free_row_pairing_is_exact
@@ -5145,11 +5341,10 @@ pub fn admit(
             "Compact Fuel replacement closure",
         ));
     }
-    if infernal_blades > 0
-        && (state.reward_card_pool != Some(RewardPool::Ironclad)
-            || state.entropy_card_pool != Some(RewardPool::Ironclad)
-            || state.rng.is_vacant(RngStream::Generation))
-    {
+    // #3816: the body's own gate. An Ironclad owner's is unchanged; any other
+    // owner's is the shared owner-pool provenance
+    // (`cards::infernal_blade_provenance_is_exact` has the IL).
+    if infernal_blades > 0 && !super::cards::infernal_blade_provenance_is_exact(state, catalog) {
         missing.insert(MissingCapability::ArgumentShape(
             "infernal blade generation provenance",
         ));
@@ -5372,7 +5567,13 @@ pub fn admit(
             })
     });
     let tutor_reachable = generated_source_reachable(CardId::Tutor);
-    if tutor_reachable && crate::engine::allies::living_keys(state).count() <= 1 {
+    // A party whose teammate is dead keeps this refusal. A solo fight no
+    // longer takes it (#3877): Tutor's body never runs there, see
+    // `any_ally_bodies_never_run_solo` below.
+    if tutor_reachable
+        && state.multiplayer_ally_key == 1
+        && crate::engine::allies::living_keys(state).count() <= 1
+    {
         missing.insert(MissingCapability::MultiplayerCard(CardId::Tutor));
     }
     if tutor_reachable
@@ -5384,17 +5585,30 @@ pub fn admit(
             "Tutor remote Draw selection",
         ));
     }
-    let autoplay_any_ally_reachable = catalog.reachable_specs().any(|spec| {
-        spec.row.steps.iter().any(|step| {
-            matches!(
-                step.kind,
-                StepKind::BlazeExact
-                    | StepKind::DemonicShieldBlockExact
-                    | StepKind::FadeExact
-                    | StepKind::TutorExact
-            )
-        })
-    });
+    // `any_ally_bodies_never_run_solo` (#3877). In a fight with no other
+    // Player, no AnyAlly body can start, so the two gates below hold for a
+    // party only. Two facts, both witnessed on the game itself
+    // (`tests/native/issue3877_autoplay_any_ally_no_target.json`, Blaze,
+    // Demonic Shield, Fade, Tutor and Believe in You, each with and without a
+    // living Osty):
+    //
+    // * A manual play is not offered. `CardModel.CanPlay` answers false with
+    //   `UnplayableReason.NoLivingAllies`, pet or no pet; the engine's
+    //   `spec.solo_unplayable` census holds all of these ids and
+    //   `can_play` tests it before any target is enumerated.
+    // * An AutoPlay goes to `CardCmd.MoveToResultPileWithoutPlaying`
+    //   (`CardCmd/<AutoPlay>d__0::MoveNext` RVA `0x3df9d4` IL_0315-IL_0390):
+    //   the target pool is the living Players other than the owner
+    //   (`<AutoPlay>b__0` `0x3df4bc`), which a pet never joins. The card lands
+    //   in Discard, or in Exhaust when it carries Exhaust (Demonic Shield,
+    //   with a `CardExhaustedEntry`), with no CardPlay and no CombatTargets
+    //   draw. `play::play_card_with_work_inner` takes that route.
+    //
+    // Until #3877 a solo deck holding Blaze, Demonic Shield, Fade or Tutor
+    // refused here as `AutoPlay AnyAlly missing teammate target`, and any
+    // AnyAlly card refused as `manual AnyAlly target roster` for a
+    // Necrobinder or anyone who could summon Osty.
+    let party = state.multiplayer_ally_key == 1;
     let osty_writer_reachable = potion_reachable(PotionId::BoneBrew)
         || catalog.reachable_specs().any(|spec| {
             card_row_is_admitted(catalog, spec)
@@ -5408,30 +5622,20 @@ pub fn admit(
                     )
                 })
         });
-    if unit_c_any_ally_reachable && (state.fanouts.pet().osty().is_some() || osty_writer_reachable)
+    if party
+        && unit_c_any_ally_reachable
+        && (state.fanouts.pet().osty().is_some() || osty_writer_reachable)
     {
         missing.insert(MissingCapability::ArgumentShape(
             "manual AnyAlly target roster",
         ));
     }
-    if unit_c_any_ally_reachable
-        && state.multiplayer_ally_key == 1
-        && !state.fanouts.multiplayer_ally().alive
-    {
-        // Manual play is MultiplayerOnly-blocked with only the local Player
-        // alive, while native AutoPlay has an empty non-owner Player pool and
-        // routes the card without a body. That no-target routing remains
-        // outside this shared typed-target gate.
-        missing.insert(MissingCapability::ArgumentShape(
-            "AutoPlay AnyAlly missing teammate target",
-        ));
-    }
-    if autoplay_any_ally_reachable && state.multiplayer_ally_key != 1 {
-        // Blaze, Demonic Shield and Fade are AutoPlayable Skills reachable
-        // from solo Mayhem, Havoc, or Cascade. Native AutoPlay has no
-        // non-owner target in that roster and routes the physical card
-        // without a body, so refuse that exact composition until the
-        // no-target route itself is represented.
+    if unit_c_any_ally_reachable && party && !state.fanouts.multiplayer_ally().alive {
+        // A party whose teammate has died: manual play is
+        // MultiplayerOnly-blocked with only the local Player alive, and
+        // native AutoPlay has an empty non-owner Player pool. The no-target
+        // route is modeled, but a dead teammate's remote state is not part
+        // of what was witnessed for #3877, so this party shape stays refused.
         missing.insert(MissingCapability::ArgumentShape(
             "AutoPlay AnyAlly missing teammate target",
         ));
@@ -6721,9 +6925,32 @@ pub fn admit(
     // refuse on their own closure gates above, so they are not conflicts —
     // and Splash and Jackpot are Jack RESULTS too. Without the complete
     // closure, every other source still refuses, as before #3092.
-    let infernal_blade_closure_is_complete = crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109
+    // #3816: the pool is the owner's (`Catalog::infernal_blade_attack_pool`),
+    // which is the frozen table for an Ironclad and for an absent owner.
+    let infernal_blade_closure_is_complete = state
+        .reward_card_pool
+        .map_or_else(
+            || crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109.to_vec(),
+            |owner| catalog.infernal_blade_attack_pool(owner),
+        )
         .into_iter()
         .all(l0_atom);
+    // #3816: an owner other than Ironclad has no seeded prefix: the boundary
+    // interns that owner's complete Attack pool beside a physical Infernal
+    // Blade (`boundary::intern_generation_preview`), and the body's live draw
+    // (`InfernalBlade/<OnPlay>d__3::MoveNext` RVA `0x3a7164` IL
+    // `0x008b`/`0x0090`) is exact only over it. A catalog built any other way
+    // refuses here rather than at the mint.
+    if infernal_blades > 0
+        && state
+            .reward_card_pool
+            .is_some_and(|owner| owner != RewardPool::Ironclad)
+        && !infernal_blade_closure_is_complete
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "infernal blade generation closure",
+        ));
+    }
     // #3236: the live power listeners the physical-card counts cannot see.
     // Each draws the live Generation stream at its own hook, so each moves a
     // SEEDED preview read at the document's stream position whenever it fires
@@ -6934,21 +7161,54 @@ pub fn admit(
     // question, as for Jack (#3092) and Creative AI (#3230): does White
     // Noise's shuffle move another consumer's SEEDED preview? Those are an
     // Infernal Blade or Jack whose closure is incomplete, Bundle of Joy,
-    // Abundance, a Distraction whose Skill pool is incomplete, and
-    // Metamorphosis (which also refuses on its own gate). Discovery, Splash,
-    // Quasar, Largesse, Manifest Authority and Jackpot close their complete
-    // pools or refuse on their own closure gates, and Discovery and Splash
-    // list White Noise in their own ordering gates. Without the complete
-    // closure White Noise is itself a one-prefix preview, and every other
-    // consumer, including the listeners above, still refuses.
+    // Abundance and a Distraction whose Skill pool is incomplete. Discovery,
+    // Splash, Quasar, Largesse, Manifest Authority and Jackpot close their
+    // complete pools or refuse on their own closure gates, and Discovery and
+    // Splash list White Noise in their own ordering gates. Without the
+    // complete closure White Noise is itself a one-prefix preview, and every
+    // other consumer, including the listeners above, still refuses.
+    //
+    // #3756: a physical Jackpot is in neither list. It samples with
+    // replacement from the live stream over a pool the boundary interns whole
+    // (`Jackpot/<OnPlay>d__3::MoveNext` RVA `0x3a80d4`, IL `0x0154` /
+    // `0x0159`), so it holds no preview for a White Noise shuffle to move;
+    // what it does is move a prefix-only White Noise, which is why the
+    // boundary now closes White Noise's whole Power pool beside one
+    // (`GenerationPreviewCounts::unpreviewed_readers`) and the prefix-only
+    // arm below still names it (site census `90ZXRGBP54W0`).
+    //
+    // #3756: Metamorphosis is not a seeded preview. Its draw is live over a
+    // complete interned Attack pool (the Metamorphosis ordering gate below
+    // has the IL), so a White Noise shuffle on either side of it moves
+    // nothing, and the boundary closes White Noise's whole Power pool beside
+    // a physical Metamorphosis (`GenerationPreviewCounts::unpreviewed_readers`).
+    // Beside a prefix-only White Noise catalog it still refuses, on the arm
+    // below (site census `DM7L5U7WVEJH`).
+    //
+    // #3825: Abundance is a seeded preview only because the boundary interns
+    // its three-offer prefix. Its body draws the live stream once, at play
+    // time (`Abundance/<OnPlay>d__6::MoveNext` RVA `0x3888ec`,
+    // `get_CombatCardGeneration` IL `0x0092`, `GetDistinctForCombat` IL
+    // `0x0097`), and `steps::neutral::begin_abundance_exact` shuffles that
+    // same live stream, so with every L1 row of the owner's Power pool
+    // interned with its descendants (`reusable_abundance_closure_is_exact`,
+    // the closure the boundary interns beside a White Noise body) its three
+    // offers are known atoms at every stream position. Then neither draw is a
+    // preview and the pair is exact in either order. A pending screen's own
+    // offers are frozen in its frame; it is admitted here only on the same
+    // complete closure, which covers any replay or physical copy still to
+    // draw, and refuses as before without one.
+    let abundance_closure_is_complete = || {
+        state.reward_card_pool.is_some_and(|owner| {
+            crate::boundary::reusable_abundance_closure_is_exact(catalog, owner)
+        })
+    };
     let white_noise_order_sensitive_source = if white_noise_closure_is_complete {
         (infernal_blades > 0 && !infernal_blade_closure_is_complete)
             || (jacks > 0 && !jack_closure_is_complete)
             || bundles_of_joy > 0
-            || abundances > 0
-            || abundance_pending
+            || ((abundances > 0 || abundance_pending) && !abundance_closure_is_complete())
             || (distractions > 0 && !distraction_closure_is_complete)
-            || metamorphosis_reachable
     } else {
         other_white_noise_generation_source
             || listener_generation_source
@@ -7028,57 +7288,105 @@ pub fn admit(
         }
     }
 
-    // Metamorphosis consumes the same Generation stream as every existing
-    // reader.  Count the complete reachable reader census here rather than
-    // only physical cards: a generated/catalog-reachable source can be
-    // played later at an arbitrary epoch, and live power readers can consume
-    // before it.  Pending readers are already mid-consumption and therefore
-    // also conflict.  Keep this list explicit so adding a reader requires an
-    // admission update rather than silently changing the stream projection.
-    let other_metamorphosis_generation_source = [
-        CardId::InfernalBlade,
-        CardId::BundleOfJoy,
-        CardId::ManifestAuthority,
-        CardId::Abundance,
-        CardId::Discovery,
-        CardId::Quasar,
-        CardId::Largesse,
-        CardId::Jackpot,
-        CardId::JackOfAllTrades,
-        CardId::Distraction,
-        CardId::WhiteNoise,
-        CardId::CreativeAi,
-        CardId::HelloWorld,
-        CardId::Calamity,
-        CardId::Stoke,
-        CardId::Splash,
-        CardId::SpectrumShift,
-    ]
-    .into_iter()
-    .any(generated_source_reachable)
-        || infernal_blades > 0
+    // Metamorphosis is a LIVE draw over a COMPLETE interned pool, the shape
+    // Mad Science's Chaos rider has above (#3322).
+    // `Metamorphosis/<OnPlay>d__5::MoveNext` RVA `0x3ac1e8` reads the owner's
+    // `GetUnlockedCards` at IL `0x0051`, filters it by `<OnPlay>b__5_0` RVA
+    // `0x3ac1da` (`get_Type; ldc.i4.1; ceq`: Attack), and only then, at play
+    // time, reads `RunRngSet::get_CombatCardGeneration` (IL `0x009a`) for
+    // `CardFactory::GetForCombat` (RVA `0x1128d0`, IL `0x009f`).
+    // `steps::neutral::metamorphosis_exact` samples that same live stream, and
+    // the closure gate above requires every L0 row of the pool to be an exact
+    // Attack atom (the boundary closes the whole pool beside any reachable
+    // Metamorphosis). So its own mint is a known atom at every stream
+    // position, whichever other reader ran first.
+    //
+    // What remains is the reverse question, as for Jack (#3092), White Noise
+    // (#3236), Creative AI (#3230) and Chaos (#3322): does a Metamorphosis
+    // draw move another consumer's SEEDED preview, a prefix the boundary read
+    // at the document's stream position? Those are an Infernal Blade, Jack,
+    // Distraction or White Noise whose closure is incomplete, Bundle of Joy,
+    // Abundance (physical or pending) and a pending Discovery offer's own
+    // replays. Each is counted here both as a physical source and as a
+    // catalog-reachable one: a generated copy of a reader whose generated
+    // closure is not its complete pool (`boundary::
+    // intern_generated_identity_closure_inner` has no Distraction arm) stays
+    // refused beside a Metamorphosis, as before #3756. A generated Infernal
+    // Blade closes its owner's whole Attack pool for any owner since #3816
+    // and is still checked here. A generated Bundle of Joy does close
+    // its pool (the walk's `BundleOfJoy | ManifestAuthority | Quasar` arm),
+    // at the generated copy's own level, while the body mints L0 rows
+    // (`BundleOfJoy/<OnPlay>d__5::MoveNext` RVA `0x390188` draws at IL
+    // `0x0063` / `0x0068` and adds each result at IL `0x0095` with no
+    // `CardCmd::Upgrade` between), so it is checked against the L0 Colorless
+    // pool here: a Colorless Potion or a Spectrum Shift reaches one
+    // (`87KM4MZ0ZN97` nodes 32 and 34, every `F8GKB1DJ96L1` fight). A
+    // PHYSICAL Bundle of Joy is counted without that exemption, as every
+    // other gate counts it.
+    //
+    // Every other reader draws live over a complete interned pool or refuses
+    // on its own closure gate (Discovery's physical bodies, Splash, Quasar,
+    // Largesse, Manifest Authority, Jackpot, Stoke, Spectrum Shift, Creative
+    // AI, Hello World, Call of the Void, Calamity and the card-choice
+    // potions), so the draws happen in native order on either side of a
+    // Metamorphosis play and both results are known atoms. Before #3756 this
+    // gate refused beside every one of them, physical, live or merely
+    // catalog-reachable: a Colorless or Skill Potion in the belt was enough
+    // (site census `87KM4MZ0ZN97`, `BEGA7RDUTT8X`, `F8GKB1DJ96L1`).
+    let bundle_of_joy_closure_is_complete =
+        catalog.colorless_generation_pool().into_iter().all(l0_atom);
+    let metamorphosis_order_sensitive_source = ((infernal_blades > 0
+        || generated_source_reachable(CardId::InfernalBlade))
+        && !infernal_blade_closure_is_complete)
+        || ((jacks > 0 || generated_source_reachable(CardId::JackOfAllTrades))
+            && !jack_closure_is_complete)
         || bundles_of_joy > 0
-        || manifest_authorities > 0
+        || (generated_source_reachable(CardId::BundleOfJoy) && !bundle_of_joy_closure_is_complete)
         || abundances > 0
         || abundance_pending
-        || discoveries.into_iter().sum::<usize>() > 0
+        || abundance_source_reachable
         || discovery_pending
-        || quasars > 0
-        || quasar_pending
-        || largesses > 0
-        || reachable_jackpots > 0
-        || jacks > 0
-        || distractions > 0
-        || white_noises > 0
-        || creative_ai_live
-        || creative_ai_sources > 0
-        || hello_world_live
-        || calamity_live
-        || spectrum_shift_live
-        || spectrum_shift_sources > 0;
-    if metamorphosis_reachable && other_metamorphosis_generation_source {
+        || ((distractions > 0 || generated_source_reachable(CardId::Distraction))
+            && !distraction_closure_is_complete)
+        || ((white_noises > 0 || generated_source_reachable(CardId::WhiteNoise))
+            && !white_noise_closure_is_complete);
+    if metamorphosis_reachable && metamorphosis_order_sensitive_source {
         missing.insert(MissingCapability::ArgumentShape(
             "Metamorphosis generation ordering",
+        ));
+    }
+
+    // #3805 item 1: a Nightmare copies a generator past its preview. The
+    // boundary's seeded previews count one body per physical copy (each
+    // Infernal Blade, Bundle of Joy, Jack, Distraction, White Noise and
+    // Abundance Exhausts, so each plays once). `Nightmare/<OnPlay>d__7::
+    // MoveNext` RVA `0x3af074` selects any Hand card with no filter (IL
+    // `0x004b`) and `NightmarePower/<BeforeHandDraw>d__11::MoveNext` RVA
+    // `0x33ed34` adds three clones of it to Hand at the next turn start. Each
+    // clone's play draws the live Generation stream again, past the last
+    // previewed shuffle, and its result is outside the interned prefix: the
+    // root admitted and the copy's body then stopped on `UnknownMintIdentity`
+    // without naming Nightmare. Refuse at the root, by name.
+    //
+    // A generator whose COMPLETE pool is interned is a live draw over known
+    // atoms at every stream position and for every copy, so it is not
+    // counted: an Infernal Blade, Jack, Distraction or White Noise under its
+    // complete-closure predicate, and a Bundle of Joy when every L0 Colorless
+    // row is an atom (the Metamorphosis gate above has that IL). Abundance is
+    // counted always, as every ordering gate counts it. Counted from physical
+    // cards: a Nightmare copies only a card that is in Hand, and a generated
+    // copy of one of these enters the catalog through the closure walk, which
+    // interns its whole pool where it has an arm.
+    if nightmare_copy_is_reachable(state, catalog)
+        && ((infernal_blades > 0 && !infernal_blade_closure_is_complete)
+            || (jacks > 0 && !jack_closure_is_complete)
+            || (bundles_of_joy > 0 && !bundle_of_joy_closure_is_complete)
+            || abundances > 0
+            || (distractions > 0 && !distraction_closure_is_complete)
+            || (white_noises > 0 && !white_noise_closure_is_complete))
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "Nightmare beside a finite-preview generator",
         ));
     }
 
@@ -7376,7 +7684,16 @@ pub fn admit(
             "abundance generation ordering",
         ));
     }
-    if debris > 0 && crash_landings == 0 {
+    // A physical Debris needs a card in the piles that mints one. Two do:
+    // Crash Landing's hand-cap body, and Collision Course
+    // (`CollisionCourse/<OnPlay>d__5::MoveNext`, RVA 0x392f78: after the
+    // awaited `AttackCommand::Execute` at IL_0088, `CreateCard<Debris>` at
+    // IL_00ef goes to `CardPileCmd::AddGeneratedCardToCombat` at IL_00fc),
+    // whose `GenerateFixedStatus` row interns the same L0 Debris. A root taken
+    // after either has resolved (Whispering Earring plays the opening Hand
+    // before the first player input) carries the Debris beside its minter in
+    // Discard or Exhaust, so every pile counts.
+    if debris > 0 && crash_landings == 0 && collision_courses == 0 {
         missing.insert(MissingCapability::ArgumentShape(
             "Debris generation provenance",
         ));
@@ -7525,8 +7842,9 @@ pub fn admit(
     // Potential, whose fresh reference HashSet enumerates live Draw in
     // insertion order (R52D), so duplicate `(CardId, upgrade)` keys (live or
     // minted later by a card/move/power writer, an upgrade, or Catastrophe's
-    // direct Draw play) are exact (#3197). Only the unmodeled Perfect Fit
-    // `ModifyShuffleOrder` listener still closes the entry, and play-time
+    // direct Draw play) are exact (#3197). The shuffle applies Perfect Fit's
+    // `ModifyShuffleOrder` listeners (#3756); only a listener order an
+    // inexact state cannot name still closes the entry, and play-time
     // preflight re-checks it against the live piles.
     let reboot_reachable =
         crate::steps::defect_rare::reboot_physical_source_is_reachable(state, catalog);
@@ -7551,22 +7869,16 @@ pub fn admit(
         ));
     }
 
-    // Debilitate and Heirloom Hammer retain target identity beyond their
-    // attack. A lethal hit can consume Axebot Stock and replace that object
-    // in-place; their step/selection continuations are not yet audited
-    // against the replacement. The catalog is the reachable closure,
-    // including leaves pre-interned for generators, so refuse each composition
-    // at entry with its own stable reason. Stock zero and catalogs without the
-    // corresponding source remain admitted. Mangle and Fight Me admit
-    // (#3326): their single trailing `PowerCmd.Apply` compares the play's
-    // frozen `(slot, uid)` identity, which a Stock respawn's fresh creation
-    // uid never matches (`steps::templates::stock_replaced_target_is_current`).
-    let debilitate_reachable = catalog
-        .reachable_specs()
-        .any(|spec| spec.identity.id == CardId::Debilitate && card_row_is_admitted(catalog, spec));
-    let heirloom_hammer_reachable = catalog.reachable_specs().any(|spec| {
-        spec.identity.id == CardId::HeirloomHammer && card_row_is_admitted(catalog, spec)
-    });
+    // A lethal hit can consume Axebot Stock and replace the attacked
+    // Creature in place. Every card that carries its target past the attack
+    // admits that composition now. Mangle and Fight Me (#3326), Debilitate
+    // and Knockdown (#3747): the single trailing `PowerCmd.Apply` compares
+    // the play's frozen `(slot, uid)` identity, which a Stock respawn's fresh
+    // creation uid never matches
+    // (`steps::templates::stock_replaced_target_is_current`). Heirloom Hammer
+    // (#3747): nothing after its attack reads the target, and its suspended
+    // selection resolves the frozen identity through
+    // `monsters::axebot_replacement_of`.
     let fight_me_strength_max = catalog
         .reachable_specs()
         .filter(|spec| spec.identity.id == CardId::FightMe && card_row_is_admitted(catalog, spec))
@@ -7581,20 +7893,6 @@ pub fn admit(
         })
         .max();
     let fight_me_reachable = fight_me_strength_max.is_some();
-    if debilitate_reachable
-        && crate::steps::templates::post_attack_stock_target_identity_is_unrepresentable(state)
-    {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Debilitate Axebot Stock target identity",
-        ));
-    }
-    if heirloom_hammer_reachable
-        && crate::steps::templates::post_attack_stock_target_identity_is_unrepresentable(state)
-    {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Heirloom Hammer Axebot Stock target identity",
-        ));
-    }
     if fight_me_strength_max.is_some_and(|amount| {
         state
             .powers
@@ -7650,6 +7948,9 @@ pub fn admit(
         .iter()
         .filter(|card| card.flags & crate::hot::CARD_FLAG_DUPE == 0)
         .count();
+    // #3794: Nightmare copies of The Ball are further transfer sources.
+    let future_the_ball_transfers =
+        nightmare_multiplied_count(state, catalog, future_the_ball_transfers);
     let largesse_can_generate_the_ball = largesse_source_reachable
         && LARGESSE_MULTIPLAYER_COLORLESS_POOL_V1101.contains(&CardId::TheBall);
     let future_the_ball_body_reachable =
@@ -7722,37 +8023,13 @@ pub fn admit(
         ));
     }
 
-    // Hibernate shares native's acquisition-ordered AfterPlayerTurnStart
-    // player-power walk with every peer below. Canonical State carries only
-    // amounts, so refuse both live and immutable-catalog future peers before
-    // the exact source can publish its power/Channel prefix. SummonNextTurn is
-    // deliberately absent: its Osty-only mutation commutes with Hibernate's
-    // amount-only decrement.
+    // Hibernate's decrement is a member of the acquisition-ordered
+    // AfterPlayerTurnStart player-power walk (#3877), so it owes no gate
+    // beside the other members.
     let hibernate_reachable = state.powers.get(PowerId::Hibernate).is_some()
         || catalog
             .reachable_specs()
             .any(|spec| crate::steps::defect_uncommon::hibernate_program_is_exact(catalog, spec));
-    let hibernate_live_peer = crate::steps::defect_uncommon::HIBERNATE_TURN_START_PEERS
-        .into_iter()
-        .any(|(power, _)| match power {
-            PowerId::Inferno => {
-                state.powers.get(PowerId::Inferno).is_some()
-                    || state.powers.get(PowerId::InfernoSelf).is_some()
-            }
-            PowerId::CrimsonMantle => {
-                state.powers.get(PowerId::CrimsonMantle).is_some()
-                    || state.powers.get(PowerId::CrimsonSelf).is_some()
-            }
-            _ => state.powers.get(power).is_some(),
-        });
-    let hibernate_future_peer = catalog
-        .reachable_specs()
-        .any(|spec| crate::steps::defect_uncommon::hibernate_turn_start_writer(spec.row).is_some());
-    if hibernate_reachable && (hibernate_live_peer || hibernate_future_peer) {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Hibernate AfterPlayerTurnStart order",
-        ));
-    }
     if hibernate_reachable && !crate::engine::damage::player_type_one_listener_order_is_exact(state)
     {
         missing.insert(MissingCapability::ArgumentShape(
@@ -7907,15 +8184,23 @@ pub fn admit(
     // the one the player happens to pick. Before slice A that meant the Queen
     // roster and nothing else, because `queen_amalgam_follow_up` was a two-kind
     // table; the wall is now the shared representability gate.
-    if whistle_reachable
-        && (state.multiplayer_ally_key != 0
-            || !state.monsters.iter().all(|monster| {
-                super::monsters::whistle_stun_target_is_representable(state, catalog, monster)
-            }))
-    {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Whistle Queen/Amalgam lifecycle",
-        ));
+    //
+    // #3823: each unrepresentable target refuses under its own reason
+    // (`monsters::whistle_stun_target_refusal`). The old single name covered
+    // rosters with no Queen in them.
+    if whistle_reachable {
+        if state.multiplayer_ally_key != 0 {
+            missing.insert(MissingCapability::ArgumentShape(
+                super::monsters::WHISTLE_QUEEN_AMALGAM,
+            ));
+        }
+        for monster in state.monsters.iter() {
+            if let Some(name) =
+                super::monsters::whistle_stun_target_refusal(state, catalog, monster)
+            {
+                missing.insert(MissingCapability::ArgumentShape(name));
+            }
+        }
     }
     // A live Queen at `loop_pos` 0 no longer needs exact piles at the root
     // (#3404): Puppet Strings promotes them with its Chains write, as Hex's
@@ -8773,9 +9058,9 @@ pub fn admit(
             // installs `CreatureCmd::Stun(Owner, null)` (`0x33cd60`
             // IL_0068-IL_006f), and a root is admitted for the whole fight,
             // so a kind that resolves today and not at `loop_pos + 1` is not
-            // admissible. This is the same predicate Whistle's gate and the
-            // `the_generic_stun_owner_set_is_exactly_the_three_bowlbug_workers` pin
-            // read, not a second opinion about it. A Rock takes IL_0056's
+            // admissible. Since #3823 the carrier kinds are their own list
+            // (`monsters::IMBALANCED_GENERIC_CARRIER_KINDS`), narrower than
+            // Whistle's generic owner set. A Rock takes IL_0056's
             // `isinst` arm instead, which #2662 and slice A already model,
             // and `imbalanced_clone_recipient_is_representable` is the one
             // predicate that says so.
@@ -9000,11 +9285,14 @@ pub fn admit(
         // Wrigglers (`_spawn_wrigglers`, frozen Python, deleted #2827) and Gremlin Merc Surprise's
         // Fat/Sneaky Gremlins (`_spawn_gremlin_merc_pair`) —
         // none of them an
-        // override-capable kind. Pinning the wire field to that writer set is
-        // what keeps `monster_act`'s dispatch-order transposition
-        // unobservable: Python consumes `spawn_noop` BEFORE its
-        // override chain, while `engine/turn.rs` resolves the
-        // override first, so a monster carrying both would diverge (#1387).
+        // override-capable kind in Python. The frozen sim consumed
+        // `spawn_noop` BEFORE its override chain, while `engine/turn.rs`
+        // resolves the override first (#1387). Since #3823 all three can
+        // carry the generic stun, and override-first is the native order:
+        // `spawn_noop` is the SPAWNED_MOVE telegraph, the STUNNED state
+        // parks it and performs first (`monsters::
+        // generic_stun_owner_state_is_representable`, with the harness
+        // trace). The pin stays, because that reading is these kinds' own.
         if monster.spawn_noop
             && !matches!(
                 monster.kind,
@@ -9081,14 +9369,7 @@ pub fn admit(
                     continue;
                 }
             }
-            let random_state_exact = if monster.kind == MonsterKind::SlitheringStrangler {
-                crate::engine::turn::slithering_strangler_ai_state_is_exact(monster)
-            } else if monster.kind == MonsterKind::HunterKiller {
-                crate::engine::turn::hunter_killer_ai_state_is_exact(monster)
-            } else {
-                valid_random_ai_state(monster, moves.len())
-            };
-            if !random_state_exact {
+            if !random_ai_state_is_exact(monster, moves.len()) {
                 missing.insert(MissingCapability::ArgumentShape("random AI state"));
             }
             let compiled = catalog.moves(monster.kind);
@@ -9350,6 +9631,11 @@ pub fn admit(
             "Funerary Mask generation closure",
         ),
         (
+            RelicId::RelicNinjaScroll,
+            CardId::Shiv,
+            "Ninja Scroll generation closure",
+        ),
+        (
             RelicId::RelicRadiantPearl,
             CardId::Luminesce,
             "Radiant Pearl generation closure",
@@ -9455,7 +9741,12 @@ pub fn admit(
             "Tea of Discourtesy + Snecko Eye entry order",
         ));
     }
-    if hooks.owns(RelicId::RelicBlessedAntler)
+    // #3635: the `BeforeHandDraw` relic bodies run in the recorded order of a
+    // vouched inventory (`relics::before_hand_draw`), so this hook's
+    // same-hook order refusals (this one, `Ninja Scroll + Radiant Pearl` and
+    // `Jeweled Mask` below) stand for an unvouched one only.
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicBlessedAntler)
         && [
             RelicId::RelicToolbox,
             RelicId::RelicNinjaScroll,
@@ -9472,13 +9763,26 @@ pub fn admit(
         ));
     }
     // #2970: Crossbow's same-`AfterSideTurnStart` peers. Native awaits the
-    // listeners in inventory order; this engine runs Crossbow at a fixed
-    // point (`engine::relics::after_side_turn_start`: after Lantern,
-    // Candelabra and the flowers, before Pael's Legion and Brimstone in
-    // `after_side_turn_start_late`). Five peers are admitted because their
+    // listeners in inventory order, and so does this engine on a vouched
+    // inventory (`engine::relics::after_side_turn_start`, #3635), where
+    // nothing here refuses. On an unvouched one it runs Crossbow at a fixed
+    // point (after Lantern, Candelabra and the flowers, before the templates,
+    // Pael's Legion and Brimstone). Six peers are admitted there because their
     // bodies commute with Crossbow's, read from IL (v0.111.0 `sts2.dll`
     // SHA-256 `9cb4f1ad…12b4`):
     //
+    // * Stone Calendar (#3756). `StoneCalendar::AfterSideTurnStart` (RVA
+    //   `0x9be34`, synchronous) tests that the owner participates
+    //   (IL_000e-IL_001d) and `TurnNumber == DamageTurn` (IL_0026-IL_004a),
+    //   then calls `RelicModel::set_Status(1)` (IL_004d-IL_004e) and
+    //   `InvokeDisplayAmountChanged` (IL_0054): a display status and a UI
+    //   event, with no command, no field of its own and no RNG.
+    //   `RelicModel::get_Status` is read by `RelicModel::UpdateTexture`
+    //   (`0x84888`), the inventory holder's `RefreshStatus` and Pael's Flesh
+    //   for its own relic, never for this one. Its damage is a different
+    //   hook, `<BeforeSideTurnEnd>d__14` (`0x3318b4`), gated on the turn
+    //   number (IL_003e-IL_005e). So its place among this hook's listeners is
+    //   unobservable in either recorded order and on an unvouched inventory.
     // * Lantern (`<AfterSideTurnStart>d__6` `0x328268`, turn 1), Candelabra
     //   (`d__7` `0x32145c`, turn 2) and Happy Flower (`d__20` `0x326434`, its
     //   own `TurnsSeen` counter) each end in `PlayerCmd::GainEnergy`
@@ -9510,18 +9814,11 @@ pub fn admit(
     // applications add either way, but their order is visible to a
     // first-application reader such as Ruined Helmet, so Brimstone beside a
     // reachable Arsenal refuses by its own name below unless a vouched
-    // inventory decides the pair (#3381): Crossbow recorded first is the
-    // engine's fixed order, and Brimstone recorded first moves Brimstone
-    // ahead of Crossbow (`engine::relics::brimstone_leads_crossbow`, which
-    // carries the IL). An unvouched or interleaved inventory still refuses.
+    // inventory decides the pair (#3381, #3635): the walk runs the two in
+    // recorded order. An unvouched inventory still refuses.
     if hooks.owns(RelicId::RelicCrossbow)
         && hooks.owns(RelicId::RelicBrimstone)
-        && !super::relics::relic_recorded_before(
-            catalog,
-            RelicId::RelicCrossbow,
-            RelicId::RelicBrimstone,
-        )
-        && !super::relics::brimstone_leads_crossbow(catalog)
+        && !hooks.dispatch_ordered()
         && (catalog
             .reachable_specs()
             .any(|spec| spec.identity.id == CardId::Arsenal)
@@ -9532,9 +9829,9 @@ pub fn admit(
         ));
     }
     if hooks.owns(RelicId::RelicCrossbow)
+        && !hooks.dispatch_ordered()
         && [
             RelicId::RelicAkabeko,
-            RelicId::RelicBigHat,
             RelicId::RelicBoomingConch,
             RelicId::RelicBread,
             RelicId::RelicChandelier,
@@ -9553,7 +9850,6 @@ pub fn admit(
             RelicId::RelicRunicCapacitor,
             RelicId::RelicSai,
             RelicId::RelicSealOfGold,
-            RelicId::RelicStoneCalendar,
             RelicId::RelicSymbioticVirus,
             RelicId::RelicVeryHotCocoa,
         ]
@@ -9597,47 +9893,22 @@ pub fn admit(
             ));
         }
     }
-    if hooks.owns(RelicId::RelicBigHat) {
-        if state.reward_card_pool != Some(RewardPool::Ironclad)
+    // Big Hat has no same-hook order refusal (#3635). Under this provenance
+    // gate the owner is a fully-unlocked solo Ironclad, whose Ethereal pool is
+    // empty, so `BigHat/<AfterSideTurnStart>d__6::MoveNext` (RVA `0x31f64c`)
+    // leaves at IL_00af-IL_00b8, before `Flash` (IL_00be) and before the
+    // `CombatCardGeneration` getter (IL_00ea). A body that writes nothing has
+    // no observable place among its peers, in any inventory. (Until #3635
+    // this refused 22 peers as `Big Hat same-hook relic acquisition order`.)
+    if hooks.owns(RelicId::RelicBigHat)
+        && (state.reward_card_pool != Some(RewardPool::Ironclad)
             || state.entropy_card_pool != Some(RewardPool::Ironclad)
             || state.multiplayer_ally_key != 0
-            || !state.fully_unlocked_card_pool_epochs
-        {
-            missing.insert(MissingCapability::ArgumentShape(
-                "Big Hat generation provenance",
-            ));
-        }
-        if [
-            RelicId::RelicAkabeko,
-            RelicId::RelicBoomingConch,
-            RelicId::RelicBread,
-            RelicId::RelicBrimstone,
-            RelicId::RelicCandelabra,
-            RelicId::RelicChandelier,
-            RelicId::RelicDiamondDiadem,
-            RelicId::RelicDivineDestiny,
-            RelicId::RelicFakeHappyFlower,
-            RelicId::RelicFencingManual,
-            RelicId::RelicHappyFlower,
-            RelicId::RelicInfusedCore,
-            RelicId::RelicLantern,
-            RelicId::RelicPaelsFlesh,
-            RelicId::RelicPaelsTears,
-            RelicId::RelicPocketwatch,
-            RelicId::RelicRunicCapacitor,
-            RelicId::RelicSai,
-            RelicId::RelicSealOfGold,
-            RelicId::RelicStoneCalendar,
-            RelicId::RelicSymbioticVirus,
-            RelicId::RelicVeryHotCocoa,
-        ]
-        .into_iter()
-        .any(|peer| hooks.owns(peer))
-        {
-            missing.insert(MissingCapability::ArgumentShape(
-                "Big Hat same-hook relic acquisition order",
-            ));
-        }
+            || !state.fully_unlocked_card_pool_epochs)
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            "Big Hat generation provenance",
+        ));
     }
     if (hooks.owns(RelicId::RelicPowerCell) || hooks.owns(RelicId::RelicJeweledMask))
         && state.turn <= 1
@@ -9647,23 +9918,14 @@ pub fn admit(
             "turn-one relic Selection provenance",
         ));
     }
-    if hooks.owns(RelicId::RelicGamePiece)
-        && state.powers.value(PowerId::Stratagem) > 0
-        && catalog.reachable_specs().any(|spec| spec.is_power)
-    {
-        // Game Piece's Draw is nested in AfterCardPlayed. A selecting
-        // Stratagem reshuffle needs a relic-return continuation that this
-        // batch deliberately does not forge.
-        missing.insert(MissingCapability::ContinuationFrame);
-    }
-    if hooks.owns(RelicId::RelicGamePiece)
-        && hellraiser_can_be_live(state, catalog)
-        && [CardId::SculptingStrike, CardId::SeekerStrike]
-            .into_iter()
-            .any(catalog_reaches)
-    {
-        missing.insert(MissingCapability::ContinuationFrame);
-    }
+    // #3822 retired two `ContinuationFrame` walls here: Game Piece under a
+    // live Stratagem with a reachable Power, and Game Piece under a
+    // reachable Hellraiser with a reachable Seeker Strike or Sculpting
+    // Strike. Game Piece's Draw is its listener's tail inside the serially
+    // awaited `Hook.AfterCardPlayed` walk on the play's own context, so a
+    // choice it begins is owned by the action's ActionReplay receipt
+    // (`draw::game_piece_draw`, `engine::puzzle`). Iron Club's Draw, which
+    // never had a wall, is owned the same way (`draw::iron_club_draw`).
     // Python's run payload does not preserve relic acquisition order. These
     // are the non-commuting same-hook combinations among the admitted relics.
     if hooks.owns(RelicId::RelicIvoryTile) && hooks.owns(RelicId::RelicLostWisp) {
@@ -9680,7 +9942,10 @@ pub fn admit(
             "Game Piece AfterCardPlayed acquisition order",
         ));
     }
-    if hooks.owns(RelicId::RelicNinjaScroll) && hooks.owns(RelicId::RelicRadiantPearl) {
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicNinjaScroll)
+        && hooks.owns(RelicId::RelicRadiantPearl)
+    {
         missing.insert(MissingCapability::ArgumentShape(
             "Ninja Scroll + Radiant Pearl BeforeHandDraw order",
         ));
@@ -9690,7 +9955,12 @@ pub fn admit(
             "incompatible phylactery bootstrap relics",
         ));
     }
-    if hooks.owns(RelicId::RelicBoneTea)
+    // #3635: the `AfterPlayerTurnStart` relic bodies run in the recorded
+    // order of a vouched inventory (`relics::relic_walk_order`), so the
+    // same-hook order refusals below stand for an unvouched one only.
+    let after_player_turn_start_order_unknown = !hooks.dispatch_ordered();
+    if after_player_turn_start_order_unknown
+        && hooks.owns(RelicId::RelicBoneTea)
         && state.fanouts.bone_tea_combats_left() > 0
         && [
             RelicId::RelicEmotionChip,
@@ -9707,7 +9977,8 @@ pub fn admit(
             "Bone Tea AfterPlayerTurnStart acquisition order",
         ));
     }
-    if hooks.owns(RelicId::RelicJeweledMask)
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicJeweledMask)
         && [
             RelicId::RelicRadiantPearl,
             RelicId::RelicFuneraryMask,
@@ -9732,7 +10003,23 @@ pub fn admit(
             "Burning Sticks exhaust relic acquisition order",
         ));
     }
-    if hooks.owns(RelicId::RelicBrilliantScarf) && hooks.owns(RelicId::RelicMummifiedHand) {
+    // #3756: Mummified Hand's Hand filter reads the Scarf's play count
+    // (`relics::mummified_hand_after_card_played` carries the IL), and a
+    // vouched inventory runs the filter on its recorded side of the Scarf's
+    // increment. Only an unvouched or interleaved inventory is unprovable.
+    if hooks.owns(RelicId::RelicBrilliantScarf)
+        && hooks.owns(RelicId::RelicMummifiedHand)
+        && !super::relics::relic_recorded_before(
+            catalog,
+            RelicId::RelicBrilliantScarf,
+            RelicId::RelicMummifiedHand,
+        )
+        && !super::relics::relic_recorded_before(
+            catalog,
+            RelicId::RelicMummifiedHand,
+            RelicId::RelicBrilliantScarf,
+        )
+    {
         missing.insert(MissingCapability::ArgumentShape(
             "Brilliant Scarf and Mummified Hand acquisition order",
         ));
@@ -9759,9 +10046,16 @@ pub fn admit(
             "Biiig Hug + The Abacus shuffle order with Juggernaut",
         ));
     }
+    // #3756: both bodies run at their recorded places in the walk
+    // (`relics::after_card_played_hand`), so the pair is exact on a vouched
+    // inventory in either order: Juggernaut's hit on Permafrost's Block and
+    // the Strike a live Hellraiser plays out of Game Piece's draw each roll
+    // `CombatTargets` in walk order (native traces `jug_piece_perma`,
+    // `jug_perma_piece`). Only an unvouched inventory is unprovable.
     if hooks.owns(RelicId::RelicGamePiece)
         && hooks.owns(RelicId::RelicPermafrost)
         && juggernaut_reachable
+        && !hooks.dispatch_ordered()
     {
         missing.insert(MissingCapability::ArgumentShape(
             "Game Piece + Permafrost order with Juggernaut",
@@ -9921,18 +10215,26 @@ pub fn admit(
     // engine runs those before the walk whatever the inventory says. Recorded
     // after the peer, the engine's order is native. Recorded before it, or on
     // an unvouched inventory, it refuses, as a counter relic does below.
+    //
+    // #3756: the order here is recorded; what refuses is the engine's fixed
+    // place for the peer. Two peers leave the refusal where the place is
+    // unobservable (`relics::game_piece_precedes_out_of_walk_peer_commutes`,
+    // which carries the IL): Unsettling Lamp always, and Velvet Choker unless
+    // a Hellraiser AutoPlay can nest in Game Piece's draw.
     if hooks.owns(RelicId::RelicGamePiece) {
         let relics = hooks.relics();
         let position = relics
             .iter()
             .position(|relic| *relic == RelicId::RelicGamePiece);
+        let nested_play = hellraiser_can_be_live(state, catalog);
         let peer_not_before = super::relics::COUNTER_OUT_OF_WALK_PEERS
             .into_iter()
             .filter(|peer| {
                 hooks.owns(*peer)
-                    && !super::relics::counter_precedes_out_of_walk_peer_commutes(
-                        RelicId::RelicGamePiece,
+                    && !super::relics::game_piece_precedes_out_of_walk_peer_commutes(
                         *peer,
+                        nested_play,
+                        hooks.dispatch_ordered(),
                     )
             })
             .any(|peer| {
@@ -9992,48 +10294,51 @@ pub fn admit(
         .into_iter()
         .filter(|relic| hooks.owns(*relic))
         .count();
-    if turn_start_damage_count > 1 {
-        missing.insert(MissingCapability::ArgumentShape(
-            "multiple AfterPlayerTurnStart enemy-damage relics",
-        ));
-    }
-    if hooks.owns(RelicId::RelicRoyalPoison) && turn_start_damage_count > 0 {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Royal Poison with turn-start enemy damage relic",
-        ));
-    }
-    if hooks.owns(RelicId::RelicMrStruggles) && hooks.owns(RelicId::RelicEmotionChip) {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Mr Struggles + Emotion Chip turn-start order",
-        ));
-    }
-    if hooks.owns(RelicId::RelicEmotionChip) && hooks.owns(RelicId::RelicMercuryHourglass) {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Emotion Chip + Mercury Hourglass turn-start order",
-        ));
-    }
-    if !super::relics::vexing_toasty_order_is_exact(catalog) {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Toasty Mittens + Vexing Puzzlebox recorded order",
-        ));
-    }
-    // Mercury Hourglass leaves this list when the engine runs the pair in its
-    // vouched recorded order (#3321, `relics::mercury_hourglass_vexing_order_is_exact`).
-    if hooks.owns(RelicId::RelicVexingPuzzlebox)
-        && ([
-            RelicId::RelicBellows,
-            RelicId::RelicEmotionChip,
-            RelicId::RelicFestivePopper,
-            RelicId::RelicMrStruggles,
-            RelicId::RelicRoyalPoison,
-        ]
-        .into_iter()
-        .any(|peer| hooks.owns(peer))
-            || !super::relics::mercury_hourglass_vexing_order_is_exact(catalog))
-    {
-        missing.insert(MissingCapability::ArgumentShape(
-            "Vexing Puzzlebox same-hook relic acquisition order",
-        ));
+    // Unvouched only (#3635): two enemy hits, a hit beside Royal Poison or
+    // Emotion Chip, and Vexing Puzzlebox's card beside a Hand choice, a Hand
+    // upgrade or a hit all run in recorded order on a vouched inventory.
+    if after_player_turn_start_order_unknown {
+        if turn_start_damage_count > 1 {
+            missing.insert(MissingCapability::ArgumentShape(
+                "multiple AfterPlayerTurnStart enemy-damage relics",
+            ));
+        }
+        if hooks.owns(RelicId::RelicRoyalPoison) && turn_start_damage_count > 0 {
+            missing.insert(MissingCapability::ArgumentShape(
+                "Royal Poison with turn-start enemy damage relic",
+            ));
+        }
+        if hooks.owns(RelicId::RelicMrStruggles) && hooks.owns(RelicId::RelicEmotionChip) {
+            missing.insert(MissingCapability::ArgumentShape(
+                "Mr Struggles + Emotion Chip turn-start order",
+            ));
+        }
+        if hooks.owns(RelicId::RelicEmotionChip) && hooks.owns(RelicId::RelicMercuryHourglass) {
+            missing.insert(MissingCapability::ArgumentShape(
+                "Emotion Chip + Mercury Hourglass turn-start order",
+            ));
+        }
+        if hooks.owns(RelicId::RelicVexingPuzzlebox) && hooks.owns(RelicId::RelicToastyMittens) {
+            missing.insert(MissingCapability::ArgumentShape(
+                "Toasty Mittens + Vexing Puzzlebox recorded order",
+            ));
+        }
+        if hooks.owns(RelicId::RelicVexingPuzzlebox)
+            && [
+                RelicId::RelicBellows,
+                RelicId::RelicEmotionChip,
+                RelicId::RelicFestivePopper,
+                RelicId::RelicMercuryHourglass,
+                RelicId::RelicMrStruggles,
+                RelicId::RelicRoyalPoison,
+            ]
+            .into_iter()
+            .any(|peer| hooks.owns(peer))
+        {
+            missing.insert(MissingCapability::ArgumentShape(
+                "Vexing Puzzlebox same-hook relic acquisition order",
+            ));
+        }
     }
     let turn_end_pair = |left, right| hooks.owns(left) && hooks.owns(right);
     if turn_end_pair(RelicId::RelicStoneCalendar, RelicId::RelicScreamingFlagon) {
@@ -10070,13 +10375,22 @@ pub fn admit(
             "Tingsha + Tough Bandages discard order with Juggernaut",
         ));
     }
-    if juggernaut_reachable && hooks.owns(RelicId::RelicBrimstone) && hooks.owns(RelicId::RelicSai)
+    // #3635: the `AfterSideTurnStart` relics run in recorded order on a
+    // vouched inventory (`relics::after_side_turn_start`), so each same-hook
+    // order refusal from here to `Brimstone + Infused Core + Cracked Core`
+    // stands for an unvouched inventory only, where the walk is the fixed
+    // early / template / late sequence and the order is unknown.
+    if !hooks.dispatch_ordered()
+        && juggernaut_reachable
+        && hooks.owns(RelicId::RelicBrimstone)
+        && hooks.owns(RelicId::RelicSai)
     {
         missing.insert(MissingCapability::ArgumentShape(
             "Brimstone + Sai turn-start order with Juggernaut",
         ));
     }
-    if hooks.owns(RelicId::RelicBread)
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicBread)
         && hooks.owns(RelicId::RelicCrackedCore)
         && hooks.owns(RelicId::RelicInfusedCore)
     {
@@ -10093,23 +10407,33 @@ pub fn admit(
                 .is_some_and(|spec| spec.identity.id == CardId::Void)
         })
         .count();
+    // #3794: a Void in Hand can be the card a Nightmare copies.
+    let void_count = nightmare_multiplied_count(state, catalog, void_count);
     let bread_active_energy_peer = hooks.owns(RelicId::RelicLantern)
         || hooks.owns(RelicId::RelicVeryHotCocoa)
         || state.booming_conch_elite()
         || hooks.owns(RelicId::RelicHappyFlower) && state.flower() == 2
         || hooks.owns(RelicId::RelicFakeHappyFlower) && state.fake_flower() == 4
         || hooks.owns(RelicId::RelicSealOfGold) && state.gold >= 3;
-    if hooks.owns(RelicId::RelicBread) && void_count >= 2 && bread_active_energy_peer {
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicBread)
+        && void_count >= 2
+        && bread_active_energy_peer
+    {
         missing.insert(MissingCapability::ArgumentShape(
             "Bread with active turn-start energy peer and two Void cards",
         ));
     }
-    if hooks.owns(RelicId::RelicSymbioticVirus) && hooks.owns(RelicId::RelicInfusedCore) {
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicSymbioticVirus)
+        && hooks.owns(RelicId::RelicInfusedCore)
+    {
         missing.insert(MissingCapability::ArgumentShape(
             "Symbiotic Virus + Infused Core turn-start order",
         ));
     }
-    if state.orbs.base_slots() == 0
+    if !hooks.dispatch_ordered()
+        && state.orbs.base_slots() == 0
         && hooks.owns(RelicId::RelicSymbioticVirus)
         && hooks.owns(RelicId::RelicRunicCapacitor)
     {
@@ -10117,7 +10441,8 @@ pub fn admit(
             "Symbiotic Virus + Runic Capacitor zero-slot order",
         ));
     }
-    if state.orbs.base_slots() == 0
+    if !hooks.dispatch_ordered()
+        && state.orbs.base_slots() == 0
         && hooks.owns(RelicId::RelicSymbioticVirus)
         && hooks.owns(RelicId::RelicCrackedCore)
         && (hooks.owns(RelicId::RelicFencingManual) || hooks.owns(RelicId::RelicBrimstone))
@@ -10126,7 +10451,8 @@ pub fn admit(
             "Symbiotic Virus + Cracked Core zero-slot turn-start order",
         ));
     }
-    if hooks.owns(RelicId::RelicRunicCapacitor)
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicRunicCapacitor)
         && hooks.owns(RelicId::RelicInfusedCore)
         && (state.orbs.base_slots() == 0 || hooks.owns(RelicId::RelicCrackedCore))
     {
@@ -10134,23 +10460,26 @@ pub fn admit(
             "Runic Capacitor + Infused Core turn-start order",
         ));
     }
-    if hooks.owns(RelicId::RelicFencingManual) && hooks.owns(RelicId::RelicInfusedCore) {
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicFencingManual)
+        && hooks.owns(RelicId::RelicInfusedCore)
+    {
         missing.insert(MissingCapability::ArgumentShape(
             "Fencing Manual + Infused Core turn-start order",
         ));
     }
     // Fencing Manual's turn-1 Forge (`engine::relics::fencing_manual_after_side_turn_start`,
     // `FencingManual/<AfterSideTurnStart>d__6::MoveNext` `0x324a80`) runs after
-    // Orange Dough's two Hand cards in this port's fixed listener order, while
-    // native follows `Player.Relics` (`CombatState::IterateHookListeners`
-    // `0x137409`), which a loaded document does not carry. The opening admits
-    // the pair only when the vouched inventory places Dough first
-    // (`entry::opening::fencing_manual_turn_start_peers_are_ordered`, #3090).
+    // Orange Dough's two Hand cards in this port's fixed listener order for an
+    // unvouched inventory, while native follows `Player.Relics`
+    // (`CombatState::IterateHookListeners` `0x137409`). A vouched inventory
+    // runs the two in recorded order (#3635) and does not refuse.
     // A loaded document can still reach the walk only on turn 1 before the
     // Forge has run, i.e. with no Sovereign Blade in any pile (the Forge always
     // leaves one); such a document refuses here. Every post-walk turn-1 root
     // carries the Blade and is unaffected.
-    if hooks.owns(RelicId::RelicFencingManual)
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicFencingManual)
         && hooks.owns(RelicId::RelicOrangeDough)
         && state.turn <= 1
         && !PileId::ALL.into_iter().any(|pile| {
@@ -10165,7 +10494,8 @@ pub fn admit(
             "Fencing Manual + Orange Dough turn-one Forge order",
         ));
     }
-    if hooks.owns(RelicId::RelicBrimstone)
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicBrimstone)
         && hooks.owns(RelicId::RelicInfusedCore)
         && hooks.owns(RelicId::RelicCrackedCore)
     {
@@ -10232,6 +10562,37 @@ pub fn admit(
     }
 }
 
+/// The machine validator admission applies to one random-table monster: the
+/// Strangler's and the Hunter Killer's private walks, [`valid_random_ai_state`]
+/// for every other kind.
+pub(crate) fn random_ai_state_is_exact(monster: &crate::hot::HotMonster, table_len: usize) -> bool {
+    match monster.kind {
+        MonsterKind::SlitheringStrangler => {
+            crate::engine::turn::slithering_strangler_ai_state_is_exact(monster)
+        }
+        MonsterKind::HunterKiller => crate::engine::turn::hunter_killer_ai_state_is_exact(monster),
+        _ => valid_random_ai_state(monster, table_len),
+    }
+}
+
+/// Is this a reachable trailing `StateLog` for the kind's machine?
+///
+/// **A move may always follow itself (#3823).** A stun parks the telegraphed
+/// `MoveState`, and the roll after the STUNNED turn re-enters it and logs it a
+/// second time (`MonsterMoveStateMachine::FindNextMoveState` `0x78e94`
+/// IL_0045-IL_008f and IL_009c-IL_00d1; the reading is on
+/// `monsters::GENERIC_STUN_RANDOM_TABLE_KINDS`). A second stun over the
+/// re-shown move logs it a third time, and so on. So for every kind that
+/// takes the stun the per-kind rules below are asked of the log with each run
+/// of equal entries read as one (`runs`), and the rules that forbade a
+/// repeat, or a third in a row, are gone: with a stun every run length is
+/// reachable for every move. What stays are the rules a duplicate cannot
+/// break: which move may follow a different one, the opening entry of a log
+/// shorter than three, `UseOnlyOnce`, and a cooldown window. This function
+/// cannot see whether the fight holds a stun source, so it accepts the
+/// duplicated shapes in every fight; the roll reads whatever log it is given
+/// through the same `GetStateWeight` rules (`turn::roll_random_intent`), so a
+/// shape accepted here is rolled as the game would roll it.
 pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len: usize) -> bool {
     if monster.loop_pos != 0 {
         return false;
@@ -10254,6 +10615,18 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
     {
         return false;
     }
+    // The log with each run of equal entries read as one (see above). Built
+    // on the stack: this runs inside every roll, and the turn transaction's
+    // allocation ceiling counts it.
+    let mut run_buffer = [0_u8; 3];
+    let mut run_len = 0;
+    for &entry in &log {
+        if run_len == 0 || run_buffer[run_len - 1] != entry {
+            run_buffer[run_len] = entry;
+            run_len += 1;
+        }
+    }
+    let runs = &run_buffer[..run_len];
     match monster.kind {
         MonsterKind::LeafSlimeS | MonsterKind::TwigSlimeM if table_len == 2 => {
             // LeafSlimeS: both branches CannotRepeat. As for Mawler,
@@ -10262,11 +10635,10 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
             // TwigSlimeM (#3026): the first branch POKEY_POUNCE is
             // `maxRepeats = 2`, so it repeats freely (and a third time on the
             // exact-zero roll); STICKY_SHOT is CannotRepeat and second, so it
-            // never repeats. The same predicate covers both kinds.
+            // never repeats by a roll. Either move repeats under a stun
+            // (#3823), so no repeat rule is left; TwigSlimeM's opening
+            // STICKY_SHOT is still the first entry of a short log.
             once.is_empty()
-                && !log
-                    .windows(2)
-                    .any(|pair| pair[0] == pair[1] && pair[0] != SLIME_ATTACK_INDEX)
                 && (monster.kind == MonsterKind::LeafSlimeS
                     || log.len() == 3
                     || log[0] == SLIME_STATUS_INDEX)
@@ -10276,14 +10648,13 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
             // RIP is the first generated branch, so when it has zero weight a
             // zero roll selects RIP again. Later zero-weight branches cannot
             // win because an earlier boundary catches first.
-            if log
-                .windows(2)
-                .any(|pair| pair[0] == pair[1] && pair[0] != MAWLER_RIP_INDEX)
-                || log
-                    .iter()
-                    .filter(|index| **index == MAWLER_ROAR_INDEX)
-                    .count()
-                    > 1
+            // A stun repeats any of the three (#3823); ROAR is still rolled
+            // once, so it is one run of the log at most.
+            if runs
+                .iter()
+                .filter(|index| **index == MAWLER_ROAR_INDEX)
+                .count()
+                > 1
                 || !matches!(once.as_slice(), [] | [MAWLER_ROAR_INDEX])
             {
                 return false;
@@ -10312,34 +10683,24 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
         // before testing, so a zero-weight *first* branch still wins an
         // exact-zero roll. Only branch index 0 can therefore repeat; a later
         // zero-weight branch is always caught by an earlier boundary.
-        MonsterKind::SludgeSpinner | MonsterKind::SoulNexus => {
-            once.is_empty()
-                && !log
-                    .windows(2)
-                    .any(|pair| pair[0] == pair[1] && pair[0] != 0)
-        }
+        //
+        // #3823: a stun repeats any branch, so no adjacency rule is left.
+        MonsterKind::SludgeSpinner | MonsterKind::SoulNexus => once.is_empty(),
         // FossilStalker (#3026): all three branches are `maxRepeats = 2`, in
         // native order LATCH, TACKLE, LASH (`turn.rs::roll_random_intent`).
         // Any move may repeat once; a third in a row is reachable only for the
         // first native branch LATCH, on the exact-zero roll.
-        MonsterKind::FossilStalker if table_len == 3 => {
-            once.is_empty()
-                && !log.windows(3).any(|run| {
-                    run[0] == run[1]
-                        && run[1] == run[2]
-                        && run[0] != crate::engine::turn::FOSSIL_STALKER_LATCH_INDEX
-                })
-        }
+        // #3823: a stun over a move already shown twice logs it a third
+        // time, for any of the three, so no run-length rule is left.
+        MonsterKind::FossilStalker if table_len == 3 => once.is_empty(),
         // FlailKnight uses two DIFFERENT AddBranch overloads: WAR_CHANT is
         // CannotRepeat, attacks use maxTimes=2 (v111 0x792b5 vs 0x792a6).
         // Mysterious Knight inherits the machine (#3357, see
         // `RANDOM_AI_ALLOWLIST`), so the same StateLog walk authenticates it.
+        // #3823: a stun logs any of the three again, so the run-length rule
+        // is gone; a short log still opens on RAM (index 2).
         MonsterKind::FlailKnight | MonsterKind::MysteriousKnight if table_len == 3 => {
-            once.is_empty()
-                && (log.len() == 3 || log[0] == 2)
-                && !log
-                    .windows(3)
-                    .any(|p| p[0] == p[1] && p[1] == p[2] && p[0] != 0)
+            once.is_empty() && (log.len() == 3 || log[0] == 2)
         }
         // SpectralKnight::GenerateMoveStateMachine (v111 RVA 0xbf5ec):
         // HEX follows SLASH directly; RAND contains SLASH (maxTimes=2) then
@@ -10347,9 +10708,9 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
         MonsterKind::SpectralKnight if table_len == 3 => {
             once.is_empty()
                 && (log.len() == 3 || log[0] == 0)
-                && log
+                && runs
                     .windows(2)
-                    .all(|pair| matches!((pair[0], pair[1]), (0, 1) | (1, 1) | (1, 2) | (2, 1)))
+                    .all(|pair| matches!((pair[0], pair[1]), (0, 1) | (1, 2) | (2, 1)))
         }
         // The three hybrid machines (#2481 slot 3). Each is a closed
         // transition system rather than a repeat constraint, so each validates
@@ -10361,7 +10722,7 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
         // both attacks return to JAB.
         MonsterKind::Inklet if table_len == 3 => {
             once.is_empty()
-                && log.windows(2).all(|pair| match pair[0] {
+                && runs.windows(2).all(|pair| match pair[0] {
                     INKLET_JAB_INDEX => {
                         pair[1] == INKLET_PIERCING_INDEX || pair[1] == INKLET_WHIRLWIND_INDEX
                     }
@@ -10378,7 +10739,7 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
         MonsterKind::Exoskeleton if table_len == 3 => {
             once.is_empty()
                 && monster.powers.value(PowerId::HardToKill) == EXOSKELETON_HARD_TO_KILL
-                && log.windows(2).all(|pair| match pair[0] {
+                && runs.windows(2).all(|pair| match pair[0] {
                     EXOSKELETON_SKITTER_INDEX => pair[1] == EXOSKELETON_MANDIBLES_INDEX,
                     EXOSKELETON_MANDIBLES_INDEX => pair[1] == EXOSKELETON_ENRAGE_INDEX,
                     EXOSKELETON_ENRAGE_INDEX => {
@@ -10399,11 +10760,17 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
         // the fight-start INITIAL traversal, and this engine is entered after
         // `start_combat` (`engine/mod.rs`), so a log shorter than three here is
         // a mid-fight root whose earlier entries were simply never projected.
+        //
+        // #3823: a stun logs the parked move again, so adjacent entries may
+        // be equal. The window rule stays for a log of three whose middle
+        // entry differs: a duplicate only pushes the earlier use further out
+        // of the window, it never lets VULNERABLE or FRAIL be rolled inside
+        // its own cooldown.
         MonsterKind::Flyconid if table_len == 3 => {
             once.is_empty()
-                && !log.windows(2).any(|pair| pair[0] == pair[1])
                 && !(log.len() == 3
                     && log[0] == log[2]
+                    && log[1] != log[0]
                     && matches!(log[2], FLYCONID_VULNERABLE_INDEX | FLYCONID_FRAIL_INDEX))
         }
         MonsterKind::Fabricator if table_len == 3 => {
@@ -10636,6 +11003,11 @@ fn body_owned_random_enemy_program_is_supported(row: &CardRow) -> bool {
                 | (CardId::Ricochet, 1, [Arg::I(3), Arg::I(5)])
                 | (CardId::SwordBoomerang, 0, [Arg::I(3), Arg::I(3)])
                 | (CardId::SwordBoomerang, 1, [Arg::I(3), Arg::I(4)])
+                // #3756: `RipAndTear::.ctor` RVA `0xe9c27` is TargetType 4
+                // (RandomEnemy); the body is cited on `steps::shared::
+                // attack_random`.
+                | (CardId::RipAndTear, 0, [Arg::I(7), Arg::I(2)])
+                | (CardId::RipAndTear, 1, [Arg::I(9), Arg::I(2)])
         ),
         StepKind::AttackRandomX => matches!(
             (row.id, row.upgrade, step.args, row.x_cost, row.star_x),
@@ -10807,8 +11179,25 @@ fn static_ethereal_attack_program_is_supported(row: &CardRow) -> bool {
 /// what the rest of `ordinary` accepts.
 /// Parse::get_CanonicalKeywords (v111 RVA 0xe7442) supplies Ethereal;
 /// OnPlay MoveNext 0x3b1968 draws CardsVar 3/4 through CardPileCmd::Draw.
+///
+/// Apparition L0 (#3756). `Apparition::get_CanonicalKeywords` RVA `0xd7d6b`
+/// is `[Ethereal (2), Exhaust (1)]` (IL_0001-IL_000e) and `OnUpgrade` RVA
+/// `0xd7dff` is `RemoveKeyword(2)` alone, so only the unupgraded row is
+/// Ethereal; the upgraded row never needed this clause. The type declares no
+/// other behaviour: `.ctor` RVA `0xd7d5e` (cost 1, Skill, Ancient, `Self`),
+/// `get_CanonicalVars` RVA `0xd7da0` (one var, `Decimal.One`), a hover tip,
+/// and `<OnPlay>d__7::MoveNext` RVA `0x38a170`, which is the cast animation
+/// (IL_0025-IL_0044) and one `Apply<IntangiblePower>(Owner.Creature,
+/// vars[..].BaseValue, Owner.Creature, card, false)` (IL_009f-IL_00d1). No
+/// `get_HasTurnEndInHandEffect`, no listener. That body is the row's single
+/// generated `Intangible 1` step, already executed for the upgraded row.
 fn static_ethereal_body_program_is_supported(row: &CardRow) -> bool {
     if seance_program_is_supported(row) {
+        return true;
+    }
+    if matches!((row.id, row.upgrade), (CardId::Apparition, 0))
+        && crate::content_tables::card_row(row.id, row.upgrade) == Some(row)
+    {
         return true;
     }
     matches!(
@@ -11635,6 +12024,22 @@ fn generated_select_program_is_supported(row: &CardRow) -> bool {
                 && *min == 1
                 && *max == 1
                 && matches!(filter, Arg::Nil)
+            // #3794: Nightmare OnPlay RVA 0x3af074 (exact-one unfiltered
+            // FromHand, IL_0030-IL_004d; Apply<NightmarePower>(3) at
+            // IL_0254-IL_0267); `engine::selection`'s
+            // `nightmare_program_is_exact` carries the IL citation.
+            || row.id == CardId::Nightmare
+                && matches!(row.upgrade, 0 | 1)
+                && crate::content_tables::card_row(row.id, row.upgrade) == Some(row)
+                && matches!(
+                    operation,
+                    Arg::List([Arg::S("nightmare_exact"), Arg::I(amount)])
+                        if *amount == i64::from(crate::engine::selection::NIGHTMARE_AMOUNT)
+                )
+                && *pile == "hand"
+                && *min == 1
+                && *max == 1
+                && matches!(filter, Arg::Nil)
             || exact_armaments
                 && matches!(operation, Arg::Select(SelectOp::Upgrade))
                 && matches!(*pile, "hand")
@@ -11772,6 +12177,43 @@ fn future_generated_play_count_exceeds_one(
         // (`Transfigure/<OnPlay>d__9::MoveNext` RVA `0x3c4438`
         // IL_0161-IL_016f, no filter at IL_003c).
         || transfigure_is_reachable(catalog)
+}
+
+/// Whether a `NightmarePower` can multiply a physical card on some admitted
+/// trajectory (#3794): an object is live, or an admitted Nightmare row is
+/// reachable.
+///
+/// `Nightmare/<OnPlay>d__7::MoveNext` RVA `0x3af074` selects any Hand card
+/// (`null` filter, IL_004b) and `NightmarePower/<BeforeHandDraw>d__11` RVA
+/// `0x33ed34` adds three clones of it to Hand at the next turn start. The
+/// selecting clone cards admitted before it are each bound to a card type or
+/// pool (Dual Wield an Attack or Power, Heirloom Hammer a Colorless card);
+/// this one can copy any card a player can hold, Skills, Statuses and Curses
+/// included.
+fn nightmare_copy_is_reachable(state: &HotState, catalog: &Catalog) -> bool {
+    !state.fanouts.nightmare_instances().is_empty()
+        || catalog.reachable_specs().any(|candidate| {
+            candidate.identity.id == CardId::Nightmare && card_row_is_admitted(catalog, candidate)
+        })
+}
+
+/// A physical-copy count as an admission wall must read it once Nightmare is
+/// reachable (#3794).
+///
+/// Admission runs once, at the root, and several walls prove "there is never
+/// a second object of this identity" from the number of physical copies in
+/// the piles. A Nightmare breaks that step for any identity with at least one
+/// copy: the copy can be in Hand when Nightmare is played, and three more
+/// arrive next turn. Such a count is therefore widened by Nightmare's three
+/// copies ([`crate::engine::selection::NIGHTMARE_AMOUNT`]); a count of zero
+/// stays zero, because a Nightmare copies only a card that exists. Every
+/// caller only refuses more for a larger count.
+fn nightmare_multiplied_count(state: &HotState, catalog: &Catalog, count: usize) -> usize {
+    if count > 0 && nightmare_copy_is_reachable(state, catalog) {
+        count.saturating_add(crate::engine::selection::NIGHTMARE_AMOUNT as usize)
+    } else {
+        count
+    }
 }
 
 /// Whether one local Energy-cost row is exactly Transfigure's (#3291).
@@ -11917,6 +12359,9 @@ fn unsupported_direct_draw_frozen_batch_future_is_reachable(
             })
         })
         .count();
+    // #3794: Nightmare copies of the one live parent are further physical
+    // parents, which the first can gather.
+    let live_parent_cards = nightmare_multiplied_count(state, catalog, live_parent_cards);
     let mayhem = state.powers.value(PowerId::Mayhem);
     if mayhem != 0 {
         return mayhem != 1 || !parent_specs.is_empty() || live_parent_cards != 0;
@@ -12856,11 +13301,27 @@ pub(crate) fn part_d_prerequisite_refusal_name(refusal: &super::EngineRefusal) -
             | "Fruit Juice hp domain"
             | "Regen Potion amount/order"
             | "Fairy AfterPotionUsed Belt Buckle"
-            | "Distilled prospective recursive source closure"),
+            | DISTILLED_CLOSURE_ROW_IDENTITY
+            | DISTILLED_CLOSURE_ROW_ADMISSION
+            | DISTILLED_CLOSURE_FAMILIES
+            | DISTILLED_CLOSURE_CARRIER),
         ) => name,
         _ => "Part D potion prerequisites",
     }
 }
+
+/// The four ways [`distilled_recursive_source_closure_refusal`] refuses, each
+/// under its own name (#3209). Before #3824 all four were `"Distilled
+/// prospective recursive source closure"`, which named a recursion that none
+/// of the five corpus fights had.
+pub(crate) const DISTILLED_CLOSURE_ROW_IDENTITY: &str =
+    "Distilled closure: a reachable row is not its generated row";
+pub(crate) const DISTILLED_CLOSURE_ROW_ADMISSION: &str =
+    "Distilled closure: a reachable row is not admitted";
+pub(crate) const DISTILLED_CLOSURE_FAMILIES: &str =
+    "Distilled closure: a reachable row carries two recursive families";
+pub(crate) const DISTILLED_CLOSURE_CARRIER: &str =
+    "Distilled closure: a suspending child without an action-replay carrier";
 
 /// Authenticate the immutable half of a future Distilled recursive closure.
 ///
@@ -12870,16 +13331,31 @@ pub(crate) fn part_d_prerequisite_refusal_name(refusal: &super::EngineRefusal) -
 /// identity it observed. This verifier binds that catalog invariant to the
 /// same row-admission walk and source census used by ordinary admission, and
 /// requires the D2j replay carrier whenever any reachable child can suspend.
-pub(crate) fn distilled_recursive_source_closure_is_exact(
+///
+/// #3824: the row-identity conjunct asks for the row the identity is interned
+/// from in this fight ([`spec_carries_fight_row`]). It used to ask for the
+/// `CARD_ROWS` entry, which no Mad Science spec can carry, so every root that
+/// held a Tinker Time Mad Science beside a Distilled Chaos (or an Entropic
+/// Brew, which can procure one) refused here whatever else it held. The other
+/// conjuncts read `spec.row`, which for Mad Science is the variant program
+/// that runs: `card_row_is_admitted` walks its steps, the family census and
+/// `autoplay_child_requires_suspension` read its steps and flags.
+pub(crate) fn distilled_recursive_source_closure_refusal(
     state: &HotState,
     catalog: &Catalog,
-) -> bool {
+) -> Option<&'static str> {
     let reachable = catalog.reachable_specs().collect::<Vec<_>>();
-    if reachable.iter().any(|spec| {
-        crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade) != Some(spec.row)
-            || !card_row_is_admitted(catalog, spec)
-    }) {
-        return false;
+    if reachable
+        .iter()
+        .any(|spec| !spec_carries_fight_row(catalog, spec))
+    {
+        return Some(DISTILLED_CLOSURE_ROW_IDENTITY);
+    }
+    if reachable
+        .iter()
+        .any(|spec| !card_row_is_admitted(catalog, spec))
+    {
+        return Some(DISTILLED_CLOSURE_ROW_ADMISSION);
     }
     let recursive_source = reachable
         .iter()
@@ -12888,7 +13364,7 @@ pub(crate) fn distilled_recursive_source_closure_is_exact(
         .iter()
         .any(|spec| !distilled_recursive_runtime_families_are_exact(spec.row))
     {
-        return false;
+        return Some(DISTILLED_CLOSURE_FAMILIES);
     }
     let imitation_source = (0..=1).any(|key| {
         state
@@ -12907,7 +13383,10 @@ pub(crate) fn distilled_recursive_source_closure_is_exact(
             .filter(|spec| spec.is_power)
             .any(|spec| !card_row_is_admitted(catalog, spec))
     {
-        return false;
+        // Subsumed by the admission conjunct above, which already refused any
+        // reachable row this finds; kept so the Imitation rule stays written
+        // where a narrower admission conjunct would need it.
+        return Some(DISTILLED_CLOSURE_ROW_ADMISSION);
     }
     let suspending_child = recursive_source
         && reachable.iter().any(|spec| {
@@ -12915,7 +13394,16 @@ pub(crate) fn distilled_recursive_source_closure_is_exact(
                 crate::engine::play::autoplay_child_requires_suspension(pile, spec, catalog)
             })
         });
-    !suspending_child || catalog.requires_action_replay()
+    (suspending_child && !catalog.requires_action_replay()).then_some(DISTILLED_CLOSURE_CARRIER)
+}
+
+/// [`distilled_recursive_source_closure_refusal`] as a predicate.
+#[cfg(test)]
+pub(crate) fn distilled_recursive_source_closure_is_exact(
+    state: &HotState,
+    catalog: &Catalog,
+) -> bool {
+    distilled_recursive_source_closure_refusal(state, catalog).is_none()
 }
 
 /// Whether Hand Trick can mark this selecting Skill Sly and hand it to a
@@ -13006,6 +13494,8 @@ fn future_same_id_sly_parent_generation_multiplicity(
         })
         .count();
     let sources = physical_sources.max(usize::from(!reachable_sources.is_empty()));
+    // #3794: Nightmare copies of a Distraction are further sources.
+    let sources = nightmare_multiplied_count(state, catalog, sources);
     let distraction = if reachable_sources
         .iter()
         .any(|spec| future_generated_play_count_exceeds_one(state, catalog, spec))
@@ -13093,6 +13583,8 @@ fn future_master_planner_sly_parent_child_pair_is_reachable(
                 })
                 .take(2)
                 .count();
+            // #3794: Nightmare copies make a second same-id object.
+            let live_count = nightmare_multiplied_count(state, catalog, live_count);
             let future_generated = future_same_id_sly_parent_generation_multiplicity(
                 state,
                 catalog,
@@ -13484,7 +13976,9 @@ mod tests {
         for (tracked, present, closure, admissible) in [
             (true, true, true, true),
             (true, false, true, true),
-            (true, false, false, false),
+            // #3877: the count outlives the generator that put a Voltaic in
+            // the closure.
+            (true, false, false, true),
             (false, true, true, false),
             (false, false, true, true),
             (false, false, false, true),
@@ -13811,6 +14305,209 @@ mod tests {
     }
 
     #[track_caller]
+    /// #3756: later OrbitPower objects exist only beside a first object of
+    /// the native Amount 1.
+    #[test]
+    fn later_orbit_objects_need_a_first_object_of_amount_one() {
+        let (_, mut state, catalog) = parts();
+        let orb_state = |state: &HotState| {
+            let document = HotBoundary::to_canonical(state, &catalog);
+            admit(&document, state, &catalog)
+                .err()
+                .is_some_and(|refusal| refusal.contains(MissingCapability::OrbState))
+        };
+        state.orbs.set_orbit_later_energy_spent(vec![2, 0]);
+        assert!(orb_state(&state), "no first object");
+        state.powers.set(PowerId::Orbit, SlotWire::Int, 2);
+        assert!(orb_state(&state), "a first object that is not Amount 1");
+        state.powers.set(PowerId::Orbit, SlotWire::Int, 1);
+        assert!(!orb_state(&state));
+    }
+
+    /// #3853: an Abundance beside any other reader of the Generation stream
+    /// is exact at every stream position, because the boundary closes its
+    /// whole L1 Power pool there (`intern_generation_preview`, the Abundance
+    /// block). Before, the pairs marked below admitted on the three-offer
+    /// prefix read at the root's position, and an Abundance played after the
+    /// other reader had drawn stopped on `UnknownMintIdentity`.
+    ///
+    /// For every owner and every card of the DLL's reader scan
+    /// (`boundary::prefix_result_reads_generation_before_a_later_copy`), over
+    /// eight Generation seeds: a pair that admits holds the complete closure,
+    /// and its Abundance opens its screen at 64 displaced stream positions.
+    /// The pairs that admit are pinned, so a gate that starts refusing one is
+    /// seen here. A lone Abundance keeps its three-offer prefix.
+    #[test]
+    fn an_abundance_beside_any_generation_reader_closes_its_whole_power_pool() {
+        const READERS: [CardId; 18] = [
+            CardId::BundleOfJoy,
+            CardId::Discovery,
+            CardId::Distraction,
+            CardId::InfernalBlade,
+            CardId::JackOfAllTrades,
+            CardId::Jackpot,
+            CardId::Largesse,
+            CardId::ManifestAuthority,
+            CardId::Metamorphosis,
+            CardId::Quasar,
+            CardId::Splash,
+            CardId::Stoke,
+            CardId::WhiteNoise,
+            CardId::Calamity,
+            CardId::CallOfTheVoid,
+            CardId::CreativeAi,
+            CardId::HelloWorld,
+            CardId::SpectrumShift,
+        ];
+        // The pairs every owner admits. The other eight refuse on a named
+        // ordering or closure gate of their own (Bundle of Joy, Infernal
+        // Blade and Manifest Authority on `abundance generation ordering`).
+        const ADMITTED: [CardId; 10] = [
+            CardId::Discovery,
+            CardId::Jackpot,
+            CardId::Quasar,
+            CardId::Splash,
+            CardId::Stoke,
+            CardId::WhiteNoise,
+            CardId::Calamity,
+            CardId::CallOfTheVoid,
+            CardId::HelloWorld,
+            CardId::SpectrumShift,
+        ];
+        let complete = |catalog: &Catalog, owner| {
+            crate::boundary::reusable_abundance_closure_is_exact(catalog, owner)
+        };
+        for owner in RewardPool::ALL {
+            let mut admitted = Vec::new();
+            for reader in READERS {
+                assert!(
+                    crate::boundary::prefix_result_reads_generation_before_a_later_copy(reader)
+                );
+                let mut admits = 0;
+                for seed in 0..8u64 {
+                    let lone = generator_document(
+                        CardId::Abundance,
+                        owner,
+                        owner == RewardPool::Regent,
+                        seed,
+                    );
+                    let pair = with_hand_card(&lone, reader, 991);
+                    let catalog = HotBoundary::catalog_from_canonical(&pair).unwrap();
+                    let state = HotBoundary::from_canonical(&pair, &catalog).unwrap();
+                    if admit(&pair, &state, &catalog).is_err() {
+                        continue;
+                    }
+                    admits += 1;
+                    let case = format!("{owner:?} Abundance beside {reader:?}, seed {seed}");
+                    assert!(complete(&catalog, owner), "{case}");
+                    for step in 0..64u64 {
+                        let mut displaced = state.clone();
+                        let seeded = Xoshiro256StarStar::from_seed(40_000 + step);
+                        displaced.rng.set(
+                            RngStream::Generation,
+                            crate::hot::RngStreamState {
+                                words: seeded.words,
+                                counter: seeded.counter,
+                            },
+                        );
+                        let offered = apply_action(
+                            &displaced,
+                            &catalog,
+                            &Action::Play {
+                                uid: jack_uid(&pair),
+                                target: None,
+                                selection: SelectionRef::NONE,
+                            },
+                        )
+                        .unwrap_or_else(|refusal| {
+                            panic!("{case}: Abundance at stream position {step}: {refusal:?}")
+                        })
+                        .state;
+                        assert!(offered.pending.is_some(), "{case}");
+                    }
+                }
+                assert!(admits == 0 || admits == 8, "{owner:?} {reader:?}: {admits}");
+                if admits > 0 {
+                    admitted.push(reader);
+                }
+            }
+            assert_eq!(admitted, ADMITTED, "{owner:?}");
+        }
+        // Alone, the three offers are fixed by the root: no closure.
+        let lone = generator_document(CardId::Abundance, RewardPool::Ironclad, false, 0);
+        let catalog = HotBoundary::catalog_from_canonical(&lone).unwrap();
+        assert!(!complete(&catalog, RewardPool::Ironclad));
+    }
+
+    /// #3853, the two-copy twin (#3498's shape): when an offer of an earlier
+    /// Abundance reads the Generation stream, the player can take and play it
+    /// before the later copy, so the later copy's offers are not fixed by the
+    /// root and the boundary closes the whole pool. With no reader among the
+    /// earlier offers the two prefixes stay. Both arms are found by seed for
+    /// the Defect, whose Power pool holds Hello World and Creative AI.
+    #[test]
+    fn an_earlier_abundance_offer_that_reads_generation_closes_the_pool() {
+        use crate::content_tables::CardType;
+        let reads = crate::boundary::prefix_result_reads_generation_before_a_later_copy;
+        let owner = RewardPool::Defect;
+        let pool = CatalogBuilder::new()
+            .build()
+            .owner_type_generation_pool(owner, CardType::Power);
+        assert!(pool.iter().copied().any(reads));
+        let mut seen = [0usize; 2];
+        let mut readers = 0;
+        for seed in 0..64u64 {
+            let mut rng = Xoshiro256StarStar::from_seed(seed);
+            let mut first = pool.clone();
+            rng.shuffle(&mut first).unwrap();
+            let earlier_reader = first[..3].iter().copied().any(reads);
+            let lone = generator_document(CardId::Abundance, owner, false, seed);
+            let pair = with_hand_card(&lone, CardId::Abundance, 991);
+            let catalog = HotBoundary::catalog_from_canonical(&pair).unwrap();
+            let complete = crate::boundary::reusable_abundance_closure_is_exact(&catalog, owner);
+            // An offer can close the pool by another route (its own
+            // closure reaching a reader), so only one direction is a rule.
+            assert!(
+                complete || !earlier_reader,
+                "seed {seed}: first offers {:?}",
+                &first[..3]
+            );
+            seen[usize::from(complete)] += 1;
+            if !earlier_reader {
+                continue;
+            }
+            readers += 1;
+            // The later copy at any position the reader left the stream.
+            let mut state = HotBoundary::from_canonical(&pair, &catalog).unwrap();
+            // The fixture's second copy carries a uid past the mint counter.
+            state.next_card_uid = 992;
+            for step in 0..16u64 {
+                let mut displaced = state.clone();
+                let seeded = Xoshiro256StarStar::from_seed(50_000 + step);
+                displaced.rng.set(
+                    RngStream::Generation,
+                    crate::hot::RngStreamState {
+                        words: seeded.words,
+                        counter: seeded.counter,
+                    },
+                );
+                apply_action(
+                    &displaced,
+                    &catalog,
+                    &Action::Play {
+                        uid: 991,
+                        target: None,
+                        selection: SelectionRef::NONE,
+                    },
+                )
+                .unwrap_or_else(|refusal| panic!("seed {seed} position {step}: {refusal:?}"));
+            }
+        }
+        assert!(
+            seen[0] > 0 && seen[1] > 0 && readers > 0,
+            "{seen:?} {readers}"
+        );
+    }
     fn assert_admits(document: &CanonicalStateV2) {
         let catalog = HotBoundary::catalog_from_canonical(document).unwrap();
         let state = HotBoundary::from_canonical(document, &catalog).unwrap();
@@ -14922,20 +15619,21 @@ mod tests {
     }
 
     #[test]
-    fn heirloom_hammer_stock_target_replacement_is_a_named_composition_refusal() {
-        for upgrade in 0..=1 {
-            let mut stock = batch_j_document(MonsterKind::Axebot, 1);
-            replace_first_hand_card(&mut stock, CardId::HeirloomHammer, upgrade);
-            assert!(
-                refuse(&stock).contains(MissingCapability::ArgumentShape(
-                    "Heirloom Hammer Axebot Stock target identity"
-                )),
-                "Heirloom Hammer L{upgrade} with live Stock"
-            );
+    fn heirloom_hammer_and_debilitate_admit_a_live_stock_axebot() {
+        // #3747: neither composition is an entry refusal any more. The
+        // execution witnesses are
+        // `play::tests::heirloom_hammer_selection_round_trips_and_freezes_target_identity`
+        // and `play::tests::debilitate_attack_power_artifact_lamp_and_replay_are_one_atomic_play`.
+        for id in [CardId::HeirloomHammer, CardId::Debilitate] {
+            for upgrade in 0..=1 {
+                let mut stock = batch_j_document(MonsterKind::Axebot, 1);
+                replace_first_hand_card(&mut stock, id, upgrade);
+                assert_admits(&stock);
 
-            let mut spent = batch_j_document(MonsterKind::Axebot, 2);
-            replace_first_hand_card(&mut spent, CardId::HeirloomHammer, upgrade);
-            assert_admits(&spent);
+                let mut spent = batch_j_document(MonsterKind::Axebot, 2);
+                replace_first_hand_card(&mut spent, id, upgrade);
+                assert_admits(&spent);
+            }
         }
     }
 
@@ -16439,9 +17137,10 @@ mod tests {
             .collect();
         // +2 (#3291): Transfigure L0/L1's exact-one `transfigure_exact`.
         // +2 (#3374): Dual Wield L0/L1's `("clone_generated", 1 + upgrade)`.
+        // +2 (#3794): Nightmare L0/L1's `("nightmare_exact", 3)`.
         assert_eq!(
             supported_shapes.len(),
-            58,
+            60,
             "complete generated select shape census drifted"
         );
         for row in &rows {
@@ -16504,6 +17203,8 @@ mod tests {
             CardId::Transfigure,
             // #3374
             CardId::DualWield,
+            // #3794
+            CardId::Nightmare,
         ]
         .into_iter()
         .flat_map(|id| [identity(id, 0), identity(id, 1)])
@@ -16512,6 +17213,9 @@ mod tests {
             identity(CardId::TrueGrit, 1),
             identity(CardId::Wish, 0),
             identity(CardId::Wish, 1),
+            // #3877: solo-unplayable, so its body never starts here.
+            identity(CardId::Tutor, 0),
+            identity(CardId::Tutor, 1),
         ])
         .collect();
         assert_eq!(
@@ -16519,6 +17223,18 @@ mod tests {
             "the row-derived gate must enumerate every currently admitted row"
         );
         for candidate in &admitted {
+            if candidate.id == CardId::Tutor {
+                // #3877: admitted solo because it cannot be played solo. No
+                // legal action names it; this forced play reaches the body's
+                // own refusal.
+                assert_eq!(
+                    play_isolated(*candidate).map(|_| ()),
+                    Err(crate::engine::EngineRefusal::MalformedArgs(
+                        "Tutor MultiplayerOnly"
+                    ))
+                );
+                continue;
+            }
             play_isolated(*candidate).unwrap_or_else(|refusal| {
                 panic!(
                     "admitted select row {}+{} refused at play: {refusal}",
@@ -16642,6 +17358,46 @@ mod tests {
             let mut wrong_owner = dual_wield;
             wrong_owner.id = CardId::HeirloomHammer;
             assert!(!generated_select_program_is_supported(&wrong_owner));
+        }
+        // #3794: Nightmare's shape is bound to its own two rows and to the
+        // native Amount; a swapped owner, pile, range, filter or amount
+        // refuses.
+        for upgrade in 0..=1u8 {
+            let nightmare = *crate::content_tables::card_row(CardId::Nightmare, upgrade).unwrap();
+            assert!(generated_select_program_is_supported(&nightmare));
+            assert_eq!(
+                admit(
+                    &document,
+                    &state,
+                    &catalog_with(&base, identity(CardId::Nightmare, upgrade)),
+                ),
+                Ok(())
+            );
+            for mutation in 0..6 {
+                let mut forged = nightmare;
+                let mut args = nightmare.steps[0].args.to_vec();
+                match mutation {
+                    0 => forged.id = CardId::Transfigure,
+                    1 => args[0] = Arg::S("draw"),
+                    2 => args[1] = Arg::I(0),
+                    3 => args[2] = Arg::I(2),
+                    4 => args[3] = Arg::S("attack_or_power"),
+                    5 => args[4] = Arg::List(&[Arg::S("nightmare_exact"), Arg::I(2)]),
+                    _ => unreachable!(),
+                }
+                let leaked_args = Box::leak(args.into_boxed_slice());
+                forged.steps = Box::leak(
+                    vec![crate::content_tables::Step {
+                        kind: StepKind::Select,
+                        args: leaked_args,
+                    }]
+                    .into_boxed_slice(),
+                );
+                assert!(
+                    !generated_select_program_is_supported(&forged),
+                    "Nightmare mutation {mutation}"
+                );
+            }
         }
     }
 
@@ -17229,6 +17985,8 @@ mod tests {
             [
                 identity(CardId::Ricochet, 0),
                 identity(CardId::Ricochet, 1),
+                identity(CardId::RipAndTear, 0),
+                identity(CardId::RipAndTear, 1),
                 identity(CardId::Stardust, 0),
                 identity(CardId::Stardust, 1),
                 identity(CardId::SwordBoomerang, 0),
@@ -17238,7 +17996,7 @@ mod tests {
             ]
             .into_iter()
             .collect(),
-            "only canonical Ricochet, Sword Boomerang, Volley, and Stardust rows have complete RandomEnemy closure"
+            "only canonical Ricochet, Rip and Tear, Sword Boomerang, Volley, and Stardust rows have complete RandomEnemy closure"
         );
         for row in random_attack_rows {
             let candidate = identity(row.id, row.upgrade);
@@ -17645,6 +18403,149 @@ mod tests {
         assert!(
             !distilled_recursive_source_closure_is_exact(&state, &drifted),
             "a reachable source row drift must fail before Distilled rehearsal"
+        );
+        assert_eq!(
+            distilled_recursive_source_closure_refusal(&state, &drifted),
+            Some(DISTILLED_CLOSURE_ROW_IDENTITY)
+        );
+    }
+
+    /// #3824: a Tinker Time Mad Science is its fight's variant row, never the
+    /// `CARD_ROWS` placeholder, and the Distilled closure accepts exactly that
+    /// row.
+    ///
+    /// Every modeled variant at both levels passes beside the recursive
+    /// source families; the same spec carrying another variant's row, or the
+    /// placeholder, is refused under the row-identity name. The five corpus
+    /// roots (`LFTYQNM5AWN0` nodes 44, 45, 47 and `DENN1LA7PRHS` nodes 38, 41)
+    /// refused on this conjunct alone.
+    #[test]
+    fn distilled_closure_accepts_a_mad_science_variant_row_and_no_other() {
+        let state = HotState::at_defaults();
+        let mut modeled = 0;
+        for variant_row in crate::content_tables::MAD_SCIENCE_VARIANT_ROWS.iter() {
+            if variant_row.row.is_none() {
+                continue;
+            }
+            let variant = crate::catalog::MadScienceVariant {
+                tinker_type: variant_row.tinker_type,
+                rider: variant_row.rider,
+            };
+            let upgrade = variant_row.row.as_ref().unwrap().upgrade;
+            let mut builder = CatalogBuilder::new();
+            assert!(builder.set_mad_science_variant(variant));
+            for id in [CardId::Havoc, CardId::Survivor, CardId::KnifeTrap] {
+                builder.intern_reachable(identity(id, 0)).unwrap();
+            }
+            let Ok(atom) = builder.intern_reachable(identity(CardId::MadScience, upgrade)) else {
+                continue;
+            };
+            builder.mark_persistent_action_replay_required();
+            let catalog = builder.build();
+            let spec = *catalog.spec(atom).unwrap();
+            assert!(spec_carries_fight_row(&catalog, &spec));
+            assert!(
+                !spec_carries_registry_row(&spec),
+                "the CARD_ROWS entry is a placeholder no variant spec carries"
+            );
+            if !card_row_is_admitted(&catalog, &spec) {
+                // A variant with its own fight-level gate (Chaos) is refused
+                // under the admission name, not the identity one.
+                assert_eq!(
+                    distilled_recursive_source_closure_refusal(&state, &catalog),
+                    Some(DISTILLED_CLOSURE_ROW_ADMISSION),
+                    "{variant:?} L{upgrade}"
+                );
+                continue;
+            }
+            assert_eq!(
+                distilled_recursive_source_closure_refusal(&state, &catalog),
+                None,
+                "{variant:?} L{upgrade}"
+            );
+            modeled += 1;
+
+            // Another variant's program on this spec is not its generated row.
+            let other = crate::content_tables::MAD_SCIENCE_VARIANT_ROWS
+                .iter()
+                .filter_map(|row| row.row.as_ref())
+                .find(|row| !std::ptr::eq(*row, spec.row) && row.upgrade == upgrade)
+                .unwrap();
+            let placeholder = crate::content_tables::card_row(CardId::MadScience, upgrade).unwrap();
+            for foreign in [other, placeholder] {
+                let mut drifted = catalog.clone();
+                drifted.spec_mut_for_test(atom).unwrap().row = foreign;
+                assert!(!spec_carries_fight_row(
+                    &drifted,
+                    drifted.spec(atom).unwrap()
+                ));
+                assert_eq!(
+                    distilled_recursive_source_closure_refusal(&state, &drifted),
+                    Some(DISTILLED_CLOSURE_ROW_IDENTITY),
+                    "{variant:?} L{upgrade}"
+                );
+            }
+        }
+        assert!(modeled >= 8, "most variants at both levels: {modeled}");
+    }
+
+    /// #3824 / #3209: the closure's other refusals, each under its own name.
+    #[test]
+    fn distilled_closure_names_each_refusal() {
+        let state = HotState::at_defaults();
+        // A suspending child under a recursive source with no replay carrier.
+        // `CatalogBuilder::build` derives the carrier itself whenever such a
+        // pair is reachable, so no catalog of one recursive parent and one
+        // other registry row reaches this name. It is a guard on that
+        // derivation, pinned here rather than witnessed.
+        let parents: Vec<_> = crate::catalog::variant_free_card_rows()
+            .filter(|row| autoplay_parent_program_can_spawn_child(row))
+            .collect();
+        let no_carrier = parents.iter().find_map(|parent| {
+            crate::catalog::variant_free_card_rows().find_map(|child| {
+                let mut builder = CatalogBuilder::new();
+                builder
+                    .intern_reachable(identity(parent.id, parent.upgrade))
+                    .ok()?;
+                builder
+                    .intern_reachable(identity(child.id, child.upgrade))
+                    .ok()?;
+                let catalog = builder.build();
+                (distilled_recursive_source_closure_refusal(&state, &catalog)
+                    == Some(DISTILLED_CLOSURE_CARRIER))
+                .then_some((parent.id, child.id))
+            })
+        });
+        assert!(!parents.is_empty());
+        assert_eq!(no_carrier, None);
+
+        // A reachable registry row admission refuses.
+        let unadmitted = crate::catalog::variant_free_card_rows().find_map(|row| {
+            let mut builder = CatalogBuilder::new();
+            builder
+                .intern_reachable(identity(row.id, row.upgrade))
+                .ok()?;
+            let catalog = builder.build();
+            (distilled_recursive_source_closure_refusal(&state, &catalog)
+                == Some(DISTILLED_CLOSURE_ROW_ADMISSION))
+            .then_some(row.id)
+        });
+        assert!(
+            unadmitted.is_some(),
+            "some registry row is unadmitted in a bare catalog"
+        );
+
+        // No generated program carries two recursive families, so the
+        // families name is unreachable from v0.111.0 rows; this pins that.
+        assert!(
+            crate::content_tables::CARD_ROWS
+                .iter()
+                .chain(
+                    crate::content_tables::MAD_SCIENCE_VARIANT_ROWS
+                        .iter()
+                        .filter_map(|row| row.row.as_ref())
+                )
+                .all(distilled_recursive_runtime_families_are_exact)
         );
     }
 
@@ -19973,6 +20874,10 @@ mod tests {
             (CardId::Dredge, 1),
             (CardId::Eradicate, 0),
             (CardId::Eradicate, 1),
+            // #3877: Fade is solo-unplayable and an AutoPlay routes it
+            // unplayed, so a solo fight admits it.
+            (CardId::Fade, 0),
+            (CardId::Fade, 1),
             (CardId::GoldAxe, 1),
             (CardId::Luminesce, 0),
             (CardId::Luminesce, 1),
@@ -20203,10 +21108,17 @@ mod tests {
                     )));
                 }
             } else if candidate.id == CardId::Tutor {
+                // #3877: a solo fight admits Tutor because its body never
+                // starts there (CanPlay is false, and an AutoPlay routes the
+                // card unplayed). It is not one of the rows played below.
+                assert_eq!(result, Ok(()), "Tutor is inert in the solo fixture");
+                let catalog = catalog_with(&base, candidate);
                 assert!(
-                    result
-                        .expect_err("Tutor remains MultiplayerOnly in the solo fixture")
-                        .contains(MissingCapability::MultiplayerCard(CardId::Tutor))
+                    catalog
+                        .atom(&candidate)
+                        .and_then(|atom| catalog.spec(atom))
+                        .unwrap()
+                        .solo_unplayable
                 );
             } else {
                 assert_eq!(
@@ -20462,6 +21374,31 @@ mod tests {
         let catalog = HotBoundary::catalog_from_canonical(&crash_and_debris).unwrap();
         let state = HotBoundary::from_canonical(&crash_and_debris, &catalog).unwrap();
         assert_eq!(admit(&crash_and_debris, &state, &catalog), Ok(()));
+
+        // Collision Course is the other minter; either upgrade, and from the
+        // Discard it lands in once played.
+        for (upgrade, pile) in [(0, "hand"), (1, "hand"), (0, "discard"), (0, "exhaust")] {
+            let mut collision_and_debris = crash_and_debris.clone();
+            let mut minter = collision_and_debris
+                .piles
+                .get_mut("hand")
+                .unwrap()
+                .remove(1);
+            minter.id = CardId::CollisionCourse.as_str().to_owned();
+            minter.upgrade = upgrade;
+            collision_and_debris
+                .piles
+                .entry(pile.to_owned())
+                .or_default()
+                .push(minter);
+            let catalog = HotBoundary::catalog_from_canonical(&collision_and_debris).unwrap();
+            let state = HotBoundary::from_canonical(&collision_and_debris, &catalog).unwrap();
+            assert_eq!(
+                admit(&collision_and_debris, &state, &catalog),
+                Ok(()),
+                "Collision Course+{upgrade} in {pile}"
+            );
+        }
 
         let row = *crate::content_tables::card_row(CardId::CrashLanding, 0).unwrap();
         let mut mutated = row;
@@ -21678,11 +22615,9 @@ mod tests {
             listener.upgrade = 0;
             listener.enchantment = Some(json!([EnchantmentId::PerfectFit.as_str(), 1]));
             perfect_fit.piles.get_mut("hand").unwrap().push(listener);
-            assert!(
-                refuse(&perfect_fit).contains(MissingCapability::ArgumentShape(
-                    "Reboot frozen shuffle domain"
-                ))
-            );
+            // The full shuffle applies Perfect Fit (#3756); an exact root
+            // holding one is no longer closed by a Reboot name.
+            assert_no_reboot_wall(&perfect_fit);
 
             let mut catastrophe = document.clone();
             let mut direct_writer = source.clone();
@@ -21827,7 +22762,7 @@ mod tests {
     }
 
     #[test]
-    fn bottled_potential_admits_exact_ties_and_keeps_perfect_fit_closed() {
+    fn bottled_potential_admits_exact_ties_and_an_exact_perfect_fit() {
         const DOMAIN_REFUSAL: MissingCapability =
             MissingCapability::ArgumentShape("Bottled Potential frozen shuffle domain");
 
@@ -22047,7 +22982,8 @@ mod tests {
             .entry("exhaust".to_owned())
             .or_default()
             .push(listener);
-        assert!(refuse(&perfect_fit).contains(DOMAIN_REFUSAL));
+        // The full shuffle applies Perfect Fit (#3756): not this wall.
+        assert!(maybe_refuse(&perfect_fit).is_none_or(|refusal| !refusal.contains(DOMAIN_REFUSAL)));
 
         let mut two_rungs = baseline.clone();
         let mut upgraded = source.clone();
@@ -22114,6 +23050,112 @@ mod tests {
         assert!(refusal.contains(MissingCapability::ArgumentShape(
             "infernal blade generation provenance"
         )));
+    }
+
+    /// #3816: an Infernal Blade outside its home character draws its OWNER's
+    /// Attack pool (`InfernalBlade/<OnPlay>d__3::MoveNext` RVA `0x3a7164`
+    /// IL_0021-IL_0095 names no character). The boundary interns that whole
+    /// pool, the shared owner-pool provenance gates it, and a catalog that
+    /// holds only part of the pool refuses on the closure by name.
+    #[test]
+    fn a_foreign_owners_infernal_blade_closes_that_owners_attack_pool() {
+        const PROVENANCE: MissingCapability =
+            MissingCapability::ArgumentShape("infernal blade generation provenance");
+        const CLOSURE: MissingCapability =
+            MissingCapability::ArgumentShape("infernal blade generation closure");
+        for owner in [
+            RewardPool::Defect,
+            RewardPool::Silent,
+            RewardPool::Necrobinder,
+            RewardPool::Regent,
+        ] {
+            let document = generator_document(CardId::InfernalBlade, owner, false, 1959);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            let pool = catalog.infernal_blade_attack_pool(owner);
+            assert_eq!(pool, catalog.crossbow_attack_pool(owner), "{owner:?}");
+            assert!(!pool.is_empty(), "{owner:?}");
+            for id in pool.iter().copied() {
+                assert!(
+                    catalog.is_reachable(identity(id, 0)),
+                    "{owner:?} {id:?} is interned and reachable"
+                );
+            }
+            let verdict = admit(&document, &state, &catalog).err();
+            assert!(
+                verdict.as_ref().is_none_or(
+                    |refusal| !refusal.contains(PROVENANCE) && !refusal.contains(CLOSURE)
+                ),
+                "{owner:?}: {verdict:?}"
+            );
+
+            // The body's own gate: a recorded profile, a live stream, and no
+            // contradicting Entropy owner. An absent Entropy owner is fine.
+            let mut absent = document.clone();
+            absent.player.remove("entropy_card_pool");
+            assert!(
+                maybe_refuse(&absent).is_none_or(|refusal| !refusal.contains(PROVENANCE)),
+                "{owner:?}"
+            );
+            for mutation in ["epochs", "stream", "entropy"] {
+                let mut changed = document.clone();
+                match mutation {
+                    "epochs" => {
+                        changed.player.remove("splash_unlock_epochs");
+                    }
+                    "stream" => {
+                        changed.rng.remove("generation");
+                    }
+                    _ => {
+                        changed
+                            .player
+                            .insert("entropy_card_pool".to_owned(), Value::from("ironclad"));
+                    }
+                }
+                assert!(
+                    refuse(&changed).contains(PROVENANCE),
+                    "{owner:?} {mutation} drift escaped Infernal Blade provenance"
+                );
+            }
+
+            // The same state over a catalog holding one row of the pool, as
+            // a seeded prefix would: the closure refuses by name.
+            let mut builder = CatalogBuilder::new();
+            for card in document.piles.values().flatten() {
+                builder
+                    .intern_reachable(identity(
+                        CardId::from_str(&card.id).unwrap(),
+                        u8::try_from(card.upgrade).unwrap(),
+                    ))
+                    .unwrap();
+            }
+            builder.intern_reachable(identity(pool[0], 0)).unwrap();
+            let prefix_only = builder.build();
+            let state = HotBoundary::from_canonical(&document, &prefix_only).unwrap();
+            assert!(
+                admit(&document, &state, &prefix_only)
+                    .expect_err("a partial owner pool refuses")
+                    .contains(CLOSURE),
+                "{owner:?}"
+            );
+        }
+        // A Defect root with nothing else in the way admits outright.
+        assert_admits(&generator_document(
+            CardId::InfernalBlade,
+            RewardPool::Defect,
+            false,
+            1959,
+        ));
+        // An Ironclad keeps its seeded one-row prefix and never owes the
+        // closure this slice names.
+        let ironclad = generator_document(CardId::InfernalBlade, RewardPool::Ironclad, false, 1959);
+        let catalog = HotBoundary::catalog_from_canonical(&ironclad).unwrap();
+        assert!(
+            crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109
+                .into_iter()
+                .any(|id| catalog.atom(&identity(id, 0)).is_none())
+        );
+        assert!(maybe_refuse(&ironclad).is_none_or(|refusal| !refusal.contains(CLOSURE)));
     }
 
     #[test]
@@ -22883,7 +23925,10 @@ mod tests {
                 "{name} beside a complete White Noise closure is not an ordering conflict"
             );
         }
-        for other in [CardId::Distraction, CardId::Abundance, CardId::BundleOfJoy] {
+        // Abundance left this list with #3825: beside a White Noise the
+        // boundary closes its complete L1 pool, so it is no longer a preview
+        // (`white_noise_and_abundance_are_exact_in_either_order_over_complete_closures`).
+        for other in [CardId::Distraction, CardId::BundleOfJoy] {
             let document = with_hand_card(&base, other, 991);
             assert!(
                 names_with(&document, &complete(&document), ordering),
@@ -22923,6 +23968,138 @@ mod tests {
         assert!(
             !names_with(&census, &census_catalog, ordering),
             "Creative AI + 2 White Noise + Colorless Potion"
+        );
+    }
+
+    /// #3825: a White Noise and an Abundance are exact in either order once
+    /// both closures are complete, and the boundary closes both beside each
+    /// other.
+    ///
+    /// `Abundance/<OnPlay>d__6::MoveNext` RVA `0x3888ec` reads the live stream
+    /// once (`get_CombatCardGeneration` IL `0x0092`, `GetDistinctForCombat`
+    /// IL `0x0097`) and `WhiteNoise/<OnPlay>d__3::MoveNext` RVA `0x3c74ac`
+    /// once (IL `0x0109`/`0x010e`), each at its own play. Abundance was a
+    /// seeded preview only because the boundary interned the three offers
+    /// read at the root's stream position. The pair's catalog is the same at
+    /// every Generation seed and in both hand orders, holds every L0 and L1
+    /// row of the owner's Power pool, and no longer names the gate. A catalog
+    /// that holds White Noise's whole L0 pool but only Abundance's three-offer
+    /// prefix still does. The Ironclad pair is the site census shape
+    /// (`94HMTTMPLYF1` nodes 20 and 22) and admits outright.
+    #[test]
+    fn white_noise_and_abundance_are_exact_in_either_order_over_complete_closures() {
+        use crate::content_tables::CardType;
+        let ordering = MissingCapability::ArgumentShape("white noise generation ordering");
+        for owner in [RewardPool::Ironclad, RewardPool::Defect] {
+            let mut catalogs = BTreeSet::new();
+            for seed in 0..6u64 {
+                let lone = generator_document(CardId::WhiteNoise, owner, false, seed);
+                let pair = with_hand_card(&lone, CardId::Abundance, 991);
+                let mut abundance_first = pair.clone();
+                abundance_first.piles.get_mut("hand").unwrap().swap(0, 1);
+                for document in [&pair, &abundance_first] {
+                    let catalog = HotBoundary::catalog_from_canonical(document).unwrap();
+                    let pool = catalog.owner_type_generation_pool(owner, CardType::Power);
+                    assert!(pool.len() > 3, "{owner:?}: more rows than one offer screen");
+                    for id in pool {
+                        for upgrade in 0..=1 {
+                            assert!(
+                                catalog.atom(&identity(id, upgrade)).is_some(),
+                                "{owner:?} seed {seed}: {id:?} L{upgrade}"
+                            );
+                        }
+                    }
+                    assert!(crate::boundary::reusable_abundance_closure_is_exact(
+                        &catalog, owner
+                    ));
+                    assert!(
+                        !names_with(document, &catalog, ordering),
+                        "{owner:?} seed {seed}"
+                    );
+                    catalogs.insert(
+                        catalog
+                            .specs()
+                            .map(|spec| spec.identity)
+                            .collect::<BTreeSet<_>>(),
+                    );
+                }
+
+                // White Noise's whole L0 pool beside Abundance's three-offer
+                // prefix alone: the prefix is still a preview White Noise's
+                // shuffle moves.
+                let mut abundance_alone = pair.clone();
+                abundance_alone.piles.get_mut("hand").unwrap().remove(0);
+                let prefix = HotBoundary::catalog_from_canonical(&abundance_alone).unwrap();
+                let full = HotBoundary::catalog_from_canonical(&lone).unwrap();
+                let mut builder = CatalogBuilder::new();
+                for catalog in [&prefix, &full] {
+                    for spec in catalog.specs() {
+                        builder.intern(spec.identity).unwrap();
+                    }
+                    for spec in catalog.reachable_specs() {
+                        builder.intern_reachable(spec.identity).unwrap();
+                    }
+                }
+                for id in full.owner_type_generation_pool(owner, CardType::Power) {
+                    builder.intern_reachable(identity(id, 0)).unwrap();
+                }
+                builder.intern_monster(MonsterKind::Toadpole).unwrap();
+                let prefix_only = builder.build();
+                assert!(!crate::boundary::reusable_abundance_closure_is_exact(
+                    &prefix_only,
+                    owner
+                ));
+                assert!(
+                    names_with(&pair, &prefix_only, ordering),
+                    "{owner:?} seed {seed}: a three-offer Abundance prefix is a preview"
+                );
+            }
+            assert_eq!(catalogs.len(), 1, "{owner:?}: seed- and order-independent");
+        }
+
+        let census = with_hand_card(
+            &first_admitted_generator_document(CardId::WhiteNoise, RewardPool::Ironclad, false),
+            CardId::Abundance,
+            991,
+        );
+        assert_admits(&census);
+
+        // The order the old prefix could not serve: White Noise first moves
+        // the stream, and Abundance's live shuffle still offers three
+        // interned L1 Powers.
+        let census = with_hand_card(
+            &first_admitted_generator_document(CardId::Abundance, RewardPool::Ironclad, false),
+            CardId::WhiteNoise,
+            991,
+        );
+        assert_admits(&census);
+        let catalog = HotBoundary::catalog_from_canonical(&census).unwrap();
+        let state = HotBoundary::from_canonical(&census, &catalog).unwrap();
+        let play = |state: &crate::hot::HotState, uid: u32| {
+            apply_action(
+                state,
+                &catalog,
+                &Action::Play {
+                    uid,
+                    target: None,
+                    selection: SelectionRef::NONE,
+                },
+            )
+            .unwrap()
+            .state
+        };
+        let before = state.rng.get(RngStream::Generation);
+        let after_white_noise = play(&state, 991);
+        assert_ne!(after_white_noise.rng.get(RngStream::Generation), before);
+        let offered = play(&after_white_noise, jack_uid(&census));
+        assert_eq!(
+            offered
+                .pending
+                .as_deref()
+                .and_then(|pending| offered.pending_card_play(pending))
+                .and_then(|(record, _)| record.route().ok())
+                .map(|(_, kind)| kind),
+            Some(crate::hot::PendingSelectionKind::Abundance)
         );
     }
 
@@ -24245,6 +25422,92 @@ mod tests {
         );
     }
 
+    /// #3756: a physical Jackpot's rows are closed through the generated
+    /// walk, so the Quasar in a Regent's zero-cost pool carries the Colorless
+    /// pool its plays draw, at the Jackpot's own level (`Jackpot/<OnPlay>d__3::
+    /// MoveNext` RVA `0x3a80d4` upgrades each result of an upgraded source at
+    /// IL `0x0183`-`0x018d`; `Quasar/<OnPlay>d__3::MoveNext` RVA `0x3b4e48`
+    /// upgrades its own offers the same way at IL `0x0074`-`0x007d`).
+    #[test]
+    fn a_physical_jackpot_closes_the_generators_in_its_zero_cost_pool() {
+        const CLOSURE: MissingCapability =
+            MissingCapability::ArgumentShape("Quasar generation closure");
+        for upgrade in 0..=1_u8 {
+            let mut document = generator_document(CardId::Jackpot, RewardPool::Regent, true, 1959);
+            document.piles.get_mut("hand").unwrap()[0].upgrade = i64::from(upgrade);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            assert!(
+                catalog.is_reachable(identity(CardId::Quasar, upgrade)),
+                "a Regent Jackpot+{upgrade} mints Quasar+{upgrade}"
+            );
+            for id in catalog.colorless_generation_pool() {
+                assert!(
+                    catalog.atom(&identity(id, upgrade)).is_some(),
+                    "Quasar+{upgrade} offers {id:?}+{upgrade}"
+                );
+            }
+            assert!(
+                !maybe_refuse(&document).is_some_and(|refusal| refusal.contains(CLOSURE)),
+                "Jackpot+{upgrade}"
+            );
+        }
+        assert_admits(&generator_document(
+            CardId::Jackpot,
+            RewardPool::Regent,
+            true,
+            1959,
+        ));
+    }
+
+    /// #3756: a Soul's Power White Noise never Exhausts, so its body count
+    /// bounds nothing. It is admitted exactly when its whole Power pool is
+    /// interned, and every other non-exhausting generator still refuses.
+    #[test]
+    fn a_non_exhausting_white_noise_needs_its_whole_power_pool() {
+        const CLOSURE: MissingCapability =
+            MissingCapability::ArgumentShape("non-exhausting generator closure");
+        let souls = |id: CardId, beside: Option<CardId>| {
+            let mut document = generator_document(id, RewardPool::Defect, false, 1959);
+            document
+                .player
+                .insert("exact_piles".to_owned(), Value::from(true));
+            document.piles.get_mut("hand").unwrap()[0].enchantment =
+                Some(json!([EnchantmentId::SoulsPower.as_str(), 1]));
+            if let Some(other) = beside {
+                push_physical_card(&mut document, "hand", other, 0);
+            }
+            document
+        };
+        let power_pool_is_closed = |document: &CanonicalStateV2| {
+            let catalog = HotBoundary::catalog_from_canonical(document).unwrap();
+            catalog
+                .owner_type_generation_pool(
+                    RewardPool::Defect,
+                    crate::content_tables::CardType::Power,
+                )
+                .into_iter()
+                .all(|id| catalog.atom(&identity(id, 0)).is_some())
+        };
+
+        // Alone, the boundary previews one seeded row: a second play of the
+        // same card would mint outside it.
+        let alone = souls(CardId::WhiteNoise, None);
+        assert!(!power_pool_is_closed(&alone));
+        assert!(refuse(&alone).contains(CLOSURE));
+
+        // Beside a Creative AI the whole Power pool is interned, and the wall
+        // is silent.
+        let closed = souls(CardId::WhiteNoise, Some(CardId::CreativeAi));
+        assert!(power_pool_is_closed(&closed));
+        assert!(!maybe_refuse(&closed).is_some_and(|refusal| refusal.contains(CLOSURE)));
+
+        // The exemption is White Noise's alone: a Distraction beside the
+        // same closed Power pool still refuses.
+        let distraction = souls(CardId::Distraction, Some(CardId::CreativeAi));
+        assert!(power_pool_is_closed(&distraction));
+        assert!(refuse(&distraction).contains(CLOSURE));
+    }
+
     #[test]
     fn metamorphosis_admission_is_total_for_five_exact_owners_and_reader_ordering() {
         for owner in [
@@ -24258,35 +25521,296 @@ mod tests {
             assert_admits(&document);
         }
 
-        let base = generator_document(CardId::Metamorphosis, RewardPool::Defect, false, 1959);
-        for (index, other) in [
-            CardId::InfernalBlade,
-            CardId::Abundance,
-            CardId::Discovery,
-            CardId::CreativeAi,
-            CardId::HelloWorld,
-            CardId::Calamity,
-            CardId::Stoke,
-            CardId::Splash,
-            CardId::SpectrumShift,
-        ]
-        .into_iter()
-        .enumerate()
-        {
-            let mut mixed = base.clone();
-            let mut card = mixed.piles.get("hand").unwrap()[0].clone();
-            card.uid = Some(900 + index as u64);
-            card.id = other.as_str().to_owned();
-            card.upgrade = 0;
-            card.physical_state = None;
-            mixed.piles.get_mut("hand").unwrap().push(card);
+        const ORDERING: MissingCapability =
+            MissingCapability::ArgumentShape("Metamorphosis generation ordering");
+        let beside = |owner, other: CardId| {
+            let mut mixed = generator_document(CardId::Metamorphosis, owner, false, 1959);
+            push_physical_card(&mut mixed, "hand", other, 0);
+            mixed
+        };
+
+        // #3756: a seeded preview still refuses by name. Abundance and Bundle
+        // of Joy keep theirs on every owner.
+        for (owner, other) in [
+            (RewardPool::Defect, CardId::Abundance),
+            (RewardPool::Defect, CardId::BundleOfJoy),
+            (RewardPool::Ironclad, CardId::Abundance),
+            (RewardPool::Ironclad, CardId::BundleOfJoy),
+        ] {
             assert!(
-                refuse(&mixed).contains(MissingCapability::ArgumentShape(
-                    "Metamorphosis generation ordering"
-                )),
-                "{other:?} escaped the shared Generation-reader census"
+                refuse(&beside(owner, other)).contains(ORDERING),
+                "{other:?} holds a seeded prefix a Metamorphosis draw moves"
             );
         }
+        // An Ironclad Metamorphosis closes the owner's whole Attack pool, which
+        // is Infernal Blade's, so that Blade is a live draw over a complete
+        // pool. Since #3816 a Defect's Infernal Blade is one as well: the
+        // boundary interns that owner's whole Attack pool beside it, where
+        // before it held no modeled pool at all and refused here. Every
+        // reader below draws live over a complete pool too.
+        for (owner, other) in [
+            (RewardPool::Ironclad, CardId::InfernalBlade),
+            (RewardPool::Defect, CardId::InfernalBlade),
+            (RewardPool::Defect, CardId::WhiteNoise),
+            (RewardPool::Defect, CardId::Discovery),
+            (RewardPool::Defect, CardId::HelloWorld),
+            (RewardPool::Defect, CardId::Calamity),
+            (RewardPool::Defect, CardId::Stoke),
+            (RewardPool::Defect, CardId::Splash),
+            (RewardPool::Defect, CardId::SpectrumShift),
+            (RewardPool::Defect, CardId::Quasar),
+            (RewardPool::Defect, CardId::ManifestAuthority),
+            (RewardPool::Defect, CardId::Jackpot),
+        ] {
+            let document = beside(owner, other);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            assert_eq!(
+                admit(&document, &state, &catalog),
+                Ok(()),
+                "{other:?} draws live over a complete pool beside Metamorphosis"
+            );
+        }
+        // The boundary closes Jack's and Distraction's complete pools beside a
+        // physical Metamorphosis, so this gate is silent; their own gates
+        // still list Metamorphosis, and so does Creative AI's.
+        for (other, own) in [
+            (
+                CardId::JackOfAllTrades,
+                "jack of all trades generation ordering",
+            ),
+            (CardId::Distraction, "distraction generation ordering"),
+            (CardId::CreativeAi, "Creative AI generation ordering"),
+        ] {
+            let refusal = refuse(&beside(RewardPool::Defect, other));
+            assert!(!refusal.contains(ORDERING), "{other:?}");
+            assert!(
+                refusal.contains(MissingCapability::ArgumentShape(own)),
+                "{other:?}"
+            );
+        }
+
+        // A Spectrum Shift's Colorless closure reaches a generated Jack and a
+        // generated Bundle of Joy, both over complete pools: the admitted pair
+        // above is the witness for the two `closure_is_complete` exemptions.
+        let spectrum = beside(RewardPool::Defect, CardId::SpectrumShift);
+        let spectrum_catalog = HotBoundary::catalog_from_canonical(&spectrum).unwrap();
+        for id in [CardId::JackOfAllTrades, CardId::BundleOfJoy] {
+            assert!(spectrum_catalog.is_reachable(identity(id, 0)), "{id:?}");
+        }
+
+        // A catalog-reachable reader whose pool is NOT closed stays refused.
+        // Rebuild the lone-Metamorphosis catalog with one extra reachable row
+        // and nothing of that row's own pool.
+        let base = generator_document(CardId::Metamorphosis, RewardPool::Defect, false, 1959);
+        let base_catalog = HotBoundary::catalog_from_canonical(&base).unwrap();
+        let base_state = HotBoundary::from_canonical(&base, &base_catalog).unwrap();
+        let rebuilt = |source: &Catalog, extra: Option<CardId>, atoms: &[CardId]| {
+            let mut builder = CatalogBuilder::new();
+            for spec in source.specs() {
+                builder.intern(spec.identity).unwrap();
+            }
+            for spec in source.reachable_specs() {
+                builder.intern_reachable(spec.identity).unwrap();
+            }
+            for id in atoms {
+                builder.intern(identity(*id, 0)).unwrap();
+            }
+            if let Some(id) = extra {
+                builder.intern_reachable(identity(id, 0)).unwrap();
+            }
+            builder.build()
+        };
+        let control = rebuilt(&base_catalog, None, &[]);
+        assert!(
+            !admit(&base, &base_state, &control)
+                .err()
+                .is_some_and(|refusal| refusal.contains(ORDERING)),
+            "the rebuilt catalog alone never names the ordering"
+        );
+        for other in [
+            CardId::JackOfAllTrades,
+            CardId::BundleOfJoy,
+            CardId::Abundance,
+            CardId::Distraction,
+            CardId::WhiteNoise,
+        ] {
+            let catalog = rebuilt(&base_catalog, Some(other), &[]);
+            assert!(
+                admit(&base, &base_state, &catalog)
+                    .expect_err("an unclosed generated reader refuses")
+                    .contains(ORDERING),
+                "generated {other:?} has no complete closure"
+            );
+        }
+        // #3816: a generated Infernal Blade left this list. Its pool is the
+        // owner's Attack pool, which the Metamorphosis closure in this
+        // catalog already interns whole, so on a Defect owner it is closed
+        // where before no Defect pool existed for it. On a catalog without
+        // that pool it still names the ordering.
+        let blade_pool = base_catalog.infernal_blade_attack_pool(RewardPool::Defect);
+        assert!(
+            blade_pool
+                .iter()
+                .all(|id| base_catalog.atom(&identity(*id, 0)).is_some())
+        );
+        let closed = rebuilt(&base_catalog, Some(CardId::InfernalBlade), &[]);
+        assert!(
+            !admit(&base, &base_state, &closed)
+                .err()
+                .is_some_and(|refusal| refusal.contains(ORDERING)),
+            "a generated Infernal Blade over its owner's whole pool is closed"
+        );
+        let mut builder = CatalogBuilder::new();
+        for card in base.piles.values().flatten() {
+            builder
+                .intern_reachable(identity(
+                    CardId::from_str(&card.id).unwrap(),
+                    u8::try_from(card.upgrade).unwrap(),
+                ))
+                .unwrap();
+        }
+        builder
+            .intern_reachable(identity(CardId::InfernalBlade, 0))
+            .unwrap();
+        let unclosed = builder.build();
+        let unclosed_state = HotBoundary::from_canonical(&base, &unclosed).unwrap();
+        assert!(
+            admit(&base, &unclosed_state, &unclosed)
+                .expect_err("an unclosed generated Infernal Blade refuses")
+                .contains(ORDERING)
+        );
+
+        // A physical Jack, Distraction or White Noise that kept its seeded
+        // prefix (the boundary saw no physical Metamorphosis) refuses beside
+        // a Metamorphosis that is only catalog-reachable.
+        let metamorphosis_pool = base_catalog.metamorphosis_attack_pool(RewardPool::Defect);
+        for other in [
+            CardId::JackOfAllTrades,
+            CardId::Distraction,
+            CardId::WhiteNoise,
+        ] {
+            let document = generator_document(other, RewardPool::Defect, false, 1959);
+            let source = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &source).unwrap();
+            let lone = rebuilt(&source, None, &metamorphosis_pool);
+            assert!(
+                !admit(&document, &state, &lone)
+                    .err()
+                    .is_some_and(|refusal| refusal.contains(ORDERING)),
+                "{other:?} alone never names Metamorphosis"
+            );
+            let catalog = rebuilt(&source, Some(CardId::Metamorphosis), &metamorphosis_pool);
+            assert!(
+                admit(&document, &state, &catalog)
+                    .expect_err("a prefix-only preview refuses")
+                    .contains(ORDERING),
+                "a prefix-only {other:?} is moved by a generated Metamorphosis"
+            );
+        }
+
+        // A pending Discovery or Abundance frame keeps its frozen offer and
+        // its own seeded replays, and still refuses by name.
+        for (other, kind) in [
+            (
+                CardId::Discovery,
+                crate::hot::PendingSelectionKind::Discovery,
+            ),
+            (
+                CardId::Abundance,
+                crate::hot::PendingSelectionKind::Abundance,
+            ),
+        ] {
+            let document = beside(RewardPool::Defect, other);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            let parked = crate::engine::legal_actions(&state, &catalog)
+                .iter()
+                .filter_map(|action| crate::engine::apply_action(&state, &catalog, action).ok())
+                .map(|transition| transition.state)
+                .find(|candidate| {
+                    candidate.pending.as_deref().is_some_and(|pending| {
+                        candidate
+                            .pending_card_play(pending)
+                            .and_then(|(record, _)| record.route().ok())
+                            .is_some_and(|(_, pending_kind)| pending_kind == kind)
+                    })
+                })
+                .unwrap_or_else(|| panic!("{other:?} parks its offer"));
+            // The Abundance root is itself refused, so its parked child has
+            // no admitted predecessor to publish and is admitted as the hot
+            // state it is; the Discovery child cold-reloads first.
+            let refusal = if other == CardId::Abundance {
+                admit(&document, &parked, &catalog)
+            } else {
+                let pending = HotBoundary::try_to_canonical(&parked, &catalog).unwrap();
+                let catalog = HotBoundary::catalog_from_canonical(&pending).unwrap();
+                let state = HotBoundary::from_canonical(&pending, &catalog).unwrap();
+                admit(&pending, &state, &catalog)
+            };
+            assert!(
+                refusal
+                    .expect_err("a pending generation frame refuses")
+                    .contains(ORDERING),
+                "pending {other:?}"
+            );
+        }
+    }
+
+    /// #3756: a physical Jackpot draws the live Generation stream at a play
+    /// that can precede a held White Noise, so the boundary closes White
+    /// Noise's whole Power pool beside one and the pair is exact in either
+    /// order. A White Noise that kept a one-row prefix still refuses.
+    #[test]
+    fn white_noise_beside_a_physical_jackpot_closes_its_power_pool() {
+        const ORDERING: MissingCapability =
+            MissingCapability::ArgumentShape("white noise generation ordering");
+        let mut pair = generator_document(CardId::WhiteNoise, RewardPool::Defect, false, 1959);
+        push_physical_card(&mut pair, "hand", CardId::Jackpot, 0);
+        let catalog = HotBoundary::catalog_from_canonical(&pair).unwrap();
+        let state = HotBoundary::from_canonical(&pair, &catalog).unwrap();
+        for id in catalog
+            .owner_type_generation_pool(RewardPool::Defect, crate::content_tables::CardType::Power)
+        {
+            assert!(catalog.atom(&identity(id, 0)).is_some(), "{id:?}");
+        }
+        assert_eq!(admit(&pair, &state, &catalog), Ok(()));
+
+        // The same state over the lone White Noise's prefix-only catalog,
+        // with the Jackpot row made reachable: the prefix arm names it.
+        let lone = generator_document(CardId::WhiteNoise, RewardPool::Defect, false, 1959);
+        let source = HotBoundary::catalog_from_canonical(&lone).unwrap();
+        let lone_state = HotBoundary::from_canonical(&lone, &source).unwrap();
+        assert_eq!(admit(&lone, &lone_state, &source), Ok(()));
+        assert!(
+            source
+                .owner_type_generation_pool(
+                    RewardPool::Defect,
+                    crate::content_tables::CardType::Power,
+                )
+                .into_iter()
+                .any(|id| source.atom(&identity(id, 0)).is_none()),
+            "the lone White Noise keeps a prefix"
+        );
+        let mut builder = CatalogBuilder::new();
+        for spec in source.specs() {
+            builder.intern(spec.identity).unwrap();
+        }
+        for spec in source.reachable_specs() {
+            builder.intern_reachable(spec.identity).unwrap();
+        }
+        for spec in catalog.specs() {
+            if spec.identity.id == CardId::Jackpot {
+                builder.intern_reachable(spec.identity).unwrap();
+            }
+        }
+        let prefix_only = builder.build();
+        let state = HotBoundary::from_canonical(&pair, &prefix_only).unwrap();
+        assert!(
+            admit(&pair, &state, &prefix_only)
+                .expect_err("a prefix-only White Noise beside a Jackpot refuses")
+                .contains(ORDERING)
+        );
     }
 
     #[test]
@@ -24321,15 +25845,8 @@ mod tests {
             state.monsters_mut().push(owner);
             assert!(crate::moves::spawned::constrict_absent_strangler_entry_is_exact(&state));
 
-            let result = admit(&document, &state, &catalog);
-            if id == CardId::Coordinate {
-                assert_eq!(result, Ok(()));
-            } else {
-                let refusal = result.expect_err("Fade still needs an AnyAlly target");
-                assert!(refusal.contains(MissingCapability::ArgumentShape(
-                    "AutoPlay AnyAlly missing teammate target"
-                )));
-            }
+            // #3877: Fade no longer refuses a solo fight for its AutoPlay.
+            assert_eq!(admit(&document, &state, &catalog), Ok(()), "{id:?}");
         }
     }
 
@@ -26666,7 +28183,14 @@ mod tests {
 
             let mut wrong_pair = document.clone();
             if loop_pos == 4 {
+                // #3823: SCREAM_MOVE without the stack is the state a stun
+                // over SCREAM leaves (the side end ticks Intangible to 0
+                // while the turn is spent on STUNNED), so it admits; two
+                // stacks before SCREAM is still no native state.
                 wrong_pair.monsters[0].remove(PowerId::Intangible.as_str());
+                assert_admits(&wrong_pair);
+                wrong_pair.monsters[0]
+                    .insert(PowerId::Intangible.as_str().to_owned(), Value::from(2));
             } else {
                 wrong_pair.monsters[0]
                     .insert(PowerId::Intangible.as_str().to_owned(), Value::from(1));
@@ -27795,8 +29319,9 @@ mod tests {
         assert!(refuse(&document).contains(MissingCapability::ArgumentShape("random AI state")));
 
         // #3357: Mysterious Knight inherits Flail Knight's machine, so it
-        // admits on the RAM opener and its StateLog walk refuses a third
-        // consecutive RAM exactly as Flail Knight's does.
+        // admits on the RAM opener. #3823: a stun over the opener logs RAM
+        // again, twice for two stuns, so three RAMs admit; a short log that
+        // does not open on RAM still refuses, exactly as Flail Knight's does.
         document.monsters[0].insert("kind".to_owned(), Value::from("MYSTERIOUS_KNIGHT"));
         document.monsters[0].insert("next_move".to_owned(), Value::from("RAM_MOVE"));
         document.monsters[0].insert(
@@ -27813,6 +29338,12 @@ mod tests {
                 Value::from("RAM_MOVE"),
                 Value::from("RAM_MOVE"),
             ]),
+        );
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert_eq!(admit(&document, &state, &catalog), Ok(()));
+        document.monsters[0].insert(
+            "move_log".to_owned(),
+            Value::Array(vec![Value::from("FLAIL_MOVE"), Value::from("RAM_MOVE")]),
         );
         assert!(refuse(&document).contains(MissingCapability::ArgumentShape("random AI state")));
     }
@@ -28100,8 +29631,11 @@ mod tests {
                 let mut monster = crate::hot::HotMonster::new(kind, 30);
                 assert!(monster.random_ai.set_log(&log));
                 assert!(monster.random_ai.set_next(log.last().copied()));
+                // #3823: `[1, 1]` is a stun over the STATUS move (TwigSlimeM's
+                // opener, a roll of LeafSlimeS's): the roll after the STUNNED
+                // turn logs the parked move again.
                 let expected = match log.as_slice() {
-                    [1] | [1, 0] | [0, 1, 0] | [1, 0, 1] | [1, 0, 0] => true,
+                    [1] | [1, 0] | [1, 1] | [0, 1, 0] | [1, 0, 1] | [1, 0, 0] => true,
                     [0] | [0, 1] => kind == MonsterKind::LeafSlimeS,
                     _ => false,
                 };
@@ -28263,9 +29797,14 @@ mod tests {
         document.monsters[0].insert("kind".to_owned(), Value::from("MAWLER"));
         document.monsters[0].remove("loop_pos");
         document.monsters[0].insert("next_move".to_owned(), Value::from("CLAW_MOVE"));
+        // A short log opens on CLAW. (CLAW, CLAW stood here until #3823: a
+        // stun over the opener logs it twice.)
         document.monsters[0].insert(
             "move_log".to_owned(),
-            Value::Array(vec![Value::from("CLAW_MOVE"), Value::from("CLAW_MOVE")]),
+            Value::Array(vec![
+                Value::from("RIP_AND_TEAR_MOVE"),
+                Value::from("CLAW_MOVE"),
+            ]),
         );
         let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
         let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
@@ -28564,6 +30103,9 @@ mod tests {
         assert_eq!(
             playable_ethereal,
             [
+                // #3756: Apparition's unupgraded row; the upgrade drops
+                // Ethereal and was never in this set.
+                identity(CardId::Apparition, 0),
                 identity(CardId::Defile, 0),
                 identity(CardId::Defile, 1),
                 // Defy, Demesne and Enfeebling Touch are the static-Ethereal
@@ -28594,6 +30136,16 @@ mod tests {
             ],
             "the terminal-sensitive Ethereal history path must widen deliberately"
         );
+
+        // #3756: both Apparition levels admit as a hand card. Six site fights
+        // were refused at the root for the unupgraded, Ethereal row.
+        for upgrade in [0, 1] {
+            let (mut document, _, _) = parts();
+            replace_first_hand_card(&mut document, CardId::Apparition, upgrade);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            assert_eq!(admit(&document, &state, &catalog), Ok(()), "L{upgrade}");
+        }
 
         for upgrade in [0, 1] {
             let (mut document, _, _) = parts();
@@ -28755,6 +30307,7 @@ mod tests {
                 "static_ethereal_body",
                 static_ethereal_body_program_is_supported as RowPredicate,
                 vec![
+                    (CardId::Apparition, 0),
                     (CardId::Defy, 0),
                     (CardId::Defy, 1),
                     (CardId::Demesne, 0),
@@ -29040,13 +30593,10 @@ mod tests {
             .insert(PowerId::Mayhem.as_str().to_owned(), Value::from(1));
         let solo_catalog = HotBoundary::catalog_from_canonical(&solo_mayhem).unwrap();
         let solo_state = HotBoundary::from_canonical(&solo_mayhem, &solo_catalog).unwrap();
-        assert!(
-            admit(&solo_mayhem, &solo_state, &solo_catalog)
-                .unwrap_err()
-                .contains(MissingCapability::ArgumentShape(
-                    "AutoPlay AnyAlly missing teammate target"
-                )),
-            "solo Mayhem must not admit a physical Draw-pile Blaze whose native AutoPlay has no non-owner target",
+        assert_eq!(
+            admit(&solo_mayhem, &solo_state, &solo_catalog),
+            Ok(()),
+            "#3877: solo Mayhem routes a Draw-pile Blaze unplayed, as native AutoPlay does with no non-owner target",
         );
 
         add_minimal_party(&mut document);
@@ -29176,11 +30726,8 @@ mod tests {
         solo_autoplay
             .player
             .insert(PowerId::Mayhem.as_str().to_owned(), Value::from(1));
-        assert!(
-            refuse(&solo_autoplay).contains(MissingCapability::ArgumentShape(
-                "AutoPlay AnyAlly missing teammate target"
-            ))
-        );
+        // #3877: routed to Exhaust unplayed; no longer a refusal.
+        assert_admits(&solo_autoplay);
     }
 
     #[test]
@@ -29244,7 +30791,7 @@ mod tests {
     }
 
     #[test]
-    fn solo_autoplay_refuses_fade_without_a_teammate_target() {
+    fn solo_autoplay_admits_fade_without_a_teammate_target() {
         let (mut document, _, _) = parts();
         let mut fade = document.piles.get_mut("hand").unwrap().remove(0);
         fade.id = CardId::Fade.as_str().to_owned();
@@ -29255,9 +30802,9 @@ mod tests {
             .insert(PowerId::Mayhem.as_str().to_owned(), Value::from(1));
         let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
         let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
-        assert!(admit(&document, &state, &catalog).unwrap_err().contains(
-            MissingCapability::ArgumentShape("AutoPlay AnyAlly missing teammate target")
-        ));
+        // #3877: native routes the card to Discard unplayed
+        // (`tests/autoplay_any_ally_no_target.rs`).
+        assert_eq!(admit(&document, &state, &catalog), Ok(()));
     }
 
     fn catalog_with_relics(
@@ -29939,13 +31486,17 @@ mod tests {
                 .iter()
                 .any(|spec| spec.name == "paels_eye_was_owner_part_last_player_turn")
         );
-        let field = "ambergris";
+        // #3756: Ambergris is ported for the solo owner. Its field exists,
+        // and the body stays behind the teammate gate, since the picked
+        // player receives both the heal and the extra turn.
         assert!(
-            !crate::boundary::PLAYER_FIELDS
+            crate::boundary::PLAYER_FIELDS
                 .iter()
-                .any(|spec| spec.name == field),
-            "party-sensitive relic/potion field {field} must stay boundary-refused",
+                .any(|spec| spec.name == "ambergris")
         );
+        assert!(crate::engine::potions::requires_solo_player_target(
+            PotionId::Ambergris
+        ));
     }
 
     #[test]
@@ -30703,6 +32254,70 @@ mod tests {
         }
     }
 
+    /// #3756: King's Courage was the one unsupported body in any owner's
+    /// factory pool, and it is the Regent's. With it ported, a Regent root
+    /// whose Alchemize can procure no longer refuses `owner potion generation
+    /// body closure`, and because the factory can hand that owner a King's
+    /// Courage, the boundary closes the Forge's generated Sovereign Blade and
+    /// marks a Forge command source. Another owner's factory cannot produce
+    /// the potion.
+    #[test]
+    fn a_regent_factory_closes_kings_courage_and_its_sovereign_blade() {
+        let blade = CardIdentity {
+            id: CardId::SovereignBlade,
+            upgrade: 0,
+            enchantment: None,
+        };
+        for owner in [
+            RewardPool::Ironclad,
+            RewardPool::Silent,
+            RewardPool::Defect,
+            RewardPool::Necrobinder,
+            RewardPool::Regent,
+        ] {
+            assert!(
+                crate::engine::potions::factory_pool(Some(owner))
+                    .iter()
+                    .all(|(id, _, _)| crate::engine::potions::is_supported(*id)),
+                "{owner:?}"
+            );
+            assert_eq!(
+                crate::engine::potions::factory_can_generate(Some(owner), PotionId::KingsCourage),
+                owner == RewardPool::Regent,
+                "{owner:?}"
+            );
+        }
+        for owner in [RewardPool::Ironclad, RewardPool::Regent] {
+            let regent = owner == RewardPool::Regent;
+            let mut document = generator_document(CardId::Alchemize, owner, regent, 9);
+            document
+                .player
+                .insert("potion_slots".to_owned(), json!([null]));
+            document
+                .player
+                .insert("fully_unlocked_potion_pool".to_owned(), json!(true));
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            // The Ironclad fixture's other generation closures already reach
+            // a Forge card, so only the Regent side is a claim here.
+            if regent {
+                assert!(catalog.atom(&blade).is_some());
+                assert!(catalog.forge_command_reachable());
+            }
+            let refusal = maybe_refuse(&document);
+            for name in [
+                "owner potion generation body closure",
+                "King's Courage Sovereign Blade closure",
+            ] {
+                assert!(
+                    refusal.as_ref().is_none_or(
+                        |refusal| !refusal.contains(MissingCapability::ArgumentShape(name))
+                    ),
+                    "{owner:?} {name}: {refusal:?}"
+                );
+            }
+        }
+    }
+
     /// #3208: an unused Throwing Axe (`ThrowingAxe::ModifyCardPlayCount`
     /// `0x9c7bf`) replays a Hand Alchemize, so the potion-generation RNG
     /// reservation covers its second body.
@@ -31441,8 +33056,9 @@ mod tests {
         );
 
         assert!(
-            crate::engine::damage::damage_player_from_card(
+            crate::engine::damage::damage_player_from_card_with_catalog(
                 &mut state,
+                &crate::catalog::CatalogBuilder::new().build(),
                 10_000,
                 false,
                 &mut Vec::new(),
@@ -31452,15 +33068,17 @@ mod tests {
         assert!(!state.history.over);
         assert_eq!(state.fanouts.potion_slots(), [None]);
 
-        let unsupported = PotionId::ALL
-            .into_iter()
-            .find(|potion| !crate::engine::potions::is_supported(*potion))
-            .unwrap();
-        assert!(!alchemize_procurement_capacity_is_reachable(
-            &[Some(unsupported)],
-            true,
-            false,
-        ));
+        // A slot holding an unsupported body could never be vacated. Since
+        // #3756 ported King's Courage no potion id is unsupported, so every
+        // held potion is a future vacancy.
+        for potion in PotionId::ALL {
+            assert!(crate::engine::potions::is_supported(potion), "{potion:?}");
+            assert!(alchemize_procurement_capacity_is_reachable(
+                &[Some(potion)],
+                true,
+                false,
+            ));
+        }
     }
 
     #[test]
@@ -31748,9 +33366,11 @@ mod tests {
             document
         };
 
+        // `maybe_refuse`: with the live power's own validity arm (#3877) this
+        // root has nothing else to refuse.
         assert!(
-            !refuse(&fixture(u64::MAX - 8)).contains(MissingCapability::ArgumentShape(
-                "Alchemize generation provenance"
+            !maybe_refuse(&fixture(u64::MAX - 8)).is_some_and(|refusal| refusal.contains(
+                MissingCapability::ArgumentShape("Alchemize generation provenance")
             ))
         );
         assert!(
@@ -31764,9 +33384,11 @@ mod tests {
         // Echo, so without the L0 Gem the same Alchemize remains one body.
         let mut no_gem = fixture(u64::MAX - 2);
         no_gem.piles.get_mut("discard").unwrap().clear();
-        assert!(!refuse(&no_gem).contains(MissingCapability::ArgumentShape(
-            "Alchemize generation provenance"
-        )));
+        assert!(
+            !maybe_refuse(&no_gem).is_some_and(|refusal| refusal.contains(
+                MissingCapability::ArgumentShape("Alchemize generation provenance")
+            ))
+        );
         no_gem
             .rng
             .get_mut(RngStream::PotionGeneration.as_str())
@@ -32095,9 +33717,16 @@ mod tests {
                 })
                 .count() as u64;
             let draws = 2 * bodies;
-            assert!(!refuse(&fixture(power, owner, u64::MAX - draws)).contains(
-                MissingCapability::ArgumentShape("Alchemize generation provenance")
-            ));
+            // #3756: with King's Courage ported the Regent factory pool is
+            // closed, so a Regent root with exactly enough headroom may now
+            // admit outright; the name must be absent either way.
+            assert!(
+                maybe_refuse(&fixture(power, owner, u64::MAX - draws)).is_none_or(|refusal| {
+                    !refusal.contains(MissingCapability::ArgumentShape(
+                        "Alchemize generation provenance",
+                    ))
+                })
+            );
             assert!(
                 refuse(&fixture(power, owner, u64::MAX - (draws - 1))).contains(
                     MissingCapability::ArgumentShape("Alchemize generation provenance")
@@ -32745,11 +34374,11 @@ mod tests {
     }
 
     /// #3427 witness: a positive Int Curious round-trips and admits alone; a
-    /// non-positive or Bool one is a power-state refusal; beside a live
-    /// Borrowed Time the root refuses by name; beside an owned Spiked
-    /// Gauntlets it does not (#3437).
+    /// non-positive or Bool one is a power-state refusal; beside an owned
+    /// Spiked Gauntlets it admits (#3437). Beside a live Borrowed Time it
+    /// admits in either recorded order (#3756).
     #[test]
-    fn curious_admits_alone_and_refuses_beside_another_power_cost_listener() {
+    fn curious_admits_alone_and_beside_the_other_power_cost_listeners() {
         let (mut document, _, _) = parts();
         document.player.insert("curious".to_owned(), Value::from(2));
         let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
@@ -32769,9 +34398,19 @@ mod tests {
         borrowed
             .player
             .insert("next_after_side_turn_end_power_uid".to_owned(), json!(1));
-        assert!(refuse(&borrowed).contains(MissingCapability::ArgumentShape(
-            "Curious energy-cost listener order"
-        )));
+        for curious_after in [false, true] {
+            let mut ordered = borrowed.clone();
+            if curious_after {
+                ordered
+                    .player
+                    .insert("curious_after_borrowed_time".to_owned(), json!(true));
+            }
+            let catalog = HotBoundary::catalog_from_canonical(&ordered).unwrap();
+            let state = HotBoundary::from_canonical(&ordered, &catalog).unwrap();
+            assert_eq!(state.fanouts.curious_follows_borrowed_time(), curious_after);
+            assert_eq!(HotBoundary::to_canonical(&state, &catalog), ordered);
+            assert_eq!(admit(&ordered, &state, &catalog), Ok(()));
+        }
 
         let mut gauntlets = document.clone();
         gauntlets.player.insert(
@@ -32800,11 +34439,7 @@ mod tests {
                 .spiked_gauntlets_owned()
         );
         gauntlets.player.remove("curious");
-        assert!(
-            maybe_refuse(&gauntlets).is_none_or(|refusal| !refusal.contains(
-                MissingCapability::ArgumentShape("Curious energy-cost listener order")
-            ))
-        );
+        assert!(maybe_refuse(&gauntlets).is_none());
     }
 
     #[test]
@@ -34032,7 +35667,9 @@ mod tests {
     }
 
     #[test]
-    fn hibernate_admission_closes_exact_rows_power_and_every_unkeyed_peer() {
+    fn hibernate_admission_closes_exact_rows_and_power_and_owes_its_peers_no_wall() {
+        // #3877 retired this name: Hibernate is a member of the ordered
+        // AfterPlayerTurnStart walk, so no peer, live or reachable, raises it.
         const HIBERNATE_ORDER: MissingCapability =
             MissingCapability::ArgumentShape("Hibernate AfterPlayerTurnStart order");
 
@@ -34048,7 +35685,15 @@ mod tests {
             let catalog = HotBoundary::catalog_from_canonical(&live).unwrap();
             let state = HotBoundary::from_canonical(&live, &catalog).unwrap();
             assert_eq!(state.powers.value(PowerId::Hibernate), 2);
-            assert_eq!(HotBoundary::to_canonical(&state, &catalog), live);
+            // A document from before #3877 names a lone Hibernate nowhere;
+            // the projection lists it.
+            let mut listed = live.clone();
+            listed.player.insert(
+                "after_player_turn_start_power_order".to_owned(),
+                json!(["hibernate"]),
+            );
+            assert_eq!(HotBoundary::to_canonical(&state, &catalog), listed);
+            assert_admits(&listed);
 
             let mut negative = document.clone();
             negative
@@ -34065,6 +35710,37 @@ mod tests {
                 json!(["summon_next_turn"]),
             );
             assert_admits(&summon);
+
+            // Beside SummonNextTurn alone the old document still loads, with
+            // Hibernate last (the two commute); beside any other member its
+            // place is not recoverable and the document is refused.
+            let mut both = summon.clone();
+            both.player.insert("hibernate".to_owned(), Value::from(1));
+            let catalog = HotBoundary::catalog_from_canonical(&both).unwrap();
+            let state = HotBoundary::from_canonical(&both, &catalog).unwrap();
+            assert_eq!(
+                &*state.after_player_turn_start_order().unwrap(),
+                [PowerId::SummonNextTurn, PowerId::Hibernate]
+            );
+            let mut unplaced = both.clone();
+            unplaced.player.insert("loop".to_owned(), Value::from(1));
+            unplaced.player.insert(
+                "after_player_turn_start_power_order".to_owned(),
+                json!(["summon_next_turn", "loop"]),
+            );
+            assert!(HotBoundary::from_canonical(&unplaced, &catalog).is_err());
+            for order in [
+                json!(["hibernate", "summon_next_turn", "loop"]),
+                json!(["summon_next_turn", "hibernate", "loop"]),
+                json!(["summon_next_turn", "loop", "hibernate"]),
+            ] {
+                let mut placed = unplaced.clone();
+                placed
+                    .player
+                    .insert("after_player_turn_start_power_order".to_owned(), order);
+                let state = HotBoundary::from_canonical(&placed, &catalog).unwrap();
+                assert_eq!(HotBoundary::to_canonical(&state, &catalog), placed);
+            }
         }
 
         for (field, amount, companion) in [
@@ -34101,8 +35777,8 @@ mod tests {
                     .insert("turn_start_hand_choice_order".to_owned(), json!([field]));
             }
             assert!(
-                refuse(&document).contains(HIBERNATE_ORDER),
-                "live peer {field} escaped Hibernate's order wall"
+                maybe_refuse(&document).is_none_or(|refusal| !refusal.contains(HIBERNATE_ORDER)),
+                "live peer {field} still raises Hibernate's retired order wall"
             );
         }
 
@@ -34136,8 +35812,8 @@ mod tests {
             future.uid = Some(2780);
             document.piles.get_mut("hand").unwrap().push(future);
             assert!(
-                refuse(&document).contains(HIBERNATE_ORDER),
-                "future peer {peer:?} escaped Hibernate's source-derived wall"
+                maybe_refuse(&document).is_none_or(|refusal| !refusal.contains(HIBERNATE_ORDER)),
+                "future peer {peer:?} still raises Hibernate's retired order wall"
             );
 
             let (mut live_hibernate, _, _) = parts();
@@ -34150,8 +35826,9 @@ mod tests {
             future.uid = Some(2781);
             live_hibernate.piles.get_mut("hand").unwrap().push(future);
             assert!(
-                refuse(&live_hibernate).contains(HIBERNATE_ORDER),
-                "live Hibernate with future peer {peer:?} escaped the symmetric wall"
+                maybe_refuse(&live_hibernate)
+                    .is_none_or(|refusal| !refusal.contains(HIBERNATE_ORDER)),
+                "live Hibernate with future peer {peer:?} still raises the retired wall"
             );
         }
 
@@ -34443,7 +36120,10 @@ mod tests {
         // An unported run enchantment names the ENCHANTMENT, not the uid: a
         // reader of the refusal has to be able to tell which mechanic is
         // missing, and "per-instance state on card#0" named neither.
-        for (enchantment, amount) in [(EnchantmentId::Momentum, 2), (EnchantmentId::Inky, 1)] {
+        for (enchantment, amount) in [
+            (EnchantmentId::SlumberingEssence, 2),
+            (EnchantmentId::Inky, 1),
+        ] {
             let (mut document, _, _) = parts();
             document.piles.get_mut("hand").unwrap()[0].enchantment =
                 Some(json!([enchantment.as_str(), amount]));
@@ -34465,10 +36145,12 @@ mod tests {
         // enchantment is missing and so is the per-instance carrier for it.
         let (mut document, _, _) = parts();
         let card = &mut document.piles.get_mut("hand").unwrap()[0];
-        card.enchantment = Some(json!([EnchantmentId::Momentum.as_str(), 2]));
-        card.enchantment_state = Some(json!([EnchantmentId::Momentum.as_str(), 3]));
+        card.enchantment = Some(json!([EnchantmentId::SlumberingEssence.as_str(), 2]));
+        card.enchantment_state = Some(json!([EnchantmentId::SlumberingEssence.as_str(), 3]));
         let refusal = refuse(&document);
-        assert!(refusal.contains(MissingCapability::CardEnchantment(EnchantmentId::Momentum)));
+        assert!(refusal.contains(MissingCapability::CardEnchantment(
+            EnchantmentId::SlumberingEssence
+        )));
         assert!(refusal.contains(MissingCapability::CardInstanceState(0)));
     }
 
@@ -34497,6 +36179,55 @@ mod tests {
             "Slither EnergyCosts provenance"
         )));
         assert!(!refusal.contains(MissingCapability::CardEnchantment(EnchantmentId::Slither)));
+    }
+
+    /// #3756: a Slither copy dealt into the opening hand carries the row its
+    /// draw-time roll wrote (`draw::slither_after_card_drawn`: Set, 0..=3,
+    /// ThisCombat, not reduce-only). That row admits, once per draw, and
+    /// nothing outside that vocabulary rides in with it. Seventeen site
+    /// fights were refused at the root for exactly this row.
+    #[test]
+    fn a_drawn_slither_copy_admits_with_its_rolled_cost_rows_only() {
+        let rolled = |rows: Value| {
+            let (mut document, _, _) = parts();
+            document
+                .player
+                .insert("exact_piles".to_owned(), Value::from(true));
+            let card = &mut document.piles.get_mut("hand").unwrap()[0];
+            card.enchantment = Some(json!([EnchantmentId::Slither.as_str(), 1]));
+            card.physical_state = Some(json!(["PHYSICAL_CARD_STATE", rows, 0, false, []]));
+            document
+        };
+        let uid = u32::try_from(rolled(json!([])).piles["hand"][0].uid.unwrap()).unwrap();
+        // [kind (Set 1, Add 2), amount, expiration (ThisCombat 0), reduce_only].
+        for amount in 0..=3 {
+            assert_admits(&rolled(json!([[1, amount, 0, false]])));
+        }
+        // Drawn twice: one row per draw, in append order.
+        assert_admits(&rolled(json!([[1, 3, 0, false], [1, 0, 0, false]])));
+
+        for (label, rows) in [
+            (
+                "an amount NextInt(4) cannot return",
+                json!([[1, 4, 0, false]]),
+            ),
+            ("a reduce-only row", json!([[1, 2, 0, true]])),
+            ("an Add row", json!([[2, 1, 0, false]])),
+            (
+                "a foreign row beside a rolled one",
+                json!([[1, 2, 0, false], [1, 4, 0, false]]),
+            ),
+        ] {
+            assert!(
+                refuse(&rolled(rows)).contains(MissingCapability::CardInstanceState(uid)),
+                "{label}"
+            );
+        }
+
+        // The same row on a card without the enchantment is not Slither's.
+        let mut plain = rolled(json!([[1, 2, 0, false]]));
+        plain.piles.get_mut("hand").unwrap()[0].enchantment = None;
+        assert!(refuse(&plain).contains(MissingCapability::CardInstanceState(uid)));
     }
 
     #[test]
@@ -34528,6 +36259,103 @@ mod tests {
                 refusal.contains(MissingCapability::CardEnchantment(enchantment)),
                 "{:?}/{amount}",
                 enchantment.as_str()
+            );
+        }
+    }
+
+    /// #3756: `CLONE` is a rest-site enchantment no combat code reads
+    /// (`play::clone_identity` has the IL), so a card carrying it admits on
+    /// any card type at any amount and plays exactly as its base row does.
+    #[test]
+    fn clone_admits_on_any_card_and_plays_as_its_base_row() {
+        let (mut document, _, _) = parts();
+        document
+            .player
+            .insert("exact_piles".to_owned(), Value::from(true));
+        // hand[0] is STRIKE_IRONCLAD (Attack), hand[2] DEFEND_IRONCLAD (Skill).
+        for (index, id, amount) in [
+            (0, None, 1),
+            (0, None, 4),
+            (2, None, 4),
+            (0, Some(CardId::Inflame), 4),
+        ] {
+            let mut candidate = document.clone();
+            let card = &mut candidate.piles.get_mut("hand").unwrap()[index];
+            if let Some(id) = id {
+                card.id = id.as_str().to_owned();
+            }
+            card.enchantment = Some(json!([EnchantmentId::Clone.as_str(), amount]));
+            assert_admits(&candidate);
+        }
+
+        let played =
+            |id: CardId, upgrade: u8, enchantment: Option<crate::catalog::CardEnchantment>| {
+                let mut builder = CatalogBuilder::new();
+                let atom = builder
+                    .intern(CardIdentity {
+                        id,
+                        upgrade,
+                        enchantment,
+                    })
+                    .unwrap();
+                builder.intern_monster(MonsterKind::Toadpole).unwrap();
+                let catalog = builder.build();
+                let spec = *catalog.spec(atom).unwrap();
+                let mut state = HotState::at_defaults();
+                state.hp = 50;
+                state.energy = 5;
+                state.next_card_uid = 2;
+                state
+                    .piles
+                    .get_mut(PileId::Hand)
+                    .make_mut()
+                    .push(crate::hot::HotCard {
+                        uid: 1,
+                        atom,
+                        flags: crate::hot::CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+                    });
+                state
+                    .monsters_mut()
+                    .push(crate::hot::HotMonster::new(MonsterKind::Toadpole, 100));
+                crate::engine::play::play_card(
+                    &mut state,
+                    &catalog,
+                    1,
+                    spec.targeted.then_some(0),
+                    None,
+                    &mut Vec::new(),
+                )
+                .unwrap();
+                let pile_of = [PileId::Hand, PileId::Discard, PileId::Exhaust]
+                    .into_iter()
+                    .find(|pile| state.piles.get(*pile).as_slice().iter().any(|c| c.uid == 1));
+                (
+                    state.monsters[0].hp,
+                    state.monsters[0].powers.value(PowerId::Vuln),
+                    state.block,
+                    state.energy,
+                    state.powers.value(PowerId::Strength),
+                    pile_of,
+                    state.history.card_plays_finished_combat,
+                )
+            };
+        let clone = Some(crate::catalog::CardEnchantment {
+            id: EnchantmentId::Clone,
+            amount: 4,
+        });
+        for (id, upgrade) in [
+            (CardId::StrikeIronclad, 0),
+            (CardId::StrikeIronclad, 1),
+            (CardId::Bash, 0),
+            (CardId::DefendIronclad, 0),
+            (CardId::Inflame, 0),
+            (CardId::Rupture, 0),
+        ] {
+            assert_eq!(
+                played(id, upgrade, clone),
+                played(id, upgrade, None),
+                "{}+{upgrade}",
+                id.as_str()
             );
         }
     }
@@ -34642,16 +36470,12 @@ mod tests {
         // `a_goopy_defend_deck_is_admitted_and_its_amount_round_trips`.
         // VIGOROUS is ported (#3275); its cases are
         // `a_vigorous_attack_admits_with_its_slot_five_status_and_round_trips`.
-        for enchantment in [EnchantmentId::Momentum, EnchantmentId::Goopy] {
-            let mut document = base.clone();
-            document.piles.get_mut("hand").unwrap()[0].enchantment =
-                Some(json!([enchantment.as_str(), 1]));
-            assert!(
-                refuse(&document).contains(MissingCapability::CardEnchantment(enchantment)),
-                "{:?}",
-                enchantment.as_str()
-            );
-        }
+        // MOMENTUM is ported (#3745); its cases are
+        // `a_momentum_attack_admits_with_its_slot_five_counter_and_round_trips`.
+        let mut goopy = base.clone();
+        goopy.piles.get_mut("hand").unwrap()[0].enchantment =
+            Some(json!([EnchantmentId::Goopy.as_str(), 1]));
+        assert!(refuse(&goopy).contains(MissingCapability::CardEnchantment(EnchantmentId::Goopy)));
     }
 
     /// #3275: a VIGOROUS Attack admits with slot-5 Status 0 or 1, the state
@@ -34701,6 +36525,58 @@ mod tests {
         }
         assert!(
             refuse(&skill).contains(MissingCapability::CardEnchantment(EnchantmentId::Vigorous))
+        );
+    }
+
+    /// #3745: a MOMENTUM Attack admits at any non-negative slot-5
+    /// `ExtraDamage` and round-trips through the boundary unchanged; a copy
+    /// with no counter, and a non-Attack owner, each refuse under their own
+    /// name.
+    #[test]
+    fn a_momentum_attack_admits_with_its_slot_five_counter_and_round_trips() {
+        let (mut base, _, _) = parts();
+        base.player
+            .insert("exact_piles".to_owned(), Value::from(true));
+        {
+            let card = &mut base.piles.get_mut("hand").unwrap()[0];
+            card.id = CardId::SwordBoomerang.as_str().to_owned();
+            card.upgrade = 1;
+            card.physical_state = None;
+            card.enchantment = Some(json!(["MOMENTUM", 5]));
+        }
+        // `Momentum::OnPlay` adds `Amount` per body and nothing lowers the
+        // counter, so the vocabulary is every non-negative integer. The gate
+        // does not re-derive which counts a fight can reach (7 is not a
+        // multiple of 5): the fold adds whatever the row holds.
+        for extra in [0, 5, 10, 7, 4000] {
+            let mut document = base.clone();
+            document.piles.get_mut("hand").unwrap()[0].enchantment_state =
+                Some(json!(["MOMENTUM", extra]));
+            assert_admits(&document);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            let emitted = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+            assert_eq!(emitted.piles["hand"][0], document.piles["hand"][0]);
+        }
+
+        // A Momentum card with no counter row has no `ExtraDamage` to read.
+        let absent = refuse(&base);
+        assert!(absent.contains(MissingCapability::ArgumentShape(
+            "MOMENTUM without its slot-5 ExtraDamage"
+        )));
+        assert!(!absent.contains(MissingCapability::CardEnchantment(EnchantmentId::Momentum)));
+
+        // `Momentum::CanEnchantCardType` RVA `0xd61cb` is `cardType == 1`:
+        // on a Skill it stays refused under the enchantment's own name.
+        let mut skill = base.clone();
+        {
+            let card = &mut skill.piles.get_mut("hand").unwrap()[0];
+            card.id = CardId::DefendIronclad.as_str().to_owned();
+            card.upgrade = 0;
+            card.enchantment_state = Some(json!(["MOMENTUM", 0]));
+        }
+        assert!(
+            refuse(&skill).contains(MissingCapability::CardEnchantment(EnchantmentId::Momentum))
         );
     }
 
@@ -34845,8 +36721,8 @@ mod tests {
                 EnchantmentId::Inky,
             ),
             (
-                json!([EnchantmentId::Momentum.as_str(), 1]),
-                EnchantmentId::Momentum,
+                json!([EnchantmentId::SlumberingEssence.as_str(), 1]),
+                EnchantmentId::SlumberingEssence,
             ),
         ] {
             let mut candidate = document.clone();
@@ -35730,39 +37606,291 @@ mod tests {
         assert_eq!(admit(&remote_document, &remote_only, &catalog), Ok(()));
     }
 
+    /// #3756: Brilliant Scarf beside Mummified Hand is admitted in either
+    /// vouched order (`relics::mummified_hand_after_card_played` reads the
+    /// Scarf's count on its recorded side) and refused by name on an
+    /// unvouched inventory.
     #[test]
-    fn puzzlebox_mittens_admission_checks_the_recorded_pair_order() {
-        let (_, state, base) = parts();
-        for (order, recorded, supported) in [
-            (
-                [RelicId::RelicVexingPuzzlebox, RelicId::RelicToastyMittens],
-                true,
-                true,
-            ),
-            (
-                [RelicId::RelicVexingPuzzlebox, RelicId::RelicToastyMittens],
-                false,
-                false,
-            ),
-            (
-                [RelicId::RelicToastyMittens, RelicId::RelicVexingPuzzlebox],
-                true,
-                false,
-            ),
+    fn scarf_and_mummified_hand_refuse_only_an_unvouched_inventory() {
+        let name = "Brilliant Scarf and Mummified Hand acquisition order";
+        let scarf = RelicId::RelicBrilliantScarf;
+        let hand = RelicId::RelicMummifiedHand;
+        for (order, vouched, refused) in [
+            ([scarf, hand], true, false),
+            ([hand, scarf], true, false),
+            ([scarf, hand], false, true),
+            ([hand, scarf], false, true),
         ] {
-            let mut builder = CatalogBuilder::new();
-            for spec in base.specs() {
-                builder.intern(spec.identity).unwrap();
+            assert_eq!(
+                relic_pair_refusal(&order, vouched, None, name),
+                refused,
+                "{order:?} vouched={vouched}"
+            );
+        }
+        assert!(!relic_pair_refusal(&[hand], false, None, name));
+        assert!(!relic_pair_refusal(&[scarf], false, None, name));
+    }
+
+    /// #3635: the engine runs the `AfterSideTurnStart` relic bodies in the
+    /// recorded order of a vouched inventory (`relics::after_side_turn_start`),
+    /// so every same-hook order refusal of that hook is admitted in any
+    /// vouched order and keeps its name on an unvouched inventory. The orb
+    /// rows are read on a state with no base orb slots.
+    #[test]
+    fn after_side_turn_start_order_refusals_stand_for_an_unvouched_inventory_only() {
+        use RelicId::{
+            RelicBread as BREAD, RelicBrimstone as BRIMSTONE, RelicCrackedCore as CRACKED,
+            RelicCrossbow as CROSSBOW, RelicFencingManual as MANUAL, RelicInfusedCore as INFUSED,
+            RelicOrangeDough as DOUGH, RelicRunicCapacitor as CAPACITOR,
+            RelicSymbioticVirus as VIRUS,
+        };
+        const CROSSBOW_ORDER: &str = "Crossbow AfterSideTurnStart acquisition order";
+        let mut rows: Vec<(Vec<RelicId>, &'static str)> = [
+            RelicId::RelicAkabeko,
+            RelicId::RelicBoomingConch,
+            BREAD,
+            RelicId::RelicChandelier,
+            RelicId::RelicDiamondDiadem,
+            RelicId::RelicDivineDestiny,
+            RelicId::RelicFakeHappyFlower,
+            MANUAL,
+            INFUSED,
+            RelicId::RelicLetterOpener,
+            DOUGH,
+            RelicId::RelicPaelsEye,
+            RelicId::RelicPaelsFlesh,
+            RelicId::RelicPaelsTears,
+            RelicId::RelicPhylacteryUnbound,
+            RelicId::RelicPocketwatch,
+            CAPACITOR,
+            RelicId::RelicSai,
+            RelicId::RelicSealOfGold,
+            VIRUS,
+            RelicId::RelicVeryHotCocoa,
+        ]
+        .into_iter()
+        .map(|peer| (vec![CROSSBOW, peer], CROSSBOW_ORDER))
+        .collect();
+        rows.extend([
+            (
+                vec![MANUAL, CROSSBOW, RelicId::RelicChandelier],
+                CROSSBOW_ORDER,
+            ),
+            (
+                vec![BREAD, CRACKED, INFUSED],
+                "Bread + Cracked Core + Infused Core turn-start order",
+            ),
+            (
+                vec![VIRUS, INFUSED],
+                "Symbiotic Virus + Infused Core turn-start order",
+            ),
+            (
+                vec![VIRUS, CAPACITOR],
+                "Symbiotic Virus + Runic Capacitor zero-slot order",
+            ),
+            (
+                vec![VIRUS, CRACKED, MANUAL],
+                "Symbiotic Virus + Cracked Core zero-slot turn-start order",
+            ),
+            (
+                vec![VIRUS, CRACKED, BRIMSTONE],
+                "Symbiotic Virus + Cracked Core zero-slot turn-start order",
+            ),
+            (
+                vec![CAPACITOR, INFUSED],
+                "Runic Capacitor + Infused Core turn-start order",
+            ),
+            (
+                vec![MANUAL, INFUSED],
+                "Fencing Manual + Infused Core turn-start order",
+            ),
+            (
+                vec![MANUAL, DOUGH],
+                "Fencing Manual + Orange Dough turn-one Forge order",
+            ),
+            (
+                vec![BRIMSTONE, INFUSED, CRACKED],
+                "Brimstone + Infused Core + Cracked Core turn-start order",
+            ),
+        ]);
+        for (relics, name) in rows {
+            let reversed = relics.iter().rev().copied().collect::<Vec<_>>();
+            for order in [&relics[..], &reversed[..]] {
+                assert!(
+                    !relic_pair_refusal(order, true, None, name),
+                    "{order:?} vouched: {name}"
+                );
+                assert!(
+                    relic_pair_refusal(order, false, None, name),
+                    "{order:?} unvouched: {name}"
+                );
             }
-            builder.set_relics_ordered(&order, recorded).unwrap();
-            let catalog = builder.build();
-            let document = HotBoundary::to_canonical(&state, &catalog);
-            let has_order_refusal = admit(&document, &state, &catalog).err().is_some_and(|r| {
-                r.contains(MissingCapability::ArgumentShape(
-                    "Toasty Mittens + Vexing Puzzlebox recorded order",
-                ))
-            });
-            assert_eq!(has_order_refusal, !supported);
+        }
+        // One relic alone is no pair.
+        for relic in [CROSSBOW, VIRUS, INFUSED, MANUAL] {
+            assert!(!relic_pair_refusal(&[relic], false, None, CROSSBOW_ORDER));
+        }
+        // Brimstone beside Sai shows only through a live Juggernaut.
+        const SAI_ORDER: &str = "Brimstone + Sai turn-start order with Juggernaut";
+        let sai = [BRIMSTONE, RelicId::RelicSai];
+        assert!(relic_pair_refusal(
+            &sai,
+            false,
+            Some(PowerId::Juggernaut),
+            SAI_ORDER
+        ));
+        assert!(!relic_pair_refusal(
+            &sai,
+            true,
+            Some(PowerId::Juggernaut),
+            SAI_ORDER
+        ));
+        assert!(!relic_pair_refusal(&sai, false, None, SAI_ORDER));
+    }
+
+    /// #3635: Big Hat's admitted owner is a fully-unlocked Ironclad, whose
+    /// Ethereal pool is empty, so the body writes nothing and no same-hook
+    /// peer refuses beside it, vouched or not.
+    #[test]
+    fn big_hat_refuses_no_same_hook_peer() {
+        let (_, state, base) = parts();
+        for peer in [
+            RelicId::RelicLantern,
+            RelicId::RelicHappyFlower,
+            RelicId::RelicBrimstone,
+            RelicId::RelicCandelabra,
+            RelicId::RelicStoneCalendar,
+            RelicId::RelicSai,
+            RelicId::RelicInfusedCore,
+        ] {
+            for vouched in [true, false] {
+                let mut builder = CatalogBuilder::new();
+                for spec in base.specs() {
+                    builder.intern(spec.identity).unwrap();
+                }
+                builder
+                    .set_relics_ordered(&[RelicId::RelicBigHat, peer], vouched)
+                    .unwrap();
+                let catalog = builder.build();
+                let document = HotBoundary::to_canonical(&state, &catalog);
+                let refused = admit(&document, &state, &catalog)
+                    .err()
+                    .is_some_and(|refusal| {
+                        refusal
+                            .missing()
+                            .any(|item| item.to_string().contains("Big Hat same-hook"))
+                    });
+                assert!(!refused, "{peer:?} vouched={vouched}");
+            }
+        }
+    }
+
+    /// #3635: the engine runs the `AfterPlayerTurnStart` relic bodies in the
+    /// recorded order of a vouched inventory (`relics::relic_walk_order`), so
+    /// every same-hook order refusal of that hook is admitted in either
+    /// vouched order and keeps its name on an unvouched inventory, pairs and
+    /// longer runs alike.
+    #[test]
+    fn after_player_turn_start_order_refusals_stand_for_an_unvouched_inventory_only() {
+        use RelicId::{
+            RelicBellows as BELLOWS, RelicEmotionChip as EMOTION_CHIP,
+            RelicFestivePopper as POPPER, RelicGamblingChip as CHIP,
+            RelicMercuryHourglass as HOURGLASS, RelicMrStruggles as STRUGGLES,
+            RelicRoyalPoison as ROYAL_POISON, RelicToastyMittens as TOASTY,
+            RelicVexingPuzzlebox as PUZZLEBOX,
+        };
+        const DAMAGE: &str = "multiple AfterPlayerTurnStart enemy-damage relics";
+        const ROYAL: &str = "Royal Poison with turn-start enemy damage relic";
+        const PUZZLEBOX_ORDER: &str = "Vexing Puzzlebox same-hook relic acquisition order";
+        for (relics, name) in [
+            (&[POPPER, HOURGLASS][..], DAMAGE),
+            (&[POPPER, STRUGGLES], DAMAGE),
+            (&[HOURGLASS, STRUGGLES], DAMAGE),
+            (&[POPPER, HOURGLASS, STRUGGLES], DAMAGE),
+            (&[ROYAL_POISON, POPPER], ROYAL),
+            (&[ROYAL_POISON, HOURGLASS], ROYAL),
+            (&[ROYAL_POISON, STRUGGLES], ROYAL),
+            (
+                &[STRUGGLES, EMOTION_CHIP],
+                "Mr Struggles + Emotion Chip turn-start order",
+            ),
+            (
+                &[EMOTION_CHIP, HOURGLASS],
+                "Emotion Chip + Mercury Hourglass turn-start order",
+            ),
+            (
+                &[PUZZLEBOX, TOASTY],
+                "Toasty Mittens + Vexing Puzzlebox recorded order",
+            ),
+            (&[PUZZLEBOX, BELLOWS], PUZZLEBOX_ORDER),
+            (&[PUZZLEBOX, EMOTION_CHIP], PUZZLEBOX_ORDER),
+            (&[PUZZLEBOX, POPPER], PUZZLEBOX_ORDER),
+            (&[PUZZLEBOX, HOURGLASS], PUZZLEBOX_ORDER),
+            (&[PUZZLEBOX, STRUGGLES], PUZZLEBOX_ORDER),
+            (&[PUZZLEBOX, ROYAL_POISON], PUZZLEBOX_ORDER),
+            // The mixed shapes the per-pair moves could not run.
+            (&[PUZZLEBOX, POPPER, CHIP], PUZZLEBOX_ORDER),
+            (&[PUZZLEBOX, HOURGLASS, POPPER], DAMAGE),
+        ] {
+            let reversed = relics.iter().rev().copied().collect::<Vec<_>>();
+            for order in [relics, &reversed[..]] {
+                assert!(
+                    !relic_pair_refusal(order, true, None, name),
+                    "{order:?} vouched: {name}"
+                );
+                assert!(
+                    relic_pair_refusal(order, false, None, name),
+                    "{order:?} unvouched: {name}"
+                );
+            }
+        }
+        // One relic alone is no pair.
+        for relic in [POPPER, PUZZLEBOX, ROYAL_POISON, EMOTION_CHIP] {
+            for name in [DAMAGE, ROYAL, PUZZLEBOX_ORDER] {
+                assert!(
+                    !relic_pair_refusal(&[relic], false, None, name),
+                    "{relic:?}"
+                );
+            }
+        }
+    }
+
+    /// #3635: a charged Bone Tea beside a same-hook peer is admitted on a
+    /// vouched inventory, where its Hand upgrade runs at its recorded place,
+    /// and keeps its name on an unvouched one. A spent Bone Tea never refuses.
+    #[test]
+    fn charged_bone_tea_refuses_its_peers_on_an_unvouched_inventory_only() {
+        let name =
+            MissingCapability::ArgumentShape("Bone Tea AfterPlayerTurnStart acquisition order");
+        for peer in [
+            RelicId::RelicEmotionChip,
+            RelicId::RelicFestivePopper,
+            RelicId::RelicMercuryHourglass,
+            RelicId::RelicMrStruggles,
+            RelicId::RelicRoyalPoison,
+            RelicId::RelicVexingPuzzlebox,
+        ] {
+            for order in [[RelicId::RelicBoneTea, peer], [peer, RelicId::RelicBoneTea]] {
+                for (vouched, charged) in [(true, true), (false, true), (false, false)] {
+                    let (_, mut state, base) = parts();
+                    let mut builder = CatalogBuilder::new();
+                    for spec in base.specs() {
+                        builder.intern(spec.identity).unwrap();
+                    }
+                    builder.set_relics_ordered(&order, vouched).unwrap();
+                    let catalog = builder.build();
+                    assert!(state.fanouts.set_bone_tea_combats_left(u8::from(charged)));
+                    let document = HotBoundary::to_canonical(&state, &catalog);
+                    let refused = admit(&document, &state, &catalog)
+                        .err()
+                        .is_some_and(|refusal| refusal.contains(name));
+                    assert_eq!(
+                        refused,
+                        charged && !vouched,
+                        "{order:?} vouched={vouched} charged={charged}"
+                    );
+                }
+            }
         }
     }
 
@@ -35949,6 +38077,52 @@ mod tests {
         }
     }
 
+    /// #3635: the `BeforeHandDraw` relic bodies run in the recorded order of
+    /// a vouched inventory (`relics::before_hand_draw`), so the hook's three
+    /// same-hook order refusals keep their names on an unvouched one only.
+    #[test]
+    fn before_hand_draw_relic_orders_refuse_on_an_unvouched_inventory_only() {
+        use RelicId::{
+            RelicBlessedAntler as ANTLER, RelicFuneraryMask as FUNERARY,
+            RelicJeweledMask as JEWELED, RelicNinjaScroll as SCROLL, RelicPendulum as PENDULUM,
+            RelicPollinousCore as CORE, RelicRadiantPearl as PEARL, RelicToolbox as TOOLBOX,
+        };
+        const ANTLER_ORDER: &str = "Blessed Antler BeforeHandDraw acquisition order";
+        const SCROLL_PEARL: &str = "Ninja Scroll + Radiant Pearl BeforeHandDraw order";
+        const JEWELED_ORDER: &str = "Jeweled Mask BeforeHandDraw acquisition order";
+        for (relics, name) in [
+            ([ANTLER, TOOLBOX], ANTLER_ORDER),
+            ([ANTLER, SCROLL], ANTLER_ORDER),
+            ([ANTLER, FUNERARY], ANTLER_ORDER),
+            ([ANTLER, CORE], ANTLER_ORDER),
+            ([ANTLER, JEWELED], ANTLER_ORDER),
+            ([ANTLER, PEARL], ANTLER_ORDER),
+            ([SCROLL, PEARL], SCROLL_PEARL),
+            ([JEWELED, PEARL], JEWELED_ORDER),
+            ([JEWELED, FUNERARY], JEWELED_ORDER),
+            ([JEWELED, SCROLL], JEWELED_ORDER),
+        ] {
+            for order in [relics, [relics[1], relics[0]]] {
+                assert!(
+                    !relic_pair_refusal(&order, true, None, name),
+                    "{order:?} vouched: {name}"
+                );
+                assert!(
+                    relic_pair_refusal(&order, false, None, name),
+                    "{order:?} unvouched: {name}"
+                );
+            }
+        }
+        // The counters commute with every body: never a pair.
+        for (order, name) in [
+            ([ANTLER, PENDULUM], ANTLER_ORDER),
+            ([JEWELED, CORE], JEWELED_ORDER),
+            ([JEWELED, PENDULUM], JEWELED_ORDER),
+        ] {
+            assert!(!relic_pair_refusal(&order, false, None, name), "{order:?}");
+        }
+    }
+
     /// Whether a root holding `order` refuses `name`. The ownership caches
     /// the boundary checks are set as a hydrated root has them.
     fn relic_pair_refusal(
@@ -35990,32 +38164,90 @@ mod tests {
     /// unvouched inventory; recorded after it, the engine's order is native.
     /// The three peers `counter_precedes_out_of_walk_peer_commutes` clears
     /// for a Power-only body never refuse.
+    ///
+    /// #3756: two more peers leave the refusal for Game Piece
+    /// (`relics::game_piece_precedes_out_of_walk_peer_commutes`). Unsettling
+    /// Lamp's latch is unreadable inside the draw with or without a nested
+    /// play. Velvet Choker's count is read there only by a Hellraiser
+    /// AutoPlay, so it commutes until Hellraiser can be live. Then a vouched
+    /// inventory runs the Choker's count at its recorded place
+    /// (`play::velvet_choker_cards_played`) and only an unvouched one
+    /// refuses. Brilliant Scarf still refuses either way.
     #[test]
     fn game_piece_before_a_play_counting_out_of_walk_peer_refuses() {
         let name = "Game Piece recorded before a non-commuting out-of-walk AfterCardPlayed peer";
         let piece = RelicId::RelicGamePiece;
-        for (peer, commutes) in [
-            (RelicId::RelicBrilliantScarf, false),
-            (RelicId::RelicUnsettlingLamp, false),
-            (RelicId::RelicVelvetChoker, false),
-            (RelicId::RelicPenNib, true),
-            (RelicId::RelicPocketwatch, true),
-            (RelicId::RelicRippleBasin, true),
+        for (peer, commutes, commutes_under_hellraiser) in [
+            (RelicId::RelicBrilliantScarf, false, false),
+            (RelicId::RelicUnsettlingLamp, true, true),
+            (RelicId::RelicVelvetChoker, true, false),
+            (RelicId::RelicPenNib, true, true),
+            (RelicId::RelicPocketwatch, true, true),
+            (RelicId::RelicRippleBasin, true, true),
         ] {
-            for (order, vouched, refused) in [
-                ([piece, peer], true, !commutes),
-                ([peer, piece], true, false),
-                ([piece, peer], false, !commutes),
-                ([peer, piece], false, !commutes),
+            for (live_power, commutes) in [
+                (None, commutes),
+                (Some(PowerId::Hellraiser), commutes_under_hellraiser),
             ] {
-                assert_eq!(
-                    relic_pair_refusal(&order, vouched, None, name),
-                    refused,
-                    "{order:?} vouched={vouched}"
-                );
+                let built = peer == RelicId::RelicVelvetChoker;
+                for (order, vouched, refused) in [
+                    ([piece, peer], true, !commutes && !built),
+                    ([peer, piece], true, false),
+                    ([piece, peer], false, !commutes),
+                    ([peer, piece], false, !commutes),
+                ] {
+                    assert_eq!(
+                        relic_pair_refusal(&order, vouched, live_power, name),
+                        refused,
+                        "{order:?} vouched={vouched} live={live_power:?}"
+                    );
+                }
             }
         }
         assert!(!relic_pair_refusal(&[piece], true, None, name));
+        // A third relic does not hide a refusing peer behind a commuting one.
+        assert!(relic_pair_refusal(
+            &[
+                piece,
+                RelicId::RelicUnsettlingLamp,
+                RelicId::RelicBrilliantScarf
+            ],
+            true,
+            None,
+            name
+        ));
+        assert!(!relic_pair_refusal(
+            &[
+                piece,
+                RelicId::RelicUnsettlingLamp,
+                RelicId::RelicVelvetChoker
+            ],
+            true,
+            None,
+            name
+        ));
+    }
+
+    /// #3756: Game Piece and Permafrost both run at their recorded places, so
+    /// with Juggernaut reachable only an unvouched inventory refuses.
+    #[test]
+    fn game_piece_and_permafrost_refuse_under_juggernaut_only_unvouched() {
+        let name = "Game Piece + Permafrost order with Juggernaut";
+        let (piece, perma) = (RelicId::RelicGamePiece, RelicId::RelicPermafrost);
+        for order in [[piece, perma], [perma, piece]] {
+            for (vouched, live, refused) in [
+                (true, Some(PowerId::Juggernaut), false),
+                (false, Some(PowerId::Juggernaut), true),
+                (true, None, false),
+                (false, None, false),
+            ] {
+                assert_eq!(
+                    relic_pair_refusal(&order, vouched, live, name),
+                    refused,
+                    "{order:?} vouched={vouched} live={live:?}"
+                );
+            }
+        }
     }
 
     /// #2909: on an unvouched inventory, a drawing body beside a peer a
@@ -36096,6 +38328,7 @@ mod tests {
                     &[CardId::Dazed][..]
                 }
                 RelicId::RelicFuneraryMask => &[CardId::Soul][..],
+                RelicId::RelicNinjaScroll => &[CardId::Shiv][..],
                 RelicId::RelicRadiantPearl => &[CardId::Luminesce][..],
                 _ => &[],
             } {
@@ -37018,5 +39251,429 @@ mod tests {
             with.requires_action_replay(),
             "Transfigure is a replay source"
         );
+    }
+
+    /// A root holding Nightmare (uid 1), a Strike (uid 2) and an Inflame
+    /// (uid 3) in Hand.
+    fn nightmare_document(upgrade: u8) -> CanonicalStateV2 {
+        let (mut document, _, _) = parts();
+        let mut template = document.piles.get("hand").unwrap()[0].clone();
+        template.physical_state = None;
+        for pile in document.piles.values_mut() {
+            pile.clear();
+        }
+        document
+            .player
+            .insert("exact_piles".to_owned(), Value::from(true));
+        let hand = document.piles.get_mut("hand").unwrap();
+        for (uid, id, level) in [
+            (1, CardId::Nightmare, upgrade),
+            (2, CardId::StrikeIronclad, 0),
+            (3, CardId::Inflame, 0),
+        ] {
+            let mut card = template.clone();
+            card.id = id.as_str().to_owned();
+            card.upgrade = i64::from(level);
+            card.uid = Some(uid);
+            hand.push(card);
+        }
+        document
+    }
+
+    /// #3794: both Nightmare rows admit (no `card keyword on "NIGHTMARE"`),
+    /// and the power object their body attaches exports and re-admits. The
+    /// held card's identity is interned from the object's own row: with the
+    /// original gone from every pile the document still builds a catalog that
+    /// knows it as reachable, and without the row the same piles do not.
+    #[test]
+    fn nightmare_rows_admit_and_the_held_card_crosses_the_boundary() {
+        let inflame = CardIdentity {
+            id: CardId::Inflame,
+            upgrade: 0,
+            enchantment: None,
+        };
+        for upgrade in 0..=1 {
+            let document = nightmare_document(upgrade);
+            assert_admits(&document);
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+            let suspended = apply_action(
+                &state,
+                &catalog,
+                &Action::Play {
+                    uid: 1,
+                    target: None,
+                    selection: SelectionRef::NONE,
+                },
+            )
+            .unwrap()
+            .state;
+            // Hold the Inflame: the option whose object names its atom.
+            let resolved = (0..2)
+                .map(|index| {
+                    apply_action(
+                        &suspended,
+                        &catalog,
+                        &Action::Select {
+                            answer: crate::engine::SelectionAnswer::OptionIndex(index),
+                        },
+                    )
+                    .unwrap()
+                    .state
+                })
+                .find(|state| {
+                    state.fanouts.nightmare_instances()[0].atom == catalog.atom(&inflame).unwrap()
+                })
+                .expect("one option holds the Inflame");
+            let exported = HotBoundary::to_canonical(&resolved, &catalog);
+            assert_eq!(
+                exported.player["nightmare_instances"],
+                json!([[3, 0, ["INFLAME", 0]]])
+            );
+            assert_admits(&exported);
+
+            // The Power is played and leaves every pile; the held clone is
+            // then the only carrier of its identity.
+            let mut gone = exported.clone();
+            for pile in gone.piles.values_mut() {
+                pile.retain(|card| card.id != CardId::Inflame.as_str());
+            }
+            let gone_catalog = HotBoundary::catalog_from_canonical(&gone).unwrap();
+            assert!(
+                gone_catalog
+                    .reachable_specs()
+                    .any(|spec| spec.identity == inflame),
+                "the held card is reachable: its copies are Hand cards next turn"
+            );
+            let gone_state = HotBoundary::from_canonical(&gone, &gone_catalog).unwrap();
+            assert_eq!(gone_state.fanouts.nightmare_instances().len(), 1);
+            assert_eq!(HotBoundary::to_canonical(&gone_state, &gone_catalog), gone);
+            assert_admits(&gone);
+            let mut orphan = gone.clone();
+            orphan.player.remove("nightmare_instances");
+            assert!(
+                HotBoundary::catalog_from_canonical(&orphan)
+                    .unwrap()
+                    .atom(&inflame)
+                    .is_none(),
+                "nothing else names the held identity"
+            );
+
+            // Rows native never writes.
+            for (label, row, reason) in [
+                (
+                    "amount",
+                    json!([2, 0, ["INFLAME", 0]]),
+                    "Nightmare instance state",
+                ),
+                (
+                    "a place past the listener order",
+                    json!([3, 1, ["INFLAME", 0]]),
+                    "Nightmare instance state",
+                ),
+            ] {
+                let mut forged = gone.clone();
+                forged
+                    .player
+                    .insert("nightmare_instances".to_owned(), json!([row]));
+                assert!(
+                    refuse(&forged).contains(MissingCapability::ArgumentShape(reason)),
+                    "{label}"
+                );
+            }
+            for (label, rows) in [
+                ("not a row list", json!(3)),
+                ("a two-part row", json!([[3, 0]])),
+                ("a row that is not a list", json!([3])),
+                (
+                    "a non-canonical payload",
+                    json!([[3, 0, ["INFLAME", 0, null]]]),
+                ),
+                ("a place outside u8", json!([[3, 256, ["INFLAME", 0]]])),
+                ("an unknown card", json!([[3, 0, ["NOT_A_CARD", 0]]])),
+            ] {
+                let mut forged = gone.clone();
+                forged.player.insert("nightmare_instances".to_owned(), rows);
+                assert!(
+                    HotBoundary::catalog_from_canonical(&forged)
+                        .and_then(|catalog| HotBoundary::from_canonical(&forged, &catalog))
+                        .is_err(),
+                    "{label} does not load"
+                );
+            }
+            let mut empty = gone.clone();
+            empty
+                .player
+                .insert("nightmare_instances".to_owned(), json!([]));
+            assert!(
+                HotBoundary::catalog_from_canonical(&empty)
+                    .and_then(|catalog| HotBoundary::from_canonical(&empty, &catalog))
+                    .is_err(),
+                "an explicit empty list is the elided default"
+            );
+        }
+    }
+
+    /// #3794: a Nightmare object beside Foregone Conclusion refuses by name,
+    /// whether Foregone is live or its turn-start choice is parked.
+    #[test]
+    fn nightmare_beside_foregone_conclusion_refuses_by_name() {
+        const REASON: &str = "Nightmare beside Foregone Conclusion";
+        let document = nightmare_document(0);
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let mut state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        let strike = state.piles.get(PileId::Hand).as_slice()[1];
+        state
+            .fanouts
+            .set_nightmare_instances(vec![crate::hot::NightmareInstance {
+                amount: 3,
+                listeners_before: 0,
+                atom: strike.atom,
+                flags: 0,
+                instance: crate::hot::CardInstanceState::default(),
+            }]);
+        let named = |state: &HotState| {
+            let document = HotBoundary::to_canonical(state, &catalog);
+            admit(&document, state, &catalog)
+                .err()
+                .is_some_and(|refusal| refusal.contains(MissingCapability::ArgumentShape(REASON)))
+        };
+        assert!(!named(&state));
+
+        let mut live = state.clone();
+        live.powers.set(PowerId::Foregone, SlotWire::Int, 1);
+        assert!(
+            live.fanouts
+                .set_before_hand_draw_order(&[PowerId::Foregone])
+        );
+        assert!(named(&live));
+
+        // A parked Foregone choice has already left the listener order.
+        let mut parked = state.clone();
+        let record = parked
+            .frames
+            .push_before_hand_draw_power(&crate::hot::BeforeHandDrawPowerRecord {
+                listeners: vec![PowerId::Foregone],
+                cursor: 1,
+                amount: 1,
+                candidates: parked.piles.get(PileId::Hand).as_slice()[1..]
+                    .iter()
+                    .map(|card| crate::hot::FrozenAutoBatchEntry {
+                        card: *card,
+                        state: crate::hot::CardInstanceState::default(),
+                    })
+                    .collect(),
+            })
+            .unwrap();
+        parked.pending = Some(std::sync::Arc::new(crate::hot::PendingSelection {
+            frame_uid: crate::hot::FOREGONE_SELECTION_PENDING_UID,
+            frame_record: record,
+        }));
+        assert_eq!(
+            super::super::turn::nightmare_state_refusal(&parked, &catalog),
+            None
+        );
+        let missing = admit(
+            &HotBoundary::to_canonical(&state, &catalog),
+            &parked,
+            &catalog,
+        )
+        .unwrap_err();
+        assert!(missing.contains(MissingCapability::ArgumentShape(REASON)));
+
+        // Neither is live yet, but one root reaches both cards.
+        let mut both = document.clone();
+        let mut foregone = both.piles.get("hand").unwrap()[1].clone();
+        foregone.id = CardId::ForegoneConclusion.as_str().to_owned();
+        foregone.uid = Some(4);
+        both.piles.get_mut("hand").unwrap().push(foregone);
+        assert!(refuse(&both).contains(MissingCapability::ArgumentShape(REASON)));
+        let mut foregone_only = both.clone();
+        foregone_only
+            .piles
+            .get_mut("hand")
+            .unwrap()
+            .retain(|card| card.id != CardId::Nightmare.as_str());
+        assert!(
+            maybe_refuse(&foregone_only).is_none_or(|refusal| {
+                !refusal.contains(MissingCapability::ArgumentShape(REASON))
+            })
+        );
+    }
+
+    /// #3805 item 1: a Nightmare can copy a generator past the one body per
+    /// copy its seeded preview counts, so the pair refuses at the root, by
+    /// name, instead of stopping mid-line on the copy's mint.
+    #[test]
+    fn nightmare_beside_a_finite_preview_generator_refuses_by_name() {
+        const NAME: MissingCapability =
+            MissingCapability::ArgumentShape("Nightmare beside a finite-preview generator");
+        let root = |owner, generator: CardId, beside: &[CardId]| {
+            let mut document = generator_document(generator, owner, false, 1959);
+            for other in beside {
+                push_physical_card(&mut document, "hand", *other, 0);
+            }
+            document
+        };
+        let names = |document: &CanonicalStateV2| {
+            maybe_refuse(document).is_some_and(|refusal| refusal.contains(NAME))
+        };
+
+        for (owner, generator) in [
+            (RewardPool::Ironclad, CardId::InfernalBlade),
+            (RewardPool::Defect, CardId::JackOfAllTrades),
+            (RewardPool::Defect, CardId::BundleOfJoy),
+            (RewardPool::Defect, CardId::Abundance),
+            (RewardPool::Defect, CardId::Distraction),
+            (RewardPool::Defect, CardId::WhiteNoise),
+        ] {
+            // Without a Nightmare the lone generator's preview is exact.
+            assert_admits(&root(owner, generator, &[]));
+            assert!(
+                names(&root(owner, generator, &[CardId::Nightmare])),
+                "{generator:?} holds a preview a Nightmare copy outruns"
+            );
+        }
+
+        // A generator over its COMPLETE pool is a live draw at any position
+        // and for any copy, so the name is absent. Each row's third card is
+        // what closes the pool: a Metamorphosis closes the Ironclad Attack
+        // pool (Infernal Blade's) and, at the boundary, Jack's and White
+        // Noise's; a Spectrum Shift closes the Colorless pool Bundle of Joy
+        // draws.
+        for (owner, generator, closer) in [
+            (
+                RewardPool::Ironclad,
+                CardId::InfernalBlade,
+                CardId::Metamorphosis,
+            ),
+            (
+                RewardPool::Defect,
+                CardId::JackOfAllTrades,
+                CardId::Metamorphosis,
+            ),
+            (
+                RewardPool::Defect,
+                CardId::WhiteNoise,
+                CardId::Metamorphosis,
+            ),
+            (
+                RewardPool::Defect,
+                CardId::Distraction,
+                CardId::Metamorphosis,
+            ),
+            (
+                RewardPool::Defect,
+                CardId::BundleOfJoy,
+                CardId::SpectrumShift,
+            ),
+        ] {
+            assert!(
+                !names(&root(owner, generator, &[closer, CardId::Nightmare])),
+                "{generator:?} beside {closer:?} draws over a complete pool"
+            );
+        }
+        // Abundance is counted whatever else is interned.
+        assert!(names(&root(
+            RewardPool::Defect,
+            CardId::Abundance,
+            &[CardId::CreativeAi, CardId::Nightmare]
+        )));
+        // The generators that close their whole pool on their own are never
+        // named.
+        for generator in [CardId::Discovery, CardId::Splash] {
+            assert_admits(&root(RewardPool::Defect, generator, &[CardId::Nightmare]));
+        }
+    }
+
+    /// #3794: a reachable Nightmare widens every physical-copy count an
+    /// admission wall reads, and a count of zero stays zero. The Bread wall
+    /// is the end-to-end witness: one Void is admitted, and one Void beside a
+    /// Nightmare is the two-Void state the wall names.
+    #[test]
+    fn a_reachable_nightmare_widens_physical_copy_counts() {
+        const BREAD: &str = "Bread with active turn-start energy peer and two Void cards";
+        let (_, base_state, base_catalog) = parts();
+        let plain = |id| CardIdentity {
+            id,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let catalog_with = |cards: &[CardId], relics: &[RelicId]| {
+            let mut builder = CatalogBuilder::new();
+            for spec in base_catalog.specs() {
+                builder.intern(spec.identity).unwrap();
+            }
+            for card in cards {
+                builder.intern_reachable(plain(*card)).unwrap();
+            }
+            builder.intern_monster(MonsterKind::Toadpole).unwrap();
+            builder.set_relics(relics).unwrap();
+            builder.build()
+        };
+        let without = catalog_with(&[CardId::Void], &[]);
+        let with = catalog_with(&[CardId::Void, CardId::Nightmare], &[]);
+        assert!(!nightmare_copy_is_reachable(&base_state, &without));
+        assert!(nightmare_copy_is_reachable(&base_state, &with));
+        for count in 0..3 {
+            assert_eq!(
+                nightmare_multiplied_count(&base_state, &without, count),
+                count
+            );
+            assert_eq!(
+                nightmare_multiplied_count(&base_state, &with, count),
+                if count == 0 { 0 } else { count + 3 }
+            );
+        }
+        // A live object counts even after its Nightmare card is gone.
+        let mut holding = base_state.clone();
+        holding
+            .fanouts
+            .set_nightmare_instances(vec![crate::hot::NightmareInstance {
+                amount: 3,
+                listeners_before: 0,
+                atom: base_state.piles.get(PileId::Hand).as_slice()[0].atom,
+                flags: 0,
+                instance: crate::hot::CardInstanceState::default(),
+            }]);
+        assert!(nightmare_copy_is_reachable(&holding, &without));
+        assert_eq!(nightmare_multiplied_count(&holding, &without, 1), 4);
+
+        let relics = [RelicId::RelicBread, RelicId::RelicLantern];
+        for (cards, voids, named) in [
+            (vec![CardId::Void], 1, false),
+            (vec![CardId::Void, CardId::Nightmare], 0, false),
+            (vec![CardId::Void, CardId::Nightmare], 1, true),
+            (vec![CardId::Void], 2, true),
+        ] {
+            let catalog = catalog_with(&cards, &relics);
+            let mut state = base_state.clone();
+            for _ in 0..voids {
+                let uid = state.next_card_uid;
+                state.next_card_uid += 1;
+                state
+                    .piles
+                    .get_mut(PileId::Draw)
+                    .make_mut()
+                    .push(crate::hot::HotCard {
+                        uid,
+                        atom: catalog.atom(&plain(CardId::Void)).unwrap(),
+                        flags: 0,
+                    });
+            }
+            let missing = admit(
+                &HotBoundary::to_canonical(&state, &catalog),
+                &state,
+                &catalog,
+            )
+            .err()
+            .map(|refusal| refusal.missing)
+            .unwrap_or_default();
+            assert_eq!(
+                missing.contains(&MissingCapability::ArgumentShape(BREAD)),
+                named,
+                "{cards:?} with {voids} Void: {missing:?}"
+            );
+        }
     }
 }

@@ -9,8 +9,8 @@
    "loop_pos": 1,
    "max_hp": 111,
    "misery_debuff_order": [
-    "weak",
-    "vuln"
+    "vuln",
+    "weak"
    ],
    "vuln": 1,
    "weak": 1
@@ -238,6 +238,7 @@
   ]
  },
  "player": {
+  "after_energy_reset_order": [],
   "cards_drawn_combat": 5,
   "dexterity": 1,
   "entropy_card_pool": "ironclad",
@@ -354,8 +355,7 @@
   "strength": 3,
   "template_relics": [
    "RELIC.SWORD_OF_JADE"
-  ],
-  "after_energy_reset_order": []
+  ]
  },
  "rng": {
   "ai": {

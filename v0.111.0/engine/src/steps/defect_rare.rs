@@ -1162,19 +1162,22 @@ fn reboot_program_is_exact(catalog: &Catalog, spec: &CardSpec) -> bool {
             == Some(spec.row)
 }
 
-fn reboot_has_no_perfect_fit(state: &crate::hot::HotState, catalog: &Catalog) -> bool {
-    !PileId::ALL.into_iter().any(|pile| {
-        state.piles.get(pile).as_slice().iter().any(|card| {
-            catalog.spec(card.atom).is_some_and(|spec| {
-                spec.identity
-                    .enchantment
-                    .is_some_and(|value| matches!(value.id, crate::ids::EnchantmentId::PerfectFit))
-            })
-        })
-    })
+/// Whether the full shuffle's Perfect Fit listeners are representable.
+///
+/// The shuffle models them (`draw::shuffle_into_draw_raw`: each Perfect Fit
+/// card in the domain moves itself to index 0, Draw's listeners before
+/// Discard's). What it cannot name is the same shape the ordinary reshuffle
+/// refuses, [`crate::engine::draw::perfect_fit_shuffle_needs_exact_piles`]:
+/// an inexact state holding two distinct Perfect Fit identities, or a
+/// uid-less Perfect Fit card.
+fn full_shuffle_perfect_fit_is_representable(
+    state: &crate::hot::HotState,
+    catalog: &Catalog,
+) -> bool {
+    !crate::engine::draw::perfect_fit_shuffle_needs_exact_piles(state, catalog)
 }
 
-/// Bottled Potential's only remaining full-shuffle exclusion is Perfect Fit.
+/// Bottled Potential's full shuffle is exact over Perfect Fit as well.
 ///
 /// `CardPileCmd.Shuffle` (RVA `0x3e4b74`) appends a fresh reference-hashed
 /// Draw `ToHashSet` to ordered Discard. The bundled .NET 9.0.7 runtime
@@ -1182,21 +1185,25 @@ fn reboot_has_no_perfect_fit(state: &crate::hot::HotState, catalog: &Catalog) ->
 /// unique reference into `_entries` and enumerates the never-removed entries
 /// in insertion order. `CardModel` has no equality/hash override, so exact
 /// pile order and physical UIDs authenticate even distinguishable CompareTo
-/// ties. Perfect Fit can still rewrite the sorted order before commit and is
-/// not modeled.
+/// ties. Perfect Fit rewrites the shuffled order before commit
+/// (`Hook::ModifyShuffleOrder`, IL_00e2); the shuffle applies it, and the
+/// entry stays closed only where that order is not representable.
+/// `BottledPotential/<OnUse>d__8::MoveNext` RVA `0x34c3c4` awaits this same
+/// `CardPileCmd::Shuffle` (IL_00dd), as `Reboot/<OnPlay>d__5` RVA `0x3b6134`
+/// does (IL_017e).
 pub(crate) fn bottled_potential_entry_is_valid(
     state: &crate::hot::HotState,
     catalog: &Catalog,
 ) -> bool {
-    reboot_has_no_perfect_fit(state, catalog)
+    full_shuffle_perfect_fit_is_representable(state, catalog)
 }
 
 /// Entry validity for a live physical Reboot: like Bottled Potential, its
-/// only remaining full-shuffle exclusion is Perfect Fit (#3197 retired the
-/// duplicate-key quotient).
+/// only remaining full-shuffle exclusion is an unrepresentable Perfect Fit
+/// listener order (#3197 retired the duplicate-key quotient).
 pub(crate) fn reboot_entry_is_valid(state: &crate::hot::HotState, catalog: &Catalog) -> bool {
     !reboot_physical_source_is_reachable(state, catalog)
-        || reboot_has_no_perfect_fit(state, catalog)
+        || full_shuffle_perfect_fit_is_representable(state, catalog)
 }
 
 /// Whether one non-Exhaust physical Reboot can still enter Play.
@@ -1238,8 +1245,10 @@ pub(crate) fn preflight_reboot_shuffle_exact(
     if catalog.spec(active.atom) != Some(spec) {
         return Err(EngineRefusal::MalformedArgs("reboot_shuffle_exact source"));
     }
-    if !reboot_has_no_perfect_fit(state, catalog) {
-        return Err(EngineRefusal::ContinuationNotModeled);
+    if !full_shuffle_perfect_fit_is_representable(state, catalog) {
+        return Err(EngineRefusal::MalformedArgs(
+            "Perfect Fit physical shuffle order",
+        ));
     }
     Ok(())
 }
@@ -3018,6 +3027,7 @@ mod tests {
                 state: initial.clone(),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         play_card(&mut state, &catalog, card.uid, None, None, &mut Vec::new()).unwrap();
         assert_eq!(
@@ -3054,6 +3064,7 @@ mod tests {
                 state: master_state,
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         let before = stale.clone();
         let mut events = Vec::new();
@@ -3878,7 +3889,7 @@ mod tests {
     }
 
     #[test]
-    fn reboot_hashset_ties_are_exact_and_only_perfect_fit_refuses() {
+    fn reboot_hashset_ties_are_exact_and_a_perfect_fit_outside_the_domain_is_inert() {
         let mut builder = CatalogBuilder::new();
         let strike = builder
             .intern(CardIdentity {
@@ -3946,7 +3957,9 @@ mod tests {
             });
 
         // #3197: a Draw duplicate key is exact (fresh reference HashSet,
-        // R52D) even when the tied payloads differ; only Perfect Fit refuses.
+        // R52D) even when the tied payloads differ. A Perfect Fit card that
+        // is not in the shuffled list returns without moving anything
+        // (`PerfectFit::ModifyShuffleOrder` RVA `0xd6259`, IL_0005-IL_0013).
         let mut events = Vec::new();
         crate::engine::draw::reboot_shuffle(&mut tie, &catalog, &[], &mut events).unwrap();
         assert!(matches!(
@@ -3955,11 +3968,12 @@ mod tests {
         ));
         let before = listener.clone();
         let mut events = Vec::new();
-        assert!(
-            crate::engine::draw::reboot_shuffle(&mut listener, &catalog, &[], &mut events).is_err()
-        );
+        crate::engine::draw::reboot_shuffle(&mut listener, &catalog, &[], &mut events).unwrap();
         assert_eq!(listener, before);
-        assert!(events.is_empty());
+        assert!(matches!(
+            events.as_slice(),
+            [Event::Reshuffled { cards: 0 }]
+        ));
 
         for mut state in {
             let mut discard_only = HotState::at_defaults();
@@ -4046,17 +4060,19 @@ mod tests {
                 }),
             })
             .unwrap();
-        // Interned but not placed: the Perfect Fit refusal witness adds it.
-        builder
-            .intern(CardIdentity {
-                id: CardId::DefendDefect,
-                upgrade: 0,
-                enchantment: Some(CardEnchantment {
-                    id: EnchantmentId::PerfectFit,
-                    amount: 1,
-                }),
-            })
-            .unwrap();
+        // Interned but not placed: the Perfect Fit witnesses add them.
+        for id in [CardId::DefendDefect, CardId::Zap] {
+            builder
+                .intern(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: Some(CardEnchantment {
+                        id: EnchantmentId::PerfectFit,
+                        amount: 1,
+                    }),
+                })
+                .unwrap();
+        }
         let catalog = builder.build();
         let card = |uid, atom| HotCard {
             uid,
@@ -4208,7 +4224,8 @@ mod tests {
                 .any(|event| matches!(event, Event::Reshuffled { cards: 8 }))
         );
 
-        // Perfect Fit is still refused at play time, atomically.
+        // A Perfect Fit card in Discard tops the shuffled Draw, so Reboot's
+        // own Draw takes it first (#3756, `UABU3Z1QSR3Z` n45).
         let (catalog, mut listener) = issue3197_duplicate_key_state();
         let pf_atom = catalog
             .atom(&CardIdentity {
@@ -4229,11 +4246,55 @@ mod tests {
                 atom: pf_atom,
                 flags: 0,
             });
-        let before = listener.clone();
         let mut events = Vec::new();
-        assert!(play_card(&mut listener, &catalog, 7, None, None, &mut events).is_err());
-        assert_eq!(listener, before);
+        play_card(&mut listener, &catalog, 7, None, None, &mut events).unwrap();
+        assert_eq!(pile_uids(&listener, PileId::Hand)[0], 16);
+        assert_eq!(listener.piles.get(PileId::Hand).len(), 4);
+        assert_eq!(listener.piles.get(PileId::Draw).len(), 5);
+
+        // What stays refused, by the shuffle's own name and atomically: an
+        // inexact state whose two Perfect Fit identities make the listener
+        // order observable.
+        let (catalog, mut inexact) = issue3197_duplicate_key_state();
+        let second = catalog
+            .atom(&CardIdentity {
+                id: CardId::Zap,
+                upgrade: 0,
+                enchantment: Some(CardEnchantment {
+                    id: EnchantmentId::PerfectFit,
+                    amount: 1,
+                }),
+            })
+            .unwrap();
+        inexact.exact_piles = false;
+        inexact.piles.get_mut(PileId::Discard).make_mut().extend([
+            HotCard {
+                uid: 16,
+                atom: pf_atom,
+                flags: 0,
+            },
+            HotCard {
+                uid: 17,
+                atom: second,
+                flags: 0,
+            },
+        ]);
+        assert!(!reboot_entry_is_valid(&inexact, &catalog));
+        assert!(!bottled_potential_entry_is_valid(&inexact, &catalog));
+        let before = inexact.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            play_card(&mut inexact, &catalog, 7, None, None, &mut events),
+            Err(EngineRefusal::MalformedArgs(
+                "Perfect Fit physical shuffle order"
+            ))
+        );
+        assert_eq!(inexact, before);
         assert!(events.is_empty());
+        let mut exact = before;
+        exact.exact_piles = true;
+        assert!(reboot_entry_is_valid(&exact, &catalog));
+        assert!(bottled_potential_entry_is_valid(&exact, &catalog));
     }
 
     /// #3515: Flak Cannon's per-Status `CardCmd.Exhaust` (`<Exhaust>d__6`

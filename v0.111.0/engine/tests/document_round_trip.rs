@@ -301,9 +301,10 @@ fn a_spawn_after_reloading_beside_an_osty_corpse_takes_the_native_uid() {
 /// Sleight of Flesh, where admission refuses an unobserved Strength applier
 /// ("Misery Strength clone unknown applier"), so a reloaded document was
 /// refused for a reason its session state did not have. Here the standing,
-/// downed and revived documents of steps 7 to 14 are admitted, and no later
-/// one is refused for a Strength or Misery reason: from step 15 the only
-/// reason is the Debris row #3644 tracks, which also parks step 32.
+/// downed and revived documents of steps 7 to 39 are admitted, and step 40
+/// is refused only as a combat that has ended. Until #3756 steps 15 on were
+/// refused by the Debris provenance row #3644 counted (a Collision Course
+/// had minted one), which also parked step 32's reload.
 #[test]
 fn a_revived_parafright_keeps_the_obscuras_strength_row() {
     let id = "f6706a4e38f307ca";
@@ -312,6 +313,7 @@ fn a_revived_parafright_keeps_the_obscuras_strength_row() {
     let mut rows = BTreeMap::new();
     let mut admitted = Vec::new();
     let mut parked = Vec::new();
+    let mut over = Vec::new();
     replay(id, &entry, &line, |index, document, reloaded| {
         let Some(parafright) = document
             .monsters
@@ -345,17 +347,14 @@ fn a_revived_parafright_keeps_the_obscuras_strength_row() {
             Ok(()) => admitted.push(index),
             Err(refusal) => {
                 let missing = format!("{:?}", refusal.missing().collect::<Vec<_>>());
-                assert!(
-                    missing.contains("Debris generation provenance")
-                        && !missing.contains("Strength")
-                        && !missing.contains("Misery"),
-                    "step {index}: {missing}",
-                );
+                assert_eq!(missing, "[PlayerPhase(5), AlreadyOver]", "step {index}");
+                over.push(index);
             }
         }
     });
     assert_eq!(downed, [11, 16, 17, 36, 39]);
     assert_eq!(rows, BTreeMap::from([(3, 11), (6, 23)]));
-    assert_eq!(admitted, [7, 8, 9, 10, 11, 12, 13, 14]);
-    assert_eq!(parked, [32]);
+    assert_eq!(admitted, (7..=39).collect::<Vec<_>>());
+    assert_eq!(parked, [0usize; 0]);
+    assert_eq!(over, [40]);
 }

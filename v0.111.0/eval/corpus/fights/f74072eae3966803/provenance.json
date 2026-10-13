@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "7U6NANVCTHUE",
+ "node": 42,
+ "encounter": "ENCOUNTER.KNIGHTS_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "37972017d2c27d59a9f483a7589002d053ceed5fb128c242a1fd9d8f1fe265d2",
+ "save_sha256": "c01b2566003dd004a2bcba0f790ffbf45b211b281ed329f3fbd79003f6c5f631",
+ "entry_digest": "edf806033fc3dfa7899a36fed31805670fc26f9d59386b25634d7e68d512738e",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

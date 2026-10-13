@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "WHEHA65J95B3",
+ "node": 13,
+ "encounter": "ENCOUNTER.HAUNTED_SHIP_NORMAL",
+ "node_type": "monster",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "f8722b44792320bd3d639e10de7d549d8debf732d45511bcae4a3225c0b89c7a",
+ "save_sha256": "df6e71ac16b2503a41d066a6db9529416b3ccc718c4a90389b133904eb012ea7",
+ "entry_digest": "43a30af48134538b86afd8ec05273c4d8a1bf5d3a09d3911f93b4420221676d0",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

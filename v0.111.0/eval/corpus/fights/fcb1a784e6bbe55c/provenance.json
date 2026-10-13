@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TVHC64H5RQKZ",
+ "node": 43,
+ "encounter": "ENCOUNTER.MECHA_KNIGHT_ELITE",
+ "node_type": "elite",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "a42f3da146d2975c762ac5fd5e43b01b7dc40b0b75c268f6d4fcacf3db813a31",
+ "save_sha256": "f2c28b27c3d31f4e09e35cf4bc3ab48afd3c60477356d84a376579484d89b1b7",
+ "entry_digest": "78849ea732c434e9bf33fd8c20b6ea3d5a94494e9c5d11ce0250aa12e3fe189a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

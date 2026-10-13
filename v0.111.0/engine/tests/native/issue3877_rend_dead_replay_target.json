@@ -1,0 +1,348 @@
+{
+ "echo_lethal": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "echo_lethal",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 2,
+   "CardPlayStartedEntry": 2,
+   "CreatureAttackedEntry": 2,
+   "DamageReceivedEntry": 2,
+   "EnergySpentEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 8,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 68,
+  "player_hp_before": 70
+ },
+ "echo_survives": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "echo_survives",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 2,
+   "CardPlayStartedEntry": 2,
+   "CreatureAttackedEntry": 2,
+   "DamageReceivedEntry": 4,
+   "EnergySpentEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 5,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 25,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 66,
+  "player_hp_before": 70
+ },
+ "glam_lethal": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "glam_lethal",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 2,
+   "CardPlayStartedEntry": 2,
+   "CreatureAttackedEntry": 2,
+   "DamageReceivedEntry": 2,
+   "EnergySpentEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 8,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 68,
+  "player_hp_before": 70
+ },
+ "glam_survives": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "glam_survives",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 2,
+   "CardPlayStartedEntry": 2,
+   "CreatureAttackedEntry": 2,
+   "DamageReceivedEntry": 4,
+   "EnergySpentEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 5,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 25,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 66,
+  "player_hp_before": 70
+ },
+ "plain_lethal": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "plain_lethal",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 1,
+   "CardPlayStartedEntry": 1,
+   "CreatureAttackedEntry": 1,
+   "DamageReceivedEntry": 2,
+   "EnergySpentEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 8,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 68,
+  "player_hp_before": 70
+ },
+ "punch_lethal": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "punch_lethal",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 2,
+   "CardPlayStartedEntry": 2,
+   "CreatureAttackedEntry": 2,
+   "DamageReceivedEntry": 2,
+   "EnergySpentEntry": 1,
+   "PowerReceivedEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 8,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 68,
+  "player_hp_before": 70
+ },
+ "punch_survives": {
+  "build": {
+   "commit": "41cef1ea",
+   "main_assembly_hash": 1172974615,
+   "version": "v0.111.0"
+  },
+  "case": "punch_survives",
+  "discard": [
+   "CARD.REND"
+  ],
+  "exhaust": [],
+  "hand": [
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT",
+   "CARD.DEFEND_SILENT"
+  ],
+  "history_types": {
+   "CardPlayFinishedEntry": 2,
+   "CardPlayStartedEntry": 2,
+   "CreatureAttackedEntry": 2,
+   "DamageReceivedEntry": 4,
+   "EnergySpentEntry": 1,
+   "PowerReceivedEntry": 1
+  },
+  "monsters_after": [
+   {
+    "dead": false,
+    "hp": 5,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "monsters_before": [
+   {
+    "dead": false,
+    "hp": 25,
+    "id": 1
+   },
+   {
+    "dead": false,
+    "hp": 23,
+    "id": 2
+   }
+  ],
+  "over": false,
+  "play": "Finished",
+  "player_hp_after": 66,
+  "player_hp_before": 70
+ }
+}

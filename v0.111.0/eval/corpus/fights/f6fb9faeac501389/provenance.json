@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "AJ3A8WAW926W",
+ "node": 22,
+ "encounter": "ENCOUNTER.EXOSKELETONS_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "7c7178061f013f4ecb03f869b13b0247f4e0946a0dfaa51d68f56b9901f2629c",
+ "save_sha256": "54bbd7f42565cd88eab089e2cdc5bb1b23368a977ca566aaa09306ee1d77c180",
+ "entry_digest": "43ed3d4aa9ce7fcafa91c5ee8633654f1783d284657243ea94e855a537fbccc9",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

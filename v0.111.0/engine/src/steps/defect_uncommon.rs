@@ -18,7 +18,7 @@
 
 use super::StepCtx;
 use crate::catalog::{CardIdentity, CardSpec, CardTargetType, Catalog, CompiledArg};
-use crate::content_tables::{CardRarity, CardRow};
+use crate::content_tables::CardRarity;
 use crate::engine::cards::{
     bulk_transform_fixed_same_pile, inject_generated_free_this_turn_bottom,
     normalize_card_identities, shuffle_generation_slice,
@@ -373,43 +373,6 @@ pub(crate) fn gain_current_energy_exact(ctx: &mut StepCtx<'_>) -> Result<(), Eng
     Ok(())
 }
 
-/// Python authority: `_run_steps_inner` (frozen Python, deleted #2827) authenticates and installs the
-/// stack through `_modify_hibernate_amount`; the captured turn-start
-/// reader begins at `_after_turn_start_hand_draw`.
-///
-/// Unkeyed current-build `AfterPlayerTurnStart` peers whose acquisition order
-/// is absent from canonical State.
-///
-/// SummonNextTurn is deliberately absent: its Osty mutation is disjoint from
-/// Hibernate's amount-only decrement, so the two callbacks commute. Every
-/// member below can observeably reorder with Hibernate through RNG, Hand,
-/// damage, Block, or combat ending.
-pub(crate) const HIBERNATE_TURN_START_PEERS: [(PowerId, StepKind); 7] = [
-    (PowerId::Loop, StepKind::Loop),
-    (PowerId::RollingBoulder, StepKind::RollingBoulder),
-    (PowerId::Entropy, StepKind::Entropy),
-    (PowerId::ToolsOfTheTrade, StepKind::ToolsOfTheTrade),
-    (PowerId::Tyranny, StepKind::Tyranny),
-    (PowerId::Inferno, StepKind::Inferno),
-    (PowerId::CrimsonMantle, StepKind::CrimsonMantle),
-];
-
-/// Map a source-derived row to the unkeyed turn-start power it can install.
-///
-/// This intentionally keys on the generated program rather than a CardId
-/// allowlist. A future carrier of an existing power therefore invalidates the
-/// order shortcut automatically instead of silently entering the quotient.
-pub(crate) fn hibernate_turn_start_writer(row: &CardRow) -> Option<PowerId> {
-    HIBERNATE_TURN_START_PEERS
-        .into_iter()
-        .find_map(|(power, kind)| {
-            row.steps
-                .iter()
-                .any(|step| step.kind == kind)
-                .then_some(power)
-        })
-}
-
 fn hibernate_program_frost_count(catalog: &Catalog, spec: &CardSpec) -> Result<u8, EngineRefusal> {
     let frost_count = match (spec.identity.id, spec.identity.upgrade) {
         (CardId::Hibernate, 0) => 2,
@@ -443,7 +406,7 @@ fn hibernate_program_frost_count(catalog: &Catalog, spec: &CardSpec) -> Result<u
         || spec.sly
         || !spec.playable
         || spec.native_unplayable
-        || !spec.solo_unplayable
+        || spec.solo_unplayable
         || spec.selects
         || program.len() != 1 + usize::from(frost_count)
         || !matches!(
@@ -499,23 +462,18 @@ fn require_hibernate_environment(state: &crate::hot::HotState) -> Result<i32, En
         Some(slot) if slot.wire == SlotWire::Int && slot.value > 0 => slot.value,
         Some(_) => return Err(EngineRefusal::MalformedArgs("hibernate amount")),
     };
-    for (peer, _) in HIBERNATE_TURN_START_PEERS {
-        let peer_is_live = match peer {
-            PowerId::Inferno => {
-                state.powers.get(PowerId::Inferno).is_some()
-                    || state.powers.get(PowerId::InfernoSelf).is_some()
-            }
-            PowerId::CrimsonMantle => {
-                state.powers.get(PowerId::CrimsonMantle).is_some()
-                    || state.powers.get(PowerId::CrimsonSelf).is_some()
-            }
-            _ => state.powers.get(peer).is_some(),
-        };
-        if peer_is_live {
-            return Err(EngineRefusal::PowerOrderNotModeled(
-                "Hibernate AfterPlayerTurnStart order",
-            ));
-        }
+    // Hibernate is a member of the acquisition-ordered `AfterPlayerTurnStart`
+    // player-power list (#3877): a live stack is in it, an absent one is not.
+    let listed = state
+        .after_player_turn_start_order()
+        .ok_or(EngineRefusal::PowerOrderNotModeled(
+            "Hibernate AfterPlayerTurnStart order",
+        ))?
+        .contains(&PowerId::Hibernate);
+    if listed != (amount > 0) {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            "Hibernate AfterPlayerTurnStart order",
+        ));
     }
     if !crate::engine::damage::player_type_one_listener_order_is_exact(state) {
         return Err(EngineRefusal::PowerOrderNotModeled(
@@ -541,6 +499,14 @@ fn apply_hibernate_stack(
     let updated = current
         .checked_add(1)
         .ok_or(EngineRefusal::CounterOverflow("hibernate"))?;
+    // A first stack is a new power object: it joins the end of the player's
+    // power list, and so of the `AfterPlayerTurnStart` walk. A restack keeps
+    // its place (`get_StackType` RVA `0xa392e` is Counter).
+    if current == 0 && !state.register_after_player_turn_start(PowerId::Hibernate) {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            "Hibernate AfterPlayerTurnStart order",
+        ));
+    }
     state.powers.set(PowerId::Hibernate, SlotWire::Int, updated);
     crate::engine::damage::note_power(events, Subject::Player, PowerId::Hibernate, updated);
     Ok(())
@@ -578,14 +544,15 @@ pub(crate) fn preflight_hibernate_turn_start(
     Ok(captured)
 }
 
-/// Execute Hibernate's captured `AfterPlayerTurnStart` decrement.
+/// Execute Hibernate's captured `AfterPlayerTurnStart` decrement, at its
+/// place in the player's power list.
 ///
 /// Native captures the player-power listener walk, but `PowerCmd::Decrement`
 /// enters the ordinary ending-gated `ModifyAmount` command. A listener which
 /// was captured while nonterminal therefore still no-ops if an earlier
-/// callback ended combat. The public quotient excludes every noncommuting
-/// earlier peer; SummonNextTurn remains legal and completes immediately before
-/// this amount-only tick.
+/// callback ended combat, and one that ran before the callback that ended it
+/// has already decremented (#3877; `tests/native/hibernate_*.native.json`
+/// record both orders against a lethal Rolling Boulder).
 ///
 /// `HibernatePower/<AfterPlayerTurnStart>d__6` RVA `0x33c790` awaits
 /// `PowerCmd.Decrement` (IL_0033), which forwards to `ModifyAmount`
@@ -594,15 +561,23 @@ pub(crate) fn preflight_hibernate_turn_start(
 /// `history.over` (#3515).
 pub(crate) fn tick_hibernate_turn_start(
     state: &mut crate::hot::HotState,
-    captured: bool,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    if !captured || crate::engine::damage::damage_combat_is_ending(state) {
+    if crate::engine::damage::damage_combat_is_ending(state) {
         return Ok(());
     }
     let current = require_hibernate_environment(state)?;
-    debug_assert!(current > 0);
+    if current <= 0 {
+        return Err(EngineRefusal::MalformedArgs("hibernate amount"));
+    }
     let updated = current - 1;
+    // The power object leaves the list at zero; the order is read while the
+    // stack is still live.
+    if updated == 0 && !state.unregister_after_player_turn_start(PowerId::Hibernate) {
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            "Hibernate AfterPlayerTurnStart order",
+        ));
+    }
     state.powers.set(PowerId::Hibernate, SlotWire::Int, updated);
     crate::engine::damage::note_power(events, Subject::Player, PowerId::Hibernate, updated);
     Ok(())
@@ -1155,6 +1130,20 @@ pub(crate) fn white_noise_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A live Hibernate stack as play leaves it: the amount, and the power's
+    /// place in the `AfterPlayerTurnStart` order.
+    fn set_live_hibernate(state: &mut HotState, amount: i32) {
+        state.powers.set(PowerId::Hibernate, SlotWire::Int, amount);
+        let mut order = state
+            .after_player_turn_start_order()
+            .map(|order| order.to_vec())
+            .unwrap_or_default();
+        if !order.contains(&PowerId::Hibernate) {
+            order.push(PowerId::Hibernate);
+        }
+        assert!(state.set_after_player_turn_start_order(&order));
+    }
     use crate::catalog::RewardPool;
     use crate::catalog::{CardIdentity, Catalog, CatalogBuilder};
     use crate::content_tables::CARD_ROWS;
@@ -1930,8 +1919,12 @@ mod tests {
         assert!(after.iter().all(|(_, id)| *id == Fuel));
     }
 
+    /// #3856: Compact's bulk transform over a Status that owns a Thieving
+    /// Hopper master row. The row stays in the run deck with no combat
+    /// object (`monsters::thieving_hopper_deck_payload_is_exact`), and the
+    /// Fuel that replaced it owns none.
     #[test]
-    fn compact_refuses_a_hopper_master_status_before_public_play_prefix() {
+    fn compact_transforms_a_hopper_master_status_and_leaves_its_deck_row() {
         let (mut state, catalog, _source) = compact_parts(0);
         let source = state.piles.get_mut(PileId::Play).make_mut().pop().unwrap();
         state.piles.get_mut(PileId::Hand).make_mut().push(source);
@@ -1943,6 +1936,7 @@ mod tests {
                 state: state.card_states.get(burn.uid),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         let mut hopper = HotMonster::new(
             MonsterKind::ThievingHopper,
@@ -1956,17 +1950,19 @@ mod tests {
         );
         state.monsters_mut()[0] = hopper;
 
-        let before = state.clone();
-        let mut events = vec![Event::TurnBegan { turn: 99 }];
-        let events_before = events.clone();
-        assert_eq!(
-            play_card(&mut state, &catalog, source.uid, None, None, &mut events,),
-            Err(EngineRefusal::MalformedArgs(
-                "persistent encounter-card transform"
-            ))
-        );
-        assert_eq!(state, before);
-        assert_eq!(events, events_before);
+        let master = state.card_states.hopper().unwrap().master.clone();
+        let mut events = Vec::new();
+        play_card(&mut state, &catalog, source.uid, None, None, &mut events).unwrap();
+        assert!(PileId::ALL.into_iter().all(|pile| {
+            state
+                .piles
+                .get(pile)
+                .as_slice()
+                .iter()
+                .all(|card| card.uid != burn.uid)
+        }));
+        assert_eq!(state.card_states.hopper().unwrap().master, master);
+        assert!(crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&state, &catalog));
     }
 
     #[test]
@@ -3386,7 +3382,9 @@ mod tests {
             state
                 .monsters_mut()
                 .push(HotMonster::new(MonsterKind::Toadpole, 100));
-            assert!(catalog.spec(source.atom).unwrap().solo_unplayable);
+            // One player may play it too (#3877,
+            // `tests/hibernate_turn_start_order.rs`); this fixture has a party.
+            assert!(!catalog.spec(source.atom).unwrap().solo_unplayable);
             let mut events = Vec::new();
             play_card(&mut state, &catalog, source.uid, None, None, &mut events).unwrap();
 
@@ -3658,6 +3656,68 @@ mod tests {
         );
     }
 
+    /// #3877: Hibernate's place in the turn-start order is an ordinal whose
+    /// zero is also "first". A writer that set the stack without registering
+    /// it would leave that zero and silently put Hibernate first, so the
+    /// stack has exactly two writers, the application and the decrement in
+    /// this file, and each of them moves the order with it. A third writer
+    /// has to come through here.
+    #[test]
+    fn hibernate_has_no_writer_that_bypasses_the_turn_start_order() {
+        fn sources(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
+            for entry in std::fs::read_dir(dir).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    sources(&path, found);
+                } else if path.to_string_lossy().ends_with(".rs") {
+                    found.push(path);
+                }
+            }
+        }
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let mut files = Vec::new();
+        sources(&root, &mut files);
+        let needle = ["set(PowerId::", "Hibernate,"].concat();
+        let mut writers = Vec::new();
+        for path in files {
+            let text = std::fs::read_to_string(&path).unwrap();
+            // Production code only: everything ahead of the test module.
+            let production = text.split("#[cfg(test)]\nmod tests").next().unwrap();
+            let count = production.matches(needle.as_str()).count();
+            if count > 0 {
+                writers.push((
+                    path.strip_prefix(&root)
+                        .unwrap()
+                        .to_string_lossy()
+                        .into_owned(),
+                    count,
+                ));
+            }
+        }
+        assert_eq!(writers, [("steps/defect_uncommon.rs".to_owned(), 2)]);
+
+        // And the two it has keep the order in step: an applied stack is
+        // listed last, a stack decremented to zero is not listed.
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.monsters_mut().push(crate::hot::HotMonster::new(
+            crate::ids::MonsterKind::Toadpole,
+            100,
+        ));
+        state.powers.set(PowerId::Loop, SlotWire::Int, 1);
+        assert!(state.set_after_player_turn_start_order(&[PowerId::Loop]));
+        apply_hibernate_stack(&mut state, &mut Vec::new()).unwrap();
+        assert_eq!(
+            &*state.after_player_turn_start_order().unwrap(),
+            [PowerId::Loop, PowerId::Hibernate]
+        );
+        tick_hibernate_turn_start(&mut state, &mut Vec::new()).unwrap();
+        assert_eq!(
+            &*state.after_player_turn_start_order().unwrap(),
+            [PowerId::Loop]
+        );
+    }
+
     #[test]
     fn hibernate_turn_start_decrement_uses_the_native_ending_gate() {
         let mut ordinary = HotState::at_defaults();
@@ -3666,11 +3726,11 @@ mod tests {
             100,
         ));
         ordinary.hp = 50;
-        ordinary.powers.set(PowerId::Hibernate, SlotWire::Int, 1);
+        set_live_hibernate(&mut ordinary, 1);
         let captured = preflight_hibernate_turn_start(&ordinary).unwrap();
         assert!(captured);
         let mut events = Vec::new();
-        tick_hibernate_turn_start(&mut ordinary, captured, &mut events).unwrap();
+        tick_hibernate_turn_start(&mut ordinary, &mut events).unwrap();
         assert_eq!(ordinary.powers.value(PowerId::Hibernate), 0);
         assert_eq!(ordinary.powers.get(PowerId::Hibernate), None);
         assert_eq!(
@@ -3684,14 +3744,12 @@ mod tests {
 
         let mut already_terminal = HotState::at_defaults();
         already_terminal.history.over = true;
-        already_terminal
-            .powers
-            .set(PowerId::Hibernate, SlotWire::Int, 2);
+        set_live_hibernate(&mut already_terminal, 2);
         let captured = preflight_hibernate_turn_start(&already_terminal).unwrap();
         assert!(!captured);
         let before = already_terminal.clone();
         let mut events = Vec::new();
-        tick_hibernate_turn_start(&mut already_terminal, captured, &mut events).unwrap();
+        tick_hibernate_turn_start(&mut already_terminal, &mut events).unwrap();
         assert_eq!(already_terminal, before);
         assert!(events.is_empty());
 
@@ -3703,21 +3761,19 @@ mod tests {
                 100,
             ));
         ended_by_prior_listener.hp = 50;
-        ended_by_prior_listener
-            .powers
-            .set(PowerId::Hibernate, SlotWire::Int, 2);
+        set_live_hibernate(&mut ended_by_prior_listener, 2);
         let captured = preflight_hibernate_turn_start(&ended_by_prior_listener).unwrap();
         assert!(captured);
         ended_by_prior_listener.history.over = true;
         let before = ended_by_prior_listener.clone();
         let mut events = Vec::new();
-        tick_hibernate_turn_start(&mut ended_by_prior_listener, captured, &mut events).unwrap();
+        tick_hibernate_turn_start(&mut ended_by_prior_listener, &mut events).unwrap();
         assert_eq!(ended_by_prior_listener, before);
         assert!(events.is_empty());
 
         let mut suspended = HotState::at_defaults();
         suspended.hp = 50;
-        suspended.powers.set(PowerId::Hibernate, SlotWire::Int, 2);
+        set_live_hibernate(&mut suspended, 2);
         let record = crate::hot::CardPlayRecord::pending_for_test(278);
         let pending = suspended.frames.push_pending_for_test(&record);
         suspended.pending = Some(std::sync::Arc::new(pending));
@@ -3756,7 +3812,7 @@ mod tests {
                         }
                         let mut state = HotState::at_defaults();
                         state.hp = 50;
-                        state.powers.set(PowerId::Hibernate, SlotWire::Int, 1);
+                        set_live_hibernate(&mut state, 1);
                         for power in listeners {
                             state.powers.set(power, SlotWire::Int, 1);
                         }
@@ -3783,7 +3839,7 @@ mod tests {
         ] {
             let mut state = HotState::at_defaults();
             state.hp = 50;
-            state.powers.set(PowerId::Hibernate, SlotWire::Int, 1);
+            set_live_hibernate(&mut state, 1);
             if let Some(power) = live {
                 state.powers.set(power, SlotWire::Int, 1);
             }
@@ -3956,9 +4012,9 @@ mod tests {
         });
         let mut template = HotState::at_defaults();
         template.hp = 50;
-        template.powers.set(PowerId::Hibernate, SlotWire::Int, 2);
+        set_live_hibernate(&mut template, 2);
         crate::engine::damage::assert_ending_window_gate(&template, "Hibernate tick", |s, _| {
-            tick_hibernate_turn_start(s, true, &mut Vec::new())
+            tick_hibernate_turn_start(s, &mut Vec::new())
         });
 
         let scrape = identity(CardId::Scrape, 0);

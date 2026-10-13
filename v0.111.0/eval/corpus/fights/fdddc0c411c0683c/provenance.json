@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "Y3NULJSNND7N",
+ "node": 32,
+ "encounter": "ENCOUNTER.THE_INSATIABLE_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "6107718e9381c89ccd1c563f6ee63b7d73d06f5cb261077ef3f601b3a01406b9",
+ "save_sha256": "de3825921816eba094f4689728de0d471293b94a589221cb5d7c7f436b33cfcf",
+ "entry_digest": "da33554ef7015047019f2446bf8105462b60cbc87675c7aee439b0af1cc57a48",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

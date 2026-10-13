@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "244SUSWZ8CVP",
+ "node": 13,
+ "encounter": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "b73bcd4c55d56b7cbf9f3151205bee34ddb3e051d77a17859d5be3d85de675f7",
+ "save_sha256": "5b77047519159edfb5427b19340071b6a8bd873bb094adda9afef21f34818f7c",
+ "entry_digest": "ec8a6280a4c7f29c157cdb6436fa61018600dd1a56fc0c47ddee727f1eecdf8e",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

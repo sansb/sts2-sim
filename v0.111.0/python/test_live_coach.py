@@ -2,7 +2,7 @@
 
 `tools/live_coach.py` used to build its root with the frozen Python
 `start_combat`, solve a projection of it, and narrate by replaying the line
-through Python. It now takes the review worker's root (`sts-sim entry --save
+through Python. It now takes the Rust root (`sts-sim entry --save
 --opening`), solves that canonical document with one `exact-solve` request, and
 replays the line in Rust before narrating it. These pin the disclosure, the
 flags, and the end-to-end path on a real v0.111.0 save with no simulator

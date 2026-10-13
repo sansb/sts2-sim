@@ -1,11 +1,10 @@
 """Recorded-capture association contracts for #1068 slice 2.
 
-The Python recorded-line seed and its annotated line (`replay_recorded_line`,
-`line_document`, `_attach_recorded_line`) were retired with the Python review
-producer (#2827 item F1). The recorded line is now resolved and replayed in
-Rust (`rust_replay.recorded_witness`, `rust_review.replay_line`; see
-`test_rust_replay.py`). What stays here is the provenance half: an associated
-capture is kept at every candidate tier.
+The Python recorded-line seed, its annotated line and the review that
+published them are gone (#2827 item F1, then the review path itself on
+2026-10-11). The recorded line is resolved and replayed in Rust
+(`engine/src/recorded.rs`). What stays here is the provenance half: an
+associated capture is kept at every candidate tier.
 """
 
 from __future__ import annotations

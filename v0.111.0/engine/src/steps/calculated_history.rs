@@ -38,15 +38,37 @@ pub const IMPLEMENTED: &[StepKind] = &[
     StepKind::TearAsunderExact,
 ];
 
-/// Crescent Spear's canonical Star-card census and repeated targeted attack.
+/// Crescent Spear: one hit of `base + extra x (Star cards in combat)`.
 ///
-/// Python: `_run_steps_inner` (frozen, deleted #2827). The playing card has left Hand
-/// but is still a combat card, so the census is Draw + Hand + Discard +
-/// Exhaust + this exact source. It reads each identity's canonical fixed/X
-/// Star-cost row, not mutable cost state, and deliberately excludes any other
-/// card temporarily in Play.
+/// v0.111.0 `sts2.dll` (sha256 9cb4f1ad...). `CrescentSpear::get_CanonicalVars`
+/// (RVA `0xdc2c4`) builds `CalculationBaseVar(8)` (IL_0014-IL_001a),
+/// `ExtraDamageVar(2)` (IL_0022-IL_0028) and
+/// `CalculatedDamageVar.WithMultiplier(<b__4_0>)` (IL_0030-IL_0055);
+/// `OnUpgrade` (RVA `0xdc37b`, IL_0001-IL_0011) adds 1 to `ExtraDamage`. So
+/// the calculated value is `8 + extra x multiplier`, and it is a DAMAGE, not
+/// a hit count: `CrescentSpear/<OnPlay>d__5::MoveNext` (RVA `0x395868`,
+/// IL_0035-IL_0073) is
+/// `DamageCmd.Attack(DynamicVars.CalculatedDamage).FromCard(..).Targeting(
+/// cardPlay.Target).WithHitFx(..).Execute(..)` with no `WithHitCount`, one
+/// powered hit. The five siblings in this file are the other shape: each
+/// builds a `CalculatedHits` var and passes it to `AttackCommand.WithHitCount`
+/// (Helix Drill `0x3a4a7c` IL_0050-IL_0074, Pull From Below `0x3b4474`
+/// IL_0050-IL_0074, Radiate `0x3b50c0` IL_003b-IL_005f, Rattle `0x3b5984`
+/// IL_0089-IL_00ad, Tear Asunder `0x3c2120` IL_0050-IL_0074).
+///
+/// The multiplier (`<get_CanonicalVars>b__4_0`, RVA `0x39581a`, IL_0001-IL_0035)
+/// is `Owner.PlayerCombatState.AllCards.Count(b__4_1)`, and `b__4_1` (RVA
+/// `0x395855`, IL_0001-IL_0011) is `CanonicalStarCost >= 0 || HasStarCostX`.
+/// The playing card has left Hand but is still a combat card, so the census
+/// is Draw + Hand + Discard + Exhaust + this exact source. It reads each
+/// identity's canonical fixed/X Star-cost row, not mutable cost state, and
+/// excludes any other card temporarily in Play.
+///
+/// Until #3761 this ran `base` damage `extra x count` times (the frozen
+/// Python reading). The game's own checkpoints refute that: with 2 Star
+/// cards an unupgraded play deals 12, not 32.
 pub(crate) fn crescent_spear_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
-    let (damage, multiplier): (i64, i64) =
+    let (base, multiplier): (i64, i64) =
         match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
             (CardId::CrescentSpear, 0, [CompiledArg::I(8), CompiledArg::I(2)]) => (8, 2),
             (CardId::CrescentSpear, 1, [CompiledArg::I(8), CompiledArg::I(3)]) => (8, 3),
@@ -69,15 +91,16 @@ pub(crate) fn crescent_spear_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRe
             }
         }
     }
-    let hits = multiplier
+    let damage = multiplier
         .checked_mul(star_cards)
+        .and_then(|extra| base.checked_add(extra))
         .ok_or(EngineRefusal::CounterOverflow("crescent_spear_exact"))?;
     player_attack_from_card(
         ctx.state,
         (ctx.catalog, ctx.spec, ctx.source_uid),
         &[target],
         damage,
-        hits,
+        1,
         ctx.events,
     )
 }
@@ -365,7 +388,74 @@ mod tests {
             events: &mut events,
         };
         crescent_spear_exact(&mut ctx).unwrap();
-        assert_eq!(state.monsters[0].hp, 68); // 2 Star cards × 2 hits × 8.
+        assert_eq!(state.monsters[0].hp, 88); // 8 + 2 extra x 2 Star cards.
+    }
+
+    /// #3761. One hit at both levels: Strength is added once, and the
+    /// damage is `8 + extra x count` (FU9KZ1M6UGR0 node 4's shape at L0:
+    /// two Star cards, 12 damage where the repeated reading dealt 32).
+    #[test]
+    fn crescent_spear_is_one_powered_hit_of_base_plus_extra_per_star_card() {
+        for (upgrade, extra, strength, expected) in
+            [(0, 2, 0, 12), (1, 3, 0, 14), (0, 2, 3, 15), (1, 3, 3, 17)]
+        {
+            let mut builder = CatalogBuilder::new();
+            let source_atom = builder
+                .intern(identity(CardId::CrescentSpear, upgrade))
+                .unwrap();
+            let other_star_atom = builder.intern(identity(CardId::Quasar, 0)).unwrap();
+            let ordinary_atom = builder.intern(identity(CardId::StrikeIronclad, 0)).unwrap();
+            let catalog = builder.build();
+            let spec = *catalog.spec(source_atom).unwrap();
+            let source = HotCard {
+                uid: 7,
+                atom: source_atom,
+                flags: 0,
+            };
+            let mut state = target_state(100);
+            state.powers.set(PowerId::Strength, SlotWire::Int, strength);
+            state.piles.set(
+                PileId::Discard,
+                HotPile::from_cards(vec![
+                    HotCard {
+                        uid: 8,
+                        atom: other_star_atom,
+                        flags: 0,
+                    },
+                    HotCard {
+                        uid: 9,
+                        atom: ordinary_atom,
+                        flags: 0,
+                    },
+                ]),
+            );
+            state
+                .piles
+                .set(PileId::Play, HotPile::from_cards(vec![source]));
+            let mut events = Vec::<Event>::new();
+            let mut ctx = StepCtx {
+                state: &mut state,
+                catalog: &catalog,
+                spec: &spec,
+                source_uid: source.uid,
+                target: Some(0),
+                selection: None,
+                x_value: 0,
+                args: &[CompiledArg::I(8), CompiledArg::I(extra)],
+                events: &mut events,
+            };
+            crescent_spear_exact(&mut ctx).unwrap();
+            assert_eq!(
+                state.monsters[0].hp,
+                100 - expected,
+                "L{upgrade} with Strength {strength}"
+            );
+            let hits = events
+                .iter()
+                .filter(|event| matches!(event, Event::MonsterDamaged { .. }))
+                .count();
+            assert_eq!(hits, 1, "L{upgrade}: one damage result");
+        }
     }
 
     #[test]

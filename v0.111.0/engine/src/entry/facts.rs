@@ -77,7 +77,9 @@ use crate::catalog::GameBuild;
 use crate::entry::belt::{Belt, PotionSlot};
 use crate::entry::canonical_model_id;
 use crate::entry::counters::REQUIRED_COMBAT_STREAMS;
-use crate::entry::deck::{DeckEntry, PER_INSTANCE_PROP_CARDS};
+use crate::entry::deck::{
+    DeckEntry, PER_INSTANCE_PROP_CARDS, ROOM_ENTRY_PROP_CARDS, carries_saved_props,
+};
 use crate::entry::document::{ENTRY_SCHEMA_V1, EntryDocument};
 use crate::entry::refusal::EntryRefusal;
 use crate::entry::relics::RelicEntry;
@@ -230,7 +232,12 @@ pub fn parse(text: &str, game_build: GameBuild) -> Result<EntryDocument, EntryRe
         &value,
         "facts",
         &TOP_LEVEL_KEYS,
-        &["opening", "map_point_type", "next_normal_encounter"],
+        &[
+            "opening",
+            "map_point_type",
+            "next_normal_encounter",
+            "murderous",
+        ],
     )?;
 
     let schema = string(&top["schema"], "schema")?;
@@ -328,6 +335,14 @@ pub fn parse(text: &str, game_build: GameBuild) -> Result<EntryDocument, EntryRe
             None | Some(Value::Null) => None,
             Some(value) => Some(canonical_id(value, "next_normal_encounter", "ENCOUNTER")?),
         },
+        // The optional off-wire `murderous` ([`EntryDocument::murderous`],
+        // #3934): absent or `null` is `false`, and a present one must be a
+        // boolean. Only [`EntryDocument::facts_json`] writes it; a facts
+        // document built from a `.run` has no run modifiers at all (#3774).
+        murderous: match top.get("murderous") {
+            None => false,
+            Some(value) => optional_bool(value, "murderous")?.unwrap_or(false),
+        },
     })
 }
 
@@ -390,12 +405,12 @@ fn deck(value: &Value) -> Result<Vec<DeckEntry>, EntryRefusal> {
         let props = match object.get("props") {
             None => None,
             Some(props) => {
-                if !PER_INSTANCE_PROP_CARDS.contains(&id.as_str()) {
+                if !carries_saved_props(&id) {
                     return Err(inconsistent(
                         "entry.deck_entering",
                         format!(
                             "{path} ({id}) carries props; only the per-instance cards \
-                             {PER_INSTANCE_PROP_CARDS:?} do"
+                             {PER_INSTANCE_PROP_CARDS:?} and {ROOM_ENTRY_PROP_CARDS:?} do"
                         ),
                     ));
                 }
@@ -669,9 +684,16 @@ fn epochs(value: &Value) -> Result<Option<Vec<String>>, EntryRefusal> {
 
 impl EntryDocument {
     /// The facts-input wire form: [`EntryDocument::to_json`] plus `streams`,
-    /// and `map_point_type` / `next_normal_encounter` when the save named them.
+    /// `map_point_type` / `next_normal_encounter` when the save named them,
+    /// and `murderous` when the run carries that modifier.
     pub fn facts_json(&self) -> Value {
         let mut value = self.to_json();
+        if self.murderous {
+            value
+                .as_object_mut()
+                .expect("an entry document")
+                .insert("murderous".to_string(), Value::Bool(true));
+        }
         if let Some(kind) = &self.map_point_type {
             value
                 .as_object_mut()

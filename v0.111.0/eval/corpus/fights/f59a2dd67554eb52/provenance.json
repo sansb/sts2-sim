@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "PCLUQUAW2H27",
+ "node": 27,
+ "encounter": "ENCOUNTER.MYTES_NORMAL",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "cebb5c72bc6be745934d57be8ff5ed80f7a3ea75ea6c5ed5f9c9f030baff0d15",
+ "save_sha256": "475f49278ffbe2f8fd23db8c7187bbc27fb3e7ec1372e0f84ca2fb1f5ecc9121",
+ "entry_digest": "8166e4e867641bcdf75b7c31fc77ad8c401d5e89f9f0dc7f972f1019b67f75a6",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

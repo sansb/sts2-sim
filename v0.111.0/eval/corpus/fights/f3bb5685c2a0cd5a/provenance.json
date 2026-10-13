@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TV4KW52QVQ9T",
+ "node": 16,
+ "encounter": "ENCOUNTER.THE_KIN_BOSS",
+ "node_type": "boss",
+ "character": "SILENT",
+ "ascension": 9,
+ "capture_sha256": "dea4bd311b8faefae61815370f099007feefbfa0cb066d9bf56f258eeaac0a99",
+ "save_sha256": "04cd6b96591ce64973156e50bfb540dcf9f2f84c4888d8d8e6f2812b256a1413",
+ "entry_digest": "06866a0f16cb64487f41428a10ef3056784f455a22ae509971792c9dfaf6a757",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

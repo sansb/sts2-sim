@@ -49,7 +49,8 @@ thread_local! {
 ///   the first `MaxSelect` options.
 ///
 /// Only the selections whose `CardSelectCmd` path was read resolve through
-/// the scope: the selector programs above ([`vakuu_program_order`], Glimmer)
+/// the scope: the selector programs above ([`vakuu_program_order`], Glimmer),
+/// Quasar's generated-card screen ([`vakuu_generated_choice`], #3756)
 /// and Stratagem's `AfterShuffle` pick after a Draw command's shuffle
 /// (#3637) or Reboot's own (#3665; `draw::stratagem_after_shuffle`,
 /// `draw::StratagemRoute`). Every other selection still
@@ -240,6 +241,22 @@ pub(crate) fn sort_native_draw_view(catalog: &Catalog, options: &mut [HotCard]) 
 /// CardPilePosition.Bottom, null, false)` (IL_00db-IL_00e1, `ldc.i4.2`,
 /// `ldc.i4.1`). So the Vakuu answer is the first Attack of the Draw pile in
 /// rarity, then id, then live order, and not Draw's topmost Attack.
+///
+/// `Headbutt/<OnPlay>d__3::MoveNext` RVA `0x3a416c` (#3756) awaits its
+/// `AttackCommand::Execute` first (IL_0088), and only then builds
+/// `CardSelectorPrefs(SelectionScreenPrompt, 1)` (IL_00e9-IL_00ef, the same
+/// two-argument constructor) and awaits the four-argument
+/// `CardSelectCmd::FromCombatPile` over the Discard pile (IL_00fa-IL_010d,
+/// `ldc.i4.3`), Cosmic Indifference's overload: `<FromCombatPile>d__19`
+/// forwards the always-true filter, and `<FromCombatPile>d__20` returns the
+/// empty list while the combat is ending (IL_0031-IL_0043, so a killing
+/// Headbutt moves nothing), auto-takes a pile no longer than `MinSelect`,
+/// and otherwise hands the selector the Discard pile in live order. Headbutt
+/// itself is still in Play. `FirstOrDefault` of the result (IL_0170) skips
+/// the move when it is null (IL_0179); otherwise `CardPileCmd::Add(card,
+/// PileType.Draw, CardPilePosition.Top, null, false)` (IL_017d-IL_0181,
+/// `ldc.i4.1`, `ldc.i4.2`). So the Vakuu answer is the Discard pile's first
+/// card, as the attack left it.
 fn vakuu_program_order(owner: &CardSpec, selector: Selector) -> Option<VakuuOrder> {
     use crate::ids::CardId;
     let draw_top = Operation::Move {
@@ -247,7 +264,9 @@ fn vakuu_program_order(owner: &CardSpec, selector: Selector) -> Option<VakuuOrde
         top: true,
     };
     let (pile, filter, operation, order) = match owner.identity.id {
-        CardId::CosmicIndifference => (PileId::Discard, None, draw_top, VakuuOrder::Live),
+        CardId::CosmicIndifference | CardId::Headbutt => {
+            (PileId::Discard, None, draw_top, VakuuOrder::Live)
+        }
         CardId::ThinkingAhead => (PileId::Hand, None, draw_top, VakuuOrder::Live),
         CardId::SecretWeapon => (
             PileId::Draw,
@@ -272,19 +291,46 @@ fn vakuu_program_order(owner: &CardSpec, selector: Selector) -> Option<VakuuOrde
         .then_some(order)
 }
 
+/// What `VakuuCardSelector` answers on a "choose a card" screen (#3756):
+/// the index of the taken option, or `None` when no selector is pushed and
+/// the player chooses.
+///
+/// `CardSelectCmd/<FromChooseACardScreen>d__16::MoveNext` RVA `0x3e58c0`
+/// throws over three cards (IL_0031-IL_004e), returns null for none
+/// (IL_004f-IL_0063), and with a `Selector` (IL_0073-IL_0078) awaits
+/// `Selector.GetSelectedCards(cards, 0, 1)` (IL_007a-IL_0087) and takes
+/// `FirstOrDefault` of the answer (IL_00e4), branching past the
+/// `ReserveChoiceId` / `SignalPlayerChoiceBegun` arm (IL_00f3-IL_011b) to
+/// `LogChoice` and the return (IL_042a-IL_0447). Nothing in it reads the
+/// combat's ending state. `VakuuCardSelector::GetSelectedCards` RVA
+/// `0x9d733` is `options.Take(maxSelect)`, so the answer is the first
+/// generated card and never the skip.
+///
+/// The caller owns the card's suffix. `Quasar/<OnPlay>d__3::MoveNext` RVA
+/// `0x3b4e48` passes its three `GetDistinctForCombat` cards (IL_0068),
+/// upgraded when it is (IL_0073-IL_007d), with `canSkip` true (IL_008f,
+/// IL_0090), and on a non-null result (IL_00f3) awaits
+/// `CardPileCmd::AddGeneratedCardToCombat(card, PileType.Hand, Owner,
+/// CardPilePosition.Bottom)` (IL_00f5-IL_00fe, `ldc.i4.2`, `ldc.i4.1`).
+pub(crate) fn vakuu_generated_choice(options: &[HotCard]) -> Option<usize> {
+    (vakuu_selector_active() && !options.is_empty()).then_some(0)
+}
+
 /// Whether Whispering Earring's AutoPlay of `spec` can meet a selection
 /// only where [`VakuuSelectorScope`] resolves it (#3414, #3433, #3608,
 /// #3637, #3665).
 ///
 /// # A selection of the child's own
 ///
-/// Four programs were read under the selector: Glimmer (`FromHand`,
+/// Six programs were read under the selector: Glimmer (`FromHand`,
 /// `CardSelectorPrefs(prompt, PutBack)` with a null filter at
-/// `Glimmer/<OnPlay>d__4::MoveNext` RVA `0x3a173c` IL_00a7-IL_00d8), and
-/// Cosmic Indifference, Thinking Ahead and Secret Weapon
-/// ([`vakuu_program_order`]). Thinking Ahead's generated program is its Draw
-/// followed by its select, the native order. Secret Weapon's is its select
-/// alone. Every other selecting child is unresolved.
+/// `Glimmer/<OnPlay>d__4::MoveNext` RVA `0x3a173c` IL_00a7-IL_00d8), Cosmic
+/// Indifference, Thinking Ahead, Secret Weapon and Headbutt
+/// ([`vakuu_program_order`]), and Quasar's generated-card screen
+/// ([`vakuu_generated_choice`], #3756). Thinking Ahead's generated program
+/// is its Draw followed by its select, the native order; Headbutt's is its
+/// attack followed by its select. Secret Weapon's is its select alone.
+/// Every other selecting child is unresolved.
 ///
 /// # Beside a live Draw hook
 ///
@@ -329,7 +375,12 @@ pub(crate) fn whispering_earring_child_selection_is_vakuu_resolved(
         CardId::Glimmer => {
             return crate::engine::admission::body_owned_select_program_is_supported(spec.row);
         }
+        CardId::Quasar => {
+            // Generated-card screen: [`vakuu_generated_choice`].
+            return crate::engine::admission::body_owned_select_program_is_supported(spec.row);
+        }
         CardId::CosmicIndifference => Some(StepKind::Block),
+        CardId::Headbutt => Some(StepKind::Attack),
         CardId::ThinkingAhead => Some(StepKind::Draw),
         CardId::SecretWeapon => None,
         _ => return false,
@@ -445,6 +496,10 @@ enum Operation {
     /// Transfigure's exact-one Hand cost-and-replay writer (#3291); see
     /// [`transfigure_program_is_exact`] and [`apply_transfigure`].
     Transfigure,
+    /// Nightmare's exact-one Hand selector: a new `NightmarePower` object
+    /// holding a clone of the selected card (#3794); see
+    /// [`nightmare_program_is_exact`] and [`apply_nightmare`].
+    Nightmare,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -498,6 +553,46 @@ fn sculpting_strike_program_is_exact(
         && max == 1
         && filter == Some(FilterMode::WithoutEtherealKeyword)
 }
+
+/// Whether this is the exact canonical Nightmare L0/L1 select program: one
+/// unfiltered Hand card is held by a new `NightmarePower` of Amount 3 (#3794).
+///
+/// Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`):
+/// `Nightmare/<OnPlay>d__7::MoveNext` RVA `0x3af074` builds
+/// `CardSelectorPrefs(SelectionScreenPrompt, 1)` (IL_0030-IL_0039, the
+/// exact-one prefs Transfigure and Dual Wield pass), a `null` filter
+/// (IL_004b), and awaits `CardSelectCmd::FromHand` (IL_004d). The row is
+/// otherwise static: `Nightmare::.ctor` RVA `0xe6530` fixes Energy cost 3 /
+/// Skill (`ldc.i4.2`) / Rare / `Self`; `get_CanonicalKeywords` RVA `0xe6540`
+/// is the single keyword `1` (Exhaust); `OnUpgrade` RVA `0xe659b` is
+/// `EnergyCost.UpgradeBy(-1)` and nothing else, so both levels apply the same
+/// literal 3 (IL_0254 `ldc.i4.3`). Registry equality pins both levels'
+/// complete immutable rows, so a forged owner, pile, count, filter or amount
+/// stays `"select operation"`.
+fn nightmare_program_is_exact(
+    owner: &CardSpec,
+    pile: PileId,
+    min: usize,
+    max: usize,
+    filter: Option<FilterMode>,
+    amount: i64,
+) -> bool {
+    owner.identity.id == crate::ids::CardId::Nightmare
+        && matches!(owner.identity.upgrade, 0 | 1)
+        && crate::content_tables::card_row(owner.identity.id, owner.identity.upgrade)
+            == Some(owner.row)
+        && crate::engine::play::body_enchantment_is_exact(owner)
+        && pile == PileId::Hand
+        && min == 1
+        && max == 1
+        && filter.is_none()
+        && amount == i64::from(NIGHTMARE_AMOUNT)
+}
+
+/// `Nightmare/<OnPlay>d__7::MoveNext` RVA `0x3af074` IL_0254: the literal
+/// Amount of every `NightmarePower` object.
+pub(crate) const NIGHTMARE_AMOUNT: i32 = 3;
 
 /// Whether this is the exact canonical Transfigure L0/L1 select program: one
 /// unfiltered Hand card gains `+1` Energy cost for the combat and one
@@ -675,6 +770,12 @@ fn selector_from_args(
             Operation::ApplyPermanentEthereal
         }
         CompiledArg::List(span) => match catalog.args(*span) {
+            [
+                CompiledArg::Word(StepWord::NightmareExact),
+                CompiledArg::I(amount),
+            ] if nightmare_program_is_exact(owner, *pile, min, max, filter, *amount) => {
+                Operation::Nightmare
+            }
             [
                 CompiledArg::Word(StepWord::DecisionsReplayExact),
                 CompiledArg::I(3),
@@ -1254,6 +1355,41 @@ fn splash_candidates<'a>(
     Ok(selection_cards)
 }
 
+/// Quasar's suffix after a non-null choice: the singular generated-card
+/// command into Hand's bottom, which the ending gate suppresses. Shared by
+/// the player's answer and the selector's ([`vakuu_generated_choice`]).
+pub(crate) fn quasar_take(
+    state: &mut HotState,
+    catalog: &Catalog,
+    selected: HotCard,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    if state.history.over {
+        return Ok(());
+    }
+    let identity = catalog
+        .spec(selected.atom)
+        .ok_or(EngineRefusal::UnknownAtom(selected.atom))?
+        .identity;
+    let mut probe = state.clone();
+    crate::engine::cards::inject_generated_exact_bottom(
+        &mut probe,
+        catalog,
+        identity,
+        1,
+        PileId::Hand,
+        &mut Vec::new(),
+    )?;
+    crate::engine::cards::inject_generated_exact_bottom(
+        state,
+        catalog,
+        identity,
+        1,
+        PileId::Hand,
+        events,
+    )
+}
+
 fn quasar_candidates<'a>(
     state: &HotState,
     catalog: &Catalog,
@@ -1778,30 +1914,7 @@ pub(crate) fn apply_special_option(
             let selected = *candidates
                 .get(index)
                 .ok_or(EngineRefusal::MalformedArgs("selection option index"))?;
-            if state.history.over {
-                return Ok(());
-            }
-            let identity = catalog
-                .spec(selected.atom)
-                .ok_or(EngineRefusal::UnknownAtom(selected.atom))?
-                .identity;
-            let mut probe = state.clone();
-            crate::engine::cards::inject_generated_exact_bottom(
-                &mut probe,
-                catalog,
-                identity,
-                1,
-                PileId::Hand,
-                &mut Vec::new(),
-            )?;
-            crate::engine::cards::inject_generated_exact_bottom(
-                state,
-                catalog,
-                identity,
-                1,
-                PileId::Hand,
-                events,
-            )
+            quasar_take(state, catalog, selected, events)
         }
         PendingSelectionKind::HandCap => {
             let spec = catalog
@@ -2345,7 +2458,8 @@ fn selection_order_is_observable(operation: Operation) -> bool {
         | Operation::Decisions
         | Operation::CloneGenerated { .. }
         | Operation::SeanceTransform
-        | Operation::Transfigure => false,
+        | Operation::Transfigure
+        | Operation::Nightmare => false,
     }
 }
 
@@ -2846,6 +2960,128 @@ fn apply_transfigure(
     Ok(())
 }
 
+/// Nightmare's writer over its one selected Hand card (#3794).
+///
+/// Current v0.111.0 `sts2.dll`
+/// (`sha256:9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`),
+/// `Nightmare/<OnPlay>d__7::MoveNext` RVA `0x3af074`: the awaited answer is
+/// stored whole (IL_00ac-IL_00af); the vignette, `CustomScaledWait` and
+/// `TriggerAnim('Cast')` (IL_00b4-IL_0220) are presentation;
+/// `FirstOrDefault` of the answer (IL_0227-IL_022c) is null for an empty Hand
+/// and IL_023c-IL_023e then returns with no power. Otherwise:
+///
+/// 1. `PowerCmd.Apply<NightmarePower>(owner, 3, owner, this, false)`
+///    (IL_0243-IL_0267). NightmarePower is a Buff (`get_Type` RVA `0xa4db7`),
+///    Counter-stacked (`get_StackType` RVA `0xa4dbd`) and Instanced
+///    (`get_InstanceType` RVA `0xa4dba`), so the call always attaches a new
+///    object at the end of the owner's power list. No amount modifier reads
+///    it: `SneckoSkull::ModifyPowerAmountGivenAdditive` RVA `0x9bb8d` is
+///    Poison only, `UnsettlingLamp::ModifyPowerAmountGivenMultiplicative` RVA
+///    `0x9d5a8` needs a Debuff (IL_0047-IL_004f), and
+///    `RuinedHelmet::TryModifyPowerAmountReceived` RVA `0x9aa00` is Strength
+///    only. The represented `AfterPowerAmountChanged` listeners are inert for
+///    a player-owned Buff (`damage::player_type_one_listener_order_is_exact`).
+/// 2. `NightmarePower::SetSelectedCard(selected)` (IL_02c6-IL_02cd), RVA
+///    `0xa4e2c`: `selected.CreateClone()` (IL_000d), `ClearAffliction` on the
+///    clone (IL_0014; `CardModel::ClearAfflictionInternal` RVA `0x7da80`
+///    drops the affliction model and nothing else), stored in the object's
+///    data (IL_0020). The selected card stays where it is, unchanged.
+///
+/// `PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988` returns null while the
+/// combat is ending (IL_0020-IL_0034) and step 2 then dereferences that null,
+/// so an ending combat here is not a state native finishes this body in. It
+/// refuses by name.
+///
+/// The frozen payload is described on [`crate::hot::NightmareInstance`]. A
+/// uid-less legacy card has no physical payload to freeze and refuses by
+/// name.
+fn apply_nightmare(
+    state: &mut HotState,
+    catalog: &Catalog,
+    selector: Selector,
+    answer: &[HotCard],
+) -> Result<(), EngineRefusal> {
+    let selected = match answer {
+        [] => return Ok(()),
+        [selected] => *selected,
+        _ => {
+            return Err(EngineRefusal::MalformedArgs(
+                "Nightmare exact-one selection",
+            ));
+        }
+    };
+    if selector.pile != PileId::Hand || selected.flags & crate::hot::CARD_FLAG_LEGACY != 0 {
+        return Err(EngineRefusal::MalformedArgs(
+            "Nightmare selected physical identity",
+        ));
+    }
+    let matches: Vec<_> = state
+        .piles
+        .get(PileId::Hand)
+        .as_slice()
+        .iter()
+        .filter(|live| snapshot_matches_live(**live, selected))
+        .copied()
+        .collect();
+    let [source] = matches[..] else {
+        return Err(EngineRefusal::FrozenCardVanished {
+            uid: selected.uid,
+            pile: PileId::Hand,
+        });
+    };
+    catalog
+        .spec(source.atom)
+        .ok_or(EngineRefusal::UnknownAtom(source.atom))?;
+    if crate::engine::damage::damage_combat_is_ending(state) {
+        return Err(EngineRefusal::MalformedArgs(
+            "Nightmare while combat is ending",
+        ));
+    }
+    if !crate::engine::damage::player_type_one_listener_order_is_exact(state) {
+        return Err(EngineRefusal::MalformedArgs(
+            "Nightmare AfterPowerAmountChanged order",
+        ));
+    }
+    // The object's place among the BeforeHandDraw power listeners is the
+    // number of them already attached; that count is only the fanout order's
+    // length when the order is the complete acquisition order.
+    if !crate::steps::templates::before_hand_draw_power_order_is_exact(state) {
+        return Err(EngineRefusal::MalformedArgs(
+            "Nightmare BeforeHandDraw order",
+        ));
+    }
+    // Refused here as well as at turn entry
+    // (`turn::nightmare_state_refusal`), so the line stops at the play that
+    // makes the unmodeled pair rather than at the next End Turn.
+    if state.powers.get(crate::ids::PowerId::Foregone).is_some() {
+        return Err(EngineRefusal::MalformedArgs(
+            "Nightmare beside Foregone Conclusion",
+        ));
+    }
+    let listeners_before = u8::try_from(state.fanouts.before_hand_draw_order().len())
+        .map_err(|_| EngineRefusal::CounterOverflow("Nightmare BeforeHandDraw order"))?;
+    let mut instance = state.card_states.get(source.uid);
+    // `CardModel::AfterCloned` RVA `0x7d31c` IL_003a-IL_0040 clears the
+    // clone's DeckVersion, as for every other clone
+    // (`cards::inject_generated_clones_bottom`).
+    if source.flags & crate::hot::CARD_FLAG_GENETIC_ALGORITHM_STATE != 0 {
+        instance.genetic_algorithm = instance.genetic_algorithm.without_deck_row();
+    }
+    let mut instances = state.fanouts.nightmare_instances().to_vec();
+    if instances.len() >= usize::from(u8::MAX) {
+        return Err(EngineRefusal::CounterOverflow("Nightmare instances"));
+    }
+    instances.push(crate::hot::NightmareInstance {
+        amount: NIGHTMARE_AMOUNT,
+        listeners_before,
+        atom: source.atom,
+        flags: source.flags & !(CARD_FLAG_PICK | crate::engine::cards::CARD_AFFLICTION_FLAGS),
+        instance,
+    });
+    state.fanouts.set_nightmare_instances(instances);
+    Ok(())
+}
+
 fn apply(
     state: &mut HotState,
     catalog: &Catalog,
@@ -2855,6 +3091,7 @@ fn apply(
 ) -> Result<(), EngineRefusal> {
     match selector.operation {
         Operation::Transfigure => apply_transfigure(state, catalog, selector, answer),
+        Operation::Nightmare => apply_nightmare(state, catalog, selector, answer),
         Operation::Decisions => {
             if answer.len() > 1 {
                 return Err(EngineRefusal::MalformedArgs("Decisions selection"));
@@ -3078,6 +3315,9 @@ fn apply(
                     let mut instance = state.card_states.get(card.uid);
                     instance.set_local_ethereal(true);
                     state.card_states.set(card.uid, instance);
+                    // The mark outlives its Sculpting Strike (#3877); see
+                    // `FanoutState::sculpting_strike_marked`.
+                    state.fanouts.set_sculpting_strike_marked(true);
                 } else {
                     state.card_states.set_local_retain(card.uid);
                 }
@@ -7084,6 +7324,205 @@ mod tests {
         assert_eq!(finished.piles.get(PileId::Discard).len(), 2);
     }
 
+    /// Headbutt in Hand beside a played Calamity, two Discard candidates, a
+    /// live Generation stream and the Ironclad owner pool interned.
+    fn calamity_headbutt_fixture() -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::Calamity,
+            CardId::Headbutt,
+            CardId::StrikeIronclad,
+            CardId::DefendIronclad,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
+        for id in crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109 {
+            builder.intern(identity(id)).unwrap();
+        }
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        crate::engine::give_a_real_root_s_current_build_provenance(&mut state);
+        state.hp = 70;
+        state.energy = 5;
+        state.next_card_uid = 5;
+        state.reward_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.entropy_card_pool = Some(crate::catalog::RewardPool::Ironclad);
+        state.fully_unlocked_card_pool_epochs = true;
+        state.rng.set(
+            RngStream::Generation,
+            RngStreamState {
+                words: [1, 2, 3, 4],
+                counter: 0,
+            },
+        );
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 80));
+        state.piles.get_mut(PileId::Hand).make_mut().extend([
+            card(&catalog, CardId::Calamity, 1),
+            card(&catalog, CardId::Headbutt, 2),
+        ]);
+        state.piles.get_mut(PileId::Discard).make_mut().extend([
+            card(&catalog, CardId::StrikeIronclad, 3),
+            card(&catalog, CardId::DefendIronclad, 4),
+        ]);
+        let mut events = Vec::new();
+        let state = crate::engine::apply_action_with_replay_witness(
+            &state,
+            &catalog,
+            &Action::Play {
+                uid: 1,
+                target: None,
+                selection: SelectionRef::NONE,
+            },
+            &mut events,
+        )
+        .unwrap();
+        assert_eq!(state.powers.value(PowerId::Calamity), 1);
+        assert!(state.calamity_hook_is_live());
+        (state, catalog)
+    }
+
+    /// #3856 / #3748: a selecting Attack parked under a replay root with
+    /// Calamity live. The resumed AfterCardPlayed walk dispatches Calamity,
+    /// which removes the play's key before generating
+    /// (`CalamityPower/<AfterCardPlayed>d__7::MoveNext` RVA `0x3368bc`
+    /// IL_0020-IL_003f); the driver then re-authenticates the stack with the
+    /// latch consumed. Every offered answer used to refuse there with a bare
+    /// `ContinuationNotModeled`.
+    #[test]
+    fn a_selecting_attack_resumes_under_a_replay_root_after_calamity_consumed_its_key() {
+        let (state, catalog) = calamity_headbutt_fixture();
+        let mut events = Vec::new();
+        let suspended = crate::engine::apply_action_with_replay_witness(
+            &state,
+            &catalog,
+            &Action::Play {
+                uid: 2,
+                target: Some(0),
+                selection: SelectionRef::NONE,
+            },
+            &mut events,
+        )
+        .unwrap();
+        assert!(matches!(
+            suspended.frames.as_slice().first(),
+            Some(crate::frame::Frame::ActionReplay { .. })
+        ));
+        assert!(pending_record(&suspended).calamity);
+        let offered = legal_actions(&suspended, &catalog);
+        assert_eq!(offered.len(), 2);
+        for action in offered {
+            let finished = crate::engine::apply_action_with_replay_witness(
+                &suspended,
+                &catalog,
+                &action,
+                &mut events,
+            )
+            .unwrap();
+            assert!(finished.pending.is_none());
+            assert!(finished.frames.is_empty());
+            assert_eq!(finished.piles.get(PileId::Draw).len(), 1);
+            assert_eq!(finished.piles.get(PileId::Discard).len(), 2);
+            let hand = finished.piles.get(PileId::Hand).as_slice();
+            assert_eq!(hand.len(), 1, "Calamity generates one Attack into Hand");
+            assert!(catalog.spec(hand[0].atom).unwrap().is_attack);
+            assert_eq!(
+                finished.rng.get(RngStream::Generation).counter,
+                1,
+                "one GetForCombat draw"
+            );
+        }
+    }
+
+    /// The Calamity latch relation of `persisted_card_play_context`, branch
+    /// by branch: captured until the AfterCardPlayed walk passes Calamity's
+    /// listener, consumed after it, and either value under a deactivated
+    /// owner (whose listener is skipped with its key intact).
+    #[test]
+    fn calamity_latch_is_authenticated_on_both_sides_of_its_listener() {
+        let (state, catalog) = calamity_headbutt_fixture();
+        let mut events = Vec::new();
+        let suspended = crate::engine::apply_action_with_replay_witness(
+            &state,
+            &catalog,
+            &Action::Play {
+                uid: 2,
+                target: Some(0),
+                selection: SelectionRef::NONE,
+            },
+            &mut events,
+        )
+        .unwrap();
+        let calamity_uid = suspended
+            .fanouts
+            .after_card_played_power_order()
+            .iter()
+            .find(|entry| entry.token == crate::hot::AfterCardPlayedPowerToken::Calamity)
+            .map(|entry| entry.uid)
+            .expect("Calamity owns one AfterCardPlayed listener");
+        let context = |state: &HotState| {
+            let record = state
+                .frames
+                .card_play(state.pending.as_deref().unwrap().frame_record)
+                .unwrap();
+            crate::engine::play::persisted_card_play_context(state, &catalog, record).map(|_| ())
+        };
+        let refused = Err(crate::engine::EngineRefusal::ContinuationNotModeled);
+        assert_eq!(context(&suspended), Ok(()));
+
+        // Before the listener: a dropped latch would skip the generation.
+        let mut dropped = suspended.clone();
+        update_pending_record(&mut dropped, |record| record.calamity = false);
+        assert_eq!(context(&dropped), refused);
+
+        let walking = |cursor: u32, phase: u8, calamity: bool| {
+            let mut state = suspended.clone();
+            update_pending_record(&mut state, |record| {
+                record.stage = crate::hot::CardPlayStage::AfterImitation;
+                record.latch_kind = crate::hot::CardPlayLatchKind::Post;
+                record.pending_choice = false;
+                record.selection_kind = None;
+                record.after_card_played_power_snapshot = vec![calamity_uid];
+                record.after_card_played_power_snapshot_captured = true;
+                record.after_card_played_power_cursor = cursor;
+                record.after_card_played_power_phase = phase;
+                record.calamity = calamity;
+            });
+            state
+        };
+        // Snapshot taken, Calamity not yet dispatched.
+        assert_eq!(context(&walking(0, 2, true)), Ok(()));
+        assert_eq!(context(&walking(0, 2, false)), refused);
+        // Dispatched: the key is gone.
+        assert_eq!(context(&walking(1, 2, false)), Ok(()));
+        assert_eq!(context(&walking(1, 2, true)), refused);
+        // Walk complete (phase 3 resets the cursor).
+        assert_eq!(context(&walking(0, 3, false)), Ok(()));
+        assert_eq!(context(&walking(0, 3, true)), refused);
+        // A deactivated owner's listener was skipped, or ran before it died.
+        for calamity in [false, true] {
+            let mut deactivated = walking(1, 2, calamity);
+            deactivated.fanouts.set_player_hooks_deactivated(true);
+            assert_eq!(context(&deactivated), Ok(()));
+        }
+        // Past the walk the snapshot is cleared and the key stays consumed.
+        let after_hook = |calamity: bool| {
+            let mut state = suspended.clone();
+            update_pending_record(&mut state, |record| {
+                record.stage = crate::hot::CardPlayStage::AfterNormalHook;
+                record.latch_kind = crate::hot::CardPlayLatchKind::Post;
+                record.pending_choice = false;
+                record.selection_kind = None;
+                record.instanced_power_uid_at_before = None;
+                record.calamity = calamity;
+            });
+            state
+        };
+        assert_eq!(context(&after_hook(false)), Ok(()));
+        assert_eq!(context(&after_hook(true)), refused);
+    }
+
     #[test]
     fn brand_exhaust_and_prepared_multi_pick_use_the_same_exact_consumer_gate() {
         let mut builder = CatalogBuilder::new();
@@ -7936,11 +8375,12 @@ mod tests {
     }
 
     /// Cosmic Indifference under the scope takes the Discard pile's first
-    /// card to Draw's top (`vakuu_program_order`); Headbutt, the same
-    /// Discard-to-Draw-top shape but a `CardSelectCmd` path not read for
-    /// #3414, still suspends for the player.
+    /// card to Draw's top (`vakuu_program_order`). Headbutt, the same
+    /// Discard-to-Draw-top shape after its attack, does too (#3756); a
+    /// Discard picker whose `CardSelectCmd` path was not read still suspends
+    /// for the player.
     #[test]
-    fn vakuu_scope_resolves_only_cosmic_indifference_among_discard_pickers() {
+    fn vakuu_scope_resolves_the_read_discard_pickers() {
         let (state, catalog) = cosmic_indifference_style_fixture(CardId::CosmicIndifference);
         let play = Action::Play {
             uid: 1,
@@ -7965,12 +8405,133 @@ mod tests {
             target: Some(0),
             selection: SelectionRef::NONE,
         };
+        let outside = apply_action(&state, &catalog, &headbutt).unwrap().state;
+        assert!(
+            outside.pending.is_some(),
+            "the player chooses without the scope"
+        );
         let _vakuu = VakuuSelectorScope::enter();
-        let parked = apply_action(&state, &catalog, &headbutt).unwrap().state;
+        let resolved = apply_action(&state, &catalog, &headbutt).unwrap().state;
+        assert!(resolved.pending.is_none());
+        assert_eq!(pile_uids(&resolved, PileId::Draw), [2]);
+        assert_eq!(pile_uids(&resolved, PileId::Discard), [3, 1]);
+        assert_eq!(resolved.monsters[0].hp, 31);
+
+        // Hologram picks from Discard too, by a path that was not read.
+        let (state, catalog) = cosmic_indifference_style_fixture(CardId::Hologram);
+        let hologram = Action::Play {
+            uid: 1,
+            target: None,
+            selection: SelectionRef::NONE,
+        };
+        let parked = apply_action(&state, &catalog, &hologram).unwrap().state;
         assert!(
             parked.pending.is_some(),
             "an unread selector is never auto-picked"
         );
+    }
+
+    /// Headbutt under the scope, as the game plays it with a
+    /// `VakuuCardSelector` pushed (native traces `headbutt`,
+    /// `headbutt_plus`, `headbutt_one`, `headbutt_empty`,
+    /// `headbutt_after_strike`, `headbutt_kill_last` in the #3756 PR): the
+    /// Discard pile's first card goes to Draw's top; one card is auto-taken;
+    /// an empty Discard moves nothing; a Strike played first lands behind
+    /// the cards already there; and the kill of the last enemy moves
+    /// nothing, with the selection never run.
+    #[test]
+    fn vakuu_scope_headbutt_takes_the_first_discard_card_after_its_attack() {
+        let play = |state: &HotState, catalog: &Catalog, uid: u32| {
+            let _vakuu = VakuuSelectorScope::enter();
+            apply_action(
+                state,
+                catalog,
+                &Action::Play {
+                    uid,
+                    target: Some(0),
+                    selection: SelectionRef::NONE,
+                },
+            )
+            .unwrap()
+            .state
+        };
+        for upgrade in [0, 1] {
+            let mut builder = CatalogBuilder::new();
+            let headbutt = builder
+                .intern(CardIdentity {
+                    id: CardId::Headbutt,
+                    upgrade,
+                    enchantment: None,
+                })
+                .unwrap();
+            for id in [CardId::StrikeIronclad, CardId::DefendIronclad] {
+                builder.intern(identity(id)).unwrap();
+            }
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 70;
+            state.energy = 3;
+            state.next_card_uid = 10;
+            state
+                .monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 40));
+            state.piles.get_mut(PileId::Hand).make_mut().extend([
+                card(&catalog, CardId::StrikeIronclad, 5),
+                HotCard {
+                    uid: 1,
+                    atom: headbutt,
+                    flags: 0,
+                },
+            ]);
+            state.piles.get_mut(PileId::Draw).make_mut().push(card(
+                &catalog,
+                CardId::DefendIronclad,
+                9,
+            ));
+            let damage = 9 + 3 * i32::from(upgrade);
+
+            // Three in Discard: the first, not the last.
+            let mut three = state.clone();
+            three.piles.get_mut(PileId::Discard).make_mut().extend([
+                card(&catalog, CardId::DefendIronclad, 2),
+                card(&catalog, CardId::StrikeIronclad, 3),
+                card(&catalog, CardId::StrikeIronclad, 4),
+            ]);
+            let next = play(&three, &catalog, 1);
+            assert!(next.pending.is_none());
+            assert_eq!(pile_uids(&next, PileId::Draw), [2, 9]);
+            assert_eq!(pile_uids(&next, PileId::Discard), [3, 4, 1]);
+            assert_eq!(next.monsters[0].hp, 40 - damage);
+
+            // A Strike played first is behind the two already there.
+            let after_strike = play(&play(&three, &catalog, 5), &catalog, 1);
+            assert_eq!(pile_uids(&after_strike, PileId::Draw), [2, 9]);
+            assert_eq!(pile_uids(&after_strike, PileId::Discard), [3, 4, 5, 1]);
+
+            // One card is auto-taken; none moves nothing.
+            let mut one = state.clone();
+            one.piles.get_mut(PileId::Discard).make_mut().push(card(
+                &catalog,
+                CardId::StrikeIronclad,
+                3,
+            ));
+            let next = play(&one, &catalog, 1);
+            assert_eq!(pile_uids(&next, PileId::Draw), [3, 9]);
+            assert_eq!(pile_uids(&next, PileId::Discard), [1]);
+            let next = play(&state, &catalog, 1);
+            assert!(next.pending.is_none());
+            assert_eq!(pile_uids(&next, PileId::Draw), [9]);
+            assert_eq!(pile_uids(&next, PileId::Discard), [1]);
+
+            // The kill of the last enemy: the selection never runs.
+            let mut kill = three.clone();
+            kill.monsters_mut()[0].hp = 3;
+            let next = play(&kill, &catalog, 1);
+            assert!(next.pending.is_none());
+            assert!(next.history.over);
+            assert_eq!(pile_uids(&next, PileId::Draw), [9]);
+            assert_eq!(pile_uids(&next, PileId::Discard)[..3], [2, 3, 4]);
+        }
     }
 
     fn thinking_ahead_fixture(hand: &[u32], draw: &[u32]) -> (HotState, Catalog) {
@@ -8086,7 +8647,7 @@ mod tests {
 
     /// The Earring's child wall (#3433, #3665): both Thinking Ahead levels
     /// resolve under the selector, beside a live Draw hook too unless
-    /// Hellraiser can be live. Headbutt never does.
+    /// Hellraiser can be live. Hologram never does.
     #[test]
     fn whispering_earring_thinking_ahead_child_is_vakuu_resolved_unless_hellraiser_is_reachable() {
         for hellraiser in [false, true] {
@@ -8100,7 +8661,7 @@ mod tests {
                     .unwrap();
             }
             builder
-                .intern_reachable(identity(CardId::Headbutt))
+                .intern_reachable(identity(CardId::Hologram))
                 .unwrap();
             if hellraiser {
                 builder.mark_live_hellraiser_reachable();
@@ -8128,8 +8689,9 @@ mod tests {
     /// The Earring's child wall beside a live Draw hook (#3637, #3665).
     /// With no Hellraiser reachable, the only selection a Draw can meet is
     /// Stratagem's, which the selector answers: a drawing child with no
-    /// selection of its own is resolved, and so are the four children whose
-    /// own selection the selector resolves. Every other selecting child
+    /// selection of its own is resolved, and so are the six children whose
+    /// own selection the selector resolves (Headbutt and Quasar since
+    /// #3756; neither draws). Every other selecting child
     /// stays unresolved, and so do Fetch, Constellation and Huddle Up, which
     /// the predicate excludes by name. With Hellraiser reachable
     /// nothing is resolved. A drawing child whose enchantment leaves the
@@ -8140,7 +8702,9 @@ mod tests {
     /// wall's AutoPlay-parent clause (`draw::tests` has the public refusal).
     #[test]
     fn whispering_earring_draw_children_are_resolved_beside_a_live_stratagem_only() {
-        const RESOLVED: [CardId; 22] = [
+        const RESOLVED: [CardId; 24] = [
+            CardId::Headbutt,
+            CardId::Quasar,
             CardId::FlashOfSteel,
             CardId::Backflip,
             CardId::BattleTrance,
@@ -8170,7 +8734,7 @@ mod tests {
             CardId::HuddleUp,
             CardId::BurningPact,
             CardId::Acrobatics,
-            CardId::Headbutt,
+            CardId::Hologram,
             CardId::SecretTechnique,
             CardId::Stratagem,
             CardId::StrikeIronclad,
@@ -8229,7 +8793,7 @@ mod tests {
                     );
                 }
             }
-            assert_eq!(resolved_seen, 44);
+            assert_eq!(resolved_seen, 48);
         }
 
         let nimble = CardIdentity {
@@ -9079,6 +9643,556 @@ mod tests {
             instance.local_cost_modifiers.as_slice(),
             &[transfigure_row()]
         );
+    }
+
+    fn nightmare_catalog() -> Catalog {
+        let mut builder = CatalogBuilder::new();
+        for upgrade in 0..=1 {
+            builder
+                .intern(CardIdentity {
+                    id: CardId::Nightmare,
+                    upgrade,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        for id in [
+            CardId::StrikeSilent,
+            CardId::DefendSilent,
+            CardId::GeneticAlgorithm,
+            CardId::Transfigure,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        builder.build()
+    }
+
+    /// A live fight holding `nightmare` and `others` in Hand, in that order.
+    fn nightmare_state(nightmare: HotCard, others: &[HotCard]) -> HotState {
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.energy = 3;
+        state.next_card_uid = 20;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 40));
+        let hand = state.piles.get_mut(PileId::Hand).make_mut();
+        hand.push(nightmare);
+        hand.extend_from_slice(others);
+        state
+    }
+
+    fn nightmare_selector(catalog: &Catalog, upgrade: u8) -> Selector {
+        let owner = catalog
+            .spec(
+                catalog
+                    .atom(&CardIdentity {
+                        id: CardId::Nightmare,
+                        upgrade,
+                        enchantment: None,
+                    })
+                    .unwrap(),
+            )
+            .unwrap();
+        selector_from_args(catalog, owner, catalog.args(catalog.steps(owner)[0].args)).unwrap()
+    }
+
+    fn play(uid: u32) -> Action {
+        Action::Play {
+            uid,
+            target: None,
+            selection: SelectionRef::NONE,
+        }
+    }
+
+    /// #3794: the writer word binds only to Nightmare's exact L0/L1 rows,
+    /// exact-one, unfiltered, from Hand, with the native Amount.
+    #[test]
+    fn nightmare_selector_is_bound_to_its_exact_rows() {
+        let catalog = nightmare_catalog();
+        for upgrade in 0..=1 {
+            let selector = nightmare_selector(&catalog, upgrade);
+            assert_eq!(selector.operation, Operation::Nightmare);
+            assert!(!selection_order_is_observable(selector.operation));
+            let owner = catalog
+                .spec(
+                    catalog
+                        .atom(&CardIdentity {
+                            id: CardId::Nightmare,
+                            upgrade,
+                            enchantment: None,
+                        })
+                        .unwrap(),
+                )
+                .unwrap();
+            for (pile, min, max, filter, amount, exact) in [
+                (PileId::Hand, 1, 1, None, 3, true),
+                (PileId::Draw, 1, 1, None, 3, false),
+                (PileId::Hand, 0, 1, None, 3, false),
+                (PileId::Hand, 1, 2, None, 3, false),
+                (
+                    PileId::Hand,
+                    1,
+                    1,
+                    Some(FilterMode::AttackOrPower),
+                    3,
+                    false,
+                ),
+                (PileId::Hand, 1, 1, None, 2, false),
+            ] {
+                assert_eq!(
+                    nightmare_program_is_exact(owner, pile, min, max, filter, amount),
+                    exact,
+                    "{pile:?} {min}..{max} {filter:?} amount {amount}"
+                );
+            }
+        }
+        // Another card carrying Nightmare's compiled arguments is not it.
+        let nightmare = catalog
+            .spec(catalog.atom(&identity(CardId::Nightmare)).unwrap())
+            .unwrap();
+        let forged = catalog
+            .spec(catalog.atom(&identity(CardId::Transfigure)).unwrap())
+            .unwrap();
+        assert_eq!(
+            selector_from_args(
+                &catalog,
+                forged,
+                catalog.args(catalog.steps(nightmare)[0].args)
+            )
+            .unwrap_err(),
+            EngineRefusal::MalformedArgs("select operation")
+        );
+    }
+
+    /// #3794 end to end: Nightmare suspends on a two-card Hand; the pending
+    /// and the resolved state survive the canonical boundary; both levels
+    /// exhaust; the selected card stays in Hand; and the next turn's
+    /// BeforeHandDraw adds three copies and removes the power.
+    #[test]
+    fn nightmare_suspends_holds_a_clone_and_copies_it_next_turn() {
+        let catalog = nightmare_catalog();
+        for upgrade in 0..=1 {
+            let source = leveled_card(&catalog, CardId::Nightmare, upgrade, 1);
+            let strike = card(&catalog, CardId::StrikeSilent, 2);
+            let defend = card(&catalog, CardId::DefendSilent, 3);
+            let state = nightmare_state(source, &[strike, defend]);
+
+            let suspended = apply_action(&state, &catalog, &play(source.uid))
+                .unwrap()
+                .state;
+            assert_eq!(suspended.energy, i16::from(upgrade), "cost 3, then 2");
+            assert!(suspended.fanouts.nightmare_instances().is_empty());
+            assert_buffered_actions_match(&suspended, &catalog);
+            let actions = legal_actions(&suspended, &catalog);
+            assert_eq!(actions, [select_action(0), select_action(1)]);
+            let canonical = HotBoundary::to_canonical(&suspended, &catalog);
+            assert_eq!(
+                canonical.player["pending"][2],
+                serde_json::json!(["select", "hand", 1, 1, null, ["nightmare_exact", 3]])
+            );
+            assert_eq!(
+                HotBoundary::from_canonical(&canonical, &catalog).unwrap(),
+                suspended
+            );
+
+            for (option, held) in [(0_usize, strike), (1, defend)] {
+                let resolved = apply_action(&suspended, &catalog, &actions[option])
+                    .unwrap()
+                    .state;
+                assert!(resolved.pending.is_none());
+                assert_eq!(
+                    resolved.piles.get(PileId::Exhaust).as_slice(),
+                    &[source],
+                    "Nightmare keeps Exhaust at both levels"
+                );
+                assert_eq!(
+                    resolved.piles.get(PileId::Hand).as_slice(),
+                    &[strike, defend],
+                    "the selected card is not moved"
+                );
+                assert_eq!(
+                    resolved.fanouts.nightmare_instances(),
+                    &[crate::hot::NightmareInstance {
+                        amount: 3,
+                        listeners_before: 0,
+                        atom: held.atom,
+                        flags: 0,
+                        instance: CardInstanceState::default(),
+                    }]
+                );
+                let canonical = HotBoundary::to_canonical(&resolved, &catalog);
+                let name = catalog.spec(held.atom).unwrap().identity.id.as_str();
+                assert_eq!(
+                    canonical.player["nightmare_instances"],
+                    serde_json::json!([[3, 0, [name, 0]]])
+                );
+                assert_eq!(
+                    HotBoundary::from_canonical(&canonical, &catalog).unwrap(),
+                    resolved,
+                    "the held card survives the boundary"
+                );
+
+                let mut next = resolved.clone();
+                let mut events = Vec::new();
+                crate::engine::turn::begin_player_turn(&mut next, &catalog, &mut events).unwrap();
+                assert!(next.fanouts.nightmare_instances().is_empty());
+                let hand = next.piles.get(PileId::Hand).as_slice();
+                assert_eq!(hand.len(), 5);
+                assert_eq!(&hand[..2], &[strike, defend]);
+                assert!(hand[2..].iter().all(|copy| copy.atom == held.atom));
+                assert_eq!(
+                    hand[2..].iter().map(|copy| copy.uid).collect::<Vec<_>>(),
+                    [20, 21, 22],
+                    "each copy is a fresh physical card"
+                );
+                assert_eq!(next.history.owner_generated_cards_combat, 3);
+                assert_eq!(
+                    next.next_generated_hook_uid,
+                    resolved.next_generated_hook_uid + 3
+                );
+            }
+        }
+    }
+
+    /// #3794: an empty Hand completes with no power (`FirstOrDefault` null,
+    /// IL_023c), and a one-card Hand is taken without a screen.
+    #[test]
+    fn nightmare_empty_and_singleton_hands_complete_without_pending() {
+        let catalog = nightmare_catalog();
+        let source = card(&catalog, CardId::Nightmare, 1);
+        let state = nightmare_state(source, &[]);
+        let empty = apply_action(&state, &catalog, &play(source.uid))
+            .unwrap()
+            .state;
+        assert!(empty.pending.is_none());
+        assert!(empty.fanouts.nightmare_instances().is_empty());
+        assert_eq!(empty.piles.get(PileId::Exhaust).as_slice(), &[source]);
+
+        let strike = card(&catalog, CardId::StrikeSilent, 2);
+        let single = nightmare_state(source, &[strike]);
+        let single = apply_action(&single, &catalog, &play(source.uid))
+            .unwrap()
+            .state;
+        assert!(single.pending.is_none());
+        let [held] = single.fanouts.nightmare_instances() else {
+            panic!("one NightmarePower object");
+        };
+        assert_eq!(held.atom, strike.atom);
+    }
+
+    /// #3794: with one card in Hand the writer runs inside the play, after
+    /// the spend/source/CardPlayed prefix. A refusal there restores the whole
+    /// in-place play (`play::play_card`'s late-body checkpoint).
+    #[test]
+    fn nightmare_auto_take_refusal_rolls_the_whole_play_back() {
+        let mut builder = CatalogBuilder::new();
+        for id in [CardId::Nightmare, CardId::StrikeSilent] {
+            builder.intern(identity(id)).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let source = card(&catalog, CardId::Nightmare, 1);
+        let strike = card(&catalog, CardId::StrikeSilent, 2);
+        let mut state = nightmare_state(source, &[strike]);
+        // An amount-changed listener with no recorded place.
+        state.powers.set(PowerId::Shroud, SlotWire::Int, 1);
+        let before = state.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            crate::engine::play::play_card(
+                &mut state,
+                &catalog,
+                source.uid,
+                None,
+                None,
+                &mut events
+            ),
+            Err(EngineRefusal::MalformedArgs(
+                "Nightmare AfterPowerAmountChanged order"
+            ))
+        );
+        assert_eq!(state, before, "no spend, source move or CardPlayed prefix");
+        assert!(events.is_empty());
+    }
+
+    /// #3794: NightmarePower is Instanced. Two Nightmares are two objects
+    /// with two cards, in acquisition order, and each records the
+    /// BeforeHandDraw power listeners attached before it.
+    #[test]
+    fn two_nightmares_are_two_objects_each_holding_its_own_card() {
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::Nightmare,
+            CardId::StrikeSilent,
+            CardId::DefendSilent,
+            CardId::InfiniteBlades,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let selector = nightmare_selector(&catalog, 0);
+        let strike = card(&catalog, CardId::StrikeSilent, 2);
+        let defend = card(&catalog, CardId::DefendSilent, 3);
+        let mut state = nightmare_state(card(&catalog, CardId::Nightmare, 1), &[strike, defend]);
+
+        apply_nightmare(&mut state, &catalog, selector, &[strike]).unwrap();
+        // Infinite Blades is attached between the two Nightmares.
+        state.powers.set(PowerId::InfiniteBlades, SlotWire::Int, 1);
+        assert!(
+            state
+                .fanouts
+                .register_before_hand_draw(PowerId::InfiniteBlades)
+        );
+        apply_nightmare(&mut state, &catalog, selector, &[defend]).unwrap();
+        apply_nightmare(&mut state, &catalog, selector, &[strike]).unwrap();
+
+        let held: Vec<_> = state
+            .fanouts
+            .nightmare_instances()
+            .iter()
+            .map(|instance| (instance.amount, instance.listeners_before, instance.atom))
+            .collect();
+        assert_eq!(
+            held,
+            [
+                (3, 0, strike.atom),
+                (3, 1, defend.atom),
+                (3, 1, strike.atom)
+            ],
+            "no object stacks onto another, even for the same card"
+        );
+        let canonical = HotBoundary::to_canonical(&state, &catalog);
+        assert_eq!(
+            canonical.player["nightmare_instances"],
+            serde_json::json!([
+                [3, 0, ["STRIKE_SILENT", 0]],
+                [3, 1, ["DEFEND_SILENT", 0]],
+                [3, 1, ["STRIKE_SILENT", 0]]
+            ])
+        );
+        assert_eq!(
+            HotBoundary::from_canonical(&canonical, &catalog).unwrap(),
+            state
+        );
+    }
+
+    /// #3794: the held clone is the selected card's whole payload at that
+    /// moment, minus its affliction (`SetSelectedCard` IL_0014) and its
+    /// DeckVersion (`AfterCloned` IL_003a). The selected card keeps both, and
+    /// a later write to it does not reach the held clone.
+    #[test]
+    fn nightmare_freezes_the_selected_payload_without_affliction_or_deck_row() {
+        let catalog = nightmare_catalog();
+        let selector = nightmare_selector(&catalog, 0);
+        let free_this_turn = LocalCostModifier {
+            kind: LocalCostModifierKind::Set,
+            amount: 0,
+            expiration: LocalCostExpiration::ThisTurnOrPlayed,
+            reduce_only: false,
+        };
+
+        // A Ringing, free-this-turn, single-turn-Retain Strike.
+        let mut strike = card(&catalog, CardId::StrikeSilent, 2);
+        strike.flags = CARD_FLAG_DEFAULT_PHYSICAL_STATE | CARD_FLAG_RINGING;
+        let mut state = nightmare_state(card(&catalog, CardId::Nightmare, 1), &[strike]);
+        state
+            .card_states
+            .append_local_cost_modifier(strike.uid, free_this_turn);
+        let mut payload = state.card_states.get(strike.uid);
+        payload.transient_retain = true;
+        state.card_states.set(strike.uid, payload.clone());
+        apply_nightmare(&mut state, &catalog, selector, &[strike]).unwrap();
+        let [held] = state.fanouts.nightmare_instances() else {
+            panic!("one NightmarePower object");
+        };
+        assert_eq!(
+            held.flags, CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+            "the affliction is cleared on the clone only"
+        );
+        assert_eq!(held.instance, payload);
+        assert_eq!(state.piles.get(PileId::Hand).as_slice()[1], strike);
+        let held = held.clone();
+
+        // The selected card is then played out of its cost row; the held
+        // clone is not a pile card and keeps the row.
+        state
+            .card_states
+            .set(strike.uid, CardInstanceState::default());
+        assert_eq!(
+            state.fanouts.nightmare_instances(),
+            std::slice::from_ref(&held)
+        );
+        let canonical = HotBoundary::to_canonical(&state, &catalog);
+        assert_eq!(
+            HotBoundary::from_canonical(&canonical, &catalog).unwrap(),
+            state,
+            "a held payload with cost rows and keywords survives the boundary"
+        );
+
+        // The copies carry the frozen payload into the next turn, each as
+        // its own row.
+        state.set_ringing(false);
+        crate::engine::cards::clear_ringing_from_current_cards(&mut state);
+        let mut next = state.clone();
+        crate::engine::turn::begin_player_turn(&mut next, &catalog, &mut Vec::new()).unwrap();
+        let copies: Vec<_> = next
+            .piles
+            .get(PileId::Hand)
+            .as_slice()
+            .iter()
+            .filter(|card| card.uid >= 20)
+            .copied()
+            .collect();
+        assert_eq!(copies.len(), 3);
+        for copy in &copies {
+            assert_eq!(copy.flags, CARD_FLAG_DEFAULT_PHYSICAL_STATE);
+            assert_eq!(next.card_states.get(copy.uid), payload);
+        }
+        assert!(next.exact_piles, "copies differ from their original");
+
+        // Genetic Algorithm: the clone keeps the growth and drops the deck
+        // link.
+        let mut genetic = card(&catalog, CardId::GeneticAlgorithm, 4);
+        genetic.flags = CARD_FLAG_DEFAULT_PHYSICAL_STATE | CARD_FLAG_GENETIC_ALGORITHM_STATE;
+        let mut state = nightmare_state(card(&catalog, CardId::Nightmare, 1), &[genetic]);
+        state.card_states.set(
+            genetic.uid,
+            CardInstanceState {
+                genetic_algorithm: GeneticAlgorithmState::from_parts(4, Some(7)).unwrap(),
+                ..CardInstanceState::default()
+            },
+        );
+        apply_nightmare(&mut state, &catalog, selector, &[genetic]).unwrap();
+        let [held] = state.fanouts.nightmare_instances() else {
+            panic!("one NightmarePower object");
+        };
+        assert_eq!(held.flags, genetic.flags);
+        assert_eq!(
+            held.instance.genetic_algorithm,
+            GeneticAlgorithmState::from_parts(4, None).unwrap()
+        );
+        assert_eq!(
+            state.card_states.get(genetic.uid).genetic_algorithm,
+            GeneticAlgorithmState::from_parts(4, Some(7)).unwrap(),
+            "the selected card keeps its own link"
+        );
+    }
+
+    /// #3794: every refusal branch of `apply_nightmare`, each leaving no
+    /// power behind.
+    #[test]
+    fn nightmare_refuses_by_name_what_it_cannot_hold_or_place() {
+        let mut builder = CatalogBuilder::new();
+        for id in [
+            CardId::Nightmare,
+            CardId::StrikeSilent,
+            CardId::DefendSilent,
+            CardId::InfiniteBlades,
+        ] {
+            builder.intern(identity(id)).unwrap();
+        }
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let selector = nightmare_selector(&catalog, 0);
+        let strike = card(&catalog, CardId::StrikeSilent, 2);
+        let defend = card(&catalog, CardId::DefendSilent, 3);
+        let base = nightmare_state(card(&catalog, CardId::Nightmare, 1), &[strike, defend]);
+        let refused = |state: &HotState, selector: Selector, answer: &[HotCard]| {
+            let mut probe = state.clone();
+            let refusal = apply_nightmare(&mut probe, &catalog, selector, answer).unwrap_err();
+            assert!(probe.fanouts.nightmare_instances().is_empty());
+            refusal
+        };
+
+        assert_eq!(
+            refused(&base, selector, &[strike, defend]),
+            EngineRefusal::MalformedArgs("Nightmare exact-one selection")
+        );
+        let legacy = HotCard {
+            uid: LEGACY_CARD_UID,
+            atom: strike.atom,
+            flags: CARD_FLAG_LEGACY,
+        };
+        assert_eq!(
+            refused(&base, selector, &[legacy]),
+            EngineRefusal::MalformedArgs("Nightmare selected physical identity")
+        );
+        let draw = Selector {
+            pile: PileId::Draw,
+            ..selector
+        };
+        assert_eq!(
+            refused(&base, draw, &[strike]),
+            EngineRefusal::MalformedArgs("Nightmare selected physical identity")
+        );
+        let absent = card(&catalog, CardId::StrikeSilent, 9);
+        assert_eq!(
+            refused(&base, selector, &[absent]),
+            EngineRefusal::FrozenCardVanished {
+                uid: 9,
+                pile: PileId::Hand
+            }
+        );
+
+        // `Apply<NightmarePower>` answers null while the combat is ending.
+        let mut ending = base.clone();
+        ending.monsters_mut()[0].hp = 0;
+        assert_eq!(
+            refused(&ending, selector, &[strike]),
+            EngineRefusal::MalformedArgs("Nightmare while combat is ending")
+        );
+
+        // A live amount-changed listener with no recorded place.
+        let mut unordered = base.clone();
+        unordered.powers.set(PowerId::Vicious, SlotWire::Int, 1);
+        assert_eq!(
+            refused(&unordered, selector, &[strike]),
+            EngineRefusal::MalformedArgs("Nightmare AfterPowerAmountChanged order")
+        );
+
+        // A live BeforeHandDraw power the fanout order does not name: the
+        // new object's place among the listeners is unknown.
+        let mut unplaced = base.clone();
+        unplaced
+            .powers
+            .set(PowerId::InfiniteBlades, SlotWire::Int, 1);
+        assert_eq!(
+            refused(&unplaced, selector, &[strike]),
+            EngineRefusal::MalformedArgs("Nightmare BeforeHandDraw order")
+        );
+
+        let mut foregone = base.clone();
+        foregone.powers.set(PowerId::Foregone, SlotWire::Int, 1);
+        assert!(
+            foregone
+                .fanouts
+                .register_before_hand_draw(PowerId::Foregone)
+        );
+        assert_eq!(
+            refused(&foregone, selector, &[strike]),
+            EngineRefusal::MalformedArgs("Nightmare beside Foregone Conclusion")
+        );
+
+        // The instance list is bounded.
+        let mut full = base.clone();
+        let one = crate::hot::NightmareInstance {
+            amount: 3,
+            listeners_before: 0,
+            atom: strike.atom,
+            flags: 0,
+            instance: CardInstanceState::default(),
+        };
+        full.fanouts
+            .set_nightmare_instances(vec![one; usize::from(u8::MAX)]);
+        let mut probe = full.clone();
+        assert_eq!(
+            apply_nightmare(&mut probe, &catalog, selector, &[strike]).unwrap_err(),
+            EngineRefusal::CounterOverflow("Nightmare instances")
+        );
+        assert_eq!(probe, full);
     }
 
     /// `VisualCardPool.IsColorless` by pool: Colorless, Event, Token and

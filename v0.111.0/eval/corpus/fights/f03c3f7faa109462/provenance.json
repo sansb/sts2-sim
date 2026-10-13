@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "STGS76WZ6WFA",
+ "node": 37,
+ "encounter": "ENCOUNTER.THE_LOST_AND_FORGOTTEN_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "9b1c0624dc1703625943fd4363b106a0b1ecf7e9a58f9f572e163ed474ce64fe",
+ "save_sha256": "091e11d5ae8858b062bd9fc40ce2b0cfcb7b7cdcfadf727d6384ae4286062914",
+ "entry_digest": "a66057b149a1e366a795c980c5c2a7c39e3c2a0dd37cdb8c24cd71a28be7c4b8",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "TNGH22DDY3JZ",
+ "node": 16,
+ "encounter": "ENCOUNTER.WATERFALL_GIANT_BOSS",
+ "node_type": "boss",
+ "character": "REGENT",
+ "ascension": 9,
+ "capture_sha256": "fee13e1d3caac7b908d5900216ce31d5e278b921d7ea46e04191cf17490731c1",
+ "save_sha256": "ffaa8c5be0a49737868c95944df9739e47c602c649931873da5080328578aa1d",
+ "entry_digest": "126faae134873c93488b2e9498c76711be81c86e4ef4dd6c20f77748c2b1162f",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "QT5J623YW7EU",
+ "node": 30,
+ "encounter": "ENCOUNTER.MYTES_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 9,
+ "capture_sha256": "b3ba76457aeb181fe294e3e364333fe34d78eea76ff250621441b3690adadaa6",
+ "save_sha256": "3583c8546db7f42ed1780a9faeb23d780fc2bebb56cdba22d30dc7967c184460",
+ "entry_digest": "04503563e527dd7e7afa51d25e85c5c702ddf8f516e6580f6c7c69c7a662edd9",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -422,6 +422,330 @@ Two facts it depends on and encodes:
 pinned in `sim/v0.111.0/python/test_encounter_stream_seeding.py`. **Re-run on every game
 version bump**, like `probe_rng_seeding.py`.
 
+## Real waits — `real_waits.py`, `one_thread.py` (#3931)
+
+The harness turns `TestMode` on, so `NonInteractiveMode.IsActive` (RVA
+`0x10a381`) is true. Five things differ from a game someone is playing, and
+each removes a point where that game gives the main loop back:
+
+| What | Headless | A played game |
+|---|---|---|
+| `Cmd/<Wait>d__1` RVA `0x3e8d28` | returns at once (IL_0019-0020) | awaits a SceneTree timer (IL_006e-0096), unless `seconds <= 0` (IL_0025-0032), fast mode is Instant (IL_0037-0050) or the combat is ending and `ignoreCombatEnd` is false (IL_0055-0069) |
+| `Cmd/<CustomScaledWait>d__3` RVA `0x3e8b64` | returns at once (IL_0020-0027) | Instant returns (IL_002c-003e); otherwise `Cmd.Wait` of the Standard or the Fast seconds (IL_005c-0107) |
+| `ActionExecutor/<ExecuteActions>d__28` RVA `0x3d4310` | awaits `action.Execute()` itself (IL_012c-01ac) | starts it and polls once a `ProcessFrame` until it completes or pauses (IL_01b8-0288) |
+| `CardPileCmd.GetTweenForCardsChangingPiles` RVA `0x1307f4` | no tween (IL_0019-0027) | a tween the caller awaits: `CardPileCmd/<Add>d__10` IL_073e-075c, `<Shuffle>d__22` RVA `0x3e4b74` IL_0363-0368 |
+| the thread an `await` resumes on | the thread pool: the harness has no `SynchronizationContext` | the main thread, a frame later (Godot's context) |
+
+A point where one flow waits and nothing else can run changes nothing. Order
+can differ only where the game runs two flows at once. The claim this section
+first carried, that a `CardSelectCmd` selection on a hook context is the only
+such place, was wrong: `DoTurnEndCards` is another and needs no selection.
+
+### Where combat code runs two flows at once
+
+The census below is a scan of the whole assembly's IL (51,602 method bodies)
+for every primitive that can start or join a second flow, then a read of each
+hit outside the UI node classes: `Task.WhenAll` (21 sites, 13 outside UI),
+`Task.WhenAny` (4), `Task.Yield` (7, one in combat), `Task.Delay` (96, 14
+outside UI), `ContinueWith` (2), `TaskHelper.RunSafely` (417), every direct or
+virtual call of an async method whose task is stored in a local or a field or
+dropped instead of awaited (76), every `ldftn` of an async method (473, all
+but 35 a monster's move or an event's option), every delegate `Invoke` whose
+result is stored, dropped, added to a list or passed to `RunSafely`, every
+`TaskCompletionSource` constructed (34), and `ToSignal` / `CallDeferred`
+outside UI. The assembly has no `async void` method, no `Task.Run` and no
+`ConfigureAwait`.
+
+**Sites where combat state can depend on the order.**
+
+| Site | What runs beside what | The trigger to recognise |
+|---|---|---|
+| `CombatManager/<DoTurnEndCards>d__132` RVA `0x3f3a68` | Per turn-end card three tasks are started and kept in locals: `AddTurnEndCardToPlayPileWithDelay` (IL_0052; `d__133` RVA `0x3f270c`: `Cmd.Wait(delay)`, then `CardPileCmd.Add` to the Play pile), `ResolveTurnEndCardEffects` (IL_0097; `d__134` RVA `0x3f64bc`: awaits the previous card's effect and this card's move, then `OnTurnEndInHandWrapper`, then Exhaust or the result pile) and `TweenTurnEndCardToResultPile` (IL_00a7); one `WhenAll` at the end (IL_012f). The effects are chained and run one at a time. The moves are not: card *i+1* leaves the Hand on a timer (the delay grows by 0.8 s, 0.4 s on Fast, 0.3 s for another player's card, times `1 - i/(i+3)`, IL_00b9-0106) while card *i*'s effect is still resolving. Headless every wait is zero, so the order is move 0, effect 0, move 1, effect 1, … | Two or more cards with `HasTurnEndInHandEffect` in the Hand at a turn end: Bad Luck, Beckon, Burn, Debt, Decay, Doubt, Infection, Regret, Shame, Toxic, Wither. What can read the difference: an effect that counts the Hand (Regret), and any listener on a card changing piles or on the damage of an earlier card |
+| `Hook/<BeforeSideTurnEnd>d__80` RVA `0x3d34f4` (three passes), `<AfterSideTurnEnd>d__81` RVA `0x3d11c0` (two), `<BeforeFlush>d__33` RVA `0x3d2acc` (two) | Each listener gets its own `HookPlayerChoiceContext` and the walk awaits `AssignTaskAndWaitForPauseOrCompletion`. A selection inside the listener releases the walk (below); the later listeners of the pass then run beside the listener's remainder, and the pass ends on `WhenAll` of every context's `WaitForCompletion` (e.g. `d__81` IL_0124-016c) | A `CardSelectCmd` selection (`FromHand`, `FromHandForUpgrade`, `FromCombatPile`, `FromSimpleGrid`, `FromChooseACardScreen`: the five callers of `SignalPlayerChoiceBegun`) reached from a side-turn-end or flush listener, directly or through a card it auto-plays or draws, with another listener after it in the same pass |
+| `Hook/<AfterDeath>d__28` RVA `0x3cd984`, `<AfterDiedToDoom>d__30` RVA `0x3cdb4c`, `<BeforeSideTurnStart>d__74` RVA `0x3d39a8` | The same release, but these walks never call `WaitForCompletion`: the listener's remainder runs beside the later listeners **and** beside everything the caller does after the walk returns | A selection reached from one of these listeners (Gremlin Horn's draw into a selecting Strike is the committed case). Inside a card play or a potion the remainder is held until that action finishes (the signal's second await, below), which fixes the order; a death outside any action (the enemy turn, turn-end damage) has nothing holding it |
+| `CombatManager/<StartTurn>d__100` RVA `0x3f781c`: the hand-draw context once it is assigned `RunAutoPrePlayPhase` (IL_0b1e-0b2e; `d__101` RVA `0x3f670c` first awaits the `SetupPlayerTurn` task, IL_0032, then runs `Hook.AfterAutoPrePlayPhaseEntered`, IL_011c), and `OrbQueue.AfterTurnStart` (IL_08a0-08c5) | Neither context is ever passed to `WaitForCompletion`. Once a selection has released it, `StartTurn` goes on to the next player, `CheckWinCondition` (IL_0bd2), the executor's `Unpause` (IL_0c5d) and the rest of the turn start beside the listener's remainder | A selection during the hand draw (`SetupPlayerTurn`, `d__102` RVA `0x3f6c6c`: a `BeforeHandDraw` relic such as Toolbox, a drawn card that is auto-played, an `AfterPlayerTurnStart` listener at IL_0451), or in an `AfterAutoPrePlayPhaseEntered` listener (Whispering Earring, History Course, Mayhem, Imbued, Bombardment, through the cards they play), or in an orb's turn-start passive. On the opening turn the executor is paused until IL_0c5d, so the remainder cannot start before `StartTurn`'s tail has run: the order is fixed there. With a prompt the player holds the remainder in every mode |
+| `RollingBoulderPower/<AfterPlayerTurnStart>d__8` RVA `0x342bdc` | Under `TestMode` one `DoDamage` over the hittable enemies (IL_0077-009a). In a played game the boulder's node calls a lambda per creature it reaches (`<>c__DisplayClass8_0::<AfterPlayerTurnStart>b__0` RVA `0x342bb2`: `DoDamage` for that one creature, the task added to a list; connected at IL_0137-0148) and the listener awaits the node's signal and then `WhenAll` (IL_01f0) | Rolling Boulder with two or more hittable enemies. The harness cannot take the played-game branch at all (no nodes); its traces are the `TestMode` branch and say nothing about the order or the overlap of the per-creature damage |
+| Multiplayer only: `CombatManager/<EndPlayerTurnPhaseOneInternal>d__130` RVA `0x3f4a4c` (IL_020c-0241 and IL_0567-0594, awaited at IL_0338 and IL_0660), `<EndPlayerTurnPhaseTwoInternal>d__139` RVA `0x3f54e8` (IL_016b-0193, IL_0264), `KnowledgeDemon/<CurseOfKnowledgeMove>d__38` RVA `0x3607a8` (IL_010a-0130), `BranchingPlayerChoiceContext/<SignalPlayerChoiceBegun>d__15` RVA `0x3d5eb0` (IL_022e, IL_024d; reached from `CardModel/<OnPlayWrapper>d__339` IL_0641-0669, `PotionModel/<OnUseWrapper>d__75` IL_03a2 and `CardPileCmd.DrawWithoutBlockingOnOtherPlayers` RVA `0x13142c`, which Huddle Up calls) | One context or task a player, joined after the loop over the players. With one player the loop has one element and the join follows it directly: one flow | More than one player. Not reachable from these probes |
+
+**Sites that are one flow, or touch no combat state.**
+
+| Site | Why |
+|---|---|
+| `CombatManager/<StartTurn>d__100` IL_069f-06d4: the hand draw, from its selection to the point `StartTurn` assigns it | The walk awaits `WaitForPauseOrCompletionWithoutAssigningTask` (`d__35` RVA `0x3d6aa0`), which waits on `_pausedBeforeTaskAssignedCompletionSource`. A selection completes that source before anything else (`<SignalPlayerChoiceBegun>d__37` IL_01d4-01d9) and then waits for a task that is assigned only at IL_0b29. So `StartTurn` is released at the signal in every mode, headless too, and `Hook.AfterSideTurnStart` (IL_07bf, awaited) and the orbs run to their end while the listener stands still: a fixed order, which is why a Toolbox pick records the same in every mode. What follows the assignment is the `StartTurn` row of the first table |
+| `CombatManager/<AfterAllPlayersReadyToBeginEnemyTurn>d__137` RVA `0x3f283c` IL_008e-0097 | `await Task.Yield()`: one flow, a frame later. Headless without a context it moved the rest of the turn onto a pool thread (`one_thread.py`) |
+| `ActionExecutor/<WaitForUnpause>d__31` RVA `0x3d4880` | A poll while the executor is paused: `Task.Delay(50)` under `TestMode` (IL_0038-0046), a `ProcessFrame` otherwise (IL_009d-00b1). Paused from `StartCombatInternal` (`d__98` RVA `0x3f71b0` IL_00d7) to the opening `StartTurn` (IL_0c5d) only |
+| `GameAction/<Execute>d__45` RVA `0x3d4c28` IL_0095-009a, IL_014b-0168; `ActionExecutor.ActionQueueChanged` RVA `0x10b93e` IL_001b-0020; `CombatManager.AfterCombatRoomLoaded` RVA `0x135aa0` IL_0025-0033 | The executor and the turn loop are started with `RunSafely` and are the two long-lived flows of a combat. A player's actions run in the executor while the turn loop waits for the turn to end (`<WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction>d__128` RVA `0x3f9008`), and the turn loop's own work (turn end, enemy turn, turn start) runs with the queue empty except for the hook actions its listeners enqueue, which are the rows above |
+| `ActionQueueSynchronizer.GetHookActionForId` RVA `0x110df8` IL_005e-0074 | A `ContinueWith` on a hook action's `ExecutionStartedTask` that calls `HookActionStarted`: bookkeeping of the pending-hook list, for a hook action another peer announced |
+| `CombatState/<GetCreatureAsync>d__60` RVA `0x3f927c` IL_0079-0084, IL_00e8-0108 | Returns at once when the creature exists; otherwise `WhenAny` of a timer (`<GodotTimerTask>d__75` RVA `0x3f952c`) and `CreaturesChanged`. Awaited in line by `PlayCardAction` and `UsePotionAction` |
+| `CreatureCmd/<Damage>d__12` RVA `0x3e96c8` IL_0830-08b6; `CardCmd/<Transform>d__13` RVA `0x3e0ae0` IL_0751-08ec; `DoomPower.StartDoomAnim` RVA `0xa1ad8` IL_0156-015b | `WhenAll` over hurt animations, over card previews (under `TestMode.IsOff`), over the death animation that becomes `DeathAnimationTask`: nodes only |
+| `AttackCommand.BeforeDamage` delegates (`Hyperbeam/<<OnPlay>b__5_0>d` RVA `0x3a6254`, `SweepingBeam/<<OnPlay>b__3_0>d` RVA `0x3c0fd4`) and `CreatureCmd`'s Stun wrapper (RVA `0x461f58`) | Async lambdas: a VFX node and a `Cmd.Wait`, invoked from `AttackCommand/<Execute>d__90` (RVA `0x3f19c0` IL_0664-066c); the Stun wrapper defers an `AddChildSafely` and awaits the stun it was given |
+| `TaskHelper.RunSafely` in combat models and commands | Display only, each read at its callee: every relic's `DoActivateVisuals` (21 sites, e.g. `IronClub/<AfterCardPlayed>d__19` RVA `0x326f78` IL_0078-007d: `IsActivating`, `Flash`, a wait), `OnEnqueuePlayVfx` (`CardModel.EnqueueManualPlay` RVA `0x7de0f`, `CardCmd/<AutoPlay>d__0` IL_0532-0537), `NCreature.RefreshIntents` (`Creature.PrepareForNextTurn` RVA `0x11d85c` IL_0046-004b after `RollMove` at IL_002a; `MonsterModel.SetMoveImmediate` RVA `0x825f0`), `InfestedPower.RevealWrigglersAfterDeathAnim` and `StockPower.RevealReplacementAfterDeathAnim` (a wait, then `SetNodeVisible`; the creatures were added before), `ReattachPower.DoFadeOutOnAllSegments` RVA `0xa6674`, the exhaust and preview VFX lambdas of `CardPileCmd` and `CardCmd`, `CombatStateTracker.NotifyCombatStateChanged` |
+| `FoulPotion/<OnUse>d__10` RVA `0x34ddd0` IL_0291 | `WhenAll` over merchants' reactions: the branch outside combat |
+
+**What this census does not prove.** It finds flows by the primitives that
+start them. A task handed to a delegate type the scan does not name, or stored
+through a generic call the disassembly prints without its target, would be
+missed; the `Invoke` and `ldftn` passes are there to catch those and found
+only what is listed. "Display only" was decided by reading each callee, not
+by running it. Godot signals that call back into game code (the Rolling
+Boulder row is one) are found only where the connecting code is in a
+non-UI class: a node class that changes combat state from an animation
+callback is outside this scan. And whether a site in the first table changes
+an end state for a given root is not answered here: that is what a recording
+in more than one mode is for.
+
+### The hook context, step by step
+
+The walk calls the listener, then
+`HookPlayerChoiceContext/<AssignTaskAndWaitForPauseOrCompletion>d__34` (RVA
+`0x3d62fc`), which stores the listener's task (IL_0021-0043), completes
+`_taskAssignedCompletionSource` (IL_0049-004e) and awaits
+`WhenAny(task, _pausedCompletionSource)` (IL_0054-0070).
+
+A selection inside the listener calls `<SignalPlayerChoiceBegun>d__37` (RVA
+`0x3d64f4`), which in order:
+
+1. makes the hook action and completes
+   `_pausedBeforeTaskAssignedCompletionSource` (IL_01b3-01d9), which only
+   `StartTurn`'s hand-draw walk waits on;
+2. if the task is not assigned yet, awaits `_taskAssignedCompletionSource`
+   (IL_01df-021b);
+3. enqueues the hook action (IL_0283-028e) and completes
+   `_pausedCompletionSource` (IL_0294-0299);
+4. awaits the hook action's `ExecutionStartedTask` (IL_029e-02d3): the
+   listener goes on only once the executor has started that action. With the
+   executor idle it starts inside the enqueue and this await is already
+   complete. Inside a card play or a potion the executor is busy with that
+   action, and the listener's remainder waits until it finishes;
+5. pauses the action for the choice (IL_02ff-0310). The options are read
+   after the signal returns.
+
+Three cases follow.
+
+- **The selection is the first thing the listener awaits.** Step 2 waits; the
+  walk assigns the task, and steps 3 to 5 run inside that `SetResult`, with
+  nobody awaiting `_pausedCompletionSource` yet. The options are read, a
+  selection that needs no prompt resolves, and the listener runs on. In a
+  headless trace it runs to its end, because nothing after the selection
+  waits. In a played game it runs to its **first await after the selection**
+  (a `Cmd.Wait`, a card tween), and there the walk reaches its `WhenAny`,
+  finds the pause already set and goes on to the next listener. So this
+  listener forks too, later than the next case and after the options were
+  read.
+- **The listener waited before the selection** (any wait, any tween). The
+  walk is already in `WhenAny` when step 3 completes the pause, and its
+  continuation runs inside that `SetResult`, before the options are read.
+- **`StartTurn`'s hand-draw walk.** Released at step 1 in every mode; the
+  listener stays at step 2 until `StartTurn` assigns it, after the side's
+  turn-start listeners and the orbs. One order up to there. From the
+  assignment on it is the first case: steps 3 to 5 run inside the `SetResult`
+  and `StartTurn`'s tail is what the remainder runs beside.
+
+After a release the walk does not start every later listener at once. It
+calls the next one and awaits *its* `AssignTaskAndWaitForPauseOrCompletion`,
+so the later listeners run one after another, each to its end or to its own
+selection. The race is between the released listener's remainder and that
+sequence, and each side advances when the other waits.
+
+**With a prompt** the player holds the listener, the later listeners finish
+while the prompt is open, and the two orders leave the same state behind.
+They can still differ in what the prompt offers: in the second case the next
+listener's work up to its first wait runs before the options are read, and
+headless after them.
+
+**With no prompt** nothing holds the listener, and its remainder interleaves
+with the later listeners by how long each wait takes.
+`PowerCmd/<Remove>d__8` (RVA `0x3f09bc`) removes the power (IL_0030) and then
+waits 0.2 / 0.4 s (IL_0035-0049) before `AfterRemoved` (IL_00af-00b4), so a
+Rage that ends at the side's end is gone before a Hellraiser play the same
+pass makes later, which the headless trace shows the other way round (the
+6 HP of `d3_seeker_one_rage`, #3920). Past each side's first wait it is a
+race between timers and tweens.
+
+### What the mode does
+
+`STS2_WAITS=real[:normal|fast|instant][:always][:after]` (and
+`STS2_WAITS_FPS`, default 60) on `probe_relic_hook_choice.py` or the crate's
+`tests/native/probe.py`. Unset, `Cmd.Wait` returns at once as it always did
+and the committed traces re-record (byte for byte, or on every key the
+committed file has where the probe's snapshot has since gained one).
+
+- `Cmd.Wait` and `Cmd.CustomScaledWait` are prefixed and keep the game's own
+  gates in its order; a wait it would really take becomes a timer with its
+  duration. Real waits start at the scenario's first `snap` (or a
+  `["real_waits"]` step): the setup before the root runs headless.
+- The fast mode is the whole game's, not only the two waits':
+  `SaveManager.Instance.PrefsSave.FastMode` is set to it, because
+  `DoTurnEndCards` (IL_00de-00f7), `TalkCmd.Play` (RVA `0x133fe8`) and the
+  OnPlay of Flash of Steel, Neutralize, Slice, Suppress and Whirlwind read
+  the setting themselves. `Cmd.Wait`'s Instant gate sits behind
+  `NGame.Instance != null` (IL_0037-003c); the harness has no `NGame`, a
+  played game always does, and the prefix applies the gate as a played game
+  would.
+- A pump starts the executor if it is idle and runs a frame clock to the
+  next expiry. A timer loses `1/fps` a frame and fires below zero; timers
+  that run out in one frame fire in creation order; one made while another
+  fires waits for a later frame. The continuation runs inline on the pumping
+  thread, as a SceneTree timer's `timeout` does. A continuation the game
+  posted (`Task.Yield`) takes one frame and runs after that frame's timers;
+  that order within a frame is this module's choice, not a measurement of
+  the engine.
+- Every snapshot is taken with no timer pending and nothing posted, and so is
+  the end of the run: a combat that has ended still has waits to run out
+  before the dead monster is gone and the play counts are reset.
+- `always` makes a hook context's first signal wait one frame when its task
+  is not assigned yet: it turns the first case above into the second. It
+  stands in for a tween **before** the selection.
+- `after` makes a hook context's `SignalPlayerChoiceEnded`
+  (`d__38` RVA `0x3d6864`) complete one frame late: the listener yields right
+  after its selection, so the walk goes on to the next listener before the
+  listener does anything with what was chosen. It stands in for a tween
+  **after** the selection, which is where the first case forks in a played
+  game, and which neither the timers nor `always` can show when the
+  listener's next await is a tween and not a `Cmd.Wait`.
+- Each of the two is wrong for a listener that has no await at that point
+  (in a played game that one does run straight through), so they are further
+  recordings to compare, never the default.
+
+### One thread (`one_thread.py`)
+
+Both probes install a `SynchronizationContext` right after the boot, in every
+mode, and run what the game posts to it from their own loop. Before this the
+harness had none, so every `await` that did not complete inline resumed on
+the thread pool: `Task.Yield()` at the start of the enemy turn
+(`<AfterAllPlayersReadyToBeginEnemyTurn>d__137` IL_008e) moved the rest of
+the turn end, the enemy turn and the next turn start to a pool thread, and
+`Task.Delay(50)` in `WaitForUnpause` did the same during the opening. The
+probes slept between pumps to let that thread finish, and a snapshot taken
+too early was a truncated one. With the context the game runs on the probe's
+thread only, the sleeps are gone (`idle` waits for a `Task.Delay` to post, and
+returns at once when something already has), and the real-waits timer list
+has one writer. A wait created on any other thread is listed under
+`off_thread_waits` and the run is refused.
+
+Nothing else in the harness installs the context: `demo_enemy_turn.py`,
+`conformance.py` and the other scripts block on `GetResult()` for tasks that
+cross the `Task.Yield`, which under a context would wait for ever. They run
+as they always have. `_Fight` uses the context when a probe has installed it
+(`_Fight.posted`) and sleeps as before when none has.
+
+Two real-time waits remain and are not on the frame clock: `Task.Delay(50)`
+in `WaitForUnpause` (the opening turn only) and the timeout of
+`GetCreatureAsync` (only when a target does not exist yet). A run that
+crosses one while two timers are pending is not reproducible to the frame.
+`posts` in the report counts every continuation that came through the
+context.
+
+### Reading a trace
+
+Each run ends with a `waits` entry: the mode, the count of waits,
+`forced_yields`, `max_pending`, under `concurrent` every moment two or more
+gameplay timers were pending with the frames that created them (a relic's
+flash is left out), under `hook_signals` every selection signalled on a hook
+context (`source` is the listener's model, null for `CombatManager`'s own
+contexts; `walk_waiting` says the walk was already waiting, the second case
+above), `posts`, `off_thread_waits`, `stalled` and `pending_at_end`.
+
+Not emulated: the card tweens and every node animation (no scene tree
+exists), the executor's frame poll, and any branch the game takes only with
+`TestMode` off (Rolling Boulder's). Instant fast mode therefore records like
+headless unless `always` or `after` is given, though in a played game on
+Instant the tweens still yield.
+
+- No `hook_signals`, `max_pending <= 1`: one flow at a time. The order does
+  not depend on any duration; if the trace equals the headless one, the
+  headless trace was right.
+- A `hook_signals` entry: a second flow could start there. Record `real`,
+  `real:always`, `real:after` and `real:always:after`. If all four equal the
+  headless trace, no yield at either point changes anything this probe
+  snapshots. If they differ, read the listener's IL for the await that is
+  really there (a Draw has a tween before a selection it leads to; a
+  selection that opens the listener has none before it), and take the
+  recording that matches.
+- `max_pending >= 2`: two flows raced on timers (the turn-end cards do this
+  with no selection at all). The clock gave one order; a tween on either side
+  could give another. Neither this trace nor the headless one is evidence for
+  the order of the racing effects. If they commute, say so from the
+  `concurrent` sites; if not, the engine refuses the root until a capture of
+  a played game settles it (`.mcr` checksums are the authority).
+
+Scenarios that are not one of the probe's own can be given in a file:
+`STS2_PROBE_SPECS=FILE` adds `{name: spec}` entries to
+`probe_relic_hook_choice.py`. Besides the probe's own setup steps (`hp`, `power`,
+`mpower`) a spec may use `["pblock", N]` (Block on the player) and
+`["kill", CREATURE_ID]`. Two specs that isolate one site each:
+
+```json
+{"turn_end_three": {"character": "Ironclad", "relics": [],
+   "deck": ["BURN", "REGRET", "DECAY", "DEFEND_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD",
+            "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "BASH"],
+   "script": [["energy", 3],
+              ["arrange", {"hand": ["BURN", "REGRET", "DECAY", "DEFEND_IRONCLAD"],
+                           "draw": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD",
+                                    "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "BASH"], "discard": []}],
+              ["snap", "root"], ["play", "@END", null], ["snap", "end"]]},
+ "constrict_seeker_rage": {"character": "Ironclad",
+   "encounter": "ENCOUNTER.SLITHERING_STRANGLER_NORMAL", "seed": "RV3920A",
+   "relics": ["CENTENNIAL_PUZZLE", "LUNAR_PASTRY"],
+   "deck": ["DEFEND_IRONCLAD", "SEEKER_STRIKE", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD",
+            "STRIKE_IRONCLAD", "BASH", "TRUE_GRIT", "SHRUG_IT_OFF"],
+   "script": [["energy", 3],
+              ["arrange", {"hand": [], "draw": ["DEFEND_IRONCLAD", "SEEKER_STRIKE", "STRIKE_IRONCLAD",
+                           "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "BASH", "TRUE_GRIT",
+                           "SHRUG_IT_OFF"], "discard": []}],
+              ["pblock", 60], ["kill", 1], ["power", "HellraiserPower", 1], ["play", "@END", null],
+              ["arrange", {"hand": ["DEFEND_IRONCLAD"], "draw": ["SEEKER_STRIKE", "STRIKE_IRONCLAD"],
+                           "discard": ["STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "STRIKE_IRONCLAD", "BASH",
+                                       "TRUE_GRIT", "SHRUG_IT_OFF"]}],
+              ["power", "RagePower", 3],
+              ["snap", "root"], ["play", "@END", null], ["snap", "end"]]}}
+```
+
+`turn_end_three` (no answers) has no selection and no relic: three turn-end
+cards. Its report lists the staggered moves under `concurrent` with
+`max_pending` 3, and its trace equals the headless one in `real` and
+`real:fast`: none of the eleven turn-end effects reads the Hand while it runs
+(Regret's count is taken in `BeforeSideTurnEnd`, RVA `0xe9638` IL_003b-004a).
+
+`constrict_seeker_rage` (answers `0,0`) is #3920's `d3_seeker_one_rage`: at
+the side's end Constrict's listener damages the player, Centennial Puzzle
+draws, Hellraiser auto-plays the drawn Seeker Strike, and its one-candidate
+selection is signalled on the listener's hook context with Rage's
+`AfterSideTurnEnd` still to come. The player's HP at the end is 71 headless
+and 65 wherever the walk goes on before the Strike's attack:
+
+| Mode | HP | `hook_signals[0]` | Why |
+|---|---:|---|---|
+| unset | 71 | | nothing waits |
+| `real`, `real:fast` | 65 | `walk_waiting: true` | the Draw's waits come before the selection; `max_pending` 2 |
+| `real:instant` | 71 | `walk_waiting: false` | no wait is taken on Instant, so the timers show nothing |
+| `real:instant:always` | 65 | `walk_waiting: false` | a yield before the selection |
+| `real:instant:after` | 65 | `walk_waiting: false` | a yield after it, with none before: the fork at the listener's first await after the selection |
+
+The last row is the case `after` exists for. The committed
+`horn_seeker_short` is the other unprompted selection on a hook context
+(Gremlin Horn's `AfterDeath` Draw into a Seeker Strike with one candidate),
+and records the same in every mode.
+
+### Stalls and children that throw
+
+A run that stops making progress is never written as a trace. A probe step
+that times out, a turn end that does not reach the next Play phase
+(`_Fight.end_turn`), a drain that runs out of pumps with timers pending, a
+task that never completes or a wait made off the pump thread prints
+`STALLED <report>` (the reason under `stalled`, the timers under
+`pending_at_end`) and exits 3.
+
+`drive` plays every answer sequence in its own process and finds the end of
+the options by the selector throwing on an index past the last one. That is
+the only thing a missing trace may mean. `probe_drive.read_child` returns
+None for exactly that exception (`ArgumentOutOfRangeException` out of
+`Enumerable.ElementAt`), accepts the one the close of a combat always logs
+(`EndCombatInternal` has no room to hand off to), and raises on anything
+else: a `STALLED` line or exit 3, any other exception the game logged, or no
+`NAT` line. Before, any logged exception read as "no such option" and
+`drive` could write a scenario with `runs: []` and exit 0.
+
 ## Known gaps / next steps (tracked on #275)
 
 - Pin-based .mcr certification needs v0.109-native captures + the sts2_rng

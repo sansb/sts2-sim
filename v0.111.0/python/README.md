@@ -10,32 +10,38 @@ The product and research umbrella is
 
 **The combat engine is the Rust crate** in [`../engine/`](../engine/). This
 directory holds the Python layer around it: run parsing, RNG and map
-reconstruction, `.mcr` decoding, the review, replay and Coach adapters that
-drive `sts-sim`, the IL censuses and templates, and their tests. The frozen
+reconstruction, `.mcr` decoding, the capture, replay and live-coach adapters
+that drive `sts-sim`, the IL censuses and templates, and their tests. The frozen
 v0.111.0 Python simulator (`combat_sim.py`, `solve_fight.py`, `content/`) and
 the tests that existed only to exercise it were hard-deleted on 2026-09-25
 (#2827 item F); `sim/meta/SIM_VERSIONING.md` carries the dated record.
 
-## How a review works
+## How a fight is replayed
 
 1. `relay_parser.py` reconstructs fight-entry state from a `.run` history.
    Captured `.save` files (adapted by `tools/live_coach.build_entry`) and the
    mod's `.mcr` captures provide stronger snapshots when available.
-2. `sts2_rng.py` recreates the game's named RNG streams for the relevant game
-   build; `rust_run_counters.py` (Rust `sts-sim run-counters`) advances each
-   stream to the fight on the `.run`-only path.
-3. `sts-sim entry … --opening` builds the fight's root in Rust: the real deck,
-   relics, potions, enchantments, monsters, RNG state and the opening turn.
-4. `rust_review.py` / `rust_exact_solve.py` hand the canonical document to
-   `sts-sim exact-solve`. Rust owns legal-action enumeration, transitions,
+2. `review_provenance.py` associates each uploaded capture with its fight and
+   resolves the save projection that goes with it; `provenance_entry.py`
+   checks that projection against the `.run` and the capture.
+3. `rust_review.replay_capture_run` hands the capture's embedded run to
+   `sts-sim entry --capture-run --opening`, which builds the fight's root in
+   Rust: the real deck, relics, potions, enchantments, monsters, RNG state
+   and the opening turn. `sts2_rng.py` recreates the game's named RNG streams
+   to check the captured ones.
+4. The recorded line is resolved and replayed in Rust (`../engine/src/recorded.rs`,
+   which the site runs as wasm), and the certification census
+   (`../engine/tools/eval_suite.py`) replays it step by step through
+   `rust_replay.py`, comparing every native checkpoint.
+5. `rust_exact_solve.py` hands a canonical document to `sts-sim exact-solve`
+   for the live coach. Rust owns legal-action enumeration, transitions,
    memoization, pruning, deadlines, and objective ordering.
-5. `rust_replay.py` replays the recorded line (from the `.mcr`) and the solved
-   line through Rust, checking the capture's native checkpoints.
-6. `review_summary_v2.py` assembles the review document the worker stores.
 
-The `.run` format does not contain every in-combat decision or stream counter.
-Later fights may therefore carry counter caveats. The review keeps those
-caveats explicit rather than presenting one guessed history as fact.
+A Python review path used to sit on top of this: a CLI that searched each
+fight and assembled a stored review document for a queue worker. The worker
+was retired on 2026-10-06 and the path was deleted on 2026-10-11; the
+`REVIEW_PIPELINE_*.md` files remain as the record of the stored document
+schema, which the site still renders.
 
 ## Exactness and the trust model
 
@@ -100,12 +106,13 @@ refusals unless a narrowly documented exclusion applies.
 | `relay_parser.py` | Parse `.run` histories and reconstruct per-fight entry state |
 | `replay_fight.py` | Deck and shuffle-counter accounting over a `.run` (the Python predictor Rust `run_counters` replaced; kept for its tests) |
 | `mcr_parser.py`, `mcr_native.py` | Decode combat replay files; read the capture's own deal and checkpoint RNG |
-| `review_summary_v2.py`, `rust_review.py`, `rust_legacy_review.py`, `rust_replay.py` | The review CLI: Rust roots, Rust search, Rust replay of recorded and solved lines |
+| `rust_replay.py` | The `sts-sim diff-serve` session and the recorded-input rules the census resolves a capture with: selections, inputs behind an open choice, native checkpoint comparison |
+| `rust_review.py` | The capture run `sts-sim entry --capture-run` roots, the floor-save root's reset-order witness, and the card and state labels |
+| `provenance_entry.py` | Completeness and conflict checks on a resolved save projection |
 | `rust_exact_solve.py` | One-call, fail-closed adapter to the Rust exact solver over a canonical document |
-| `rust_run_counters.py` | The `.run`-only path's entering RNG counters, from Rust |
 | `sts2_rng.py`, `dotnet_sort.py` | Exact game RNG algorithms, stream seeding, counters, and .NET sort |
 | `map_gen.py`, `neow.py`, `monster_ai.py` | Map, Neow and monster-AI stream reconstruction |
-| `admission.py`, `sim_identity.py`, `review_provenance.py` | Build admission, producer identity, and review provenance |
+| `admission.py`, `review_provenance.py` | Build admission, and the association of uploaded captures with their fights |
 | `tools/` | IL dumpers, censuses, template builders, `.mcr` tables and watcher, and the live coach |
 | `harness/` | Local headless host for executing the real `sts2.dll` as an oracle |
 | `testdata/` | Distilled run, save, and replay fixtures from live gameplay |

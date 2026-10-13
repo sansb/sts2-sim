@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "R7NPTLWR6H22",
+ "node": 32,
+ "encounter": "ENCOUNTER.KAISER_CRAB_BOSS",
+ "node_type": "boss",
+ "character": "NECROBINDER",
+ "ascension": 10,
+ "capture_sha256": "5fdeb778900ffbd2a11d9f43acd43006ed2731ee0c51610552dfd2ac231f4bf1",
+ "save_sha256": "bf8d5f6c931816efc14f189bb2dc253214f4d5cb8134ed6aa87d4e9787f492fc",
+ "entry_digest": "fb1eba32b3ab1102535e8727b9e92a9e2fbdd7c88a268ea48377aeb13c99f01a",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

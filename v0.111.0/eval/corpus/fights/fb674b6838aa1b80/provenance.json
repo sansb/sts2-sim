@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "3NNB72PME940",
+ "node": 5,
+ "encounter": "ENCOUNTER.TWO_TAILED_RATS_NORMAL",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "3f066e47c865f4b4a5bd0fc8d9d30c956ef2229739151c2680468f410918483b",
+ "save_sha256": "e3e71a45c7ede4c281d82cd902c8f92cb27e5d647fa85c315df16857e1fce851",
+ "entry_digest": "5bb2dbc96cb653d2122e432848c63a5125a4659669b3afc944be58afadf9b396",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

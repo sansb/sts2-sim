@@ -440,10 +440,19 @@ pub(crate) fn attack_context_result_exact(ctx: &mut StepCtx<'_>) -> Result<(), E
 /// registry-locked shared discard/AutoPlay lifecycle in `engine::draw`.
 pub(crate) fn attack_random(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
     let (damage, hits) = match (ctx.spec.identity.id, ctx.spec.identity.upgrade, ctx.args) {
-        (CardId::Ricochet, 0, [CompiledArg::I(3), CompiledArg::I(4)])
-        | (CardId::RipAndTear, 1, [CompiledArg::I(3), CompiledArg::I(4)]) => (3, 4),
+        (CardId::Ricochet, 0, [CompiledArg::I(3), CompiledArg::I(4)]) => (3, 4),
         (CardId::Ricochet, 1, [CompiledArg::I(3), CompiledArg::I(5)]) => (3, 5),
-        (CardId::RipAndTear, 0, [CompiledArg::I(3), CompiledArg::I(3)]) => (3, 3),
+        // #3756: `RipAndTear/<OnPlay>d__5::MoveNext` RVA `0x3b7998` is
+        // `DamageCmd::Attack(DynamicVars.Damage.BaseValue)` (IL_0021-0030),
+        // `WithHitCount(2)` (IL_0035-0036), `FromCard` (IL_0042),
+        // `TargetingRandomOpponents(CombatState, true)` (IL_0048-004e) and
+        // `Execute` (IL_007d): Sword Boomerang's command
+        // (`SwordBoomerang/<OnPlay>d__3` RVA `0x3c142c`) with a literal hit
+        // count. `get_CanonicalVars` RVA `0xe9c34` is `DamageVar(7, 8)` and
+        // `OnUpgrade` RVA `0xe9ca3` raises Damage by 2. The class declares no
+        // keyword getter and no hook besides `OnPlay`.
+        (CardId::RipAndTear, 0, [CompiledArg::I(7), CompiledArg::I(2)]) => (7, 2),
+        (CardId::RipAndTear, 1, [CompiledArg::I(9), CompiledArg::I(2)]) => (9, 2),
         (CardId::SwordBoomerang, 0, [CompiledArg::I(3), CompiledArg::I(3)]) => (3, 3),
         (CardId::SwordBoomerang, 1, [CompiledArg::I(3), CompiledArg::I(4)]) => (3, 4),
         _ => return Err(EngineRefusal::MalformedArgs("attack_random")),
@@ -870,8 +879,22 @@ pub(crate) fn calculated_operand(ctx: &StepCtx<'_>, kind: StepKind) -> Result<i6
         StepWord::PlayerBlock => i64::from(ctx.state.block),
         StepWord::DrawCount => pile_len(PileId::Draw)?,
         StepWord::DiscardCount => pile_len(PileId::Discard)?,
+        // Expect a Fight. `ExpectAFight/<>c::<get_CanonicalVars>b__4_0` RVA
+        // `0x39c766` is `Math.Max(0, Owner.Creature.GetPowerAmount<
+        // StrengthPower>())` (IL_0001-IL_0012): the one `StrengthPower`
+        // instance, whatever applied it. A `TemporaryStrengthPower` holds no
+        // Strength of its own; its `InternallyAppliedPower` is
+        // `StrengthPower` (`0xa9ad3`) and its `BeforeApplied` (`0xa9c0c`)
+        // applies that amount to the same creature. So the amount read here
+        // is permanent plus temporary. The owner's positive temporary
+        // Strength is the core field `State.temp_strength`
+        // (`damage::apply_owner_temporary_strength`), not a slot in the
+        // player's power bag: `boundary.rs` routes the player's
+        // `temp_strength` wire name to that field, and the `TempStrength`
+        // slot is the monsters' carrier. Reading the slot left Reptile
+        // Trinket's, Flex Potion's and Setup Strike's Strength out (#3756).
         StepWord::StrengthPowerAmount => (i64::from(ctx.state.powers.value(PowerId::Strength))
-            + i64::from(ctx.state.powers.value(PowerId::TempStrength)))
+            + i64::from(ctx.state.temp_strength))
         .max(0),
         StepWord::ExhaustCount => pile_len(PileId::Exhaust)?,
         StepWord::ExhaustExactSoul => ctx
@@ -4825,6 +4848,52 @@ mod tests {
         assert_eq!(block(&mut state), Ok(72));
     }
 
+    /// #3756, site witnesses `LU7UZCTYY2EZ` node 21 and `WQXLUF17VCRY` node
+    /// 50: with Reptile Trinket's 3 temporary Strength and none permanent,
+    /// Expect a Fight grants 15 + 5 x 3 = 30. The temporary amount is the
+    /// owner's `temp_strength` field; a negative permanent Strength still
+    /// nets against it and the product never goes below the base.
+    #[test]
+    fn expect_a_fight_counts_the_owners_temporary_strength() {
+        let mut builder = CatalogBuilder::new();
+        builder
+            .intern(CardIdentity {
+                id: CardId::ExpectAFight,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+        let block = |state: &mut HotState| {
+            resolve_operand(
+                StepKind::CalculatedBlock,
+                CardId::ExpectAFight,
+                0,
+                state,
+                &catalog,
+                None,
+                &[
+                    CompiledArg::Word(StepWord::StrengthPowerAmount),
+                    CompiledArg::I(15),
+                    CompiledArg::I(5),
+                ],
+            )
+        };
+        assert_eq!(block(&mut state), Ok(15));
+        crate::engine::allies::gain_temp_strength(&mut state, 0, 3, &mut Vec::new()).unwrap();
+        assert_eq!(state.temp_strength, 3);
+        assert_eq!(block(&mut state), Ok(30));
+        state.powers.set(PowerId::Strength, SlotWire::Int, -1);
+        assert_eq!(block(&mut state), Ok(25));
+        state.powers.set(PowerId::Strength, SlotWire::Int, -9);
+        assert_eq!(block(&mut state), Ok(15));
+    }
+
     #[test]
     fn calculated_resolver_reads_every_live_operand_and_refuses_wrong_pairs() {
         use crate::hot::{HotCard, HotOrb};
@@ -4878,7 +4947,7 @@ mod tests {
         let mut state = HotState::at_defaults();
         state.block = 7;
         state.powers.set(PowerId::Strength, SlotWire::Int, -3);
-        state.powers.set(PowerId::TempStrength, SlotWire::Int, 5);
+        state.temp_strength = 5;
         state.piles.get_mut(PileId::Draw).make_mut().extend([
             card(1, CardId::StrikeIronclad),
             card(2, CardId::StrikeIronclad),
@@ -5808,6 +5877,47 @@ mod tests {
             before + 3
         );
 
+        // #3756: Rip and Tear is the same command at 7 x 2 (9 x 2 upgraded),
+        // one `CombatTargets` draw per hit. The pre-v0.111.0 operands the
+        // matcher used to name refuse.
+        for (upgrade, damage, hp) in [(0, 7, 86), (1, 9, 82)] {
+            let mut rip = HotState::at_defaults();
+            rip.hp = 50;
+            rip.monsters_mut()
+                .push(HotMonster::new(MonsterKind::Toadpole, 100));
+            let before = rip.rng.get(crate::hot::RngStream::Targets).counter;
+            run_attack_unit_card(
+                StepKind::AttackRandom,
+                CardId::RipAndTear,
+                upgrade,
+                &mut rip,
+                None,
+                &[CompiledArg::I(damage), CompiledArg::I(2)],
+            )
+            .unwrap();
+            assert_eq!(rip.monsters[0].hp, hp);
+            assert_eq!(
+                rip.rng.get(crate::hot::RngStream::Targets).counter,
+                before + 2
+            );
+        }
+        let mut stale = HotState::at_defaults();
+        stale.hp = 50;
+        stale
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 100));
+        assert_eq!(
+            run_attack_unit_card(
+                StepKind::AttackRandom,
+                CardId::RipAndTear,
+                0,
+                &mut stale,
+                None,
+                &[CompiledArg::I(3), CompiledArg::I(3)],
+            ),
+            Err(EngineRefusal::MalformedArgs("attack_random"))
+        );
+
         let mut result = HotState::at_defaults();
         result.hp = 50;
         let mut target = HotMonster::new(MonsterKind::Toadpole, 20);
@@ -6003,13 +6113,11 @@ mod tests {
         // #3279: the step no longer returns early at `history.over`. A
         // pre-OnPlay listener that ended the combat still reaches the
         // carrier's first-command `OstyCmd.Summon` natively, under
-        // IsEnding: a live Osty grows MaxHp only, an absent one refuses.
+        // IsEnding: a live Osty grows MaxHp only, and an absent one is
+        // created at 1 HP under the summoned MaxHp (#3635).
         for (osty, expected) in [
-            (Some((2, 4)), Ok(Some((2, 9)))),
-            (
-                None,
-                Err(EngineRefusal::EndingSummonNotModeled("Osty summon")),
-            ),
+            (Some((2, 4)), Ok::<_, EngineRefusal>(Some((2, 9)))),
+            (None, Ok(Some((1, 5)))),
         ] {
             let mut over = HotState::at_defaults();
             over.history.over = true;

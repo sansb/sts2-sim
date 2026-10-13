@@ -72,6 +72,8 @@ pub mod draw;
 pub(crate) mod hook_action;
 pub(crate) mod monsters;
 pub mod native_checkpoint;
+#[cfg(test)]
+mod native_stun_traces;
 pub mod orbs;
 pub mod play;
 pub(crate) mod potions;
@@ -518,9 +520,6 @@ pub enum EngineRefusal {
         /// The event being fired.
         event: HookEvent,
     },
-    /// `OstyCmd.Summon` reached a dead or absent Osty while the combat is
-    /// ending; see `SoloPetState::summon_ending` (#3246).
-    EndingSummonNotModeled(&'static str),
     /// A random-target listener picked a live enemy while the combat is
     /// ending, and native would run `CreatureCmd.Damage` against it (#3261).
     /// `<Damage>d__12` (RVA `0x3e96c8`) has no ending gate on entry; the
@@ -634,10 +633,6 @@ impl fmt::Display for EngineRefusal {
                 "relic {:?} subscribes to {:?}, which has no modeled body",
                 relic.as_str(),
                 event.as_str()
-            ),
-            Self::EndingSummonNotModeled(site) => write!(
-                f,
-                "{site} summons a dead or absent Osty while the combat is ending"
             ),
             Self::EndingDamageNotModeled(site) => {
                 write!(f, "{site} damages a live enemy while the combat is ending")
@@ -966,7 +961,7 @@ const BOUND_PHYLACTERY_SUMMON: i32 = 1;
 /// `PhylacteryUnbound::get_CanonicalVars` (v0.111.0 RVA `0x9959d`) builds
 /// `SummonVar("StartOfCombat", 5)` at `IL_0009`-`IL_0014` and
 /// `SummonVar("StartOfTurn", 2)` at `IL_001c`-`IL_0027`. The turn-start 2 is
-/// `relics::after_side_turn_start_late`'s row.
+/// `relics::after_side_turn_start`'s row.
 const PHYLACTERY_UNBOUND_COMBAT_START_SUMMON: i32 = 5;
 
 /// The two phylacteries' combat-start Osty summons (#2827).
@@ -993,7 +988,7 @@ const PHYLACTERY_UNBOUND_COMBAT_START_SUMMON: i32 = 5;
 /// `IL_002e`, `leave` at `IL_0035` otherwise) and then `OstyCmd::Summon(Owner,
 /// DynamicVars["StartOfTurn"].BaseValue)` at `IL_005b`, with **no** turn test,
 /// so it fires on turn one too. That half was already
-/// `relics::after_side_turn_start_late`'s `summon(2)` row, which the opening
+/// `relics::after_side_turn_start`'s `summon(2)` row, which the opening
 /// reaches through `deal_opening_hand`, so an owner's first document carries a
 /// 7/7 Osty.
 ///
@@ -1031,7 +1026,9 @@ fn phylactery_before_combat_start(
         if !catalog.hooks().owns(relic) {
             continue;
         }
-        summon_osty(state, amount, what)?;
+        // The combat-start pets are counted together by
+        // `seed_creature_uid_counter`, so this summon does not seed it.
+        summon_osty_unseeded(state, amount, what)?;
         crate::coverage::record_relic(relic);
     }
     Ok(())
@@ -1046,8 +1043,56 @@ fn phylactery_before_combat_start(
 /// creature while `CombatManager.IsEnding`. So every summon site reads
 /// [`damage::damage_combat_is_ending`] (the IsEnding projection, not
 /// `history.over`) at the moment it runs; `SoloPetState::summon_ending`
-/// carries the arithmetic and the refused dead/absent branch (#3246).
+/// carries the arithmetic (#3246), including the add of an absent Osty and
+/// the revive of a corpse while ending (#3635).
+///
+/// # The creature id counter (#3877)
+///
+/// A first summon creates the Osty creature: `<Summon>d__0` `IL_01e9` calls
+/// `PlayerCmd.AddPet`, whose `<AddPet>d__14`1::MoveNext` (`0x3ee68c`
+/// `IL_0054`) calls `ICombatState::CreateCreature`, and
+/// `CombatState::AttachCreature` (`0x13718f` `IL_0009`-`IL_0022`) stamps
+/// `CombatId = _nextCreatureId++`. So the Osty takes the next creature id and
+/// every enemy spawned afterwards takes one more.
+///
+/// A root with no combat-start pet leaves the counter untracked (zero),
+/// because `max(monster uid) + 1` is the counter there
+/// ([`monsters::allocate_creature_uids`]). `FanoutState::mutate_pet` advances
+/// only a tracked counter, so a first summon in the middle of such a fight
+/// (Afterlife, Bodyguard, Bone Brew and the rest, for any character without a
+/// Phylactery) left an Osty under an untracked counter, and the next spawn
+/// (Fabricator, Fogmog, any summoner) refused as `creature id counter
+/// untracked with a live pet`. This is the moment the derivation stops
+/// holding, so it is where the counter starts being tracked: the Osty takes
+/// `max(monster uid) + 1` and the counter is written one past it. A relic
+/// pet cannot be missing from that sum: a root with one tracks its counter
+/// from the opening.
 pub(crate) fn summon_osty(
+    state: &mut HotState,
+    amount: i32,
+    site: &'static str,
+) -> Result<(), EngineRefusal> {
+    let first_under_untracked =
+        state.fanouts.next_creature_uid() == 0 && !state.fanouts.pet().has_die_for_you();
+    summon_osty_unseeded(state, amount, site)?;
+    if first_under_untracked && state.fanouts.pet().has_die_for_you() {
+        let next = state
+            .monsters
+            .iter()
+            .map(|monster| monster.uid)
+            .max()
+            .map_or(Some(0), |uid| uid.checked_add(1))
+            .and_then(|enemies| enemies.checked_add(1))
+            .ok_or(EngineRefusal::CounterOverflow("creature id counter"))?;
+        state.fanouts.set_next_creature_uid(next);
+        // The Osty took the id before it (#3904).
+        state.fanouts.set_osty_creature_uid(next - 1);
+    }
+    Ok(())
+}
+
+/// [`summon_osty`] without the creature id counter's first-summon seed.
+fn summon_osty_unseeded(
     state: &mut HotState,
     amount: i32,
     site: &'static str,
@@ -1056,12 +1101,7 @@ pub(crate) fn summon_osty(
     state
         .fanouts
         .mutate_pet(|pet| pet.summon_ending(amount, ending))
-        .map_err(|error| match error {
-            crate::pet::PetStateError::EndingSummonNotLive => {
-                EngineRefusal::EndingSummonNotModeled(site)
-            }
-            _ => EngineRefusal::CounterOverflow(site),
-        })
+        .map_err(|_| EngineRefusal::CounterOverflow(site))
 }
 
 /// The `CombatTargets` pick of an AfterCardPlayed random-hit listener that has
@@ -1245,7 +1285,7 @@ fn vambrace_before_combat_start(catalog: &Catalog, state: &mut HotState) {
 ///
 /// Pael's Legion's other opening hook is its turn-1 `AfterSideTurnStart`
 /// (`<AfterSideTurnStart>d__36::MoveNext`, `0x32c9d4`). It already runs in
-/// `relics::after_side_turn_start_late`. On turn 1 the cooldown is 0, so
+/// `relics::after_side_turn_start`. On turn 1 the cooldown is 0, so
 /// native's unconditional `Cooldown - 1` (`IL_0056`-`IL_005b`) goes to -1.
 /// The oracle's canonical 0 stands for every native value <= 0, so nothing
 /// changes. `GetPet<PaelsLegion>` (`IL_0081`) has a target, because the pet
@@ -1296,8 +1336,10 @@ fn passive_relic_pets_before_combat_start(catalog: &Catalog) {
 /// `DELICATE_FROND`, the other procurer on the same combat start, runs in the
 /// ordinary pass ([`delicate_frond_before_combat_start`]) and so always
 /// before this: a belt the Frond filled leaves the Toad's procurement to fail.
-/// `BELT_BUCKLE` (whose latch a procurement clears) is still refused in
-/// `entry::opening`'s room-entry gate.
+/// `BELT_BUCKLE`'s combat-start body is also in the ordinary pass
+/// ([`potions::belt_buckle_before_combat_start`], #3617), so a Dexterity it
+/// granted on an empty belt is taken back by this procurement, through
+/// `procure_potion`'s `AfterPotionProcured` call.
 fn petrified_toad_before_combat_start_late(
     catalog: &Catalog,
     state: &mut HotState,
@@ -1326,8 +1368,9 @@ fn petrified_toad_before_combat_start_late(
 /// which this function does not reproduce: it runs after all of them. That
 /// is exact because the body reads and writes only the belt and the
 /// `CombatPotionGeneration` stream, and the one first-walk peer that touches
-/// either, `BELT_BUCKLE` (`AfterPotionProcured` unlatches its Dexterity), is
-/// refused by `entry::opening`'s room-entry gate.
+/// either, `BELT_BUCKLE` (`AfterPotionProcured` unlatches its Dexterity),
+/// ends in the same state on either side of it
+/// ([`potions::belt_buckle_before_combat_start`], #3617).
 fn delicate_frond_before_combat_start(
     catalog: &Catalog,
     state: &mut HotState,
@@ -1352,7 +1395,15 @@ pub(crate) fn fire_before_combat_start(
     phylactery_before_combat_start(catalog, state)?;
     seed_creature_uid_counter(catalog, state)?;
     vambrace_before_combat_start(catalog, state);
+    monsters::fur_coat_before_combat_start(state);
+    // Belt Buckle's latch reset and empty-belt Dexterity (#3617), ahead of
+    // the Frond; `potions::belt_buckle_before_combat_start` says why either
+    // order ends in the same state.
+    potions::belt_buckle_before_combat_start(state, events)?;
     delicate_frond_before_combat_start(catalog, state, events)?;
+    // Tea of Discourtesy's two Dazed into the shuffled Draw (#3756); no other
+    // body of this hook reads the pile, the `Rng` stream or the uid counter.
+    relics::tea_of_discourtesy_before_combat_start(catalog, state, events)?;
     // Pass 2: the distinct `…Late` walk. `PETRIFIED_TOAD` is its only
     // v0.111.0 subscriber (`0x9939c`); the base body (`0x7a00f`) is
     // `Task::get_CompletedTask; ret`, so every other listener contributes
@@ -1641,6 +1692,17 @@ fn validate_potion_action(
             "Belt Buckle last-potion Dexterity",
         ));
     }
+    if potion == PotionId::Ambergris {
+        // #3756: the `AmbergrisPower` apply is one more PowerCmd amount
+        // write. Authenticate its listener walk and its amount before the
+        // slot is spent.
+        damage::null_applier_power_amount_changed_is_exact(state)?;
+        state
+            .fanouts
+            .ambergris()
+            .checked_add(1)
+            .ok_or(EngineRefusal::CounterOverflow("ambergris"))?;
+    }
     if potion == PotionId::RegenPotion {
         damage::null_applier_power_amount_changed_is_exact(state)?;
         state
@@ -1709,6 +1771,11 @@ pub fn legal_actions_into<'a>(
     // caller may reuse the same buffer across unrelated states and catalogs.
     buffer.clear();
     if !cards::call_local_ethereal_provenance_is_exact(state, catalog) {
+        // The name `apply_action` gives the same state, so a driver reads a
+        // refusal here and never a live state with nothing to do (#3877).
+        buffer.refusal = Some(EngineRefusal::MalformedArgs(
+            "Call of the Void local Ethereal provenance",
+        ));
         return &buffer.actions;
     }
     if let Some(pending) = state.pending.as_deref() {
@@ -1789,6 +1856,8 @@ pub fn legal_actions_into<'a>(
                 .as_slice()
                 .iter()
                 .any(|frame| matches!(frame, crate::frame::Frame::CardPlay { .. }))
+            // #3817: the opening's one rootless CardPlay continuation.
+            && play::imbued_auto_pre_stack_is_exact(state, catalog).is_err()
         {
             return &buffer.actions;
         }
@@ -2271,6 +2340,57 @@ fn hand_uids_are_interchangeable(state: &HotState, offered: u32, requested: u32)
         && (!state.exact_piles || rest_of_hand_agrees(state, hand, left, right))
 }
 
+/// Whether two selections of a selecting play are the same choice as far as
+/// [`legal_actions`] is concerned (#3756).
+///
+/// [`legal_actions_into`] groups a selecting play's candidates over the Hand
+/// WITHOUT the played card (its `rest` buffer): equal interned atom, plus,
+/// when `exact_piles` is on, agreement of that rest after removing either
+/// candidate ([`rest_of_indexed_hand_agrees`]); with `exact_piles` off it
+/// dedups by atom alone. This mirrors that key. Testing the selection with
+/// [`hand_uids_are_interchangeable`] instead compared the Hand WITH the played
+/// card still in it, so two copies on either side of the played card (Defend,
+/// Burning Pact, Defend) were one offered group and yet the second copy was
+/// refused as illegal.
+///
+/// The played uids are already known interchangeable when this is asked, so
+/// the two rests carry the same payload position for position, and a
+/// candidate's position in the offered rest names the same card in the
+/// requested one.
+fn selected_uids_are_interchangeable(
+    state: &HotState,
+    offered_played: u32,
+    offered: u32,
+    requested_played: u32,
+    requested: u32,
+) -> bool {
+    if offered_played == requested_played && offered == requested {
+        return true;
+    }
+    let hand = state.piles.get(PileId::Hand).as_slice();
+    let rest_without = |played: u32| {
+        hand.iter()
+            .copied()
+            .enumerate()
+            .filter(|(_, card)| card.uid != played)
+            .collect::<Vec<_>>()
+    };
+    let offered_rest = rest_without(offered_played);
+    let requested_rest = rest_without(requested_played);
+    let (Some(left), Some(right)) = (
+        offered_rest
+            .iter()
+            .position(|(_, card)| card.uid == offered),
+        requested_rest
+            .iter()
+            .position(|(_, card)| card.uid == requested),
+    ) else {
+        return false;
+    };
+    offered_rest[left].1.atom == requested_rest[right].1.atom
+        && (!state.exact_piles || rest_of_indexed_hand_agrees(state, &requested_rest, left, right))
+}
+
 /// Whether `action` is the public action `offered` names, allowing any
 /// physical uid inside the group [`legal_actions`] collapsed (see
 /// [`hand_uids_are_interchangeable`]).
@@ -2297,9 +2417,13 @@ fn action_matches_modulo_hand_dedupe(state: &HotState, offered: &Action, action:
                 && hand_uids_are_interchangeable(state, *offered_uid, *uid)
                 && match (offered_selection.get(), selection.get()) {
                     (None, None) => true,
-                    (Some(offered_selected), Some(selected)) => {
-                        hand_uids_are_interchangeable(state, offered_selected, selected)
-                    }
+                    (Some(offered_selected), Some(selected)) => selected_uids_are_interchangeable(
+                        state,
+                        *offered_uid,
+                        offered_selected,
+                        *uid,
+                        selected,
+                    ),
                     _ => false,
                 }
         }
@@ -3147,9 +3271,67 @@ fn apply_action_into_replay(
         // The action has finished: its queued hook action is the next ready
         // action, and it parks as an ordinary Draw rooted at this action
         // (#3387, `engine::hook_action`).
-        if hook_action::publish_queued(&mut next)? && replay_root.is_none() {
-            install_parked_action_replay_root(state, &mut next, catalog, action)?;
-            installed_root = true;
+        let published = hook_action::publish_queued(&mut next)?;
+        if published != hook_action::Published::Nothing {
+            let restart = hook_action::take_published_restart();
+            let root_here = replay_root.is_none();
+            // The published choice on the receipt it will carry.
+            let mut rooted = next.clone();
+            if root_here {
+                install_parked_action_replay_root(state, &mut rooted, catalog, action)?;
+            }
+            // The game reads the options once the hook action starts
+            // (#3903, `hook_action::moved_choice`): none left is refused by
+            // name, and a single one is taken without asking, after which
+            // the hook action runs on.
+            let mut auto = None;
+            if published == hook_action::Published::Moved {
+                match *legal_actions(&rooted, catalog).as_slice() {
+                    [] => return Err(hook_action::moved_choice_is_empty()),
+                    [Action::Select { answer }] => {
+                        #[cfg(test)]
+                        hook_action::note_auto_take();
+                        auto = Some(answer);
+                    }
+                    _ => {}
+                }
+            }
+            match restart {
+                // The choice began inside a receipt-owned Draw and its
+                // answer is at hand: the hook action runs on its listener's
+                // re-run stack (`hook_action::receipt_choice_in_listener`).
+                Some(restart) if auto.is_some() || puzzle::tape_has_unread_answer(&next) => {
+                    let ran = hook_action::run_started(
+                        &mut next,
+                        restart,
+                        auto.and_then(|answer| replay_answer(&Action::Select { answer })),
+                        catalog,
+                        events,
+                    );
+                    carrier.settle(&mut next, ran)?;
+                    if next.pending.is_some() && root_here {
+                        install_parked_action_replay_root(state, &mut next, catalog, action)?;
+                        installed_root = true;
+                    }
+                }
+                _ => {
+                    next = rooted;
+                    installed_root = installed_root || root_here;
+                    if let Some(answer) = auto {
+                        let taken = play::resume_selection(&mut next, catalog, answer, events)
+                            .and_then(|()| {
+                                play::drive_until_depth(&mut next, catalog, events, 1).map(|_| ())
+                            });
+                        carrier.settle(&mut next, taken)?;
+                        if root_here && next.pending.is_none() {
+                            next.frames
+                                .pop_top_action_replay()
+                                .ok_or(EngineRefusal::ContinuationNotModeled)?;
+                            installed_root = false;
+                        }
+                    }
+                }
+            }
         }
         match (replay_root.as_ref(), installed_root, next.pending.is_some()) {
             // The resumed end-turn action can finish and reach the next
@@ -4207,6 +4389,84 @@ mod tests {
         );
         assert_eq!(next.history.card_plays_finished_combat, 2);
         assert_eq!(legal_actions(&next, &catalog), [Action::EndTurn]);
+    }
+
+    /// #3756: a selecting play's candidates are grouped over the Hand without
+    /// the played card, so two Defends on either side of Burning Pact are one
+    /// offered choice. The copy the player actually picked is legal and is the
+    /// one exhausted, wherever the played card sits; a card of another
+    /// identity, the played card itself and a uid outside the Hand are not.
+    #[test]
+    fn a_selection_copy_across_the_played_card_is_the_offered_choice() {
+        let identities = [
+            plain_identity(CardId::BurningPact, 0),
+            plain_identity(CardId::DefendIronclad, 0),
+            plain_identity(CardId::StrikeIronclad, 0),
+        ];
+        // Pact between, before and after the two Defends.
+        for hand in [
+            [(3, 2), (1, 1), (9, 0), (2, 1)],
+            [(9, 0), (3, 2), (1, 1), (2, 1)],
+            [(3, 2), (1, 1), (2, 1), (9, 0)],
+        ] {
+            let (mut state, catalog) =
+                empty_hand_pact_fixture(&identities, &hand, &[(20, 2), (21, 2)], |_| {}).unwrap();
+            for exact_piles in [false, true] {
+                state.exact_piles = exact_piles;
+                let play = |selection: u32| Action::Play {
+                    uid: 9,
+                    target: None,
+                    selection: SelectionRef::new(Some(selection)),
+                };
+                let offered = legal_actions(&state, &catalog);
+                assert!(offered.contains(&play(1)), "{hand:?} {exact_piles}");
+                assert!(
+                    !offered.contains(&play(2)),
+                    "{hand:?} {exact_piles}: the second Defend is the first's group"
+                );
+                for picked in [1, 2] {
+                    let next = apply_action(&state, &catalog, &play(picked))
+                        .unwrap_or_else(|refusal| {
+                            panic!("{hand:?} {exact_piles} pick {picked}: {refusal:?}")
+                        })
+                        .state;
+                    assert_eq!(
+                        next.piles
+                            .get(PileId::Exhaust)
+                            .as_slice()
+                            .iter()
+                            .map(|card| card.uid)
+                            .collect::<Vec<_>>(),
+                        [picked],
+                        "{hand:?} {exact_piles}: the picked copy is the one exhausted"
+                    );
+                }
+                assert!(action_is_legal_modulo_hand_dedupe(
+                    &state,
+                    &catalog,
+                    &play(3)
+                ));
+                for illegal in [9, 20, 77] {
+                    assert_eq!(
+                        apply_action(&state, &catalog, &play(illegal)).map(|_| ()),
+                        Err(EngineRefusal::ActionNotLegal("public action legality")),
+                        "{hand:?} {exact_piles} pick {illegal}"
+                    );
+                }
+            }
+        }
+        // A Defend that differs in payload is its own choice, and a Strike is
+        // never a Defend's group.
+        let (state, _) = empty_hand_pact_fixture(
+            &identities,
+            &[(1, 1), (9, 0), (2, 1), (3, 2)],
+            &[(20, 2), (21, 2)],
+            |_| {},
+        )
+        .unwrap();
+        assert!(!selected_uids_are_interchangeable(&state, 9, 1, 9, 3));
+        assert!(selected_uids_are_interchangeable(&state, 9, 1, 9, 2));
+        assert!(!selected_uids_are_interchangeable(&state, 9, 1, 9, 9));
     }
 
     /// #2977 witness 2b, reshaped by #3250 — the persisted twin of the
@@ -7468,33 +7728,108 @@ mod tests {
         );
     }
 
+    /// #3756: King's Courage admits in a belt, is one `ForgeCmd::Forge` of
+    /// 15 through the public `UsePotion` path, and is refused for an enemy
+    /// pick. It was the last body outside `potions::SUPPORTED`, so the
+    /// `PotionsNotModeled` arm of `validate_potion_action` has no potion id
+    /// left to reach it; the census test pins `SUPPORTED == PotionId::ALL`.
+    ///
+    /// With no live Sovereign Blade the Forge generates the level-zero one
+    /// into the Hand and grows it (`ForgeCmd/<Forge>d__2::MoveNext`
+    /// `0x3ed3bc` IL_0075-0099, then `IncreaseSovereignBladeDamage`
+    /// `0x132c24`); with one already live it only grows it.
     #[test]
-    fn unsupported_potion_body_refuses_before_physical_removal() {
-        let (mut state, catalog) = fixture();
+    fn kings_courage_admits_and_forges_fifteen_through_the_public_action() {
+        let blade = CardIdentity {
+            id: CardId::SovereignBlade,
+            upgrade: 0,
+            enchantment: None,
+        };
+        let (mut state, _) = fixture();
         assert!(state.fanouts.set_potion_belt(
-            vec![Some(PotionId::Ambergris)],
+            vec![Some(PotionId::KingsCourage), Some(PotionId::KingsCourage)],
             false,
             false,
             false,
             false,
             true,
         ));
-        let before = state.clone();
-        let mut events = vec![Event::TurnEnded { turn: 99 }];
+        // A catalog without the Blade cannot mint it: refused by name. No
+        // card in this fixture forges.
+        let (_, bare) = fixture();
+        assert!(bare.atom(&blade).is_none());
+        assert!(!bare.forge_command_reachable());
+        let document = HotBoundary::to_canonical(&state, &bare);
+        assert!(admit(&document, &state, &bare).unwrap_err().contains(
+            admission::MissingCapability::ArgumentShape("King's Courage Sovereign Blade closure")
+        ));
+        // The document's own catalog closes the generated Blade and marks a
+        // Forge command source from the belt alone.
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        assert!(catalog.atom(&blade).is_some());
+        assert!(catalog.forge_command_reachable());
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert_eq!(admit(&document, &state, &catalog), Ok(()));
+
+        let blades = |state: &HotState| -> Vec<(PileId, i32)> {
+            PileId::ALL
+                .into_iter()
+                .flat_map(|pile| {
+                    state
+                        .piles
+                        .get(pile)
+                        .as_slice()
+                        .iter()
+                        .filter(|card| catalog.spec(card.atom).unwrap().identity == blade)
+                        .map(move |card| (pile, card.uid))
+                        .collect::<Vec<_>>()
+                })
+                .map(|(pile, uid)| (pile, state.card_states.get(uid).damage_growth))
+                .collect()
+        };
+        assert!(blades(&state).is_empty());
+        let drink = Action::UsePotion {
+            slot: 0,
+            target: None,
+        };
+        assert!(legal_actions(&state, &catalog).contains(&drink));
         assert_eq!(
-            apply_action_into(
+            apply_action(
                 &state,
                 &catalog,
                 &Action::UsePotion {
                     slot: 0,
-                    target: None,
+                    target: Some(0),
                 },
-                &mut events,
-            ),
-            Err(EngineRefusal::PotionsNotModeled)
+            )
+            .map(|_| ()),
+            Err(EngineRefusal::PotionTargetMismatch { required: false })
         );
-        assert_eq!(state, before);
-        assert!(events.is_empty());
+        let hand_before = state.piles.get(PileId::Hand).as_slice().len();
+        let first = apply_action(&state, &catalog, &drink).unwrap().state;
+        assert_eq!(first.fanouts.potion_slots()[0], None);
+        // The generated Blade's own 10, plus the Forge's 15.
+        assert_eq!(blades(&first), vec![(PileId::Hand, 25)]);
+        assert_eq!(
+            first.piles.get(PileId::Hand).as_slice().len(),
+            hand_before + 1
+        );
+        // A second Forge finds the live Blade and only grows it.
+        let second = apply_action(
+            &first,
+            &catalog,
+            &Action::UsePotion {
+                slot: 1,
+                target: None,
+            },
+        )
+        .unwrap()
+        .state;
+        assert_eq!(blades(&second), vec![(PileId::Hand, 40)]);
+        assert_eq!(
+            second.piles.get(PileId::Hand).as_slice().len(),
+            hand_before + 1
+        );
     }
 
     #[test]
@@ -7535,7 +7870,7 @@ mod tests {
                 PotionId::ShacklingPotion,
             ]
         );
-        assert_eq!(by_kind[5].len(), 49);
+        assert_eq!(by_kind[5].len(), 51);
         assert_eq!(
             (0..by_kind.len())
                 .filter(|kind| !by_kind[*kind].is_empty())
@@ -7555,6 +7890,7 @@ mod tests {
     #[test]
     fn supported_potion_body_census_is_the_complete_r52e_set() {
         let expected = [
+            PotionId::Ambergris,
             PotionId::Ashwater,
             PotionId::AttackPotion,
             PotionId::BeetleJuice,
@@ -7589,6 +7925,7 @@ mod tests {
             PotionId::GigantificationPotion,
             PotionId::GlowwaterPotion,
             PotionId::HeartOfIron,
+            PotionId::KingsCourage,
             PotionId::LiquidBronze,
             PotionId::LiquidMemories,
             PotionId::LuckyTonic,
@@ -7619,7 +7956,7 @@ mod tests {
             PotionId::WeakPotion,
         ];
         assert_eq!(potions::SUPPORTED, expected);
-        assert_eq!(expected.len(), 62);
+        assert_eq!(expected.len(), 64);
         assert_eq!(
             PotionId::ALL
                 .into_iter()
@@ -7627,9 +7964,11 @@ mod tests {
                 .collect::<Vec<_>>(),
             expected
         );
-        // #3229: the two bodies no census belt carries stay unported.
-        assert!(!potions::is_supported(PotionId::Ambergris));
-        assert!(!potions::is_supported(PotionId::KingsCourage));
+        // #3756 ported Ambergris and then King's Courage, the last body:
+        // every potion id is supported.
+        assert!(potions::is_supported(PotionId::Ambergris));
+        assert!(potions::is_supported(PotionId::KingsCourage));
+        assert_eq!(potions::SUPPORTED, PotionId::ALL);
         assert!(potions::is_supported(PotionId::ColorlessPotion));
         assert!(potions::is_supported(PotionId::FairyInABottle));
         let solo_player = expected
@@ -7639,6 +7978,9 @@ mod tests {
         assert_eq!(
             solo_player,
             [
+                // #3756: kind 5 (`0xab93c`); the heal and the power both land
+                // on the picked `target` (`0x34b9cc` IL_004d, IL_00f6).
+                PotionId::Ambergris,
                 PotionId::BlessingOfTheForge,
                 PotionId::BlockPotion,
                 PotionId::BloodPotion,
@@ -7665,6 +8007,9 @@ mod tests {
                 PotionId::FyshOil,
                 PotionId::GlowwaterPotion,
                 PotionId::HeartOfIron,
+                // #3756: kind 5 (`0xacc55`); the Forge is `target.Player`'s
+                // (`0x34ea88` IL_003d-0049).
+                PotionId::KingsCourage,
                 PotionId::LiquidBronze,
                 PotionId::PotionOfBinding,
                 // #3229: kind 5 (`0xad0c5`), `OrbCmd::AddSlots(target.Player,
@@ -11147,6 +11492,108 @@ mod tests {
         }
     }
 
+    /// #3756: Ambergris (`Ambergris/<OnUse>d__9::MoveNext` RVA `0x34b9cc`)
+    /// admits in a belt and drinks through the public `UsePotion` path: half
+    /// of max HP healed (IL_0059-008a, clamped by `CreatureCmd.Heal`), then
+    /// one `AmbergrisPower` (IL_010e), which the same turn's end spends on an
+    /// extra player turn.
+    #[test]
+    fn ambergris_admits_heals_half_max_hp_and_buys_the_next_turn() {
+        let (mut state, catalog) = fixture();
+        assert!(state.fanouts.set_potion_belt(
+            vec![Some(PotionId::Ambergris), Some(PotionId::Ambergris)],
+            false,
+            false,
+            false,
+            false,
+            true,
+        ));
+        state.max_hp = 75;
+        state.hp = 10;
+        let document = HotBoundary::to_canonical(&state, &catalog);
+        assert_eq!(admit(&document, &state, &catalog), Ok(()));
+        let action = Action::UsePotion {
+            slot: 0,
+            target: None,
+        };
+        assert!(legal_actions(&state, &catalog).contains(&action));
+
+        // Target kind 5 never takes an enemy pick.
+        assert_eq!(
+            apply_action(
+                &state,
+                &catalog,
+                &Action::UsePotion {
+                    slot: 0,
+                    target: Some(0),
+                },
+            )
+            .map(|_| ()),
+            Err(EngineRefusal::PotionTargetMismatch { required: false })
+        );
+
+        // 75 * 50 / 100 is 37.5; `CreatureCmd.Heal` takes the integer part,
+        // as Blood Potion's 20 percent does.
+        let drunk = apply_action(&state, &catalog, &action).unwrap().state;
+        assert_eq!(
+            drunk.fanouts.potion_slots(),
+            [None, Some(PotionId::Ambergris)]
+        );
+        assert_eq!(drunk.hp, 47);
+        assert_eq!(drunk.fanouts.ambergris(), 1);
+        assert!(drunk.frames.is_empty() && drunk.pending.is_none());
+
+        // A second bottle stacks the counter and clamps the heal at max HP.
+        let twice = apply_action(
+            &drunk,
+            &catalog,
+            &Action::UsePotion {
+                slot: 1,
+                target: None,
+            },
+        )
+        .unwrap()
+        .state;
+        assert_eq!(twice.hp, 75);
+        assert_eq!(twice.fanouts.ambergris(), 2);
+
+        // The turn end takes the extra turn instead of the enemy side.
+        let extra = apply_action(&drunk, &catalog, &Action::EndTurn)
+            .unwrap()
+            .state;
+        assert!(extra.fanouts.players_taking_extra_turn());
+        assert!(extra.player_side_active);
+        assert_eq!(extra.fanouts.ambergris(), 0);
+        assert_eq!(extra.turn, drunk.turn + 1);
+        assert_eq!(extra.hp, drunk.hp, "no enemy acted");
+
+        // `CombatManager.IsInProgress` gates the power (IL_00e4-00ee), not
+        // the heal.
+        let mut ending = state.clone();
+        ending.history.over = true;
+        potions::use_potion(
+            &mut ending,
+            &catalog,
+            0,
+            None,
+            PotionId::Ambergris,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(ending.hp, 47);
+        assert_eq!(ending.fanouts.ambergris(), 0);
+
+        // The amount is authenticated before the slot is spent.
+        let mut full = state.clone();
+        full.fanouts.set_ambergris(u8::MAX);
+        let before = full.clone();
+        assert_eq!(
+            apply_action(&full, &catalog, &action).map(|_| ()),
+            Err(EngineRefusal::CounterOverflow("ambergris"))
+        );
+        assert_eq!(full, before);
+    }
+
     /// #2873: Focus Potion (`FocusPotion/<OnUse>d__10::MoveNext` RVA
     /// `0x34dbd4`) admits in a belt, drinks through the public `UsePotion`
     /// path, and its permanent Focus reaches both orb reads.
@@ -11831,21 +12278,20 @@ mod tests {
             assert_eq!(multiplayer, before, "{potion:?}");
         }
 
-        // The pet arm of the roster guard: a body whose native target kind is
-        // unread (here an unsupported potion) is refused while an Osty lives
-        // and admitted once it is gone.
+        // The pet arm of the roster guard refuses a body whose native target
+        // kind is unread while an Osty lives. Since #3756 ported King's
+        // Courage, the last unsupported body, every potion's kind is read and
+        // none can pick a pet, so no potion id reaches that arm.
         let (mut state, _catalog) = fixture();
-        assert!(potions::native_target_type(PotionId::Ambergris).is_none());
-        assert!(!potions::native_target_excludes_pets(PotionId::Ambergris));
-        assert!(potions::potion_target_roster_is_exact(
-            &state,
-            PotionId::Ambergris
-        ));
         state.fanouts.set_osty(Some((3, 5))).unwrap();
-        assert!(!potions::potion_target_roster_is_exact(
-            &state,
-            PotionId::Ambergris
-        ));
+        for potion in PotionId::ALL {
+            assert!(potions::native_target_type(potion).is_some(), "{potion:?}");
+            assert!(potions::native_target_excludes_pets(potion), "{potion:?}");
+            assert!(
+                potions::potion_target_roster_is_exact(&state, potion),
+                "{potion:?}"
+            );
+        }
     }
 
     #[test]
@@ -16179,6 +16625,45 @@ mod tests {
             assert_eq!(state.fanouts.gigantification(), remaining);
             assert!(!state.fanouts.gigantification_bound());
         }
+    }
+
+    /// `BeltBuckle/<BeforeCombatStart>d__11::MoveNext` (`0x31f444`): the latch
+    /// is cleared first (`IL_001e`-`IL_001f`), whatever it held, and only an
+    /// empty belt then sets it and grants the two Dexterity. Witnesses each
+    /// arm of `potions::belt_buckle_before_combat_start`: a stale latch on a
+    /// held belt is cleared without touching Dexterity, an empty belt grants
+    /// once even from a stale latch, and a non-owner is untouched.
+    #[test]
+    fn belt_buckle_combat_start_clears_the_latch_and_grants_only_on_an_empty_belt() {
+        let run = |slots: Vec<Option<PotionId>>, owned: bool, stale: bool| {
+            let (mut state, _) = fixture();
+            assert!(
+                state
+                    .fanouts
+                    .set_potion_belt(slots, false, owned, false, false, true)
+            );
+            // Set directly: the belt setter refuses a latch beside a held
+            // potion, the very state this hook has to clear.
+            state.fanouts.set_potion_belt_buckle_applied(stale);
+            potions::belt_buckle_before_combat_start(&mut state, &mut Vec::new()).unwrap();
+            (
+                state.fanouts.potion_belt_buckle_applied(),
+                state.powers.value(PowerId::Dexterity),
+            )
+        };
+        assert_eq!(run(vec![None], true, false), (true, 2), "empty belt");
+        assert_eq!(run(vec![None, None], true, true), (true, 2), "stale latch");
+        assert_eq!(
+            run(vec![Some(PotionId::FirePotion), None], true, false),
+            (false, 0),
+            "a held potion"
+        );
+        assert_eq!(
+            run(vec![Some(PotionId::FirePotion)], true, true),
+            (false, 0),
+            "a stale latch on a held belt is cleared"
+        );
+        assert_eq!(run(vec![None], false, false), (false, 0), "not an owner");
     }
 
     #[test]
@@ -21018,7 +21503,10 @@ mod tests {
             let mut events = vec![Event::TurnEnded { turn: 99 }];
             assert_eq!(
                 apply_action_into(&state, &catalog, &action, &mut events),
-                Err(EngineRefusal::ContinuationNotModeled),
+                // #3822 named the site that refuses (#3209).
+                Err(EngineRefusal::PowerOrderNotModeled(
+                    crate::engine::play::HELLRAISER_SELECTING_STRIKE_IN_SYNCHRONOUS_DRAW
+                )),
                 "{id:?} must refuse when its fused command would park Vicious"
             );
             assert_eq!(state, before, "{id:?} mutated the caller-owned state");
@@ -21129,7 +21617,10 @@ mod tests {
                 },
                 &mut events,
             ),
-            Err(EngineRefusal::ContinuationNotModeled)
+            // #3822 named the site that refuses (#3209).
+            Err(EngineRefusal::PowerOrderNotModeled(
+                crate::engine::play::HELLRAISER_SELECTING_STRIKE_IN_SYNCHRONOUS_DRAW
+            ))
         );
         assert_eq!(state, before);
         assert!(events.is_empty());
@@ -21797,7 +22288,16 @@ mod tests {
         assert_eq!(state, checkpoint);
 
         let mut events = Vec::new();
-        assert!(damage::damage_player_from_card(&mut state, 10_000, false, &mut events).unwrap());
+        assert!(
+            damage::damage_player_from_card_with_catalog(
+                &mut state,
+                &CatalogBuilder::new().build(),
+                10_000,
+                false,
+                &mut events
+            )
+            .unwrap()
+        );
         assert_eq!(state.hp, (state.max_hp * 30 / 100).max(1));
         assert!(!state.history.over);
         assert_eq!(
@@ -21819,8 +22319,12 @@ mod tests {
         terminal_window.hp = 0;
         terminal_window.history.over = true;
         assert!(
-            potions::consume_first_fairy_after_lethal(&mut terminal_window, &mut Vec::new())
-                .unwrap()
+            potions::consume_first_fairy_after_lethal(
+                &mut terminal_window,
+                Some(&CatalogBuilder::new().build()),
+                &mut Vec::new()
+            )
+            .unwrap()
         );
         assert_eq!(
             terminal_window.hp,
@@ -22063,7 +22567,13 @@ mod tests {
             false,
             true,
         ));
-        damage::lose_player_max_hp_from_card(&mut capped, None, 10, &mut Vec::new()).unwrap();
+        damage::lose_player_max_hp_from_card(
+            &mut capped,
+            Some(&CatalogBuilder::new().build()),
+            10,
+            &mut Vec::new(),
+        )
+        .unwrap();
         assert_eq!((capped.hp, capped.max_hp), (1, 1));
         assert_eq!(capped.fanouts.potion_slots(), [None]);
         assert!(!capped.history.over);
@@ -22377,9 +22887,19 @@ mod tests {
         assert_eq!(completed.player_phase, admission::PHASE_ORDINARY_ACTIONS);
     }
 
+    /// #3756: Unceasing Top draws the card whose own wrapper has just routed
+    /// it, and a live Hellraiser plays it again inside that wrapper's
+    /// `CheckForEmptyHand`. The native traces are replayed in
+    /// `puzzle::tests::after_card_played`; this pins the roots the retired
+    /// admission wall refused, a loop far longer than the traces, and the
+    /// one loop the game never leaves.
     #[test]
-    fn unceasing_top_same_uid_hellraiser_reentry_is_refused_at_admission() {
-        fn candidate(ids: &[CardId]) -> (crate::canonical::CanonicalStateV2, HotState, Catalog) {
+    fn unceasing_top_same_uid_hellraiser_reentry_is_played() {
+        fn candidate(
+            ids: &[CardId],
+            monster_hp: i32,
+            strength: i32,
+        ) -> (crate::canonical::CanonicalStateV2, HotState, Catalog) {
             let mut builder = CatalogBuilder::new();
             for &id in ids {
                 builder.intern_reachable(plain_identity(id, 0)).unwrap();
@@ -22408,43 +22928,99 @@ mod tests {
                 atom: catalog.atom(&plain_identity(ids[0], 0)).unwrap(),
                 flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
             });
-            let mut monster = HotMonster::new(MonsterKind::Toadpole, 1_000);
-            monster.max_hp = 1_000;
+            if strength != 0 {
+                state
+                    .powers
+                    .set(PowerId::Strength, crate::powers::SlotWire::Int, strength);
+            }
+            let mut monster = HotMonster::new(MonsterKind::Toadpole, monster_hp);
+            monster.max_hp = monster_hp;
             monster.loop_pos = 2;
             state.monsters = std::sync::Arc::new(vec![monster]);
             let document = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
             (document, state, catalog)
         }
+        let play = Action::Play {
+            uid: 1,
+            target: Some(0),
+            selection: SelectionRef::NONE,
+        };
 
-        for (name, ids) in [
-            (
-                "intrinsic Shining Strike DrawTop",
-                vec![CardId::ShiningStrike, CardId::Hellraiser],
-            ),
-            (
-                "future Rebound DrawTop",
-                vec![CardId::StrikeIronclad, CardId::Hellraiser, CardId::Rebound],
-            ),
-            (
-                "future Nostalgia DrawTop",
-                vec![
-                    CardId::StrikeIronclad,
-                    CardId::Hellraiser,
-                    CardId::Nostalgia,
-                ],
-            ),
+        // The three roots the wall refused, and the one it let through.
+        for ids in [
+            vec![CardId::ShiningStrike, CardId::Hellraiser],
+            vec![CardId::StrikeIronclad, CardId::Hellraiser, CardId::Rebound],
+            vec![
+                CardId::StrikeIronclad,
+                CardId::Hellraiser,
+                CardId::Nostalgia,
+            ],
+            vec![CardId::StrikeIronclad, CardId::Hellraiser],
         ] {
-            let (document, state, catalog) = candidate(&ids);
-            assert!(
-                admit(&document, &state, &catalog).unwrap_err().contains(
-                    MissingCapability::ArgumentShape("Unceasing Top same-UID Hellraiser reentry",)
-                ),
-                "{name}"
-            );
+            let (document, state, catalog) = candidate(&ids, 1_000, 0);
+            assert_eq!(admit(&document, &state, &catalog), Ok(()), "{ids:?}");
         }
 
-        let (document, state, catalog) = candidate(&[CardId::StrikeIronclad, CardId::Hellraiser]);
-        assert_eq!(admit(&document, &state, &catalog), Ok(()));
+        // A lone Strike against 3,000 HP: 500 plays in one action. Each
+        // wrapper is one `CardFinish`, `Draw` pair on the frame stack, not a
+        // Rust call chain, so the test thread's stack does not grow with it.
+        let ids = [CardId::StrikeIronclad, CardId::Hellraiser];
+        let (_, mut state, catalog) = candidate(&ids, 3_000, 0);
+        state
+            .powers
+            .set(PowerId::Hellraiser, crate::powers::SlotWire::Int, 1);
+        let done = apply_action(&state, &catalog, &play).unwrap().state;
+        assert!(done.history.over);
+        assert_eq!(done.monsters[0].hp, 0);
+        assert_eq!(done.history.card_plays_finished_combat, 500);
+        assert!(done.pending.is_none() && done.frames.is_empty());
+
+        // Without Hellraiser the Top draws the Strike back and it stays in
+        // Hand; without the Top it stays in Discard.
+        let (_, state, catalog) = candidate(&ids, 3_000, 0);
+        let once = apply_action(&state, &catalog, &play).unwrap().state;
+        assert_eq!(once.monsters[0].hp, 2_994);
+        assert_eq!(once.piles.get(PileId::Hand).len(), 1);
+        let (_, mut state, catalog) = candidate(&ids, 3_000, 0);
+        state
+            .powers
+            .set(PowerId::Hellraiser, crate::powers::SlotWire::Int, 1);
+        state.fanouts.set_unceasing_top(false);
+        let once = apply_action(&state, &catalog, &play).unwrap().state;
+        assert_eq!(once.monsters[0].hp, 2_994);
+        assert_eq!(once.piles.get(PileId::Discard).len(), 1);
+
+        // A Strike that deals nothing: the game never finishes the action
+        // (`play::TOP_TAIL_LOOP_LIMIT` has the native record), so there is
+        // no successor state to publish.
+        let (_, mut state, catalog) = candidate(&ids, 3_000, -6);
+        state
+            .powers
+            .set(PowerId::Hellraiser, crate::powers::SlotWire::Int, 1);
+        let before = state.clone();
+        assert_eq!(
+            apply_action(&state, &catalog, &play).map(|step| step.state.history.over),
+            Err(EngineRefusal::CounterOverflow(play::TOP_TAIL_LOOP_REFUSAL))
+        );
+        assert_eq!(state, before);
+        // The limit is on wrappers open at once. The killing play opens
+        // none (its check finds the combat over), so the limit plus one
+        // plays still end, at 6 damage a play.
+        let hp = 6 * (i32::try_from(play::TOP_TAIL_LOOP_LIMIT).unwrap() + 1);
+        let (_, mut state, catalog) = candidate(&ids, hp, 0);
+        state
+            .powers
+            .set(PowerId::Hellraiser, crate::powers::SlotWire::Int, 1);
+        let done = apply_action(&state, &catalog, &play).unwrap().state;
+        assert!(done.history.over);
+        let (_, mut state, catalog) = candidate(&ids, hp + 1, 0);
+        state
+            .powers
+            .set(PowerId::Hellraiser, crate::powers::SlotWire::Int, 1);
+        assert_eq!(
+            apply_action(&state, &catalog, &play).map(|step| step.state.history.over),
+            Err(EngineRefusal::CounterOverflow(play::TOP_TAIL_LOOP_REFUSAL))
+        );
     }
 
     #[test]

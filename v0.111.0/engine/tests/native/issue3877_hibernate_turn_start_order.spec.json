@@ -1,0 +1,352 @@
+{
+ "hibernate_before_boulder_lethal": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "HIBERNATE",
+   "ROLLING_BOULDER"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HIBERNATE",
+      "ROLLING_BOULDER",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "hp",
+    1,
+    1
+   ],
+   [
+    "hp",
+    2,
+    1
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HIBERNATE"
+   ],
+   [
+    "play",
+    "ROLLING_BOULDER"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "hibernate_after_boulder_lethal": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "HIBERNATE",
+   "ROLLING_BOULDER"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ROLLING_BOULDER",
+      "HIBERNATE",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "hp",
+    1,
+    1
+   ],
+   [
+    "hp",
+    2,
+    1
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ROLLING_BOULDER"
+   ],
+   [
+    "play",
+    "HIBERNATE"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "hibernate_before_boulder": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "HIBERNATE",
+   "ROLLING_BOULDER"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HIBERNATE",
+      "ROLLING_BOULDER",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HIBERNATE"
+   ],
+   [
+    "play",
+    "ROLLING_BOULDER"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "hibernate_after_boulder": {
+  "character": "Ironclad",
+  "relics": [],
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "HIBERNATE",
+   "ROLLING_BOULDER"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ROLLING_BOULDER",
+      "HIBERNATE",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ROLLING_BOULDER"
+   ],
+   [
+    "play",
+    "HIBERNATE"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "hibernate_solo_defect": {
+  "character": "Defect",
+  "relics": [],
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "HIBERNATE"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HIBERNATE",
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT"
+     ],
+     "draw": [
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HIBERNATE"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "hibernate_solo_defect_upgraded": {
+  "character": "Defect",
+  "relics": [],
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "HIBERNATE+"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HIBERNATE+",
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT"
+     ],
+     "draw": [
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HIBERNATE+"
+   ],
+   [
+    "end"
+   ]
+  ]
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "SUM91EUXZMGY",
+ "node": 4,
+ "encounter": "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "059e23080f5a899e68403036ee0dbc48043f4c33a9f6597a0c6b8c682e40dd09",
+ "save_sha256": "d32bd00791ef2692b11161d2f8c6a506911c9c6c417327e9bd735aa1d653613e",
+ "entry_digest": "b94d8e65636baa335433ee72fae7d7cf0ec5a675d5fd62c5a10704d1f64e4f76",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -30,7 +30,7 @@ use crate::engine::damage::{
     apply_player_duration_affliction, monster_attack_player_with_catalog, note_power,
 };
 use crate::engine::{EngineRefusal, Subject};
-use crate::hot::{HotState, MonsterFollowUp, MonsterOverride};
+use crate::hot::HotState;
 use crate::ids::{MonsterKind, MoveKind, PowerId};
 use crate::powers::SlotWire;
 
@@ -59,14 +59,25 @@ const OWNED: [MoveKind; 4] = [
 
 /// `("attack_vuln_weak_player", damage, hits, vuln, weak)`.
 ///
-/// Python: `monster_act` (frozen, deleted #2827) and the resumed suffix
-/// `_finish_monster_move_after_attack`. Soul Nexus attacks, then while
-/// combat and owner remain live applies enemy-fresh Vulnerable followed by
-/// enemy-fresh Weak. Despite the move name, it does not heal the owner.
+/// Soul Nexus attacks, then while the combat remains live applies
+/// enemy-fresh Vulnerable followed by enemy-fresh Weak. Despite the move
+/// name, it does not heal the owner.
 ///
-/// The attack is followed by fresh Vulnerable then fresh Weak while combat
-/// and owner remain live. Soul Nexus's random-AI machine remains a separate
-/// entry refusal; it does not alter this branch's exact command semantics.
+/// The suffix does not wait on the actor's survival (#3827): a move body is
+/// straight-line, and `PowerCmd.Apply` to the player reads no applier HP
+/// (`PowerCmd/<Apply>d__1`1::MoveNext` RVA `0x3ef988` returns only on
+/// `IsEnding`, IL_0020-IL_002a, and on a target that cannot receive powers,
+/// IL_003a-IL_0044; `<Apply>d__2` RVA `0x3efbac` adds the zero-amount and
+/// no-combat-state returns, IL_004b-IL_008c). v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad…12b4`. Each native body awaits `AttackCommand.Execute` and makes
+/// the Apply its next statement, with only the await's `IsCompleted` branch
+/// between:
+/// `SoulNexus/<DrainLifeMove>d__24::MoveNext` RVA `0x36c120`: Execute IL_0060,
+/// `Apply<VulnerablePower>` IL_00d4, `Apply<WeakPower>` IL_0148. The frozen
+/// Python simulator also required a live owner here, which the body does not.
+///
+/// Soul Nexus's random-AI machine remains a separate entry refusal; it does
+/// not alter this branch's exact command semantics.
 pub(crate) fn attack_vuln_weak_player(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
     let [
         CompiledArg::I(damage),
@@ -96,7 +107,7 @@ pub(crate) fn attack_vuln_weak_player(ctx: &mut MoveCtx<'_>) -> Result<(), Engin
         *hits,
         ctx.events,
     )?;
-    if !ctx.state.history.over && ctx.state.monsters[ctx.actor].hp > 0 {
+    if !ctx.state.history.over {
         for (power, fresh, raw, site) in [
             (
                 PowerId::PlayerVuln,
@@ -269,8 +280,10 @@ fn constrict_owner_is_exact(state: &HotState, allow_dying_uid: Option<u32>) -> b
         )
         || owner.hp > owner.max_hp
         || owner.block < 0
-        || owner.override_state != MonsterOverride::None
-        || owner.forced_follow_up != MonsterFollowUp::None
+        // #3823: the Strangler takes the generic stun, which writes its move
+        // state alone (`Creature::StunInternal` `0x11d7cc`); Constrict and its
+        // owner are untouched by it.
+        || !crate::engine::monsters::machine_is_undisturbed_or_generic_stun(owner)
         || owner.spawn_noop
         || owner.revive_stage != 0
         || owner.pressure_gun_damage != 0
@@ -305,9 +318,31 @@ pub(crate) fn constrict_absent_strangler_entry_is_exact(state: &HotState) -> boo
         .iter()
         .find(|monster| monster.kind == MonsterKind::SlitheringStrangler)
         .expect("validated one Strangler");
-    owner.random_ai.next() == Some(crate::engine::turn::STRANGLER_CONSTRICT_INDEX)
-        && owner.random_ai.log_len() == 1
-        && owner.random_ai.log_at(0) == Some(crate::engine::turn::STRANGLER_CONSTRICT_INDEX)
+    machine_shows_only_its_opener(
+        owner.random_ai,
+        crate::engine::turn::STRANGLER_CONSTRICT_INDEX,
+    )
+}
+
+/// Is this machine still showing its fixed opener, which has not performed?
+///
+/// The constructor logs the opener once (`MonsterMoveStateMachine::.ctor`
+/// `0x78da4` IL_006b-IL_0084). A stun over it logs it once more when the roll
+/// after the STUNNED turn re-enters it (#3823,
+/// `turn::resume_stunned_random_ai`), and again for each further stun, so the
+/// unperformed opener is a log of that one move, of any retained length.
+/// Neither opener here is a branch of its machine's `RAND`
+/// (`SlitheringStrangler` `0xbdf78` re-enters CONSTRICT only after an attack
+/// has been logged between; `HunterKiller` `0xb6604` never rolls GOOP), so
+/// once it has performed the next roll logs another move and the log is no
+/// longer the opener alone, unless three stuns over a later CONSTRICT have
+/// pushed the attacks out of the Strangler's retained tail; by then Constrict
+/// has been applied, and the callers of this ask it only with Constrict or
+/// Tender absent.
+fn machine_shows_only_its_opener(machine: crate::hot::RandomAiState, opener: u8) -> bool {
+    machine.next() == Some(opener)
+        && machine.log_len() >= 1
+        && (0..machine.log_len()).all(|position| machine.log_at(position) == Some(opener))
 }
 
 /// Authenticate the one inert historical row left after the exact applier's
@@ -493,8 +528,10 @@ fn tender_owner_is_exact(state: &HotState, require_alive: bool) -> bool {
         && owner.hp <= owner.max_hp
         && (!require_alive || owner.hp > 0)
         && owner.block >= 0
-        && owner.override_state == MonsterOverride::None
-        && owner.forced_follow_up == MonsterFollowUp::None
+        // #3823: the Hunter Killer takes the generic stun, which writes its
+        // move state alone (`Creature::StunInternal` `0x11d7cc`); Tender and
+        // its owner are untouched by it.
+        && crate::engine::monsters::machine_is_undisturbed_or_generic_stun(owner)
         && !owner.spawn_noop
         && owner.revive_stage == 0
         && owner.pressure_gun_damage == 0
@@ -524,8 +561,7 @@ pub(crate) fn tender_owner_is_exact_for_prepare(state: &HotState) -> bool {
         .expect("validated one Hunter Killer");
     match owner.random_ai.next() {
         Some(crate::engine::turn::HUNTER_GOOP_INDEX) => {
-            owner.random_ai.log_len() == 1
-                && owner.random_ai.log_at(0) == Some(crate::engine::turn::HUNTER_GOOP_INDEX)
+            machine_shows_only_its_opener(owner.random_ai, crate::engine::turn::HUNTER_GOOP_INDEX)
         }
         Some(crate::engine::turn::HUNTER_BITE_INDEX)
         | Some(crate::engine::turn::HUNTER_PUNCTURE_INDEX) => true,
@@ -558,9 +594,7 @@ pub(crate) fn tender_absent_hunter_entry_is_exact(state: &HotState) -> bool {
         .iter()
         .find(|monster| monster.kind == MonsterKind::HunterKiller)
         .expect("validated one Hunter Killer");
-    owner.random_ai.next() == Some(crate::engine::turn::HUNTER_GOOP_INDEX)
-        && owner.random_ai.log_len() == 1
-        && owner.random_ai.log_at(0) == Some(crate::engine::turn::HUNTER_GOOP_INDEX)
+    machine_shows_only_its_opener(owner.random_ai, crate::engine::turn::HUNTER_GOOP_INDEX)
 }
 
 /// Authenticate the retained exact applier, singleton/counter pair, and random
@@ -623,9 +657,10 @@ fn tender_goop_exact(ctx: &mut MoveCtx<'_>) -> Result<(), EngineRefusal> {
         || ctx.state.monsters.get(ctx.actor).is_none_or(|monster| {
             monster.kind != MonsterKind::HunterKiller
                 || monster.hp <= 0
-                || monster.random_ai.next() != Some(crate::engine::turn::HUNTER_GOOP_INDEX)
-                || monster.random_ai.log_len() != 1
-                || monster.random_ai.log_at(0) != Some(crate::engine::turn::HUNTER_GOOP_INDEX)
+                || !machine_shows_only_its_opener(
+                    monster.random_ai,
+                    crate::engine::turn::HUNTER_GOOP_INDEX,
+                )
         })
     {
         return Err(EngineRefusal::MalformedArgs("Tender Goop foundation"));
@@ -882,6 +917,59 @@ mod tests {
             );
         }
         assert!(events.is_empty());
+    }
+
+    /// #3827: a Soul Nexus killed inside its own Drain Life by the player's
+    /// Thorns still applies Vulnerable and Weak while another enemy lives; a
+    /// lone one ends the combat and applies nothing.
+    #[test]
+    fn a_soul_nexus_killed_by_retaliation_still_applies_its_debuffs() {
+        for (with_peer, expected) in [(true, 2), (false, 0)] {
+            let mut builder = crate::catalog::CatalogBuilder::new();
+            builder.intern_monster(MonsterKind::SoulNexus).unwrap();
+            let catalog = builder.build();
+            let mut state = crate::hot::HotState::at_defaults();
+            state.hp = 100;
+            state
+                .powers
+                .set(PowerId::Thorns, crate::powers::SlotWire::Int, 50);
+            let mut nexus = crate::hot::HotMonster::new(MonsterKind::SoulNexus, 30);
+            nexus.uid = 4;
+            state.monsters_mut().push(nexus);
+            if with_peer {
+                // A second Nexus: a Parafright does not keep a combat alive.
+                let mut ally = crate::hot::HotMonster::new(MonsterKind::SoulNexus, 20);
+                ally.uid = 9;
+                state.monsters_mut().push(ally);
+            }
+            let mut events = Vec::new();
+            let args = [
+                CompiledArg::I(19),
+                CompiledArg::I(1),
+                CompiledArg::I(2),
+                CompiledArg::I(2),
+            ];
+            let mut ctx = MoveCtx {
+                state: &mut state,
+                catalog: &catalog,
+                actor: 0,
+                args: &args,
+                events: &mut events,
+            };
+            attack_vuln_weak_player(&mut ctx).unwrap();
+            assert!(state.monsters[0].hp <= 0);
+            assert_eq!(state.history.over, !with_peer);
+            assert_eq!(state.powers.value(PowerId::PlayerVuln), expected);
+            assert_eq!(state.powers.value(PowerId::PlayerWeak), expected);
+            assert_eq!(
+                state.powers.value(PowerId::PlayerVulnFresh),
+                i32::from(with_peer)
+            );
+            assert_eq!(
+                state.powers.value(PowerId::PlayerWeakFresh),
+                i32::from(with_peer)
+            );
+        }
     }
 
     #[test]

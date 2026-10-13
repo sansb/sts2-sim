@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "J8JL0SC7A2JX",
+ "node": 1,
+ "encounter": "ENCOUNTER.TOADPOLES_WEAK",
+ "node_type": "monster",
+ "character": "SILENT",
+ "ascension": 10,
+ "capture_sha256": "3bf4fc4e38f47e6ae6a2b07d541c3160f7108cbf15450fb5f4d4e7650b09d30e",
+ "save_sha256": "830ff352c69ad1c3c6acf5cd62dcf603f045384e05949bfa282d38d16341b4b8",
+ "entry_digest": "2ecffd59a3ad485a9b2e4d4cf2ed8537d4e99b1309a60c856934e4d9cdcd0a35",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

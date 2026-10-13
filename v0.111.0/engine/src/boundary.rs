@@ -255,6 +255,8 @@ impl FieldDefault {
 pub enum PlayerSlot {
     Ally,
     OstyCorpse,
+    OstyCreatureUid,
+    HellraiserInfiniteAutoPlaysThisTurn,
     PlayerHooksDeactivated,
     BlockNextTurnOrder,
     AfterBlockGainedPowerOrder,
@@ -300,6 +302,7 @@ pub enum PlayerSlot {
     Nunchaku,
     OrnamentalFan,
     CreativeAiGenerationPool,
+    CuriousAfterBorrowedTime,
     DampenCards,
     DampenCasters,
     DarkEmbraceEthereal,
@@ -334,6 +337,7 @@ pub enum PlayerSlot {
     HelloWorldGenerationPool,
     HopperLootHistory,
     HopperMasterDeck,
+    HopperTransformedRows,
     Hp,
     ImitationCloneRecords,
     ImitationLearning,
@@ -350,6 +354,7 @@ pub enum PlayerSlot {
     MonologueStrengthApplied,
     MultiplayerAllies,
     MultiplayerPlayerOrder,
+    Murderous,
     NextAfterSideTurnEndPowerUid,
     NextCardUid,
     NextConsumingShadowSideEndAuthUid,
@@ -358,6 +363,7 @@ pub enum PlayerSlot {
     NextPoisonUid,
     NextRandomOrbProgressUid,
     NextTheBombUid,
+    NightmareInstances,
     NoEnergyGain,
     NonHandDrawsThisTurn,
     NormalityCardPlaysStartedThisTurn,
@@ -365,6 +371,7 @@ pub enum PlayerSlot {
     OrbEnergyResetOrder,
     OrbSlots,
     OrbitEnergySpent,
+    OrbitLaterEnergySpent,
     OrbitTriggerCount,
     Orbs,
     OstyAttacksThisTurn,
@@ -396,6 +403,7 @@ pub enum PlayerSlot {
     RandomOrbProgressAuths,
     Radiance,
     Regen,
+    Ambergris,
     RelicsEntering,
     RelicsEnteringDispatchOrdered,
     RelicPets,
@@ -406,6 +414,7 @@ pub enum PlayerSlot {
     RainbowRingTypesThisTurn,
     Ringing,
     RoundNumber,
+    SculptingStrikeMarkedCombat,
     ScytheDeckGrowth,
     SelfReturnFinishedUidsCurrentTurn,
     SelfReturnFinishedUidsPreviousTurn,
@@ -431,6 +440,8 @@ pub enum PlayerSlot {
     TheBombInstances,
     ToricToughness,
     ToricToughnessBlock,
+    ToricToughnessLaterInstances,
+    RollingBoulderLaterInstances,
     TheHunt,
     TheHuntCardRewards,
     Turn,
@@ -549,7 +560,7 @@ pub struct FieldSpec<S: 'static> {
 // (deleted #2999; `PROJECTION_PARITY_CENSUS.md` is its frozen last run).
 const _: () = assert!(crate::encounters::MODELED_ASCENSION == 10);
 
-pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
+pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 228] = [
     spec(
         "after_block_gained_power_order",
         PlayerSlot::AfterBlockGainedPowerOrder,
@@ -608,6 +619,7 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         FieldDefault::EmptyList,
     ),
     spec("ally", PlayerSlot::Ally, FieldDefault::Null),
+    spec("ambergris", PlayerSlot::Ambergris, FieldDefault::Int(0)),
     spec(
         "art_of_war_current_attack",
         PlayerSlot::ArtOfWarCurrentAttack,
@@ -759,6 +771,15 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         PlayerSlot::CreativeAiGenerationPool,
         FieldDefault::EmptyList,
     ),
+    // #3756: the owner's CuriousPower was first attached while its
+    // BorrowedTimePower was live, so it follows it in the energy-cost
+    // listener walk. The default (Curious first) is every other history, and
+    // the field is refused unless both powers are live.
+    spec(
+        "curious_after_borrowed_time",
+        PlayerSlot::CuriousAfterBorrowedTime,
+        FieldDefault::Bool(false),
+    ),
     spec(
         "dampen_cards",
         PlayerSlot::DampenCards,
@@ -901,6 +922,11 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         FieldDefault::EmptyList,
     ),
     spec(
+        "hellraiser_infinite_auto_plays_this_turn",
+        PlayerSlot::HellraiserInfiniteAutoPlaysThisTurn,
+        FieldDefault::Int(0),
+    ),
+    spec(
         "history_course_attack_current_turn",
         PlayerSlot::HistoryCourseAttackCurrentTurn,
         FieldDefault::Null,
@@ -918,6 +944,11 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
     spec(
         "hopper_master_deck",
         PlayerSlot::HopperMasterDeck,
+        FieldDefault::EmptyList,
+    ),
+    spec(
+        "hopper_transformed_rows",
+        PlayerSlot::HopperTransformedRows,
         FieldDefault::EmptyList,
     ),
     spec("hp", PlayerSlot::Hp, FieldDefault::Int(0)),
@@ -1027,6 +1058,11 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         FieldDefault::EmptyList,
     ),
     spec(
+        "murderous",
+        PlayerSlot::Murderous,
+        FieldDefault::Bool(false),
+    ),
+    spec(
         "music_box_card_uid",
         PlayerSlot::MusicBoxCardUid,
         FieldDefault::Int(-1),
@@ -1076,6 +1112,14 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         PlayerSlot::NextTheBombUid,
         FieldDefault::Int(0),
     ),
+    // Live NightmarePower objects in acquisition order (#3794): one
+    // `[amount, listeners_before, card payload]` row each, the payload in
+    // the frozen-card encoding (`canonical_card_payload_value`).
+    spec(
+        "nightmare_instances",
+        PlayerSlot::NightmareInstances,
+        FieldDefault::EmptyList,
+    ),
     spec(
         "no_energy_gain",
         PlayerSlot::NoEnergyGain,
@@ -1111,6 +1155,11 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         FieldDefault::Int(0),
     ),
     spec(
+        "orbit_later_energy_spent",
+        PlayerSlot::OrbitLaterEnergySpent,
+        FieldDefault::EmptyList,
+    ),
+    spec(
         "orbit_trigger_count",
         PlayerSlot::OrbitTriggerCount,
         FieldDefault::Int(0),
@@ -1126,6 +1175,11 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         "osty_corpse",
         PlayerSlot::OstyCorpse,
         FieldDefault::Bool(false),
+    ),
+    spec(
+        "osty_creature_uid",
+        PlayerSlot::OstyCreatureUid,
+        FieldDefault::Int(0),
     ),
     spec("over", PlayerSlot::Over, FieldDefault::Bool(false)),
     spec(
@@ -1323,6 +1377,17 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         FieldDefault::Null,
     ),
     spec("ringing", PlayerSlot::Ringing, FieldDefault::Bool(false)),
+    // `[amount, listeners_before]` for each RollingBoulderPower object after
+    // the first, in acquisition order (#3756: the power is Instanced). The
+    // first object stays the `rolling_boulder` power slot with its
+    // `after_player_turn_start_power_order` entry, so a one-object document
+    // elides this field and keeps its earlier bytes. `listeners_before`
+    // counts the entries of that order that run before the object.
+    spec(
+        "rolling_boulder_later_instances",
+        PlayerSlot::RollingBoulderLaterInstances,
+        FieldDefault::EmptyList,
+    ),
     spec(
         "round_number",
         PlayerSlot::RoundNumber,
@@ -1331,6 +1396,11 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
     spec(
         "ruined_helmet_used",
         PlayerSlot::RuinedHelmetUsed,
+        FieldDefault::Bool(false),
+    ),
+    spec(
+        "sculpting_strike_marked_combat",
+        PlayerSlot::SculptingStrikeMarkedCombat,
         FieldDefault::Bool(false),
     ),
     spec(
@@ -1453,6 +1523,18 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 217] = [
         "toric_toughness_block",
         PlayerSlot::ToricToughnessBlock,
         FieldDefault::Int(0),
+    ),
+    // `[duration, block, listeners_before]` for each ToricToughnessPower
+    // object after the first live one, in acquisition order (#3756: the
+    // power is Instanced). The first object stays `toric_toughness` /
+    // `toric_toughness_block` with its `block_next_turn_order` entry, so a
+    // one-object document elides this field and keeps its earlier bytes.
+    // `listeners_before` counts the `block_next_turn_order` entries that run
+    // before the object in the after-block-cleared walk.
+    spec(
+        "toric_toughness_later_instances",
+        PlayerSlot::ToricToughnessLaterInstances,
+        FieldDefault::EmptyList,
     ),
     spec(
         "tuning_fork_skills",
@@ -2152,9 +2234,14 @@ pub(crate) fn batch_nine_relic_state_is_exact(state: &HotState, catalog: &Catalo
         && (state.fanouts.paels_legion_cooldown() <= 0
             || state.fanouts.paels_legion_trigger_uid().is_none())
         && (owns(RelicId::RelicPaelsEye) || !state.fanouts.paels_eye_used())
-        // Pael's Eye is the only represented extra-turn source, and it marks
-        // itself used as the extra turn begins (#3049).
-        && (!state.fanouts.players_taking_extra_turn() || state.fanouts.paels_eye_used())
+        // An owned Pael's Eye marks itself used as any extra turn begins:
+        // `PaelsEye::AfterTakingExtraTurn` (RVA `0x981c7`) tests only the
+        // player (IL_0003-0008) before `set_UsedThisCombat(true)` (IL_001f),
+        // whichever listener approved the turn (#3049). Without the relic the
+        // approver was `AmbergrisPower` (#3756), which leaves no mark.
+        && (!state.fanouts.players_taking_extra_turn()
+            || !owns(RelicId::RelicPaelsEye)
+            || state.fanouts.paels_eye_used())
         && (owns(RelicId::RelicRegalite) || !state.fanouts.regalite_used_this_turn())
         && state.fanouts.self_forming_clay_owned() == owns(RelicId::RelicSelfFormingClay)
         && state.fanouts.gremlin_horn_owned() == owns(RelicId::RelicGremlinHorn)
@@ -2163,6 +2250,7 @@ pub(crate) fn batch_nine_relic_state_is_exact(state: &HotState, catalog: &Catalo
         // A queued deferred hook action lives only inside one public
         // transaction (#3387, `engine::hook_action`).
         && !state.fanouts.deferred_hook_action_is_queued()
+        && !state.fanouts.hook_action_is_running()
         && matches!(state.regalite_block_amount, 4 | 6)
 }
 
@@ -3696,6 +3784,14 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::ArtOfWarLastAttack => Value::from(state.art_of_war_last_attack()),
         PlayerSlot::BoomingConchElite => Value::from(state.booming_conch_elite()),
         PlayerSlot::DemonTongueTriggered => Value::from(state.demon_tongue_triggered()),
+        // Emitted only while both powers are live: the bit is rewritten at
+        // every attachment of either, so a value outliving its Borrowed Time
+        // is never read and is not state.
+        PlayerSlot::CuriousAfterBorrowedTime => Value::from(
+            state.fanouts.curious_follows_borrowed_time()
+                && state.powers.value(PowerId::Curious) > 0
+                && state.powers.value(PowerId::BorrowedTime) > 0,
+        ),
         PlayerSlot::EmotionDamageCurrentTurn => Value::from(state.emotion_damage_current_turn()),
         PlayerSlot::EmotionDamagePreviousTurn => Value::from(state.emotion_damage_previous_turn()),
         PlayerSlot::FakeTeaSetCharged => Value::from(state.fake_tea_set_charged()),
@@ -3798,6 +3894,7 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::PlayerRitual => Value::from(state.fanouts.player_ritual()),
         PlayerSlot::Radiance => Value::from(state.fanouts.radiance()),
         PlayerSlot::Regen => Value::from(state.fanouts.regen()),
+        PlayerSlot::Ambergris => Value::from(state.fanouts.ambergris()),
         PlayerSlot::RelicsEntering => Value::Array(
             catalog
                 .map(|c| c.hooks().relics())
@@ -3855,6 +3952,33 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::ToricToughnessBlock => state.fanouts.toric_toughness().map_or_else(
             || Value::from(0),
             |instance| toric_decimal_value(instance.block),
+        ),
+        PlayerSlot::RollingBoulderLaterInstances => Value::Array(
+            state
+                .fanouts
+                .rolling_boulder_later_instances()
+                .iter()
+                .map(|instance| {
+                    Value::Array(vec![
+                        Value::from(instance.amount),
+                        Value::from(instance.listeners_before),
+                    ])
+                })
+                .collect(),
+        ),
+        PlayerSlot::ToricToughnessLaterInstances => Value::Array(
+            state
+                .fanouts
+                .toric_toughness_later_instances()
+                .iter()
+                .map(|instance| {
+                    Value::Array(vec![
+                        Value::from(instance.duration),
+                        toric_decimal_value(instance.block),
+                        Value::from(instance.listeners_before),
+                    ])
+                })
+                .collect(),
         ),
         PlayerSlot::CardsPlayedThisTurn => Value::from(
             state
@@ -4021,6 +4145,14 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::OrbSlots => Value::from(state.orbs.slots()),
         PlayerSlot::OrbitEnergySpent => Value::from(state.orbs.orbit_energy_spent()),
         PlayerSlot::OrbitTriggerCount => Value::from(state.orbs.orbit_trigger_count()),
+        PlayerSlot::OrbitLaterEnergySpent => Value::Array(
+            state
+                .orbs
+                .orbit_later_energy_spent()
+                .iter()
+                .map(|spent| Value::from(*spent))
+                .collect(),
+        ),
         PlayerSlot::Orbs => Value::Array(
             state
                 .orbs
@@ -4037,6 +4169,10 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         ),
         PlayerSlot::OstyAttacksThisTurn => Value::from(state.fanouts.pet().attacks_this_turn()),
         PlayerSlot::OstyCorpse => Value::from(state.fanouts.pet().corpse()),
+        PlayerSlot::OstyCreatureUid => Value::from(state.fanouts.osty_creature_uid()),
+        PlayerSlot::HellraiserInfiniteAutoPlaysThisTurn => {
+            Value::from(state.fanouts.hellraiser_infinite_auto_plays())
+        }
         PlayerSlot::PlayerHooksDeactivated => Value::from(state.fanouts.player_hooks_deactivated()),
         PlayerSlot::OwnerCardExhaustedThisTurn => {
             Value::from(history.owner_card_exhausted_this_turn)
@@ -4080,6 +4216,10 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         }
         PlayerSlot::PlaysThisTurn => Value::from(history.plays_this_turn),
         PlayerSlot::RoundNumber => Value::from(history.round_number),
+        PlayerSlot::SculptingStrikeMarkedCombat => {
+            Value::from(state.fanouts.sculpting_strike_marked())
+        }
+        PlayerSlot::Murderous => Value::from(state.fanouts.murderous()),
         PlayerSlot::ScytheDeckGrowth => {
             scythe_deck_growth_value(state, catalog).unwrap_or_else(|| Value::Array(Vec::new()))
         }
@@ -4271,6 +4411,13 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
                 })
                 .unwrap_or_default(),
         ),
+        PlayerSlot::HopperTransformedRows => Value::Array(
+            state
+                .card_states
+                .hopper()
+                .map(|deck| deck.transformed.iter().copied().map(Value::from).collect())
+                .unwrap_or_default(),
+        ),
         PlayerSlot::HopperLootHistory => Value::Array(
             state
                 .card_states
@@ -4355,6 +4502,21 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::MonologueStrengthApplied => {
             Value::from(state.fanouts.monologue_strength_applied())
         }
+        PlayerSlot::NightmareInstances => Value::Array(
+            state
+                .fanouts
+                .nightmare_instances()
+                .iter()
+                .map(|instance| {
+                    let catalog = catalog.expect("Nightmare projection has a catalog");
+                    Value::Array(vec![
+                        Value::from(instance.amount),
+                        Value::from(instance.listeners_before),
+                        nightmare_held_payload_value(catalog, instance),
+                    ])
+                })
+                .collect(),
+        ),
         PlayerSlot::MultiplayerAllies => multiplayer_ally_value(state),
         PlayerSlot::MultiplayerPlayerOrder => Value::Array(
             (state.multiplayer_ally_key != 0)
@@ -4770,6 +4932,11 @@ fn player_write(
         PlayerSlot::DemonTongueTriggered => {
             state.set_demon_tongue_triggered(as_flag(entity, name, value)?);
         }
+        PlayerSlot::CuriousAfterBorrowedTime => {
+            state
+                .fanouts
+                .set_curious_follows_borrowed_time(as_flag(entity, name, value)?);
+        }
         PlayerSlot::EmotionDamageCurrentTurn => {
             state.set_emotion_damage_current_turn(as_flag(entity, name, value)?);
         }
@@ -4909,7 +5076,9 @@ fn player_write(
             ));
         }
         PlayerSlot::HopperMasterDeck
+        | PlayerSlot::HopperTransformedRows
         | PlayerSlot::HopperLootHistory
+        | PlayerSlot::NightmareInstances
         | PlayerSlot::DampenCards
         | PlayerSlot::DampenCasters
         | PlayerSlot::BeforeHandDrawCardListenerUids
@@ -5040,6 +5209,7 @@ fn player_write(
                     PowerId::ToolsOfTheTrade,
                     PowerId::Tyranny,
                     PowerId::Entropy,
+                    PowerId::Hibernate,
                 ],
             )?;
             if !state.set_after_player_turn_start_order(&order) {
@@ -5169,6 +5339,10 @@ fn player_write(
         PlayerSlot::DoomAppliedByPlayerThisTurn => {
             state.history.doom_applied_by_player_this_turn = as_flag(entity, name, value)?
         }
+        PlayerSlot::SculptingStrikeMarkedCombat => state
+            .fanouts
+            .set_sculpting_strike_marked(as_flag(entity, name, value)?),
+        PlayerSlot::Murderous => state.fanouts.set_murderous(as_flag(entity, name, value)?),
         PlayerSlot::Duplication => {
             let amount = narrow(entity, name, as_int(entity, name, value)?)?;
             if !state.fanouts.set_duplication(amount) {
@@ -5200,6 +5374,10 @@ fn player_write(
             if !state.fanouts.set_regen(amount) {
                 return Err(unrepresentable(entity, name, "must be nonnegative"));
             }
+        }
+        PlayerSlot::Ambergris => {
+            let amount = narrow(entity, name, as_int(entity, name, value)?)?;
+            state.fanouts.set_ambergris(amount);
         }
         PlayerSlot::UnceasingTop => {
             state
@@ -5324,6 +5502,20 @@ fn player_write(
             state
                 .orbs
                 .set_orbit_counters(energy_spent, state.orbs.orbit_trigger_count());
+        }
+        PlayerSlot::OrbitLaterEnergySpent => {
+            let rows = value
+                .as_array()
+                .ok_or_else(|| unrepresentable(entity, name, "expected a list"))?;
+            let mut later = Vec::with_capacity(rows.len());
+            for row in rows {
+                let spent: i32 = narrow(entity, name, as_int(entity, name, row)?)?;
+                if spent < 0 {
+                    return Err(unrepresentable(entity, name, "must be nonnegative"));
+                }
+                later.push(spent);
+            }
+            state.orbs.set_orbit_later_energy_spent(later);
         }
         PlayerSlot::OrbitTriggerCount => {
             let trigger_count = narrow(entity, name, as_int(entity, name, value)?)?;
@@ -5881,6 +6073,28 @@ fn player_write(
                 as_int(entity, name, value)?,
             )?);
         }
+        PlayerSlot::OstyCreatureUid => {
+            state.fanouts.set_osty_creature_uid(narrow(
+                entity,
+                name,
+                as_int(entity, name, value)?,
+            )?);
+        }
+        PlayerSlot::HellraiserInfiniteAutoPlaysThisTurn => {
+            // The engine holds `min(count, 9)`; a larger value is not a
+            // state it writes.
+            if !state.fanouts.set_hellraiser_infinite_auto_plays(narrow(
+                entity,
+                name,
+                as_int(entity, name, value)?,
+            )?) {
+                return Err(unrepresentable(
+                    entity,
+                    name,
+                    "out of range for its hot slot",
+                ));
+            }
+        }
         PlayerSlot::NoEnergyGain => {
             state
                 .fanouts
@@ -5959,6 +6173,73 @@ fn player_write(
             instance.block = parse_toric_decimal(name, value)?;
             if !state.fanouts.set_toric_toughness(Some(instance)) {
                 return Err(unrepresentable(entity, name, "invalid Toric payload"));
+            }
+        }
+        PlayerSlot::RollingBoulderLaterInstances => {
+            let rows = value
+                .as_array()
+                .ok_or_else(|| {
+                    unrepresentable(entity, name, "expected [amount, listeners_before] rows")
+                })?
+                .iter()
+                .map(|row| {
+                    let [amount, listeners_before] = row
+                        .as_array()
+                        .map(Vec::as_slice)
+                        .and_then(|row| <&[Value; 2]>::try_from(row).ok())
+                        .ok_or_else(|| {
+                            unrepresentable(entity, name, "expected two-element rows")
+                        })?;
+                    Ok(crate::hot::RollingBoulderLaterInstance {
+                        amount: narrow(entity, name, as_int(entity, name, amount)?)?,
+                        listeners_before: narrow(
+                            entity,
+                            name,
+                            as_int(entity, name, listeners_before)?,
+                        )?,
+                    })
+                })
+                .collect::<Result<Vec<_>, BoundaryRefusal>>()?;
+            if !state.fanouts.set_rolling_boulder_later_instances(&rows) {
+                return Err(unrepresentable(entity, name, "rows need a positive amount"));
+            }
+        }
+        PlayerSlot::ToricToughnessLaterInstances => {
+            let rows = value
+                .as_array()
+                .ok_or_else(|| {
+                    unrepresentable(
+                        entity,
+                        name,
+                        "expected [duration, block, listeners_before] rows",
+                    )
+                })?
+                .iter()
+                .map(|row| {
+                    let [duration, block, listeners_before] = row
+                        .as_array()
+                        .map(Vec::as_slice)
+                        .and_then(|row| <&[Value; 3]>::try_from(row).ok())
+                        .ok_or_else(|| {
+                            unrepresentable(entity, name, "expected three-element rows")
+                        })?;
+                    Ok(crate::hot::ToricToughnessLaterInstance {
+                        duration: narrow(entity, name, as_int(entity, name, duration)?)?,
+                        block: parse_toric_decimal(name, block)?,
+                        listeners_before: narrow(
+                            entity,
+                            name,
+                            as_int(entity, name, listeners_before)?,
+                        )?,
+                    })
+                })
+                .collect::<Result<Vec<_>, BoundaryRefusal>>()?;
+            if !state.fanouts.set_toric_toughness_later_instances(&rows) {
+                return Err(unrepresentable(
+                    entity,
+                    name,
+                    "rows need a positive duration and a reachable Block payload",
+                ));
             }
         }
         PlayerSlot::TheHuntCardRewards => {
@@ -8491,6 +8772,7 @@ fn card_play_frame_inventory(fields: &BTreeMap<String, Value>) -> Result<(), Bou
                 && !matches!(
                     name.as_str(),
                     "monologue_latches"
+                        | "energy_value"
                         | "after_card_played_power_snapshot"
                         | "instanced_power_uid_at_before"
                         | "instanced_power_created_uid"
@@ -8500,6 +8782,25 @@ fn card_play_frame_inventory(fields: &BTreeMap<String, Value>) -> Result<(), Bou
         return Err(malformed(kind, "field inventory does not match its class"));
     }
     Ok(())
+}
+
+/// The optional `energy_value` of a CardPlay frame (#3756): the
+/// `CardPlay.Resources.EnergyValue` an AutoPlay resolved at its entry. A
+/// manual play's value is its `spent`, so the field is refused there; an
+/// AutoPlay frame without it loads as "not carried" and its readers refuse.
+fn card_play_energy_value_field(
+    fields: &BTreeMap<String, Value>,
+    manual: bool,
+) -> Result<Option<i16>, BoundaryRefusal> {
+    let Some(value) = fields.get("energy_value") else {
+        return Ok(None);
+    };
+    value
+        .as_i64()
+        .filter(|value| !manual && *value >= 0)
+        .and_then(|value| i16::try_from(value).ok())
+        .map(Some)
+        .ok_or_else(|| malformed(FrameKind::CardPlay, "energy_value is invalid"))
 }
 
 fn card_play_optional_uid(
@@ -8927,6 +9228,62 @@ fn auto_pre_history_course_phase_from_canonical(
         .and_then(|uid| u32::try_from(uid).ok())
         .filter(|uid| *uid != 0 && *uid != crate::hot::LEGACY_CARD_UID)
         .ok_or_else(|| malformed(kind, "History Course dupe uid is out of range"))
+}
+
+fn imbued_phase_snapshot() -> Value {
+    serde_json::json!([["enchantment", "IMBUED"]])
+}
+
+/// The Imbued AutoPre/Normal phase (#3817): its listener
+/// (`Imbued/<AfterAutoPrePlayPhaseEntered>d__5::MoveNext` RVA `0x3882a8`,
+/// v0.111.0 SHA-256 `9cb4f1ad…12b4`) has precommitted, and its one local is
+/// the enchanted card whose awaited `CardCmd.AutoPlay` (IL_004d-005d) the
+/// CardPlay frame above resumes.
+#[cold]
+#[inline(never)]
+fn auto_pre_imbued_phase_from_canonical(
+    canonical: &CanonicalFrameV2,
+) -> Result<u32, BoundaryRefusal> {
+    let kind = FrameKind::Phase;
+    if canonical.frame_type != kind.as_str() {
+        return Err(malformed(kind, "wrong frame type"));
+    }
+    let fields = &canonical.fields;
+    frame_inventory(
+        kind,
+        fields,
+        &[
+            "tag",
+            "phase",
+            "subphase",
+            "snapshot",
+            "cursor",
+            "terminal",
+            "remaining",
+            "locals",
+        ],
+    )?;
+    frame_check_tag(kind, fields)?;
+    if frame_text(kind, fields, "phase")? != "auto_pre"
+        || frame_text(kind, fields, "subphase")? != "normal"
+        || frame_field(kind, fields, "snapshot")? != &imbued_phase_snapshot()
+        || frame_int(kind, fields, "cursor")? != 1
+        || frame_text(kind, fields, "terminal")? != "ordinary_actions"
+        || frame_field(kind, fields, "remaining")? != &serde_json::json!(["late"])
+    {
+        return Err(malformed(kind, "unsupported AutoPre Imbued phase shape"));
+    }
+    let [uid] = frame_field(kind, fields, "locals")?
+        .as_array()
+        .map(Vec::as_slice)
+        .ok_or_else(|| malformed(kind, "Imbued locals is not an array"))?
+    else {
+        return Err(malformed(kind, "Imbued locals is not one card uid"));
+    };
+    uid.as_u64()
+        .and_then(|uid| u32::try_from(uid).ok())
+        .filter(|uid| *uid != crate::hot::LEGACY_CARD_UID)
+        .ok_or_else(|| malformed(kind, "Imbued card uid is out of range"))
 }
 
 #[cold]
@@ -9928,6 +10285,15 @@ fn pending_from_canonical(
         state,
         allow_stale_apc_target,
     )?;
+    if !allow_stale_apc_target
+        && !replaced_pending_target_is_admitted(spec.identity.id, target, state)
+    {
+        return Err(unrepresentable(
+            Entity::Player,
+            "pending",
+            "invalid target identity",
+        ));
+    }
     let effective_targeted = if matches!(spec.identity.id, CardId::Shiv | CardId::SovereignBlade) {
         let target_type =
             crate::engine::play::effective_target_type(state, catalog, spec, frame_uid)
@@ -9958,7 +10324,8 @@ fn pending_from_canonical(
     }
     let choice_value = frame_field(FrameKind::CardPlay, fields, "choice")?;
     let first_choice = if kind != crate::hot::PendingSelectionKind::Replay {
-        let target_index = target.and_then(|target| pending_target_record_index(target, state));
+        let target_index = target
+            .and_then(|target| pending_card_target_index(target, state, allow_stale_apc_target));
         let expected = if manual && kind == crate::hot::PendingSelectionKind::Tutor {
             Value::from(0)
         } else if manual {
@@ -10174,7 +10541,8 @@ fn pending_from_canonical(
             "result route disagrees with the frozen source semantics",
         ));
     }
-    let target_index = target.and_then(|target| pending_target_record_index(target, state));
+    let target_index =
+        target.and_then(|target| pending_card_target_index(target, state, allow_stale_apc_target));
     let monologue_latches = card_play_monologue_latches(fields)?;
     let instanced_power_uid_at_before =
         card_play_optional_uid(fields, "instanced_power_uid_at_before")?;
@@ -10228,6 +10596,7 @@ fn pending_from_canonical(
         plays,
         play_index,
         spent: spent_i32,
+        energy_value: card_play_energy_value_field(fields, manual)?,
         x_value: frame_int(FrameKind::CardPlay, fields, "x_value")?,
         selection_amount,
         star_spent: u32::try_from(frame_int(FrameKind::CardPlay, fields, "star_spent")?)
@@ -10356,7 +10725,17 @@ fn nonpending_card_play_from_canonical(
         state,
         allow_stale_apc_target,
     )?;
-    let target_index = target.and_then(|target| pending_target_record_index(target, state));
+    if !allow_stale_apc_target
+        && !replaced_pending_target_is_admitted(spec.identity.id, target, state)
+    {
+        return Err(unrepresentable(
+            Entity::Player,
+            "pending",
+            "invalid target identity",
+        ));
+    }
+    let target_index =
+        target.and_then(|target| pending_card_target_index(target, state, allow_stale_apc_target));
     let choice = frame_field(FrameKind::CardPlay, fields, "choice")?;
     let (choice_kind, choice_i32, first_choice) = if choice.is_null() {
         if source == CardPlaySource::Manual && target.is_some() {
@@ -10713,6 +11092,10 @@ fn nonpending_card_play_from_canonical(
         play_index,
         x_value: frame_int(FrameKind::CardPlay, fields, "x_value")?,
         spent,
+        energy_value: card_play_energy_value_field(
+            fields,
+            source == crate::hot::CardPlaySource::Manual,
+        )?,
         star_spent,
         glam: u32::try_from(frame_int(FrameKind::CardPlay, fields, "glam")?)
             .map_err(|_| invalid())?,
@@ -10845,6 +11228,16 @@ fn pending_target_record(
                 let _ = index;
             }
             (matches, Some(index)) if matches.len() >= 2 && matches.contains(&index) => {}
+            // #3747: the frozen target is the Axebot body a Stock respawn
+            // replaced. Callers admit it for Heirloom Hammer alone
+            // (`replaced_pending_target_is_admitted`).
+            ([], None)
+                if i32::try_from(slot)
+                    .ok()
+                    .zip(u32::try_from(uid).ok())
+                    .is_some_and(|(slot, uid)| {
+                        crate::engine::monsters::axebot_replacement_of(state, slot, uid).is_some()
+                    }) => {}
             _ => return Err(invalid()),
         }
     }
@@ -10917,6 +11310,44 @@ fn pending_target_record_index(target: (i32, u32, Option<i32>), state: &HotState
     matches.next().is_none().then_some(index)
 }
 
+/// [`pending_target_record_index`] for a pending CardPlay's target (#3747).
+///
+/// A Stock-replaced Axebot target resolves to its replacement's row, as
+/// `engine::play::persisted_card_target_index` does. The stale-APC form keeps
+/// its own reading of a target the roster does not hold.
+pub(crate) fn pending_card_target_index(
+    target: (i32, u32, Option<i32>),
+    state: &HotState,
+    allow_stale_apc_target: bool,
+) -> Option<usize> {
+    pending_target_record_index(target, state).or_else(|| {
+        let (slot, uid, fallback) = target;
+        (!allow_stale_apc_target && fallback.is_none())
+            .then(|| crate::engine::monsters::axebot_replacement_of(state, slot, uid))
+            .flatten()
+    })
+}
+
+/// Whether a pending CardPlay of `card` may carry `target`.
+///
+/// A target the roster holds is always fine. One it does not hold is the
+/// Axebot body a Stock respawn replaced (`pending_target_record` admits
+/// nothing else), and only Heirloom Hammer's suspended body is modeled across
+/// that replacement (#3747, `engine::play::persisted_card_target_index`).
+pub(crate) fn replaced_pending_target_is_admitted(
+    card: CardId,
+    target: Option<(i32, u32, Option<i32>)>,
+    state: &HotState,
+) -> bool {
+    target.is_none_or(|(slot, uid, _)| {
+        card == CardId::HeirloomHammer
+            || state
+                .monsters
+                .iter()
+                .any(|monster| (monster.slot, monster.uid) == (slot, uid))
+    })
+}
+
 #[cold]
 #[inline(never)]
 fn auto_pre_mayhem_phase_to_canonical(
@@ -10949,6 +11380,16 @@ fn auto_pre_history_course_phase_to_canonical(dupe_uid: u32, fields: &mut BTreeM
     fields.insert("terminal".to_owned(), Value::from("ordinary_actions"));
     fields.insert("remaining".to_owned(), serde_json::json!(["late"]));
     fields.insert("locals".to_owned(), serde_json::json!([dupe_uid]));
+}
+
+fn auto_pre_imbued_phase_to_canonical(card_uid: u32, fields: &mut BTreeMap<String, Value>) {
+    fields.insert("phase".to_owned(), Value::from("auto_pre"));
+    fields.insert("subphase".to_owned(), Value::from("normal"));
+    fields.insert("snapshot".to_owned(), imbued_phase_snapshot());
+    fields.insert("cursor".to_owned(), Value::from(1));
+    fields.insert("terminal".to_owned(), Value::from("ordinary_actions"));
+    fields.insert("remaining".to_owned(), serde_json::json!(["late"]));
+    fields.insert("locals".to_owned(), serde_json::json!([card_uid]));
 }
 
 #[cold]
@@ -11578,6 +12019,127 @@ fn frozen_legacy_entry_from_payload_value(
     Ok(entry)
 }
 
+/// The frozen-card payload of one `NightmarePower` object's held card
+/// (#3794). The held clone lives in no pile and has no physical uid of its
+/// own in this engine, so the payload is the whole of it.
+fn nightmare_held_payload_value(
+    catalog: &Catalog,
+    instance: &crate::hot::NightmareInstance,
+) -> Value {
+    frozen_card_payload_value(
+        catalog,
+        crate::hot::FrozenAutoBatchEntry {
+            card: HotCard {
+                uid: 0,
+                atom: instance.atom,
+                flags: instance.flags,
+            },
+            state: instance.instance.clone(),
+        },
+    )
+}
+
+/// The canonical card each `nightmare_instances` row holds, with its Amount
+/// and place, in row order (#3794). Shared by catalog construction, which
+/// needs the identities before any atom exists, and by hydration.
+fn nightmare_rows_from_canonical(
+    value: &Value,
+) -> Result<Vec<(i32, u8, CanonicalCardV2)>, BoundaryRefusal> {
+    let name = "nightmare_instances";
+    let entity = Entity::Player;
+    let rows = value.as_array().ok_or_else(|| {
+        unrepresentable(
+            entity,
+            name,
+            "expected [amount, listeners_before, payload] rows",
+        )
+    })?;
+    let mut held = Vec::with_capacity(rows.len());
+    for row in rows {
+        let [amount, listeners_before, payload] = row
+            .as_array()
+            .map(Vec::as_slice)
+            .ok_or_else(|| unrepresentable(entity, name, "expected a three-part row"))?
+        else {
+            return Err(unrepresentable(entity, name, "expected a three-part row"));
+        };
+        let amount: i32 = narrow(entity, name, as_int(entity, name, amount)?)?;
+        let listeners_before: u8 = narrow(entity, name, as_int(entity, name, listeners_before)?)?;
+        let (_, card) =
+            canonical_card_from_payload_pair(&Value::Array(vec![Value::from(0), payload.clone()]))?;
+        held.push((amount, listeners_before, card));
+    }
+    Ok(held)
+}
+
+/// `document` with each `nightmare_instances` row's held card appended to
+/// Hand once per copy it will make (#3794), for catalog construction only.
+/// The copies carry no uid: they are not physical cards yet.
+fn document_with_nightmare_copies(
+    document: &CanonicalStateV2,
+    rows: &Value,
+) -> Result<CanonicalStateV2, BoundaryRefusal> {
+    let mut augmented = document.clone();
+    let hand = augmented
+        .piles
+        .entry(PileId::Hand.as_str().to_owned())
+        .or_default();
+    for (amount, _, mut card) in nightmare_rows_from_canonical(rows)? {
+        card.uid = None;
+        // Admission refuses any Amount but the native one; the clamp only
+        // bounds the work a forged row can ask of this pass.
+        let copies = amount.clamp(0, crate::engine::selection::NIGHTMARE_AMOUNT);
+        for _ in 0..copies {
+            hand.push(card.clone());
+        }
+    }
+    Ok(augmented)
+}
+
+/// Hydrate `nightmare_instances` (#3794). A row whose payload is not exactly
+/// what [`nightmare_held_payload_value`] projects for the decoded card does
+/// not load; whether the list is a state the engine can run is admission's
+/// question (`turn::nightmare_state_refusal`).
+fn nightmare_instances_from_canonical(
+    value: &Value,
+    catalog: &Catalog,
+) -> Result<Vec<crate::hot::NightmareInstance>, BoundaryRefusal> {
+    let name = "nightmare_instances";
+    let entity = Entity::Player;
+    let rows = value.as_array().ok_or_else(|| {
+        unrepresentable(
+            entity,
+            name,
+            "expected [amount, listeners_before, payload] rows",
+        )
+    })?;
+    let mut instances = Vec::with_capacity(rows.len());
+    for ((amount, listeners_before, card), row) in
+        nightmare_rows_from_canonical(value)?.into_iter().zip(rows)
+    {
+        let identity = card_identity(entity, &card)?;
+        let atom = catalog
+            .atom(&identity)
+            .ok_or_else(|| BoundaryRefusal::UnknownCardId(identity.id.as_str().to_owned()))?;
+        let instance = crate::hot::NightmareInstance {
+            amount,
+            listeners_before,
+            atom,
+            flags: reject_unmodeled_card_slots(entity, &card)?,
+            instance: card_instance_state(entity, &card, &identity)?,
+        };
+        if row.get(2) != Some(&nightmare_held_payload_value(catalog, &instance)) {
+            return Err(unrepresentable(
+                entity,
+                name,
+                "held card payload is not canonical",
+            ));
+        }
+        instances.push(instance);
+    }
+    Ok(instances)
+}
+
 fn hand_choice_kind(value: &str) -> Option<crate::hot::TurnStartHandChoiceKind> {
     match value {
         "loop" => Some(crate::hot::TurnStartHandChoiceKind::Loop),
@@ -11588,6 +12150,7 @@ fn hand_choice_kind(value: &str) -> Option<crate::hot::TurnStartHandChoiceKind> 
         "tools_of_the_trade" => Some(crate::hot::TurnStartHandChoiceKind::ToolsOfTheTrade),
         "tyranny" => Some(crate::hot::TurnStartHandChoiceKind::Tyranny),
         "entropy" => Some(crate::hot::TurnStartHandChoiceKind::Entropy),
+        "hibernate" => Some(crate::hot::TurnStartHandChoiceKind::Hibernate),
         _ => None,
     }
 }
@@ -11602,6 +12165,7 @@ fn hand_choice_kind_name(kind: crate::hot::TurnStartHandChoiceKind) -> &'static 
         crate::hot::TurnStartHandChoiceKind::ToolsOfTheTrade => "tools_of_the_trade",
         crate::hot::TurnStartHandChoiceKind::Tyranny => "tyranny",
         crate::hot::TurnStartHandChoiceKind::Entropy => "entropy",
+        crate::hot::TurnStartHandChoiceKind::Hibernate => "hibernate",
     }
 }
 
@@ -11611,8 +12175,8 @@ fn hand_choice_order_value(
     let kind = FrameKind::TurnStartHandChoice;
     let values = value
         .as_array()
-        .filter(|values| (1..=8).contains(&values.len()))
-        .ok_or_else(|| malformed(kind, "listener_order is not a one-to-eight-token tuple"))?;
+        .filter(|values| (1..=9).contains(&values.len()))
+        .ok_or_else(|| malformed(kind, "listener_order is not a one-to-nine-token tuple"))?;
     let mut order = Vec::with_capacity(values.len());
     for value in values {
         let token = value
@@ -11783,13 +12347,20 @@ fn frame_to_canonical(
                 .frames
                 .after_side_turn_end_power(record)
                 .ok_or_else(|| malformed(kind, "AfterSideTurnEndPower record is malformed"))?;
+            // Two owners are published under a parked choice, both with every
+            // captured listener started: the one behind a parked Dark Embrace
+            // child, and the one whose Constrict listener paused on a choice
+            // of its own (`turn::side_end_prompt_starts_later_listeners`).
             if owner.cursor as usize != owner.listeners().len()
-                || owner.dark_pending_uid.is_none()
                 || !owner.ordinary_suffix_invoked
+                || (owner.dark_pending_uid.is_none()
+                    && !owner.listeners().any(|listener| {
+                        listener.object.token == crate::hot::AfterSideTurnEndPowerToken::Constrict
+                    }))
             {
                 return Err(malformed(
                     kind,
-                    "only the fully invoked parked Dark owner is canonical",
+                    "only a fully invoked parked owner is canonical",
                 ));
             }
             fields.insert(
@@ -11866,6 +12437,8 @@ fn frame_to_canonical(
                 auto_pre_bombardment_phase_to_canonical(record, state, &mut fields)?;
             } else if let Some(dupe_uid) = state.frames.auto_pre_history_course_phase(record) {
                 auto_pre_history_course_phase_to_canonical(dupe_uid, &mut fields);
+            } else if let Some(card_uid) = state.frames.auto_pre_imbued_phase(record) {
+                auto_pre_imbued_phase_to_canonical(card_uid, &mut fields);
             } else {
                 auto_pre_mayhem_phase_to_canonical(record, state, &mut fields)?;
             }
@@ -12327,6 +12900,9 @@ fn frame_to_canonical(
             fields.insert("glam".to_owned(), Value::from(pending.glam));
             fields.insert("star_spent".to_owned(), Value::from(pending.star_spent));
             fields.insert("spent".to_owned(), Value::from(pending.spent));
+            if let Some(energy_value) = pending.energy_value {
+                fields.insert("energy_value".to_owned(), Value::from(energy_value));
+            }
             fields.insert(
                 "source".to_owned(),
                 Value::from(match pending.source {
@@ -12814,6 +13390,20 @@ impl HotBoundary {
     /// [`Self::from_canonical`].
     pub fn catalog_from_canonical(document: &CanonicalStateV2) -> Result<Catalog, BoundaryRefusal> {
         Self::check_document(document)?;
+        // #3794: a held Nightmare card is in no pile, and its original may be
+        // gone (a Power that was played, a card that was transformed), yet
+        // its copies are Hand cards at the next turn start. Every closure
+        // below is derived from the piles, so the catalog is built from the
+        // document with those copies already in Hand. Hydration reads the
+        // original document; nothing here is positional.
+        let with_nightmare_copies;
+        let document = match document.player.get("nightmare_instances") {
+            Some(rows) => {
+                with_nightmare_copies = document_with_nightmare_copies(document, rows)?;
+                &with_nightmare_copies
+            }
+            None => document,
+        };
         if document
             .continuations
             .first()
@@ -13464,6 +14054,20 @@ impl HotBoundary {
                 })?;
             }
         }
+        // #3756: King's Courage is one `ForgeCmd::Forge`
+        // (`KingsCourage/<OnUse>d__10::MoveNext` `0x34ea88` IL_0049), which
+        // generates a level-zero Sovereign Blade when no live one exists
+        // (`ForgeCmd/<Forge>d__2::MoveNext` `0x3ed3bc` IL_0075-0099). The
+        // potion is a Forge command source like a Forge card, so it closes
+        // the same leaf and raises the same reachability.
+        if generation_potion_reachable(PotionId::KingsCourage) {
+            builder.mark_potion_forge_reachable();
+            builder.intern_reachable(CardIdentity {
+                id: CardId::SovereignBlade,
+                upgrade: 0,
+                enchantment: None,
+            })?;
+        }
         let mut drain_power_reachable = false;
         let mut apotheosis_reachable = false;
         let mut blade_symphony_reachable = false;
@@ -13482,6 +14086,24 @@ impl HotBoundary {
             .get(PowerId::EchoForm.as_str())
             .and_then(Value::as_i64)
             .is_some_and(|amount| amount > 0);
+        // #3756: Duplication is a replay writer of the same kind, with no
+        // card behind it. `Duplicator/<OnUse>d__6::MoveNext` RVA `0x34d154`
+        // applies one `DuplicationPower` to its target (`Decimal::One` IL
+        // `0x002d`, `Apply<DuplicationPower>` IL `0x003a`), and
+        // `DuplicationPower::ModifyCardPlayCount` RVA `0xa1dd9` adds one play
+        // to the next card its owner plays (IL `0x0016`-`0x0019`), whatever
+        // its type; `<AfterModifyingCardPlayCount>d__5` RVA `0x3399f8`
+        // decrements the power once for that card (IL `0x001e`). So a held,
+        // active or procurable Duplicator, or a live Duplication stack, is
+        // one more possible body of each finite generator, exactly as a
+        // reachable Burst is. Which card the player doubles is not known at
+        // the root, so every such source previews one extra shuffle.
+        let future_duplication_reachable = generation_potion_reachable(PotionId::Duplicator)
+            || document
+                .player
+                .get("duplication")
+                .and_then(Value::as_i64)
+                .is_some_and(|amount| amount > 0);
         for (name, cards) in &document.piles {
             let Some(pile) = PileId::from_str(name) else {
                 continue;
@@ -13703,6 +14325,7 @@ impl HotBoundary {
                     .saturating_add(hidden_gem_replays)
                     .saturating_add(usize::from(future_burst_reachable))
                     .saturating_add(usize::from(future_echo_reachable))
+                    .saturating_add(usize::from(future_duplication_reachable))
                     .min(256);
                 let body_count = if eidolon_exhaust_executable {
                     intrinsic_body_count
@@ -14025,10 +14648,14 @@ impl HotBoundary {
                 .get("reward_card_pool")
                 .and_then(Value::as_str)
                 .and_then(RewardPool::from_str);
-            for id in owner
+            let pool = owner
                 .map(|o| builder.owner_listener_pool(o, PowerId::HelloWorld))
-                .unwrap_or_default()
-            {
+                .unwrap_or_default();
+            // #3877: the listener can hand the owner a Drain Power on any
+            // turn (a Necrobinder's Common pool holds it), and that card is
+            // then the same Discard-upgrade writer as one in the deck.
+            drain_power_reachable |= pool_holds_drain_power_writer(&pool);
+            for id in pool {
                 intern_generated_identity_closure(
                     &mut builder,
                     CardIdentity {
@@ -14074,6 +14701,9 @@ impl HotBoundary {
                 .and_then(Value::as_str)
                 .and_then(RewardPool::from_str);
             if let Some(owner_pool) = owner.map(|o| builder.calamity_attack_pool(o)) {
+                // #3877: as for Hello World above; a Necrobinder's Attack
+                // pool holds Drain Power.
+                drain_power_reachable |= pool_holds_drain_power_writer(&owner_pool);
                 for id in owner_pool.iter() {
                     intern_generated_identity_closure(
                         &mut builder,
@@ -14192,7 +14822,9 @@ impl HotBoundary {
                 || call_of_the_void_reachable
                 || calamity_reachable
                 || stokes.into_iter().any(|reachable| reachable)
-                || spectrum_shift_reachable,
+                || spectrum_shift_reachable
+                || metamorphosis_reachable
+                || jackpots.into_iter().any(|count| count > 0),
         };
         // A bounded finite generator can itself reveal a future Burst/Echo
         // writer earlier on the same Generation stream. Rehearse to a fixed
@@ -14344,6 +14976,9 @@ impl HotBoundary {
         for (relic, id) in [
             (RelicId::RelicBiiigHug, CardId::Soot),
             (RelicId::RelicFuneraryMask, CardId::Soul),
+            // Ninja Scroll's three turn-one Shivs (#3619,
+            // `engine::relics::ninja_scroll_before_hand_draw`).
+            (RelicId::RelicNinjaScroll, CardId::Shiv),
             (RelicId::RelicRadiantPearl, CardId::Luminesce),
         ] {
             if relics.contains(&relic) {
@@ -14383,6 +15018,11 @@ impl HotBoundary {
             }
             _ => crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109.to_vec(),
         };
+        // #3756: a Crossbow whose pool holds Drain Power can hand the player
+        // that writer on any turn, with none in the deck. Read here, used by
+        // the re-close after the relic pools below.
+        let crossbow_mints_drain_power =
+            relics.contains(&RelicId::RelicCrossbow) && crossbow_pool.contains(&CardId::DrainPower);
         if relics.contains(&RelicId::RelicCrossbow) {
             for id in crossbow_pool {
                 intern_generated_identity_closure(
@@ -14508,7 +15148,7 @@ impl HotBoundary {
         // `RELIC.BONE_TEA` does the same while charged
         // (`BoneTea::AfterPlayerTurnStart`, v0.111.0 RVA `0x90ffc`,
         // `CardCmd::Upgrade` at `IL_0064`, skipped while `IsUsedUp` at
-        // `IL_000d`-`IL_0012`; `engine::relics::continue_after_toasty_mittens`).
+        // `IL_000d`-`IL_0012`; `engine::relics::bone_tea_after_player_turn_start`).
         // Gated on the charge the document carries, so a spent copy — and every
         // post-deal document, where the charge is already spent — interns
         // exactly what it did before the opening seeded it (#2884, #2827).
@@ -14565,7 +15205,22 @@ impl HotBoundary {
         // WV9GZBQ50ZHH n36 refused `Drain Power discard upgrade closure` on
         // 57 such Necrobinder rows. Re-close after the relic pools, as the
         // Armaments and Razor Tooth writers above already do.
-        if upgrade_all_hand_reachable || drain_power_reachable || apotheosis_reachable {
+        //
+        // #3756: a Drain Power only a Crossbow can mint is the same writer
+        // once it is played. `drain_power_reachable` reads the physical
+        // piles; the Crossbow draws its owner's Attack pool every turn
+        // (`Crossbow/<AfterSideTurnStart>d__2::MoveNext` RVA `0x322340`,
+        // `GetDistinctForCombat` IL_00c7, `AddGeneratedCardsToCombat` into
+        // Hand IL_0112), and a Necrobinder's Attack pool holds Drain Power,
+        // whose `CardCmd::Upgrade` (IL_0149 above) then needs the successor
+        // of whatever sits in Discard. The card generators' own pools are
+        // not widened here: their closures are pinned against admission's
+        // probes, and a writer minted from one still stops by name.
+        if upgrade_all_hand_reachable
+            || drain_power_reachable
+            || crossbow_mints_drain_power
+            || apotheosis_reachable
+        {
             builder.intern_all_card_upgrade_closure()?;
         }
 
@@ -14756,6 +15411,7 @@ impl HotBoundary {
         let mut gremlin_merc_returned_wire: Option<i32> = None;
         let mut hopper_master_wire: Option<Value> = None;
         let mut hopper_history_wire: Option<Value> = None;
+        let mut hopper_transformed_wire: Option<Value> = None;
         let mut dampen_casters_wire: Option<Value> = None;
         let mut dampen_cards_wire: Option<Value> = None;
         let mut self_return_current_wire: Option<Value> = None;
@@ -14771,6 +15427,7 @@ impl HotBoundary {
         let mut template_relics_wire: Option<Value> = None;
         let mut history_course_current_wire: Option<Value> = None;
         let mut history_course_previous_wire: Option<Value> = None;
+        let mut nightmare_instances_wire: Option<Value> = None;
         hydrate_potion_belt(document, &mut state, catalog)?;
         state.set_deep_relic_ownership(
             catalog.hooks().owns(RelicId::RelicHandDrill),
@@ -14885,6 +15542,8 @@ impl HotBoundary {
                     hopper_master_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::HopperLootHistory {
                     hopper_history_wire = Some(value.clone());
+                } else if field.slot == PlayerSlot::HopperTransformedRows {
+                    hopper_transformed_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::DampenCasters {
                     dampen_casters_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::DampenCards {
@@ -14924,6 +15583,8 @@ impl HotBoundary {
                     history_course_current_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::HistoryCourseAttackPreviousTurn {
                     history_course_previous_wire = Some(value.clone());
+                } else if field.slot == PlayerSlot::NightmareInstances {
+                    nightmare_instances_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::AfterSideTurnEndPowerOrder {
                     after_side_turn_end_power_order_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::NextAfterSideTurnEndPowerUid {
@@ -14963,6 +15624,7 @@ impl HotBoundary {
                             PowerId::ToolsOfTheTrade,
                             PowerId::Tyranny,
                             PowerId::Entropy,
+                            PowerId::Hibernate,
                         ],
                     )?);
                 } else if field.slot == PlayerSlot::AfterSideTurnStartPowerOrder {
@@ -15576,12 +16238,33 @@ impl HotBoundary {
                 })
                 .collect::<Vec<_>>()
         };
+        // Hibernate joined this order with #3877. A document written before
+        // that lists a live Hibernate nowhere; its place is recoverable only
+        // beside SummonNextTurn, whose Osty-only summon commutes with the
+        // amount-only decrement, and it then goes last.
+        let hibernate_live = state.powers.value(PowerId::Hibernate) > 0;
+        let legacy_hibernate_order = after_player_turn_start_order_wire
+            .as_deref()
+            .filter(|full| {
+                hibernate_live
+                    && !full.contains(&PowerId::Hibernate)
+                    && full.iter().all(|power| *power == PowerId::SummonNextTurn)
+            })
+            .map(|full| {
+                full.iter()
+                    .copied()
+                    .chain([PowerId::Hibernate])
+                    .collect::<Vec<_>>()
+            });
         match (
-            after_player_turn_start_order_wire.as_deref(),
+            legacy_hibernate_order
+                .as_deref()
+                .or(after_player_turn_start_order_wire.as_deref()),
             turn_start_hand_choice_order_wire.as_deref(),
         ) {
             (Some(full), witness) => {
                 let live_count = [
+                    PowerId::Hibernate,
                     PowerId::Loop,
                     PowerId::RollingBoulder,
                     PowerId::SummonNextTurn,
@@ -15608,6 +16291,7 @@ impl HotBoundary {
             }
             (None, Some(legacy)) => {
                 let nonselective_live = [
+                    PowerId::Hibernate,
                     PowerId::Loop,
                     PowerId::RollingBoulder,
                     PowerId::SummonNextTurn,
@@ -15649,8 +16333,18 @@ impl HotBoundary {
                 // One live listener has only one possible acquisition order.
                 // Two or more remain deliberately unset here and fail the
                 // exact carrier validator below as an ambiguous legacy shape.
-                if let [only] = live.as_slice() {
-                    let written = state.set_after_player_turn_start_order(&[*only]);
+                // A live Hibernate goes last beside nothing or SummonNextTurn
+                // (see `legacy_hibernate_order`).
+                let order = match (live.as_slice(), hibernate_live) {
+                    ([only], false) => Some(vec![*only]),
+                    ([], true) => Some(vec![PowerId::Hibernate]),
+                    ([PowerId::SummonNextTurn], true) => {
+                        Some(vec![PowerId::SummonNextTurn, PowerId::Hibernate])
+                    }
+                    _ => None,
+                };
+                if let Some(order) = order {
+                    let written = state.set_after_player_turn_start_order(&order);
                     debug_assert!(written);
                 }
             }
@@ -16012,6 +16706,11 @@ impl HotBoundary {
                 frozen_entry_from_payload_value(value, &state, catalog, false)?,
             ));
         }
+        if let Some(value) = nightmare_instances_wire.as_ref() {
+            state
+                .fanouts
+                .set_nightmare_instances(nightmare_instances_from_canonical(value, catalog)?);
+        }
         if self_return_current_wire.is_some()
             || self_return_previous_wire.is_some()
             || before_hand_draw_card_listener_wire.is_some()
@@ -16077,7 +16776,11 @@ impl HotBoundary {
             .monsters
             .iter()
             .any(|monster| monster.kind == MonsterKind::ThievingHopper);
-        if hopper_present || hopper_master_wire.is_some() || hopper_history_wire.is_some() {
+        if hopper_present
+            || hopper_master_wire.is_some()
+            || hopper_history_wire.is_some()
+            || hopper_transformed_wire.is_some()
+        {
             let parse_rows =
                 |value: Option<Value>| -> Result<Vec<crate::hot::HopperDeckRow>, BoundaryRefusal> {
                     value
@@ -16143,9 +16846,47 @@ impl HotBoundary {
                     },
                 });
             }
+            // #3856: the master rows a transform left without a combat
+            // object, as ascending uids. Each must name a master row that no
+            // pile holds; anything else is not a state the engine writes.
+            let malformed_transformed = |detail: &'static str| {
+                unrepresentable(Entity::Player, "hopper_transformed_rows", detail)
+            };
+            let mut transformed = Vec::new();
+            if let Some(value) = hopper_transformed_wire {
+                let rows = value
+                    .as_array()
+                    .ok_or_else(|| malformed_transformed("expected an ascending uid list"))?;
+                for row in rows {
+                    let uid = row
+                        .as_u64()
+                        .and_then(|uid| u32::try_from(uid).ok())
+                        .ok_or_else(|| malformed_transformed("expected a u32 master uid"))?;
+                    if transformed.last().is_some_and(|last| *last >= uid) {
+                        return Err(malformed_transformed("uids must strictly ascend"));
+                    }
+                    if !master.iter().any(|row| row.card.uid == uid) {
+                        return Err(malformed_transformed("uid names no master row"));
+                    }
+                    if PileId::ALL
+                        .into_iter()
+                        .flat_map(|pile| state.piles.get(pile).as_slice())
+                        .any(|card| card.uid == uid)
+                    {
+                        return Err(malformed_transformed(
+                            "a transformed row still has a combat card",
+                        ));
+                    }
+                    transformed.push(uid);
+                }
+            }
             state
                 .card_states
-                .set_hopper(Some(crate::hot::HopperDeckState { master, history }));
+                .set_hopper(Some(crate::hot::HopperDeckState {
+                    master,
+                    history,
+                    transformed,
+                }));
             if let Some(owner) = state.monsters.first()
                 && owner.kind == MonsterKind::ThievingHopper
                 && let Some(uid) = owner.hopper_swipe_uid()
@@ -16683,6 +17424,14 @@ impl HotBoundary {
                                                 // IL_0058-0094), owned the
                                                 // same way.
                                                 | "joss_paper"
+                                                // #3822: Game Piece's and
+                                                // Iron Club's AfterCardPlayed
+                                                // tail Draws (`0x325930`
+                                                // IL_0089, `0x326f78`
+                                                // IL_0095), owned the same
+                                                // way.
+                                                | "game_piece"
+                                                | "iron_club"
                                                 // #3387: Gremlin Horn's Draw
                                                 // (`0x326170` IL_00d9),
                                                 // published by its deferred
@@ -16722,7 +17471,17 @@ impl HotBoundary {
                                     })
                             || document.continuations[..index]
                                 .iter()
-                                .any(|owner| owner.frame_type == FrameKind::CardFinish.as_str()),
+                                .any(|owner| owner.frame_type == FrameKind::CardFinish.as_str())
+                            // #3817: turn one's Imbued AutoPlay sits
+                            // directly on its AutoPre phase record, the
+                            // stack base. Admission checks the whole
+                            // two-frame stack with
+                            // `play::imbued_auto_pre_stack_is_exact`.
+                            || index == 1
+                                && document.continuations[0].frame_type
+                                    == FrameKind::Phase.as_str()
+                                && document.continuations[0].fields.get("snapshot")
+                                    == Some(&imbued_phase_snapshot()),
                         allow_stale_apc_target,
                     )?
                 } else {
@@ -16789,6 +17548,15 @@ impl HotBoundary {
                                     "AutoPre History Course phase word record overflow",
                                 )
                             })?;
+                    } else if canonical.fields.get("snapshot") == Some(&imbued_phase_snapshot()) {
+                        let card_uid = auto_pre_imbued_phase_from_canonical(canonical)?;
+                        frames.push_auto_pre_imbued_phase(card_uid).ok_or_else(|| {
+                            unrepresentable(
+                                Entity::Player,
+                                "pending",
+                                "AutoPre Imbued phase word record overflow",
+                            )
+                        })?;
                     } else {
                         auto_pre_mayhem_phase_from_canonical(canonical)?;
                         frames.push_auto_pre_mayhem_phase().ok_or_else(|| {
@@ -17233,11 +18001,22 @@ impl HotBoundary {
                     .as_array()
                     .filter(|rows| !rows.is_empty())
                     .ok_or_else(|| malformed(kind, "listeners is empty or not an array"))?;
-                let dark_pending_uid = frame_field(kind, fields, "dark_pending_uid")?
-                    .as_u64()
-                    .and_then(|uid| u32::try_from(uid).ok())
-                    .filter(|uid| *uid != u32::MAX)
-                    .ok_or_else(|| malformed(kind, "dark_pending_uid is not allocatable"))?;
+                // `null` names the owner a paused Constrict listener left
+                // fully invoked; a uid names the parked Dark Embrace child's.
+                let dark_field = frame_field(kind, fields, "dark_pending_uid")?;
+                let dark_pending_uid = if dark_field.is_null() {
+                    None
+                } else {
+                    Some(
+                        dark_field
+                            .as_u64()
+                            .and_then(|uid| u32::try_from(uid).ok())
+                            .filter(|uid| *uid != u32::MAX)
+                            .ok_or_else(|| {
+                                malformed(kind, "dark_pending_uid is not allocatable")
+                            })?,
+                    )
+                };
                 let cursor = frame_field(kind, fields, "cursor")?
                     .as_u64()
                     .and_then(|cursor| u32::try_from(cursor).ok())
@@ -17252,11 +18031,19 @@ impl HotBoundary {
                             malformed(kind, "conqueror_reachable_at_entry is not boolean")
                         })?;
                 let mut listeners = Vec::with_capacity(rows.len());
+                // The paused listener's row: its child ran after every earlier
+                // row had finished.
                 let pending_dark_index = rows.iter().position(|row| {
-                    row.as_array().is_some_and(|row| {
-                        row.first().and_then(Value::as_str) == Some("dark_embrace")
-                            && row.get(1).and_then(Value::as_u64)
-                                == Some(u64::from(dark_pending_uid))
+                    row.as_array().is_some_and(|row| match dark_pending_uid {
+                        Some(dark_pending_uid) => {
+                            row.first().and_then(Value::as_str) == Some("dark_embrace")
+                                && row.get(1).and_then(Value::as_u64)
+                                    == Some(u64::from(dark_pending_uid))
+                        }
+                        None => {
+                            row.first().and_then(Value::as_str)
+                                == Some(crate::hot::AfterSideTurnEndPowerToken::Constrict.as_str())
+                        }
                     })
                 });
                 for row in rows {
@@ -17287,7 +18074,7 @@ impl HotBoundary {
                                 .ok_or_else(|| malformed(kind, "listener payload is not Int32"))?;
                     }
                     let pending_dark = token == crate::hot::AfterSideTurnEndPowerToken::DarkEmbrace
-                        && uid == dark_pending_uid;
+                        && Some(uid) == dark_pending_uid;
                     if !after_side_turn_end_payload_is_valid(token, payload, pending_dark) {
                         return Err(malformed(
                             kind,
@@ -17332,24 +18119,30 @@ impl HotBoundary {
                     || !ordinary_suffix_invoked
                     || listeners
                         .iter()
-                        .filter(|listener| {
-                            listener.object.token
-                                == crate::hot::AfterSideTurnEndPowerToken::DarkEmbrace
-                                && listener.object.uid == dark_pending_uid
+                        .filter(|listener| match dark_pending_uid {
+                            Some(dark_pending_uid) => {
+                                listener.object.token
+                                    == crate::hot::AfterSideTurnEndPowerToken::DarkEmbrace
+                                    && listener.object.uid == dark_pending_uid
+                            }
+                            None => {
+                                listener.object.token
+                                    == crate::hot::AfterSideTurnEndPowerToken::Constrict
+                            }
                         })
                         .count()
                         != 1
                 {
                     return Err(malformed(
                         kind,
-                        "exposed owner is not the fully invoked unique-Dark parked shape",
+                        "exposed owner is not a fully invoked parked shape with one paused listener",
                     ));
                 }
                 frames
                     .push_after_side_turn_end_power(&crate::hot::AfterSideTurnEndPowerRecord {
                         listeners,
                         cursor,
-                        dark_pending_uid: Some(dark_pending_uid),
+                        dark_pending_uid,
                         ordinary_suffix_invoked,
                         conqueror_reachable_at_entry,
                     })
@@ -17753,6 +18546,10 @@ impl HotBoundary {
                                     PotionId::SwiftPotion
                                         | PotionId::CureAll
                                         | PotionId::BottledPotential
+                                        // #3877: Glowwater's `Draw(10)` tail, the
+                                        // pair `play::rooted_potion_draw_suffix_is_exact`
+                                        // authenticates (IL cited there).
+                                        | PotionId::GlowwaterPotion
                                 ) | (crate::hot::DrawCaller::ClarityPotion, PotionId::Clarity)
                                     | (crate::hot::DrawCaller::SneckoOil, PotionId::SneckoOil)
                             ) && parent.stage == PotionFinishStage::Effect
@@ -18487,21 +19284,18 @@ impl HotBoundary {
                         .expect("authenticated carrier")
                 })
                 .collect::<Vec<_>>();
-            let retained_order = order
-                .iter()
-                .enumerate()
-                .filter_map(|(index, kind)| {
-                    (index >= next_listener as usize
-                        || *kind != crate::hot::TurnStartHandChoiceKind::SummonNextTurn)
-                        .then_some(*kind)
-                })
-                .collect::<Vec<_>>();
+            let retained_order = crate::hot::turn_start_retained_listeners(
+                &order,
+                &appended_suffix,
+                next_listener as usize,
+                state.powers.value(PowerId::Hibernate) > 0,
+            );
             let hand = state.piles.get(PileId::Hand).as_slice();
             // Summon may already have removed itself before this later
             // selection. A Tools-owned Sly child carries an exact minted
             // proof for each next-turn-only listener it appended.
             let completed_listeners = (next_listener as usize).saturating_sub(1);
-            let proof_is_exact = retained_order.len().saturating_add(appended_suffix.len()) <= 8
+            let proof_is_exact = retained_order.len().saturating_add(appended_suffix.len()) <= 9
                 && appended_suffix.iter().enumerate().all(|(index, token)| {
                     !retained_order.contains(token) && !appended_suffix[..index].contains(token)
                 })
@@ -18823,6 +19617,30 @@ impl HotBoundary {
                 Entity::Player,
                 "block_next_turn_order",
                 "Toric keyed state and acquisition order disagree",
+            ));
+        }
+        if !state.fanouts.toric_toughness_later_state_is_exact() {
+            return Err(unrepresentable(
+                Entity::Player,
+                "toric_toughness_later_instances",
+                "later Toric objects must follow a live first object in the walk order",
+            ));
+        }
+        if state.fanouts.curious_follows_borrowed_time()
+            && (state.powers.value(PowerId::Curious) <= 0
+                || state.powers.value(PowerId::BorrowedTime) <= 0)
+        {
+            return Err(unrepresentable(
+                Entity::Player,
+                "curious_after_borrowed_time",
+                "an order between Curious and Borrowed Time needs both powers live",
+            ));
+        }
+        if !state.rolling_boulder_later_state_is_exact() {
+            return Err(unrepresentable(
+                Entity::Player,
+                "rolling_boulder_later_instances",
+                "later Rolling Boulder objects must follow a live first object in the walk order",
             ));
         }
         if !crate::engine::play::panache_false_rows_are_rooted(&state, catalog) {
@@ -20117,10 +20935,17 @@ struct GenerationPreviewCounts {
     generation_potions: bool,
     /// #3487: a physical or live Generation reader that no seeded prefix
     /// accounts for: a Hello World, Call of the Void or Calamity card or
-    /// power, a physical Stoke, or a reachable Spectrum Shift. Each draws
-    /// the live stream at a play or hook that can precede a held Jack,
-    /// Distraction or White Noise play, so beside one those three close
-    /// their COMPLETE pools. See [`intern_generation_preview`].
+    /// power, a physical Stoke, a reachable Spectrum Shift, or (#3756) a
+    /// physical Metamorphosis, whose play draws at
+    /// `Metamorphosis/<OnPlay>d__5::MoveNext` RVA `0x3ac1e8` IL `0x009a` /
+    /// `0x009f`, or (#3756) a physical Jackpot, whose play draws at
+    /// `Jackpot/<OnPlay>d__3::MoveNext` RVA `0x3a80d4` IL `0x0154` /
+    /// `0x0159` (the type overrides no `CanonicalKeywords`, so the card
+    /// returns to Discard and can be played again). Each draws the live
+    /// stream at a play or hook that can precede a held Jack, Distraction or
+    /// White Noise play, so beside one those three close their COMPLETE
+    /// pools. See
+    /// [`intern_generation_preview`].
     unpreviewed_readers: bool,
 }
 
@@ -20326,6 +21151,28 @@ fn jackpot_pool_for_owner(owner: Option<RewardPool>, full_pool: bool) -> Vec<Car
 /// exact closure is therefore all 49 L0 results. Those results recurse through
 /// this same owner-aware walk: in particular Jack can create Discovery, whose
 /// later choice reaches the complete physical owner's card-generation pool.
+/// Whether a persistent listener's generation pool holds a card whose play
+/// upgrades cards already in the fight: a `DrainPowerExact` row at level 0,
+/// the level a listener mints.
+///
+/// `DrainPower/<OnPlay>d__3::MoveNext` (RVA `0x399f7c`) reads the Discard
+/// pile (IL_00d3-IL_00da), picks on `CombatCardSelection` (IL_0128) and
+/// upgrades each pick with `CardCmd::Upgrade` (IL_0149), whatever put the
+/// Drain Power in Hand. A fight whose only Drain Power is one Hello World or
+/// Calamity will mint therefore needs every reachable identity's successor,
+/// exactly as a deck's Drain Power does (#3877; the sweep's lone
+/// Necrobinder `HELLO_WORLD` root stopped mid-line at that play with
+/// `was not pre-interned`).
+fn pool_holds_drain_power_writer(pool: &[CardId]) -> bool {
+    pool.iter().any(|id| {
+        crate::content_tables::card_row(*id, 0).is_some_and(|row| {
+            row.steps
+                .iter()
+                .any(|step| step.kind == StepKind::DrainPowerExact)
+        })
+    })
+}
+
 fn intern_generated_identity_closure(
     builder: &mut CatalogBuilder,
     identity: CardIdentity,
@@ -20667,8 +21514,13 @@ fn intern_generated_identity_closure_inner(
                 }
             }
         }
-        CardId::InfernalBlade if owner == Some(RewardPool::Ironclad) => {
-            for id in crate::content_tables::INFERNAL_BLADE_ATTACK_POOL_V109 {
+        // #3816: a generated Infernal Blade draws its OWNER's Attack pool
+        // (`steps::neutral::infernal_blade_owner_attack_pool`), which is the
+        // frozen table for an Ironclad, as before.
+        CardId::InfernalBlade if owner.is_some() => {
+            let pool =
+                builder.infernal_blade_attack_pool(owner.expect("Infernal Blade owner is present"));
+            for id in pool {
                 intern_generated_identity_closure_inner(
                     builder,
                     CardIdentity {
@@ -21277,6 +22129,37 @@ fn one_card_prefixes_without_an_earlier_reader(
     Ok(Some((results, rng)))
 }
 
+/// #3853, the Abundance twin of #3498: whether an offer of any of `shuffles`
+/// sequential Abundance draws BEFORE the last reads the Generation stream
+/// ([`prefix_result_reads_generation_before_a_later_copy`]; an owner's Power
+/// pool can hold Hello World, Creative AI, Calamity, Call of the Void and
+/// Spectrum Shift). The player may take that offer and play it, and its hook
+/// then draws before the later copy does
+/// (`Abundance/<OnPlay>d__6::MoveNext` RVA `0x3888ec` draws at IL `0x0097`,
+/// offers at IL `0x00e8` and only then hands the pick to Hand), so the later
+/// copy's three offers are not fixed by the root and the caller interns the
+/// complete pool. Previews on a copy of `rng`; takes nothing from it.
+fn abundance_offer_reads_generation_before_a_later_copy(
+    rng: Xoshiro256StarStar,
+    pool: &[CardId],
+    shuffles: usize,
+) -> Result<bool, BoundaryRefusal> {
+    let mut rng = rng;
+    for _ in 1..shuffles {
+        let mut shuffled = pool.to_vec();
+        rng.shuffle(&mut shuffled)
+            .map_err(|detail| unrepresentable(Entity::Document, "generation", detail))?;
+        if shuffled
+            .into_iter()
+            .take(3)
+            .any(prefix_result_reads_generation_before_a_later_copy)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 /// Intern exactly the deterministic leaves the admitted generation cards can
 /// reach from this entry's live Generation stream.
 ///
@@ -21336,7 +22219,21 @@ fn intern_generation_preview(
     } = counts;
     // #3487: a reader beside which Distraction, White Noise and Jack close
     // their complete pools rather than hold a seeded prefix.
-    let prefix_is_unsafe = generation_potions || unpreviewed_readers;
+    //
+    // #3756: and so does a Thieving Hopper on the board. Its theft draws the
+    // same stream: `ThievingHopper/<ThieveryMove>d__36::MoveNext` RVA
+    // `0x371428` reads `RunRngSet::get_CombatCardGeneration` at IL `0x023b`
+    // and takes its card with `NextItem` at IL `0x0242`, one draw even over a
+    // single candidate (`engine::monsters::hopper_steal_one_card`). The move
+    // runs on the enemy turn, so whether it precedes a held Distraction,
+    // White Noise, Jack or Abundance play is the player's choice and no
+    // seeded prefix survives it. The document's roster is the fight's: no
+    // admitted move adds a Hopper mid-combat.
+    let hopper_theft_reads_generation = document.monsters.iter().any(|monster| {
+        monster.get("kind").and_then(Value::as_str) == Some(MonsterKind::ThievingHopper.as_str())
+    });
+    let prefix_is_unsafe =
+        generation_potions || unpreviewed_readers || hopper_theft_reads_generation;
     let owner = document
         .player
         .get("reward_card_pool")
@@ -21604,7 +22501,9 @@ fn intern_generation_preview(
     {
         let pool =
             builder.owner_type_generation_pool(owner, crate::content_tables::CardType::Power);
-        let prefixes = if prefix_is_unsafe {
+        // #3825: and beside an Abundance body, whose live three-offer draw
+        // shares the stream (the Abundance block below has the IL).
+        let prefixes = if prefix_is_unsafe || abundance_shuffles > 0 {
             None
         } else {
             one_card_prefixes_without_an_earlier_reader(rng, &pool, white_noise_shuffles)?
@@ -21797,11 +22696,32 @@ fn intern_generation_preview(
     // `NextItem` sampling is with replacement. Every member is reachable at
     // every draw, so the exact cold closure is the whole frozen pool at each
     // source level; unlike a shuffle prefix, the live seed cannot narrow it.
+    //
+    // #3756: each row is closed through the ordinary generated-identity walk,
+    // as a GENERATED Jackpot's rows already are (the walk's `Jackpot` arm). A
+    // row that is itself a generator is played from Hand like any other mint,
+    // so it owes its own closure: a Regent's zero-cost pool holds Quasar,
+    // whose plays draw the whole Colorless pool, and interning the Quasar row
+    // alone left every Regent root with a physical Jackpot refused on `Quasar
+    // generation closure` (site census `JTDUFUU7UZ1B`).
     for (upgrade, count) in jackpots.into_iter().enumerate() {
         if count == 0 || !owner_pool_gate {
             continue;
         }
-        builder.intern_jackpot_full_closure(upgrade as u8, jackpot_pool)?;
+        let mut expanded = std::collections::BTreeSet::new();
+        for &id in jackpot_pool {
+            intern_generated_identity_closure_inner(
+                builder,
+                CardIdentity {
+                    id,
+                    upgrade: upgrade as u8,
+                    enchantment: None,
+                },
+                jackpot_pool,
+                owner,
+                &mut expanded,
+            )?;
+        }
     }
     // #3122: `Abundance/<OnPlay>d__6::MoveNext` (`0x3888ec` IL_0027-IL_0058)
     // reads `Owner.Character.CardPool` and `Owner.UnlockState`, never an
@@ -21818,7 +22738,58 @@ fn intern_generation_preview(
             builder.owner_type_generation_pool(owner, crate::content_tables::CardType::Power);
         // Beside a reachable generation potion, every row at L1 (the
         // Distraction comment above has the IL).
-        if generation_potions {
+        //
+        // #3825: and beside a White Noise body. Nothing in Abundance's IL is
+        // order-sensitive in itself: `Abundance/<OnPlay>d__6::MoveNext` RVA
+        // `0x3888ec` reads the stream once, at play time
+        // (`get_CombatCardGeneration` IL `0x0092`, the one
+        // `GetDistinctForCombat` at IL `0x0097`), upgrades each offer
+        // (`CardCmd::Upgrade` IL `0x00b8`) and opens its screen (IL `0x00e8`).
+        // What made it order-sensitive was this function: the three-offer
+        // prefix below is read at the ROOT's stream position, and a White
+        // Noise played first (`WhiteNoise/<OnPlay>d__3::MoveNext` RVA
+        // `0x3c74ac`, IL `0x0109`/`0x010e`) moves that position, so
+        // `begin_abundance_exact`'s live shuffle would offer rows outside the
+        // prefix and fail at the mint. The complete L1 closure is independent
+        // of stream position, and White Noise closes its complete L0 pool
+        // beside an Abundance (above), so both draws are exact in either
+        // order and neither takes anything from `rng`.
+        //
+        // #3756: and beside a Thieving Hopper, whose theft moves the same
+        // position from the enemy turn (`hopper_theft_reads_generation`).
+        //
+        // #3853: and beside every other reader of the stream, for the same
+        // reason. The list is the all-method-body scan at
+        // `prefix_result_reads_generation_before_a_later_copy`: the live
+        // listeners, Stoke, Spectrum Shift, Metamorphosis and Jackpot
+        // (`unpreviewed_readers`), and the other card bodies that draw at
+        // play time (Discovery, Splash, Quasar, Largesse, Jack of All Trades,
+        // Distraction, Infernal Blade, Bundle of Joy, Manifest Authority).
+        // Before, `[Abundance, Jackpot]` admitted on the three-offer prefix
+        // and an Abundance played after the Jackpot stopped on
+        // `UnknownMintIdentity`. Whether the other card's own preview
+        // survives an Abundance is that card's ordering gate, unchanged.
+        let other_reader = unpreviewed_readers
+            || discovery_shuffles > 0
+            || discovery_unbounded
+            || splashes.into_iter().any(|reachable| reachable)
+            || quasars.into_iter().sum::<usize>() > 0
+            || largesses.into_iter().sum::<usize>() > 0
+            || jack_shuffles > 0
+            || distraction_shuffles > 0
+            || infernal_blades > 0
+            || bundles_of_joy > 0
+            || manifest_l0 + manifest_upgraded > 0;
+        let complete_closure = generation_potions
+            || white_noise_shuffles > 0
+            || hopper_theft_reads_generation
+            || other_reader
+            || abundance_offer_reads_generation_before_a_later_copy(
+                rng,
+                &pool,
+                abundance_shuffles,
+            )?;
+        if complete_closure {
             for &id in &pool {
                 intern_generated_identity_closure(
                     builder,
@@ -21832,7 +22803,7 @@ fn intern_generation_preview(
                 )?;
             }
         }
-        let rounds = if generation_potions {
+        let rounds = if complete_closure {
             0
         } else {
             abundance_shuffles
@@ -21964,6 +22935,36 @@ fn intern_generation_preview(
                 upgrade: 0,
                 enchantment: None,
             })?;
+        }
+    } else if let Some(blade_owner) = owner.filter(|&owner| {
+        owner != RewardPool::Ironclad
+            && infernal_blades > 0
+            && owner_pool_gate
+            && profile_is_recorded
+    }) {
+        // #3816: any other owner's Infernal Blade draws that owner's Attack
+        // pool under the recorded profile (`steps::neutral::
+        // infernal_blade_owner_attack_pool` has the IL), and the boundary
+        // interns the COMPLETE pool with its closure, never a seeded prefix.
+        // The body's draw is live (`InfernalBlade/<OnPlay>d__3::MoveNext` RVA
+        // `0x3a7164`, getter IL `0x008b`, `GetDistinctForCombat` IL `0x0090`),
+        // so over a complete pool it mints a known atom wherever the stream
+        // stands, and this takes nothing from the preview `rng`. An in-class
+        // deck can hold readers no Ironclad gate was written against (a
+        // Defect's Hello World listener, say), which is why the prefix an
+        // Ironclad owner keeps is not offered here. `engine::admission`
+        // requires this closure (`infernal blade generation closure`).
+        for id in builder.infernal_blade_attack_pool(blade_owner) {
+            intern_generated_identity_closure(
+                builder,
+                CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                },
+                jackpot_pool,
+                owner,
+            )?;
         }
     }
     // #2560: Bundle of Joy (`0x390188`) and Manifest Authority (`0x3ab860`)
@@ -23678,6 +24679,110 @@ mod tests {
         assert_eq!(round_trip(&absent_power), absent_power);
     }
 
+    /// #3856: the same absent non-Power row is a state only when a transform
+    /// recorded it. `hopper_transformed_rows` names the row; without it the
+    /// row has no account of itself, whatever else the fight holds (the
+    /// Primal Force here is a transform writer, which before the field
+    /// existed was enough). The field round-trips, is elided when empty, and
+    /// refuses every malformed value without panicking.
+    #[test]
+    fn thieving_hopper_absent_master_row_needs_its_transformed_fact() {
+        let initial = thieving_hopper_document();
+        let rows = initial.player["hopper_master_deck"].as_array().unwrap();
+        let uid = rows[0][0].as_u64().expect("master uid");
+        let other = rows[1][0].as_u64().expect("a second master uid");
+        let mut absent = initial.clone();
+        for cards in absent.piles.values_mut() {
+            cards.retain(|card| card.uid != Some(uid));
+        }
+        let fresh = absent
+            .player
+            .get("next_card_uid")
+            .and_then(Value::as_u64)
+            .unwrap_or_else(|| {
+                1 + initial
+                    .piles
+                    .values()
+                    .flatten()
+                    .filter_map(|card| card.uid)
+                    .max()
+                    .expect("fixture cards are physical")
+            });
+        absent
+            .piles
+            .entry("exhaust".to_owned())
+            .or_default()
+            .push(card("PRIMAL_FORCE", fresh));
+        absent
+            .player
+            .insert("next_card_uid".to_owned(), Value::from(fresh + 1));
+
+        // No fact: the row has no combat object and no account of itself.
+        let catalog = HotBoundary::catalog_from_canonical(&absent).unwrap();
+        let hot = HotBoundary::from_canonical(&absent, &catalog).unwrap();
+        assert!(!crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&hot, &catalog));
+        assert!(
+            crate::engine::admit(&absent, &hot, &catalog)
+                .unwrap_err()
+                .to_string()
+                .contains("Thieving Hopper")
+        );
+
+        // With it: exact, no Hopper refusal, and the bytes round-trip.
+        let mut transformed = absent.clone();
+        transformed
+            .player
+            .insert("hopper_transformed_rows".to_owned(), json!([uid]));
+        let catalog = HotBoundary::catalog_from_canonical(&transformed).unwrap();
+        let hot = HotBoundary::from_canonical(&transformed, &catalog).unwrap();
+        assert_eq!(
+            hot.card_states.hopper().unwrap().transformed,
+            [u32::try_from(uid).unwrap()]
+        );
+        assert!(crate::engine::monsters::thieving_hopper_deck_payload_is_exact(&hot, &catalog));
+        if let Err(refusal) = crate::engine::admit(&transformed, &hot, &catalog) {
+            assert!(
+                !refusal.to_string().contains("Thieving Hopper"),
+                "{refusal}"
+            );
+        }
+        assert_eq!(round_trip(&transformed), transformed);
+        // The initial document writes no field.
+        assert!(
+            !round_trip(&initial)
+                .player
+                .contains_key("hopper_transformed_rows")
+        );
+
+        for rows in [
+            json!([]),
+            json!(uid),
+            json!("x"),
+            json!(null),
+            json!({}),
+            json!([[uid]]),
+            json!(["x"]),
+            json!([-1]),
+            json!([1.5]),
+            json!([u64::from(u32::MAX) + 1]),
+            // A uid that is no master row; a row that still has its card;
+            // a repeat; a descending pair.
+            json!([fresh + 7]),
+            json!([other]),
+            json!([uid, uid]),
+            json!([uid, other]),
+            json!([other, uid]),
+        ] {
+            let mut malformed = absent.clone();
+            malformed
+                .player
+                .insert("hopper_transformed_rows".to_owned(), rows.clone());
+            let loaded = HotBoundary::catalog_from_canonical(&malformed)
+                .and_then(|catalog| HotBoundary::from_canonical(&malformed, &catalog));
+            assert!(loaded.is_err(), "accepted {rows}");
+        }
+    }
+
     #[test]
     fn thieving_hopper_rarity_priority_and_singleton_fallback_spend_one_draw() {
         let document = thieving_hopper_document_with_deck(
@@ -24040,11 +25145,10 @@ mod tests {
             } else {
                 mixed_spawned.monsters[2].remove("spawn_noop");
             }
-            assert!(
-                refuse(&mixed_spawned)
-                    .to_string()
-                    .contains("Gremlin Merc lineage")
-            );
+            // #3823: two live siblings with different SPAWNED_MOVE flags is
+            // the state a stun over one gremlin's SPAWNED_MOVE leaves (it
+            // spends that enemy turn on STUNNED), so the wire round-trips.
+            assert_eq!(round_trip(&mixed_spawned), mixed_spawned);
         }
 
         let mut escaped_entry = state.clone();
@@ -24330,6 +25434,159 @@ mod tests {
                 .push(Frame::ConsumingShadowSideEnd { auth_uid: 0 });
             assert!(!gremlin_merc_projection_state_is_valid(&foreign));
             // An ended combat is never parked.
+            let mut over = parked;
+            over.history.over = true;
+            assert!(!gremlin_merc_projection_state_is_valid(&over));
+        }
+    }
+
+    /// #3756: a generation potion's choose-a-card screen is a park of the
+    /// same kind (`AttackPotion/<OnUse>d__6` RVA `0x34bdb4`,
+    /// `FromChooseACardScreen` IL_00a9, between `BeforePotionUsed` and
+    /// `AfterPotionUsed` of `PotionModel/<OnUseWrapper>d__75` RVA `0x31dd20`).
+    /// It projects the retained Merc lineage over its ActionReplay root and
+    /// resumes identically from the imported wire, before and after Surprise.
+    /// A transient lineage, a rootless park, a frame under the potion and an
+    /// ended combat still refuse.
+    #[test]
+    fn gremlin_merc_parked_generation_potion_round_trips_its_lineage() {
+        use crate::engine::monsters::{
+            gremlin_merc_projection_state_is_valid, gremlin_merc_public_state_is_valid,
+        };
+        let mut document = gremlin_merc_document(20);
+        for pile in document.piles.values_mut() {
+            pile.clear();
+        }
+        document.piles.get_mut("hand").unwrap().extend([
+            card(CardId::StrikeIronclad.as_str(), 2),
+            card(CardId::DefendIronclad.as_str(), 3),
+        ]);
+        document.player.insert("next_card_uid".to_owned(), json!(4));
+        document
+            .player
+            .insert("exact_piles".to_owned(), json!(true));
+        document
+            .player
+            .insert("reward_card_pool".to_owned(), json!("Ironclad"));
+        document.player.insert(
+            "splash_unlock_epochs".to_owned(),
+            Value::Array(
+                FULLY_UNLOCKED_CARD_POOL_EPOCHS
+                    .iter()
+                    .copied()
+                    .map(Value::from)
+                    .collect(),
+            ),
+        );
+        document
+            .player
+            .insert("potion_slots".to_owned(), json!(["ATTACK_POTION"]));
+        document
+            .player
+            .insert("potions".to_owned(), json!(["ATTACK_POTION"]));
+        document
+            .player
+            .insert("fully_unlocked_potion_pool".to_owned(), Value::Bool(true));
+        let seeded = Xoshiro256StarStar::from_seed(47);
+        document.rng.insert(
+            "generation".to_owned(),
+            CanonicalRngV2 {
+                counter: seeded.counter,
+                words: seeded.words,
+            },
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let lone = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        crate::engine::admit(&document, &lone, &catalog).unwrap();
+        let mut spawned = lone.clone();
+        spawned.rng.set(
+            RngStream::Niche,
+            crate::hot::RngStreamState {
+                words: [5, 6, 7, 8],
+                counter: 1,
+            },
+        );
+        let lethal = i64::from(spawned.monsters[0].hp);
+        crate::engine::damage::damage_monster(
+            &mut spawned,
+            0,
+            crate::decimal::DotNetDecimal::from_i64(lethal),
+            false,
+            false,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert_eq!(spawned.monsters.len(), 3);
+        for (state, halves) in [(lone, -1), (spawned, 2)] {
+            let action = crate::engine::legal_actions(&state, &catalog)
+                .into_iter()
+                .find(|action| matches!(action, crate::engine::Action::UsePotion { .. }))
+                .unwrap();
+            let parked = crate::engine::apply_action(&state, &catalog, &action)
+                .unwrap()
+                .state;
+            let pending = parked.pending.as_deref().expect("the potion's screen");
+            assert!(pending.generation_potion_record(&parked.frames).is_some());
+            assert!(matches!(
+                parked.frames.as_slice(),
+                [Frame::ActionReplay { .. }, Frame::PotionFinish { .. }]
+            ));
+            assert!(!gremlin_merc_public_state_is_valid(&parked));
+            assert!(gremlin_merc_projection_state_is_valid(&parked));
+
+            let canonical = HotBoundary::try_to_canonical(&parked, &catalog).unwrap();
+            assert_eq!(
+                canonical
+                    .player
+                    .get("gremlin_merc_gold_proportion_halves")
+                    .cloned()
+                    .unwrap_or(json!(-1)),
+                json!(halves)
+            );
+            let rebuilt = HotBoundary::catalog_from_canonical(&canonical).unwrap();
+            let imported = HotBoundary::from_canonical(&canonical, &rebuilt).unwrap();
+            assert!(gremlin_merc_projection_state_is_valid(&imported));
+            assert_eq!(
+                HotBoundary::try_to_canonical(&imported, &rebuilt).unwrap(),
+                canonical
+            );
+            let resume = crate::engine::legal_actions(&imported, &rebuilt)
+                .into_iter()
+                .next()
+                .unwrap();
+            let from_import = crate::engine::apply_action(&imported, &rebuilt, &resume)
+                .unwrap()
+                .state;
+            let direct = crate::engine::apply_action(&parked, &catalog, &resume)
+                .unwrap()
+                .state;
+            assert!(from_import.pending.is_none());
+            assert!(gremlin_merc_public_state_is_valid(&from_import));
+            assert_eq!(
+                HotBoundary::try_to_canonical(&from_import, &rebuilt).unwrap(),
+                HotBoundary::try_to_canonical(&direct, &catalog).unwrap()
+            );
+
+            let mut dead = parked.clone();
+            let merc_hp = dead.monsters[0].hp;
+            dead.monsters_mut()[0].hp = if merc_hp > 0 { 0 } else { 1 };
+            assert!(!gremlin_merc_projection_state_is_valid(&dead));
+            assert!(
+                HotBoundary::try_to_canonical(&dead, &catalog)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("gremlin_merc_gold_proportion_halves")
+            );
+            let mut rootless = parked.clone();
+            rootless.frames =
+                crate::hot::Frames::from_frames(parked.frames.as_slice()[1..].to_vec());
+            assert!(!gremlin_merc_projection_state_is_valid(&rootless));
+            // A frame above the potion's is no longer the potion's own screen.
+            let mut foreign = parked.clone();
+            foreign
+                .frames
+                .push(Frame::ConsumingShadowSideEnd { auth_uid: 0 });
+            assert!(!gremlin_merc_projection_state_is_valid(&foreign));
             let mut over = parked;
             over.history.over = true;
             assert!(!gremlin_merc_projection_state_is_valid(&over));
@@ -25068,6 +26325,56 @@ mod tests {
             &CatalogBuilder::new().build(),
             RewardPool::Necrobinder
         ));
+    }
+
+    /// #3816: the generated-identity walk's Infernal Blade arm closes the
+    /// OWNER's Attack pool, the frozen table for an Ironclad as before, and
+    /// nothing without an owner.
+    #[test]
+    fn a_generated_infernal_blade_closes_its_owners_attack_pool() {
+        let blade = CardIdentity {
+            id: CardId::InfernalBlade,
+            upgrade: 0,
+            enchantment: None,
+        };
+        for owner in [RewardPool::Ironclad, RewardPool::Defect, RewardPool::Silent] {
+            let mut builder = CatalogBuilder::new();
+            let jackpot_pool = jackpot_pool_for_owner(Some(owner), true);
+            intern_generated_identity_closure(&mut builder, blade, &jackpot_pool, Some(owner))
+                .unwrap();
+            let pool = builder.infernal_blade_attack_pool(owner);
+            if owner == RewardPool::Ironclad {
+                assert_eq!(pool, INFERNAL_BLADE_ATTACK_POOL_V109.to_vec());
+            } else {
+                assert_eq!(pool, builder.crossbow_attack_pool(owner), "{owner:?}");
+                assert!(
+                    pool.iter()
+                        .all(|id| !INFERNAL_BLADE_ATTACK_POOL_V109.contains(id)),
+                    "{owner:?}"
+                );
+            }
+            let catalog = builder.build();
+            for id in pool {
+                assert!(
+                    catalog.is_reachable(CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    }),
+                    "{owner:?} {id:?}"
+                );
+            }
+        }
+        let mut builder = CatalogBuilder::new();
+        intern_generated_identity_closure(&mut builder, blade, &[], None).unwrap();
+        let catalog = builder.build();
+        assert_eq!(
+            catalog
+                .reachable_specs()
+                .map(|spec| spec.identity)
+                .collect::<Vec<_>>(),
+            vec![blade]
+        );
     }
 
     #[test]
@@ -26186,14 +27493,16 @@ mod tests {
         active_goop.monsters[0].insert("move_log".to_owned(), json!(["TENDERIZING_GOOP_MOVE"]));
         cases.push(active_goop);
         // #3026: PUNCTURE is `maxRepeats = 2`, so GOOP, PUNCTURE, PUNCTURE is
-        // reachable; only a third consecutive PUNCTURE is not.
-        let mut puncture_repeat = exact.clone();
-        puncture_repeat.monsters[0].insert("next_move".to_owned(), json!("PUNCTURE_MOVE"));
-        puncture_repeat.monsters[0].insert(
+        // reachable, and (#3823) a stun over the second PUNCTURE logs a
+        // third. What no roll and no stun gives is GOOP after another move:
+        // it is the opener and in no branch.
+        let mut goop_again = exact.clone();
+        goop_again.monsters[0].insert("next_move".to_owned(), json!("PUNCTURE_MOVE"));
+        goop_again.monsters[0].insert(
             "move_log".to_owned(),
-            json!(["PUNCTURE_MOVE", "PUNCTURE_MOVE", "PUNCTURE_MOVE"]),
+            json!(["BITE_MOVE", "TENDERIZING_GOOP_MOVE", "PUNCTURE_MOVE"]),
         );
-        cases.push(puncture_repeat);
+        cases.push(goop_again);
 
         for malformed in cases {
             assert!(
@@ -28895,6 +30204,252 @@ mod tests {
         }
     }
 
+    /// #3756: ToricToughnessPower objects after the first round-trip as
+    /// `[duration, block, listeners_before]` rows; a one-object document
+    /// elides the field; malformed rows and rows that disagree with the first
+    /// object or the walk order do not load.
+    #[test]
+    fn later_toric_instances_round_trip_and_refuse_malformed_rows() {
+        let mut document = fixture();
+        document
+            .player
+            .insert("block_next_turn".to_owned(), json!(4));
+        document.player.insert(
+            "block_next_turn_order".to_owned(),
+            json!(["toric_toughness", "block_next_turn"]),
+        );
+        document
+            .player
+            .insert("toric_toughness".to_owned(), json!(1));
+        document.player.insert(
+            "toric_toughness_block".to_owned(),
+            json!({"__fraction__": [5, 1]}),
+        );
+        document.player.insert(
+            "toric_toughness_later_instances".to_owned(),
+            json!([
+                [1, {"__fraction__": [15, 4]}, 1],
+                [2, {"__fraction__": [6, 1]}, 2]
+            ]),
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let hot = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        let later = hot.fanouts.toric_toughness_later_instances();
+        assert_eq!(
+            later
+                .iter()
+                .map(|row| (
+                    row.duration,
+                    row.block.nonnegative_fraction(),
+                    row.listeners_before
+                ))
+                .collect::<Vec<_>>(),
+            vec![(1, Some((15, 4)), 1), (2, Some((6, 1)), 2)]
+        );
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), document);
+
+        // One object elides the field: the earlier bytes are unchanged.
+        let mut single = document.clone();
+        single.player.remove("toric_toughness_later_instances");
+        let hot = HotBoundary::from_canonical(&single, &catalog).unwrap();
+        assert!(hot.fanouts.toric_toughness_later_instances().is_empty());
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), single);
+
+        for rows in [
+            // Malformed rows.
+            json!([[0, {"__fraction__": [6, 1]}, 1]]),
+            json!([[2, 6, 1]]),
+            json!([[2, {"__fraction__": [6, 3]}, 1]]),
+            json!([[2, {"__fraction__": [6, 1]}]]),
+            json!([[2, {"__fraction__": [6, 1]}, 1, 0]]),
+            json!([[2, {"__fraction__": [6, 1]}, -1]]),
+            json!([2, 6, 1]),
+            json!({"duration": 2}),
+            // Well-formed rows that disagree with the first object or the
+            // walk: at the first object's own place, past the order, out of
+            // acquisition order.
+            json!([[2, {"__fraction__": [6, 1]}, 0]]),
+            json!([[2, {"__fraction__": [6, 1]}, 3]]),
+            json!([
+                [2, {"__fraction__": [6, 1]}, 2],
+                [2, {"__fraction__": [6, 1]}, 1]
+            ]),
+        ] {
+            let mut malformed = document.clone();
+            malformed
+                .player
+                .insert("toric_toughness_later_instances".to_owned(), rows.clone());
+            assert!(
+                HotBoundary::from_canonical(&malformed, &catalog).is_err(),
+                "accepted Toric rows {rows}"
+            );
+        }
+
+        // No first object: the rows have nothing to follow.
+        let mut orphan = fixture();
+        orphan.player.insert(
+            "toric_toughness_later_instances".to_owned(),
+            json!([[2, {"__fraction__": [6, 1]}, 0]]),
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&orphan).unwrap();
+        assert!(HotBoundary::from_canonical(&orphan, &catalog).is_err());
+    }
+
+    /// #3756: the order between a live Curious and a live Borrowed Time
+    /// round-trips as one bool, is elided at its default, refuses a
+    /// non-bool, and refuses to claim an order when either power is absent.
+    /// A hot state whose bit outlived its Borrowed Time writes no field.
+    #[test]
+    fn curious_after_borrowed_time_round_trips_and_refuses_malformed_values() {
+        let mut document = fixture();
+        document.player.insert("curious".to_owned(), json!(2));
+        document.player.insert("borrowed_time".to_owned(), json!(1));
+        document.player.insert(
+            "after_side_turn_end_power_order".to_owned(),
+            json!([["borrowed_time", 0]]),
+        );
+        document
+            .player
+            .insert("next_after_side_turn_end_power_uid".to_owned(), json!(1));
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+
+        // Default: Curious first, no field.
+        let hot = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert!(!hot.fanouts.curious_follows_borrowed_time());
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), document);
+
+        let mut after = document.clone();
+        after
+            .player
+            .insert("curious_after_borrowed_time".to_owned(), json!(true));
+        let hot = HotBoundary::from_canonical(&after, &catalog).unwrap();
+        assert!(hot.fanouts.curious_follows_borrowed_time());
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), after);
+
+        // An explicit default is not canonical, like every other field.
+        for value in [
+            json!(false),
+            json!(1),
+            json!("true"),
+            json!([true]),
+            json!(null),
+            json!({}),
+        ] {
+            let mut malformed = document.clone();
+            malformed
+                .player
+                .insert("curious_after_borrowed_time".to_owned(), value.clone());
+            assert!(
+                HotBoundary::from_canonical(&malformed, &catalog).is_err(),
+                "accepted {value}"
+            );
+        }
+
+        // An order needs both powers.
+        for (missing, its_ledger) in [
+            ("curious", &[][..]),
+            (
+                "borrowed_time",
+                &[
+                    "after_side_turn_end_power_order",
+                    "next_after_side_turn_end_power_uid",
+                ][..],
+            ),
+        ] {
+            let mut orphan = after.clone();
+            orphan.player.remove(missing);
+            for field in its_ledger {
+                orphan.player.remove(*field);
+            }
+            let catalog = HotBoundary::catalog_from_canonical(&orphan).unwrap();
+            assert!(
+                HotBoundary::from_canonical(&orphan, &catalog).is_err(),
+                "accepted an order without {missing}"
+            );
+        }
+
+        // A bit that outlived its Borrowed Time is not state.
+        let mut stale = HotBoundary::from_canonical(&after, &catalog).unwrap();
+        stale.powers.set(PowerId::Curious, SlotWire::Int, 0);
+        assert!(
+            !HotBoundary::to_canonical(&stale, &catalog)
+                .player
+                .contains_key("curious_after_borrowed_time")
+        );
+    }
+
+    /// #3756: RollingBoulderPower objects after the first round-trip as
+    /// `[amount, listeners_before]` rows; a one-object document elides the
+    /// field; malformed rows and rows that disagree with the first object or
+    /// the walk order do not load.
+    #[test]
+    fn later_rolling_boulder_instances_round_trip_and_refuse_malformed_rows() {
+        let mut document = fixture();
+        document
+            .player
+            .insert("rolling_boulder".to_owned(), json!(15));
+        document.player.insert(
+            "after_player_turn_start_power_order".to_owned(),
+            json!(["rolling_boulder"]),
+        );
+        let single = document.clone();
+        document.player.insert(
+            "rolling_boulder_later_instances".to_owned(),
+            json!([[5, 1], [10, 1]]),
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let hot = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert_eq!(
+            hot.fanouts
+                .rolling_boulder_later_instances()
+                .iter()
+                .map(|row| (row.amount, row.listeners_before))
+                .collect::<Vec<_>>(),
+            vec![(5, 1), (10, 1)]
+        );
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), document);
+
+        // One object elides the field: the earlier bytes are unchanged.
+        let hot = HotBoundary::from_canonical(&single, &catalog).unwrap();
+        assert!(hot.fanouts.rolling_boulder_later_instances().is_empty());
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), single);
+
+        for rows in [
+            // Malformed rows.
+            json!([[0, 1]]),
+            json!([[-5, 1]]),
+            json!([[5]]),
+            json!([[5, 1, 0]]),
+            json!([[5, -1]]),
+            json!([["5", 1]]),
+            json!([5, 1]),
+            json!({"amount": 5}),
+            json!(5),
+            // Well-formed rows that disagree with the walk: at the first
+            // object's own place, past the order, out of acquisition order.
+            json!([[5, 0]]),
+            json!([[5, 2]]),
+        ] {
+            let mut malformed = document.clone();
+            malformed
+                .player
+                .insert("rolling_boulder_later_instances".to_owned(), rows.clone());
+            assert!(
+                HotBoundary::from_canonical(&malformed, &catalog).is_err(),
+                "accepted Rolling Boulder rows {rows}"
+            );
+        }
+
+        // No first object: the rows have nothing to follow.
+        let mut orphan = fixture();
+        orphan.player.insert(
+            "rolling_boulder_later_instances".to_owned(),
+            json!([[5, 0]]),
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&orphan).unwrap();
+        assert!(HotBoundary::from_canonical(&orphan, &catalog).is_err());
+    }
+
     #[test]
     fn instanced_panache_boundary_rejects_scalar_uid_and_private_bit_forgeries() {
         let exact = || {
@@ -31112,6 +32667,120 @@ mod tests {
     /// mid-fight on an uninterned Spinner). Without the potion the Power pool
     /// is not interned (control). Distraction, the other one-row drawer, is
     /// Event rarity, so no potion offers it.
+    /// #3756: Thieving Hopper's theft draws the Generation stream
+    /// (`ThievingHopper/<ThieveryMove>d__36::MoveNext` RVA `0x371428`, IL
+    /// `0x023b`/`0x0242`) on the enemy turn, so a White Noise or Abundance
+    /// played after it reads a position the root's seeded prefix did not.
+    /// Beside a Hopper both close their complete owner-Power pools, White
+    /// Noise at L0 and Abundance at L1; against any other monster each keeps
+    /// its seeded prefix.
+    #[test]
+    fn a_thieving_hopper_closes_the_white_noise_and_abundance_power_pools() {
+        for (source, owner, level) in [
+            ("WHITE_NOISE", RewardPool::Defect, 0_u8),
+            ("ABUNDANCE", RewardPool::Regent, 1_u8),
+        ] {
+            let mut document = white_noise_document(47, owner, 0, 0);
+            document.piles.get_mut("hand").unwrap()[0] = card(source, 0);
+            let interned = |catalog: &Catalog, id: CardId| {
+                catalog
+                    .atom(&CardIdentity {
+                        id,
+                        upgrade: level,
+                        enchantment: None,
+                    })
+                    .is_some()
+            };
+            let prefix = HotBoundary::catalog_from_canonical(&document).unwrap();
+            let pool =
+                prefix.owner_type_generation_pool(owner, crate::content_tables::CardType::Power);
+            assert!(pool.len() > 3, "{source}");
+            assert!(
+                pool.iter().any(|id| !interned(&prefix, *id)),
+                "{source}: without a Hopper only the seeded prefix is interned (control)"
+            );
+            assert!(
+                pool.iter().any(|id| interned(&prefix, *id)),
+                "{source}: the seeded prefix is interned (control)"
+            );
+
+            document.monsters.truncate(1);
+            document.monsters[0].insert(
+                "kind".to_owned(),
+                Value::from(MonsterKind::ThievingHopper.as_str()),
+            );
+            let before = document.clone();
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            assert_eq!(
+                document, before,
+                "the closure takes nothing from the stream"
+            );
+            for id in &pool {
+                assert!(
+                    interned(&catalog, *id),
+                    "{source}: after a theft the draw can mint {id:?}+{level}"
+                );
+            }
+        }
+    }
+
+    /// #3756: a Duplicator doubles the next card played
+    /// (`DuplicationPower::ModifyCardPlayCount` RVA `0xa1dd9`, IL
+    /// `0x0016`-`0x0019`), so a White Noise played under it shuffles twice.
+    /// A held Duplicator and a live Duplication stack each preview the second
+    /// shuffle's leaf; with neither, only the first is interned.
+    #[test]
+    fn a_duplicator_previews_the_second_white_noise_body() {
+        let seed = 47;
+        let owner = RewardPool::Defect;
+        let mut rng = Xoshiro256StarStar::from_seed(seed);
+        let mut leaves = Vec::new();
+        for _ in 0..2 {
+            let mut shuffled = abundance_pool(owner).to_vec();
+            rng.shuffle(&mut shuffled).unwrap();
+            leaves.push(shuffled[0]);
+        }
+        assert_ne!(leaves[0], leaves[1], "the fixed seed separates the bodies");
+        let interned = |document: &CanonicalStateV2, id: CardId| {
+            HotBoundary::catalog_from_canonical(document)
+                .unwrap()
+                .atom(&CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .is_some()
+        };
+
+        let bare = white_noise_document(seed, owner, 0, 0);
+        assert!(interned(&bare, leaves[0]));
+        assert!(
+            !interned(&bare, leaves[1]),
+            "one body, one previewed shuffle (control)"
+        );
+
+        let mut held = bare.clone();
+        held.player
+            .insert("potion_slots".to_owned(), json!(["DUPLICATOR"]));
+        held.player
+            .insert("potions".to_owned(), json!(["DUPLICATOR"]));
+        held.player
+            .insert("fully_unlocked_potion_pool".to_owned(), Value::Bool(true));
+        let before = held.clone();
+        assert!(interned(&held, leaves[0]));
+        assert!(interned(&held, leaves[1]), "the doubled play's second leaf");
+        assert_eq!(held, before, "preview must not publish its RNG copy");
+
+        let mut live = bare.clone();
+        live.player.insert("duplication".to_owned(), json!(1));
+        append_singleton_side_end_row(&mut live, "duplication");
+        assert!(interned(&live, leaves[0]));
+        assert!(
+            interned(&live, leaves[1]),
+            "a Duplication stack already applied doubles the next play too"
+        );
+    }
+
     #[test]
     fn a_potion_minted_white_noise_closes_its_power_pool() {
         let mut document = white_noise_document(47, RewardPool::Defect, 0, 0);
@@ -31237,6 +32906,149 @@ mod tests {
         assert!(
             upgraded_leaves(&control).iter().any(|present| !present),
             "without an upgrade writer the relic pool stays at L0"
+        );
+    }
+
+    /// #3756: a Crossbow hands its owner a random Attack of the owner's pool
+    /// every turn (`Crossbow/<AfterSideTurnStart>d__2::MoveNext` RVA
+    /// `0x322340`, IL_00c7 / IL_0112). A Necrobinder's Attack pool holds
+    /// Drain Power, whose play upgrades Discard cards
+    /// (`DrainPower/<OnPlay>d__3::MoveNext` RVA `0x399f7c`, `CardCmd::Upgrade`
+    /// IL_0149), so every reachable identity needs its successor even though
+    /// no Drain Power is in any pile. Without the Crossbow, and for an owner
+    /// whose Crossbow pool holds no Drain Power, nothing is closed (controls).
+    #[test]
+    fn a_crossbow_minted_drain_power_closes_every_upgrade() {
+        let document = |owner: RewardPool, crossbow: bool| {
+            let mut document = white_noise_document(47, owner, 0, 0);
+            document.piles.get_mut("hand").unwrap()[0] =
+                fixture().piles.get("hand").unwrap()[0].clone();
+            if crossbow {
+                document
+                    .player
+                    .insert("relics_entering".to_owned(), json!(["RELIC.CROSSBOW"]));
+                document
+                    .player
+                    .insert("relics_entering_dispatch_ordered".to_owned(), json!(true));
+                document.player.insert("crossbow".to_owned(), json!(true));
+            }
+            document
+        };
+        let missing_successors = |catalog: &Catalog| {
+            catalog
+                .reachable_specs()
+                .filter(|spec| {
+                    crate::engine::cards::native_card_is_upgradable(spec.identity)
+                        && catalog
+                            .atom(&CardIdentity {
+                                upgrade: spec.identity.upgrade + 1,
+                                ..spec.identity
+                            })
+                            .is_none()
+                })
+                .count()
+        };
+
+        let necrobinder =
+            HotBoundary::catalog_from_canonical(&document(RewardPool::Necrobinder, true)).unwrap();
+        assert!(
+            necrobinder
+                .crossbow_attack_pool(RewardPool::Necrobinder)
+                .contains(&CardId::DrainPower)
+        );
+        assert_eq!(
+            missing_successors(&necrobinder),
+            0,
+            "a Crossbow-minted Drain Power can upgrade any reachable card"
+        );
+
+        let bare =
+            HotBoundary::catalog_from_canonical(&document(RewardPool::Necrobinder, false)).unwrap();
+        assert!(
+            missing_successors(&bare) > 0,
+            "no Crossbow, no closure (control)"
+        );
+
+        let silent =
+            HotBoundary::catalog_from_canonical(&document(RewardPool::Silent, true)).unwrap();
+        assert!(
+            !silent
+                .crossbow_attack_pool(RewardPool::Silent)
+                .contains(&CardId::DrainPower)
+        );
+        assert!(
+            missing_successors(&silent) > 0,
+            "a Silent Crossbow pool holds no Drain Power (control)"
+        );
+    }
+
+    /// #3877: a Drain Power only a listener can mint is the same writer. A
+    /// Necrobinder's Hello World draws her Common pool and her Calamity her
+    /// Attack pool; both hold Drain Power, whose play upgrades Discard cards
+    /// (`DrainPower/<OnPlay>d__3::MoveNext` RVA `0x399f7c`, `CardCmd::Upgrade`
+    /// IL_0149). The composition sweep's lone `HELLO_WORLD` root stopped
+    /// mid-line with `"DEFEND_NECROBINDER"+1 was not pre-interned` at that
+    /// play. For an owner whose pool holds no Drain Power, and with no
+    /// generator, nothing is closed (controls).
+    #[test]
+    fn a_listener_minted_drain_power_closes_every_upgrade() {
+        let document = |owner: RewardPool, generator: Option<&str>| {
+            let mut document = white_noise_document(47, owner, 0, 0);
+            document.piles.get_mut("hand").unwrap()[0] = match generator {
+                Some(id) => card(id, 900),
+                None => fixture().piles.get("hand").unwrap()[0].clone(),
+            };
+            document
+        };
+        let missing_successors = |catalog: &Catalog| {
+            catalog
+                .reachable_specs()
+                .filter(|spec| {
+                    crate::engine::cards::native_card_is_upgradable(spec.identity)
+                        && catalog
+                            .atom(&CardIdentity {
+                                upgrade: spec.identity.upgrade + 1,
+                                ..spec.identity
+                            })
+                            .is_none()
+                })
+                .count()
+        };
+        let reaches_drain_power = |catalog: &Catalog| {
+            catalog
+                .reachable_specs()
+                .any(|spec| matches!(spec.identity.id, CardId::DrainPower))
+        };
+
+        for generator in ["HELLO_WORLD", "CALAMITY"] {
+            let necrobinder = HotBoundary::catalog_from_canonical(&document(
+                RewardPool::Necrobinder,
+                Some(generator),
+            ))
+            .unwrap();
+            assert!(reaches_drain_power(&necrobinder), "{generator}");
+            assert_eq!(
+                missing_successors(&necrobinder),
+                0,
+                "a Drain Power {generator} can mint may upgrade any reachable card"
+            );
+
+            let silent =
+                HotBoundary::catalog_from_canonical(&document(RewardPool::Silent, Some(generator)))
+                    .unwrap();
+            assert!(!reaches_drain_power(&silent), "{generator}");
+            assert!(
+                missing_successors(&silent) > 0,
+                "a Silent's {generator} pool holds no Drain Power (control)"
+            );
+        }
+
+        let bare =
+            HotBoundary::catalog_from_canonical(&document(RewardPool::Necrobinder, None)).unwrap();
+        assert!(!reaches_drain_power(&bare));
+        assert!(
+            missing_successors(&bare) > 0,
+            "no generator, no closure (control)"
         );
     }
 
@@ -33840,6 +35652,67 @@ mod tests {
                 .insert("lamp_latched".to_owned(), json!(true));
             assert!(HotBoundary::from_canonical(&impossible, &catalog).is_err());
         }
+    }
+
+    /// #3756: an AutoPlay's CardPlay frame carries the `EnergyValue` it
+    /// resolved at entry as `energy_value`; a manual frame carries none (its
+    /// value is `spent`). The field round-trips, loads as "not carried" when
+    /// absent, and refuses a malformed value or one on a manual frame.
+    #[test]
+    fn auto_card_play_energy_value_round_trips_and_refuses_malformed_values() {
+        // The fixture's record is built by hand and carries no value.
+        let (state, catalog) = pending_replay_state(PileId::Play, false, true);
+        let legacy = HotBoundary::to_canonical(&state, &catalog);
+        assert!(!legacy.continuations[0].fields.contains_key("energy_value"));
+        let mut canonical = legacy.clone();
+        canonical.continuations[0]
+            .fields
+            .insert("energy_value".to_owned(), json!(2));
+        let hot = HotBoundary::from_canonical(&canonical, &catalog).unwrap();
+        assert_ne!(hot, state);
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), canonical);
+
+        for value in [3, 0, i64::from(i16::MAX)] {
+            let mut other = canonical.clone();
+            other.continuations[0]
+                .fields
+                .insert("energy_value".to_owned(), json!(value));
+            let hot = HotBoundary::from_canonical(&other, &catalog).unwrap();
+            assert_eq!(HotBoundary::to_canonical(&hot, &catalog), other);
+        }
+
+        // Absent: a frame written before the field existed still loads, and
+        // writes no field back.
+        let hot = HotBoundary::from_canonical(&legacy, &catalog).unwrap();
+        assert_eq!(hot, state);
+        assert_eq!(HotBoundary::to_canonical(&hot, &catalog), legacy);
+
+        for value in [
+            json!(-1),
+            json!(i64::from(i16::MAX) + 1),
+            json!("2"),
+            json!(2.5),
+            json!([2]),
+            json!(null),
+            json!(true),
+        ] {
+            let mut malformed = canonical.clone();
+            malformed.continuations[0]
+                .fields
+                .insert("energy_value".to_owned(), value.clone());
+            assert!(
+                HotBoundary::from_canonical(&malformed, &catalog).is_err(),
+                "accepted energy_value {value}"
+            );
+        }
+
+        let (state, catalog) = pending_replay_state(PileId::Play, true, false);
+        let mut manual = HotBoundary::to_canonical(&state, &catalog);
+        assert!(!manual.continuations[0].fields.contains_key("energy_value"));
+        manual.continuations[0]
+            .fields
+            .insert("energy_value".to_owned(), json!(1));
+        assert!(HotBoundary::from_canonical(&manual, &catalog).is_err());
     }
 
     #[test]

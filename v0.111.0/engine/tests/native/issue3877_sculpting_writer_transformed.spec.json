@@ -1,0 +1,34 @@
+{
+ "sculpting_seance_call": {
+  "character": "Ironclad",
+  "relics": [],
+  "deck": ["CALL_OF_THE_VOID", "SCULPTING_STRIKE", "DEFEND_IRONCLAD", "SEANCE", "BASH", "BASH"],
+  "script": [
+   ["energy", 9],
+   ["arrange", {"hand": ["CALL_OF_THE_VOID", "SCULPTING_STRIKE", "DEFEND_IRONCLAD", "SEANCE[Ethereal]"], "draw": ["BASH", "BASH"]}],
+   ["snap", "root"],
+   ["play", "CALL_OF_THE_VOID"],
+   ["play", "SCULPTING_STRIKE", 1],
+   ["play", "DEFEND_IRONCLAD[Ethereal]"],
+   ["arrange", {"hand": ["SEANCE[Ethereal]"], "draw": ["SCULPTING_STRIKE", "BASH"], "discard": ["DEFEND_IRONCLAD[Ethereal]", "BASH"]}],
+   ["snap", "before-seance"],
+   ["play", "SEANCE[Ethereal]"],
+   ["end"]
+  ]
+ },
+ "sculpting_seance": {
+  "character": "Ironclad",
+  "relics": [],
+  "deck": ["SCULPTING_STRIKE", "DEFEND_IRONCLAD", "SEANCE", "BASH", "BASH"],
+  "script": [
+   ["energy", 9],
+   ["arrange", {"hand": ["SCULPTING_STRIKE", "DEFEND_IRONCLAD", "SEANCE[Ethereal]"], "draw": ["BASH", "BASH"]}],
+   ["snap", "root"],
+   ["play", "SCULPTING_STRIKE", 1],
+   ["arrange", {"hand": ["SEANCE[Ethereal]", "DEFEND_IRONCLAD[Ethereal]"], "draw": ["SCULPTING_STRIKE", "BASH"], "discard": ["BASH"]}],
+   ["snap", "before-seance"],
+   ["play", "SEANCE[Ethereal]"],
+   ["end"]
+  ]
+ }
+}

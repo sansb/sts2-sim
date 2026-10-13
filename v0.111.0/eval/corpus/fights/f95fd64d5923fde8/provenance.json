@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "ECN6B749UETJ",
+ "node": 7,
+ "encounter": "ENCOUNTER.CULTISTS_NORMAL",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "700be4d2988937d552f8cf923ba2d34735a79ff255a7d08739c9952df5302547",
+ "save_sha256": "95ec76a27bce8c6fc429711c8cb3a5eed3ebdc67d4551d230c1f6642d5b640a3",
+ "entry_digest": "a54c5167aa9c1936f87572e6a945fddaa5d6ce4ac3d0fdf12b3034095d3b6182",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

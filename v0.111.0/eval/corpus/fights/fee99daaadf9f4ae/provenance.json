@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "2HR2M2LW1RZ4",
+ "node": 4,
+ "encounter": "ENCOUNTER.CORPSE_SLUGS_WEAK",
+ "node_type": "monster",
+ "character": "DEFECT",
+ "ascension": 10,
+ "capture_sha256": "b229325276764ce368b46b94f494a00cb065acf25f442caed02d7224a5519db4",
+ "save_sha256": "6e2eea5518a423e6fb99e4487e44831465ccf8ea645477617ac6219e4d6d2c9a",
+ "entry_digest": "f0fa79dca0bc6dab16cbc4161cab7599b27949c0104e3d114dd40b26a6af305d",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

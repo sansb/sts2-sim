@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "UZP5NVGBG0N8",
+ "node": 14,
+ "encounter": "ENCOUNTER.SEWER_CLAM_NORMAL",
+ "node_type": "monster",
+ "character": "REGENT",
+ "ascension": 10,
+ "capture_sha256": "8e145cff8eef2bc63de44b23ac0d269ad4f93b2144567605822f55668c764d50",
+ "save_sha256": "27cb2cb4404de330b8a1050a1179f7b7c363305f740569e71ac1b2e5c412a725",
+ "entry_digest": "f47c08395b8d4777cf216675aa8bdfe8debb9eee0d40988362e03382148fcd9d",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "MT2A8Y7JG6V5",
+ "node": 18,
+ "encounter": "ENCOUNTER.EXOSKELETONS_WEAK",
+ "node_type": "monster",
+ "character": "IRONCLAD",
+ "ascension": 10,
+ "capture_sha256": "e6e9db6f47dc1c72b75eb3e12e6abfb285a050fc2901fa458746c78eab191d08",
+ "save_sha256": "8c9fb1d62e987ce8f345ff43c5e95834a44b74b0839d3e595a4bd09c423bab85",
+ "entry_digest": "71db1eae9c78ea2d1aebd1a8233b7e2d3788e08bf45c59d87ec21677a5f9b170",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}

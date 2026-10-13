@@ -44,7 +44,7 @@ use crate::hot::{
 use crate::ids::{CardId, EnchantmentId, MonsterKind, PowerId, RelicId, StepKind};
 use crate::powers::SlotWire;
 use crate::rng::Xoshiro256StarStar;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
 use super::draw::MAX_CARDS_IN_HAND;
 use super::{EngineRefusal, Event, StepCtx, Subject, fire_hook};
@@ -267,14 +267,38 @@ pub(crate) fn static_body_enchantment_identity_is_exact(spec: &CardSpec) -> bool
     };
     enchantment.amount > 0
         && !spec.native_unplayable
-        && matches!(
+        && (matches!(
             (enchantment.id, spec.card_type, spec.row.nimble_eligible),
             (
                 EnchantmentId::Sharp,
                 crate::content_tables::CardType::Attack,
                 _
             ) | (EnchantmentId::Nimble, _, true)
-        )
+        ) || nimble_entrench_identity_is_exact(spec))
+}
+
+/// Nimble on Entrench (#3756).
+///
+/// `Nimble::CanEnchant` (v0.111.0 RVA `0xd622e`, IL_0001-IL_0010) is the base
+/// test and `card.GainsBlock`, and `Entrench::get_GainsBlock` (RVA `0xdeac1`)
+/// is the constant `true`, so the game offers the pair. The generated
+/// `nimble_eligible` column comes from the frozen registry list, which does
+/// not name Entrench, so the pair is admitted here by identity instead of by
+/// that column. Its one effect is the additive in
+/// `damage::modified_card_block_decimal`.
+///
+/// The DLL has eight more `get_GainsBlock` overrides the frozen list lacks
+/// (Demonic Shield, Expect a Fight, Fisticuffs, Mimic, Mirage, Sacrifice,
+/// Sovereign Blade, Stack). None was read for this change and each stays
+/// refused under the enchantment's name.
+pub(crate) fn nimble_entrench_identity_is_exact(spec: &CardSpec) -> bool {
+    spec.identity
+        .enchantment
+        .is_some_and(|enchantment| matches!(enchantment.id, EnchantmentId::Nimble))
+        && matches!(spec.identity.id, CardId::Entrench)
+        && matches!(spec.identity.upgrade, 0 | 1)
+        && crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
+            == Some(spec.row)
 }
 
 /// Enchantments whose represented effect is an immutable keyword delta.
@@ -508,6 +532,120 @@ pub(crate) fn vigorous_identity_is_exact(spec: &CardSpec) -> bool {
         && !spec.native_unplayable
 }
 
+/// MOMENTUM (#3745): a powered-attack damage additive that grows by `Amount`
+/// after every complete body of its own card, carried in slot 5.
+///
+/// Current v0.111.0 DLL SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`
+/// (`dump_type.py Momentum`). `Enchantments.Momentum` declares exactly one
+/// field, `_extraDamage` (an `int`), and:
+///
+/// * `CanEnchantCardType` RVA `0xd61cb` — `cardType == 1` (IL_0001-0005):
+///   Attack owners only, the card-type half of the gate below;
+/// * `get_HasExtraCardText` RVA `0xd61d1` and `get_ShowAmount` RVA `0xd61d4`
+///   — `true`, display only;
+/// * `get_ExtraDamage` RVA `0xd61d7` / `set_ExtraDamage` RVA `0xd61df` — the
+///   plain `_extraDamage` accessors (the setter's only extra is
+///   `AssertMutable`, IL_0002);
+/// * `OnPlay` RVA `0xd61ee` — `ExtraDamage = ExtraDamage + Amount`
+///   (IL_0001-000f) and `Task.CompletedTask` (IL_0014): synchronous, no gate
+///   of any kind, no command; see [`momentum_on_play`];
+/// * `EnchantDamageAdditive` RVA `0xd6208` — `if (!IsPoweredAttack(props))
+///   return 0` (IL_0001-000e), else `(decimal)ExtraDamage` (IL_000f-001a):
+///   Sharp's body (`Sharp::EnchantDamageAdditive` RVA `0xd62f4`) with the
+///   live counter in place of `Amount`. The one caller is `Hook::ModifyDamage`
+///   RVA `0x10511c` IL_0015-0046, which adds
+///   `cardSource.Enchantment.EnchantDamageAdditive` directly whenever the
+///   damage has a card source with an enchantment, so the counter is read
+///   once per hit, at the hit, in the same additive slot Sharp fills in
+///   [`crate::engine::damage`]'s powered-attack fold;
+/// * `.ctor` RVA `0xd6223` — the base ctor only.
+///
+/// No `AfterCardPlayed`, no `EnchantPlayCount`, no `EnchantBlock*`, no
+/// `EnchantDamageMultiplicative`, no `OnEnchant`, no `Status` write, no turn
+/// or combat hook and no async state machine. Nothing ever lowers
+/// `_extraDamage`: `set_ExtraDamage`'s only caller in the DLL is `OnPlay`
+/// IL_000f (the xref on `entry::opening`'s `entry_enchantment_state`), so the
+/// counter is monotone within a fight and never resets at a turn boundary.
+/// It does reset between fights: `EnchantmentModel::ToSerializable` RVA
+/// `0x7f6c5` writes only `Id`, `Props` and `Amount`, no Enchantment member
+/// carries `[SavedProperty]`, and `OnPlay` runs on the combat copy, so a saved
+/// deck card enters every combat at zero — which is the `["MOMENTUM", 0]` row
+/// the opening seeds. Within a fight the Rust carrier is slot 5,
+/// `Some(ExtraDamage)`, spelled `["MOMENTUM", n]` at the boundary; clones copy
+/// it with the rest of the instance state, as `MemberwiseClone` copies
+/// `_extraDamage`.
+///
+/// So the first body of a fight deals the card's plain damage, and every
+/// later body — a replay of the same play included — deals `Amount` more per
+/// hit than the one before it. A multi-hit host (Sword Boomerang's random
+/// hits) reads the same counter on every hit of one body, because the write
+/// happens only after the body returns.
+///
+/// The amount gate is `>= 0`: a zero-amount copy adds zero to a zero counter,
+/// which the fold computes exactly.
+pub(crate) fn momentum_identity_is_exact(spec: &CardSpec) -> bool {
+    matches!(
+        spec.identity.enchantment,
+        Some(crate::catalog::CardEnchantment {
+            id: EnchantmentId::Momentum,
+            amount,
+        }) if amount >= 0
+    ) && spec.card_type == crate::content_tables::CardType::Attack
+        && !spec.native_unplayable
+}
+
+/// `Momentum::OnPlay` RVA `0xd61ee`: `ExtraDamage += Amount`.
+///
+/// The caller is `CardModel/<OnPlayWrapper>d__339::MoveNext` RVA `0x31b8d0`,
+/// inside the per-body loop: the loop top leaves on
+/// `CombatManager.IsOverOrEnding` (IL_0428-0432), the card's own `OnPlay` is
+/// IL_0659, a dead owner leaves at IL_06c3-06d2, and then
+/// `Enchantment.OnPlay` runs at IL_06fa whenever the card has an enchantment
+/// (IL_06de-06e3) — before `Affliction.OnPlay` (IL_07a1),
+/// `History.CardPlayFinished` (IL_084e) and `Hook.AfterCardPlayed` (IL_0874).
+/// It is a direct call, not a hook: neither
+/// `EnchantmentModel::get_ShouldReceiveCombatHooks` nor the card's pile is
+/// consulted, and there is no ending gate between the body and it, so a body
+/// that killed the last enemy still grows the counter. That is the same
+/// position [`apply_enchantment_on_play`] already occupies for Sown, Swift,
+/// Corrupted and Adroit, and the owner-death exits around it are the caller's.
+///
+/// The write is published like Vigorous's: the slot-5 integer changes, and
+/// the exact-pile promotion re-runs because two equal Momentum copies now
+/// differ ([`super::cards::divergent_identity_enchantment`]).
+///
+/// A Momentum card without a slot-5 row cannot be given a counter value and
+/// refuses by name, as does an owner outside
+/// [`momentum_identity_is_exact`].
+fn momentum_on_play(
+    state: &mut HotState,
+    catalog: &Catalog,
+    spec: &CardSpec,
+    uid: u32,
+) -> Result<(), EngineRefusal> {
+    let Some(enchantment) = spec.identity.enchantment else {
+        return Ok(());
+    };
+    if !momentum_identity_is_exact(spec) {
+        return Err(EngineRefusal::MalformedArgs("MOMENTUM owner"));
+    }
+    let mut instance = state.card_states.get(uid);
+    let Some(extra) = instance.enchantment_state.get() else {
+        return Err(EngineRefusal::MalformedArgs("MOMENTUM extra damage"));
+    };
+    let grown = extra
+        .checked_add(enchantment.amount)
+        .ok_or(EngineRefusal::CounterOverflow("Momentum extra damage"))?;
+    instance.enchantment_state = crate::hot::OptionalNonNegativeI32::from_option(Some(grown))
+        .ok_or(EngineRefusal::CounterOverflow("Momentum extra damage"))?;
+    state.card_states.set(uid, instance);
+    if !state.exact_piles && super::cards::live_cards_need_exact_piles(state, catalog)? {
+        state.exact_piles = true;
+    }
+    Ok(())
+}
+
 /// TEZCATARAS_EMBER (#3413): a zero base cost plus a fixed powered-attack
 /// damage additive of 3.
 ///
@@ -566,6 +704,39 @@ pub(crate) fn tezcataras_ember_identity_is_exact(spec: &CardSpec) -> bool {
         && !spec.x_cost
         && spec.row.cost >= 0
         && spec.cost == 0
+        && !spec.native_unplayable
+}
+
+/// INSTINCT (#3756): a constant multiplier on its own Attack's base damage.
+///
+/// Current v0.111.0 DLL SHA-256
+/// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`
+/// (`dump_il.py Instinct`). `Enchantments.Instinct` declares exactly:
+///
+/// * `CanEnchantCardType` RVA `0xd61a7` — `cardType == 1`, Attack
+///   (IL_0001-0005);
+/// * `EnchantDamageMultiplicative` RVA `0xd61ad` — `!IsPoweredAttack(props)
+///   -> Decimal.One` (IL_0001-000e), else `new Decimal(2)` (IL_000f-0015);
+/// * `.ctor` RVA `0xd61c3` — the base ctor only.
+///
+/// No `OnEnchant`, `OnPlay`, `AfterCardPlayed`, `EnchantPlayCount`,
+/// `EnchantBlock*`, `EnchantDamageAdditive`, `Status` write or field, so the
+/// identity is immutable and needs no slot-5 row, and `Amount` is never read.
+/// The one caller is `Hook::ModifyDamage` RVA `0x10511c`: for a card source
+/// with an enchantment it adds `EnchantDamageAdditive` (IL_0041-0046) and
+/// then multiplies by `EnchantDamageMultiplicative` (IL_006b-0070), both
+/// before any listener's additive or multiplicative term. So the factor
+/// lands on the card's own damage alone, in the slot
+/// [`crate::engine::damage`]'s powered-attack fold already gives Corrupted's
+/// `3/2`.
+pub(crate) fn instinct_identity_is_exact(spec: &CardSpec) -> bool {
+    matches!(
+        spec.identity.enchantment,
+        Some(crate::catalog::CardEnchantment {
+            id: EnchantmentId::Instinct,
+            amount,
+        }) if amount >= 0
+    ) && spec.card_type == crate::content_tables::CardType::Attack
         && !spec.native_unplayable
 }
 
@@ -809,7 +980,9 @@ fn goopy_after_card_played(
 /// Slither contributes only a draw-time cost roll (#2926), see
 /// [`super::draw::slither_identity_is_exact`]. Vigorous contributes only a
 /// Status-gated damage additive in the shared powered-attack fold (#3275),
-/// see [`vigorous_identity_is_exact`]. TezcatarasEmber contributes a zero
+/// see [`vigorous_identity_is_exact`]. Momentum contributes only a growing
+/// additive in the same fold plus the post-body `OnPlay` write that grows it
+/// (#3745), see [`momentum_identity_is_exact`]. TezcatarasEmber contributes a zero
 /// spec cost and a fixed additive in the same fold (#3413), see
 /// [`tezcataras_ember_identity_is_exact`]. Imbued changes nothing a play reads
 /// (#3381): its one effect is a turn-one AutoPre listener, which admission
@@ -824,8 +997,44 @@ pub(crate) fn body_enchantment_is_exact(spec: &CardSpec) -> bool {
         || super::draw::slither_identity_is_exact(spec)
         || goopy_identity_is_exact(spec)
         || vigorous_identity_is_exact(spec)
+        || momentum_identity_is_exact(spec)
         || tezcataras_ember_identity_is_exact(spec)
+        || instinct_identity_is_exact(spec)
         || imbued_skill_identity(spec)
+        || clone_identity(spec)
+}
+
+/// Whether `spec` carries the `CLONE` enchantment, which no combat code reads
+/// (#3756).
+///
+/// `Clone` (v0.111.0 `sts2.dll` SHA-256 `9cb4f1ad…12b4`) declares its
+/// constructor (`0xd5ea4`, a bare `EnchantmentModel::.ctor` call) and nothing
+/// else, so every member is the base's: `CanEnchantCardType` `0x7f403` is
+/// `true`, `ShouldStartAtBottomOfDrawPile` `0x7f397` is `false`, `OnPlay`
+/// `0x7f493` returns a completed task, the four `Enchant*` damage and block
+/// terms (`0x7f737`-`0x7f74c`) are zero and one, `EnchantPlayCount` `0x7f753`
+/// returns its argument, `ShowAmount` `0x7f368` is `false`, and the type
+/// overrides no hook. A whole-assembly scan of every IL operand naming the
+/// type (directly, or inside a generic instantiation) finds four users:
+/// `AbstractModelSubtypes::.cctor` (`0x84d4c`, the type registry),
+/// `PaelsGrowth` (`get_CanonicalVars` `0x98409`, `get_ExtraHoverTips`
+/// `0x98429` and `<AfterObtained>d__6::MoveNext` `0x32c50c`, which enchants a
+/// deck card when the relic is obtained) and `CloneRestSiteOption`
+/// (`get_Description` `0x114ef8`, and the `isinst Clone` filter of
+/// `<OnSelect>b__5_0` `0x3d7cea` IL_0007, which copies the card at a rest
+/// site). None runs inside a combat. The same scan run for `Imbued` returns
+/// the reader list [`imbued_identity_is_inert`] records, which is the control.
+///
+/// So a `CLONE` card plays as its base row at any amount (the amount is the
+/// rest site's, and no combat member reads it). What still tells it from a
+/// plain copy is its identity: an enchanted card cannot take a second,
+/// different enchantment (`EnchantmentModel::CanEnchant` `0x7f40c`
+/// IL_005b-IL_0084), and that is the identity's `enchantment` being `Some`,
+/// which every enchanting body here already reads.
+pub(crate) fn clone_identity(spec: &CardSpec) -> bool {
+    spec.identity
+        .enchantment
+        .is_some_and(|enchantment| matches!(enchantment.id, EnchantmentId::Clone))
 }
 
 /// An `IMBUED` Skill, the only card type `Imbued::CanEnchantCardType`
@@ -1545,6 +1754,11 @@ fn apply_enchantment_on_play(
     let Some(enchantment) = spec.identity.enchantment else {
         return Ok(());
     };
+    // Momentum's `OnPlay` is a field write with no command behind it
+    // (#3745); it shares only this call's position in the body loop.
+    if matches!(enchantment.id, EnchantmentId::Momentum) {
+        return momentum_on_play(state, catalog, spec, uid);
+    }
     if !matches!(
         enchantment.id,
         EnchantmentId::Sown
@@ -1659,16 +1873,158 @@ thread_local! {
     /// and never enters canonical state.
     static ACTIVE_PLAYS: RefCell<Vec<ActivePlayContext>> = const { RefCell::new(Vec::new()) };
 
-    /// Test-only source-derived replay evidence. Recording `(uid, index)`
-    /// rather than a count is stable across ActionReplay authentication,
-    /// which intentionally re-executes the predecessor transcript.
+    /// Test-only source-derived replay evidence. Recording `(uid, index,
+    /// plays finished so far)` rather than a count is stable across
+    /// ActionReplay authentication and rehearsal clones, which re-execute
+    /// the same body start; the finished count tells one physical card's
+    /// later play in the same action from its first.
     #[cfg(test)]
-    static TEST_BODY_STARTS: RefCell<Vec<(u32, u8)>> = const { RefCell::new(Vec::new()) };
+    static TEST_BODY_STARTS: RefCell<Vec<(u32, u8, i32)>> = const { RefCell::new(Vec::new()) };
+
+    /// Synchronous card plays that are between native
+    /// `BeginCardOrPotionEffect` and `EndCardOrPotionEffect` on this Rust
+    /// call stack ([`CardOrPotionEffect`]). Execution-only, like
+    /// `ACTIVE_PLAYS`: a play that suspends leaves a `Frame::CardPlay`
+    /// behind and unwinds its guard.
+    static SYNCHRONOUS_EFFECT_DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+/// One synchronous card play's share of native
+/// `CombatManager._cardOrPotionEffectDepth` (#3822).
+///
+/// # Native (v0.111.0 `sts2.dll`, SHA-256 `9cb4f1ad…`)
+///
+/// `CombatManager::BeginCardOrPotionEffect` RVA `0x1357a0` adds one to the
+/// player's entry of `_cardOrPotionEffectDepth` (IL_0002-0016);
+/// `<EndCardOrPotionEffect>d__77::MoveNext` RVA `0x3f3c64` subtracts one
+/// (IL_0020-0033), removing the entry at zero (IL_003b-004c) and otherwise
+/// storing the difference (IL_00c5-00d2). At zero, and only when the
+/// player's creature is dead (IL_004d-005d), it awaits
+/// `RemoveDeadPlayerCardsFromCombat(combatId, player)` (IL_005f-006c); a
+/// living player's End runs nothing else: no hook and no deferred
+/// empty-hand check. (This crate's fights end with the one player's death,
+/// so that branch has no successor state here.)
+/// `IsExecutingCardOrPotionEffect` RVA `0x13578f` is
+/// `depth > 0` (IL_0002-0010). The field has exactly those three accessors
+/// besides its constructor and `Reset`.
+///
+/// Two wrappers bracket an effect, and nothing else does:
+///
+/// * `CardModel/<OnPlayWrapper>d__339::MoveNext` RVA `0x31b8d0`: Begin at
+///   IL_03d4-03df, after `GeneratePlayCount` (IL_034a) and the dead-owner
+///   exit (IL_03b2-03c3) and before the play loop's first test
+///   (IL_0428-0432). Inside the bracket, per generated play:
+///   `Hook.BeforeCardPlayed` IL_05a1, `CardPlayStarted` IL_0626, `OnPlay`
+///   IL_0659, the enchantment's `OnPlay` IL_06fa, the affliction's IL_07a1,
+///   `CardPlayFinished` IL_084e and `Hook.AfterCardPlayed` IL_0874. End at
+///   IL_0925-0936 on every exit of that region. Only then the result
+///   routing (`RemoveFromCombat` IL_0ba9, `CardCmd.Exhaust` IL_0c1a,
+///   `CardPileCmd.Add` IL_0c99) and, after it, the wrapper's own
+///   `CheckForEmptyHand` (IL_0cf8-0d0f).
+/// * `PotionModel/<OnUseWrapper>d__75::MoveNext` RVA `0x31dd20`: Begin at
+///   IL_0341-034c, `OnUse` IL_0397, End IL_040d-041e, then
+///   `Hook.AfterPotionUsed` (IL_0515) OUTSIDE the bracket and the wrapper's
+///   `CheckForEmptyHand` (IL_05a8-05bf). `Hook.BeforePotionUsed` (IL_00db)
+///   precedes Begin.
+///
+/// So `AfterCardPlayed` listeners run inside the card's bracket and
+/// `AfterPotionUsed` listeners run outside the potion's, and a card's
+/// routing (with its `AfterCardExhausted` walk) is outside too.
+///
+/// # Readers
+///
+/// `CombatManager/<CheckForEmptyHand>d__115::MoveNext` RVA `0x3f3448`
+/// returns unless the turn state is in progress (IL_0020-002d), returns
+/// while the player is executing an effect (IL_0032-0040), returns when the
+/// Hand holds a card (IL_0045-005d), and otherwise awaits
+/// `Hook.AfterHandEmptied` (IL_0062-0079), whose only override in the
+/// assembly is `UnceasingTop::AfterHandEmptied` RVA `0x9d34c`. Its callers
+/// are the two wrappers above, through the `combatId` overload
+/// `<CheckForEmptyHand>d__114` RVA `0x3f3360` (which resolves the live turn
+/// state, IL_001d-002d, and forwards, IL_0032-0040), and
+/// `<RunAutoPrePlayPhase>d__101` RVA `0x3f670c` at IL_00ab, between the
+/// phase write (IL_0093) and `Hook.AfterAutoPrePlayPhaseEntered` (IL_011c):
+/// `turn::resume_player_turn_start_after_relics`'s check, where no effect is
+/// executing. The other reader, `<HandlePlayerDeath>d__117` RVA `0x3f609c`
+/// IL_00b7-00c3, returns first when every player is dead (IL_0041-0072,
+/// predicate `b__117_0` RVA `0x3f2585`), which a one-player combat always
+/// is there.
+///
+/// A suppressed check is not deferred: the next one is whichever wrapper
+/// finishes next. A card AutoPlayed inside another card's body or
+/// `AfterCardPlayed` walk therefore never draws through Unceasing Top; the
+/// enclosing wrapper's own check, after its End and its routing, is the
+/// first that can.
+///
+/// # This crate
+///
+/// A potion's bracket is always its `Frame::PotionFinish` at
+/// `PotionFinishStage::Effect`, and a suspended or frame-driven card play's
+/// is its `Frame::CardPlay` (every [`CardPlayStage`] lies inside the
+/// bracket; the frame is popped before routing). A card play that runs to
+/// completion on the Rust stack has no frame, so it holds this guard across
+/// the same region. [`card_or_potion_effect_is_executing`] reads both.
+pub(crate) struct CardOrPotionEffect(());
+
+impl CardOrPotionEffect {
+    fn begin() -> Result<Self, EngineRefusal> {
+        SYNCHRONOUS_EFFECT_DEPTH.with(|depth| {
+            let next = depth
+                .get()
+                .checked_add(1)
+                .ok_or(EngineRefusal::CounterOverflow("card effect depth"))?;
+            depth.set(next);
+            Ok(Self(()))
+        })
+    }
+}
+
+impl Drop for CardOrPotionEffect {
+    fn drop(&mut self) {
+        SYNCHRONOUS_EFFECT_DEPTH.with(|depth| {
+            debug_assert!(depth.get() > 0);
+            depth.set(depth.get().saturating_sub(1));
+        });
+    }
+}
+
+/// Native `CombatManager.IsExecutingCardOrPotionEffect(player)` for the one
+/// player ([`CardOrPotionEffect`] has the IL): some card or potion wrapper
+/// is between its Begin and its End. The caller is a wrapper that has
+/// already ended its own bracket, so its own frame (popped, or a
+/// `PotionFinish` past `Effect`) and guard (dropped) are not counted.
+pub(crate) fn card_or_potion_effect_is_executing(state: &HotState) -> bool {
+    SYNCHRONOUS_EFFECT_DEPTH.with(Cell::get) > 0
+        || state.frames.as_slice().iter().any(|frame| {
+            matches!(frame, Frame::CardPlay { .. })
+                || matches!(*frame, Frame::PotionFinish { record }
+                    if state.frames.potion_finish(record).is_some_and(|view|
+                        view.stage == crate::frame::PotionFinishStage::Effect))
+        })
+}
+
+/// Run `operation` as though `depth` synchronous card effects enclosed it.
+#[cfg(test)]
+pub(crate) fn with_test_synchronous_effect_depth<T>(
+    depth: u32,
+    operation: impl FnOnce() -> T,
+) -> T {
+    let outer = SYNCHRONOUS_EFFECT_DEPTH.with(|live| live.replace(depth));
+    let result = operation();
+    SYNCHRONOUS_EFFECT_DEPTH.with(|live| live.set(outer));
+    result
 }
 
 #[cfg(test)]
-fn record_test_body_start(uid: u32, play_index: u8) {
-    TEST_BODY_STARTS.with(|starts| starts.borrow_mut().push((uid, play_index)));
+fn record_test_body_start(state: &HotState, uid: u32, play_index: u8) {
+    let finished = state.history.card_plays_finished_combat;
+    TEST_BODY_STARTS.with(|starts| starts.borrow_mut().push((uid, play_index, finished)));
+}
+
+/// The distinct CardPlay bodies started since the last reset or take.
+#[cfg(test)]
+pub(crate) fn take_test_body_starts() -> std::collections::BTreeSet<(u32, u8, i32)> {
+    TEST_BODY_STARTS.with(|starts| starts.borrow_mut().drain(..).collect())
 }
 
 #[cfg(test)]
@@ -1678,7 +2034,12 @@ fn reset_test_body_starts() {
 
 #[cfg(test)]
 fn test_body_started(uid: u32, play_index: u8) -> bool {
-    TEST_BODY_STARTS.with(|starts| starts.borrow().contains(&(uid, play_index)))
+    TEST_BODY_STARTS.with(|starts| {
+        starts
+            .borrow()
+            .iter()
+            .any(|start| (start.0, start.1) == (uid, play_index))
+    })
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -1711,6 +2072,9 @@ struct ActivePlayContext {
     /// Rupture's `playedCards` entry for this body when no persisted
     /// CardPlay record owns it (#3298). See [`ActiveRuptureBatch`].
     rupture: ActiveRuptureBatch,
+    /// The wrapper has routed its card and is inside its own
+    /// `CheckForEmptyHand` (#3756). See [`mark_active_play_routed`].
+    routed: bool,
 }
 
 /// Native `RupturePower.Data.playedCards[card]` for one synchronous CardPlay
@@ -1750,7 +2114,7 @@ impl ActivePlayGuard {
     fn enter_with_source(uid: u32, source: CardPlaySource) -> Result<Self, EngineRefusal> {
         ACTIVE_PLAYS.with(|active| {
             let mut active = active.borrow_mut();
-            if active.iter().any(|entry| entry.uid == uid) {
+            if active.iter().any(|entry| entry.uid == uid && !entry.routed) {
                 return Err(EngineRefusal::ContinuationNotModeled);
             }
             active.push(ActivePlayContext {
@@ -1763,6 +2127,7 @@ impl ActivePlayGuard {
                 unsettling_lamp_triggered: false,
                 body_block_gains: Some(0),
                 rupture: ActiveRuptureBatch::Unregistered,
+                routed: false,
             });
             Ok(Self(uid))
         })
@@ -1998,6 +2363,7 @@ impl PersistedActivePlayGuard {
                     // in `set_top_play_index`.
                     body_block_gains: None,
                     rupture: ActiveRuptureBatch::Persisted,
+                    routed: false,
                 });
             }
             let depth = active.len();
@@ -2076,12 +2442,14 @@ pub(crate) fn trigger_active_card_lamp() -> Result<(), EngineRefusal> {
 /// innermost physical play before a later Draw refusal. Snapshot the complete
 /// synchronous stack, require the rehearsal to preserve its execution shape,
 /// and restore every latch on both success and refusal before the real command
-/// is allowed to run.
+/// is allowed to run. Native checkpoint recording is off for the rehearsal.
 pub(crate) fn rehearse_preserving_active_plays<T>(
     operation: impl FnOnce() -> Result<T, EngineRefusal>,
 ) -> Result<T, EngineRefusal> {
     let snapshot = ACTIVE_PLAYS.with(|active| active.borrow().clone());
-    let result = operation();
+    // The rehearsal's state is discarded, so the native checkpoint boundaries
+    // it passes are not the transition's (`native_checkpoint::unrecorded`).
+    let result = super::native_checkpoint::unrecorded(operation);
     let shape_is_exact = ACTIVE_PLAYS.with(|active| {
         let mut active = active.borrow_mut();
         let exact = active.len() == snapshot.len()
@@ -2141,7 +2509,44 @@ impl Drop for ActivePlayGuard {
 /// complete nested stack. Commands that move physical cards must not detach a
 /// suspended parent merely because a child CardPlay is currently innermost.
 pub(crate) fn active_play_stack_contains_uid(uid: u32) -> bool {
-    ACTIVE_PLAYS.with(|active| active.borrow().iter().any(|entry| entry.uid == uid))
+    ACTIVE_PLAYS.with(|active| {
+        active
+            .borrow()
+            .iter()
+            .any(|entry| entry.uid == uid && !entry.routed)
+    })
+}
+
+/// Release the finishing wrapper's ownership of its card before the
+/// wrapper's own `CheckForEmptyHand` (#3756).
+///
+/// v0.111.0 (SHA-256 `9cb4f1ad…`), `CardModel/<OnPlayWrapper>d__339::MoveNext`
+/// RVA `0x31b8d0`: `EndCardOrPotionEffect` (IL_0925-0936), the result routing
+/// (`RemoveFromCombat` IL_0ba9, `CardCmd.Exhaust` IL_0c1a, `CardPileCmd.Add`
+/// IL_0c99), then the awaited `CombatManager.CheckForEmptyHand` (IL_0cf8-0d0f).
+/// Only after that await does the wrapper touch the card again:
+/// `EnergyCost.AfterCardPlayedCleanup` (IL_0d6e-0d73), `_temporaryStarCosts`
+/// `RemoveAll` (IL_0d8c-0db0), `CurrentTarget = null` (IL_0dcb),
+/// `CurrentPlayIndex = 0` (IL_0dd2), `Played` (IL_0dd8-0de3) and
+/// `choiceContext.PopModel` (IL_0de9-0def). None of them reads where the
+/// card is. So during the check the card is an ordinary pile card: Unceasing
+/// Top (`UnceasingTop/<AfterHandEmptied>d__4` RVA `0x333994`, one
+/// `CardPileCmd.Draw` at IL_005e) can draw it and a live Hellraiser can
+/// AutoPlay it in a second `OnPlayWrapper` on the same `CardModel`, nested in
+/// the first one's await. The first play's `CardPlayFinished` history entry
+/// is already written (native trace `top_rebound`), and the inner wrapper's
+/// own tail cleanup runs before the outer one repeats it on the same card.
+///
+/// The entry stays on the stack, because the cleanup that follows the check
+/// still belongs to it; it only stops owning the uid.
+fn mark_active_play_routed(uid: u32) {
+    ACTIVE_PLAYS.with(|active| {
+        if let Some(current) = active.borrow_mut().last_mut()
+            && current.uid == uid
+        {
+            current.routed = true;
+        }
+    });
 }
 
 /// Whether execution is currently below an authenticated CardPlay boundary.
@@ -2155,6 +2560,20 @@ pub(crate) fn active_play_transaction_is_running() -> bool {
 
 pub(crate) fn active_play_current_uid() -> Option<u32> {
     ACTIVE_PLAYS.with(|active| active.borrow().last().map(|entry| entry.uid))
+}
+
+/// Whether the innermost active CardPlay is `uid`'s and is a manual play,
+/// the `manual` [`record_card_play_finished`] counted it under (#3756).
+/// `None` when no active CardPlay owns `uid`: a caller that needs the answer
+/// refuses rather than guess.
+pub(crate) fn active_play_is_manual(uid: u32) -> Option<bool> {
+    ACTIVE_PLAYS.with(|active| {
+        active
+            .borrow()
+            .last()
+            .filter(|entry| entry.uid == uid)
+            .map(|entry| entry.source == CardPlaySource::Manual)
+    })
 }
 
 pub(crate) fn active_play_pen_double() -> bool {
@@ -2238,9 +2657,48 @@ pub(crate) fn active_card_play_index(uid: u32) -> Option<u8> {
         active
             .borrow()
             .iter()
+            .rev()
             .find(|entry| entry.uid == uid)
             .and_then(|entry| entry.play_index)
     })
+}
+
+/// Whether a generated replay of `spec` is modeled when its frozen target
+/// has left combat and a Stock replacement stands in its roster row (#3756).
+///
+/// `CardModel/<OnPlayWrapper>d__339::MoveNext` RVA `0x31b8d0` builds every
+/// replay's `CardPlay` with the one frozen target (`set_Target`, IL_054a)
+/// and tests only `IsOverOrEnding` at the loop head (IL_0428-IL_0432), so a
+/// replay is aimed at the Creature the first body was aimed at whatever has
+/// become of it (`play_card_with_work_inner`'s doc, #3101). A body here may
+/// read that
+/// target only through a single-target `AttackCommand`:
+/// `AttackCommand/<Execute>d__90::MoveNext` RVA `0x3f19c0` takes
+/// `GetPossibleTargets` (IL_0168; `_singleTarget` alone, RVA `0x1348ac`
+/// IL_000d-IL_0015), keeps the members that are `IsAlive`
+/// (`<Execute>b__90_1` RVA `0x3f18b6`, IL_017b-IL_0191), and with none left
+/// in a live combat leaves the hit loop for the record site
+/// (IL_01a1-IL_01b3). A corpse is not alive whether or not it is still in
+/// combat, so the command lands on nobody, exactly as it does on a target
+/// that died in place. The engine's attack pipeline already compares the
+/// play's frozen `(slot, uid)` per hit (`damage::frozen_card_target_identity`),
+/// so the replacement in that row takes nothing.
+///
+/// The other admitted step never reads the target: `OrbCmd.Channel`
+/// (`IceLance/<OnPlay>d__5::MoveNext` RVA `0x3a67e8`: `cardPlay.Target` at
+/// IL_002d and IL_0063 feeds `AttackCommand::Targeting` IL_0068 only; the
+/// Channels are IL_00ef with `CardModel::get_Owner`).
+///
+/// Narrow on purpose. An enchanted source, a targeted power or debuff, and
+/// any step not listed keep the refusal, because their bodies have not been
+/// read against a replaced target.
+fn replay_body_is_exact_over_a_replaced_target(catalog: &Catalog, spec: &CardSpec) -> bool {
+    let steps = catalog.steps(spec);
+    spec.identity.enchantment.is_none()
+        && !steps.is_empty()
+        && steps
+            .iter()
+            .all(|step| matches!(step.kind, StepKind::Attack | StepKind::Channel))
 }
 
 /// Return the frozen native target identity only for the uniquely active
@@ -2251,6 +2709,7 @@ pub(crate) fn active_card_target_identity(uid: u32) -> Option<Option<(i32, u32)>
         active
             .borrow()
             .iter()
+            .rev()
             .find(|entry| entry.uid == uid)
             .map(|entry| entry.target_identity)
     })
@@ -2337,13 +2796,14 @@ fn card_play_energy_value(
 ///
 /// A manual play's `EnergyValue` is its `EnergySpent`, which the record keeps
 /// as `spent`. An AutoPlay's is the cost it resolved at its entry
-/// ([`card_play_energy_value`]), which no persisted field carries; each
-/// resumed reader refuses by name when it would read `None`.
+/// ([`card_play_energy_value`]), which the record keeps as `energy_value`
+/// (#3756). `None` is a record written before that field existed; each
+/// resumed reader refuses by name when it would read it.
 fn persisted_card_play_energy_value(
     record: &crate::hot::CardPlayRecord,
 ) -> Result<Option<i16>, EngineRefusal> {
     if record.source != CardPlaySource::Manual {
-        return Ok(None);
+        return Ok(record.energy_value);
     }
     i16::try_from(record.spent)
         .map(Some)
@@ -2358,6 +2818,7 @@ pub(super) fn active_card_energy_spent(uid: u32) -> Option<i16> {
         active
             .borrow()
             .iter()
+            .rev()
             .find(|entry| entry.uid == uid)
             .and_then(|entry| entry.spent)
     })
@@ -3455,9 +3916,12 @@ fn apply_keyed_after_card_played_object(
 ) -> Result<(), EngineRefusal> {
     use crate::hot::AfterCardPlayedPowerToken as Token;
     match token {
-        Token::Withering => {
-            super::cards::withering_after_card_played(state, catalog, true, events)?;
-        }
+        // Withering Presence sits on the Aeonglass, not on the player
+        // (#3821), so its row is not a player-power callback: the body runs
+        // in [`after_card_played_enemy_suffix`], behind every model the
+        // player owns. The row stays in this ledger only as the carrier's
+        // liveness witness ([`after_card_played_power_order_is_exact`]).
+        Token::Withering => {}
         Token::Rupture => {
             let batch = latch.rupture_batch;
             let registered = latch.rupture_registered;
@@ -3658,7 +4122,7 @@ fn apply_keyed_after_card_played_object(
 /// Current v0.111.0 native authority is ARM64 `sts2.dll` SHA-256
 /// `9cb4f1ad8c9f284aa8fec3122ffd6d780bbf543d875c817abdd12ff63fbf12b4`.
 /// `CalamityPower::BeforeCardPlayed` RVA `0xa01bc` records Attack membership;
-/// `<AfterCardPlayed>d__10::MoveNext` RVA `0x3368bc` removes that key, reads
+/// `<AfterCardPlayed>d__7::MoveNext` RVA `0x3368bc` removes that key, reads
 /// the live Amount, calls owner `GetForCombat` once per member, materializes
 /// the whole list, and only then serially awaits each generated add.
 #[cold]
@@ -4611,8 +5075,9 @@ fn fire_physical_after_card_played(
 /// (IL_0067-IL_0081), then awaits `CardPileCmd.Add(Hand)` (IL_0083-IL_0088).
 /// `energy_value` is that `EnergyValue` ([`card_play_energy_value`]): an
 /// AutoPlay of a 2-cost card pays nothing but still returns Right Hand Hand
-/// (#3168). `None` is a resumed AutoPlay whose value was not persisted; it
-/// refuses only when a live Right Hand Hand in Discard would read it.
+/// (#3168). `None` is a resumed AutoPlay whose record carries no value (one
+/// written before #3756); it refuses only when a live Right Hand Hand in
+/// Discard would read it.
 fn physical_cards_after_card_played_late(
     state: &mut HotState,
     catalog: &Catalog,
@@ -4742,6 +5207,28 @@ fn after_card_played_enemy_suffix(
             if !monster.set_bygone_effigy_slow(next) {
                 return Err(EngineRefusal::CounterOverflow("Bygone Effigy SlowPower"));
             }
+        }
+        // #3821: Withering Presence is the Aeonglass's own power.
+        // `Aeonglass/<AfterAddedToRoom>d__31::MoveNext` (v0.111.0 RVA
+        // `0x3524e8`, DLL 9cb4f1ad) sets the power's `Target` to the opponent
+        // (IL_00e8) and applies it to the Aeonglass's creature
+        // (IL_00f5-IL_0108). `CombatState/<IterateHookListeners>d__69::
+        // MoveNext` (RVA `0x3f9720`) lists `_allies` before `_enemies`
+        // (IL_0059-IL_0088) and, for a player, its powers, relics, potions,
+        // orbs and pile cards (IL_0092-IL_019b), so this body runs after
+        // every player-owned AfterCardPlayed listener: a Calamity Attack
+        // generated by the same play is in Hand before the Wither. It is the
+        // Aeonglass's first power (room entry), ahead of a player-applied
+        // Oblivion or Strangle on the same owner. A dead Aeonglass does not
+        // reach here: `CombatState::Contains` (RVA `0x137564`
+        // IL_00ae-IL_00d3) passes a power only while its owner's
+        // `CombatState` is set, and `RemoveCreature` (RVA `0x1371d0`) takes a
+        // dead enemy out of `_enemies`. The body itself has no combat gate
+        // (`WitheringPresencePower/<AfterCardPlayed>d__14::MoveNext` RVA
+        // `0x34af14`: card-owner test IL_0027-IL_0042, decrement
+        // IL_0049-IL_0066).
+        if state.monsters[index].kind == MonsterKind::Aeonglass {
+            super::cards::withering_after_card_played(state, catalog, true, events)?;
         }
         // Globe Head's Galvanic is its first power (applied at
         // AfterAddedToRoom), so it precedes any player-applied Oblivion or
@@ -5063,7 +5550,26 @@ fn preflight_curl_up_after_card_played(
         .iter()
         .find(|card| card.uid == played_uid)
         .expect("unique_live_card_pile resolved this uid");
-    if catalog.spec(card.atom) != Some(spec) {
+    // The live card is the played one, as it stands now. Native compares
+    // references: `CurlUpPower/<AfterCardPlayed>d__11::MoveNext` RVA
+    // `0x3384d0` tests `cardPlay.Card` against the `playedCard` its
+    // AfterDamageReceived remembered (`0xa10cc` IL_0056-IL_005e) with a
+    // `beq` (IL_002c-IL_0042). An earlier listener of the same
+    // AfterCardPlayed walk may have upgraded that object in place: Razor
+    // Tooth (`RazorTooth::AfterCardPlayed` `0x9a1b8` IL_0060) runs in the
+    // relic walk, before this enemy-owner suffix, so the card is one level
+    // above the spec its play ran with and Curl Up still fires (#3877; on
+    // the game a Razor Tooth Strike leaves the Louse Progenitor curled with
+    // its full Block and the Strike upgraded,
+    // `tests/native/curl_up_razor_tooth.native.json`). Requiring the running
+    // spec refused every such play. The id and enchantment cannot change
+    // under a play; the upgrade can only rise.
+    let live_is_the_played_card = catalog.spec(card.atom).is_some_and(|live| {
+        (live.identity.id, live.identity.enchantment)
+            == (spec.identity.id, spec.identity.enchantment)
+            && live.identity.upgrade >= spec.identity.upgrade
+    });
+    if !live_is_the_played_card {
         return Err(EngineRefusal::MalformedArgs("CurlUp physical card source"));
     }
     for monster in state
@@ -5157,6 +5663,33 @@ fn orbit_after_energy_spent(state: &mut HotState, spent: i16) -> Result<(), Engi
         state.orbs.orbit_trigger_count()
     };
     state.orbs.set_orbit_counters(energy_spent, trigger_count);
+    // #3756: every later OrbitPower object is its own listener with its own
+    // `Data` (`<AfterEnergySpent>d__15::MoveNext` RVA `0x33f718` reads
+    // `GetInternalData` on `this`, IL_004d). Each adds the spend to its own
+    // `energySpent` (IL_0058-0069) and pays `Amount * (energySpent / 4 -
+    // triggerCount)` (IL_0071-00bd) with Amount 1. The payments are plain
+    // `PlayerCmd::GainEnergy` calls on the same player, so their order among
+    // the objects is not observable.
+    if !state.orbs.orbit_later_energy_spent().is_empty() {
+        let mut later = state.orbs.orbit_later_energy_spent().to_vec();
+        for object in &mut later {
+            let before = *object;
+            *object = before
+                .checked_add(i32::from(spent))
+                .ok_or(EngineRefusal::CounterOverflow("orbit energy spent"))?;
+            let triggers = *object / 4 - before / 4;
+            if triggers > 0 {
+                state.energy = state
+                    .energy
+                    .checked_add(
+                        i16::try_from(triggers)
+                            .map_err(|_| EngineRefusal::CounterOverflow("orbit energy"))?,
+                    )
+                    .ok_or(EngineRefusal::CounterOverflow("orbit energy"))?;
+            }
+        }
+        state.orbs.set_orbit_later_energy_spent(later);
+    }
     Ok(())
 }
 
@@ -5452,11 +5985,16 @@ pub(crate) fn effective_replay_count(
                 || onplay_enchantment_identity_is_exact(spec)
                 // Goopy declares no `EnchantPlayCount` (its method set is
                 // enumerated on `goopy_identity_is_exact`), nor does Vigorous
-                // (`vigorous_identity_is_exact`), nor TezcatarasEmber
+                // (`vigorous_identity_is_exact`), nor Momentum
+                // (`momentum_identity_is_exact`), nor TezcatarasEmber
                 // (`tezcataras_ember_identity_is_exact`).
                 || goopy_identity_is_exact(spec)
                 || vigorous_identity_is_exact(spec)
-                || tezcataras_ember_identity_is_exact(spec) =>
+                || momentum_identity_is_exact(spec)
+                || tezcataras_ember_identity_is_exact(spec)
+                // Instinct declares no `EnchantPlayCount` either
+                // (`instinct_identity_is_exact`).
+                || instinct_identity_is_exact(spec) =>
         {
             0
         }
@@ -5571,10 +6109,34 @@ fn manual_play_condition_is_met(state: &HotState, catalog: &Catalog, spec: &Card
     }
 }
 
+/// Ids on the frozen `MULTIPLAYER_ONLY_CANPLAY_CARDS` census that the game
+/// itself lets one player play, with their solo body modeled here (#3877).
+///
+/// `CardModel::CanPlay` (RVA `0x7dca8`) has one player-count test: a
+/// `TargetType` of AnyAlly (6, IL_0075-IL_007c) with at most one entry in
+/// `CombatState.PlayerCreatures` (IL_007e-IL_00a9) sets
+/// `UnplayableReason.NoLivingAllies` (64, IL_00ab-IL_00b1). It never reads
+/// `MultiplayerConstraint`, so a MultiplayerOnly card that targets Self, all
+/// allies or an enemy is playable alone. The headless census of the whole
+/// list is on #3703: 18 of the census ids answer true. An id moves here when
+/// its solo body is modeled and witnessed; the rest stay unplayable alone,
+/// which for those 17 is a named gap (#3703), not the game's behaviour.
+///
+/// Hibernate (`get_TargetType` Self; `tests/native/hibernate_solo_*.native.json`).
+pub(crate) const NATIVE_SOLO_PLAYABLE_CARDS: [CardId; 1] = [CardId::Hibernate];
+
+/// Whether `id` is unplayable while the owner is the only living Player.
+pub(crate) fn card_is_solo_unplayable(id: CardId) -> bool {
+    (MULTIPLAYER_ONLY_CANPLAY_CARDS.contains(&id) && !NATIVE_SOLO_PLAYABLE_CARDS.contains(&id))
+        || TEAMMATE_REQUIRED_CANPLAY_CARDS.contains(&id)
+}
+
 fn multiplayer_restriction_blocks(state: &HotState, id: CardId) -> bool {
     let living_players = usize::from(state.hp > 0)
         + usize::from(state.multiplayer_ally_key == 1 && state.fanouts.multiplayer_ally().alive);
-    (MULTIPLAYER_ONLY_CANPLAY_CARDS.contains(&id) && living_players <= 1)
+    (MULTIPLAYER_ONLY_CANPLAY_CARDS.contains(&id)
+        && !NATIVE_SOLO_PLAYABLE_CARDS.contains(&id)
+        && living_players <= 1)
         || (TEAMMATE_REQUIRED_CANPLAY_CARDS.contains(&id) && state.multiplayer_ally_key == 0)
 }
 
@@ -5714,13 +6276,22 @@ fn resolved_energy_cost_without_free_from_local(
         0
     };
     let borrowed_time = state.powers.value(PowerId::BorrowedTime);
-    let early = (i128::from(local) + i128::from(tangled) + i128::from(borrowed_time))
-        .clamp(0, i128::from(i64::MAX)) as i64;
-    if spec.is_power {
-        spiked_gauntlets_surcharged_energy_cost(state, curious_reduced_energy_cost(state, early))
-    } else {
-        early
+    let surcharged = |cost: i64| {
+        (i128::from(cost) + i128::from(tangled) + i128::from(borrowed_time))
+            .clamp(0, i128::from(i64::MAX)) as i64
+    };
+    if !spec.is_power {
+        return surcharged(local);
     }
+    // Borrowed Time and Curious are both the owner's powers, folded in the
+    // order of `Creature.Powers` ([`curious_reduced_energy_cost`]). Tangled
+    // reads Attacks only, so on this arm `surcharged` is Borrowed Time alone.
+    let powers = if borrowed_time > 0 && state.fanouts.curious_follows_borrowed_time() {
+        curious_reduced_energy_cost(state, surcharged(local))
+    } else {
+        surcharged(curious_reduced_energy_cost(state, local))
+    };
+    spiked_gauntlets_surcharged_energy_cost(state, powers)
 }
 
 /// Spiked Gauntlets' early `TryModifyEnergyCostInCombat` term on a Power
@@ -5769,13 +6340,17 @@ fn spiked_gauntlets_surcharged_energy_cost(state: &HotState, cost: i64) -> i64 {
 /// (IL_0051-IL_006d), so this term precedes every absolute-zero Late row.
 ///
 /// The only other early listeners that can reach a Power card are Borrowed
-/// Time and Spiked Gauntlets. A Curious beside a live Borrowed Time refuses
-/// at the application sites (`steps::templates::mad_science_curious` /
-/// `borrowed_time`) and at admission, since both are player powers whose
-/// relative order is their unrecorded first-application order; Tangled reads
-/// Attacks only. So `cost` here is the unmodified local cost whenever Curious
-/// is live. Spiked Gauntlets is a relic, which the listener walk always puts
-/// after the player's powers, so its `+1` follows this term
+/// Time and Spiked Gauntlets; Tangled reads Attacks only. Borrowed Time
+/// (`BorrowedTimePower::TryModifyEnergyCostInCombat` RVA `0x9feb6`,
+/// `cost + Amount` on every owner card, IL_001d-IL_002f) is the owner's power
+/// too, and the two do not commute on a Power costing less than the Curious
+/// amount: with one stack of each, a zero-cost Power costs 1 when Curious
+/// runs first (it declines, then `+1`) and 0 when Borrowed Time does (`+1`,
+/// then `-1`). They run in `Creature.Powers` order, which is their attachment
+/// order; the caller reads it from
+/// [`crate::hot::HotFanouts::curious_follows_borrowed_time`] (#3756). Spiked
+/// Gauntlets is a relic, which the listener walk always puts after the
+/// player's powers, so its `+1` follows both
 /// ([`spiked_gauntlets_surcharged_energy_cost`]).
 #[inline]
 fn curious_reduced_energy_cost(state: &HotState, cost: i64) -> i64 {
@@ -6597,8 +7172,9 @@ fn whispering_earring_child_can_suspend(
 /// Execute one Whispering Earring iteration. The caller repeats this at most
 /// thirteen times, rebuilding the first-playable Hand query after each play.
 /// It holds a [`super::selection::VakuuSelectorScope`] across the loop, so a
-/// Glimmer, Cosmic Indifference (#3414), Thinking Ahead (#3433) or Secret
-/// Weapon (#3608) child resolves its selection inline, and so does the
+/// Glimmer, Cosmic Indifference (#3414), Thinking Ahead (#3433), Secret
+/// Weapon (#3608), Headbutt or Quasar (#3756) child resolves its selection
+/// inline, and so does the
 /// Stratagem pick when a Draw on the resumable frame reshuffles (#3637).
 /// A selection the scope does not resolve never becomes a player choice:
 /// the caller refuses a child left pending, and a receipt-owned Draw that
@@ -6689,6 +7265,11 @@ pub(crate) fn autoplay_whispering_earring_first(
     Ok(true)
 }
 
+/// A Hellraiser AutoPlay of a Strike that needs a player choice, reached
+/// from a Draw command that has no resumable frame (#3209, #3822).
+pub(crate) const HELLRAISER_SELECTING_STRIKE_IN_SYNCHRONOUS_DRAW: &str =
+    "Hellraiser AutoPlay of a selecting Strike inside a synchronous Draw";
+
 /// Direct-AutoPlay one exact Strike captured by Hellraiser's early draw hook.
 ///
 /// Native moves the drawn Hand instance into Play before its body/listeners.
@@ -6734,11 +7315,21 @@ fn autoplay_hellraiser_strike_inner(
     let spec = catalog
         .spec(card.atom)
         .ok_or(EngineRefusal::UnknownAtom(card.atom))?;
-    if !spec.strike_tag
-        || !suspendable
-            && (spec.selects || autoplay_child_requires_suspension(PileId::Hand, spec, catalog))
-    {
+    if !spec.strike_tag {
         return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    if !suspendable
+        && (spec.selects || autoplay_child_requires_suspension(PileId::Hand, spec, catalog))
+    {
+        // #3209/#3822: the Draw that reached this Strike is a synchronous
+        // command with no frame to park on. Admission closes the
+        // card-program Draw sources ("Hellraiser synchronous Strike
+        // closure"), and a fused Vicious producer refuses its whole action
+        // here by design; the relic and enchantment Draws park on the
+        // receipt carrier instead and never reach this arm.
+        return Err(EngineRefusal::PowerOrderNotModeled(
+            HELLRAISER_SELECTING_STRIKE_IN_SYNCHRONOUS_DRAW,
+        ));
     }
     if super::presentation::recording() {
         super::presentation::observe_autoplay(
@@ -7593,6 +8184,10 @@ fn play_card_with_work(
                     | CardId::ShadowStep
                     | CardId::HeirloomHammer
                     | CardId::DualWield
+                    // #3794: a one-card Hand is taken without a screen, so
+                    // Nightmare's writer runs inside the play, after the
+                    // shared prefix, and can still refuse by name.
+                    | CardId::Nightmare
                     | CardId::GraveWarden
                     | CardId::Reave
                     | CardId::Severance
@@ -8268,7 +8863,7 @@ fn play_card_with_work_inner(
             && state.powers.value(PowerId::SmogLock) > 0)
         || sloth_blocked
         || ringing_blocks_card_play(state, card)
-        || state.velvet_choker_owned() && state.history.owner_card_plays_finished_this_turn >= 6
+        || state.velvet_choker_owned() && velvet_choker_cards_played(state, catalog) >= 6
         // Normality::ShouldPlay RVA 0xe6754 is one more Hook.ShouldPlay
         // listener, consulted by the same CardCmd.AutoPlay IL_015c check
         // (Python `_auto_play_block_reason` "normality").
@@ -8408,7 +9003,11 @@ fn play_card_with_work_inner(
         CardId::Hibernate => crate::steps::defect_uncommon::preflight_hibernate_power_exact(
             state, catalog, uid, &spec,
         )?,
-        CardId::Tutor => {
+        // An AutoPlay with no other living Player never starts Tutor's body:
+        // its AnyAlly pool is empty and the card is routed unplayed below
+        // (#3877, `CardCmd/<AutoPlay>d__0` RVA `0x3df9d4` IL_0315-IL_0390).
+        // The preflight's MultiplayerOnly refusal is for a body that runs.
+        CardId::Tutor if manual || crate::engine::allies::living_keys(state).count() > 1 => {
             crate::steps::regent_uncommon::preflight_tutor_exact(state, catalog, uid, &spec)?
         }
         CardId::PrimalForce => {
@@ -8478,28 +9077,14 @@ fn play_card_with_work_inner(
     {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
-    // Admission rejects the reachable catalog composition. Keep the same
-    // fail-closed wall at the execution choke point for direct/manual and
-    // nested AutoPlay callers that deliberately bypass entry admission.
-    // Native Debilitate and Heirloom Hammer retain the attacked Creature
-    // across their await; their post-attack bodies are not yet audited
-    // against a lethal Stock respawn in the same slot. Preserve distinct
-    // reasons for the independently reachable rows. Mangle and Fight Me are
-    // modeled (#3326): their trailing `PowerCmd.Apply` compares the frozen
-    // `(slot, uid)` target identity, see
-    // [`crate::steps::templates::stock_replaced_target_is_current`].
-    if matches!(
-        spec.identity.id,
-        CardId::Debilitate | CardId::HeirloomHammer
-    ) && crate::steps::templates::post_attack_stock_target_identity_is_unrepresentable(state)
-    {
-        let reason = match spec.identity.id {
-            CardId::Debilitate => "Debilitate Axebot Stock target identity",
-            CardId::HeirloomHammer => "Heirloom Hammer Axebot Stock target identity",
-            _ => unreachable!("guarded by exact source ids"),
-        };
-        return Err(EngineRefusal::MalformedArgs(reason));
-    }
+    // No Stock wall here any more (#3747). A lethal hit on a Stock-bearing
+    // Axebot replaces the attacked Creature; Mangle, Fight Me (#3326),
+    // Debilitate and Knockdown compare the frozen `(slot, uid)` target in
+    // their trailing step
+    // ([`crate::steps::templates::stock_replaced_target_is_current`]), and
+    // Heirloom Hammer's suspended selection resolves it through
+    // [`persisted_card_target_index`].
+    //
     // Admission checks the entire legal-target closure. Keep the same
     // pre-mutation proof at this direct execution seam because nested AutoPlay
     // can bypass entry admission and resolves its target only afterward.
@@ -8634,11 +9219,22 @@ fn play_card_with_work_inner(
             && state.pending.is_none()
             && super::selection::vakuu_selector_active()
             && !whispering_earring_child_can_suspend(state, catalog, &spec);
+        // Turn one's Imbued AutoPlay (#3817) nests directly on its AutoPre
+        // phase record, which names this card
+        // ([`autoplay_imbued_turn_one`] carries the IL).
+        let imbued_child = matches!(provenance, PlayProvenance::Auto)
+            && state.pending.is_none()
+            && matches!(
+                state.frames.as_slice(),
+                [crate::frame::Frame::Phase { record }]
+                    if state.frames.auto_pre_imbued_phase(*record) == Some(uid)
+            );
         if !restricted_batch_child
             && !direct_owner_child
             && !potion_draw_child
             && !history_course_child
             && !whispering_earring_child
+            && !imbued_child
         {
             // Only modeled parent/child continuation grammars may nest a
             // physical AutoPlay. The active card is already in Play, so it
@@ -8664,7 +9260,27 @@ fn play_card_with_work_inner(
         // a live combat with no living enemy, e.g. a Hellraiser Strike drawn
         // by Gremlin Horn before InfestedPower adds the Wrigglers (#2656).
         // Nothing has mutated since the ShouldPlay routing above.
-        if target.is_none() && effective_target_type == CardTargetType::AnyEnemy {
+        //
+        // An AnyAlly card (`TargetType == 6`, IL_0315-IL_031b) takes the same
+        // exit (#3877). Its pool is `Allies.Where(<AutoPlay>b__0)` (IL_0326-
+        // IL_033c), and `<AutoPlay>b__0` (`0x3df4bc`) keeps a creature that
+        // is alive, a Player, and not the card owner's (IL_0005, IL_000d,
+        // IL_001b-IL_0028): never the owner, never a pet. With no preset
+        // target (IL_0349) it rolls `CombatTargets.NextItem` over that pool
+        // (IL_0357-IL_036d), and a null result (IL_037d) reaches
+        // `MoveToResultPileWithoutPlaying` at IL_0390. In a solo fight the
+        // pool is always empty, so Mayhem, Havoc or Cascade turning up
+        // Believe in You, Constellation, Coordinate or any other AnyAlly
+        // card discards it (or exhausts it, when forced) with no body, no
+        // CardPlayed and no draw from CombatTargets. `roll_auto_target_key`
+        // already answers `None` without a draw for that roster; this arm
+        // used to fall through to `TargetMismatch` instead of routing.
+        if target.is_none()
+            && matches!(
+                effective_target_type,
+                CardTargetType::AnyEnemy | CardTargetType::AnyAlly
+            )
+        {
             drop(_active_play);
             return route_auto_play_without_playing(
                 state,
@@ -9043,6 +9659,9 @@ fn play_card_with_work_inner(
         .plays_this_turn
         .checked_add(1)
         .ok_or(EngineRefusal::CounterOverflow("plays_this_turn"))?;
+    // `BeginCardOrPotionEffect` (IL_03d4-03df): held across every generated
+    // play and released before the routing below ([`CardOrPotionEffect`]).
+    let effect = CardOrPotionEffect::begin()?;
     for play_index in 0..plays {
         // A terminal body suppresses every later generated CardPlay in the
         // frozen series. The physical instance remains in Play and routing
@@ -9106,7 +9725,16 @@ fn play_card_with_work_inner(
             match state.monsters.get(index) {
                 None => return Err(EngineRefusal::ContinuationNotModeled),
                 Some(monster) if (monster.slot, monster.uid) != identity => {
-                    return Err(EngineRefusal::ContinuationNotModeled);
+                    // An earlier body killed a Stock Axebot: the frozen
+                    // target is a Creature the roster no longer holds, and
+                    // this row is its replacement. Only a body read against
+                    // that shape runs; every other one keeps refusing.
+                    if !replay_body_is_exact_over_a_replaced_target(catalog, &spec)
+                        || super::monsters::axebot_replacement_of(state, identity.0, identity.1)
+                            != Some(index)
+                    {
+                        return Err(EngineRefusal::ContinuationNotModeled);
+                    }
                 }
                 Some(_) => {}
             }
@@ -9121,7 +9749,7 @@ fn play_card_with_work_inner(
         let pen_double = super::relics::before_card_played_hand(catalog, state, &spec, uid)?;
         _active_play.set_pen_double(pen_double)?;
         #[cfg(test)]
-        record_test_body_start(uid, body_index);
+        record_test_body_start(state, uid, body_index);
         note_normality_card_play_started(catalog, state)?;
         if spec.is_attack || spec.is_skill {
             state.history.attack_skill_plays_started_this_turn = state
@@ -9208,6 +9836,7 @@ fn play_card_with_work_inner(
             _active_play.set_rupture_registered(true)?;
         }
         super::allies::imitation_before_local_power(state, catalog, card, &spec, play_index == 0)?;
+        let before_card_played_listeners_end = state.next_card_uid;
         juggling_before_card_played(state, catalog, card, &spec, events)?;
         super::relics::intimidating_helmet_before_card_played(
             catalog,
@@ -9216,7 +9845,7 @@ fn play_card_with_work_inner(
             events,
         )?;
         fire_hook(catalog, HookEvent::BeforeCardPlayed, state, events)?;
-        stomp_before_card_played(state, catalog, &spec);
+        stomp_before_card_played(state, catalog, &spec, before_card_played_listeners_end);
         // The inline twin of the persisted park site (#2977, #3250): a Hand of
         // at most one card never prompts. Zero candidates return empty
         // (`<FromHand>d__28` RVA `0x3e7568` IL_0152-IL_0161), and one card is
@@ -9241,6 +9870,7 @@ fn play_card_with_work_inner(
                 plays,
                 play_index,
                 spent,
+                energy_value,
                 x_value,
                 spend_star_cost,
                 glam,
@@ -9282,6 +9912,7 @@ fn play_card_with_work_inner(
                 plays,
                 play_index,
                 spent,
+                energy_value,
                 x_value,
                 spend_star_cost,
                 glam,
@@ -9415,6 +10046,7 @@ fn play_card_with_work_inner(
                     plays,
                     play_index,
                     spent,
+                    energy_value,
                     x_value,
                     spend_star_cost,
                     glam,
@@ -9480,6 +10112,9 @@ fn play_card_with_work_inner(
             return Ok(());
         }
         record_card_play_finished(state, &spec, uid, manual)?;
+        // Finished, and not yet counted by a Velvet Choker later in the
+        // AfterCardPlayed walk ([`velvet_choker_cards_played`]).
+        let _choker_window = VelvetChokerWindow::open(state, catalog, uid);
         let physical_listeners = capture_physical_after_card_played(state, catalog, &spec, uid)?;
         super::allies::imitation_after_local_power(state, catalog, uid, &spec, events)?;
         let power_snapshot = state
@@ -9565,6 +10200,8 @@ fn play_card_with_work_inner(
             spend_glam(state, catalog, &spec, uid, glam)?;
         }
     }
+    // `EndCardOrPotionEffect` (IL_0925-0936), before the result routing.
+    drop(effect);
     // A winning listener in the post-body groups (notably Panache) also ends
     // routing: Add/Exhaust no-op after ending, leaving the card in Play.
     // RemoveBottom still runs for Powers and dupes: native RemoveFromCombat
@@ -9691,37 +10328,355 @@ fn play_card_with_work_inner(
     )
 }
 
+thread_local! {
+    /// Owner card plays that have written `CardPlayFinished` and whose
+    /// `AfterCardPlayed` walk has not reached Velvet Choker, innermost last:
+    /// the played uid and whether the Choker has still to count it
+    /// ([`velvet_choker_cards_played`]). Execution-only, like `ACTIVE_PLAYS`.
+    static VELVET_CHOKER_WINDOWS: RefCell<Vec<(u32, bool)>> = const { RefCell::new(Vec::new()) };
+}
+
+/// One play's entry in `VELVET_CHOKER_WINDOWS`.
+pub(crate) struct VelvetChokerWindow(bool);
+
+impl VelvetChokerWindow {
+    /// Open the window for `uid`'s play, if a vouched inventory holds the
+    /// Choker. An unvouched inventory has no recorded place for it, and keeps
+    /// this crate's fixed one (the count moves when the play finishes).
+    pub(crate) fn open(state: &HotState, catalog: &Catalog, uid: u32) -> Self {
+        let held = state.velvet_choker_owned() && catalog.hooks().dispatch_ordered();
+        if held {
+            VELVET_CHOKER_WINDOWS.with(|windows| windows.borrow_mut().push((uid, true)));
+        }
+        Self(held)
+    }
+}
+
+impl Drop for VelvetChokerWindow {
+    fn drop(&mut self) {
+        if self.0 {
+            VELVET_CHOKER_WINDOWS.with(|windows| windows.borrow_mut().pop());
+        }
+    }
+}
+
+/// Velvet Choker's own `AfterCardPlayed` for `uid`'s play, at the relic's
+/// recorded place in the walk: it has now counted the play.
+pub(crate) fn velvet_choker_counts_play(uid: u32) {
+    VELVET_CHOKER_WINDOWS.with(|windows| {
+        if let Some(window) = windows.borrow_mut().last_mut()
+            && window.0 == uid
+        {
+            window.1 = false;
+        }
+    });
+}
+
+/// Native `VelvetChoker._cardsPlayedThisTurn` (#3756).
+///
+/// v0.111.0 (SHA-256 `9cb4f1ad…`): the relic keeps its own count.
+/// `VelvetChoker::AfterCardPlayed` RVA `0x9d9a0` adds one for an owner card
+/// (IL_0001-001d); `BeforeSideTurnStart` RVA `0x9da04` zeroes it on the
+/// owner's side (IL_0001-001c); `get_ShouldPreventCardPlay` RVA `0x9d945`
+/// compares it with `Cards` (IL_0002-001a) for `ShouldPlay` RVA `0x9d985`
+/// (IL_0012). The increment is a listener of `Hook/<AfterCardPlayed>d__16`
+/// RVA `0x3ccbf4`, which `OnPlayWrapper` RVA `0x31b8d0` awaits at IL_0874,
+/// after `CombatHistory.CardPlayFinished` (IL_084e).
+/// `CombatState/<IterateHookListeners>d__69` RVA `0x3f9720` yields a
+/// creature's powers (IL_0092-0097) before its player's relics in
+/// `Player.Relics` order (IL_00c9-00ef). So between a play's history entry
+/// and the Choker's place in the relic walk, the play is finished and the
+/// Choker has not counted it. A card AutoPlayed in that window asks
+/// `Hook.ShouldPlay` (`CardCmd/<AutoPlay>d__0` RVA `0x3df9d4` IL_015c)
+/// against a count one short of the history's, for each enclosing play still
+/// in its window: Game Piece recorded before the Choker draws a Strike that
+/// Hellraiser plays as the sixth card's guest (native trace
+/// `choker_after_piece`), and recorded after it the same Strike is refused
+/// (`choker_before_piece`).
+///
+/// This crate counts from the history, so the count here is the history's
+/// less the plays still in their window: the synchronous ones
+/// (`VELVET_CHOKER_WINDOWS`) and each `Frame::CardPlay` parked at
+/// `CardPlayStage::AfterImitation`, which is past its history entry and
+/// short of its relic walk.
+fn velvet_choker_cards_played(state: &HotState, catalog: &Catalog) -> i32 {
+    let finished = i32::from(state.history.owner_card_plays_finished_this_turn);
+    if !catalog.hooks().dispatch_ordered() {
+        return finished;
+    }
+    let synchronous = VELVET_CHOKER_WINDOWS
+        .with(|windows| windows.borrow().iter().filter(|window| window.1).count());
+    let parked = state
+        .frames
+        .as_slice()
+        .iter()
+        .filter(|frame| {
+            matches!(**frame, Frame::CardPlay { record }
+                if state.frames.card_play(record).is_some_and(|play|
+                    play.stage == CardPlayStage::AfterImitation))
+        })
+        .count();
+    finished - i32::try_from(synchronous + parked).unwrap_or(i32::MAX)
+}
+
 fn finish_card_wrapper_after_route(
     state: &mut HotState,
     catalog: &Catalog,
     record: crate::hot::CardFinishRecord,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    let nested_effect = state.frames.as_slice().iter().any(|frame| {
-        matches!(frame, Frame::CardPlay { .. })
-            || matches!(*frame, Frame::PotionFinish { record }
-                if state.frames.potion_finish(record).is_some_and(|view|
-                    view.stage == crate::frame::PotionFinishStage::Effect))
-    });
-    if state.fanouts.unceasing_top()
+    // `OnPlayWrapper`'s own `CheckForEmptyHand` (IL_0cf8-0d0f), after its
+    // End and its routing: suppressed while any enclosing card or potion
+    // effect is still executing, on the frame stack or the Rust stack
+    // (#3822, [`CardOrPotionEffect`]).
+    let nested_effect = card_or_potion_effect_is_executing(state);
+    if !(state.fanouts.unceasing_top()
         && !state.history.over
         && state.hp > 0
         && state.piles.get(PileId::Hand).is_empty()
         && matches!(state.player_phase, 2..=4)
-        && !nested_effect
+        && !nested_effect)
     {
+        return cleanup_finished_card(state, record.routed_uid, record.uid);
+    }
+    if defer_top_tail(state, &record) {
+        return Ok(());
+    }
+    mark_active_play_routed(record.uid);
+    run_top_tail(state, catalog, record, events)
+}
+
+/// The most card wrappers one action may hold open inside each other's
+/// `CheckForEmptyHand` (#3756).
+///
+/// The game's only bound on the loop is Hellraiser's own:
+/// `HellraiserPower/<AfterCardDrawnEarly>d__7::MoveNext` RVA `0x33c1a8`
+/// (v0.111.0, SHA-256 `9cb4f1ad…`) stops AutoPlaying once
+/// `infiniteAutoPlaysThisTurn` has reached 9 while every hittable enemy's
+/// `HpDisplay` is infinite or no enemy is hittable (IL_0063-00a6), which
+/// `draw::hellraiser_should_auto_play` models (#3929; native traces
+/// `cap_colony_lone`, `cap_giant_lone`, `cap_subject_lone`). So the loop is
+/// unbounded only while some hittable enemy shows a finite display. There
+/// Unceasing Top, a live Hellraiser and nothing but Strikes left to draw
+/// make one play loop until the combat ends (native traces
+/// `top_lone_strike`, `top_two_strikes`, `top_three_strikes`), and when a
+/// whole pass of the cycle changes nothing the game never leaves the action
+/// at all (recorded against the same DLL with `StrengthPower` -10 and two
+/// Toadpoles: the headless process recursed through `CardPileCmd.Draw`
+/// until its stack overflowed).
+///
+/// An action the game does not finish has no successor state, so past this
+/// many wrappers the action refuses by name. What reaches it: a finite
+/// hittable enemy, and a cycle of Strikes none of whose passes removes HP or
+/// Block from an enemy, kills the player, leaves a card in Hand, parks on a
+/// choice or runs a listener that ends the turn's draws (Velvet Choker's
+/// sixth card, No Draw). In practice that is Strikes dealing zero against
+/// enemies with no Block (Strength at or below minus the Strike's damage).
+/// Every pass that removes anything ends within the enemies' HP and Block,
+/// and no encounter has 1024 Strikes' worth. Admission cannot tell these
+/// roots apart: Strength, the pile contents and the Hand all change during
+/// the fight, so the condition exists only at the play.
+pub(crate) const TOP_TAIL_LOOP_LIMIT: usize = 1024;
+
+/// The refusal for [`TOP_TAIL_LOOP_LIMIT`].
+pub(crate) const TOP_TAIL_LOOP_REFUSAL: &str = "Unceasing Top Hellraiser loop wrappers";
+
+/// One wrapper's `CheckForEmptyHand` draw in progress on this Rust stack,
+/// and the wrapper a Strike played out of that draw has handed back
+/// ([`defer_top_tail`]).
+struct TopTailDraw {
+    /// Address of the state the draw runs on. A rehearsal clone is another
+    /// state and keeps its own recursion.
+    state: usize,
+    /// Frame depth while the draw's own Draw frame is the top frame.
+    draw_depth: usize,
+    deferred: Option<(crate::hot::CardFinishRecord, Option<ActivePlayContext>)>,
+}
+
+thread_local! {
+    static TOP_TAIL_DRAW: RefCell<Option<TopTailDraw>> = const { RefCell::new(None) };
+}
+
+/// Installs one [`TopTailDraw`] and restores the enclosing one.
+struct TopTailDrawScope(Option<TopTailDraw>);
+
+impl TopTailDrawScope {
+    fn enter(state: &HotState, draw_depth: usize) -> Self {
+        Self(TOP_TAIL_DRAW.with(|slot| {
+            slot.replace(Some(TopTailDraw {
+                state: state as *const HotState as usize,
+                draw_depth,
+                deferred: None,
+            }))
+        }))
+    }
+
+    fn take_deferred(&self) -> Option<(crate::hot::CardFinishRecord, Option<ActivePlayContext>)> {
+        TOP_TAIL_DRAW.with(|slot| {
+            slot.borrow_mut()
+                .as_mut()
+                .and_then(|draw| draw.deferred.take())
+        })
+    }
+}
+
+impl Drop for TopTailDrawScope {
+    fn drop(&mut self) {
+        TOP_TAIL_DRAW.with(|slot| *slot.borrow_mut() = self.0.take());
+    }
+}
+
+/// Whether a Strike AutoPlayed out of the running `CheckForEmptyHand` draw
+/// has handed its own check back to that draw's wrapper
+/// ([`defer_top_tail`]). The Draw command treats it as an awaited child that
+/// has not returned.
+pub(crate) fn top_tail_is_deferred(state: &HotState) -> bool {
+    TOP_TAIL_DRAW.with(|slot| {
+        slot.borrow().as_ref().is_some_and(|draw| {
+            draw.state == state as *const HotState as usize && draw.deferred.is_some()
+        })
+    })
+}
+
+/// Hand this wrapper's `CheckForEmptyHand` to the wrapper whose own check
+/// drew and AutoPlayed its card (#3756).
+///
+/// Natively the inner wrapper awaits its check inside the outer one's:
+/// `OnPlayWrapper` IL_0cf8-0d0f, inside `HellraiserPower/<AfterCardDrawnEarly>
+/// d__7` RVA `0x33c1a8` IL_011e-012e, inside `CardPileCmd.Draw`, inside
+/// `UnceasingTop/<AfterHandEmptied>d__4` RVA `0x333994` IL_005e, inside the
+/// outer `OnPlayWrapper` IL_0cf8-0d0f. That is one level per Strike for as
+/// long as the loop runs. The frame stack already carries the nesting as
+/// `CardFinish`, `Draw` pairs, so this crate keeps the order and runs the
+/// levels from one loop ([`run_top_tail`]) instead of one Rust call chain
+/// per Strike.
+///
+/// Only the exact shape defers: the running draw's own Draw frame is on top,
+/// at its early hook, for this card, on the same state.
+fn defer_top_tail(state: &HotState, record: &crate::hot::CardFinishRecord) -> bool {
+    TOP_TAIL_DRAW.with(|slot| {
+        let mut slot = slot.borrow_mut();
+        let Some(draw) = slot.as_mut() else {
+            return false;
+        };
+        if draw.state != state as *const HotState as usize
+            || draw.deferred.is_some()
+            || state.frames.len() != draw.draw_depth
+        {
+            return false;
+        }
+        let Some(Frame::Draw { record: top }) = state.frames.top() else {
+            return false;
+        };
+        let Some(top) = state.frames.draw(top) else {
+            return false;
+        };
+        if top.caller != crate::hot::DrawCaller::UnceasingTopFinish
+            || top.stage != crate::hot::DrawStage::EarlyHook
+            || top.card_uid != Some(record.uid)
+        {
+            return false;
+        }
+        let context = ACTIVE_PLAYS.with(|active| {
+            active
+                .borrow()
+                .last()
+                .filter(|entry| entry.uid == record.uid)
+                .map(|entry| ActivePlayContext {
+                    routed: true,
+                    ..*entry
+                })
+        });
+        draw.deferred = Some((record.clone(), context));
+        true
+    })
+}
+
+/// The [`ActivePlayContext`] entries [`run_top_tail`] holds for wrappers
+/// whose Rust frames have returned. Each is the entry the wrapper's own
+/// guard held, kept until that wrapper's `CardFinish` frame is popped, so a
+/// reader sees the same stack as it would under one call chain per Strike.
+struct DeferredActivePlays(usize);
+
+impl DeferredActivePlays {
+    fn push(&mut self, context: ActivePlayContext) {
+        ACTIVE_PLAYS.with(|active| active.borrow_mut().push(context));
+        self.0 += 1;
+    }
+
+    fn pop(&mut self) {
+        if self.0 == 0 {
+            return;
+        }
+        ACTIVE_PLAYS.with(|active| {
+            let popped = active.borrow_mut().pop();
+            debug_assert!(popped.is_some_and(|entry| entry.routed));
+        });
+        self.0 -= 1;
+    }
+}
+
+impl Drop for DeferredActivePlays {
+    fn drop(&mut self) {
+        ACTIVE_PLAYS.with(|active| {
+            let mut active = active.borrow_mut();
+            let keep = active.len().saturating_sub(self.0);
+            active.truncate(keep);
+        });
+    }
+}
+
+/// `CheckForEmptyHand` for a wrapper that has routed its card, and for every
+/// wrapper that check goes on to nest ([`defer_top_tail`]).
+///
+/// Going in, each level pushes its `CardFinish` frame and draws one card. A
+/// drawn Strike that Hellraiser AutoPlays to its own check hands that check
+/// back, and the loop takes it as the next level. Coming out, the innermost
+/// level pops its frame and cleans its card up, and each level above it
+/// finishes its Draw (the ordinary `AfterCardDrawn` walk, which natively
+/// runs after everything nested in the early hook) and then its own frame
+/// and cleanup, exactly as a parked stack of the same frames resumes.
+fn run_top_tail(
+    state: &mut HotState,
+    catalog: &Catalog,
+    mut record: crate::hot::CardFinishRecord,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let base = state.frames.len();
+    let mut deferred_plays = DeferredActivePlays(0);
+    // Whether each deferred level, outermost first, holds an entry.
+    let mut levels = Vec::<bool>::new();
+    loop {
         state
             .frames
             .push_card_finish(&record)
             .ok_or(EngineRefusal::CounterOverflow("CardFinish store"))?;
-        if super::draw::draw_cards_for_potion(
+        let scope = TopTailDrawScope::enter(state, state.frames.len() + 1);
+        let result = super::draw::draw_cards_for_potion(
             state,
             catalog,
             1,
             crate::hot::DrawCaller::UnceasingTopFinish,
             events,
-        )? == super::draw::PotionDrawResult::Suspended
-        {
+        );
+        let deferred = scope.take_deferred();
+        drop(scope);
+        let result = result?;
+        if let Some((next, context)) = deferred {
+            if result != super::draw::PotionDrawResult::Suspended || state.pending.is_some() {
+                return Err(EngineRefusal::ContinuationNotModeled);
+            }
+            if levels.len() + 1 >= TOP_TAIL_LOOP_LIMIT {
+                return Err(EngineRefusal::CounterOverflow(TOP_TAIL_LOOP_REFUSAL));
+            }
+            levels.push(context.is_some());
+            if let Some(context) = context {
+                deferred_plays.push(context);
+            }
+            record = next;
+            continue;
+        }
+        if result == super::draw::PotionDrawResult::Suspended {
             return Ok(());
         }
         let popped = state
@@ -9731,8 +10686,30 @@ fn finish_card_wrapper_after_route(
         if popped != record {
             return Err(EngineRefusal::ContinuationNotModeled);
         }
+        cleanup_finished_card(state, record.routed_uid, record.uid)?;
+        break;
     }
-    cleanup_finished_card(state, record.routed_uid, record.uid)
+    while let Some(held) = levels.pop() {
+        let depth = state.frames.len();
+        if !matches!(state.frames.top(), Some(Frame::Draw { .. })) || depth < base + 2 {
+            return Err(EngineRefusal::ContinuationNotModeled);
+        }
+        // The wrapper under this Draw's early hook has returned.
+        if held {
+            deferred_plays.pop();
+        }
+        super::draw::advance_top_potion_draw(state, catalog, events)?;
+        if state.pending.is_some() {
+            return Ok(());
+        }
+        if state.frames.len() != depth - 2 {
+            return Err(EngineRefusal::ContinuationNotModeled);
+        }
+    }
+    if state.frames.len() != base {
+        return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    Ok(())
 }
 
 fn finish_card_wrapper_through_exhaust(
@@ -10003,6 +10980,7 @@ fn pending_card_play_record(
     plays: usize,
     play_index: usize,
     spent: i16,
+    energy_value: i16,
     x_value: i64,
     star_spent: i64,
     glam: u32,
@@ -10056,6 +11034,7 @@ fn pending_card_play_record(
             .map_err(|_| EngineRefusal::CounterOverflow("play index"))?,
         x_value,
         spent: i32::from(spent),
+        energy_value: (!manual).then_some(energy_value),
         star_spent: star_spent
             .try_into()
             .map_err(|_| EngineRefusal::CounterOverflow("star spend"))?,
@@ -10203,6 +11182,17 @@ fn cardplay_draw_return_kind(
 /// card program.  `DrawRecord::requested` is continuation input, not proof:
 /// accepting it unchecked would let a forged parked state run a real card
 /// suffix after too few or too many draws.
+///
+/// Fetch's count is its compiled `CardsVar`, never a literal (#3877). v0.111.0
+/// `sts2.dll` (sha256 `9cb4f1ad...fbf12b4`): `Fetch::get_CanonicalVars` (RVA
+/// `0xdfa45`) builds `CardsVar(1)` at `IL_0017`-`IL_0019`, `OnUpgrade`
+/// (`0xdfabf`) upgrades only the Osty damage, and
+/// `Fetch/<OnPlay>d__9::MoveNext` (`0x39de84`) passes
+/// `DynamicVars.Cards.BaseValue` to `CardPileCmd::Draw` at
+/// `IL_0103`-`IL_0120`. The body has drawn that one card since #2519, while
+/// this arm kept the frozen registry's 3. A Fetch whose Draw parked (an empty
+/// Draw pile reshuffling under Stratagem) then failed this check on a state
+/// the engine itself had just produced, and the fight enumerated no action.
 fn cardplay_draw_expected_requested(
     state: &HotState,
     catalog: &Catalog,
@@ -10241,7 +11231,9 @@ fn cardplay_draw_expected_requested(
                 }
                 kinds.count_ones() as usize
             }
-            (StepKind::OstyBody, [Arg::S("fetch"), Arg::I(_), Arg::I(1)]) => 3,
+            (StepKind::OstyBody, [Arg::S("fetch"), Arg::I(_), Arg::I(cards)]) => {
+                usize::try_from(*cards).ok()?
+            }
             (StepKind::SameTurnHistoryBody, [Arg::S("ftl"), Arg::I(_), Arg::I(_)]) => 1,
             (StepKind::HandCapBody, [Arg::S("draw_space")]) => {
                 // Every legacy payload in a parked prefix completed inline
@@ -10494,6 +11486,7 @@ fn push_frozen_batch_parent(
     plays: usize,
     play_index: usize,
     spent: i16,
+    energy_value: i16,
     x_value: i64,
     star_spent: i64,
     glam: u32,
@@ -10533,6 +11526,7 @@ fn push_frozen_batch_parent(
         plays,
         play_index,
         spent,
+        energy_value,
         x_value,
         star_spent,
         glam,
@@ -11142,6 +12136,44 @@ fn persisted_target_index(
     Ok(Some(index))
 }
 
+/// [`persisted_target_index`] for a suspended CardPlay of `spec`, admitting
+/// the one target that has legitimately left the roster (#3747).
+///
+/// `HeirloomHammer/<OnPlay>d__3::MoveNext` RVA `0x3a46d0` reads
+/// `cardPlay.Target` twice, both before its attack resolves: the null check
+/// (IL_002d-IL_003c) and `AttackCommand::Targeting` (IL_0058-IL_006d). After
+/// the attack's await it builds the Hand selector (IL_00e9-IL_0121) and
+/// clones the pick (IL_01a7-IL_01bd) without touching the target again. So
+/// when that attack kills a Stock-bearing Axebot, the selection is offered
+/// and resolved exactly as it would be otherwise; the frozen target simply
+/// names a Creature that is no longer in combat.
+///
+/// The suspended record keeps that frozen `(slot, uid)`. Resolved here to the
+/// replacement's row, it is what the inline path already carries across a
+/// Stock respawn (the body's `target_index` is the slot's row before and
+/// after), and the active play's frozen identity still fails every
+/// `active_card_target_is_current` comparison, so nothing lands on the
+/// replacement. Only Heirloom Hammer is admitted: every other card's
+/// suspended body keeps refusing a target the roster does not hold, because
+/// its remaining steps have not been read against a replaced target.
+fn persisted_card_target_index(
+    state: &HotState,
+    spec: &CardSpec,
+    target: Option<(i32, u32, Option<i32>)>,
+) -> Result<Option<usize>, EngineRefusal> {
+    if let (CardId::HeirloomHammer, Some((slot, uid, None))) = (spec.identity.id, target)
+        && !state
+            .monsters
+            .iter()
+            .any(|monster| (monster.slot, monster.uid) == (slot, uid))
+    {
+        return super::monsters::axebot_replacement_of(state, slot, uid)
+            .map(Some)
+            .ok_or(EngineRefusal::ContinuationNotModeled);
+    }
+    persisted_target_index(state, target)
+}
+
 fn persisted_choice_is_exact(state: &HotState, choice: HotCard) -> bool {
     if choice.uid >= state.next_card_uid || choice.flags & CARD_FLAG_PICK == 0 {
         return false;
@@ -11158,6 +12190,48 @@ fn persisted_choice_is_exact(state: &HotState, choice: HotCard) -> bool {
         card.flags |= CARD_FLAG_PICK;
         card == choice
     })
+}
+
+/// Whether this parked play's ordinary AfterCardPlayed walk has already
+/// dispatched Calamity's listener.
+///
+/// `Hook/<AfterCardPlayed>d__16::MoveNext` (RVA `0x3ccbf4`) takes one
+/// `IterateHookListeners` enumerator (IL_0024-IL_002e) and awaits each
+/// listener's `AfterCardPlayed` once (IL_0070); the persisted record keeps
+/// that list as `after_card_played_power_snapshot` with a cursor (phase 2),
+/// then marks the walk complete (phase 3) and leaves the stage. Calamity is
+/// one stacking power object, so it owns at most one uid in the live order.
+fn calamity_after_card_played_was_reached(
+    state: &HotState,
+    record: crate::hot::CardPlayView<'_>,
+) -> bool {
+    if record.latch_kind != CardPlayLatchKind::Post {
+        return false;
+    }
+    let Some(calamity_uid) = state
+        .fanouts
+        .after_card_played_power_order()
+        .iter()
+        .find(|entry| entry.token == crate::hot::AfterCardPlayedPowerToken::Calamity)
+        .map(|entry| entry.uid)
+    else {
+        return false;
+    };
+    match record.stage {
+        CardPlayStage::AfterNormalHook => true,
+        CardPlayStage::AfterImitation if record.after_card_played_power_snapshot_captured => {
+            let dispatched = match record.after_card_played_power_phase {
+                2 => usize::try_from(record.after_card_played_power_cursor).unwrap_or(0),
+                3 => usize::MAX,
+                _ => 0,
+            };
+            record
+                .after_card_played_power_snapshot()
+                .take(dispatched)
+                .any(|uid| uid == calamity_uid)
+        }
+        _ => false,
+    }
 }
 
 pub(crate) fn persisted_card_play_context(
@@ -11286,10 +12360,28 @@ pub(crate) fn persisted_card_play_context(
     // every captured latch equals Attack && the inline live-hook provenance.
     // Authenticate that relation before any resume reader can use the bit to
     // choose a transaction or dispatch the late callback.
-    let expected_calamity_latch = record.latch_kind != CardPlayLatchKind::Empty
+    //
+    // The relation holds until the callback runs. `CalamityPower/
+    // <AfterCardPlayed>d__7::MoveNext` (RVA `0x3368bc`, IL_0020-IL_003f)
+    // removes the played card from `amountsForPlayedCards` and returns when
+    // it was absent, before it reads the Amount (IL_00b2) or generates
+    // anything, so once the ordinary AfterCardPlayed walk
+    // has passed Calamity's listener the key is gone for the rest of this
+    // play. The driver re-authenticates the stack between every listener of
+    // that walk, so a selecting Attack resumed under a replay root reaches
+    // this test again with the latch already consumed (#3856, #3748).
+    let calamity_latch_captured = record.latch_kind != CardPlayLatchKind::Empty
         && spec.is_attack
         && state.calamity_hook_is_live();
-    if record.calamity != expected_calamity_latch {
+    let calamity_latch_is_exact =
+        if calamity_latch_captured && calamity_after_card_played_was_reached(state, record) {
+            // A deactivated owner's listener is skipped with its key intact; one
+            // that ran before the deactivation has consumed it.
+            !record.calamity || state.fanouts.player_hooks_deactivated()
+        } else {
+            record.calamity == calamity_latch_captured
+        };
+    if !calamity_latch_is_exact {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
     if record.latch_kind == CardPlayLatchKind::Empty && record.oblivion_latches().next().is_some() {
@@ -11325,7 +12417,7 @@ pub(crate) fn persisted_card_play_context(
             return Err(EngineRefusal::ContinuationNotModeled);
         }
     }
-    let monster_target = persisted_target_index(state, record.target)?;
+    let monster_target = persisted_card_target_index(state, &spec, record.target)?;
     let exact_ally_player_target =
         (matches!(spec.identity.id, CardId::Constellation | CardId::Tutor)
             && matches!(spec.identity.upgrade, 0 | 1)
@@ -11674,6 +12766,13 @@ fn persisted_card_play_stack_is_exact_inner(
     }
     if frames.is_empty() {
         return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    if matches!(
+        frames.first(),
+        Some(crate::frame::Frame::Phase { record })
+            if state.frames.auto_pre_imbued_phase(*record).is_some()
+    ) {
+        return imbued_auto_pre_stack_is_exact(state, catalog);
     }
     let restricted_batch = matches!(
         frames.get(1),
@@ -12177,6 +13276,25 @@ fn receipt_owned_draw_stack_is_exact(
             draw.completed < draw.requested
                 && catalog.hooks().owns(crate::ids::RelicId::RelicJossPaper)
                 && state.fanouts.joss_paper_cards_exhausted() >= 0
+        }
+        // Game Piece's Draw(Cards = 1) (#3822), issued by
+        // `<AfterCardPlayed>d__6` RVA `0x325930` IL_006c-0089 from an owned
+        // relic. A park inside it precedes the drawn card's `AfterCardDrawn`
+        // return, so nothing is completed yet.
+        DrawCaller::GamePiece => {
+            draw.requested == 1
+                && draw.completed == 0
+                && catalog.hooks().owns(crate::ids::RelicId::RelicGamePiece)
+        }
+        // Iron Club's Draw(1) (#3822), issued by `<AfterCardPlayed>d__19`
+        // RVA `0x326f78` IL_0083-0095 after its counter write
+        // (IL_003d-0048). A nested AutoPlay that finished inside this Draw
+        // has already advanced the live counter again, so the counter is
+        // not checked here; the receipt's replay authenticates it.
+        DrawCaller::IronClub => {
+            draw.requested == 1
+                && draw.completed == 0
+                && catalog.hooks().owns(crate::ids::RelicId::RelicIronClub)
         }
         _ => false,
     };
@@ -15011,6 +16129,19 @@ fn replay_rooted_potion_draw_stack_is_exact(
     rooted_potion_draw_suffix_is_exact(state, catalog, frames, 1)
 }
 
+/// Authenticate a potion body parked on its own Draw: the `PotionFinish`
+/// record and the Draw cursors above it.
+///
+/// The `(caller, potion)` table below must hold every pair
+/// `potions::resume_after_draw` resumes, or a potion that parks its Draw
+/// produces a state this reader refuses and the fight enumerates no action.
+/// Glowwater Potion was the one missing (#3877): its `Draw(10)` tail
+/// (`GlowwaterPotion/<OnUse>d__10::MoveNext` RVA `0x34e764`,
+/// `CardPileCmd::Draw` at `IL_014a`; `get_CanonicalVars` `0xacb35` is
+/// `CardsVar(10)`) is issued after the whole-hand Exhaust walk has returned,
+/// with the same empty finish cursor Swift Potion's Draw carries, and it
+/// parks like any Draw when the pile reshuffles under
+/// `StratagemPower::AfterShuffle` (`0xa88e8`).
 fn rooted_potion_draw_suffix_is_exact(
     state: &HotState,
     catalog: &Catalog,
@@ -15061,6 +16192,7 @@ fn rooted_potion_draw_suffix_is_exact(
                     crate::ids::PotionId::SwiftPotion
                         | crate::ids::PotionId::CureAll
                         | crate::ids::PotionId::BottledPotential
+                        | crate::ids::PotionId::GlowwaterPotion
                 ) | (
                     crate::hot::DrawCaller::ClarityPotion,
                     crate::ids::PotionId::Clarity
@@ -15808,15 +16940,13 @@ fn turn_start_hand_choice_live_order_matches(
                 .expect("authenticated turn-start carrier")
         })
         .collect::<Vec<_>>();
-    let retained = captured
-        .iter()
-        .enumerate()
-        .filter_map(|(index, kind)| {
-            (index >= record.next_listener as usize
-                || *kind != crate::hot::TurnStartHandChoiceKind::SummonNextTurn)
-                .then_some(*kind)
-        })
-        .collect::<Vec<_>>();
+    let appended = record.appended().collect::<Vec<_>>();
+    let retained = crate::hot::turn_start_retained_listeners(
+        &captured,
+        &appended,
+        record.next_listener as usize,
+        state.powers.value(PowerId::Hibernate) > 0,
+    );
     let completed_listeners = (record.next_listener as usize)
         .saturating_sub(1)
         .checked_add(usize::from(
@@ -15824,8 +16954,7 @@ fn turn_start_hand_choice_live_order_matches(
                 && record.kind == crate::hot::TurnStartHandChoiceKind::ToolsOfTheTrade
                 && record.cursor as usize == record.entries().len(),
         ));
-    let appended = record.appended().collect::<Vec<_>>();
-    let proof_is_exact = retained.len().saturating_add(appended.len()) <= 8
+    let proof_is_exact = retained.len().saturating_add(appended.len()) <= 9
         && appended
             .iter()
             .enumerate()
@@ -15845,8 +16974,7 @@ fn turn_start_hand_choice_live_order_matches(
     order_matches
         && !captured.is_empty()
         && captured.iter().enumerate().all(|(index, kind)| {
-            index < record.next_listener as usize
-                && *kind == crate::hot::TurnStartHandChoiceKind::SummonNextTurn
+            crate::hot::turn_start_listener_may_be_gone(*kind, index, record.next_listener as usize)
                 || state.powers.value(kind.power()) > 0
         })
 }
@@ -16261,9 +17389,10 @@ fn advance_top_card_play_one(
             }
             // `CardPlay.Resources.EnergyValue` is `EnergySpent` for a manual
             // play (see [`card_play_energy_value`]), which the record keeps.
-            // An AutoPlay's EnergyValue is the cost it resolved at its entry,
-            // which no persisted field carries; with the one represented
-            // reader owned, the resumed body refuses by name (#3124).
+            // An AutoPlay's EnergyValue is the cost it resolved at its entry.
+            // The record carries it now (#3756), but this resumed start does
+            // not run Intimidating Helmet's body for an AutoPlay, so with the
+            // relic owned it still refuses by name (#3124).
             if !manual && catalog.hooks().owns(RelicId::RelicIntimidatingHelmet) {
                 return Err(EngineRefusal::HookNotModeled {
                     relic: RelicId::RelicIntimidatingHelmet,
@@ -16272,9 +17401,10 @@ fn advance_top_card_play_one(
             }
             // Feral's `<AfterApplied>b__8_0` counts an Attack start only when
             // `EnergyValue` is zero (see the fresh path). While no Feral card
-            // is interned the zero-energy start counter has no reader, so an
-            // AutoPlay's unpersisted value is unobservable; otherwise the
-            // resumed Attack body refuses here, before anything moves (#3168).
+            // is interned the zero-energy start counter has no reader, so a
+            // record that carries no value (one written before #3756) is
+            // unobservable; otherwise such a resumed Attack body refuses
+            // here, before anything moves (#3168).
             let start_energy_value = match persisted_card_play_energy_value(&record)? {
                 Some(value) => value,
                 None if spec.is_attack
@@ -16290,7 +17420,7 @@ fn advance_top_card_play_one(
                 super::relics::before_card_played_hand(catalog, state, &spec, record.uid)?;
             active_play.set_top_pen_double(record.uid, record.pen_double)?;
             #[cfg(test)]
-            record_test_body_start(record.uid, body_index);
+            record_test_body_start(state, record.uid, body_index);
             note_normality_card_play_started(catalog, state)?;
             if spec.is_attack || spec.is_skill {
                 state.history.attack_skill_plays_started_this_turn = state
@@ -16355,6 +17485,7 @@ fn advance_top_card_play_one(
                 &spec,
                 record.play_index == 0,
             )?;
+            let before_card_played_listeners_end = state.next_card_uid;
             juggling_before_card_played(state, catalog, card, &spec, events)?;
             super::relics::intimidating_helmet_before_card_played(
                 catalog,
@@ -16366,7 +17497,7 @@ fn advance_top_card_play_one(
                 events,
             )?;
             fire_hook(catalog, HookEvent::BeforeCardPlayed, state, events)?;
-            stomp_before_card_played(state, catalog, &spec);
+            stomp_before_card_played(state, catalog, &spec, before_card_played_listeners_end);
             record.stage = CardPlayStage::Body;
             record.latch_kind = CardPlayLatchKind::Raw;
             record.next_step = 0;
@@ -16696,14 +17827,19 @@ fn advance_top_card_play_one(
                     .replace_top_card_play_after_lamp_consumption(&record)
                     .ok_or(EngineRefusal::ContinuationNotModeled)?;
             }
-            super::relics::after_card_played_hand(
-                catalog,
-                state,
-                &spec,
-                record.uid,
-                persisted_card_play_energy_value(&record)?,
-                events,
-            )?;
+            {
+                // The frame has left `AfterImitation`, so the walk up to the
+                // Choker's place holds the window itself.
+                let _choker_window = VelvetChokerWindow::open(state, catalog, record.uid);
+                super::relics::after_card_played_hand(
+                    catalog,
+                    state,
+                    &spec,
+                    record.uid,
+                    persisted_card_play_energy_value(&record)?,
+                    events,
+                )?;
+            }
             fire_physical_after_card_played(state, catalog, &physical_listeners)?;
             goopy_after_card_played(state, catalog, record.uid)?;
             vigorous_after_card_played(state, catalog, record.uid)?;
@@ -17698,6 +18834,17 @@ fn advance_top_replay_phase_one(
             .pop_top_auto_pre_mayhem_phase()
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         super::turn::finish_auto_pre_relic_tail(state, catalog, events)
+    } else if state.frames.auto_pre_imbued_phase(record).is_some() {
+        // The Imbued card's answered CardPlay has returned to its phase
+        // record (#3817): the Late pass and the phase terminal follow.
+        if state.frames.len() != 1 || state.pending.is_some() {
+            return Err(EngineRefusal::ContinuationNotModeled);
+        }
+        state
+            .frames
+            .pop_top_auto_pre_imbued_phase()
+            .ok_or(EngineRefusal::ContinuationNotModeled)?;
+        super::turn::finish_auto_pre_after_imbued(state, catalog, events)
     } else {
         advance_top_auto_post_phase_one(state, catalog, events)
     }
@@ -18152,18 +19299,50 @@ fn resume_selected_replay(
 }
 
 /// `Stomp.BeforeCardPlayed`: every owner Attack appends one `-1` this-turn
-/// row to every live Stomp instance across all five piles.
-fn stomp_before_card_played(state: &mut HotState, catalog: &Catalog, spec: &CardSpec) {
+/// row to every Stomp instance that was in a pile when the dispatch began.
+///
+/// v0.111.0 `sts2.dll` (SHA-256 `9cb4f1ad…12b4`). `Stomp::BeforeCardPlayed`
+/// RVA `0xecf2a`: the played card's owner is this card's (IL_0001-IL_0012),
+/// its type is Attack (IL_001a-IL_0026), then `ReduceCostBy(1)` (IL_002f-
+/// IL_0030), which is `EnergyCost.AddThisTurn(-1, 0)` (`0xecf65`).
+///
+/// `listeners_end` is `next_card_uid` as it stood before the dispatch's first
+/// listener. A card minted since then, a uid in
+/// `listeners_end..next_card_uid`, is skipped (#3792).
+/// `Hook/<BeforeCardPlayed>d__15::MoveNext` RVA `0x3d2190` walks
+/// `IterateCombatHookListeners` (IL_0018-IL_0052), and
+/// `CombatState/<IterateHookListeners>d__69::MoveNext` RVA `0x3f9720` builds
+/// the whole list on its first step (`List` at IL_0048; each creature's
+/// Powers at IL_0092-IL_0097, then the player's pile cards at IL_0163-
+/// IL_019b) and yields from that list's enumerator (IL_0282), rechecking
+/// only `CombatState::Contains` (IL_02a6). The owner's powers therefore run
+/// before any card, and a card a power creates during the walk is never
+/// visited by it. The one such creator is Juggling:
+/// `JugglingPower/<BeforeCardPlayed>d__7::MoveNext` RVA `0x33dc08` clones the
+/// played card (`CardModel::CreateClone`, IL_009b) into Hand
+/// (`AddGeneratedCardToCombat`, IL_00af) on the third Attack. The clone
+/// carries the played Stomp's rows as they were at that moment, takes no row
+/// from this play, and (being a clone) none from `AfterCardEnteredCombat`
+/// either (`0xeced8` IL_0017-IL_001c). Site witness: after two Attacks, a
+/// Stomp played for 1 as the third leaves a clone that also costs 1.
+fn stomp_before_card_played(
+    state: &mut HotState,
+    catalog: &Catalog,
+    spec: &CardSpec,
+    listeners_end: u32,
+) {
     if !spec.is_attack {
         return;
     }
+    let minted_during_dispatch = listeners_end..state.next_card_uid;
     let (piles, card_states) = (&state.piles, &mut state.card_states);
     let mut changed = false;
     for pile in PileId::ALL {
         for card in piles.get(pile).as_slice() {
-            if catalog
-                .spec(card.atom)
-                .is_some_and(|candidate| matches!(candidate.identity.id, CardId::Stomp))
+            if !minted_during_dispatch.contains(&card.uid)
+                && catalog
+                    .spec(card.atom)
+                    .is_some_and(|candidate| matches!(candidate.identity.id, CardId::Stomp))
             {
                 card_states.append_local_cost_modifier(
                     card.uid,
@@ -19251,12 +20430,24 @@ pub(crate) fn imbued_identity(spec: &CardSpec) -> bool {
 /// Electric Shrymp (`AfterObtained`, out of combat) and Thieving Hopper's
 /// theft-priority lambdas (`b__43_0`-`b__43_3`), which
 /// `engine::monsters::hopper_theft_priority` already reads.
+///
+/// Turn one's AutoPre parked on the Imbued card's own choice (#3817) is the
+/// other state past the listener: its stack base is the Imbued phase record
+/// the listener pushed ([`autoplay_imbued_turn_one`]), and admission checks
+/// that whole stack with [`imbued_auto_pre_stack_is_exact`].
 pub(crate) fn imbued_identity_is_inert(spec: &CardSpec, state: &HotState) -> bool {
     imbued_skill_identity(spec)
         && (state.turn > 1
             || (state.turn == 1
                 && state.player_phase == super::admission::PHASE_ORDINARY_ACTIONS
-                && state.pending.is_none()))
+                && state.pending.is_none())
+            || (state.turn == 1
+                && state.player_phase == super::turn::PHASE_AUTO_PRE
+                && matches!(
+                    state.frames.as_slice().first(),
+                    Some(crate::frame::Frame::Phase { record })
+                        if state.frames.auto_pre_imbued_phase(*record).is_some()
+                )))
 }
 
 /// Turn one's `IMBUED` AutoPlay (#3381), at the AutoPre phase's Normal pass.
@@ -19288,10 +20479,62 @@ pub(crate) fn imbued_identity_is_inert(spec: &CardSpec, state: &HotState) -> boo
 /// witnessed), and a card this engine does not auto-play exactly without a
 /// target: an X or star-X cost, a targeted card (a null AutoPlay target is
 /// resolved by `CardCmd.AutoPlay`, not modeled here), an unplayable card, a
-/// program that can suspend or spawn a child AutoPlay, or a play that parks.
+/// program that can spawn a child AutoPlay, or a program that can suspend
+/// other than the one parking body below.
+///
+/// # A body that parks a choice (#3817)
+///
+/// The listener's `choiceContext` is the turn's one `HookPlayerChoiceContext`.
+/// `CombatManager/<StartTurn>d__100::MoveNext` RVA `0x3f781c` builds it with
+/// `GameActionType` 2, `CombatPlayPhaseOnly` (IL_069e-069f), starts
+/// `SetupPlayerTurn` with it (IL_06b9), writes the "After player turn start"
+/// checksum (IL_096f-0975), and hands `RunAutoPrePlayPhase` the same context
+/// (IL_0b1a-0b1e), awaiting only
+/// `HookPlayerChoiceContext.AssignTaskAndWaitForPauseOrCompletion`
+/// (IL_0b29). `<RunAutoPrePlayPhase>d__101` RVA `0x3f670c` passes it to
+/// `Hook.AfterAutoPrePlayPhaseEntered` (IL_0106-011c), and
+/// `Hook/<AfterAutoPrePlayPhaseEntered>d__58` RVA `0x3cb930` hands it to
+/// every listener (IL_018e for the plain pass).
+///
+/// So the first choice a listener begins turns the rest of the AutoPre phase
+/// into a queued `GenericHookGameAction`:
+/// `HookPlayerChoiceContext/<SignalPlayerChoiceBegun>d__37` RVA `0x3d64f4`
+/// calls `GenerateHookAction` (IL_01c9), `RequestEnqueueHookAction`
+/// (IL_028e), waits for the action to start (`ExecutionStartedTask`,
+/// IL_02a4-02f9) and then `PauseActionForPlayerChoice` (IL_0310).
+/// `StartTurn` meanwhile moves on to `CheckWinCondition` (IL_0bd2) and
+/// unpauses the executor (IL_0c5d), neither of which writes combat state.
+/// The capture records exactly that: a `HookAction` (`hook_id` 0,
+/// `CombatPlayPhaseOnly`), the `PlayerChoice`, a `ResumeAction`, and a
+/// `finished action execution GenericHookGameAction id 0` checksum whose
+/// state is the one after the whole phase.
+///
+/// The one parking body modeled is Discovery's
+/// ([`imbued_parking_body_is_exact`] carries its IL). That play runs on a
+/// resumable CardPlay frame above an AutoPre Imbued phase record naming the
+/// card. The answer resumes the CardPlay (`resume_selection`), and the phase
+/// record then runs the rest of AutoPre
+/// (`turn::finish_auto_pre_after_imbued`). The parked state has no
+/// ActionReplay root: the opening is not a player action, so there is no
+/// admitted predecessor document to replay.
+/// [`imbued_auto_pre_stack_is_exact`] authenticates it structurally, and a
+/// resume that would park again refuses (`resume_selection_inner`'s
+/// `parks_allowed`).
+///
+/// Each of these refuses by name instead:
+///
+/// * [`IMBUED_CHOICE_BESIDE_EARRING`]: Whispering Earring's Late pass would
+///   run its selector-scoped loop inside the same resumed hook action.
+/// * [`IMBUED_CHOICE_AFTER_SETUP_PAUSE`]: a `SetupPlayerTurn` choice (Toolbox,
+///   Toasty Mittens, ...) already paused this turn start, so the Imbued
+///   choice would re-pause a hook action that is already running
+///   (`SignalPlayerChoiceBegun` IL_00ed-0100, then IL_0310) from inside a
+///   public Select.
+/// * [`IMBUED_CHILD`]: every other body that can suspend.
 pub(crate) fn autoplay_imbued_turn_one(
     state: &mut HotState,
     catalog: &Catalog,
+    window_is_synchronous: bool,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
     let mut found = None;
@@ -19332,10 +20575,35 @@ pub(crate) fn autoplay_imbued_turn_one(
             target_type,
             CardTargetType::AnyEnemy | CardTargetType::AnyAlly
         )
-        || autoplay_child_requires_suspension(pile, spec, catalog)
         || super::admission::autoplay_parent_program_can_spawn_child(spec.row)
     {
-        return Err(EngineRefusal::MalformedArgs("Imbued AutoPlay child"));
+        return Err(EngineRefusal::MalformedArgs(IMBUED_CHILD));
+    }
+    let parks = autoplay_child_requires_suspension(pile, spec, catalog);
+    if parks {
+        if !imbued_parking_body_is_exact(spec, catalog) {
+            return Err(EngineRefusal::MalformedArgs(IMBUED_CHILD));
+        }
+        if auto_play_entry_stops(state) {
+            // `CardCmd.AutoPlay`'s entry gate: nothing is played, so nothing
+            // parks and no phase record is owed.
+            return Ok(());
+        }
+        if catalog.hooks().owns(RelicId::RelicWhisperingEarring) {
+            return Err(EngineRefusal::MalformedArgs(IMBUED_CHOICE_BESIDE_EARRING));
+        }
+        if !window_is_synchronous
+            || !state.frames.is_empty()
+            || crate::engine::replay_lifecycle_is_active()
+        {
+            return Err(EngineRefusal::MalformedArgs(
+                IMBUED_CHOICE_AFTER_SETUP_PAUSE,
+            ));
+        }
+        state
+            .frames
+            .push_auto_pre_imbued_phase(card.uid)
+            .ok_or(EngineRefusal::CounterOverflow("AutoPre Imbued phase"))?;
     }
     play_card_with_work(
         state,
@@ -19352,8 +20620,157 @@ pub(crate) fn autoplay_imbued_turn_one(
             allow_dead_target: false,
         },
     )?;
-    if state.pending.is_some() {
+    // The parking body parks, and no other body may.
+    if state.pending.is_some() != parks {
         return Err(EngineRefusal::ContinuationNotModeled);
+    }
+    if parks {
+        imbued_auto_pre_stack_is_exact(state, catalog)?;
+    }
+    Ok(())
+}
+
+/// An Imbued body this engine does not AutoPlay exactly (#3381; see
+/// [`autoplay_imbued_turn_one`]).
+pub(crate) const IMBUED_CHILD: &str = "Imbued AutoPlay child";
+/// An Imbued body that parks a choice beside Whispering Earring (#3817; see
+/// [`autoplay_imbued_turn_one`]).
+pub(crate) const IMBUED_CHOICE_BESIDE_EARRING: &str =
+    "Imbued AutoPlay choice beside Whispering Earring";
+/// An Imbued body that parks a choice after a `SetupPlayerTurn` listener
+/// already paused this turn start (#3817; see [`autoplay_imbued_turn_one`]).
+pub(crate) const IMBUED_CHOICE_AFTER_SETUP_PAUSE: &str =
+    "Imbued AutoPlay choice after a paused turn start";
+
+/// Whether `spec` is the one Imbued body whose turn-one AutoPlay may park
+/// (#3817): Discovery, whose whole program is its one seeded choice.
+///
+/// `Discovery/<OnPlay>d__4::MoveNext` (v0.111.0 `sts2.dll` SHA-256
+/// `9cb4f1ad…12b4`, RVA `0x399254`) builds its options before it asks:
+/// `CardFactory.GetDistinctForCombat(Owner, unlocked pool, 3,
+/// CombatCardGeneration)` (IL_0063-007e) is materialized by `ToList`
+/// (IL_0083), and only then does it await
+/// `CardSelectCmd.FromChooseACardScreen(choiceContext, cards, Owner, true)`
+/// (IL_008a-0097, `canSkip` the `ldc.i4.1` at IL_0096). That command
+/// (`<FromChooseACardScreen>d__16` RVA `0x3e58c0`) signals the context at
+/// IL_011b unless a selector is set (IL_0073-0078). A null answer skips the
+/// rest (IL_0103); otherwise `SetToFreeThisTurn` (IL_0106) and
+/// `CardPileCmd.AddGeneratedCardToCombat` into the Hand (IL_010c-0114). So
+/// the stream is drawn before the pause, the parked state carries the
+/// offered cards, and nothing but the answer remains of the body.
+fn imbued_parking_body_is_exact(spec: &CardSpec, catalog: &Catalog) -> bool {
+    imbued_skill_identity(spec)
+        && matches!(spec.identity.id, CardId::Discovery)
+        && matches!(spec.identity.upgrade, 0 | 1)
+        && matches!(
+            catalog.steps(spec),
+            [step] if step.kind == StepKind::DiscoveryExact
+        )
+}
+
+/// Whether `state` is turn one's AutoPre parked on the Imbued card's choice
+/// (#3817): the whole grammar of the one rootless CardPlay continuation the
+/// opening publishes.
+///
+/// The published stack is exactly the Imbued phase record and the pending
+/// CardPlay it names. Every fact the opening's own run fixes is checked:
+/// turn one in the AutoPre phase, the single Imbued card in Play and nowhere
+/// else, an Auto play at its first step with nothing spent, and three
+/// distinct unupgraded options from the owner's generation pool. The order
+/// of the options and the stream position they were drawn at are the only
+/// facts with no witness in the document.
+///
+/// With no choice pending the stack is execution-only: the answered play on
+/// its way back to the phase record, or the phase record alone once that
+/// play has returned. No such state is published, because a nonpending
+/// state with frames is refused at every boundary.
+pub(crate) fn imbued_auto_pre_stack_is_exact(
+    state: &HotState,
+    catalog: &Catalog,
+) -> Result<(), EngineRefusal> {
+    use crate::frame::Frame;
+    let refuse = || EngineRefusal::ContinuationNotModeled;
+    let (phase, record) = match state.frames.as_slice() {
+        [Frame::Phase { record: phase }] => (*phase, None),
+        [Frame::Phase { record: phase }, Frame::CardPlay { record }] => (*phase, Some(*record)),
+        _ => return Err(refuse()),
+    };
+    let uid = state
+        .frames
+        .auto_pre_imbued_phase(phase)
+        .ok_or_else(refuse)?;
+    if state.turn != 1
+        || state.player_phase != super::turn::PHASE_AUTO_PRE
+        || catalog.hooks().owns(RelicId::RelicWhisperingEarring)
+    {
+        return Err(refuse());
+    }
+    let play = record
+        .map(|record| state.frames.card_play(record).ok_or_else(refuse))
+        .transpose()?;
+    if play.is_some_and(|play| play.uid != uid || play.source != CardPlaySource::Auto) {
+        return Err(refuse());
+    }
+    let Some(pending) = state.pending.as_deref() else {
+        return Ok(());
+    };
+    let play = play.ok_or_else(refuse)?;
+    if state.history.over
+        || play.plays != 1
+        || play.play_index != 0
+        || play.spent != 0
+        || play.star_spent != 0
+        || play.x_value != 0
+        || play.force_exhaust
+        || play.target.is_some()
+    {
+        return Err(refuse());
+    }
+    let mut imbued = PileId::ALL.into_iter().flat_map(|pile| {
+        state
+            .piles
+            .get(pile)
+            .as_slice()
+            .iter()
+            .filter(|card| catalog.spec(card.atom).is_some_and(imbued_identity))
+            .map(move |card| (pile, *card))
+    });
+    let Some((PileId::Play, card)) = imbued.next() else {
+        return Err(refuse());
+    };
+    if imbued.next().is_some() || card.uid != uid {
+        return Err(refuse());
+    }
+    let spec = catalog
+        .spec(card.atom)
+        .ok_or(EngineRefusal::UnknownAtom(card.atom))?;
+    if !imbued_parking_body_is_exact(spec, catalog) {
+        return Err(refuse());
+    }
+    persisted_card_play_context(state, catalog, play)?;
+    let (pending_play, _) = state.pending_card_play(pending).ok_or_else(refuse)?;
+    let owner = state.reward_card_pool.ok_or_else(refuse)?;
+    let pool = catalog.owner_generation_pool(owner);
+    let options = play.selection_cards();
+    if pending_play.uid != uid
+        || !play.pending_choice
+        || play.stage != CardPlayStage::Body
+        || play.next_step != 1
+        || play.selection_kind != Some(PendingSelectionKind::Discovery)
+        || play.source_pile != PileId::Play
+        || options.len() != 3
+        || options.iter().enumerate().any(|(index, option)| {
+            options[..index]
+                .iter()
+                .any(|prior| prior.atom == option.atom)
+                || !catalog.spec(option.atom).is_some_and(|option_spec| {
+                    option_spec.identity.upgrade == 0
+                        && option_spec.identity.enchantment.is_none()
+                        && pool.contains(&option_spec.identity.id)
+                })
+        })
+    {
+        return Err(refuse());
     }
     Ok(())
 }
@@ -19856,9 +21273,21 @@ macro_rules! define_run_steps_with_precommit {
             }
             crate::ids::StepKind::QuasarExact => {
                 crate::coverage::record_step(step.kind);
-                Some(SuspendedSelection::Quasar(
-                    crate::steps::regent_uncommon::begin_quasar_exact(&mut ctx)?,
-                ))
+                let options = crate::steps::regent_uncommon::begin_quasar_exact(&mut ctx)?;
+                // Under Whispering Earring's selector the screen is never
+                // shown (`selection::vakuu_generated_choice`, #3756).
+                match crate::engine::selection::vakuu_generated_choice(&options) {
+                    Some(taken) => {
+                        crate::engine::selection::quasar_take(
+                            &mut *ctx.state,
+                            ctx.catalog,
+                            options[taken],
+                            &mut *ctx.events,
+                        )?;
+                        None
+                    }
+                    None => Some(SuspendedSelection::Quasar(options)),
+                }
             }
             crate::ids::StepKind::TutorExact => {
                 crate::coverage::record_step(step.kind);
@@ -20325,6 +21754,7 @@ mod goopy_tests {
                 state: CardInstanceState::default(),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         assert!(crate::engine::monsters::thieving_hopper_state_is_valid(
             &state
@@ -20349,6 +21779,7 @@ mod goopy_tests {
                 state: CardInstanceState::default(),
             }],
             history: Vec::new(),
+            transformed: Vec::new(),
         }));
         assert_eq!(
             goopy_after_card_played(&mut stale, &catalog, UID),
@@ -20602,7 +22033,522 @@ mod vigorous_tests {
     }
 }
 
+/// MOMENTUM's growing damage additive and its post-body `OnPlay` write
+/// (#3745).
+#[cfg(test)]
+mod momentum_tests {
+    use super::*;
+    use crate::boundary::HotBoundary;
+    use crate::catalog::{CardEnchantment, CardIdentity, CatalogBuilder};
+    use crate::hot::{CARD_FLAG_DEFAULT_PHYSICAL_STATE, HotMonster, OptionalNonNegativeI32};
+    use crate::ids::{CardId, EnchantmentId, MonsterKind};
+
+    const UID: u32 = 7;
+    const HP: i32 = 200;
+    const AMOUNT: i32 = 5;
+
+    fn momentum(id: CardId, upgrade: u8, amount: i32) -> CardIdentity {
+        CardIdentity {
+            id,
+            upgrade,
+            enchantment: Some(CardEnchantment {
+                id: EnchantmentId::Momentum,
+                amount,
+            }),
+        }
+    }
+
+    fn fixture_of(
+        identity: CardIdentity,
+        extra: Option<i32>,
+        monsters: usize,
+    ) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(identity).unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 70;
+        state.max_hp = 70;
+        state.energy = 3;
+        for _ in 0..monsters {
+            let mut target = HotMonster::new(MonsterKind::Toadpole, HP);
+            target.max_hp = HP;
+            state.monsters_mut().push(target);
+        }
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: UID,
+            atom,
+            flags: 0,
+        });
+        set_extra(&mut state, UID, extra);
+        (state, catalog)
+    }
+
+    fn fixture(id: CardId, extra: Option<i32>) -> (HotState, Catalog) {
+        fixture_of(momentum(id, 0, AMOUNT), extra, 1)
+    }
+
+    fn set_extra(state: &mut HotState, uid: u32, extra: Option<i32>) {
+        let mut instance = state.card_states.get(uid);
+        instance.enchantment_state = OptionalNonNegativeI32::from_option(extra).unwrap();
+        state.card_states.set(uid, instance);
+    }
+
+    fn extra(state: &HotState, uid: u32) -> Option<i32> {
+        state.card_states.get(uid).enchantment_state.get()
+    }
+
+    fn dealt(state: &HotState) -> i32 {
+        state.monsters.iter().map(|monster| HP - monster.hp).sum()
+    }
+
+    fn play(state: &mut HotState, catalog: &Catalog) -> Result<(), EngineRefusal> {
+        play_card(state, catalog, UID, Some(0), None, &mut Vec::new())
+    }
+
+    fn return_to_hand(state: &mut HotState) {
+        let card = state
+            .piles
+            .get_mut(PileId::Discard)
+            .make_mut()
+            .pop()
+            .unwrap();
+        state.piles.get_mut(PileId::Hand).make_mut().push(card);
+        state.energy = 3;
+    }
+
+    #[test]
+    fn the_first_body_of_a_fight_adds_nothing_and_grows_the_counter() {
+        // `OnPlay` (IL_06fa) runs after the body (IL_0659), so the entry
+        // counter of zero is what the first body's hit reads.
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 6);
+        assert_eq!(extra(&state, UID), Some(AMOUNT));
+        assert_eq!(
+            unique_live_card_location(&state, UID)
+                .unwrap()
+                .map(|(pile, _)| pile),
+            Some(PileId::Discard)
+        );
+    }
+
+    #[test]
+    fn each_later_play_adds_the_counter_and_grows_it_again() {
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        play(&mut state, &catalog).unwrap();
+        return_to_hand(&mut state);
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 6 + (6 + AMOUNT));
+        assert_eq!(extra(&state, UID), Some(2 * AMOUNT));
+        return_to_hand(&mut state);
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 6 + (6 + AMOUNT) + (6 + 2 * AMOUNT));
+        assert_eq!(extra(&state, UID), Some(3 * AMOUNT));
+    }
+
+    #[test]
+    fn the_counter_does_not_reset_at_a_turn_boundary() {
+        // No Momentum member is a turn hook; the only write is `OnPlay`.
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        play(&mut state, &catalog).unwrap();
+        let next = crate::engine::apply_action(&state, &catalog, &crate::engine::Action::EndTurn)
+            .unwrap()
+            .state;
+        assert_eq!(next.history.round_number, state.history.round_number + 1);
+        assert_eq!(extra(&next, UID), Some(AMOUNT));
+    }
+
+    #[test]
+    fn every_hit_of_one_body_reads_the_same_counter() {
+        // Twin Strike: two hits of 5 inside one body, one read each, and one
+        // write after both.
+        let (mut state, catalog) = fixture(CardId::TwinStrike, Some(AMOUNT));
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 2 * (5 + AMOUNT));
+        assert_eq!(extra(&state, UID), Some(2 * AMOUNT));
+    }
+
+    #[test]
+    fn sword_boomerang_reads_one_counter_on_every_random_hit() {
+        // The #3745 host: SWORD_BOOMERANG+ is four random-target hits of 3.
+        // Whichever enemy each hit lands on, every hit of the body carries
+        // the same counter, and the counter grows once per body, not per hit.
+        for monsters in [1, 3] {
+            let (mut state, catalog) = fixture_of(
+                momentum(CardId::SwordBoomerang, 1, AMOUNT),
+                Some(0),
+                monsters,
+            );
+            play_card(&mut state, &catalog, UID, None, None, &mut Vec::new()).unwrap();
+            assert_eq!(dealt(&state), 4 * 3, "{monsters}");
+            assert_eq!(extra(&state, UID), Some(AMOUNT), "{monsters}");
+            return_to_hand(&mut state);
+            play_card(&mut state, &catalog, UID, None, None, &mut Vec::new()).unwrap();
+            assert_eq!(dealt(&state), 4 * 3 + 4 * (3 + AMOUNT), "{monsters}");
+            assert_eq!(extra(&state, UID), Some(2 * AMOUNT), "{monsters}");
+        }
+    }
+
+    #[test]
+    fn every_replay_body_grows_the_counter_before_the_next_body_reads_it() {
+        // `Enchantment.OnPlay` is inside the body loop, so body 1 of the
+        // same play already reads what body 0 wrote.
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        state.piles.get_mut(PileId::Hand).make_mut()[0].flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        let mut replay = state.card_states.get(UID);
+        replay.set_base_replay_count(Some(1)).unwrap();
+        state.card_states.set(UID, replay);
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 6 + (6 + AMOUNT));
+        assert_eq!(extra(&state, UID), Some(2 * AMOUNT));
+    }
+
+    #[test]
+    fn the_counter_joins_the_additive_fold_before_vulnerable() {
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(AMOUNT));
+        state.monsters_mut()[0]
+            .powers
+            .set(PowerId::Vuln, crate::powers::SlotWire::Int, 1);
+        play(&mut state, &catalog).unwrap();
+        // floor((6 + 5) * 1.5) = 16, not floor(6 * 1.5) + 5 = 14.
+        assert_eq!(dealt(&state), 16);
+    }
+
+    #[test]
+    fn a_body_that_ends_the_combat_still_grows_the_counter() {
+        // No ending gate sits between the body and IL_06fa.
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        state.monsters_mut()[0].hp = 6;
+        play(&mut state, &catalog).unwrap();
+        assert!(state.history.over);
+        assert_eq!(extra(&state, UID), Some(AMOUNT));
+    }
+
+    #[test]
+    fn a_momentum_card_without_a_counter_refuses_by_name() {
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, None);
+        assert_eq!(
+            play(&mut state, &catalog),
+            Err(EngineRefusal::MalformedArgs("MOMENTUM extra damage"))
+        );
+        let (mut direct, catalog) = fixture(CardId::StrikeIronclad, None);
+        let spec = *catalog
+            .spec(direct.piles.get(PileId::Hand).as_slice()[0].atom)
+            .unwrap();
+        assert_eq!(
+            momentum_on_play(&mut direct, &catalog, &spec, UID),
+            Err(EngineRefusal::MalformedArgs("MOMENTUM extra damage"))
+        );
+    }
+
+    #[test]
+    fn the_on_play_write_refuses_a_foreign_owner_and_an_overflow() {
+        // `Momentum::CanEnchantCardType` is Attack-only: a Skill owner is not
+        // a native state.
+        let (mut skill, catalog) = fixture(CardId::DefendIronclad, Some(0));
+        let spec = *catalog
+            .spec(skill.piles.get(PileId::Hand).as_slice()[0].atom)
+            .unwrap();
+        assert_eq!(
+            momentum_on_play(&mut skill, &catalog, &spec, UID),
+            Err(EngineRefusal::MalformedArgs("MOMENTUM owner"))
+        );
+        assert_eq!(extra(&skill, UID), Some(0));
+
+        let (mut full, catalog) = fixture(CardId::StrikeIronclad, Some(i32::MAX - 1));
+        let spec = *catalog
+            .spec(full.piles.get(PileId::Hand).as_slice()[0].atom)
+            .unwrap();
+        assert_eq!(
+            momentum_on_play(&mut full, &catalog, &spec, UID),
+            Err(EngineRefusal::CounterOverflow("Momentum extra damage"))
+        );
+        assert_eq!(extra(&full, UID), Some(i32::MAX - 1));
+
+        // An unenchanted card has no `Enchantment.OnPlay` to run.
+        let mut builder = CatalogBuilder::new();
+        let atom = builder
+            .intern(CardIdentity {
+                id: CardId::StrikeIronclad,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let plain_catalog = builder.build();
+        let mut plain = HotState::at_defaults();
+        let spec = *plain_catalog.spec(atom).unwrap();
+        momentum_on_play(&mut plain, &plain_catalog, &spec, UID).unwrap();
+        assert_eq!(extra(&plain, UID), None);
+    }
+
+    #[test]
+    fn the_identity_gate_is_attack_only_and_non_negative() {
+        let mut builder = CatalogBuilder::new();
+        let strike = builder
+            .intern(momentum(CardId::StrikeIronclad, 0, 0))
+            .unwrap();
+        let negative = builder
+            .intern(momentum(CardId::StrikeIronclad, 0, -1))
+            .unwrap();
+        let defend = builder
+            .intern(momentum(CardId::DefendIronclad, 0, 3))
+            .unwrap();
+        let catalog = builder.build();
+        assert!(momentum_identity_is_exact(catalog.spec(strike).unwrap()));
+        assert!(body_enchantment_is_exact(catalog.spec(strike).unwrap()));
+        assert!(!momentum_identity_is_exact(catalog.spec(negative).unwrap()));
+        assert!(!body_enchantment_is_exact(catalog.spec(negative).unwrap()));
+        assert!(!momentum_identity_is_exact(catalog.spec(defend).unwrap()));
+        assert!(!body_enchantment_is_exact(catalog.spec(defend).unwrap()));
+    }
+
+    #[test]
+    fn the_damage_fold_refuses_a_counter_it_cannot_place() {
+        // A powered attack that names the Momentum card as its source but
+        // carries no physical uid has no slot 5 to read.
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(AMOUNT));
+        let spec = *catalog
+            .spec(state.piles.get(PileId::Hand).as_slice()[0].atom)
+            .unwrap();
+        assert_eq!(
+            crate::engine::damage::player_attack(&mut state, &spec, &[0], 6, 1, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs("MOMENTUM source uid"))
+        );
+        assert_eq!(dealt(&state), 0);
+
+        // An owner outside the identity gate (a negative amount is not a
+        // native state) is refused at the hit, before any damage lands.
+        let (mut negative, catalog) =
+            fixture_of(momentum(CardId::StrikeIronclad, 0, -1), Some(0), 1);
+        assert_eq!(
+            play(&mut negative, &catalog),
+            Err(EngineRefusal::MalformedArgs("MOMENTUM owner"))
+        );
+        assert_eq!(dealt(&negative), 0);
+    }
+
+    #[test]
+    fn momentum_adds_no_replay_body() {
+        // `Momentum` declares no `EnchantPlayCount`.
+        let (state, catalog) = fixture(CardId::StrikeIronclad, Some(3 * AMOUNT));
+        let spec = *catalog
+            .spec(state.piles.get(PileId::Hand).as_slice()[0].atom)
+            .unwrap();
+        assert_eq!(effective_replay_count(&state, &spec, UID), Ok(0));
+    }
+
+    #[test]
+    fn the_counter_round_trips_through_the_boundary() {
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        let before = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        assert_eq!(
+            before.piles["hand"][0].enchantment_state,
+            Some(serde_json::json!(["MOMENTUM", 0]))
+        );
+        play(&mut state, &catalog).unwrap();
+        return_to_hand(&mut state);
+        play(&mut state, &catalog).unwrap();
+        let after = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        let card = &after.piles["discard"][0];
+        assert_eq!(card.enchantment, Some(serde_json::json!(["MOMENTUM", 5])));
+        assert_eq!(
+            card.enchantment_state,
+            Some(serde_json::json!(["MOMENTUM", 10]))
+        );
+        let reloaded_catalog = HotBoundary::catalog_from_canonical(&after).unwrap();
+        let reloaded = HotBoundary::from_canonical(&after, &reloaded_catalog).unwrap();
+        assert_eq!(
+            HotBoundary::try_to_canonical(&reloaded, &reloaded_catalog).unwrap(),
+            after
+        );
+    }
+
+    #[test]
+    fn two_equal_momentum_copies_promote_exact_piles_once_one_grows() {
+        let (mut state, catalog) = fixture(CardId::StrikeIronclad, Some(0));
+        let mut twin = state.piles.get(PileId::Hand).as_slice()[0];
+        twin.uid = UID + 1;
+        state.piles.get_mut(PileId::Hand).make_mut().push(twin);
+        set_extra(&mut state, UID + 1, Some(0));
+        play(&mut state, &catalog).unwrap();
+        assert!(state.exact_piles);
+        assert_eq!(extra(&state, UID), Some(AMOUNT));
+        assert_eq!(extra(&state, UID + 1), Some(0));
+    }
+}
+
 /// TEZCATARAS_EMBER's zero base cost and fixed damage additive (#3413).
+#[cfg(test)]
+mod instinct_tests {
+    use super::*;
+    use crate::boundary::HotBoundary;
+    use crate::catalog::{CardEnchantment, CardIdentity, CatalogBuilder};
+    use crate::hot::HotMonster;
+    use crate::ids::{CardId, EnchantmentId, MonsterKind};
+
+    const UID: u32 = 7;
+    const HP: i32 = 100;
+
+    fn enchanted(id: CardId, upgrade: u8, amount: i32) -> CardIdentity {
+        CardIdentity {
+            id,
+            upgrade,
+            enchantment: Some(CardEnchantment {
+                id: EnchantmentId::Instinct,
+                amount,
+            }),
+        }
+    }
+
+    fn instinct(id: CardId, upgrade: u8) -> CardIdentity {
+        enchanted(id, upgrade, 1)
+    }
+
+    fn fixture(identity: CardIdentity) -> (HotState, Catalog) {
+        let mut builder = CatalogBuilder::new();
+        let atom = builder.intern(identity).unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 70;
+        state.max_hp = 70;
+        state.energy = 3;
+        let mut target = HotMonster::new(MonsterKind::Toadpole, HP);
+        target.max_hp = HP;
+        state.monsters_mut().push(target);
+        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+            uid: UID,
+            atom,
+            flags: 0,
+        });
+        (state, catalog)
+    }
+
+    fn dealt(state: &HotState) -> i32 {
+        HP - state.monsters[0].hp
+    }
+
+    fn play(state: &mut HotState, catalog: &Catalog) -> Result<(), EngineRefusal> {
+        play_card(state, catalog, UID, Some(0), None, &mut Vec::new())
+    }
+
+    fn spec_of(catalog: &Catalog, identity: CardIdentity) -> &CardSpec {
+        catalog.spec(catalog.atom(&identity).unwrap()).unwrap()
+    }
+
+    /// `Instinct::EnchantDamageMultiplicative` RVA `0xd61ad`: twice the
+    /// card's own damage, at the card's ordinary cost.
+    #[test]
+    fn an_instinct_strike_deals_twice_its_base_at_full_cost() {
+        let (mut state, catalog) = fixture(instinct(CardId::StrikeIronclad, 0));
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(state.energy, 2);
+        assert_eq!(dealt(&state), 12);
+
+        let (mut state, catalog) = fixture(instinct(CardId::StrikeIronclad, 1));
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 18);
+    }
+
+    /// `Hook::ModifyDamage` RVA `0x10511c` applies the enchantment's factor
+    /// (IL_006b-0070) before any listener's additive: Strength is not
+    /// doubled, and Vulnerable multiplies the sum.
+    #[test]
+    fn the_factor_lands_on_the_base_before_strength_and_vulnerable() {
+        let (mut state, catalog) = fixture(instinct(CardId::StrikeIronclad, 0));
+        crate::engine::damage::apply_signed_player_stat(
+            &mut state,
+            PowerId::Strength,
+            3,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        play(&mut state, &catalog).unwrap();
+        // 6 * 2 + 3, not (6 + 3) * 2 = 18.
+        assert_eq!(dealt(&state), 15);
+
+        let (mut state, catalog) = fixture(instinct(CardId::StrikeIronclad, 0));
+        crate::engine::damage::apply_signed_player_stat(
+            &mut state,
+            PowerId::Strength,
+            3,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        state.monsters_mut()[0]
+            .powers
+            .set(PowerId::Vuln, crate::powers::SlotWire::Int, 1);
+        play(&mut state, &catalog).unwrap();
+        // floor((6 * 2 + 3) * 1.5) = 22.
+        assert_eq!(dealt(&state), 22);
+    }
+
+    /// Every hit of a multi-hit body passes through the same fold.
+    #[test]
+    fn every_hit_of_a_body_is_doubled() {
+        let (mut state, catalog) = fixture(instinct(CardId::TwinStrike, 0));
+        play(&mut state, &catalog).unwrap();
+        assert_eq!(dealt(&state), 20);
+    }
+
+    /// `CanEnchantCardType` RVA `0xd61a7` admits Attacks only; `Amount` is
+    /// never read, so any non-negative payload is the same identity.
+    #[test]
+    fn the_identity_gate_is_attack_only() {
+        let mut builder = CatalogBuilder::new();
+        let identities = [
+            instinct(CardId::StrikeIronclad, 0),
+            instinct(CardId::TwinStrike, 1),
+            enchanted(CardId::StrikeIronclad, 0, 3),
+            instinct(CardId::DefendIronclad, 0),
+            enchanted(CardId::StrikeIronclad, 0, -1),
+        ];
+        for identity in identities {
+            builder.intern(identity).unwrap();
+        }
+        let catalog = builder.build();
+        let verdicts =
+            identities.map(|identity| instinct_identity_is_exact(spec_of(&catalog, identity)));
+        assert_eq!(verdicts, [true, true, true, false, false]);
+        for (identity, verdict) in identities.into_iter().zip(verdicts) {
+            assert_eq!(
+                body_enchantment_is_exact(spec_of(&catalog, identity)),
+                verdict
+            );
+        }
+    }
+
+    /// The fold refuses an owner the gate does not place rather than
+    /// doubling it.
+    #[test]
+    fn the_damage_fold_refuses_a_foreign_owner_by_name() {
+        let (mut state, catalog) = fixture(enchanted(CardId::StrikeIronclad, 0, -1));
+        assert_eq!(
+            play(&mut state, &catalog),
+            Err(EngineRefusal::MalformedArgs("INSTINCT owner"))
+        );
+    }
+
+    #[test]
+    fn instinct_contributes_no_replay_and_round_trips() {
+        let (state, catalog) = fixture(instinct(CardId::StrikeIronclad, 0));
+        let card = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_eq!(
+            effective_replay_count(&state, catalog.spec(card.atom).unwrap(), UID),
+            Ok(0)
+        );
+        let entry = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+        let entry_catalog = HotBoundary::catalog_from_canonical(&entry).unwrap();
+        let reloaded = HotBoundary::from_canonical(&entry, &entry_catalog).unwrap();
+        let reloaded_card = reloaded.piles.get(PileId::Hand).as_slice()[0];
+        assert!(instinct_identity_is_exact(
+            entry_catalog.spec(reloaded_card.atom).unwrap()
+        ));
+    }
+}
+
 #[cfg(test)]
 mod tezcataras_ember_tests {
     use super::*;
@@ -20790,6 +22736,174 @@ mod tezcataras_ember_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// #3756: a wrapper hands its `CheckForEmptyHand` back only in the exact
+    /// shape `run_top_tail` leaves: the running draw's own Draw frame on
+    /// top, at its early hook, for this card, on the same state. Each other
+    /// shape keeps the wrapper's own check.
+    #[test]
+    fn a_wrapper_defers_its_empty_hand_check_only_to_the_draw_that_played_it() {
+        let card = HotCard {
+            uid: 7,
+            atom: 0,
+            flags: crate::hot::CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        };
+        let finish = |uid: u32| crate::hot::CardFinishRecord {
+            uid,
+            payload: crate::hot::FrozenAutoBatchEntry {
+                card: HotCard { uid, ..card },
+                state: CardInstanceState::default(),
+            },
+            glam: 0,
+            result_route: CardResultRoute::DiscardBottom,
+            source: CardPlaySource::Hellraiser,
+            is_power_auto: false,
+            routed_uid: Some(uid),
+            stage: crate::frame::CardFinishStage::AfterTop,
+        };
+        let draw = |caller, stage, uid| crate::hot::DrawRecord {
+            requested: 1,
+            completed: 0,
+            drawn: vec![crate::hot::DrawEntry::Uid(HotCard { uid, ..card })],
+            from_hand_draw: false,
+            stage,
+            card_uid: Some(uid),
+            caller,
+            shuffle_candidates: Vec::new(),
+            gamble_paired: None,
+        };
+        let top = crate::hot::DrawCaller::UnceasingTopFinish;
+        let early = crate::hot::DrawStage::EarlyHook;
+        let stacked = |record: &crate::hot::DrawRecord| {
+            let mut state = HotState::at_defaults();
+            state.frames.push_card_finish(&finish(3)).unwrap();
+            state.frames.push_draw(record).unwrap();
+            state
+        };
+
+        // No draw is running.
+        let state = stacked(&draw(top, early, 7));
+        assert!(!defer_top_tail(&state, &finish(7)));
+        assert!(!top_tail_is_deferred(&state));
+
+        // The exact shape, with the wrapper's own entry carried along.
+        let scope = TopTailDrawScope::enter(&state, 2);
+        let deferred = with_test_active_play(7, || defer_top_tail(&state, &finish(7)));
+        assert!(deferred);
+        assert!(top_tail_is_deferred(&state));
+        // A clone is another state: its draw has not been handed anything.
+        assert!(!top_tail_is_deferred(&state.clone()));
+        // One hand-back per draw.
+        assert!(!defer_top_tail(&state, &finish(7)));
+        let (record, context) = scope.take_deferred().unwrap();
+        assert_eq!(record, finish(7));
+        assert!(context.is_some_and(|entry| entry.uid == 7 && entry.routed));
+        assert!(!top_tail_is_deferred(&state));
+        // With another card's entry innermost, nothing is carried.
+        assert!(with_test_active_play(8, || defer_top_tail(
+            &state,
+            &finish(7)
+        )));
+        assert!(scope.take_deferred().unwrap().1.is_none());
+        // A rehearsal clone does not hand back to the real draw.
+        assert!(!defer_top_tail(&state.clone(), &finish(7)));
+        drop(scope);
+        assert!(!defer_top_tail(&state, &finish(7)));
+
+        // Another frame depth than the running draw's.
+        let scope = TopTailDrawScope::enter(&state, 3);
+        assert!(!defer_top_tail(&state, &finish(7)));
+        drop(scope);
+        // The top frame is not a Draw.
+        let mut bare = HotState::at_defaults();
+        bare.frames.push_card_finish(&finish(3)).unwrap();
+        let scope = TopTailDrawScope::enter(&bare, 1);
+        assert!(!defer_top_tail(&bare, &finish(7)));
+        drop(scope);
+        // Another caller's Draw, a later stage, another card.
+        for record in [
+            draw(crate::hot::DrawCaller::GamePiece, early, 7),
+            draw(top, crate::hot::DrawStage::OrdinaryHook, 7),
+            draw(top, early, 9),
+        ] {
+            let state = stacked(&record);
+            let scope = TopTailDrawScope::enter(&state, 2);
+            assert!(!defer_top_tail(&state, &finish(7)), "{record:?}");
+            drop(scope);
+        }
+
+        // A nested scope restores the enclosing one.
+        let state = stacked(&draw(top, early, 7));
+        let outer = TopTailDrawScope::enter(&state, 2);
+        let inner = TopTailDrawScope::enter(&state, 5);
+        assert!(!defer_top_tail(&state, &finish(7)));
+        drop(inner);
+        assert!(defer_top_tail(&state, &finish(7)));
+        drop(outer);
+        assert!(!top_tail_is_deferred(&state));
+    }
+
+    /// #3756: a routed wrapper no longer owns its uid, and the innermost
+    /// entry answers for a uid that has a routed wrapper below it.
+    #[test]
+    fn a_routed_wrapper_releases_its_uid() {
+        let outer = ActivePlayGuard::enter(4).unwrap();
+        outer.set_play_index(1).unwrap();
+        assert!(active_play_stack_contains_uid(4));
+        assert!(ActivePlayGuard::enter(4).is_err());
+        // Another card's wrapper is not marked.
+        mark_active_play_routed(5);
+        assert!(active_play_stack_contains_uid(4));
+        mark_active_play_routed(4);
+        assert!(!active_play_stack_contains_uid(4));
+        let inner = ActivePlayGuard::enter(4).unwrap();
+        assert!(active_play_stack_contains_uid(4));
+        inner.set_play_index(0).unwrap();
+        inner.set_target_identity(Some((2, 9))).unwrap();
+        inner.set_spent(3).unwrap();
+        assert_eq!(active_card_play_index(4), Some(0));
+        assert_eq!(active_card_target_identity(4), Some(Some((2, 9))));
+        assert_eq!(active_card_energy_spent(4), Some(3));
+        // A third wrapper of the same card needs the second routed too.
+        assert!(ActivePlayGuard::enter(4).is_err());
+        drop(inner);
+        assert_eq!(active_card_play_index(4), Some(1));
+        drop(outer);
+        // With no wrapper on the stack there is nothing to mark.
+        mark_active_play_routed(4);
+        assert!(!active_play_stack_contains_uid(4));
+    }
+
+    /// #3756: the entries `run_top_tail` holds for returned wrappers leave
+    /// the stack with their level, or all at once on an early exit.
+    #[test]
+    fn deferred_wrapper_entries_leave_with_their_level() {
+        let entry = |uid| ActivePlayContext {
+            uid,
+            source: CardPlaySource::Hellraiser,
+            play_index: Some(0),
+            target_identity: None,
+            spent: Some(0),
+            pen_double: false,
+            unsettling_lamp_triggered: false,
+            body_block_gains: Some(0),
+            rupture: ActiveRuptureBatch::Unregistered,
+            routed: true,
+        };
+        let _outer = ActivePlayGuard::enter(1).unwrap();
+        let mut held = DeferredActivePlays(0);
+        // Nothing held: a pop is a no-op.
+        held.pop();
+        assert_eq!(active_play_current_uid(), Some(1));
+        held.push(entry(2));
+        held.push(entry(3));
+        assert_eq!(active_play_current_uid(), Some(3));
+        held.pop();
+        assert_eq!(active_play_current_uid(), Some(2));
+        held.push(entry(4));
+        drop(held);
+        assert_eq!(active_play_current_uid(), Some(1));
+    }
     use crate::boundary::HotBoundary;
     use crate::catalog::{CardAtom, CardEnchantment, CardIdentity, CatalogBuilder};
     use crate::hot::{
@@ -21448,6 +23562,531 @@ mod tests {
         }
     }
 
+    /// #3823: Owl Magistrate and Mecha Knight from a public root, every row.
+    ///
+    /// Both machines are plain `MoveState` cycles with no branch state
+    /// (`OwlMagistrate::GenerateMoveStateMachine` RVA `0xbaf54`
+    /// IL_00c3-IL_00dc: SCRUTINY -> PECK -> FLIGHT -> VERDICT -> SCRUTINY;
+    /// `MechaKnight::GenerateMoveStateMachine` RVA `0xb9970` IL_00c7-IL_00e0:
+    /// CHARGE -> FLAMETHROWER -> WINDUP -> HEAVY_CLEAVE -> FLAMETHROWER), so
+    /// `StateLog.Last()` at Whistle's `CreatureCmd::Stun(target, null)`
+    /// (`Whistle/<OnPlay>d__7::MoveNext` IL_00e6) is the telegraphed row and
+    /// `parked_telegraph` names it. At each `loop_pos`: the stun parks that
+    /// row and leaves `loop_pos`; the state survives a cold reload and
+    /// re-admits; a mismatched parked name refuses; the stunned enemy action
+    /// does nothing to the player and clears the override without moving
+    /// `loop_pos`; and the action after it advances the loop exactly as the
+    /// same monster does with no stun at all, one enemy turn later.
+    #[test]
+    fn whistle_parks_every_plain_loop_owner_row_and_survives_a_cold_reload() {
+        for (kind, rows) in [
+            (
+                MonsterKind::OwlMagistrate,
+                [
+                    MonsterFollowUp::OwlMagistrateScrutiny,
+                    MonsterFollowUp::OwlPeckAssault,
+                    MonsterFollowUp::OwlJudicialFlight,
+                    MonsterFollowUp::OwlVerdict,
+                ],
+            ),
+            (
+                MonsterKind::MechaKnight,
+                [
+                    MonsterFollowUp::MechaCharge,
+                    MonsterFollowUp::MechaFlamethrower,
+                    MonsterFollowUp::MechaWindup,
+                    MonsterFollowUp::MechaHeavyCleave,
+                ],
+            ),
+        ] {
+            let mut builder = CatalogBuilder::new();
+            let atom = builder
+                .intern(CardIdentity {
+                    id: CardId::Whistle,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            builder.intern_monster(kind).unwrap();
+            if kind == MonsterKind::MechaKnight {
+                // FLAMETHROWER_MOVE adds Burns to the Hand.
+                builder
+                    .intern(CardIdentity {
+                        id: CardId::Burn,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+            }
+            let catalog = builder.build();
+            for (loop_pos, follow_up) in rows.into_iter().enumerate() {
+                let loop_pos = loop_pos as i32;
+                let root = |with_whistle: bool| {
+                    let mut state = HotState::at_defaults();
+                    state.hp = 1_000;
+                    state.max_hp = 1_000;
+                    state.energy = 2;
+                    state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+                    state.exact_piles = true;
+                    state.next_card_uid = 1;
+                    if with_whistle {
+                        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+                            uid: 0,
+                            atom,
+                            flags: 0,
+                        });
+                    }
+                    let mut monster = HotMonster::new(kind, 400);
+                    monster.max_hp = 400;
+                    monster.loop_pos = loop_pos;
+                    state.monsters_mut().push(monster);
+                    state
+                };
+                let state = root(true);
+                let entry = HotBoundary::to_canonical(&state, &catalog);
+                let imported = HotBoundary::from_canonical(&entry, &catalog).unwrap();
+                assert_eq!(
+                    crate::engine::admit(&entry, &imported, &catalog),
+                    Ok(()),
+                    "{kind:?} row {loop_pos}"
+                );
+                let mut state = imported;
+                let hp_before = state.monsters[0].hp;
+                play_card(&mut state, &catalog, 0, Some(0), None, &mut Vec::new()).unwrap();
+                assert_eq!(state.monsters[0].hp, hp_before - 33);
+                assert_eq!(state.monsters[0].loop_pos, loop_pos);
+                assert_eq!(state.monsters[0].override_state, MonsterOverride::Stunned);
+                assert_eq!(state.monsters[0].forced_follow_up, follow_up);
+
+                let canonical = HotBoundary::to_canonical(&state, &catalog);
+                let rebuilt = HotBoundary::catalog_from_canonical(&canonical).unwrap();
+                let reloaded = HotBoundary::from_canonical(&canonical, &rebuilt).unwrap();
+                assert_eq!(reloaded, state);
+                assert_eq!(HotBoundary::to_canonical(&reloaded, &rebuilt), canonical);
+                assert_eq!(
+                    crate::engine::admit(&canonical, &reloaded, &rebuilt),
+                    Ok(())
+                );
+                let mut swapped = canonical.clone();
+                swapped.monsters[0].insert(
+                    "forced_follow_up".to_owned(),
+                    serde_json::json!(rows[(loop_pos as usize + 1) % 4].as_str()),
+                );
+                let imported = HotBoundary::from_canonical(&swapped, &rebuilt).unwrap();
+                assert!(crate::engine::admit(&swapped, &imported, &rebuilt).is_err());
+
+                // The stunned action: nothing happens to the player, the
+                // override clears, `loop_pos` stays.
+                let mut cold = reloaded;
+                let player_before = (cold.hp, cold.block);
+                super::super::turn::end_player_turn(&mut cold, &rebuilt, &mut Vec::new()).unwrap();
+                assert_eq!(cold.monsters[0].loop_pos, loop_pos, "{kind:?}");
+                assert_eq!(cold.monsters[0].override_state, MonsterOverride::None);
+                assert_eq!(cold.monsters[0].forced_follow_up, MonsterFollowUp::None);
+                assert_eq!(player_before.0, cold.hp, "the stun consumed the action");
+                assert_eq!(
+                    cold.piles.get(PileId::Hand).len()
+                        + cold.piles.get(PileId::Draw).len()
+                        + cold.piles.get(PileId::Discard).len(),
+                    0,
+                    "no status entered a pile on the stunned action"
+                );
+
+                // The parked row then performs: the same loop step an
+                // unstunned copy takes on its first enemy action.
+                super::super::turn::end_player_turn(&mut cold, &rebuilt, &mut Vec::new()).unwrap();
+                let mut plain = root(false);
+                super::super::turn::end_player_turn(&mut plain, &catalog, &mut Vec::new()).unwrap();
+                assert_eq!(
+                    cold.monsters[0].loop_pos, plain.monsters[0].loop_pos,
+                    "{kind:?} row {loop_pos}"
+                );
+                assert_eq!(
+                    1_000 - plain.hp,
+                    player_before.0 - cold.hp,
+                    "{kind:?} row {loop_pos}"
+                );
+                assert_eq!(
+                    cold.monsters[0].powers, plain.monsters[0].powers,
+                    "{kind:?} row {loop_pos}"
+                );
+                assert_eq!(cold.monsters[0].block, plain.monsters[0].block);
+            }
+        }
+    }
+
+    /// #3823: every generic stun owner, every row of its loop.
+    ///
+    /// The sweep form of the witness above, over the whole derived owner set
+    /// (`monsters::generic_stun_owner_loop_is_fully_resolvable`) instead of two
+    /// named kinds. For each kind and each `loop_pos`:
+    ///
+    /// * Whistle's `CreatureCmd::Stun(target, null)` parks the row and leaves
+    ///   `loop_pos` (`Creature::StunInternal` RVA `0x11d7cc` IL_0039-IL_0055
+    ///   parks `StateLog.Last().Id`; `SetMoveImmediate` `0x825f0` IL_001d-
+    ///   IL_002b installs STUNNED through `ForceCurrentState`, which does not
+    ///   log);
+    /// * a second Whistle on the unperformed stun changes nothing but the HP
+    ///   (`0x825f0` IL_000c-IL_001c: `NextMove.CanTransitionAway` is false and
+    ///   `force` is false);
+    /// * the stunned state projects, hydrates to the same state, and admits
+    ///   exactly as the unstunned root does (the stun adds no refusal);
+    /// * the stunned enemy action costs the player nothing, clears the
+    ///   override and leaves `loop_pos` (the STUNNED body is the completed
+    ///   task `<Stun>b__26_0` `0x3e8f83`);
+    /// * the action after it is the one an unstunned copy takes first: same
+    ///   successor row, same damage, same powers and block
+    ///   (`FindNextMoveState` `0x78e94` IL_0045-IL_008f walks STUNNED ->
+    ///   `States[FollowUpStateId]`, the parked `MoveState` itself).
+    ///
+    /// **What this is not.** It is an engine-against-engine sweep on a bare
+    /// one-monster root, with none of the powers an opening applies and none
+    /// of the per-kind lifecycle validators a real roster runs. "Admits as
+    /// its root does" compares two verdicts and holds trivially where the
+    /// bare root already refuses. Its use is row coverage: every row of every
+    /// owner is parked and reloaded, including rows no native run reached.
+    /// The comparison with the game is
+    /// `engine::native_stun_traces::the_generic_stun_matches_the_stored_
+    /// native_traces_on_real_rosters`, which opens the real encounters.
+    #[test]
+    fn whistle_parks_every_generic_owner_row_and_resumes_it() {
+        let mut swept = 0;
+        let mut rows_swept = 0;
+        let mut acted = Vec::new();
+        let mut bare_root_unprojectable = Vec::new();
+        let mut bare_root_cannot_act = Vec::new();
+        for kind in MonsterKind::ALL {
+            if !crate::engine::monsters::generic_stun_owner_loop_is_fully_resolvable(kind) {
+                continue;
+            }
+            // A random table has no `loop_pos` row (#3823); its rows are
+            // swept in `turn.rs` and compared with the game in
+            // `engine::native_stun_traces`.
+            let Some(rows) = crate::content_tables::monster_loop(kind) else {
+                continue;
+            };
+            swept += 1;
+            let mut builder = CatalogBuilder::new();
+            let atom = builder
+                .intern(CardIdentity {
+                    id: CardId::Whistle,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+            builder.intern_monster(kind).unwrap();
+            // The statuses and curses a move can add to a pile.
+            for id in [
+                CardId::Burn,
+                CardId::Dazed,
+                CardId::Slimed,
+                CardId::Void,
+                CardId::Wound,
+            ] {
+                builder
+                    .intern(CardIdentity {
+                        id,
+                        upgrade: 0,
+                        enchantment: None,
+                    })
+                    .unwrap();
+            }
+            let catalog = builder.build();
+            assert_eq!(catalog.moves(kind).len(), rows.len(), "{kind:?}");
+            for loop_pos in 0..rows.len() as i32 {
+                rows_swept += 1;
+                let root = |whistles: usize| {
+                    let mut state = HotState::at_defaults();
+                    state.hp = 1_000;
+                    state.max_hp = 1_000;
+                    state.energy = 2;
+                    state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+                    state.exact_piles = true;
+                    state.next_card_uid = whistles as u32;
+                    for uid in 0..whistles as u32 {
+                        state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+                            uid,
+                            atom,
+                            flags: 0,
+                        });
+                    }
+                    let mut monster = HotMonster::new(kind, 400);
+                    monster.max_hp = 400;
+                    monster.loop_pos = loop_pos;
+                    state.monsters_mut().push(monster);
+                    state
+                };
+                let label = format!("{kind:?} row {loop_pos} ({})", rows[loop_pos as usize].name);
+                let state = root(2);
+                let Ok(entry) = HotBoundary::try_to_canonical(&state, &catalog) else {
+                    bare_root_unprojectable.push(kind);
+                    continue;
+                };
+                let imported = HotBoundary::from_canonical(&entry, &catalog).unwrap();
+                assert_eq!(imported, state, "{label}");
+                let root_verdict = crate::engine::admit(&entry, &imported, &catalog);
+                assert!(
+                    crate::engine::monsters::whistle_stun_target_refusal(
+                        &state,
+                        &catalog,
+                        &state.monsters[0]
+                    )
+                    .is_none(),
+                    "{label}"
+                );
+                let mut state = imported;
+                let hp_before = state.monsters[0].hp;
+                play_card(&mut state, &catalog, 0, Some(0), None, &mut Vec::new())
+                    .unwrap_or_else(|refusal| panic!("{label}: {refusal:?}"));
+                assert_eq!(state.monsters[0].loop_pos, loop_pos, "{label}");
+                assert_eq!(
+                    state.monsters[0].override_state,
+                    MonsterOverride::Stunned,
+                    "{label}"
+                );
+                assert_eq!(
+                    Some(state.monsters[0].forced_follow_up),
+                    crate::engine::monsters::parked_telegraph(kind, loop_pos),
+                    "{label}"
+                );
+                let hp_after_first = state.monsters[0].hp;
+                assert!(hp_after_first <= hp_before, "{label}");
+
+                // The second stun is dropped: only the attack lands.
+                let mut twice = state.clone();
+                twice.energy = 2;
+                play_card(&mut twice, &catalog, 1, Some(0), None, &mut Vec::new())
+                    .unwrap_or_else(|refusal| panic!("{label}: {refusal:?}"));
+                assert_eq!(twice.monsters[0].loop_pos, loop_pos, "{label}");
+                assert_eq!(
+                    (
+                        twice.monsters[0].override_state,
+                        twice.monsters[0].forced_follow_up
+                    ),
+                    (
+                        state.monsters[0].override_state,
+                        state.monsters[0].forced_follow_up
+                    ),
+                    "{label}"
+                );
+
+                // Cold reload, and the stun adds no refusal of its own.
+                let canonical = HotBoundary::to_canonical(&state, &catalog);
+                let rebuilt = HotBoundary::catalog_from_canonical(&canonical).unwrap();
+                let reloaded = HotBoundary::from_canonical(&canonical, &rebuilt).unwrap();
+                assert_eq!(reloaded, state, "{label}");
+                assert_eq!(
+                    HotBoundary::to_canonical(&reloaded, &rebuilt),
+                    canonical,
+                    "{label}"
+                );
+                assert_eq!(
+                    crate::engine::admit(&canonical, &reloaded, &rebuilt),
+                    root_verdict,
+                    "{label}: the stunned state admits as its root does"
+                );
+
+                // What an unstunned copy does first. A bare root of a kind
+                // with private state its opening would have set up cannot
+                // run a turn at all; those keep the static half above.
+                let mut plain = root(0);
+                plain.monsters_mut()[0].hp = hp_after_first;
+                if super::super::turn::end_player_turn(&mut plain, &catalog, &mut Vec::new())
+                    .is_err()
+                {
+                    bare_root_cannot_act.push(kind);
+                    continue;
+                }
+
+                // The stunned action.
+                let mut cold = reloaded;
+                let player_before = (cold.hp, cold.block);
+                let piles_before: usize = [PileId::Hand, PileId::Draw, PileId::Discard]
+                    .into_iter()
+                    .map(|pile| cold.piles.get(pile).len())
+                    .sum();
+                super::super::turn::end_player_turn(&mut cold, &rebuilt, &mut Vec::new())
+                    .unwrap_or_else(|refusal| panic!("{label}: {refusal:?}"));
+                assert_eq!(cold.monsters[0].loop_pos, loop_pos, "{label}");
+                assert_eq!(
+                    cold.monsters[0].override_state,
+                    MonsterOverride::None,
+                    "{label}"
+                );
+                assert_eq!(
+                    cold.monsters[0].forced_follow_up,
+                    MonsterFollowUp::None,
+                    "{label}"
+                );
+                assert_eq!(cold.hp, player_before.0, "{label}");
+                assert_eq!(
+                    [PileId::Hand, PileId::Draw, PileId::Discard]
+                        .into_iter()
+                        .map(|pile| cold.piles.get(pile).len())
+                        .sum::<usize>(),
+                    piles_before,
+                    "{label}: no status entered a pile on the stunned action"
+                );
+                assert_eq!(cold.monsters[0].hp, hp_after_first, "{label}");
+
+                // The parked row then performs, as it does with no stun.
+                super::super::turn::end_player_turn(&mut cold, &rebuilt, &mut Vec::new())
+                    .unwrap_or_else(|refusal| panic!("{label}: {refusal:?}"));
+                acted.push(kind);
+                assert_eq!(
+                    cold.monsters.len(),
+                    plain.monsters.len(),
+                    "{label}: same roster after the move"
+                );
+                if (kind, loop_pos) == (MonsterKind::ScrollOfBiting, 1) {
+                    // The one row whose successor reads the log: the parked
+                    // CHEW was logged twice, so the roll after it is CHOMP
+                    // whatever the unstunned copy drew, for the same one
+                    // MonsterAi draw
+                    // (`a_stun_over_chew_forces_the_scrolls_next_roll_to_chomp`).
+                    assert_eq!(cold.monsters[0].loop_pos, 0, "{label}");
+                    assert_eq!(
+                        cold.rng.get(RngStream::Ai).counter,
+                        plain.rng.get(RngStream::Ai).counter,
+                        "{label}"
+                    );
+                } else {
+                    assert_eq!(
+                        cold.monsters[0].loop_pos, plain.monsters[0].loop_pos,
+                        "{label}"
+                    );
+                }
+                assert_eq!(1_000 - plain.hp, player_before.0 - cold.hp, "{label}");
+                assert_eq!(cold.monsters[0].powers, plain.monsters[0].powers, "{label}");
+                assert_eq!(cold.monsters[0].block, plain.monsters[0].block, "{label}");
+                assert_eq!(cold.monsters[0].hp, plain.monsters[0].hp, "{label}");
+                assert_eq!(cold.powers, plain.powers, "{label}");
+            }
+        }
+        assert_eq!(swept, 68, "the generic stun owners with a generated loop");
+        acted.dedup();
+        bare_root_unprojectable.dedup();
+        bare_root_cannot_act.dedup();
+        // What a bare one-monster root cannot show. Four kinds do not
+        // project without the private state their opening sets up, so they
+        // have only the kind-level pin; eleven more have at least one row that
+        // cannot run a turn there, so those rows have the static half
+        // (park, drop, cold reload, admission parity) and not the resume.
+        // Their resume is the same `monster_act` arm every other row takes.
+        use MonsterKind::*;
+        assert_eq!(
+            (
+                rows_swept,
+                acted.len(),
+                bare_root_unprojectable,
+                bare_root_cannot_act
+            ),
+            (
+                180,
+                58,
+                vec![Aeonglass, FatGremlin, GremlinMerc, SneakyGremlin],
+                vec![
+                    BattleFriendV1,
+                    BattleFriendV2,
+                    BattleFriendV3,
+                    Entomancer,
+                    // SHIELD_SLAM's row writes the completed-Slam receipt
+                    // only in its two-monster roster; its resume and both
+                    // successors are native-traced
+                    // (`engine::native_stun_traces`, the `shield_*` cases).
+                    LivingShield,
+                    MagiKnight,
+                    Noisebot,
+                    SoulFysh,
+                    TheForgotten,
+                    TheInsatiable,
+                    TheLost
+                ]
+            ),
+            "rows swept; kinds whose resumed move ran; kinds a bare root cannot carry"
+        );
+    }
+
+    /// #3823: a stunned monster's powers keep their own clock.
+    ///
+    /// Native (harness, `CULTISTS_NORMAL` A10, `CreatureCmd.Stun` on the
+    /// Calcified Cultist in player turn 2, after both INCANTATIONs): the enemy
+    /// turn performs STUNNED and the Damp Cultist's DARK_STRIKE, the player
+    /// loses the Damp Cultist's hit alone (3 against 14 unstunned), and the
+    /// stunned Cultist still ends the turn with the Strength its Ritual
+    /// grants (2, as unstunned). Turn 3 then costs exactly what it costs
+    /// unstunned (22), because the parked DARK_STRIKE performs with the
+    /// Strength of two Ritual ticks. Only the move is skipped; the side-end
+    /// listeners are not the move's.
+    #[test]
+    fn a_stunned_cultist_still_gains_its_ritual_strength() {
+        let mut builder = CatalogBuilder::new();
+        builder
+            .intern_monster(MonsterKind::CalcifiedCultist)
+            .unwrap();
+        builder.intern_monster(MonsterKind::DampCultist).unwrap();
+        let catalog = builder.build();
+        let root = || {
+            let mut state = HotState::at_defaults();
+            state.hp = 1_000;
+            state.max_hp = 1_000;
+            state.player_phase = crate::engine::admission::PHASE_ORDINARY_ACTIONS;
+            state.exact_piles = true;
+            for (uid, kind) in [MonsterKind::CalcifiedCultist, MonsterKind::DampCultist]
+                .into_iter()
+                .enumerate()
+            {
+                let mut monster = HotMonster::new(kind, 40);
+                monster.max_hp = 40;
+                monster.uid = uid as u32 + 1;
+                monster.slot = uid as i32;
+                state.monsters_mut().push(monster);
+            }
+            state
+        };
+        let end = |state: &mut HotState| {
+            let before = state.hp;
+            super::super::turn::end_player_turn(state, &catalog, &mut Vec::new()).unwrap();
+            before - state.hp
+        };
+        let strength =
+            |state: &HotState, index: usize| state.monsters[index].powers.value(PowerId::Strength);
+
+        let mut plain = root();
+        let mut stunned = root();
+        // Turn 1: both INCANTATIONs.
+        assert_eq!((end(&mut plain), end(&mut stunned)), (0, 0));
+        assert_eq!(plain, stunned);
+        assert!(plain.monsters[0].powers.value(PowerId::Ritual) > 0);
+
+        // Turn 2: the Calcified Cultist is stunned over DARK_STRIKE.
+        crate::engine::monsters::install_generic_stun(&mut stunned, 0).unwrap();
+        assert_eq!(
+            stunned.monsters[0].forced_follow_up,
+            MonsterFollowUp::ParkedTelegraph
+        );
+        let plain_two = end(&mut plain);
+        let stunned_two = end(&mut stunned);
+        let mut damp_alone = root();
+        end(&mut damp_alone);
+        damp_alone.monsters_mut()[0].hp = 0;
+        let damp_hit = end(&mut damp_alone);
+        assert!(damp_hit > 0 && plain_two > damp_hit);
+        assert_eq!(stunned_two, damp_hit, "only the Damp Cultist's hit landed");
+        assert!(strength(&plain, 0) > 0);
+        assert_eq!(strength(&stunned, 0), strength(&plain, 0));
+        assert_eq!(strength(&stunned, 1), strength(&plain, 1));
+        assert_eq!(stunned.monsters[0].loop_pos, plain.monsters[0].loop_pos);
+        assert_eq!(stunned.monsters[0].override_state, MonsterOverride::None);
+
+        // Turn 3 on: indistinguishable from the unstunned fight but for the
+        // HP the stunned turn saved.
+        for turn in 3..=5 {
+            assert_eq!(end(&mut stunned), end(&mut plain), "turn {turn}");
+            assert_eq!(stunned.monsters, plain.monsters, "turn {turn}");
+        }
+    }
+
     /// The one kind class Whistle must keep refusing: no unique telegraph.
     #[test]
     fn whistle_refuses_a_kind_with_no_unique_telegraph() {
@@ -21579,7 +24218,7 @@ mod tests {
             });
         unsupported
             .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 40));
+            .push(HotMonster::new(MonsterKind::Mawler, 40));
         let before = unsupported.clone();
         let mut events = vec![Event::TurnBegan { turn: 2033 }];
         let before_events = events.clone();
@@ -21620,12 +24259,17 @@ mod tests {
             });
             unsupported
                 .monsters_mut()
-                .push(HotMonster::new(MonsterKind::Toadpole, 40));
+                .push(HotMonster::new(MonsterKind::Fogmog, 40));
             let canonical = HotBoundary::to_canonical(&unsupported, &catalog);
             let refusal = crate::engine::admit(&canonical, &unsupported, &catalog).unwrap_err();
             assert!(
+                // #3823: a Fogmog's SWIPE re-enters a `RandomBranchState`
+                // and its ILLUSION summons a bespoke owner; it is named as
+                // a branching machine rather than as the Queen roster. (A
+                // Toadpole stood here until its plain cycle became
+                // representable, then a Mawler until its random table did.)
                 refusal.contains(crate::engine::admission::MissingCapability::ArgumentShape(
-                    "Whistle Queen/Amalgam lifecycle"
+                    crate::engine::monsters::WHISTLE_STUN_BRANCH
                 )),
                 "Whistle in {pile:?} escaped prospective admission: {refusal:?}"
             );
@@ -22011,13 +24655,12 @@ mod tests {
 
     /// #3057: the replayed body of these rows applies a SECOND native object
     /// of an Instanced power Rust keeps as one scalar, so the admitted replay
-    /// must refuse by name rather than execute both bodies.
+    /// must refuse by name rather than execute both bodies. (Orbit, Toric
+    /// Toughness and Rolling Boulder left this list when #3756 represented
+    /// their later objects.)
     fn instanced_restack_replay_power(id: CardId) -> Option<PowerId> {
         match id {
             CardId::Cacophony => Some(PowerId::Cacophony),
-            CardId::Orbit => Some(PowerId::Orbit),
-            CardId::RollingBoulder => Some(PowerId::RollingBoulder),
-            CardId::ToricToughness => Some(PowerId::ToricToughness),
             _ => None,
         }
     }
@@ -22409,7 +25052,8 @@ mod tests {
             // -8 base / -8 Glam / -2 static (#3057): Cacophony, Orbit,
             // Rolling Boulder and Toric Toughness at both levels (and Nimble
             // Toric) replay into a second native object of an Instanced
-            // power and now refuse by name; `restack_refused` pins all 18.
+            // power and now refuse by name; `restack_refused` pins them
+            // (18 then, 14 since #3756 represented Orbit's objects).
             // +2 base / +2 Glam (#3197): Reboot L0/L1. The replayed copy's
             // duplicate `(Reboot, upgrade)` key no longer closes its full
             // Shuffle, which is exact over equal keys like Bottled Potential.
@@ -22421,9 +25065,31 @@ mod tests {
             // flag (`potions::generation_potion_profile`).
             // +2 base / +2 Glam (#3374): Dual Wield L0/L1 own their exact-one
             // Attack-or-Power Hand clone selector.
-            (1071, 1070, 523)
+            // +2 in each family (#3756): Rip and Tear L0/L1 own their
+            // current-build random-opponent command.
+            // +2 base / +2 Glam (#3756): Orbit L0/L1. The replayed body
+            // attaches a second OrbitPower object, now represented.
+            // +2 base / +2 Glam (#3794): Nightmare L0/L1 own their exact-one
+            // Hand selector; a replayed body attaches a second NightmarePower
+            // object.
+            // +1 base / +1 Glam (#3756): Apparition L0, the static-Ethereal
+            // row admission now accepts.
+            // +2 in each family (#3756): Toric Toughness L0/L1, their Glam
+            // descendants and Nimble Toric L0/L1. The replayed body attaches
+            // a second ToricToughnessPower object, now represented.
+            // +2 in each family (#3823): Whistle L0/L1, their Glam
+            // descendants and Sharp Whistle L0/L1. The sweep's target is a
+            // Toadpole, a plain cycle after its opening roll, whose stun is
+            // now representable.
+            // +2 base / +2 Glam (#3756): Rolling Boulder L0/L1 and their
+            // Glam descendants. The replayed body attaches a second
+            // RollingBoulderPower object, now represented.
+            (1084, 1083, 529)
         );
-        assert_eq!(restack_refused, 18);
+        // 18 before #3756: Orbit's base and Glam rows at both levels left
+        // (14), then Toric Toughness's base, Glam and Nimble rows (8), then
+        // Rolling Boulder's base and Glam rows (4).
+        assert_eq!(restack_refused, 4);
         // The admitted static-Ethereal/static-Sly
         // rows, Clash, Parse and their Glam/static descendants no longer appear
         // in this refusal transcript. No remaining row names any of them.
@@ -22448,6 +25114,8 @@ mod tests {
                 CardId::ManifestAuthority,
                 CardId::Reboot,
                 CardId::DualWield,
+                CardId::RipAndTear,
+                CardId::Nightmare,
             ] {
                 assert!(
                     !row.contains(name.as_str()),
@@ -22492,7 +25160,23 @@ mod tests {
         // (`CardKeyword(DualWield)`), pinned by the +2/+2 completion tuple and
         // the name loop above; a DualWield-gate-off vs head transcript diff is
         // exactly those four.
-        assert_eq!(admission_refusals.len(), 60);
+        // 60 before #3756: Rip and Tear's base, Glam and Sharp rows at both
+        // levels left (`CardKeyword(RipAndTear)`), pinned by the +2/+2/+2
+        // completion tuple and the name loop above.
+        // 54 before #3794: Nightmare's base and Glam rows at both levels left
+        // (`CardKeyword(Nightmare)`), pinned by the +2/+2 completion tuple and
+        // the name loop above; a Nightmare-gate-off vs head transcript diff is
+        // exactly those four.
+        // 50 before #3756 (Apparition): the unupgraded Apparition's base and
+        // Glam rows left (`CardKeyword(Apparition)`). A printed base-vs-head
+        // transcript diff is exactly `BaseReplay APPARITION+0` and
+        // `Glam APPARITION+0`; the static transcript is unchanged.
+        // 48 before #3823 (the plain-cycle stun): Whistle's base, Glam and
+        // Sharp rows at both levels left (`Whistle stun target outside the
+        // parked-telegraph vocabulary`, a name that no longer exists), pinned
+        // by the +2/+2/+2 completion tuple above. A printed base-vs-head
+        // transcript diff is exactly those six rows, in order.
+        assert_eq!(admission_refusals.len(), 42);
         use sha2::{Digest, Sha256};
         let refusal_digest = format!("{:x}", Sha256::digest(admission_refusals.join("\n")));
         let entropy_rows = admission_refusals
@@ -22592,7 +25276,25 @@ mod tests {
             // #3374: exactly that transcript minus the four
             // `CardKeyword(DualWield)` rows (base/Glam at both levels),
             // diffed against the same build with the Dual Wield gate off.
-            "3f432212fc2e6fcab3f9f0f3b03564b5ede0ff3c29b17eeac4d5b5530d997bca",
+            // #3756: exactly that transcript minus the six
+            // `CardKeyword(RipAndTear)` rows (base/Glam/Sharp at both
+            // levels), diffed against the same build with the Rip and Tear
+            // gate off.
+            // #3794: exactly that transcript minus the four
+            // `CardKeyword(Nightmare)` rows (base/Glam at both levels),
+            // diffed against the same build with the Nightmare gate off,
+            // which reproduces `1817c948…`.
+            // #3756 (Apparition): the two rows named at the length pin left.
+            // #3823: no row joined or left. The six Whistle rows (base, Glam
+            // and Sharp at both levels) changed their one refusal name from
+            // `Whistle Queen/Amalgam lifecycle` to `Whistle stun target
+            // outside the parked-telegraph vocabulary` (the fixture's monster
+            // is a plain loop outside the vocabulary); a printed base-vs-head
+            // transcript diff is exactly those six lines.
+            // #3823 (the plain-cycle stun): those six Whistle rows left. The
+            // base build prints `f3b853b1…` (48 rows) and this head prints
+            // the same transcript minus exactly them (42 rows).
+            "93b87d74b67d6e6af4a940d7996478431523d718d0d858e095fbdc9b4f14cff9",
             "the R53B activation census remains pinned after publishing exact The Ball rows"
         );
         assert_eq!(
@@ -22614,7 +25316,12 @@ mod tests {
             // #3291: the four Transfigure rows left (ditto).
             // #3343: the four Alchemize rows left (ditto).
             // #3374: the four Dual Wield rows left (ditto).
-            "3f432212fc2e6fcab3f9f0f3b03564b5ede0ff3c29b17eeac4d5b5530d997bca"
+            // #3756: the six Rip and Tear rows left (ditto).
+            // #3794: the four Nightmare rows left (ditto).
+            // #3756 (Apparition): the two rows named at the length pin left.
+            // #3823: the six Whistle rows were renamed, then left (see the
+            // oracle above).
+            "93b87d74b67d6e6af4a940d7996478431523d718d0d858e095fbdc9b4f14cff9"
         );
         // Melancholy removes two more static refusal rows; its two levels
         // also retire four base/Glam refusals and two general static entries.
@@ -22623,7 +25330,10 @@ mod tests {
         // 13 before #2942: the four Mad Science placeholder rows (Sharp and
         // Nimble at both levels, each `CardKeyword(MadScience)`) left with
         // the placeholder, as for the length pin above.
-        assert_eq!(static_admission_refusals.len(), 9);
+        // 9 before #3756: the two Sharp Rip and Tear rows left.
+        // 7 before #3823 (the plain-cycle stun): the two Sharp Whistle rows
+        // left.
+        assert_eq!(static_admission_refusals.len(), 5);
         let static_refusal_digest =
             format!("{:x}", Sha256::digest(static_admission_refusals.join("\n")));
         assert_eq!(
@@ -22631,8 +25341,16 @@ mod tests {
             // The base static transcript minus the two Nimble Manifest
             // Authority rows, recomputed from the diffed transcripts; then
             // (#2942) minus the four Mad Science lines of origin/main's
-            // printed transcript `8bf92f6e…`.
-            "43de05d0a49bd8d81f37d6d6bc231270e62358435185ed811dbad27dde44358c"
+            // printed transcript `8bf92f6e…`. #3756: the two Sharp Rip and
+            // Tear rows left (length pin above; the gate-off transcript
+            // names them). This digest was read from the head build, not
+            // recomputed from a row diff. #3823: the two Sharp Whistle rows
+            // were renamed as in the oracle above; a printed base-vs-head
+            // diff of this transcript is exactly those two lines.
+            // #3823 (the plain-cycle stun): those two rows left. The base
+            // build prints `ce87cf26…` (7 rows) and this head prints the same
+            // transcript minus exactly them (5 rows).
+            "65222da228a2ba173a4bff08a1193ade752cb43e8642fcc3e2f4707ff4613013"
         );
         assert!(
             !admission_refusals.is_empty(),
@@ -24015,18 +26733,19 @@ mod tests {
 
         // An unmodeled enchantment still keeps its owner out of the family:
         // the classifier authenticates the compiled program, and an unported
-        // enchantment could edit it anywhere. Momentum is the standing
-        // unported Attack-only id (mutable slot-5 growth).
+        // enchantment could edit it anywhere. Slumbering Essence is a
+        // standing unported id (Momentum was the example here until #3745
+        // ported it, then Instinct until #3756).
         let mut builder = CatalogBuilder::new();
-        let momentum = CardIdentity {
+        let unported = CardIdentity {
             id: CardId::PommelStrike,
             upgrade: 0,
             enchantment: Some(CardEnchantment {
-                id: EnchantmentId::Momentum,
+                id: EnchantmentId::SlumberingEssence,
                 amount: 1,
             }),
         };
-        let atom = builder.intern(momentum).unwrap();
+        let atom = builder.intern(unported).unwrap();
         let catalog = builder.build();
         assert!(!cardplay_no_result_draw_program_is_exact(
             catalog.spec(atom).unwrap(),
@@ -25201,6 +27920,76 @@ mod tests {
         record
     }
 
+    /// #3756: Velvet Choker's count is the history's less the owner plays
+    /// that are finished and still short of the Choker's place in their
+    /// relic walk, on a vouched inventory only.
+    #[test]
+    fn velvet_choker_count_leaves_out_plays_it_has_not_reached() {
+        let build = |relics: &[RelicId], vouched: bool| {
+            let mut builder = CatalogBuilder::new();
+            builder
+                .intern_reachable(identity(CardId::DefendIronclad, 0))
+                .unwrap();
+            builder.set_relics_ordered(relics, vouched).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.set_batch_six_deep_relic_ownership(
+                false,
+                false,
+                false,
+                relics.contains(&RelicId::RelicVelvetChoker),
+            );
+            state.history.owner_card_plays_finished_this_turn = 6;
+            (state, catalog)
+        };
+        let choker = [RelicId::RelicGamePiece, RelicId::RelicVelvetChoker];
+        let (mut state, catalog) = build(&choker, true);
+        assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+        {
+            let _outer = VelvetChokerWindow::open(&state, &catalog, 4);
+            assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
+            {
+                let _inner = VelvetChokerWindow::open(&state, &catalog, 9);
+                assert_eq!(velvet_choker_cards_played(&state, &catalog), 4);
+                // The Choker's own callback for another play's walk.
+                velvet_choker_counts_play(4);
+                assert_eq!(velvet_choker_cards_played(&state, &catalog), 4);
+                velvet_choker_counts_play(9);
+                assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
+            }
+            assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
+            velvet_choker_counts_play(4);
+            assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+        }
+        // With no window open the callback has nothing to mark.
+        velvet_choker_counts_play(4);
+        assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+
+        // A play parked past its history entry and short of its relic walk.
+        let mut parked = crate::hot::CardPlayRecord::pending_for_test(4);
+        parked.stage = CardPlayStage::AfterImitation;
+        parked.latch_kind = CardPlayLatchKind::Post;
+        parked.pending_choice = false;
+        parked.selection_kind = None;
+        state.frames.push_card_play(&parked).unwrap();
+        assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
+        // One whose walk has started holds a window instead.
+        state
+            .frames
+            .push_card_play(&finished_driver_record(5))
+            .unwrap();
+        assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
+
+        // An unvouched inventory keeps the count at the history's, and a
+        // deck without the Choker opens no window.
+        let (state, catalog) = build(&choker, false);
+        let _window = VelvetChokerWindow::open(&state, &catalog, 4);
+        assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+        let (state, catalog) = build(&[RelicId::RelicGamePiece], true);
+        let _window = VelvetChokerWindow::open(&state, &catalog, 4);
+        assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+    }
+
     fn two_persisted_defends() -> (Catalog, HotState) {
         let defend = identity(CardId::DefendIronclad, 0);
         let mut builder = CatalogBuilder::new();
@@ -25914,6 +28703,111 @@ mod tests {
         record.source = CardPlaySource::Auto;
         record.spent = 0;
         assert_eq!(persisted_card_play_energy_value(&record), Ok(None));
+        // #3756: an AutoPlay record carries the value it resolved at entry.
+        record.energy_value = Some(2);
+        assert_eq!(persisted_card_play_energy_value(&record), Ok(Some(2)));
+    }
+
+    /// #3756: a resumed AutoPlay reads the `EnergyValue` its record carries.
+    /// Right Hand Hand in Discard returns at 2 and stays at 1 (`0x3b770c`
+    /// IL_003d-IL_0062); Ivory Tile pays at 3 and not at 2. The record
+    /// survives the frame store with the value intact, and a manual record
+    /// may not carry one.
+    #[test]
+    fn a_resumed_autoplay_reads_the_energy_value_its_record_carries() {
+        let defend = identity(CardId::DefendIronclad, 0);
+        let right_hand = identity(CardId::RightHandHand, 0);
+        for (energy_value, returns) in [(2_i16, true), (1, false), (0, false), (i16::MAX, true)] {
+            let mut builder = CatalogBuilder::new();
+            let atom = builder.intern(defend).unwrap();
+            let right_hand = builder.intern(right_hand).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.next_card_uid = 3;
+            state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+                uid: 1,
+                atom,
+                flags: 0,
+            });
+            state
+                .piles
+                .get_mut(PileId::Discard)
+                .make_mut()
+                .push(HotCard {
+                    uid: 2,
+                    atom: right_hand,
+                    flags: 0,
+                });
+            let mut record = finished_driver_record(1);
+            record.source = CardPlaySource::Auto;
+            record.energy_value = Some(energy_value);
+            let index = state.frames.push_card_play(&record).unwrap();
+            assert_eq!(
+                state.frames.card_play(index).unwrap().energy_value,
+                Some(energy_value),
+                "the frame store keeps the value"
+            );
+            assert_eq!(state.frames.card_play(index).unwrap().spent, 0);
+            let active = PersistedActivePlayGuard::enter(&state).unwrap();
+            advance_top_card_play_one(&mut state, &catalog, &mut Vec::new(), &active).unwrap();
+            assert_eq!(
+                state
+                    .piles
+                    .get(PileId::Hand)
+                    .as_slice()
+                    .iter()
+                    .any(|card| card.uid == 2),
+                returns,
+                "EnergyValue {energy_value}"
+            );
+        }
+
+        for (energy_value, gained) in [(3_i16, 1), (2, 0)] {
+            let mut builder = CatalogBuilder::new();
+            let atom = builder.intern(defend).unwrap();
+            builder.set_relics(&[RelicId::RelicIvoryTile]).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.energy = 0;
+            state.next_card_uid = 2;
+            state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+                uid: 1,
+                atom,
+                flags: 0,
+            });
+            let mut record = finished_driver_record(1);
+            record.stage = CardPlayStage::AfterImitation;
+            record.after_card_played_power_snapshot_captured = true;
+            record.after_card_played_power_phase = 3;
+            record.source = CardPlaySource::Auto;
+            record.energy_value = Some(energy_value);
+            state.frames.push_card_play(&record).unwrap();
+            let active = PersistedActivePlayGuard::enter(&state).unwrap();
+            advance_top_card_play_one(&mut state, &catalog, &mut Vec::new(), &active).unwrap();
+            assert_eq!(state.energy, gained, "EnergyValue {energy_value}");
+        }
+
+        // A manual play's value is its payment: the record may not carry a
+        // second one, nor a negative one.
+        let mut manual = finished_driver_record(1);
+        manual.energy_value = Some(2);
+        assert!(
+            HotState::at_defaults()
+                .frames
+                .push_card_play(&manual)
+                .is_none()
+        );
+        let mut negative = finished_driver_record(1);
+        negative.source = CardPlaySource::Auto;
+        negative.energy_value = Some(-1);
+        assert!(
+            HotState::at_defaults()
+                .frames
+                .push_card_play(&negative)
+                .is_none()
+        );
     }
 
     /// #3168: a resumed AfterCardPlayed walk reads Ivory Tile's gate from
@@ -27222,24 +30116,128 @@ mod tests {
         axebot.uid = 1;
         axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
         stock.monsters_mut()[0] = axebot;
-        let before = stock.clone();
+
+        // #3747: a lethal hit on a Stock body parks the selection with the
+        // ORIGINAL frozen target. `HeirloomHammer/<OnPlay>d__3` (`0x3a46d0`)
+        // never reads `cardPlay.Target` after its attack, so the selection
+        // is offered and resolved as usual.
+        play_card(
+            &mut stock,
+            &stock_catalog,
+            stock_source.uid,
+            Some(0),
+            None,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let replacement = stock.monsters[0].clone();
+        assert_eq!(replacement.kind, MonsterKind::Axebot);
+        assert_eq!(replacement.uid, 2, "a fresh creation uid");
+        assert_eq!(replacement.powers.value(PowerId::Stock), 0);
+        assert_eq!(replacement.hp, replacement.max_hp);
+        let record = stock
+            .pending
+            .as_deref()
+            .unwrap()
+            .record(&stock.frames)
+            .unwrap();
         assert_eq!(
-            play_card(
-                &mut stock,
+            record.target.map(|target| (target.0, target.1)),
+            Some((0, 1)),
+            "the record keeps the dead body's identity"
+        );
+
+        // The boundary's reading of that record: Heirloom Hammer alone may
+        // carry a target the roster no longer holds, it resolves to the
+        // replacement's row, and the stale-APC form is left as it was.
+        for (card, target, admitted) in [
+            (CardId::HeirloomHammer, Some((0, 1, None)), true),
+            (CardId::Mangle, Some((0, 1, None)), false),
+            (CardId::Mangle, Some((0, 2, None)), true),
+            (CardId::Mangle, None, true),
+        ] {
+            assert_eq!(
+                crate::boundary::replaced_pending_target_is_admitted(card, target, &stock),
+                admitted,
+                "{card:?} {target:?}"
+            );
+        }
+        for (target, stale, index) in [
+            ((0, 1, None), false, Some(0)),
+            ((0, 1, None), true, None),
+            ((0, 2, None), false, Some(0)),
+            ((0, 1, Some(0)), false, None),
+            ((0, 9, None), false, None),
+        ] {
+            assert_eq!(
+                crate::boundary::pending_card_target_index(target, &stock, stale),
+                index,
+                "{target:?} stale={stale}"
+            );
+        }
+
+        let canonical = HotBoundary::to_canonical(&stock, &stock_catalog);
+        let mut resumed = HotBoundary::from_canonical(&canonical, &stock_catalog).unwrap();
+        assert_eq!(resumed, stock);
+        resume_selection(
+            &mut resumed,
+            &stock_catalog,
+            crate::engine::SelectionAnswer::OptionIndex(0),
+            &mut Vec::new(),
+        )
+        .unwrap();
+        assert!(resumed.pending.is_none());
+        assert_eq!(resumed.history.owner_generated_cards_combat, 1);
+        assert_eq!(
+            resumed.monsters[0], replacement,
+            "nothing after the attack touches the replacement"
+        );
+
+        // A frozen target that is not the body the live Axebot replaced
+        // still refuses.
+        let mut stranger = stock.clone();
+        stranger.monsters_mut()[0].uid = 5;
+        let before = stranger.clone();
+        assert_eq!(
+            resume_selection(
+                &mut stranger,
                 &stock_catalog,
-                stock_source.uid,
-                Some(0),
-                None,
+                crate::engine::SelectionAnswer::OptionIndex(0),
                 &mut Vec::new(),
             ),
-            Err(EngineRefusal::MalformedArgs(
-                "Heirloom Hammer Axebot Stock target identity"
-            ))
+            Err(EngineRefusal::ContinuationNotModeled)
         );
+        assert_eq!(stranger, before);
+    }
+
+    /// #3747: a replayed Heirloom Hammer whose first body killed a Stock
+    /// Axebot would re-attack a Creature that has left combat. That body is
+    /// not modeled; the whole action refuses before anything publishes.
+    #[test]
+    fn heirloom_hammer_replay_over_a_stock_replacement_refuses_atomically() {
+        let (mut state, catalog, source) =
+            heirloom_fixture(0, &[CardId::Alchemize, CardId::BeatDown]);
+        let mut axebot = HotMonster::new(MonsterKind::Axebot, 20);
+        axebot.max_hp = 86;
+        axebot.uid = 1;
+        axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
+        state.monsters_mut()[0] = axebot;
+        state.powers.set(PowerId::OneTwoPunch, SlotWire::Int, 1);
+        hydrate_side_end_order(&mut state);
+        let before = state.clone();
+
         assert_eq!(
-            stock, before,
-            "a lethal Stock replacement refuses before publishing a stale target continuation"
+            play_card(
+                &mut state,
+                &catalog,
+                source.uid,
+                Some(0),
+                None,
+                &mut Vec::new()
+            ),
+            Err(EngineRefusal::ContinuationNotModeled)
         );
+        assert_eq!(state, before);
     }
 
     /// #2966: `OnPlayWrapper` (0x31b8d0) awaits `Hook::BeforeCardPlayed`
@@ -28044,14 +31042,22 @@ mod tests {
         axebot.uid = 1;
         axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
         stock.monsters_mut().push(axebot);
-        let before = stock.clone();
-        assert_eq!(
-            play_card(&mut stock, &catalog, 46, Some(0), None, &mut Vec::new()),
-            Err(EngineRefusal::MalformedArgs(
-                "Debilitate Axebot Stock target identity"
-            ))
-        );
-        assert_eq!(stock, before);
+        // #3747: the lethal hit respawns the Stock body, and the trailing
+        // Apply (`0x3973fc` IL_010d) lands on the removed original, never on
+        // the replacement.
+        let mut survives = stock.clone();
+        play_card(&mut stock, &catalog, 46, Some(0), None, &mut Vec::new()).unwrap();
+        assert_eq!(stock.monsters[0].uid, 2, "a fresh creation uid");
+        assert_eq!(stock.monsters[0].hp, stock.monsters[0].max_hp);
+        assert_eq!(stock.monsters[0].powers.value(PowerId::Stock), 0);
+        assert_eq!(stock.monsters[0].powers.value(PowerId::Debilitate), 0);
+
+        // A Stock body that survives the hit is still the frozen target.
+        survives.monsters_mut()[0].hp = 60;
+        play_card(&mut survives, &catalog, 46, Some(0), None, &mut Vec::new()).unwrap();
+        assert_eq!(survives.monsters[0].uid, 1);
+        assert_eq!(survives.monsters[0].powers.value(PowerId::Stock), 1);
+        assert!(survives.monsters[0].powers.value(PowerId::Debilitate) > 0);
     }
 
     #[test]
@@ -28984,6 +31990,142 @@ mod tests {
             "LoseAllBlock and the shared play prefix roll back"
         );
         assert_eq!(events, events_before);
+    }
+
+    /// One played Expose against a Toadpole with the given Block and Artifact.
+    fn play_expose(
+        upgrade: u8,
+        block: i32,
+        artifact: i32,
+        lamp: bool,
+        hand_drill: bool,
+    ) -> (HotState, Vec<Event>) {
+        let expose = identity(CardId::Expose, upgrade);
+        let mut builder = CatalogBuilder::new();
+        builder.intern(expose).unwrap();
+        if lamp {
+            builder
+                .set_relics(&[crate::ids::RelicId::RelicUnsettlingLamp])
+                .unwrap();
+        }
+        let catalog = builder.build();
+        let mut state = state_with_card(&catalog, expose, 51);
+        let mut target = HotMonster::new(MonsterKind::Toadpole, 80);
+        target.block = block;
+        if artifact > 0 {
+            target
+                .powers
+                .set(PowerId::Artifact, SlotWire::Int, artifact);
+        }
+        state.monsters_mut().push(target);
+        state.fanouts.set_unsettling_lamp_available(lamp);
+        state.set_deep_relic_ownership(hand_drill, false, false, false);
+        let mut events = Vec::new();
+        play_card(&mut state, &catalog, 51, Some(0), None, &mut events).unwrap();
+        (state, events)
+    }
+
+    /// #3756: `Expose/<OnPlay>d__8` RVA `0x39ca44` IL_0180-IL_0197 removes the
+    /// target's whole Artifact power, then IL_01f4-IL_021d applies the
+    /// Vulnerable. Every stack goes, none absorbs the Vulnerable, and the
+    /// removal is published before the debuff.
+    #[test]
+    fn expose_removes_every_artifact_stack_before_its_vulnerable() {
+        for (upgrade, vulnerable) in [(0, 2), (1, 3)] {
+            for artifact in [1, 3] {
+                let (state, events) = play_expose(upgrade, 7, artifact, false, false);
+                let monster = &state.monsters[0];
+                assert_eq!(monster.block, 0);
+                assert_eq!(monster.powers.value(PowerId::Artifact), 0);
+                assert_eq!(monster.powers.value(PowerId::Vuln), vulnerable);
+                let powers = events
+                    .iter()
+                    .filter_map(|event| match event {
+                        Event::PowerChanged { power, amount, .. } => Some((*power, *amount)),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    powers,
+                    [(PowerId::Artifact, 0), (PowerId::Vuln, vulnerable)]
+                );
+            }
+        }
+    }
+
+    /// The IL_018a branch not taken: with no Artifact there is no removal
+    /// and no Artifact event, and the Vulnerable still lands.
+    #[test]
+    fn expose_without_artifact_publishes_only_its_vulnerable() {
+        let (state, events) = play_expose(0, 0, 0, false, false);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Vuln), 2);
+        assert!(!events.iter().any(|event| matches!(
+            event,
+            Event::PowerChanged {
+                power: PowerId::Artifact,
+                ..
+            }
+        )));
+    }
+
+    /// Expose passes itself as `cardSource` (IL_021b), so Unsettling Lamp
+    /// latches on it and doubles the Vulnerable, with or without an Artifact
+    /// at entry: the Lamp's own `HasPower<ArtifactPower>` test (`0x9d4fc`
+    /// IL_0083) runs inside the Apply, after the removal.
+    #[test]
+    fn expose_is_a_card_sourced_debuff_for_unsettling_lamp() {
+        for artifact in [0, 2] {
+            let (state, _) = play_expose(0, 0, artifact, true, false);
+            assert_eq!(state.monsters[0].powers.value(PowerId::Artifact), 0);
+            assert_eq!(state.monsters[0].powers.value(PowerId::Vuln), 4);
+            assert!(!state.fanouts.unsettling_lamp_available());
+        }
+    }
+
+    /// LoseBlock's `AfterBlockBroken` runs before the Artifact test
+    /// (IL_0120 before IL_0185): Hand Drill's null-card Vulnerable 2 spends
+    /// one Artifact stack. With one stack nothing is left to remove and with
+    /// two the survivor is removed; either way Expose's own Vulnerable is the
+    /// only one that lands.
+    #[test]
+    fn expose_tests_artifact_after_hand_drill_spent_a_stack() {
+        for artifact in [1, 2] {
+            let (state, events) = play_expose(0, 9, artifact, false, true);
+            assert_eq!(state.monsters[0].block, 0);
+            assert_eq!(state.monsters[0].powers.value(PowerId::Artifact), 0);
+            assert_eq!(state.monsters[0].powers.value(PowerId::Vuln), 2);
+            let artifact_events = events
+                .iter()
+                .filter(|event| {
+                    matches!(
+                        event,
+                        Event::PowerChanged {
+                            power: PowerId::Artifact,
+                            ..
+                        }
+                    )
+                })
+                .count();
+            assert_eq!(artifact_events, artifact as usize);
+        }
+        // No Block to break: Hand Drill never fires, so both stacks are
+        // removed by Expose in one event.
+        let (state, events) = play_expose(0, 0, 2, false, true);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Artifact), 0);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Vuln), 2);
+        assert_eq!(
+            events
+                .iter()
+                .filter(|event| matches!(
+                    event,
+                    Event::PowerChanged {
+                        power: PowerId::Artifact,
+                        ..
+                    }
+                ))
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -31545,6 +34687,50 @@ mod tests {
         assert!(state.card_states.get(7).local_sly);
     }
 
+    /// #3877: Curl Up's remembered card is a physical card. An earlier
+    /// AfterCardPlayed listener may have upgraded it (Razor Tooth), and it is
+    /// still the played card; another card under the same uid, or a lower
+    /// level than the play ran with, is not.
+    #[test]
+    fn curl_up_after_card_played_follows_the_played_card_through_an_upgrade() {
+        let mut builder = CatalogBuilder::new();
+        let strike = builder.intern(identity(CardId::StrikeIronclad, 0)).unwrap();
+        let upgraded = builder.intern(identity(CardId::StrikeIronclad, 1)).unwrap();
+        let bash = builder.intern(identity(CardId::Bash, 0)).unwrap();
+        let catalog = builder.build();
+        let played = *catalog.spec(strike).unwrap();
+        let played_upgraded = *catalog.spec(upgraded).unwrap();
+        let curled = |live_atom| {
+            let mut state = HotState::at_defaults();
+            state.hp = 50;
+            state.piles.get_mut(PileId::Play).make_mut().push(HotCard {
+                uid: 7,
+                atom: live_atom,
+                flags: 0,
+            });
+            let mut louse = HotMonster::new(MonsterKind::LouseProgenitor, 100);
+            louse.curl_up_card_uid = 7;
+            louse.powers.set(PowerId::CurlUp, SlotWire::Int, 18);
+            state.monsters_mut().push(louse);
+            state
+        };
+        for live_atom in [strike, upgraded] {
+            let mut state = curled(live_atom);
+            curl_up_after_card_played(&mut state, &catalog, &played, 7, &mut Vec::new()).unwrap();
+            assert_eq!(state.monsters[0].block, 18);
+            assert_eq!(state.monsters[0].powers.value(PowerId::CurlUp), 0);
+        }
+        for (live_atom, spec) in [(bash, &played), (strike, &played_upgraded)] {
+            let mut state = curled(live_atom);
+            let before = state.clone();
+            assert_eq!(
+                curl_up_after_card_played(&mut state, &catalog, spec, 7, &mut Vec::new()),
+                Err(EngineRefusal::MalformedArgs("CurlUp physical card source"))
+            );
+            assert_eq!(state, before);
+        }
+    }
+
     #[test]
     fn curl_up_after_card_played_preflights_roster_overflow_and_terminal_skip() {
         let strike = identity(CardId::StrikeIronclad, 0);
@@ -31717,8 +34903,9 @@ mod tests {
     /// #3279: Haunt's hit kills the last enemy, and Devour Life, acquired
     /// after it, still summons (`DevourLifePower/<AfterCardPlayed>d__6`
     /// `0x338e98` IL_007b has no combat gate), under IsEnding: a live Osty
-    /// grows MaxHp only, and an absent one refuses by name. Before #3279
-    /// Rust skipped the summon at `history.over`.
+    /// grows MaxHp only, and an absent one is created at 1 HP under the
+    /// summoned MaxHp (#3635). Before #3279 Rust skipped the summon at
+    /// `history.over`.
     #[test]
     fn devour_life_after_a_killing_haunt_summons_under_ending() {
         use crate::hot::AfterCardPlayedPowerToken as Token;
@@ -31728,11 +34915,8 @@ mod tests {
         builder.intern_monster(MonsterKind::Toadpole).unwrap();
         let catalog = builder.build();
         for (osty, expected) in [
-            (Some((3, 5)), Ok(Some((3, 7)))),
-            (
-                None,
-                Err(EngineRefusal::EndingSummonNotModeled("Devour Life summon")),
-            ),
+            (Some((3, 5)), Ok::<_, EngineRefusal>(Some((3, 7)))),
+            (None, Ok(Some((1, 2)))),
         ] {
             let mut state = state_with_card(&catalog, soul, 7);
             state
@@ -33122,6 +36306,91 @@ mod tests {
         }
     }
 
+    /// #3756 (`LMWKPC7VYF5P` n37): Echo Form replays Ice Lance+ after its
+    /// first body killed a Stock Axebot. The replay's attack has no living
+    /// target (`AttackCommand/<Execute>d__90` RVA `0x3f19c0`, the `IsAlive`
+    /// filter of IL_017b-IL_0191) and lands on nobody, least of all the
+    /// replacement; its Channels run. A plain Attack replays the same way.
+    #[test]
+    fn a_replayed_attack_or_channel_body_runs_against_its_stock_replaced_target() {
+        for (card_id, upgrade, frost) in [(CardId::StrikeIronclad, 0, 0), (CardId::IceLance, 1, 3)]
+        {
+            let identity = identity(card_id, upgrade);
+            let mut builder = CatalogBuilder::new();
+            builder.intern(identity).unwrap();
+            builder.intern_monster(MonsterKind::Axebot).unwrap();
+            let catalog = builder.build();
+            let mut state = state_with_card(&catalog, identity, 12);
+            state.energy = 10;
+            state.orbs.set_slots(3);
+            state.piles.get_mut(PileId::Hand).make_mut()[0].flags |=
+                CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+            let mut physical = state.card_states.get(12);
+            physical.set_base_replay_count(Some(1)).unwrap();
+            state.card_states.set(12, physical);
+            let mut axebot = HotMonster::new(MonsterKind::Axebot, 1);
+            axebot.max_hp = 86;
+            axebot.uid = 1;
+            axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
+            state.monsters_mut().push(axebot);
+            state.exact_piles = true;
+
+            play_card(&mut state, &catalog, 12, Some(0), None, &mut Vec::new()).unwrap();
+            let replacement = &state.monsters[0];
+            assert_ne!(replacement.uid, 1, "{card_id:?} must trigger Stock");
+            assert_eq!(
+                replacement.hp, replacement.max_hp,
+                "{card_id:?}: the replay's attack lands on nobody"
+            );
+            assert_eq!(
+                state.history.owner_attack_plays_started_this_turn, 2,
+                "{card_id:?}: both bodies started"
+            );
+            // Two bodies of three Channels into three slots: the first
+            // body's Frost is evoked by the second body's.
+            assert_eq!(state.orbs.as_slice().len(), frost, "{card_id:?}");
+            assert_eq!(state.block > 0, frost > 0, "{card_id:?}");
+        }
+    }
+
+    /// The same replay keeps refusing for a body that has not been read
+    /// against a replaced target: here an enchanted source.
+    #[test]
+    fn an_enchanted_replay_over_a_stock_replacement_still_refuses_atomically() {
+        let identity = CardIdentity {
+            id: CardId::StrikeIronclad,
+            upgrade: 0,
+            enchantment: Some(crate::catalog::CardEnchantment {
+                id: crate::ids::EnchantmentId::Sharp,
+                amount: 3,
+            }),
+        };
+        let mut builder = CatalogBuilder::new();
+        builder.intern(identity).unwrap();
+        builder.intern_monster(MonsterKind::Axebot).unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_card(&catalog, identity, 12);
+        state.energy = 10;
+        state.piles.get_mut(PileId::Hand).make_mut()[0].flags |= CARD_FLAG_DEFAULT_PHYSICAL_STATE;
+        let mut physical = state.card_states.get(12);
+        physical.set_base_replay_count(Some(1)).unwrap();
+        state.card_states.set(12, physical);
+        let mut axebot = HotMonster::new(MonsterKind::Axebot, 1);
+        axebot.max_hp = 86;
+        axebot.uid = 1;
+        axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
+        state.monsters_mut().push(axebot);
+        state.exact_piles = true;
+        let before = state.clone();
+        let mut events = Vec::new();
+        assert_eq!(
+            play_card(&mut state, &catalog, 12, Some(0), None, &mut events),
+            Err(EngineRefusal::ContinuationNotModeled)
+        );
+        assert_eq!(state, before);
+        assert!(events.is_empty());
+    }
+
     #[test]
     fn sealed_throne_refuses_live_rupture_and_juggling_peers() {
         for (card, peer) in [
@@ -33816,13 +37085,21 @@ mod tests {
         assert!(state.piles.get(PileId::Play).is_empty());
     }
 
+    /// #3756: OrbitPower is Instanced (`get_InstanceType` RVA `0xa5476`), so
+    /// each cast is its own object with its own `Data`. An object counts only
+    /// the energy spent while it exists (`<AfterEnergySpent>d__15` RVA
+    /// `0x33f718` IL_0058-0069) and pays its own Amount, 1, per four.
     #[test]
-    fn orbit_counts_only_spends_while_active_and_keeps_data_across_recasts() {
+    fn each_orbit_cast_is_its_own_object_with_its_own_energy_counter() {
         let orbit = identity(CardId::Orbit, 0);
         let mut builder = CatalogBuilder::new();
         builder.intern(orbit).unwrap();
+        builder.intern_monster(MonsterKind::Toadpole).unwrap();
         let catalog = builder.build();
         let mut state = state_with_card(&catalog, orbit, 1);
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 200));
         for uid in [2, 3] {
             state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
                 uid,
@@ -33837,13 +37114,44 @@ mod tests {
             play_card(&mut state, &catalog, uid, None, None, &mut events).unwrap();
         }
 
-        assert_eq!(state.powers.value(PowerId::Orbit), 3);
+        // The first object saw the second and third casts' spends (2 + 2)
+        // and paid once. The second saw only the third's. The third saw none.
+        assert_eq!(state.powers.value(PowerId::Orbit), 1);
         assert_eq!(state.orbs.orbit_energy_spent(), 4);
         assert_eq!(state.orbs.orbit_trigger_count(), 1);
+        assert_eq!(state.orbs.orbit_later_energy_spent(), [2, 0]);
+        assert_eq!(state.energy, 9 - 6 + 1, "one object paid, not three");
+
+        // The objects round-trip, and two more energy completes the second
+        // object's four while the first sits at six.
+        let entry = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap();
         assert_eq!(
-            state.energy, 5,
-            "the third cast gains the old amount of two"
+            entry.player.get("orbit_later_energy_spent"),
+            Some(&serde_json::json!([2, 0]))
         );
+        let entry_catalog = crate::boundary::HotBoundary::catalog_from_canonical(&entry).unwrap();
+        let mut reloaded =
+            crate::boundary::HotBoundary::from_canonical(&entry, &entry_catalog).unwrap();
+        assert_eq!(reloaded.orbs.orbit_later_energy_spent(), [2, 0]);
+        let energy = reloaded.energy;
+        orbit_after_energy_spent(&mut reloaded, 2).unwrap();
+        assert_eq!(reloaded.orbs.orbit_energy_spent(), 6);
+        assert_eq!(reloaded.orbs.orbit_later_energy_spent(), [4, 2]);
+        assert_eq!(reloaded.energy, energy + 1);
+        // Six more: the first reaches 12 (third payment), the second 10
+        // (second payment), the third 8 (two payments at once).
+        orbit_after_energy_spent(&mut reloaded, 6).unwrap();
+        assert_eq!(reloaded.orbs.orbit_later_energy_spent(), [10, 8]);
+        assert_eq!(reloaded.energy, energy + 1 + 2 + 1 + 2);
+
+        // A negative counter does not load. The admission side of the
+        // invariant is witnessed in `admission.rs`.
+        let mut negative = entry.clone();
+        negative.player.insert(
+            "orbit_later_energy_spent".to_owned(),
+            serde_json::json!([-1]),
+        );
+        assert!(crate::boundary::HotBoundary::from_canonical(&negative, &entry_catalog).is_err());
     }
 
     #[test]
@@ -33912,49 +37220,83 @@ mod tests {
         assert_eq!(state.monsters[0].hp, 44);
     }
 
+    /// #3792. Juggling's clone is made inside the `BeforeCardPlayed` walk,
+    /// after the listener list was built (`0x3f9720` IL_0048-IL_019b), so
+    /// `Stomp::BeforeCardPlayed` reaches the played Stomp and not its clone:
+    /// the clone keeps the two rows it copied and the played card takes a
+    /// third. Site witnesses `YGX1ME6C5FDA` nodes 8 and 22 and `J5LLBQ6N0KN4`
+    /// node 45: the clone of a Stomp played for 1 also costs 1.
     #[test]
-    fn juggling_clones_stomps_ordered_cost_rows_before_the_listener_appends() {
+    fn juggling_clone_of_a_stomp_takes_no_row_from_the_play_that_made_it() {
         let card = identity(CardId::Stomp, 0);
         let mut builder = CatalogBuilder::new();
-        builder.intern(card).unwrap();
+        let atom = builder.intern(card).unwrap();
         let catalog = builder.build();
+        let cost = catalog.spec(atom).unwrap().cost;
+        assert_eq!(cost, 3);
         let mut state = state_with_card(&catalog, card, 10);
         state.piles.get_mut(PileId::Hand).make_mut()[0].flags = CARD_FLAG_DEFAULT_PHYSICAL_STATE;
-        for _ in 0..2 {
-            state.card_states.append_local_cost_modifier(
-                10,
-                LocalCostModifier {
-                    kind: LocalCostModifierKind::Add,
-                    amount: -1,
-                    expiration: LocalCostExpiration::ThisTurn,
-                    reduce_only: false,
-                },
-            );
+        // A second physical Stomp in Draw, present when the walk begins.
+        state.piles.get_mut(PileId::Draw).make_mut().push(HotCard {
+            uid: 11,
+            atom,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE,
+        });
+        for uid in [10, 11] {
+            for _ in 0..2 {
+                state.card_states.append_local_cost_modifier(
+                    uid,
+                    LocalCostModifier {
+                        kind: LocalCostModifierKind::Add,
+                        amount: -1,
+                        expiration: LocalCostExpiration::ThisTurn,
+                        reduce_only: false,
+                    },
+                );
+            }
         }
+        state.energy = 2;
         state.next_card_uid = 20;
         state
             .monsters_mut()
-            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+            .push(HotMonster::new(MonsterKind::Toadpole, 90));
         state.powers.set(PowerId::Juggling, SlotWire::Int, 1);
         state.powers.set(PowerId::JugglingAttacks, SlotWire::Int, 2);
         let mut events = Vec::new();
 
         play_card(&mut state, &catalog, 10, None, None, &mut events).unwrap();
+        assert_eq!(state.energy, 1, "the third Attack's Stomp cost 3 - 2");
 
         let clone = state.piles.get(PileId::Hand).as_slice()[0];
         assert_eq!(clone.uid, 20);
         assert_eq!(clone.flags, CARD_FLAG_DEFAULT_PHYSICAL_STATE);
+        let rows = |state: &HotState, uid| {
+            state
+                .card_states
+                .get_ref(uid)
+                .unwrap()
+                .local_cost_modifiers
+                .as_slice()
+                .len()
+        };
+        assert_eq!(rows(&state, clone.uid), 2, "the copied rows and no more");
+        assert_eq!(rows(&state, 11), 3, "a Stomp already in a pile is visited");
         assert_eq!(
             state
                 .card_states
                 .get_ref(clone.uid)
                 .unwrap()
                 .local_cost_modifiers
-                .as_slice()
-                .len(),
-            3
+                .resolve(cost),
+            1
         );
         assert!(state.exact_piles);
+
+        // The clone is an ordinary listener from the next play on: playing it
+        // costs 1, and that play's walk appends to the Stomp still in Draw.
+        play_card(&mut state, &catalog, clone.uid, None, None, &mut events).unwrap();
+        assert_eq!(state.energy, 0);
+        assert_eq!(rows(&state, 11), 4);
     }
 
     #[test]
@@ -34195,6 +37537,82 @@ mod tests {
         curious.powers.set(PowerId::Curious, SlotWire::Int, 2);
         curious.powers.set(PowerId::FreePower, SlotWire::Int, 1);
         assert_eq!(cost(&curious, demon_form), (0, 1), "Late Free Power zeroes");
+    }
+
+    /// #3756 witness: Borrowed Time (`0x9feb6`) and Curious (`0xa102c`) fold
+    /// in their attachment order. The two orders agree on a Power costing at
+    /// least the Curious amount and differ below it; Skills and Attacks take
+    /// Borrowed Time only; Spiked Gauntlets follows both; a bit with no live
+    /// Borrowed Time is not read.
+    #[test]
+    fn borrowed_time_and_curious_fold_in_their_attachment_order() {
+        let demon_form = identity(CardId::DemonForm, 0);
+        let inflame = identity(CardId::Inflame, 0);
+        let panache = identity(CardId::Panache, 0);
+        let defend = identity(CardId::DefendIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        for id in [demon_form, inflame, panache, defend] {
+            builder.intern(id).unwrap();
+        }
+        let catalog = builder.build();
+        let state = state_with_card(&catalog, inflame, 7);
+        let cost = |state: &HotState, id: CardIdentity| {
+            let card = HotCard {
+                uid: 7,
+                atom: catalog.atom(&id).unwrap(),
+                flags: 0,
+            };
+            let spec = catalog.spec(card.atom).unwrap();
+            let paid = resolved_energy_cost(state, card, spec);
+            assert_eq!(paid, resolved_energy_cost_without_free(state, card, spec));
+            paid
+        };
+        let both = |curious: i32, borrowed: i32, curious_after: bool| {
+            let mut state = state.clone();
+            state.powers.set(PowerId::Curious, SlotWire::Int, curious);
+            state
+                .powers
+                .set(PowerId::BorrowedTime, SlotWire::Int, borrowed);
+            state
+                .fanouts
+                .set_curious_follows_borrowed_time(curious_after);
+            state
+        };
+        // (Curious, Borrowed Time, card) -> (Curious first, Curious after).
+        for (curious, borrowed, card, first, after) in [
+            // Cost 3 >= amount: 3 - 1 + 1 either way.
+            (1, 1, demon_form, 3, 3),
+            // Cost 1 == amount: max(1 - 1, 0) + 1 = 1; max(1 + 1 - 1, 0) = 1.
+            (1, 1, inflame, 1, 1),
+            // Cost 0: Curious declines, then +1 = 1; +1 then -1 = 0.
+            (1, 1, panache, 1, 0),
+            // Cost 1 below amount 2: 0 + 1 = 1; max(2 - 2, 0) = 0.
+            (2, 1, inflame, 1, 0),
+            (2, 2, inflame, 2, 1),
+            (5, 1, demon_form, 1, 0),
+            // A Skill reads Borrowed Time only.
+            (2, 1, defend, 2, 2),
+        ] {
+            assert_eq!(
+                cost(&both(curious, borrowed, false), card),
+                first,
+                "Curious {curious} first, Borrowed Time {borrowed}, {card:?}"
+            );
+            assert_eq!(
+                cost(&both(curious, borrowed, true), card),
+                after,
+                "Borrowed Time {borrowed} first, Curious {curious}, {card:?}"
+            );
+        }
+        // No live Borrowed Time: the bit is not read.
+        assert_eq!(cost(&both(1, 0, true), panache), 0);
+        assert_eq!(cost(&both(1, 0, true), inflame), 0);
+        // Spiked Gauntlets is a relic and follows both powers.
+        let mut gauntlets = both(1, 1, true);
+        gauntlets.fanouts.set_spiked_gauntlets_owned(true);
+        assert_eq!(cost(&gauntlets, panache), 1);
+        gauntlets.fanouts.set_curious_follows_borrowed_time(false);
+        assert_eq!(cost(&gauntlets, panache), 2);
     }
 
     /// #3437 witness for `SpikedGauntlets::TryModifyEnergyCostInCombat` RVA
@@ -34492,8 +37910,12 @@ mod tests {
         assert_eq!(state.history.owner_card_plays_finished_this_turn, 5);
     }
 
+    /// #3821: Withering Presence is the Aeonglass's power, so a player power
+    /// gained after it still runs first. Here that Panache kills the
+    /// Aeonglass, and a dead owner's power is no longer a listener: the
+    /// countdown is not taken and no Wither is made.
     #[test]
-    fn withering_then_panache_uses_the_common_acquisition_ledger() {
+    fn a_later_player_panache_runs_before_the_aeonglass_withering_presence() {
         let defend = identity(CardId::DefendIronclad, 0);
         let mut builder = CatalogBuilder::new();
         builder.intern_aeonglass_smoke_foundation().unwrap();
@@ -34519,8 +37941,67 @@ mod tests {
         play_card(&mut state, &catalog, 7, None, None, &mut Vec::new()).unwrap();
 
         assert!(state.history.over);
-        assert_eq!(state.fanouts.withering_cards_left(), 6);
+        assert_eq!(state.fanouts.withering_cards_left(), 1);
+        assert!(state.piles.get(PileId::Hand).is_empty());
         assert!(after_card_played_power_order_is_exact(&state));
+    }
+
+    /// #3821: on a play that takes the countdown to zero, a player power
+    /// acquired after the room-entry Withering Presence has finished before
+    /// the Wither enters Hand.
+    #[test]
+    fn the_wither_enters_hand_after_a_later_acquired_player_listener() {
+        let defend = identity(CardId::DefendIronclad, 0);
+        let mut builder = CatalogBuilder::new();
+        builder.intern_aeonglass_smoke_foundation().unwrap();
+        builder.intern(defend).unwrap();
+        let catalog = builder.build();
+        let mut state = state_with_card(&catalog, defend, 7);
+        state.max_hp = 50;
+        state.exact_piles = true;
+        let mut boss =
+            HotMonster::new(MonsterKind::Aeonglass, super::super::monsters::AEONGLASS_HP);
+        boss.max_hp = super::super::monsters::AEONGLASS_HP;
+        boss.powers.set(PowerId::Artifact, SlotWire::Int, 3);
+        state.monsters_mut().push(boss);
+        assert!(state.fanouts.set_withering_cards_left(1));
+        assert_eq!(
+            state.fanouts.register_after_card_played_power(
+                crate::hot::AfterCardPlayedPowerToken::Withering,
+                None,
+            ),
+            Ok(0)
+        );
+        let afterimage = install_after_card_played_scalar(&mut state, PowerId::Afterimage, 3);
+        assert!(afterimage > 0, "acquired after Withering Presence");
+        let block_before = state.block;
+        let mut events = Vec::new();
+
+        play_card(&mut state, &catalog, 7, None, None, &mut events).unwrap();
+
+        assert_eq!(state.fanouts.withering_cards_left(), 6);
+        let hand = state.piles.get(PileId::Hand).as_slice();
+        assert_eq!(hand.len(), 1);
+        let wither = hand[0].uid;
+        assert_eq!(
+            catalog.spec(hand[0].atom).unwrap().identity.id,
+            CardId::Wither
+        );
+        assert_eq!(state.block, block_before + 5 + 3, "Defend, then Afterimage");
+        let wither_at = events
+            .iter()
+            .position(|event| {
+                matches!(event, Event::CardResolved { uid, pile: PileId::Hand } if *uid == wither)
+            })
+            .expect("the Wither's entry is an event");
+        let last_block = events
+            .iter()
+            .rposition(|event| matches!(event, Event::PlayerBlockGained { .. }))
+            .expect("Afterimage's Block is an event");
+        assert!(
+            last_block < wither_at,
+            "Afterimage (player, acquired later) ran before the enemy's Withering Presence"
+        );
     }
 
     #[test]
@@ -50536,6 +54017,7 @@ mod rupture_batch_tests {
                 unsettling_lamp_triggered: false,
                 body_block_gains: None,
                 rupture: ActiveRuptureBatch::Persisted,
+                routed: false,
             })
         });
         let result = card_body_hp_loss(&mut state, &catalog, 1, 3, &mut Vec::new());

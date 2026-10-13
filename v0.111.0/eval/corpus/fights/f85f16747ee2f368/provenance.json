@@ -1,0 +1,15 @@
+{
+ "schema": "sts-eval-provenance-v1",
+ "build": "v0.111.0",
+ "seed": "A3TWXLDLLNJ1",
+ "node": 16,
+ "encounter": "ENCOUNTER.THE_KIN_BOSS",
+ "node_type": "boss",
+ "character": "IRONCLAD",
+ "ascension": 9,
+ "capture_sha256": "1ae39c0e38ab295e54cba7ad5a6d6a8d817fac96dab1785674ef52dc0142f51a",
+ "save_sha256": "ef9e70ed17b7d8e6af438352763f98db95f84e871588d4e10ef49d820cf98531",
+ "entry_digest": "a7b50440222e886adfa2aed61fdaeb5139aadbc4f37f70a74e145482f1aba8d9",
+ "checksummed": true,
+ "entry_input": "--capture-run"
+}
