@@ -1000,6 +1000,10 @@ VOID_FORM_END_TURN_REQUEST = 'void_form_end_turn_request'
 AUTO_POST_HOOK_FINISHED = 'auto_post_hook_finished'
 
 
+#: The context prefix of a hook dispatch's completed-action checkpoint.
+_HOOK_OWNER = 'GenericHookGameAction '
+
+
 class NativeChecks:
     def __init__(self, replay):
         self.checks = [c for c in replay.get('checksums', [])
@@ -1034,10 +1038,19 @@ class NativeChecks:
                 raise ValueError(f'native checkpoint {kind} does not project: '
                                  f"{entry.get('refusal')}")
             states[kind] = entry['state']
-        self.auto_post = states.get(AUTO_POST_HOOK_FINISHED)
+        auto_post = states.get(AUTO_POST_HOOK_FINISHED)
+        if auto_post is not None and self.owner is not None \
+                and self.owner[0] == _HOOK_OWNER:
+            # The AutoPost dispatch's HookAction is already open (#3936): a
+            # listener of it paused for a choice, the recorded HookAction
+            # came before that choice, and this apply is the answer, which
+            # ran on past the dispatch. Its checkpoint is this wire's own.
+            self.auto_post = None
+            return auto_post
+        self.auto_post = auto_post
         return states.get(VOID_FORM_END_TURN_REQUEST)
 
-    def no_decision(self, event):
+    def no_decision(self, event, state=None):
         """A recorded event with no Rust wire (hook, resume, ready marker).
 
         A HookAction after the apply that passed the AutoPost dispatch, and
@@ -1046,10 +1059,34 @@ class NativeChecks:
         d__130` RVA 0x3f4a4c IL_020c-023c, #3242): its checkpoint is compared
         against the staged state now. Any other HookAction keeps its owner
         for the PlayerChoice that follows it.
+
+        A ResumeAction that finds a hook still owning the next checkpoint is
+        that hook's action completing with no choice of this player's inside
+        it (#3936): `state`, the engine's state when the event arrives, is
+        what its checkpoint is compared against. The witnessed case is the
+        turn-start AutoPrePlay dispatch. `CombatManager/<StartTurn>d__100::
+        MoveNext` (v0.111.0 RVA 0x3f781c) writes the 'After player turn
+        start' checksum at IL_096f and only then runs `RunAutoPrePlayPhase`
+        under a `HookPlayerChoiceContext` (IL_0b1e, `AssignTaskAndWaitFor
+        PauseOrCompletion` IL_0b29); `<RunAutoPrePlayPhase>d__101::MoveNext`
+        (RVA 0x3f670c) raises `Hook::AfterAutoPrePlayPhaseEntered` at
+        IL_011c, Mayhem's listener among others. When a listener's task
+        yields, the dispatch is a GenericHookGameAction with a HookAction
+        event and its own completed-action checkpoint, and nothing after it
+        in `StartTurn` writes combat state before the player's first input
+        (IL_0b8d-IL_0bd2: cancellation checks and `CheckWinCondition`). Rust
+        runs that dispatch inside the EndTurn apply, so the state the next
+        recorded input sees is the state the hook's action finished in. A
+        hook whose choice is still open keeps its owner (`completed` returns
+        on a pending choice).
         """
         if event.get('event_type') == 'HookAction':
-            state, self.auto_post = self.auto_post, None
-            if state is not None:
+            staged, self.auto_post = self.auto_post, None
+            if staged is not None:
+                self.completed(staged)
+        elif event.get('event_type') == 'ResumeAction':
+            if (state is not None and self.owner is not None
+                    and self.owner[0] == _HOOK_OWNER):
                 self.completed(state)
         elif (event.get('action') or {}).get('type') == 'NetReadyToBeginEnemyTurnAction':
             self.auto_post = None
@@ -1062,7 +1099,7 @@ class NativeChecks:
         elif kind == 'NetUsePotionAction':
             self.owner = ('UsePotionAction ', f" index: {action['potion_index']} target:")
         elif event.get('event_type') == 'HookAction':
-            self.owner = ('GenericHookGameAction ', f" id {event['hook_id']} owner ")
+            self.owner = (_HOOK_OWNER, f" id {event['hook_id']} owner ")
 
     def completed(self, state):
         if self.owner is None or state['player'].get('pending'):

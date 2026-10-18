@@ -120,7 +120,6 @@ fn beetle_state_owner_and_counter_are_authenticated() {
         json!({"slumber":0}),
         json!({"kind":"TOADPOLE"}),
         json!({"override":"WAKE"}),
-        json!({"override":"","slumber":0}),
         json!({"loop_pos":1}),
     ] {
         let mut doc = entry();
@@ -136,6 +135,26 @@ fn beetle_state_owner_and_counter_are_authenticated() {
         let state = HotBoundary::from_canonical(&doc, &cat).unwrap();
         assert!(engine::admit(&doc, &state, &cat).is_err(), "{change}");
     }
+}
+
+/// #3823: an awake Beetle that kept its Plating is a wake by damage a
+/// Whistle's stun dropped (`SlumberPower/<AfterDamageReceived>d__4`
+/// `0x34500c` IL_00c1-IL_00d8 `Stun` refused by `SetMoveImmediate` `0x825f0`
+/// IL_000c-IL_001c), so it admits; native trace `bee_s3b0st3`.
+#[test]
+fn an_awake_beetle_with_plating_admits() {
+    let mut doc = entry();
+    doc.monsters[0].extend(
+        json!({"override":"","slumber":0})
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone())),
+    );
+    doc.monsters[0].retain(|_, v| *v != json!(0) && *v != json!(""));
+    let cat = HotBoundary::catalog_from_canonical(&doc).unwrap();
+    let state = HotBoundary::from_canonical(&doc, &cat).unwrap();
+    assert!(engine::admit(&doc, &state, &cat).is_ok());
 }
 
 #[test]

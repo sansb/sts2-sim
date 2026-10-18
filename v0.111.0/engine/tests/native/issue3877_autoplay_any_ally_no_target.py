@@ -22,9 +22,14 @@ The output is one `RESULT` JSON line; the committed
 `issue3877_autoplay_any_ally_no_target.json` is those lines keyed by case.
 """
 import json
+import os
+import pathlib
 import sys
 
-H = '/Users/seanbloomfield/Documents/StsHistoryViewer/sim/v0.111.0/python/harness'
+# The harness directory: `STS2_HARNESS_DIR`, or `python/harness` in this tree.
+H = os.environ.get(
+    'STS2_HARNESS_DIR',
+    str(pathlib.Path(__file__).resolve().parents[3] / 'python' / 'harness'))
 sys.path.insert(0, H)
 import experiment as X  # noqa: E402
 from experiment import prop, call, find, ALL  # noqa: E402

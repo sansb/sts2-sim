@@ -1,0 +1,1994 @@
+{
+ "solo_beacon_of_hope": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "BEACON_OF_HOPE",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "BEACON_OF_HOPE",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BEACON_OF_HOPE"
+   ],
+   [
+    "play",
+    "DEFEND_IRONCLAD"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_energy_surge": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "ENERGY_SURGE",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ENERGY_SURGE",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ENERGY_SURGE"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_huddle_up": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "HUDDLE_UP",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HUDDLE_UP",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HUDDLE_UP"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_plot": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "PLOT",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "PLOT",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "PLOT"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_rally": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "RALLY",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "RALLY",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "RALLY"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_gang_up": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GANG_UP",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GANG_UP",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "play",
+    "GANG_UP",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_gang_up_glam_lethal": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GANG_UP@GLAM:1",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GANG_UP@GLAM",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "hp",
+    1,
+    4
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "GANG_UP@GLAM",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    2
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_rally_unmovable": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "UNMOVABLE",
+   "RALLY",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "UNMOVABLE",
+      "RALLY",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "UNMOVABLE"
+   ],
+   [
+    "play",
+    "RALLY"
+   ],
+   [
+    "play",
+    "DEFEND_IRONCLAD"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_blade_symphony": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "BLADE_SYMPHONY",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "BLADE_SYMPHONY",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BLADE_SYMPHONY"
+   ],
+   [
+    "play",
+    "SHIV",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_glimpse_beyond": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GLIMPSE_BEYOND",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GLIMPSE_BEYOND",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "GLIMPSE_BEYOND"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_one_for_all": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "ONE_FOR_ALL",
+   "BEAM_CELL",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ONE_FOR_ALL",
+      "BEAM_CELL",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ONE_FOR_ALL"
+   ],
+   [
+    "play",
+    "BEAM_CELL",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    2
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_hammer_time": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "HAMMER_TIME",
+   "BULWARK",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HAMMER_TIME",
+      "BULWARK",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HAMMER_TIME"
+   ],
+   [
+    "play",
+    "BULWARK"
+   ],
+   [
+    "play",
+    "SOVEREIGN_BLADE",
+    2
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_gang_up_osty": {
+  "character": "Necrobinder",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GANG_UP",
+   "BODYGUARD",
+   "UNLEASH",
+   "STRIKE_NECROBINDER",
+   "STRIKE_NECROBINDER",
+   "STRIKE_NECROBINDER",
+   "STRIKE_NECROBINDER",
+   "DEFEND_NECROBINDER",
+   "DEFEND_NECROBINDER",
+   "DEFEND_NECROBINDER"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GANG_UP",
+      "BODYGUARD",
+      "UNLEASH",
+      "STRIKE_NECROBINDER"
+     ],
+     "draw": [
+      "STRIKE_NECROBINDER",
+      "STRIKE_NECROBINDER",
+      "STRIKE_NECROBINDER",
+      "DEFEND_NECROBINDER",
+      "DEFEND_NECROBINDER",
+      "DEFEND_NECROBINDER"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BODYGUARD"
+   ],
+   [
+    "play",
+    "UNLEASH",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_NECROBINDER",
+    2
+   ],
+   [
+    "play",
+    "GANG_UP",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_hammer_time_regent": {
+  "character": "Regent",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "HAMMER_TIME",
+   "BULWARK",
+   "STRIKE_REGENT",
+   "DEFEND_REGENT",
+   "STRIKE_REGENT",
+   "STRIKE_REGENT",
+   "STRIKE_REGENT",
+   "DEFEND_REGENT",
+   "DEFEND_REGENT",
+   "DEFEND_REGENT"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HAMMER_TIME",
+      "BULWARK",
+      "STRIKE_REGENT",
+      "DEFEND_REGENT"
+     ],
+     "draw": [
+      "STRIKE_REGENT",
+      "STRIKE_REGENT",
+      "STRIKE_REGENT",
+      "DEFEND_REGENT",
+      "DEFEND_REGENT",
+      "DEFEND_REGENT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HAMMER_TIME"
+   ],
+   [
+    "play",
+    "BULWARK"
+   ],
+   [
+    "play",
+    "SOVEREIGN_BLADE",
+    2
+   ],
+   [
+    "play",
+    "STRIKE_REGENT",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_one_for_all_defect": {
+  "character": "Defect",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "ONE_FOR_ALL",
+   "BEAM_CELL",
+   "CLAW",
+   "STRIKE_DEFECT",
+   "DEFEND_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ONE_FOR_ALL",
+      "BEAM_CELL",
+      "CLAW",
+      "STRIKE_DEFECT",
+      "DEFEND_DEFECT"
+     ],
+     "draw": [
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ONE_FOR_ALL"
+   ],
+   [
+    "play",
+    "BEAM_CELL",
+    1
+   ],
+   [
+    "play",
+    "CLAW",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_DEFECT",
+    2
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_blade_symphony_silent": {
+  "character": "Silent",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "BLADE_SYMPHONY",
+   "STRIKE_SILENT",
+   "DEFEND_SILENT",
+   "STRIKE_SILENT",
+   "STRIKE_SILENT",
+   "STRIKE_SILENT",
+   "DEFEND_SILENT",
+   "DEFEND_SILENT",
+   "DEFEND_SILENT"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "BLADE_SYMPHONY",
+      "STRIKE_SILENT",
+      "DEFEND_SILENT"
+     ],
+     "draw": [
+      "STRIKE_SILENT",
+      "STRIKE_SILENT",
+      "STRIKE_SILENT",
+      "DEFEND_SILENT",
+      "DEFEND_SILENT",
+      "DEFEND_SILENT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BLADE_SYMPHONY"
+   ],
+   [
+    "play",
+    "SHIV",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_beacon_of_hope_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "BEACON_OF_HOPE+",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "BEACON_OF_HOPE+",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BEACON_OF_HOPE+"
+   ],
+   [
+    "play",
+    "DEFEND_IRONCLAD"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_energy_surge_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "ENERGY_SURGE+",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ENERGY_SURGE+",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ENERGY_SURGE+"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_huddle_up_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "HUDDLE_UP+",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HUDDLE_UP+",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HUDDLE_UP+"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_plot_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "PLOT+",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "PLOT+",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "PLOT+"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_rally_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "RALLY+",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "RALLY+",
+      "DEFEND_IRONCLAD",
+      "STRIKE_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "RALLY+"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_gang_up_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GANG_UP+",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GANG_UP+",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "play",
+    "GANG_UP+",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_gang_up_glam_lethal_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GANG_UP+@GLAM:1",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GANG_UP+@GLAM",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "hp",
+    1,
+    4
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "GANG_UP+@GLAM",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    2
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_rally_unmovable_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "UNMOVABLE",
+   "RALLY+",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "UNMOVABLE",
+      "RALLY+",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "UNMOVABLE"
+   ],
+   [
+    "play",
+    "RALLY+"
+   ],
+   [
+    "play",
+    "DEFEND_IRONCLAD"
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_blade_symphony_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "BLADE_SYMPHONY+",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "BLADE_SYMPHONY+",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BLADE_SYMPHONY+"
+   ],
+   [
+    "play",
+    "SHIV",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_glimpse_beyond_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GLIMPSE_BEYOND+",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GLIMPSE_BEYOND+",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "GLIMPSE_BEYOND+"
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_one_for_all_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "ONE_FOR_ALL+",
+   "BEAM_CELL",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ONE_FOR_ALL+",
+      "BEAM_CELL",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ONE_FOR_ALL+"
+   ],
+   [
+    "play",
+    "BEAM_CELL",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    2
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_hammer_time_upgraded": {
+  "character": "Ironclad",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "HAMMER_TIME+",
+   "BULWARK",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "STRIKE_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD",
+   "DEFEND_IRONCLAD"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HAMMER_TIME+",
+      "BULWARK",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ],
+     "draw": [
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "STRIKE_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD",
+      "DEFEND_IRONCLAD"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HAMMER_TIME+"
+   ],
+   [
+    "play",
+    "BULWARK"
+   ],
+   [
+    "play",
+    "SOVEREIGN_BLADE",
+    2
+   ],
+   [
+    "play",
+    "STRIKE_IRONCLAD",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_gang_up_osty_upgraded": {
+  "character": "Necrobinder",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "GANG_UP+",
+   "BODYGUARD",
+   "UNLEASH",
+   "STRIKE_NECROBINDER",
+   "STRIKE_NECROBINDER",
+   "STRIKE_NECROBINDER",
+   "STRIKE_NECROBINDER",
+   "DEFEND_NECROBINDER",
+   "DEFEND_NECROBINDER",
+   "DEFEND_NECROBINDER"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "GANG_UP+",
+      "BODYGUARD",
+      "UNLEASH",
+      "STRIKE_NECROBINDER"
+     ],
+     "draw": [
+      "STRIKE_NECROBINDER",
+      "STRIKE_NECROBINDER",
+      "STRIKE_NECROBINDER",
+      "DEFEND_NECROBINDER",
+      "DEFEND_NECROBINDER",
+      "DEFEND_NECROBINDER"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BODYGUARD"
+   ],
+   [
+    "play",
+    "UNLEASH",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_NECROBINDER",
+    2
+   ],
+   [
+    "play",
+    "GANG_UP+",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_hammer_time_regent_upgraded": {
+  "character": "Regent",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "HAMMER_TIME+",
+   "BULWARK",
+   "STRIKE_REGENT",
+   "DEFEND_REGENT",
+   "STRIKE_REGENT",
+   "STRIKE_REGENT",
+   "STRIKE_REGENT",
+   "DEFEND_REGENT",
+   "DEFEND_REGENT",
+   "DEFEND_REGENT"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "HAMMER_TIME+",
+      "BULWARK",
+      "STRIKE_REGENT",
+      "DEFEND_REGENT"
+     ],
+     "draw": [
+      "STRIKE_REGENT",
+      "STRIKE_REGENT",
+      "STRIKE_REGENT",
+      "DEFEND_REGENT",
+      "DEFEND_REGENT",
+      "DEFEND_REGENT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "HAMMER_TIME+"
+   ],
+   [
+    "play",
+    "BULWARK"
+   ],
+   [
+    "play",
+    "SOVEREIGN_BLADE",
+    2
+   ],
+   [
+    "play",
+    "STRIKE_REGENT",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_one_for_all_defect_upgraded": {
+  "character": "Defect",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "ONE_FOR_ALL+",
+   "BEAM_CELL",
+   "CLAW",
+   "STRIKE_DEFECT",
+   "DEFEND_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "STRIKE_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT",
+   "DEFEND_DEFECT"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "ONE_FOR_ALL+",
+      "BEAM_CELL",
+      "CLAW",
+      "STRIKE_DEFECT",
+      "DEFEND_DEFECT"
+     ],
+     "draw": [
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT",
+      "STRIKE_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT",
+      "DEFEND_DEFECT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "ONE_FOR_ALL+"
+   ],
+   [
+    "play",
+    "BEAM_CELL",
+    1
+   ],
+   [
+    "play",
+    "CLAW",
+    1
+   ],
+   [
+    "play",
+    "STRIKE_DEFECT",
+    2
+   ],
+   [
+    "end"
+   ]
+  ]
+ },
+ "solo_blade_symphony_silent_upgraded": {
+  "character": "Silent",
+  "relics": [],
+  "ascension": 10,
+  "encounter": "TOADPOLES_WEAK",
+  "deck": [
+   "BLADE_SYMPHONY+",
+   "STRIKE_SILENT",
+   "DEFEND_SILENT",
+   "STRIKE_SILENT",
+   "STRIKE_SILENT",
+   "STRIKE_SILENT",
+   "DEFEND_SILENT",
+   "DEFEND_SILENT",
+   "DEFEND_SILENT"
+  ],
+  "script": [
+   [
+    "energy",
+    9
+   ],
+   [
+    "arrange",
+    {
+     "hand": [
+      "BLADE_SYMPHONY+",
+      "STRIKE_SILENT",
+      "DEFEND_SILENT"
+     ],
+     "draw": [
+      "STRIKE_SILENT",
+      "STRIKE_SILENT",
+      "STRIKE_SILENT",
+      "DEFEND_SILENT",
+      "DEFEND_SILENT",
+      "DEFEND_SILENT"
+     ]
+    }
+   ],
+   [
+    "snap",
+    "root"
+   ],
+   [
+    "play",
+    "BLADE_SYMPHONY+"
+   ],
+   [
+    "play",
+    "SHIV",
+    1
+   ],
+   [
+    "end"
+   ]
+  ]
+ }
+}

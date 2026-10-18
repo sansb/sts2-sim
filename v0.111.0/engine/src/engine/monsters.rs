@@ -53,6 +53,93 @@ pub(crate) const MONSTER_BLOCK_CAP: i32 = 999_999_999;
 pub(crate) const SEGMENT_REVIVE_DEAD: u8 = 1;
 pub(crate) const SEGMENT_REVIVE_REATTACH: u8 = 2;
 pub(crate) const SEGMENT_REVIVE_RAND: u8 = 3;
+/// A segment killed while stunned (#3823): dead for good, and its machine
+/// still acting.
+///
+/// `ReattachPower/<AfterDeath>d__11::MoveNext` `0x341d30` sets `isReviving`
+/// (IL_005a-IL_0065) and then installs DEAD with `SetMoveImmediate(DeadState,
+/// force: false)` (IL_0086-IL_008c). An unperformed STUNNED cannot be left
+/// (`MonsterModel::SetMoveImmediate` `0x825f0` IL_000c-IL_001c), so DEAD is
+/// dropped: the corpse performs STUNNED, then the parked move, then its loop,
+/// every enemy turn at 0 HP, and never reaches REATTACH (`turn::dead_segment_act`).
+/// `isReviving` stays set, so `ReattachPower::ShouldAllowHitting` `0xa6643`
+/// (IL_000c-IL_0015) keeps vetoing powers on it. It counts as dead for
+/// `AreAllOtherSegmentsDead` (`0xa683f`, `IsDead`), so the last living
+/// segment's death still ends the fight. Native traces `dcm_s1k1`,
+/// `dcm_s1k1k2`, `dcm_s1k1k2k3`, `dcm_k1s3k3`.
+pub(crate) const SEGMENT_REVIVE_STUN_KEPT: u8 = 4;
+/// An illusion's `revive_stage` while its corpse waits to spend
+/// REVIVE_MOVE (`IllusionPower/<AfterDeath>d__18::MoveNext` `0x33ca54`
+/// IL_00b3-IL_011b installs it; `turn::monster_act` spends it).
+pub(crate) const ILLUSION_REVIVING: u8 = 1;
+/// An illusion killed while stunned (#3823): dead for good, and its machine
+/// still acts every enemy turn.
+///
+/// `IllusionPower/<AfterDeath>d__18::MoveNext` `0x33ca54` sets
+/// `isReviving` (IL_00a7-IL_00ae), builds REVIVE_MOVE (IL_00b3-IL_0108) and
+/// installs it with `MonsterModel::SetMoveImmediate(state, force: false)`
+/// (IL_0119-IL_011b). `SetMoveImmediate` `0x825f0` IL_000c-IL_001c returns
+/// without installing when the current state cannot transition away, and the
+/// STUNNED state is `MustPerformOnceBeforeTransitioning` until it has
+/// performed (`Creature::StunInternal` `0x11d7cc` IL_0078,
+/// `MoveState::get_CanTransitionAway` `0x78ff3`). So the revive is dropped
+/// and nothing installs it again: AfterDeath is its only caller.
+///
+/// The creature stays in combat (`IllusionPower::
+/// ShouldCreatureBeRemovedFromCombatAfterDeath` `0xa3b33` vetoes its own
+/// owner's removal) and `isReviving` stays set, so it cannot be hit
+/// (`IllusionPower::ShouldAllowHitting` `0xa3b1b` IL_000c-IL_0015).
+/// `CombatManager/<ExecuteEnemyTurn>d__126::MoveNext` `0x3f597c`
+/// IL_00e4-IL_01c4 calls `TakeTurn` on every enemy the combat still contains,
+/// so the dead illusion performs STUNNED, then the parked move, then its
+/// loop, every enemy turn at 0 HP. How each move resolves for a dead actor is
+/// at [`crate::engine::turn`]'s dead-actor arm. It does not keep the fight
+/// going: `CombatManager::IsCombatEnding` `0x135854` IL_0026-IL_0058 asks
+/// only whether an enemy `IsAlive && IsPrimaryEnemy`
+/// (`<IsCombatEnding>b__82_0` `0x3f2532`).
+///
+/// Native traces `obs_sk2*`, `fog_sk2*`, `*_s2s3k3*`, `*_skall*`: the dead
+/// Parafright's SLAM deals nothing, the dead Eye With Teeth's DISTRACT adds
+/// three Dazed every turn, and neither ever revives.
+pub(crate) const ILLUSION_REVIVE_DROPPED: u8 = 2;
+
+/// Is this a Parafright or an Eye With Teeth (`Apply<IllusionPower>`'s two
+/// owners)?
+pub(crate) fn is_illusion(kind: MonsterKind) -> bool {
+    matches!(kind, MonsterKind::Parafright | MonsterKind::EyeWithTeeth)
+}
+
+/// The dead-acting illusion while its STUNNED has not yet performed: a
+/// corpse at [`ILLUSION_REVIVE_DROPPED`] carrying the generic stun its death
+/// could not replace.
+pub(crate) fn illusion_dead_stun_is_exact(monster: &HotMonster) -> bool {
+    is_illusion(monster.kind)
+        && monster.hp <= 0
+        && monster.revive_stage == ILLUSION_REVIVE_DROPPED
+        && generic_stun_shape_parks_this_row(monster)
+}
+
+/// A segment killed under a stun, still holding it
+/// ([`SEGMENT_REVIVE_STUN_KEPT`]).
+pub(crate) fn segment_dead_stun_is_exact(monster: &HotMonster) -> bool {
+    monster.kind == MonsterKind::DecimillipedeSegment
+        && monster.hp <= 0
+        && monster.revive_stage == SEGMENT_REVIVE_STUN_KEPT
+        && generic_stun_shape_parks_this_row(monster)
+}
+
+/// The stun a segment dies under, which its death keeps
+/// ([`SEGMENT_REVIVE_STUN_KEPT`]), or `None`. Read before
+/// [`clear_generic_stun_at_death`]; the death body puts it back only when a
+/// peer still stands (otherwise the fight ends).
+pub(crate) fn segment_stun_survives_death(
+    monster: &HotMonster,
+) -> Option<(MonsterOverride, MonsterFollowUp)> {
+    (monster.kind == MonsterKind::DecimillipedeSegment
+        && monster.revive_stage == 0
+        && generic_stun_shape_parks_this_row(monster))
+    .then_some((monster.override_state, monster.forced_follow_up))
+}
 /// `ReattachPower/<DoReattach>d__10::MoveNext` RVA `0x341e90` IL_0081-IL_0093
 /// heals the owner for the power's own Amount once `AreAllOtherSegmentsDead`
 /// is false. `monster_act` (frozen Python, deleted #2827) pins that Amount at its `REATTACH_HEAL`
@@ -739,18 +826,46 @@ fn hopper_owner_shape_is_exact(state: &HotState, owner: &HotMonster) -> bool {
         && owner.possess_strength_debit == 0
         && owner.possess_speed_debit == 0
         && owner.hopper_private_state_is_exact()
-        && matches!(
-            (owner.override_state, owner.forced_follow_up),
-            (MonsterOverride::None, MonsterFollowUp::None)
-                | (MonsterOverride::Stunned, MonsterFollowUp::HopperNab)
-                | (MonsterOverride::Stunned, MonsterFollowUp::HopperEscape)
-        )
-        && (owner.override_state == MonsterOverride::None
-            || (owner.hp > 0
-                && matches!(
-                    (owner.loop_pos, owner.forced_follow_up),
-                    (2, MonsterFollowUp::HopperNab) | (3 | 4, MonsterFollowUp::HopperEscape)
-                )))
+        && (generic_stun_parks_this_row(owner)
+            || matches!(
+                (owner.override_state, owner.forced_follow_up),
+                (MonsterOverride::None, MonsterFollowUp::None)
+                    | (MonsterOverride::Stunned, MonsterFollowUp::HopperNab)
+                    | (MonsterOverride::Stunned, MonsterFollowUp::HopperEscape)
+            ) && (owner.override_state == MonsterOverride::None
+                || (owner.hp > 0
+                    && matches!(
+                        (owner.loop_pos, owner.forced_follow_up),
+                        (2, MonsterFollowUp::HopperNab) | (3 | 4, MonsterFollowUp::HopperEscape)
+                    ))))
+}
+
+/// The Hopper's machine with a Whistle's generic stun read as the row it
+/// parks (#3823): `(None, None)` for an undisturbed or generically stunned
+/// owner, otherwise its own override pair (the Flutter stun).
+///
+/// The generic stun changes nothing the Hopper's validators guard but the
+/// pace of the machine: `Creature::StunInternal` `0x11d7cc` writes the move
+/// state alone, and `EscapeArtistPower::AfterSideTurnEnd` `0xa2238` ticks at
+/// every enemy-side end whatever the owner performed. So a stunned turn
+/// leaves `loop_pos` where it is while Escape Artist falls by one (it stops
+/// at 1, `turn::run_side_end` only decrements above 1). With no stun the two
+/// move together, `escape_artist == 5 - loop_pos`; each stunned turn opens
+/// the gap by one, so the reachable pairs are `1 <= escape_artist <= 5 -
+/// loop_pos` ([`hopper_escape_artist_is_reachable`]). Native traces
+/// `hop_s*`, `hop_every`, `hop_late`.
+fn hopper_machine_shape(owner: &HotMonster) -> (MonsterOverride, MonsterFollowUp) {
+    if generic_stun_parks_this_row(owner) {
+        (MonsterOverride::None, MonsterFollowUp::None)
+    } else {
+        (owner.override_state, owner.forced_follow_up)
+    }
+}
+
+/// `1 <= escape_artist <= 5 - loop_pos` ([`hopper_machine_shape`]), with one
+/// more on the enemy side before Escape Artist's own tick (`pre_tick`).
+fn hopper_escape_artist_is_reachable(escape_artist: i32, loop_pos: i32, pre_tick: bool) -> bool {
+    (1..=THIEVING_HOPPER_ESCAPE_ARTIST - loop_pos + i32::from(pre_tick)).contains(&escape_artist)
 }
 
 fn hopper_power_owners_are_exact(state: &HotState) -> bool {
@@ -871,7 +986,9 @@ fn thieving_hopper_structural_state_is_valid(state: &HotState) -> bool {
             let flutter = owner.powers.value(PowerId::Flutter);
             if owner.hp > 0 {
                 if escape_artist == 0
-                    || owner.override_state == MonsterOverride::Stunned && flutter != 0
+                    || owner.override_state == MonsterOverride::Stunned
+                        && flutter != 0
+                        && !generic_stun_parks_this_row(owner)
                 {
                     return false;
                 }
@@ -942,54 +1059,38 @@ pub(crate) fn thieving_hopper_state_is_valid(state: &HotState) -> bool {
                         .all(|card| !deck.master.iter().any(|row| row.card.uid == card.uid))
                 }));
         let terminal_loss = state.hp == 0 && (stolen || empty_theft);
+        // #3823: a Whistle's stunned turns leave Escape Artist behind the
+        // machine ([`hopper_machine_shape`]); an attack that kills the player
+        // still runs undisturbed (a stunned Hopper performs nothing).
         return terminal_loss
+            && hopper_escape_artist_is_reachable(escape_artist, owner.loop_pos, false)
+            && owner.override_state == MonsterOverride::None
+            && owner.forced_follow_up == MonsterFollowUp::None
             && match owner.loop_pos {
-                0 => {
-                    escape_artist == 5
-                        && flutter == 0
-                        && owner.override_state == MonsterOverride::None
-                        && owner.forced_follow_up == MonsterFollowUp::None
-                }
-                2 => {
-                    escape_artist == 3
-                        && (1..=THIEVING_HOPPER_FLUTTER).contains(&flutter)
-                        && owner.override_state == MonsterOverride::None
-                        && owner.forced_follow_up == MonsterFollowUp::None
-                }
-                3 => {
-                    escape_artist == 2
-                        && (0..=THIEVING_HOPPER_FLUTTER).contains(&flutter)
-                        && owner.override_state == MonsterOverride::None
-                        && owner.forced_follow_up == MonsterFollowUp::None
-                }
+                0 => flutter == 0,
+                2 | 3 => (0..=THIEVING_HOPPER_FLUTTER).contains(&flutter),
                 _ => false,
             };
     }
-    if escape_artist != THIEVING_HOPPER_ESCAPE_ARTIST - owner.loop_pos {
+    if !hopper_escape_artist_is_reachable(escape_artist, owner.loop_pos, false) {
         return false;
     }
     let swipe_is_live = owner.hopper_swipe_uid().is_some();
+    let undisturbed = hopper_machine_shape(owner) == (MonsterOverride::None, MonsterFollowUp::None);
     match owner.loop_pos {
-        0 => {
-            flutter == 0
-                && owner.override_state == MonsterOverride::None
-                && owner.forced_follow_up == MonsterFollowUp::None
-                && !swipe_is_live
-                && deck.history.is_empty()
-        }
-        1 => {
-            flutter == 0
-                && owner.override_state == MonsterOverride::None
-                && owner.forced_follow_up == MonsterFollowUp::None
-        }
-        2 => match (owner.override_state, owner.forced_follow_up) {
+        0 => flutter == 0 && undisturbed && !swipe_is_live && deck.history.is_empty(),
+        1 => flutter == 0 && undisturbed,
+        // #3823: a Flutter break under a Whistle's stun drops its own stun,
+        // so HAT_TRICK can show again with Flutter spent (native trace
+        // `hop_brk_hat`).
+        2 => match hopper_machine_shape(owner) {
             (MonsterOverride::None, MonsterFollowUp::None) => {
-                (1..=THIEVING_HOPPER_FLUTTER).contains(&flutter)
+                (0..=THIEVING_HOPPER_FLUTTER).contains(&flutter)
             }
             (MonsterOverride::Stunned, MonsterFollowUp::HopperNab) => flutter == 0,
             _ => false,
         },
-        3 | 4 => match (owner.override_state, owner.forced_follow_up) {
+        3 | 4 => match hopper_machine_shape(owner) {
             (MonsterOverride::None, MonsterFollowUp::None) => {
                 (0..=THIEVING_HOPPER_FLUTTER).contains(&flutter)
             }
@@ -1021,7 +1122,7 @@ pub(crate) fn thieving_hopper_internal_state_is_valid(state: &HotState) -> bool 
             && owner.hopper_swipe_uid() == Some(stolen.row.card.uid))
         && owner.hp > 0
         && owner.loop_pos == 0
-        && owner.powers.value(PowerId::EscapeArtist) == THIEVING_HOPPER_ESCAPE_ARTIST
+        && hopper_escape_artist_is_reachable(owner.powers.value(PowerId::EscapeArtist), 0, false)
         && owner.powers.value(PowerId::Flutter) == 0
         && owner.override_state == MonsterOverride::None
         && owner.forced_follow_up == MonsterFollowUp::None
@@ -1060,28 +1161,30 @@ pub(crate) fn hopper_dying_entry_is_exact(state: &HotState, owner: usize) -> boo
     // `ModifyDamageMultiplicative`, `AfterDamageReceived` and `StunnedMove`).
     // So on the enemy side the dying owner may carry the one un-ticked
     // Escape Artist stack, and every other field is the post-tick shape.
-    let pre_tick = !live.player_side_active
-        && escape_artist == THIEVING_HOPPER_ESCAPE_ARTIST + 1 - owner.loop_pos;
+    // #3823: a Whistle's stunned turns open the gap between the two
+    // ([`hopper_machine_shape`]), so this is a range, not a pair.
     if live.history.over
-        || (escape_artist != THIEVING_HOPPER_ESCAPE_ARTIST - owner.loop_pos && !pre_tick)
+        || !hopper_escape_artist_is_reachable(
+            escape_artist,
+            owner.loop_pos,
+            !live.player_side_active,
+        )
     {
         return false;
     }
     match owner.loop_pos {
         0 => {
             owner.powers.value(PowerId::Flutter) == 0
-                && owner.override_state == MonsterOverride::None
-                && owner.forced_follow_up == MonsterFollowUp::None
+                && hopper_machine_shape(owner) == (MonsterOverride::None, MonsterFollowUp::None)
         }
         1 => {
             owner.powers.value(PowerId::Flutter) == 0
-                && owner.override_state == MonsterOverride::None
-                && owner.forced_follow_up == MonsterFollowUp::None
+                && hopper_machine_shape(owner) == (MonsterOverride::None, MonsterFollowUp::None)
         }
         2 => {
             (0..=THIEVING_HOPPER_FLUTTER).contains(&owner.powers.value(PowerId::Flutter))
                 && matches!(
-                    (owner.override_state, owner.forced_follow_up),
+                    hopper_machine_shape(owner),
                     (MonsterOverride::None, MonsterFollowUp::None)
                         | (MonsterOverride::Stunned, MonsterFollowUp::HopperNab)
                 )
@@ -1089,7 +1192,7 @@ pub(crate) fn hopper_dying_entry_is_exact(state: &HotState, owner: usize) -> boo
         3 | 4 => {
             (0..=THIEVING_HOPPER_FLUTTER).contains(&owner.powers.value(PowerId::Flutter))
                 && matches!(
-                    (owner.override_state, owner.forced_follow_up),
+                    hopper_machine_shape(owner),
                     (MonsterOverride::None, MonsterFollowUp::None)
                         | (MonsterOverride::Stunned, MonsterFollowUp::HopperEscape)
                 )
@@ -1730,11 +1833,9 @@ fn parked_telegraph_in(
 ///
 /// Every one of these already owns a bespoke arm in `monster_act` or a
 /// bespoke `valid_override` disjunct, so admitting them generically would
-/// give one wire state two readers. `TerrorEel` is the sharpest case: for it
-/// `STUNNED` with no follow-up is the Terror chain (#2647 §5.7), and nothing
-/// may make a generic parked telegraph wire-indistinguishable from it.
+/// give one wire state two readers.
 ///
-/// #3823 adds the kinds whose native machine has a **second writer of the
+/// #3823 added the kinds whose native machine has a **second writer of the
 /// move** besides the roll, found by scanning the whole v0.111.0 assembly for
 /// callers of `MonsterModel::SetMoveImmediate` `0x825f0`,
 /// `MonsterMoveStateMachine::ForceCurrentState` `0x78e7f`,
@@ -1744,39 +1845,106 @@ fn parked_telegraph_in(
 /// logged, so `StateLog.Last()` no longer names the move the monster is
 /// showing, or it refuses to be left before it has performed, so
 /// `SetMoveImmediate(state, force: false)` drops the stun
-/// (`0x825f0` IL_000c-IL_001c). Each needs its own reading:
+/// (`0x825f0` IL_000c-IL_001c). Each needs its own reading, and what is left
+/// here is the Queen roster (its own two-kind table,
+/// [`queen_amalgam_follow_up`]).
 ///
-/// * `EyeWithTeeth`, `Parafright` — `IllusionPower/<AfterDeath>d__18::
-///   MoveNext` `0x33ca54` IL_00f2-IL_011b reads `StateLog` and calls
-///   `SetMoveImmediate` to install the revive;
-/// * `TestSubject` — `TestSubject/<TriggerDeadState>d__67::MoveNext`
-///   `0x36e658` IL_00c5 `SetMoveImmediate`, and RESPAWN_MOVE is
-///   must-perform (`GenerateMoveStateMachine` `0xc031c` IL_0041);
-/// * `ToughEgg` — `ToughEgg/<AfterAddedToRoom>d__33::MoveNext` `0x3724a8`
-///   IL_01cb `ForceCurrentState`;
-/// * `Tunneler` — `BurrowedPower/<AfterBlockBroken>d__5::MoveNext`
-///   `0x33622c` IL_00db `CreatureCmd::Stun` with its own DIZZY state;
-/// * `WaterfallGiant` — `WaterfallGiant/<TriggerAboutToBlowState>d__77::
-///   MoveNext` `0x3762a8` IL_00b1 `SetMoveImmediate`, and a must-perform
-///   state (`GenerateMoveStateMachine` `0xc4eb0` IL_0169).
-const GENERIC_STUN_BESPOKE_KINDS: [MonsterKind; 16] = [
-    MonsterKind::BowlbugRock,
-    MonsterKind::CeremonialBeast,
-    MonsterKind::CorpseSlug,
-    MonsterKind::DecimillipedeSegment,
-    MonsterKind::EyeWithTeeth,
-    MonsterKind::LagavulinMatriarch,
-    MonsterKind::Parafright,
-    MonsterKind::Queen,
-    MonsterKind::SlumberingBeetle,
-    MonsterKind::TerrorEel,
-    MonsterKind::TestSubject,
-    MonsterKind::ThievingHopper,
-    MonsterKind::TorchHeadAmalgam,
-    MonsterKind::ToughEgg,
-    MonsterKind::Tunneler,
-    MonsterKind::WaterfallGiant,
-];
+/// `DecimillipedeSegment` left this list (#3823). A living segment's machine
+/// is the WRITHE, CONSTRICT, BULK cycle (`GenerateMoveStateMachine`
+/// `0xb2c04`), so a stun parks its row. Its second writer is
+/// `ReattachPower/<AfterDeath>d__11::MoveNext` `0x341d30` IL_0086-IL_008c,
+/// `SetMoveImmediate(DeadState, force: false)`, which a standing stun drops:
+/// the segment killed under a stun acts dead ([`SEGMENT_REVIVE_STUN_KEPT`]).
+/// A dead segment (DEAD, REATTACH) is a corpse to `StunInternal` `0x11d7cc`
+/// (IL_0028), and the RAND roll after REATTACH is resolved before the player
+/// acts, so neither is ever parked.
+///
+/// `TerrorEel` left this list (#3823). Its own stun is ShriekPower's
+/// `CreatureCmd.Stun(Owner, TerrorState.StateId)`
+/// (`ShriekPower/<AfterDamageReceived>d__10::MoveNext` `0x344348`
+/// IL_0065-IL_008b), carried as `STUNNED` with no follow-up (the Terror
+/// chain, #2647 §5.7); a Whistle's parks the loop row as
+/// [`MonsterFollowUp::ParkedTelegraph`] or a named row, never with no
+/// follow-up, so the two wire states stay apart. What each does to the other
+/// is at [`install_generic_stun`] and the Shriek break in
+/// `damage::damage_monster`.
+///
+/// `WaterfallGiant` and `TestSubject` left this list (#3823). Their second
+/// writers are death writers, `WaterfallGiant/<TriggerAboutToBlowState>d__77::
+/// MoveNext` `0x3762a8` IL_00a9-IL_00b1 and `TestSubject/<TriggerDeadState>
+/// d__67::MoveNext` `0x36e658` IL_00c4-IL_00c5, and both call
+/// `SetMoveImmediate(state, force: true)`, so each replaces a standing stun
+/// (the engine's death cleanup clears the override before it installs
+/// ABOUT_TO_BLOW or the retained corpse). ABOUT_TO_BLOW_MOVE is must-perform
+/// (`WaterfallGiant::GenerateMoveStateMachine` `0xc4eb0` IL_0169), so a
+/// Whistle on it is dropped ([`install_generic_stun`]); EXPLODE_MOVE follows
+/// itself (IL_01e2-IL_01e6) and parks like any row. RESPAWN_MOVE is shown by
+/// a creature the game counts dead, so a Whistle on it returns at
+/// `StunInternal` `0x11d7cc` IL_0028 (the corpse arm). Native traces
+/// `wfg_s2k2`, `wfg_k2s2`, `wfg_k2s3`, `tsj_s1k1`, `tsj_k1s1`.
+///
+/// `EyeWithTeeth` and `Parafright` left this list (#3823). Their second
+/// writer is `IllusionPower/<AfterDeath>d__18::MoveNext` `0x33ca54`
+/// IL_00b3-IL_011b, which builds REVIVE_MOVE and installs it with
+/// `SetMoveImmediate(state, force: false)`. It runs only at the illusion's
+/// death, when no stun can land any more (`StunInternal` `0x11d7cc` IL_0028),
+/// so a stun on a living illusion parks its one-row loop like any other. What
+/// the writer does to a stun already standing is the dead-acting illusion
+/// ([`ILLUSION_REVIVE_DROPPED`]).
+///
+/// `Tunneler` left this list (#3823). Its own stun is the burrow break's
+/// DIZZY (`BurrowedPower/<AfterBlockBroken>d__5::MoveNext` `0x33622c`
+/// IL_00d6-IL_00db, follow-up BITE), carried as `MonsterOverride::Dizzy`, a
+/// wire state apart from `STUNNED`. A Whistle parks its loop (BITE, BURROW,
+/// then BELOW following to itself); a Whistle on DIZZY is dropped
+/// ([`install_generic_stun`]), and a break under a Whistle's stun drops the
+/// DIZZY but still removes Burrowed (`damage::after_monster_block_broken`).
+///
+/// `ThievingHopper` left this list (#3823). Its own stun is FlutterPower's
+/// break, `Stun(owner, ...)` with a named follow-up (NAB over HAT_TRICK,
+/// ESCAPE over NAB or ESCAPE), which the generic `PARKED_TELEGRAPH` never
+/// names, so the two wire states stay apart. A Whistle parks its plain chain
+/// (`ThievingHopper::GenerateMoveStateMachine` `0xc21e0` IL_00e7-IL_010a:
+/// THIEVERY, FLUTTER, HAT_TRICK, NAB, then ESCAPE following to itself); what
+/// that does to Escape Artist is [`hopper_machine_shape`], and what each stun
+/// does to the other is at [`install_generic_stun`] and the Flutter break in
+/// `damage::damage_monster`.
+///
+/// `BowlbugRock`, `CorpseSlug` and `CeremonialBeast` left this list (#3823).
+/// Each one's own stun is a separate wire state (the Rock's DIZZY,
+/// RAVENOUS_STUN_MOVE, STUN_MOVE), installed through `StunInternal` like a
+/// Whistle's, so whichever lands second is dropped
+/// ([`own_stun_is_unperformed`], and the Ravenous, Plow-break writers in
+/// `damage`). A Whistle parks their generated loops as any other: HEADBUTT;
+/// WHIP_SLAP, GLOMP, GOOP; STAMP, PLOW, BEAST_CRY, STOMP, CRUSH
+/// (`CeremonialBeast::GenerateMoveStateMachine` `0xb0cfc` IL_0121-IL_0159:
+/// PLOW follows itself, so a Plow break under a Whistle leaves the Beast on
+/// PLOW for good, [`ceremonial_beast_state_is_valid`]).
+///
+/// `LagavulinMatriarch` and `SlumberingBeetle` left this list (#3823). Their
+/// sleep move (SLEEP_MOVE, SNORE_MOVE) is not a generated loop row: a stun
+/// parks it as [`MonsterFollowUp::LagavulinSleep`] /
+/// [`MonsterFollowUp::BeetleSnore`] ([`lagavulin_sleep_is_parked`],
+/// [`beetle_snore_is_parked`]), and their wake by damage is their own stun.
+/// The Beetle has no generated loop, so it stays outside
+/// [`generic_stun_owner_is_eligible`]; [`install_beetle_stun`] is its stun.
+///
+/// `ToughEgg` left this list (#3823). Its one second writer,
+/// `ToughEgg/<AfterAddedToRoom>d__33::MoveNext` `0x3724a8` IL_01c6-IL_01cb
+/// (`ForceCurrentState(AfterHatchedState)`), sits behind `get_IsHatched`
+/// (IL_00c6-IL_00cb): it runs only for an egg that is already hatched when it
+/// is added. `set_IsHatched` `0xc30ac` has one caller in the assembly,
+/// `<HatchMove>d__35::MoveNext` `0x372874` IL_002e, and the only egg a fight
+/// adds is the fresh one `Ovicopter/<LayEggsMove>` makes, so that branch is
+/// not reached in combat. What is left is a two-row loop (HATCH_MOVE follows
+/// to NIBBLE_MOVE, NIBBLE_MOVE to itself: `GenerateMoveStateMachine`
+/// `0xc3160` IL_0061-IL_006a) that takes the generic stun.
+/// ABOUT_TO_BLOW_MOVE's row in the Waterfall Giant's generated loop, which
+/// its death writes (`damage::finish_monster_death`).
+pub(crate) const WATERFALL_ABOUT_TO_BLOW_INDEX: i32 = 6;
+
+const GENERIC_STUN_BESPOKE_KINDS: [MonsterKind; 2] =
+    [MonsterKind::Queen, MonsterKind::TorchHeadAmalgam];
 
 /// Random-table kinds that take the generic stun (#3823).
 ///
@@ -1830,15 +1998,43 @@ const GENERIC_STUN_BESPOKE_KINDS: [MonsterKind; 16] = [
 /// and a call may complete without a summon: [`rat_roster_is_valid`] and
 /// [`spawn_rat`] hold all three.
 ///
-/// Not listed, and so still refused by name:
+/// `FakeMerchantMonster` is the one listed machine with two
+/// `RandomBranchState`s (`GenerateMoveStateMachine` `0xb40c4`; the reading is
+/// on `turn::roll_random_intent`'s arm). The parked move decides which of
+/// them the roll after it enters, as in an unstunned fight: STUNNED follows
+/// to the parked `MoveState` itself, never to a branch state, so a stun over
+/// THROW_RELIC resumes THROW_RELIC and the roll after that THROW is
+/// `RAND_ATTACK_MOVE`'s. The duplicate entry is read by ENRAGE's cooldown
+/// like any other entry: a stun over ENRAGE leaves two ENRAGE entries, which
+/// keep it out of the next three rolls instead of the next two.
 ///
-/// * `Fabricator` (its `fabricateBranch` is a `ConditionalBranchState`) and
-///   `FakeMerchantMonster` (not an admitted random AI).
-/// * `TheObscura`, whose ILLUSION_MOVE summons a `Parafright`, a bespoke
-///   owner ([`GENERIC_STUN_BESPOKE_KINDS`]): a root that admitted the
-///   summoner would refuse mid-line once the minion stood beside it.
-pub(crate) const GENERIC_STUN_RANDOM_TABLE_KINDS: [MonsterKind; 15] = [
+/// `Fabricator` (`GenerateMoveStateMachine` `0xb3bc0`) is the one listed
+/// machine whose moves follow to a `ConditionalBranchState`: all three go to
+/// `fabricateBranch` (IL_0126-IL_0139), which enters `RAND` under `b__17_2`
+/// (`0xb4051`, `CanFabricate`) and DISINTEGRATE under `b__17_3` (`0xb4059`,
+/// its complement) (IL_00fd-IL_0121). STUNNED follows to the parked
+/// `MoveState`, not to that branch, so the stunned turn's roll evaluates no
+/// condition and draws nothing; `CanFabricate` (`0xb3d2c`, fewer than four
+/// living teammates) is read by the roll after the parked move performs,
+/// which is `turn::roll_fabricator_intent` in the same roster walk. Both
+/// `RAND` branches are `CanRepeatForever`, so the second log entry has no
+/// reader. A parked FABRICATE or FABRICATING_STRIKE makes its bots a turn
+/// late, whatever the teammate count has become: neither body asks
+/// `CanFabricate` again.
+///
+/// `TheObscura` (`GenerateMoveStateMachine` `0xc1d2c`) is listed with its
+/// illusion (#3823). ILLUSION_MOVE, PIERCING_GAZE_MOVE, SAIL_MOVE and
+/// HARDENING_STRIKE_MOVE all follow to `RAND` (IL_00c7-IL_00e3), and `RAND`
+/// holds the last three, each `CannotRepeat` (repeat type 2,
+/// IL_00e8-IL_00ff), which reads the last log entry alone: a duplicate
+/// changes no weight. ILLUSION_MOVE is in no branch, so it is shown once, as
+/// the opening. The `Parafright` it summons takes the generic stun too, and
+/// one killed while stunned is the dead-acting illusion
+/// ([`ILLUSION_REVIVE_DROPPED`]).
+pub(crate) const GENERIC_STUN_RANDOM_TABLE_KINDS: [MonsterKind; 18] = [
     MonsterKind::Exoskeleton,
+    MonsterKind::Fabricator,
+    MonsterKind::FakeMerchantMonster,
     MonsterKind::FlailKnight,
     MonsterKind::Flyconid,
     MonsterKind::FossilStalker,
@@ -1851,6 +2047,7 @@ pub(crate) const GENERIC_STUN_RANDOM_TABLE_KINDS: [MonsterKind; 15] = [
     MonsterKind::SludgeSpinner,
     MonsterKind::SoulNexus,
     MonsterKind::SpectralKnight,
+    MonsterKind::TheObscura,
     MonsterKind::TwigSlimeM,
     MonsterKind::TwoTailedRat,
 ];
@@ -1896,8 +2093,30 @@ pub(crate) const GENERIC_STUN_RANDOM_TABLE_KINDS: [MonsterKind; 15] = [
 ///   the stun does (native cases `frog_low_only_while_stunned`,
 ///   `frog_low_after_stun`). `PlatingPower` counts rounds, not moves
 ///   ([`frog_knight_state_is_valid`]).
-const GENERIC_STUN_CONDITIONAL_KINDS: [MonsterKind; 2] =
-    [MonsterKind::FrogKnight, MonsterKind::LivingShield];
+/// * `KnowledgeDemon` (`GenerateMoveStateMachine` `0xb79bc`):
+///   CURSE_OF_KNOWLEDGE follows to SLAP, SLAP to KNOWLEDGE_OVERWHELMING,
+///   that to PONDER (IL_00d7-IL_00e8), and PONDER to
+///   `CurseOfKnowledgeBranch` (IL_00ed-IL_00f1), which holds
+///   CURSE_OF_KNOWLEDGE under `b__37_0` (IL_00f6-IL_0105; `0xb7eab` is
+///   `_curseOfKnowledgeCounter < 3`) and SLAP under `b__37_1`
+///   (IL_010a-IL_0119; `0xb7eb6`, the complement). The machine opens on
+///   CURSE_OF_KNOWLEDGE (IL_0143-IL_0145). The counter has one writer, the
+///   end of the curse move's own body
+///   (`<CurseOfKnowledgeMove>d__38::MoveNext` `0x3607a8` IL_01ae-IL_01ba,
+///   after the player has chosen), so a stunned turn does not move it: a
+///   stun over CURSE_OF_KNOWLEDGE resumes it with the same counter, the
+///   choice is offered a turn late from the same set
+///   (`<ChooseCurse>d__39` `0x3605e0` IL_0069-IL_0074 indexes
+///   `_curseOfKnowledgeSets` by the counter), and a stun over PONDER resumes
+///   PONDER, whose successor is read when it performs
+///   (`turn::monster_act`). `turn::knowledge_demon_state_is_exact` ties the
+///   row to the counter only where a stun cannot separate them (counter 0
+///   is the opening row; at counter 3 the curse row is never shown again).
+const GENERIC_STUN_CONDITIONAL_KINDS: [MonsterKind; 3] = [
+    MonsterKind::FrogKnight,
+    MonsterKind::KnowledgeDemon,
+    MonsterKind::LivingShield,
+];
 
 /// May `kind` carry the generic `STUNNED` + parked-telegraph state?
 ///
@@ -1913,12 +2132,35 @@ const GENERIC_STUN_CONDITIONAL_KINDS: [MonsterKind; 2] =
 ///   STUNNED), and `RandomBranchState::GetStateWeight` `0x79380` reads the
 ///   log; a conditional successor is deferred past the stunned turn. Those
 ///   are their own slices. In the generated tables such a machine is a
-///   `random_moves` table outside [`GENERIC_STUN_RANDOM_TABLE_KINDS`], a
-///   `Repeats::Conditional` row, or one of the two move kinds that carry the
-///   branch inside the row:
-///   `AttackStrengthBranch` (`Fogmog` `0xb4cb8`, SWIPE_MOVE -> `BRANCH`) and
-///   `AttackVulnerableDeferredOvicopter` (`Ovicopter` `0xbab10`,
-///   TENDERIZER_MOVE -> `SUMMON_BRANCH_STATE`).
+///   `random_moves` table outside [`GENERIC_STUN_RANDOM_TABLE_KINDS`] or a
+///   `Repeats::Conditional` row outside [`GENERIC_STUN_CONDITIONAL_KINDS`].
+///
+/// `AttackStrengthBranch` (`Fogmog` `0xb4cb8`, SWIPE_MOVE -> `BRANCH`) carries
+/// a `RandomBranchState` inside its row and **is** eligible (#3823). ILLUSION
+/// follows to SWIPE, SWIPE to `BRANCH`, SWIPE_RANDOM to HEADBUTT and HEADBUTT
+/// to SWIPE (IL_0126-IL_0144); `BRANCH` holds SWIPE_RANDOM and HEADBUTT, each
+/// `CannotRepeat` (repeat type 2) under a constant weight
+/// (`<GenerateMoveStateMachine>b__14_0` `0x35bde2`, `b__14_1` `0x35bde9`;
+/// IL_00c9-IL_0121). `BRANCH` is entered only from SWIPE, so the last log
+/// entry it reads is always SWIPE, and a stun's duplicate changes neither
+/// weight. A stun over SWIPE parks the `MoveState`, so the STUNNED turn draws
+/// nothing; the resumed SWIPE draws its one MonsterAi in its own tail
+/// (`turn::roll_fogmog_branch`), as an unstunned one does. Native trace
+/// `fog_s2`: no MonsterAi draw on the stunned turn, one on the turn after.
+///
+/// `AttackVulnerableDeferredOvicopter` (`Ovicopter` `0xbab10`) also carries a
+/// branch and **is** eligible (#3823). TENDERIZER_MOVE follows to
+/// `SUMMON_BRANCH_STATE` (IL_00de-IL_00e1), a `ConditionalBranchState` that
+/// enters LAY_EGGS_MOVE under `b__25_0` `0xbae6c` and NUTRITIONAL_PASTE_MOVE
+/// under `b__25_1` `0xbae74` (IL_00e6-IL_010a). The branch is read only on
+/// the walk out of TENDERIZER_MOVE, which the engine runs once TENDERIZER
+/// has performed (the move parks the loop on `OVICOPTER_BRANCH_POS`) and
+/// resolves after the enemy side's end ([`resolve_ovicopter_after_side_end`]).
+/// A stun over TENDERIZER parks the `MoveState`, so the STUNNED turn reads no
+/// condition and the resumed TENDERIZER reads it after it performs, as an
+/// unstunned one does. The sentinel row is resolved before the player acts,
+/// so no stun lands on it, and [`parked_telegraph`] names no follow-up for
+/// it: a stun there refuses by name. No branch reads the log.
 ///
 /// `AttackScrollBranch` (`ScrollOfBiting` `0xbcde4`, CHEW -> `rand`) is the
 /// third such move kind and **is** eligible. The one weight of its `rand`
@@ -1954,13 +2196,8 @@ pub(crate) fn generic_stun_owner_is_eligible(kind: MonsterKind) -> bool {
         return false;
     };
     !rows.iter().any(|row| {
-        (matches!(row.repeats, crate::content_tables::Repeats::Conditional(_))
-            && !GENERIC_STUN_CONDITIONAL_KINDS.contains(&kind))
-            || matches!(
-                row.kind,
-                crate::ids::MoveKind::AttackStrengthBranch
-                    | crate::ids::MoveKind::AttackVulnerableDeferredOvicopter
-            )
+        matches!(row.repeats, crate::content_tables::Repeats::Conditional(_))
+            && !GENERIC_STUN_CONDITIONAL_KINDS.contains(&kind)
     })
 }
 
@@ -2013,13 +2250,29 @@ pub(crate) fn generic_stun_parks_this_row(monster: &HotMonster) -> bool {
 /// Native removes the creature from combat (`CombatState::RemoveCreature`
 /// `0x1371d0` IL_0029-IL_0043), so nothing reads its move state again; the
 /// retained corpse row must therefore not depend on whether it died stunned.
-/// No generic stun owner revives (the reviving kinds are all in
-/// [`GENERIC_STUN_BESPOKE_KINDS`]).
+///
+/// The one generic owner that stays in combat is an illusion, and its death
+/// does not clear the stun: the stun is what keeps the revive out
+/// ([`ILLUSION_REVIVE_DROPPED`]). The death body reads
+/// [`illusion_stun_survives_death`] before this and puts the stun back.
 pub(crate) fn clear_generic_stun_at_death(monster: &mut HotMonster) {
     if generic_stun_shape_parks_this_row(monster) {
         monster.override_state = MonsterOverride::None;
         monster.forced_follow_up = MonsterFollowUp::None;
     }
+}
+
+/// The stun an illusion dies under, which its death keeps
+/// ([`ILLUSION_REVIVE_DROPPED`]), or `None` when it dies unstunned and its
+/// REVIVE_MOVE is installed ([`ILLUSION_REVIVING`]).
+///
+/// Read before [`clear_generic_stun_at_death`] and the death body's power
+/// wipe, which both clear the override.
+pub(crate) fn illusion_stun_survives_death(
+    monster: &HotMonster,
+) -> Option<(MonsterOverride, MonsterFollowUp)> {
+    (is_illusion(monster.kind) && generic_stun_shape_parks_this_row(monster))
+        .then_some((monster.override_state, monster.forced_follow_up))
 }
 
 /// Is `owner`'s generic stun state the one [`parked_telegraph`] determines?
@@ -2035,8 +2288,66 @@ pub(crate) fn clear_generic_stun_at_death(monster: &mut HotMonster) {
 /// because its one executable row is ROLL_OUT itself.
 pub(crate) fn generic_stun_state_is_exact(state: &HotState, owner: usize) -> bool {
     state.monsters.get(owner).is_some_and(|monster| {
-        generic_stun_parks_this_row(monster) || beetle_rollout_stun_is_exact(monster)
+        generic_stun_parks_this_row(monster)
+            || beetle_rollout_stun_is_exact(monster)
+            || (monster.hp > 0
+                && monster.override_state == MonsterOverride::Stunned
+                && (lagavulin_sleep_is_parked(monster) || beetle_snore_is_parked(monster)))
     })
+}
+
+/// A Lagavulin Matriarch whose SLEEP_MOVE is parked (#3823): under a stun
+/// (`STUNNED` over [`MonsterFollowUp::LagavulinSleep`]), or, with no override,
+/// the resumed SLEEP_MOVE that stun hands back.
+///
+/// While it sleeps the machine sits on SLEEP_MOVE (`LagavulinMatriarch::
+/// GenerateMoveStateMachine` `0xb8124` IL_0012-IL_0031, the initial state at
+/// IL_017f-IL_0181; SLEEP_BRANCH returns to it while `HasPower<AsleepPower>`,
+/// `b__43_0` `0xb85d8`), so `StateLog.Last()` is SLEEP_MOVE and a stun parks
+/// it (`Creature::StunInternal` `0x11d7cc` IL_0039-IL_0055). The walk out of
+/// STUNNED follows `FollowUpStateId` to SLEEP_MOVE itself
+/// (`MonsterMoveStateMachine::FindNextMoveState` `0x78e94` IL_0045-IL_008f):
+/// a move state, so no branch is read and SLEEP_MOVE is shown again whatever
+/// Asleep holds by then. Only the roll after that SLEEP_MOVE reads
+/// SLEEP_BRANCH. Native traces `lag_s3` (a stun on the turn Asleep runs out:
+/// SLEEP_MOVE again, then SLASH), `lag_s3s4` (a stun on that resumed
+/// SLEEP_MOVE parks it again).
+///
+/// `loop_pos` is the SLASH the machine rolls to once awake, as for every
+/// sleeping Matriarch (`turn::lagavulin_sleep_move`).
+pub(crate) fn lagavulin_sleep_is_parked(monster: &HotMonster) -> bool {
+    monster.kind == MonsterKind::LagavulinMatriarch
+        && matches!(
+            monster.override_state,
+            MonsterOverride::Stunned | MonsterOverride::None
+        )
+        && monster.forced_follow_up == MonsterFollowUp::LagavulinSleep
+        && monster.loop_pos == super::admission::LAGAVULIN_SLASH_INDEX
+        && !monster.spawn_noop
+        && (0..=3).contains(&monster.powers.value(PowerId::Asleep))
+}
+
+/// A Slumbering Beetle whose SNORE_MOVE is parked (#3823), the
+/// [`lagavulin_sleep_is_parked`] reading of `SlumberingBeetle::
+/// GenerateMoveStateMachine` `0xbe5f4`: SNORE_MOVE follows to the SNORE_NEXT
+/// `ConditionalBranchState` (IL_006a-IL_009d), which only the roll after a
+/// performed SNORE_MOVE reads. So a stun parks SNORE_MOVE, the walk out of
+/// STUNNED shows it again whatever Slumber holds, and only then does the
+/// Beetle roll on to ROLL_OUT. Native traces `bee_s3s4`, `bee_s2s3`.
+///
+/// Slumber is 0..=3, and Plating may outlive it: a wake by damage under the
+/// stun is dropped (`damage::damage_monster`), so `WakeUpMove` never removes
+/// Plating (native trace `bee_s3b0st3`).
+pub(crate) fn beetle_snore_is_parked(monster: &HotMonster) -> bool {
+    monster.kind == MonsterKind::SlumberingBeetle
+        && matches!(
+            monster.override_state,
+            MonsterOverride::Stunned | MonsterOverride::None
+        )
+        && monster.forced_follow_up == MonsterFollowUp::BeetleSnore
+        && monster.loop_pos == 0
+        && !monster.spawn_noop
+        && (0..=3).contains(&monster.powers.value(PowerId::Slumber))
 }
 
 /// Is this an awake Slumbering Beetle under a `CreatureCmd::Stun(creature,
@@ -2074,7 +2385,6 @@ pub(crate) fn beetle_rollout_stun_is_exact(monster: &HotMonster) -> bool {
         && monster.forced_follow_up == MonsterFollowUp::BeetleRollOut
         && monster.loop_pos == 0
         && monster.powers.value(PowerId::Slumber) == 0
-        && monster.powers.value(PowerId::Mplating) == 0
 }
 
 /// Install an Imbalanced carrier's `CreatureCmd::Stun(Owner, null)` on
@@ -2100,26 +2410,50 @@ pub(crate) fn install_imbalanced_self_stun(
     if monster.kind != MonsterKind::SlumberingBeetle {
         return install_generic_stun(state, owner);
     }
+    install_beetle_stun(state, owner)
+}
+
+/// `CreatureCmd::Stun(creature, null)` on a Slumbering Beetle, from a Whistle
+/// or its own Imbalanced clone (#2647, #3823), with `StunInternal`
+/// `0x11d7cc`'s contract: silent on a corpse or a finished combat (IL_001f /
+/// IL_0028), a silent drop over an unperformed stun (its own WAKE or a
+/// standing STUNNED: `SetMoveImmediate` `0x825f0` IL_000c-IL_001c with
+/// `force: false`), otherwise STUNNED over the move the Beetle is showing:
+/// ROLL_OUT_MOVE awake ([`beetle_rollout_stun_is_exact`]), SNORE_MOVE asleep
+/// or resumed ([`beetle_snore_is_parked`]).
+///
+/// Awake with Plating is the wake a stun dropped (`bee_s3b0st3`): it still
+/// shows ROLL_OUT_MOVE, so a stun parks ROLL_OUT (`bee_s3b0st3s4`).
+fn install_beetle_stun(state: &mut HotState, owner: usize) -> Result<(), EngineRefusal> {
+    let monster = &state.monsters[owner];
     if state.history.over || monster.hp <= 0 {
         return Ok(());
     }
     if monster.override_state == MonsterOverride::Stunned {
-        return beetle_rollout_stun_is_exact(monster)
+        return generic_stun_state_is_exact(state, owner)
             .then_some(())
             .ok_or(EngineRefusal::MalformedArgs("generic stun existing state"));
     }
-    if monster.override_state != MonsterOverride::None
-        || monster.forced_follow_up != MonsterFollowUp::None
-        || monster.loop_pos != 0
-        || monster.powers.value(PowerId::Slumber) != 0
-        || monster.powers.value(PowerId::Mplating) != 0
-    {
+    if own_stun_is_unperformed(monster) {
+        return Ok(());
+    }
+    if !beetle_state_is_valid(monster) {
         return Err(EngineRefusal::MalformedArgs("Slumbering Beetle stun state"));
     }
+    let follow_up = match (monster.override_state, monster.forced_follow_up) {
+        (MonsterOverride::None, MonsterFollowUp::None) => MonsterFollowUp::BeetleRollOut,
+        (MonsterOverride::BeetleSnore, MonsterFollowUp::None)
+        | (MonsterOverride::None, MonsterFollowUp::BeetleSnore) => MonsterFollowUp::BeetleSnore,
+        _ => return Err(EngineRefusal::MalformedArgs("Slumbering Beetle stun state")),
+    };
     let monster = &mut state.monsters_mut()[owner];
     monster.override_state = MonsterOverride::Stunned;
-    monster.forced_follow_up = MonsterFollowUp::BeetleRollOut;
-    Ok(())
+    monster.forced_follow_up = follow_up;
+    generic_stun_state_is_exact(state, owner)
+        .then_some(())
+        .ok_or(EngineRefusal::MalformedArgs(
+            "Slumbering Beetle stun result",
+        ))
 }
 
 /// Can a player-sourced `CreatureCmd::Stun(target, null)` represent stunning
@@ -2152,6 +2486,12 @@ pub(crate) fn whistle_stun_target_is_representable(
     ) {
         return queen_roster_state_is_valid(state)
             && crate::moves::boss::queen_amalgam_machine_is_exact(catalog);
+    }
+    if monster.kind == MonsterKind::SlumberingBeetle {
+        // #3823: no generated loop, but every move the Beetle can show parks
+        // exactly: SNORE_MOVE asleep, ROLL_OUT_MOVE awake, and its own WAKE
+        // drops the stun ([`install_beetle_stun`]).
+        return beetle_state_is_valid(monster);
     }
     generic_stun_owner_state_is_representable(catalog, monster)
 }
@@ -2254,7 +2594,21 @@ pub(crate) fn generic_stun_owner_state_is_representable(
     catalog: &Catalog,
     monster: &HotMonster,
 ) -> bool {
-    if !generic_stun_owner_loop_is_fully_resolvable(monster.kind) || monster.revive_stage != 0 {
+    // `revive_stage` is a revive machine's own row for the kinds that have
+    // one. The Knowledge Demon keeps its curse counter in that lane
+    // (`HotMonster::knowledge_demon_curse_counter`), which is no row at all:
+    // its `loop_pos` indexes the generated loop at every counter (#3823).
+    // The Test Subject keeps its form count and its two lifecycle latches
+    // there (`HotMonster::test_subject_respawns`); each form's rows are rows
+    // of the one generated loop (BITE and SKULL_BASH, MULTI_CLAW, then
+    // LACERATE, BIG_POUNCE and BURNING_GROWL), so its `loop_pos` indexes the
+    // loop in every form too (#3823).
+    let off_loop = monster.revive_stage != 0
+        && !matches!(
+            monster.kind,
+            MonsterKind::KnowledgeDemon | MonsterKind::TestSubject
+        );
+    if !generic_stun_owner_loop_is_fully_resolvable(monster.kind) || off_loop {
         return false;
     }
     if let Some(rows) = crate::content_tables::random_moves(monster.kind) {
@@ -2269,6 +2623,72 @@ pub(crate) fn generic_stun_owner_state_is_representable(
     monster.random_ai.is_empty()
         && crate::content_tables::monster_loop(monster.kind)
             .is_some_and(|rows| catalog.moves(monster.kind).len() == rows.len())
+}
+
+/// Is this monster showing its kind's own unperformed stun, which a
+/// Whistle's `CreatureCmd::Stun(target, null)` cannot replace (#3823)?
+///
+/// Each of these is installed through `Creature::StunInternal` `0x11d7cc`,
+/// which marks the state `MustPerformOnceBeforeTransitioning` (IL_0078), so
+/// a second stun's `SetMoveImmediate(state, force: false)` is dropped
+/// (`MonsterModel::SetMoveImmediate` `0x825f0` IL_000c-IL_001c):
+///
+/// * the Tunneler's DIZZY: `BurrowedPower/<AfterBlockBroken>d__5::MoveNext`
+///   `0x33622c` IL_00d6-IL_00db `CreatureCmd.Stun(owner, ..., "BITE_MOVE")`.
+///   Native trace `tun_br3s3`.
+/// * the Bowlbug Rock's DIZZY: `BowlbugRock/<HeadbuttMove>d__24::MoveNext`
+///   IL_00bf-IL_00c7 calls `BowlbugRock::Stun` `0xafddc` when the HEADBUTT
+///   left it off balance, and `BowlbugRock/<Stun>d__25::MoveNext` IL_009e-
+///   IL_00b0 is `CreatureCmd.Stun(creature, DizzyMove, null)` `0x132b2c`.
+///   Native traces `rck_pb1s2`, `rck_pb1w2`.
+/// * the Corpse Slug's RAVENOUS_STUN_MOVE: `RavenousPower/<AfterDeath>d__6`
+///   installs it through the same `StunInternal` (the stun its sibling's
+///   death lands). Native traces `slg_k1s1`, `slg_k1w2`.
+/// * the Ceremonial Beast's STUN_MOVE: `PlowPower/<AfterDamageReceived>d__8::
+///   MoveNext` IL_0225-IL_024c `CreatureCmd.Stun(owner, StunnedMove,
+///   BeastCryState.StateId)` `0x132b2c`, after `SetStunned` `0xb0f24`.
+///   Native traces `bst_hb2s`, `bst_hbw2`.
+/// * the Lagavulin Matriarch's WAKE_UP_MOVE: `AsleepPower/<AfterDamageReceived>
+///   d__4::MoveNext` `0x335094` IL_0162-IL_017e `CreatureCmd.Stun(Owner,
+///   WakeUpMove, "SLASH_MOVE")`. Native traces `lag_b0st2s`, `lag_w`.
+/// * the Slumbering Beetle's WAKE: `SlumberPower/<AfterDamageReceived>d__4::
+///   MoveNext` `0x34500c` IL_00c1-IL_00d8 `Stun(owner, WakeUpMove,
+///   "ROLL_OUT_MOVE")`. Native trace `bee_b0st3s3`.
+/// * the Terror Eel's STUNNED, the Terror chain:
+///   `ShriekPower/<AfterDamageReceived>d__10::MoveNext` `0x344348`
+///   IL_0065-IL_008b `CreatureCmd.Stun(Owner, TerrorState.StateId)`
+///   `0x132ae0`. The engine carries it as `STUNNED` with no follow-up, and a
+///   Whistle on a showing TERROR_MOVE writes the same state
+///   ([`install_generic_stun`]). Native traces `eel_hb2s`, `eel_hbw2`.
+pub(crate) fn own_stun_is_unperformed(monster: &HotMonster) -> bool {
+    match (
+        monster.kind,
+        monster.override_state,
+        monster.forced_follow_up,
+    ) {
+        (MonsterKind::TerrorEel, MonsterOverride::Stunned, MonsterFollowUp::None) => {
+            monster.powers.value(PowerId::Shriek) == 0
+        }
+        (MonsterKind::Tunneler, MonsterOverride::Dizzy, MonsterFollowUp::None) => {
+            monster.powers.value(PowerId::Burrowed) == 0
+        }
+        (MonsterKind::BowlbugRock, MonsterOverride::Dizzy, MonsterFollowUp::None) => true,
+        (
+            MonsterKind::CorpseSlug,
+            MonsterOverride::RavenousStun,
+            MonsterFollowUp::SlugWhipSlap | MonsterFollowUp::SlugGlomp | MonsterFollowUp::SlugGoop,
+        ) => true,
+        (MonsterKind::CeremonialBeast, MonsterOverride::BeastStun, MonsterFollowUp::BeastCry) => {
+            true
+        }
+        (
+            MonsterKind::LagavulinMatriarch,
+            MonsterOverride::LagavulinWakeUp,
+            MonsterFollowUp::LagavulinSlash,
+        ) => true,
+        (MonsterKind::SlumberingBeetle, MonsterOverride::BeetleWake, MonsterFollowUp::None) => true,
+        _ => false,
+    }
 }
 
 /// Install `CreatureCmd::Stun(creature, null)` on a monster.
@@ -2306,9 +2726,84 @@ pub(crate) fn install_generic_stun(
     if monster.override_state == MonsterOverride::Stunned {
         // The unperformed dynamic state cannot transition away and `force` is
         // false: native drops this stun on the floor without touching state.
+        // #3823: that holds for the Thieving Hopper's Flutter stun too, which
+        // `FlutterPower` installs through the same `StunInternal` `0x11d7cc`
+        // (must-perform, IL_0078). Native trace `hop_fls4`.
+        let hopper_flutter_stun = monster.kind == MonsterKind::ThievingHopper
+            && matches!(
+                (monster.loop_pos, monster.forced_follow_up),
+                (2, MonsterFollowUp::HopperNab) | (3 | 4, MonsterFollowUp::HopperEscape)
+            )
+            && thieving_hopper_state_is_valid(state);
+        // #3823: so does the Terror Eel's own STUNNED (the Terror chain) and
+        // the Whistle-over-TERROR state that is wire-identical to it
+        // ([`own_stun_is_unperformed`]).
+        return (generic_stun_state_is_exact(state, owner)
+            || hopper_flutter_stun
+            || own_stun_is_unperformed(monster))
+        .then_some(())
+        .ok_or(EngineRefusal::MalformedArgs("generic stun existing state"));
+    }
+    if monster.kind == MonsterKind::TerrorEel
+        && (monster.override_state, monster.forced_follow_up)
+            == (MonsterOverride::Terror, MonsterFollowUp::None)
+    {
+        // #3823: a stun over a showing TERROR_MOVE. `StateLog.Last()` is
+        // TERROR_MOVE (the walk out of the Eel's own STUNNED logs the state
+        // it lands on, `FindNextMoveState` `0x78e94` IL_009c-IL_00d6), and
+        // TerrorState is a plain `MoveState`
+        // (`TerrorEel::GenerateMoveStateMachine` `0xbfe28` IL_009b-IL_00c1,
+        // no `MustPerformOnceBeforeTransitioning`), so `StunInternal`
+        // `0x11d7cc` parks it: STUNNED following to TERROR_MOVE, which is
+        // exactly the state ShriekPower's own stun installs
+        // (`ShriekPower/<AfterDamageReceived>d__10::MoveNext` `0x344348`
+        // IL_0081-IL_008b). The second `StateLog` entry has no reader (the
+        // machine has no branch state). So the engine writes the Eel's own
+        // STUNNED: it performs nothing, TERROR_MOVE follows, then CRASH
+        // (TerrorState follows to CRASH, IL_00e0-IL_00e7). Native trace
+        // `eel_hb2s3`.
+        if monster.powers.value(PowerId::Shriek) != 0 {
+            return Err(EngineRefusal::MalformedArgs("Terror Eel stun state"));
+        }
+        state.monsters_mut()[owner].override_state = MonsterOverride::Stunned;
+        return Ok(());
+    }
+    if monster.kind == MonsterKind::WaterfallGiant
+        && monster.is_about_to_blow()
+        && monster.override_state == MonsterOverride::None
+        && monster.forced_follow_up == MonsterFollowUp::None
+        && monster.loop_pos == WATERFALL_ABOUT_TO_BLOW_INDEX
+    {
+        // #3823: ABOUT_TO_BLOW_MOVE is must-perform
+        // (`WaterfallGiant::GenerateMoveStateMachine` `0xc4eb0` IL_0169), so
+        // `MoveState::get_CanTransitionAway` `0x78ff3` is false until it has
+        // performed and `StunInternal`'s `SetMoveImmediate(state, force:
+        // false)` (`0x825f0` IL_000c-IL_001c) drops the stun. Native trace
+        // `wfg_k2s2`: ABOUT_TO_BLOW performs, then EXPLODE.
+        return Ok(());
+    }
+    if monster.kind == MonsterKind::SlumberingBeetle {
+        return install_beetle_stun(state, owner);
+    }
+    if monster.kind == MonsterKind::LagavulinMatriarch
+        && monster.override_state == MonsterOverride::None
+        && (monster.powers.value(PowerId::Asleep) > 0
+            || monster.forced_follow_up == MonsterFollowUp::LagavulinSleep)
+    {
+        // #3823: SLEEP_MOVE parked ([`lagavulin_sleep_is_parked`]).
+        let monster = &mut state.monsters_mut()[owner];
+        monster.override_state = MonsterOverride::Stunned;
+        monster.forced_follow_up = MonsterFollowUp::LagavulinSleep;
         return generic_stun_state_is_exact(state, owner)
             .then_some(())
-            .ok_or(EngineRefusal::MalformedArgs("generic stun existing state"));
+            .ok_or(EngineRefusal::MalformedArgs("Lagavulin sleep stun result"));
+    }
+    if own_stun_is_unperformed(monster) {
+        // #3823: the kind's own stun is a `StunInternal` state too,
+        // must-perform like any other (`0x11d7cc` IL_0078), so a Whistle
+        // landing on it is dropped (`SetMoveImmediate` `0x825f0`
+        // IL_000c-IL_001c). See [`own_stun_is_unperformed`].
+        return Ok(());
     }
     if monster.override_state != MonsterOverride::None
         || monster.forced_follow_up != MonsterFollowUp::None
@@ -2328,6 +2823,44 @@ pub(crate) fn install_generic_stun(
     generic_stun_state_is_exact(state, owner)
         .then_some(())
         .ok_or(EngineRefusal::MalformedArgs("generic stun result"))
+}
+
+/// Install `CreatureCmd::Stun(creature, null)` on a living Queen or Torch
+/// Head Amalgam: `STUNNED` over the follow-up their own two-kind table names
+/// ([`queen_amalgam_follow_up`]).
+///
+/// This is the tail of `steps::neutral::stun_target`, moved here unchanged so
+/// that `engine::native_stun_traces` installs the Queen roster's stun
+/// through the same code a Whistle does (#3823). The caller has checked that
+/// the target is alive and the roster representable
+/// ([`whistle_stun_target_is_representable`]). A second stun before the first
+/// performs is a no-op, as in [`install_generic_stun`].
+pub(crate) fn install_queen_amalgam_stun(
+    state: &mut HotState,
+    target: usize,
+) -> Result<(), EngineRefusal> {
+    let Some(monster) = state.monsters.get(target) else {
+        return Ok(());
+    };
+    if monster.override_state == MonsterOverride::Stunned {
+        return queen_amalgam_stun_state_is_exact(state, target)
+            .then_some(())
+            .ok_or(EngineRefusal::MalformedArgs("Whistle existing stun"));
+    }
+    if monster.override_state != MonsterOverride::None
+        || monster.forced_follow_up != MonsterFollowUp::None
+    {
+        return Err(EngineRefusal::MalformedArgs("Whistle target state"));
+    }
+    let follow_up = queen_amalgam_follow_up(monster.kind, monster.loop_pos)
+        .ok_or(EngineRefusal::MalformedArgs("Whistle target machine"))?;
+    let monster = &mut state.monsters_mut()[target];
+    monster.override_state = MonsterOverride::Stunned;
+    monster.forced_follow_up = follow_up;
+    if !queen_amalgam_stun_state_is_exact(state, target) {
+        return Err(EngineRefusal::MalformedArgs("Whistle stun result"));
+    }
+    Ok(())
 }
 
 /// Queen/Torch Head Amalgam state admitted at a public action boundary.
@@ -2882,8 +3415,13 @@ pub(crate) fn beetle_state_is_valid(monster: &HotMonster) -> bool {
     // #2647 — the awake Beetle's Imbalanced self-stun, the one state here
     // that carries a follow-up. A corpse never holds it: death cleanup clears
     // the override, as `StunInternal` `0x11d7cc` IL_0028 refuses a corpse.
+    // #3823: a Whistle's stun parks SNORE_MOVE as well, and the walk out of it
+    // shows SNORE_MOVE once more ([`beetle_snore_is_parked`]).
     if monster.override_state == MonsterOverride::Stunned {
-        return beetle_rollout_stun_is_exact(monster);
+        return beetle_rollout_stun_is_exact(monster) || beetle_snore_is_parked(monster);
+    }
+    if beetle_snore_is_parked(monster) {
+        return true;
     }
     if monster.loop_pos != 0 || monster.forced_follow_up != MonsterFollowUp::None {
         return false;
@@ -2892,7 +3430,10 @@ pub(crate) fn beetle_state_is_valid(monster: &HotMonster) -> bool {
     match monster.override_state {
         MonsterOverride::BeetleSnore => (1..=3).contains(&slumber),
         MonsterOverride::BeetleWake => slumber == 0,
-        MonsterOverride::None => slumber == 0 && monster.powers.value(PowerId::Mplating) == 0,
+        // #3823: Plating outlives a wake by damage that a stun dropped
+        // (`damage::damage_monster`; native trace `bee_s3b0st3`: the awake
+        // Beetle keeps its decaying Plating).
+        MonsterOverride::None => slumber == 0,
         _ => false,
     }
 }
@@ -3348,22 +3889,42 @@ pub(crate) fn ceremonial_beast_state_is_valid(state: &HotState) -> bool {
     }
     let plow = beast.powers.value(PowerId::PlowThreshold);
     let threshold = ceremonial_beast_plow_threshold(state);
+    // #3823: a Whistle's stun reads as the row it parks (`StunInternal`
+    // `0x11d7cc` writes the move state alone).
+    let (override_state, forced_follow_up) = if generic_stun_parks_this_row(beast) {
+        (MonsterOverride::None, MonsterFollowUp::None)
+    } else {
+        (beast.override_state, beast.forced_follow_up)
+    };
     match (
         beast.loop_pos,
         plow,
-        beast.override_state,
-        beast.forced_follow_up,
+        override_state,
+        forced_follow_up,
         state.ringing(),
     ) {
         (0, 0, MonsterOverride::None, MonsterFollowUp::None, false)
         | (2 | 4, 0, MonsterOverride::None, MonsterFollowUp::None, false) => true,
-        (1, plow, MonsterOverride::None, MonsterFollowUp::None, false) if plow == threshold => {
-            beast.hp > threshold
-        }
+        // Plow lives at or below its threshold when STAMP applied it to a
+        // Beast already that low (`PlowPower` breaks only on the next hit,
+        // `<AfterDamageReceived>d__8` IL_0051-IL_006a). Reachable unstunned
+        // by damage before the first STAMP, and over several turns behind a
+        // stunned STAMP (#3823; native traces `bst_h1low`, `bst_s1h1low`,
+        // and `bst_h1low_st2`, `bst_s1h1low_st3` for the break after it).
+        (1, plow, MonsterOverride::None, MonsterFollowUp::None, false) if plow == threshold => true,
         (1, 0, MonsterOverride::BeastStun, MonsterFollowUp::BeastCry, false) => {
             beast.hp <= threshold
         }
+        // #3823: a Plow break under a Whistle's stun drops the break's own
+        // STUN_MOVE (`damage::damage_monster`), so PLOW follows itself with
+        // Plow gone, for the rest of the fight. Native traces `bst_s2hb`,
+        // `bst_w2hb`, `bst_s3hb3`.
+        (1, 0, MonsterOverride::None, MonsterFollowUp::None, false) => beast.hp <= threshold,
         (3, 0, MonsterOverride::None, MonsterFollowUp::None, true) => true,
+        // #3823: a stunned STOMP's enemy-side end removes the Ringing BEAST_CRY
+        // applied, so the parked STOMP stands without it. Native trace
+        // `bst_hb2s4`.
+        (3, 0, MonsterOverride::None, MonsterFollowUp::None, false) => true,
         _ => false,
     }
 }
@@ -3531,8 +4092,11 @@ pub(crate) fn test_subject_state_is_valid(state: &HotState) -> bool {
         || owner.hp > owner.max_hp
         || owner.block < 0
         || !owner.random_ai.is_empty()
-        || owner.override_state != MonsterOverride::None
-        || owner.forced_follow_up != MonsterFollowUp::None
+        // #3823: or a Whistle's stun parked over a form's row; the death
+        // replaces it with the retained corpse (`TestSubject/
+        // <TriggerDeadState>d__67::MoveNext` `0x36e658` IL_00c4-IL_00c5,
+        // `SetMoveImmediate(state, force: true)`).
+        || !machine_is_undisturbed_or_generic_stun(owner)
         || owner.spawn_noop
         || owner.last_spawned.is_some()
         || owner.curl_up_card_uid != -1
@@ -3721,8 +4285,9 @@ pub(crate) fn beast_plow_damage_owner_is_valid(state: &HotState, target: usize) 
         // listener transient so the nested result remains exact.
         && beast.hp > 0
         && beast.powers.value(PowerId::PlowThreshold) == ceremonial_beast_plow_threshold(state)
-        && beast.override_state == MonsterOverride::None
-        && beast.forced_follow_up == MonsterFollowUp::None
+        // #3823: or a Whistle's stun parked over PLOW (the break under it is
+        // `damage::damage_monster`'s; native trace `bst_s2hb`).
+        && machine_is_undisturbed_or_generic_stun(beast)
         && !state.ringing()
 }
 
@@ -3765,8 +4330,15 @@ pub(crate) fn fabricator_ai_state_is_valid(
         // may follow itself (#2945; IL on `engine::turn::roll_fabricator_intent`:
         // `Fabricator::GenerateMoveStateMachine` `0xb3bc0` IL_00a4/IL_00cc pass
         // repeat type 0 to `AddBranch` `0x7925a`).
+        // The log against the bots made. FABRICATE and FABRICATING_STRIKE
+        // both end on an aggro bot (`<FabricateMove>d__20` `0x35a434`
+        // IL_00f2, `<FabricatingStrikeMove>d__21` `0x35a5dc` IL_00c0), and
+        // the roll after a performed move logs a second entry. #3823: a
+        // stun logs the parked move again without performing it
+        // (`turn::resume_stunned_random_ai`), so a Fabricator that has made
+        // nothing yet holds its opener once, twice or three times.
         && (allow_post_move_transient
-            || (log.len() == 1 && monster.last_spawned.is_none())
+            || (monster.last_spawned.is_none() && log.iter().all(|index| *index == log[0]))
             || (log.len() >= 2
                 && monster
                     .last_spawned
@@ -4610,7 +5182,7 @@ pub(crate) fn respawn_axebot(
     replacement.max_hp = hp;
     replacement.slot = 0;
     replacement.uid = next_uid;
-    replacement.loop_pos = 2;
+    replacement.loop_pos = AXEBOT_BOOT_UP_LOOP_POS;
     if new_stock > 0 {
         replacement
             .powers
@@ -4626,6 +5198,11 @@ pub(crate) fn respawn_axebot(
     );
     Ok(())
 }
+
+/// The loop position a Stock replacement is created at: `BOOT_UP_MOVE`, the
+/// machine's initial state when `_stockOverrideAmount` has a value
+/// (`Axebot::GenerateMoveStateMachine` RVA `0xaee50`, IL_00ca-IL_00d8).
+pub(crate) const AXEBOT_BOOT_UP_LOOP_POS: i32 = 2;
 
 fn insert_slot_ordered(state: &mut HotState, monster: HotMonster) {
     let roster = state.monsters_mut();
@@ -4990,11 +5567,18 @@ pub(crate) fn ovicopter_roster_is_valid(state: &HotState) -> bool {
         }
         let is_hatched = hatched.is_some();
         let hatch_amount = hatch.map_or(0, |slot| slot.value);
+        // An unhatched egg may hold no HatchPower (#3823): a stun over
+        // HATCH_MOVE parks it, and `HatchPower/<AfterSideTurnEnd>d__4::
+        // MoveNext` `0x33bd80` decrements at its owner's side end whatever
+        // the owner's move (the participant test IL_001e-IL_002e, then
+        // `PowerCmd.Decrement` `0x13394c` at IL_0033), so the side end of the
+        // STUNNED turn takes 1 to nothing and the egg hatches when the parked
+        // HATCH_MOVE performs (native: `ovi_rnd40_*`, `ovi_rndk60_*`).
         let valid_state = if egg.hp > 0 {
             if is_hatched {
                 hatch_amount == 0 && egg.loop_pos == 1
             } else {
-                matches!(hatch_amount, 1 | 2) && egg.loop_pos == 0
+                matches!(hatch_amount, 0..=2) && egg.loop_pos == 0
             }
         } else {
             hatch_amount == 0
@@ -5080,6 +5664,13 @@ pub(crate) fn spawn_tough_egg(state: &mut HotState, parent_uid: u32) -> Result<(
 }
 
 /// Tough Egg HATCH's `_hatch_tough_egg` (frozen Python, deleted #2827).
+///
+/// HatchPower may be 1 or absent (#3823: a stun over HATCH_MOVE outlives it,
+/// see [`ovicopter_roster_is_valid`]). `<HatchMove>d__35::MoveNext`
+/// `0x372874` never reads the amount: it sets `IsHatched` (IL_002d-IL_002e)
+/// and then removes powers from a filtered copy of the egg's list
+/// (IL_00aa-IL_0100; MinionPower stays, as every native trace shows), with
+/// no test of HatchPower's amount anywhere in the body.
 pub(crate) fn hatch_tough_egg(state: &mut HotState, egg_uid: u32) -> Result<(), EngineRefusal> {
     require_ovicopter_roster(state, egg_uid)?;
     let index = state
@@ -5091,7 +5682,7 @@ pub(crate) fn hatch_tough_egg(state: &mut HotState, egg_uid: u32) -> Result<(), 
     if egg.kind != MonsterKind::ToughEgg
         || egg.hp <= 0
         || egg.powers.value(PowerId::IsHatched) != 0
-        || egg.powers.value(PowerId::HatchPower) != 1
+        || !matches!(egg.powers.value(PowerId::HatchPower), 0 | 1)
         || egg.loop_pos != 0
     {
         return Err(EngineRefusal::MalformedArgs("hatch_tough_egg owner/state"));
@@ -5243,12 +5834,26 @@ fn rat_slot_label(native: i32) -> i32 {
 ///
 /// A stun hides a parked call from that teammate test (#3823,
 /// `GENERIC_STUN_RANDOM_TABLE_KINDS`), so calls can be pending on several
-/// living rats at once. A call is still only ever *rolled* while the count is
-/// below 3, so when the count reaches 3 the calls still to come are the ones
-/// already pending on the other living rats, at most four of them (five
-/// slots, `TwoTailedRatsNormal::get_Slots` `0xd59f2`): seven calls in all,
-/// and so at most seven summons.
-const RAT_MAX_SUMMONS: usize = 7;
+/// living rats at once, and more than three can complete. The bound is five:
+///
+/// * a call is only *rolled* while the roller's count is below 3
+///   (`CanSummon` IL_0017-IL_001e), and the count is the number of calls
+///   performed so far (every performed call raises every `Enemies` rat's
+///   count to the maximum plus one, `<CallForBackup>d__41::MoveNext`
+///   `0x373d98` IL_01e1-IL_025d);
+/// * so every rat that ever rolls the call stood in the fight while fewer
+///   than three calls had been performed: the three of the opening and the
+///   at most two that the first two calls summoned. The rat the third call
+///   summons arrives with the count at 3 and never rolls it;
+/// * CALL_FOR_BACKUP is `UseOnlyOnce`: `RandomBranchState::GetStateWeight`
+///   `0x79380` IL_0036-IL_0077 weighs it 0 once that rat's `StateLog` holds
+///   it, and a rat's own stun only logs it again. Each of those five rats
+///   rolls it at most once.
+///
+/// At most five calls are rolled, so at most five are performed, and a
+/// summon is a performed call that found a free slot. (Five is reached
+/// natively: the #3927 review recorded five summons with the count at 5.)
+const RAT_MAX_SUMMONS: usize = 5;
 
 /// The value `CallForBackupCount` is held at.
 ///
@@ -6047,8 +6652,10 @@ mod tests {
             state.monsters_mut().push(beast);
             assert!(ceremonial_beast_state_is_valid(&state), "A{ascension}");
             assert!(beast_plow_damage_owner_is_valid(&state, 0), "A{ascension}");
+            // #3823: Plow at or below its threshold is the STAMP that landed
+            // on a Beast already that low (native trace `bst_h1low`).
             state.monsters_mut()[0].hp = threshold;
-            assert!(!ceremonial_beast_state_is_valid(&state), "A{ascension}");
+            assert!(ceremonial_beast_state_is_valid(&state), "A{ascension}");
             let other = 310 - threshold;
             state.monsters_mut()[0].hp = 200;
             state.monsters_mut()[0]
@@ -6891,6 +7498,71 @@ mod tests {
         assert_eq!(state.monsters.last().unwrap().loop_pos, 3);
     }
 
+    /// #3823: an unhatched egg whose HatchPower ran out under a stun is a
+    /// valid roster member and still hatches; a HatchPower above 2, or one
+    /// left on a hatched egg, is not.
+    #[test]
+    fn a_stunned_out_hatch_counter_is_valid_and_still_hatches() {
+        let mut state = ovicopter_state();
+        spawn_tough_egg(&mut state, 0).unwrap();
+        let egg = state
+            .monsters
+            .iter()
+            .position(|monster| monster.kind == MonsterKind::ToughEgg)
+            .unwrap();
+        // The side end of the STUNNED turn decrements 1 to nothing.
+        state.monsters_mut()[egg]
+            .powers
+            .set(PowerId::HatchPower, SlotWire::Int, 0);
+        assert_eq!(state.monsters[egg].powers.value(PowerId::HatchPower), 0);
+        assert!(ovicopter_roster_is_valid(&state));
+        state.monsters_mut()[egg]
+            .powers
+            .set(PowerId::HatchPower, SlotWire::Int, 3);
+        assert!(!ovicopter_roster_is_valid(&state));
+        state.monsters_mut()[egg]
+            .powers
+            .set(PowerId::HatchPower, SlotWire::Int, 2);
+        assert!(
+            hatch_tough_egg(&mut state, 1).is_err(),
+            "HATCH with the counter at 2"
+        );
+        state.monsters_mut()[egg]
+            .powers
+            .set(PowerId::HatchPower, SlotWire::Int, 0);
+        hatch_tough_egg(&mut state, 1).unwrap();
+        let hatched = &state.monsters[egg];
+        assert_eq!(
+            (hatched.loop_pos, hatched.powers.value(PowerId::IsHatched)),
+            (1, 1)
+        );
+        state.monsters_mut()[egg]
+            .powers
+            .set(PowerId::HatchPower, SlotWire::Int, 1);
+        assert!(
+            !ovicopter_roster_is_valid(&state),
+            "a counter on a hatched egg"
+        );
+    }
+
+    /// #3823: Ovicopter and Tough Egg take the generic stun on every loop
+    /// row; the Ovicopter's SUMMON_BRANCH sentinel names no parked telegraph.
+    #[test]
+    fn ovicopter_and_tough_egg_park_every_row_but_the_branch_sentinel() {
+        for kind in [MonsterKind::Ovicopter, MonsterKind::ToughEgg] {
+            assert!(generic_stun_owner_is_eligible(kind), "{kind:?}");
+            assert!(
+                generic_stun_owner_loop_is_fully_resolvable(kind),
+                "{kind:?}"
+            );
+        }
+        assert_eq!(
+            parked_telegraph(MonsterKind::Ovicopter, OVICOPTER_BRANCH_POS),
+            None
+        );
+        assert!(parked_telegraph(MonsterKind::Ovicopter, OVICOPTER_BRANCH_POS - 1).is_some());
+    }
+
     #[test]
     fn ovicopter_reuses_dead_slots_with_new_creation_uids() {
         let mut state = ovicopter_state();
@@ -7597,7 +8269,16 @@ mod tests {
         // one inside parks the row `random_ai.next` names, at `loop_pos` 0
         // only (#3823).
         assert!(crate::content_tables::monster_loop(MonsterKind::Mawler).is_none());
-        assert_eq!(parked_telegraph(MonsterKind::TheObscura, 0), None);
+        for kind in MonsterKind::ALL.into_iter().filter(|kind| {
+            crate::content_tables::random_moves(*kind).is_some()
+                && !GENERIC_STUN_RANDOM_TABLE_KINDS.contains(kind)
+        }) {
+            assert_eq!(parked_telegraph(kind, 0), None, "{kind:?}");
+        }
+        assert_eq!(
+            parked_telegraph(MonsterKind::TheObscura, 0),
+            Some(MonsterFollowUp::ParkedTelegraph)
+        );
         assert_eq!(
             parked_telegraph(MonsterKind::TwoTailedRat, 0),
             Some(MonsterFollowUp::ParkedTelegraph)
@@ -7719,6 +8400,19 @@ mod tests {
             }
             // Slumbering Beetle's ROLL_OUT_MOVE is its catalog-private
             // executable row (`catalog.rs` `BEETLE_ROLLOUT`); pin it there.
+            // #3823: the sleep moves are not loop rows either. Each is the
+            // machine's initial state, which a sleeping Lagavulin or Beetle
+            // shows while its power lives (`lagavulin_sleep_is_parked`,
+            // `beetle_snore_is_parked` cite the IL); the intents name them.
+            if follow_up == MonsterFollowUp::LagavulinSleep {
+                assert_eq!(name, crate::engine::turn::LAGAVULIN_SLEEP_MOVE);
+                continue;
+            }
+            if follow_up == MonsterFollowUp::BeetleSnore {
+                assert_eq!(name, "SNORE_MOVE");
+                assert_eq!(MonsterOverride::BeetleSnore.as_str(), "SNORE");
+                continue;
+            }
             if follow_up == MonsterFollowUp::BeetleRollOut {
                 let mut builder = crate::catalog::CatalogBuilder::new();
                 builder
@@ -7742,6 +8436,216 @@ mod tests {
         }
     }
 
+    /// #3823: each kind's own unperformed stun drops a Whistle's, and the
+    /// drop leaves the monster exactly as it was. Native traces `rck_pb1s2`,
+    /// `slg_k1s1`, `bst_hb2s`, `lag_b0st2s`, `bee_b0st3s3`, `tun_br3s3`.
+    #[test]
+    fn a_whistle_on_a_kinds_own_stun_is_dropped() {
+        use MonsterFollowUp as F;
+        use MonsterOverride as O;
+        let cases = [
+            (MonsterKind::BowlbugRock, O::Dizzy, F::None),
+            (MonsterKind::CorpseSlug, O::RavenousStun, F::SlugWhipSlap),
+            (MonsterKind::CorpseSlug, O::RavenousStun, F::SlugGlomp),
+            (MonsterKind::CorpseSlug, O::RavenousStun, F::SlugGoop),
+            (MonsterKind::CeremonialBeast, O::BeastStun, F::BeastCry),
+            (
+                MonsterKind::LagavulinMatriarch,
+                O::LagavulinWakeUp,
+                F::LagavulinSlash,
+            ),
+            (MonsterKind::SlumberingBeetle, O::BeetleWake, F::None),
+            (MonsterKind::TerrorEel, O::Stunned, F::None),
+            (MonsterKind::Tunneler, O::Dizzy, F::None),
+        ];
+        for (kind, override_state, follow_up) in cases {
+            let mut state = stunnable(kind, 0);
+            state.monsters_mut()[0].override_state = override_state;
+            state.monsters_mut()[0].forced_follow_up = follow_up;
+            assert!(own_stun_is_unperformed(&state.monsters[0]), "{kind:?}");
+            let before = state.monsters[0].clone();
+            assert_eq!(install_generic_stun(&mut state, 0), Ok(()), "{kind:?}");
+            assert_eq!(state.monsters[0], before, "{kind:?}");
+        }
+        // A burrowed Tunneler's DIZZY is not a state the break leaves, and
+        // another kind's DIZZY is not its own stun.
+        let mut burrowed = stunnable(MonsterKind::Tunneler, 0);
+        burrowed.monsters_mut()[0].override_state = O::Dizzy;
+        burrowed.monsters_mut()[0]
+            .powers
+            .set(PowerId::Burrowed, SlotWire::Bool, 1);
+        assert!(!own_stun_is_unperformed(&burrowed.monsters[0]));
+        let mut slug = stunnable(MonsterKind::CorpseSlug, 0);
+        slug.monsters_mut()[0].override_state = O::Dizzy;
+        assert!(!own_stun_is_unperformed(&slug.monsters[0]));
+        // The Eel's follow-up-free STUNNED with Shriek still standing is no
+        // state the Shriek break leaves.
+        let mut shrieking = stunnable(MonsterKind::TerrorEel, 0);
+        shrieking.monsters_mut()[0].override_state = O::Stunned;
+        shrieking.monsters_mut()[0]
+            .powers
+            .set(PowerId::Shriek, SlotWire::Bool, 1);
+        assert!(!own_stun_is_unperformed(&shrieking.monsters[0]));
+        assert_eq!(
+            install_generic_stun(&mut shrieking, 0),
+            Err(EngineRefusal::MalformedArgs("generic stun existing state"))
+        );
+    }
+
+    /// #3823: a Whistle on the Terror Eel. Over a loop row it parks the row
+    /// (never the follow-up-free STUNNED of its Terror chain); over a showing
+    /// TERROR_MOVE it writes that chain's own STUNNED, which TERROR_MOVE
+    /// follows. Native traces `eel_s2`, `eel_hb2s3`.
+    #[test]
+    fn a_whistle_on_the_terror_eel_parks_its_row_or_its_terror() {
+        for loop_pos in [0, 1] {
+            let mut state = stunnable(MonsterKind::TerrorEel, loop_pos);
+            assert_eq!(install_generic_stun(&mut state, 0), Ok(()));
+            let eel = &state.monsters[0];
+            assert_eq!(eel.override_state, MonsterOverride::Stunned);
+            assert_ne!(eel.forced_follow_up, MonsterFollowUp::None, "{loop_pos}");
+            assert!(generic_stun_parks_this_row(eel), "{loop_pos}");
+        }
+        let mut terror = stunnable(MonsterKind::TerrorEel, 1);
+        terror.monsters_mut()[0].override_state = MonsterOverride::Terror;
+        assert_eq!(install_generic_stun(&mut terror, 0), Ok(()));
+        assert_eq!(
+            (
+                terror.monsters[0].override_state,
+                terror.monsters[0].forced_follow_up,
+                terror.monsters[0].loop_pos
+            ),
+            (MonsterOverride::Stunned, MonsterFollowUp::None, 1)
+        );
+        assert!(own_stun_is_unperformed(&terror.monsters[0]));
+        // TERROR with Shriek standing is no state the game reaches (Shriek
+        // removes itself as it stuns): refused, not overwritten.
+        let mut forged = stunnable(MonsterKind::TerrorEel, 0);
+        forged.monsters_mut()[0].override_state = MonsterOverride::Terror;
+        forged.monsters_mut()[0]
+            .powers
+            .set(PowerId::Shriek, SlotWire::Bool, 1);
+        assert_eq!(
+            install_generic_stun(&mut forged, 0),
+            Err(EngineRefusal::MalformedArgs("Terror Eel stun state"))
+        );
+        assert_eq!(forged.monsters[0].override_state, MonsterOverride::Terror);
+    }
+
+    /// #3823: a Whistle on the Waterfall Giant's must-perform ABOUT_TO_BLOW is
+    /// dropped, one on EXPLODE parks it, and before the death the loop parks
+    /// as any other. Native traces `wfg_k2s2`, `wfg_k2s3`, `wfg_s2`.
+    #[test]
+    fn a_whistle_on_the_waterfall_giant_after_its_death() {
+        let mut about = stunnable(MonsterKind::WaterfallGiant, WATERFALL_ABOUT_TO_BLOW_INDEX);
+        about.monsters_mut()[0].set_is_about_to_blow(true);
+        let before = about.monsters[0].clone();
+        assert_eq!(install_generic_stun(&mut about, 0), Ok(()));
+        assert_eq!(about.monsters[0], before);
+        let mut explode = stunnable(
+            MonsterKind::WaterfallGiant,
+            WATERFALL_ABOUT_TO_BLOW_INDEX + 1,
+        );
+        explode.monsters_mut()[0].set_is_about_to_blow(true);
+        assert_eq!(install_generic_stun(&mut explode, 0), Ok(()));
+        assert!(generic_stun_parks_this_row(&explode.monsters[0]));
+        let mut alive = stunnable(MonsterKind::WaterfallGiant, 1);
+        assert_eq!(install_generic_stun(&mut alive, 0), Ok(()));
+        assert!(generic_stun_parks_this_row(&alive.monsters[0]));
+    }
+
+    /// #3823: a stun over a sleeping Lagavulin parks SLEEP_MOVE, a second one
+    /// is dropped, and the resumed SLEEP_MOVE (no override) parks again.
+    /// Native traces `lag_s1`, `lag_ss2`, `lag_s3s4`.
+    #[test]
+    fn a_stun_parks_the_lagavulin_sleep_move() {
+        let mut state = stunnable(MonsterKind::LagavulinMatriarch, 0);
+        state.monsters_mut()[0]
+            .powers
+            .set(PowerId::Asleep, SlotWire::Int, 2);
+        assert_eq!(install_generic_stun(&mut state, 0), Ok(()));
+        let parked = (
+            state.monsters[0].override_state,
+            state.monsters[0].forced_follow_up,
+        );
+        assert_eq!(
+            parked,
+            (MonsterOverride::Stunned, MonsterFollowUp::LagavulinSleep)
+        );
+        assert!(lagavulin_sleep_is_parked(&state.monsters[0]));
+        assert!(generic_stun_state_is_exact(&state, 0));
+        assert_eq!(install_generic_stun(&mut state, 0), Ok(()), "dropped");
+        assert_eq!(state.monsters[0].override_state, MonsterOverride::Stunned);
+        // The resumed SLEEP_MOVE after Asleep ran out.
+        let mut resumed = stunnable(MonsterKind::LagavulinMatriarch, 0);
+        resumed.monsters_mut()[0].forced_follow_up = MonsterFollowUp::LagavulinSleep;
+        assert!(lagavulin_sleep_is_parked(&resumed.monsters[0]));
+        assert!(!generic_stun_state_is_exact(&resumed, 0), "no stun yet");
+        assert_eq!(install_generic_stun(&mut resumed, 0), Ok(()));
+        assert_eq!(resumed.monsters[0].override_state, MonsterOverride::Stunned);
+        // Off the SLASH row the parked SLEEP_MOVE is not a state.
+        resumed.monsters_mut()[0].loop_pos = 1;
+        assert!(!lagavulin_sleep_is_parked(&resumed.monsters[0]));
+        // Awake, a Whistle parks the loop row like any generic owner.
+        let mut awake = stunnable(MonsterKind::LagavulinMatriarch, 1);
+        assert_eq!(install_generic_stun(&mut awake, 0), Ok(()));
+        assert!(generic_stun_parks_this_row(&awake.monsters[0]));
+    }
+
+    /// #3823: the Beetle's stun parks SNORE_MOVE asleep or resumed, ROLL_OUT
+    /// awake (also with the Plating a dropped wake left), and drops on its own
+    /// WAKE or a standing stun. Native traces `bee_s2`, `bee_s3s4`,
+    /// `bee_s3b0st3s4`, `bee_b0st3s3`.
+    #[test]
+    fn the_beetle_stun_parks_the_move_it_shows() {
+        let mut asleep = stunnable(MonsterKind::SlumberingBeetle, 0);
+        asleep.monsters_mut()[0].override_state = MonsterOverride::BeetleSnore;
+        asleep.monsters_mut()[0]
+            .powers
+            .set(PowerId::Slumber, SlotWire::Int, 2);
+        assert_eq!(install_generic_stun(&mut asleep, 0), Ok(()));
+        assert_eq!(
+            (
+                asleep.monsters[0].override_state,
+                asleep.monsters[0].forced_follow_up
+            ),
+            (MonsterOverride::Stunned, MonsterFollowUp::BeetleSnore)
+        );
+        assert!(beetle_state_is_valid(&asleep.monsters[0]));
+        let before = asleep.monsters[0].clone();
+        assert_eq!(install_generic_stun(&mut asleep, 0), Ok(()));
+        assert_eq!(asleep.monsters[0], before, "a second stun is dropped");
+
+        let mut resumed = stunnable(MonsterKind::SlumberingBeetle, 0);
+        resumed.monsters_mut()[0].forced_follow_up = MonsterFollowUp::BeetleSnore;
+        assert!(beetle_state_is_valid(&resumed.monsters[0]));
+        assert_eq!(install_imbalanced_self_stun(&mut resumed, 0), Ok(()));
+        assert_eq!(
+            resumed.monsters[0].forced_follow_up,
+            MonsterFollowUp::BeetleSnore
+        );
+
+        let mut plated = stunnable(MonsterKind::SlumberingBeetle, 0);
+        plated.monsters_mut()[0]
+            .powers
+            .set(PowerId::Mplating, SlotWire::Int, 16);
+        assert!(beetle_state_is_valid(&plated.monsters[0]), "a dropped wake");
+        assert_eq!(install_generic_stun(&mut plated, 0), Ok(()));
+        assert!(beetle_rollout_stun_is_exact(&plated.monsters[0]));
+
+        let mut malformed = stunnable(MonsterKind::SlumberingBeetle, 0);
+        malformed.monsters_mut()[0].override_state = MonsterOverride::BeetleSnore;
+        assert_eq!(
+            install_generic_stun(&mut malformed, 0),
+            Err(EngineRefusal::MalformedArgs("Slumbering Beetle stun state")),
+            "SNORE with no Slumber"
+        );
+        let mut corpse = stunnable(MonsterKind::SlumberingBeetle, 0);
+        corpse.monsters_mut()[0].hp = 0;
+        assert_eq!(install_generic_stun(&mut corpse, 0), Ok(()));
+        assert_eq!(corpse.monsters[0].override_state, MonsterOverride::None);
+    }
+
     /// The bespoke owners keep their own arms; the generic state is not a
     /// second reader of their wire states (#2647 §5.7).
     #[test]
@@ -7749,29 +8653,41 @@ mod tests {
         for kind in GENERIC_STUN_BESPOKE_KINDS {
             assert!(!generic_stun_owner_is_eligible(kind), "{kind:?}");
         }
-        // Terror Eel is the sharpest case: `STUNNED` with no follow-up is its
-        // Terror chain, so it must never present a generic parked telegraph.
-        let mut state = stunnable(MonsterKind::TerrorEel, 0);
+        // The Queen roster keeps its own two-kind table's reader.
+        let mut state = stunnable(MonsterKind::Queen, 0);
         assert_eq!(
             install_generic_stun(&mut state, 0),
             Err(EngineRefusal::MalformedArgs("generic stun owner"))
         );
         assert_eq!(state.monsters[0].override_state, MonsterOverride::None);
-        // A kind whose loop branches conditionally is refused too, until the
-        // conditional-branch slice of #3823 (the parked state is settled; the
-        // successor deferred past the stunned turn is what is left).
-        let branching = crate::content_tables::LOOPS
+        // Every generated loop that branches conditionally is either a
+        // bespoke owner (the Queen) or read from IL and listed (#3823): a
+        // new one must be put in one of the two by name.
+        let branching: Vec<MonsterKind> = crate::content_tables::LOOPS
             .iter()
-            .find(|(kind, rows)| {
-                !GENERIC_STUN_BESPOKE_KINDS.contains(kind)
-                    && !GENERIC_STUN_CONDITIONAL_KINDS.contains(kind)
-                    && rows.iter().any(|row| {
-                        matches!(row.repeats, crate::content_tables::Repeats::Conditional(_))
-                    })
+            .filter(|(_, rows)| {
+                rows.iter().any(|row| {
+                    matches!(row.repeats, crate::content_tables::Repeats::Conditional(_))
+                })
             })
             .map(|(kind, _)| *kind)
-            .expect("some non-bespoke generated loop branches conditionally");
-        assert!(!generic_stun_owner_is_eligible(branching), "{branching:?}");
+            .collect();
+        assert_eq!(
+            branching,
+            [
+                MonsterKind::FrogKnight,
+                MonsterKind::KnowledgeDemon,
+                MonsterKind::LivingShield,
+                MonsterKind::Queen,
+            ]
+        );
+        for kind in branching {
+            assert_ne!(
+                GENERIC_STUN_BESPOKE_KINDS.contains(&kind),
+                GENERIC_STUN_CONDITIONAL_KINDS.contains(&kind),
+                "{kind:?}"
+            );
+        }
     }
 
     /// The exact set of owners the generic stun admits (#3823).
@@ -7786,6 +8702,43 @@ mod tests {
     /// in `solver/invariant-walks/2026-10-12-issue3823-plain-cycle.md`: each
     /// machine is a cycle of `MoveState`s after its opening roll, with no
     /// second writer of the move.
+    /// #3823: each stunned turn ticks Escape Artist without moving the
+    /// Hopper's machine, so the reachable pairs are a range below the
+    /// unstunned diagonal, one higher on the enemy side before the tick; and
+    /// a Whistle's stun reads as the row it parks while the Flutter stun keeps
+    /// its own pair.
+    #[test]
+    fn the_hopper_escape_artist_lags_its_machine_by_the_stunned_turns() {
+        for loop_pos in 0..=4 {
+            let diagonal = THIEVING_HOPPER_ESCAPE_ARTIST - loop_pos;
+            for escape_artist in 0..=6 {
+                assert_eq!(
+                    hopper_escape_artist_is_reachable(escape_artist, loop_pos, false),
+                    (1..=diagonal).contains(&escape_artist),
+                    "{loop_pos} {escape_artist}"
+                );
+                assert_eq!(
+                    hopper_escape_artist_is_reachable(escape_artist, loop_pos, true),
+                    (1..=diagonal + 1).contains(&escape_artist),
+                    "{loop_pos} {escape_artist} pre-tick"
+                );
+            }
+        }
+        let mut hopper = HotMonster::new(MonsterKind::ThievingHopper, 40);
+        hopper.loop_pos = 2;
+        hopper.override_state = MonsterOverride::Stunned;
+        hopper.forced_follow_up = MonsterFollowUp::ParkedTelegraph;
+        assert_eq!(
+            hopper_machine_shape(&hopper),
+            (MonsterOverride::None, MonsterFollowUp::None)
+        );
+        hopper.forced_follow_up = MonsterFollowUp::HopperNab;
+        assert_eq!(
+            hopper_machine_shape(&hopper),
+            (MonsterOverride::Stunned, MonsterFollowUp::HopperNab)
+        );
+    }
+
     #[test]
     fn the_generic_stun_owner_set_is_pinned() {
         use MonsterKind::*;
@@ -7810,22 +8763,30 @@ mod tests {
                 BattleFriendV3,
                 BowlbugEgg,
                 BowlbugNectar,
+                BowlbugRock,
                 BowlbugSilk,
                 BruteRubyRaider,
                 BygoneEffigy,
                 Byrdonis,
                 CalcifiedCultist,
+                CeremonialBeast,
                 Chomper,
+                CorpseSlug,
                 CrossbowRubyRaider,
                 Crusher,
                 CubexConstruct,
                 DampCultist,
+                DecimillipedeSegment,
                 DevotedSculptor,
                 Entomancer,
                 Exoskeleton,
+                EyeWithTeeth,
+                Fabricator,
+                FakeMerchantMonster,
                 FatGremlin,
                 FlailKnight,
                 Flyconid,
+                Fogmog,
                 FossilStalker,
                 FrogKnight,
                 FuzzyWurmCrawler,
@@ -7839,6 +8800,8 @@ mod tests {
                 Inklet,
                 KinFollower,
                 KinPriest,
+                KnowledgeDemon,
+                LagavulinMatriarch,
                 LeafSlimeM,
                 LeafSlimeS,
                 LivingFog,
@@ -7851,7 +8814,9 @@ mod tests {
                 Myte,
                 Nibbit,
                 Noisebot,
+                Ovicopter,
                 OwlMagistrate,
+                Parafright,
                 PhantasmalGardener,
                 PhrogParasite,
                 PunchConstruct,
@@ -7871,17 +8836,24 @@ mod tests {
                 SpectralKnight,
                 SpinyToad,
                 Stabbot,
+                TerrorEel,
+                TestSubject,
                 TheForgotten,
                 TheInsatiable,
                 TheLost,
+                TheObscura,
+                ThievingHopper,
                 Toadpole,
+                ToughEgg,
                 TrackerRubyRaider,
+                Tunneler,
                 TurretOperator,
                 TwigSlimeM,
                 TwigSlimeS,
                 TwoTailedRat,
                 Vantom,
                 VineShambler,
+                WaterfallGiant,
                 Wriggler,
                 Zapbot,
             ],
@@ -8179,27 +9151,100 @@ mod tests {
             // A corpse is a silent no-op, never a state to represent.
             assert_eq!(refusal(kind, &|monster| monster.hp = 0), None);
         }
-        assert_eq!(
-            refusal(MonsterKind::TerrorEel, &plain),
-            Some(WHISTLE_STUN_BESPOKE)
+        // #3823: every bespoke kind but the Queen roster (named by its own
+        // arm first) takes the generic stun or its own, so no kind is named
+        // as a bespoke machine any more.
+        for kind in [MonsterKind::TerrorEel, MonsterKind::DecimillipedeSegment] {
+            assert_eq!(refusal(kind, &plain), None, "{kind:?}");
+        }
+        // A dead segment (DEAD, REATTACH, or killed under a stun) is a
+        // corpse to `StunInternal`.
+        for stage in [
+            SEGMENT_REVIVE_DEAD,
+            SEGMENT_REVIVE_REATTACH,
+            SEGMENT_REVIVE_STUN_KEPT,
+        ] {
+            assert_eq!(
+                refusal(MonsterKind::DecimillipedeSegment, &|monster| {
+                    monster.hp = 0;
+                    monster.revive_stage = stage;
+                }),
+                None,
+                "{stage}"
+            );
+        }
+        assert!(
+            MonsterKind::ALL
+                .into_iter()
+                .filter(|kind| GENERIC_STUN_BESPOKE_KINDS.contains(kind))
+                .all(|kind| matches!(kind, MonsterKind::Queen | MonsterKind::TorchHeadAmalgam))
         );
-        // Random AI outside the stun's list, a conditional successor, and a
-        // branch move kind.
+        // #3823: every random table and every conditional successor is a
+        // generic owner now. What is left outside both lists is a kind with
+        // no generated loop at all (its table is the private native loop).
+        let branching: Vec<MonsterKind> = MonsterKind::ALL
+            .into_iter()
+            .filter(|kind| {
+                !GENERIC_STUN_BESPOKE_KINDS.contains(kind) && !generic_stun_owner_is_eligible(*kind)
+            })
+            .collect();
+        for kind in &branching {
+            assert!(
+                crate::content_tables::random_moves(*kind).is_none()
+                    && crate::content_tables::monster_loop(*kind).is_none(),
+                "{kind:?}"
+            );
+        }
+        // #3823: the Slumbering Beetle, whose table is its private ROLL_OUT
+        // row, takes its own stun (`install_beetle_stun`), so no refusal.
+        assert_eq!(branching, vec![MonsterKind::SlumberingBeetle]);
+        for kind in branching {
+            assert_eq!(refusal(kind, &plain), None, "{kind:?}");
+        }
+        // #3823: the Obscura's RAND and Fogmog's in-row BRANCH read no log a
+        // stun's duplicate can move, and their illusions take the stun too.
         for kind in [
             MonsterKind::TheObscura,
-            MonsterKind::Fabricator,
-            MonsterKind::FakeMerchantMonster,
-            MonsterKind::KnowledgeDemon,
             MonsterKind::Fogmog,
+            MonsterKind::Parafright,
+            MonsterKind::EyeWithTeeth,
         ] {
-            assert!(!generic_stun_owner_is_eligible(kind), "{kind:?}");
-            assert_eq!(refusal(kind, &plain), Some(WHISTLE_STUN_BRANCH), "{kind:?}");
+            assert!(generic_stun_owner_is_eligible(kind), "{kind:?}");
+        }
+        for kind in [
+            MonsterKind::Fogmog,
+            MonsterKind::Parafright,
+            MonsterKind::EyeWithTeeth,
+        ] {
+            assert_eq!(refusal(kind, &plain), None, "{kind:?}");
+            // A corpse waiting on REVIVE_MOVE is a silent no-op.
+            assert_eq!(
+                refusal(kind, &|monster| {
+                    monster.hp = 0;
+                    monster.revive_stage = ILLUSION_REVIVING;
+                }),
+                None,
+                "{kind:?}"
+            );
         }
         // #3823: Living Shield's conditional successor is read by the roll
         // after SHIELD_SLAM performs, never by a stun, so it is a generic
         // owner (`GENERIC_STUN_CONDITIONAL_KINDS`).
         assert!(generic_stun_owner_is_eligible(MonsterKind::LivingShield));
         assert!(generic_stun_owner_is_eligible(MonsterKind::FrogKnight));
+        assert!(generic_stun_owner_is_eligible(MonsterKind::KnowledgeDemon));
+        // The demon's curse counter shares the `revive_stage` lane and is not
+        // a row: a Whistle is representable at every counter.
+        for counter in 0..=3 {
+            assert_eq!(
+                refusal(MonsterKind::KnowledgeDemon, &|monster| {
+                    assert!(monster.set_knowledge_demon_curse_counter(counter));
+                    monster.loop_pos = i32::from(counter.min(1));
+                }),
+                None,
+                "counter {counter}"
+            );
+        }
         assert_eq!(refusal(MonsterKind::FrogKnight, &plain), None);
         assert_eq!(refusal(MonsterKind::LivingShield, &plain), None);
         // #3823: Scroll of Biting's CHEW -> `rand` is a branch move kind the
@@ -8212,25 +9257,17 @@ mod tests {
         // still refuse on the Living Shield beside it.
         assert!(generic_stun_owner_is_eligible(MonsterKind::TurretOperator));
         assert_eq!(refusal(MonsterKind::TurretOperator, &plain), None);
-        // The Ovicopter's deferred conditional rides inside a move kind.
-        assert_eq!(
-            refusal(MonsterKind::Ovicopter, &plain),
-            Some(WHISTLE_STUN_BRANCH)
-        );
-        // A second writer of the move: its own reading, not the generic one.
-        for kind in [
-            MonsterKind::Tunneler,
-            MonsterKind::WaterfallGiant,
-            MonsterKind::TestSubject,
-            MonsterKind::ToughEgg,
-            MonsterKind::EyeWithTeeth,
-            MonsterKind::Parafright,
-        ] {
-            assert_eq!(
-                refusal(kind, &plain),
-                Some(WHISTLE_STUN_BESPOKE),
-                "{kind:?}"
-            );
+        // #3823: the Ovicopter's deferred conditional rides inside a move
+        // kind, read only after TENDERIZER performs; the stun covers it.
+        assert_eq!(refusal(MonsterKind::Ovicopter, &plain), None);
+        // #3823: the Tough Egg's `ForceCurrentState` is only for an egg
+        // added already hatched, which no fight does.
+        assert_eq!(refusal(MonsterKind::ToughEgg, &plain), None);
+        // #3823: a death writer of the move with `force: true` replaces a
+        // standing stun, and its must-perform state drops one (the Waterfall
+        // Giant's ABOUT_TO_BLOW, the Test Subject's corpse-shown RESPAWN).
+        for kind in [MonsterKind::WaterfallGiant, MonsterKind::TestSubject] {
+            assert_eq!(refusal(kind, &plain), None, "{kind:?}");
         }
         assert_eq!(
             refusal(MonsterKind::Queen, &plain),

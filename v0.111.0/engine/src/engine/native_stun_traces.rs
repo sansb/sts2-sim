@@ -22,11 +22,53 @@
 //! the same schedule and compares turn by turn. A stun is
 //! [`install_generic_stun`](super::monsters::install_generic_stun), the body
 //! of Whistle's `CreatureCmd::Stun(target, null)`; a play is the public
-//! action; `h` sets a monster's current HP, as the probe did. After every schedule step and every enemy turn the state is
+//! action; `h` sets a monster's current HP and `b` its block, as the probe
+//! did, and `pb` the player's block; `k` is the
+//! probe's `CreatureCmd.Kill` (the Obscura and Fogmog runs, #3823: a card
+//! that kills an illusion exits the headless host). After every schedule step and every enemy turn the state is
 //! projected, hydrated and admitted again, so the stunned state round-trips
 //! the canonical document in its real roster.
 //!
 //! Nothing here is derived from the engine's own unstunned run.
+//!
+//! The Queen and her Torch Head Amalgam (`q_*`) are not generic owners: their
+//! stun has its own two-kind follow-up table and its own roster gate
+//! (`monsters::install_queen_amalgam_stun`, the code a Whistle runs on
+//! them). Their cases are here because the question is the same one, asked
+//! of the game: the stunned turn, the Queen's two conditional rows with the
+//! Amalgam alive and dead, the Amalgam killed while either is stunned.
+//!
+//! A turn may carry `choices`: the options the probe took, in order, at the
+//! card choices the enemy side opened (the Knowledge Demon's curse, answered
+//! natively through the game's `TestCardSelector`). The test answers the
+//! engine's selection with the same option index, so the comparison also
+//! holds the two option orders together. The `kd_*` cases' name ends in the
+//! answer string the probe cycled through.
+//!
+//! The Fake Merchant's runs (`fm_*`, 8 of them with no stun at all: the
+//! machine's own witness) are on a document root, as the other event-started
+//! fights are, and were recorded with one harness patch:
+//! `FakeMerchantMonster::ShowDialogueForMove` (`0xb4438`) needs the
+//! localisation tables the headless host does not load, so it was replaced
+//! by the one thing its body does besides the speech bubble, `Cmd.Wait(0.5f,
+//! false)` (`<ShowDialogueForMove>d__25` `0x35ac5c` IL_0046-IL_004c). The
+//! line it picks is drawn from `Rng.Chaotic` (IL_001d), not a run stream.
+//!
+//! The Decimillipede's runs (`dcm_*`) were recorded with one more harness
+//! patch (#3823). `DecimillipedeSegment/<ReattachMove>d__52::MoveNext`
+//! (`0x358fb0`) loads its phobia-mode texture after the reattach
+//! (IL_009b-IL_00aa) through `Godot.ResourceLoader`, whose type initializer
+//! needs the native engine the headless host has not got: the throw faulted
+//! the whole enemy turn and froze the combat on the enemy side (every earlier
+//! kill trace was that freeze). The non-generic
+//! `ResourceLoader.Load(path, typeHint, cacheMode)` was made to return null.
+//! The texture only reaches `ChangePhobiaModeTexture` (`0xb2f48`), which
+//! returns at once with no creature node (IL_000c-IL_001b).
+//!
+//! One Whistle per player turn: a second costs 4 energy against Ironclad's 3,
+//! and an unaffordable card play exits the headless host (status 139, on any
+//! fight). That, not the target, is why no real Whistle on a Tough Egg was
+//! recorded before; the `egg_*` cases are those Whistles.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -37,6 +79,34 @@ use crate::canonical::CanonicalStateV2;
 use crate::catalog::Catalog;
 use crate::engine::{self, Action};
 use crate::hot::HotState;
+
+/// Native monster powers whose document field has another name. A native
+/// power on this list is compared with that field both ways: an amount the
+/// engine does not hold, and a field the engine holds that native does not.
+/// HatchPower is here so the countdown a stun outlives is compared (#3823).
+const MONSTER_POWER_FIELDS: &[(&str, &str)] = &[("hatch", "hatch_power")];
+
+fn monster_power_field(native: &str) -> &str {
+    MONSTER_POWER_FIELDS
+        .iter()
+        .find(|(name, _)| *name == native)
+        .map_or(native, |(_, field)| field)
+}
+
+/// Native monster powers the document carries as a flag although the game's
+/// amount is a constant, with that amount. ShriekPower's amount is the Terror
+/// Eel's HP threshold, `TerrorEel::get_ShriekAmount` `0xbfda2`
+/// (`GetValueIfAscension(8, 75, 70)`), 75 at the fixture's ascension 10
+/// (#3823).
+const FLAG_POWER_AMOUNTS: &[(&str, i64)] = &[("shriek", 75)];
+
+/// A held flag (1) reads as the listed native amount.
+fn flag_power_amount(native: &str, held: i64) -> i64 {
+    FLAG_POWER_AMOUNTS
+        .iter()
+        .find(|(name, _)| *name == native)
+        .map_or(held, |(_, amount)| if held == 1 { *amount } else { held })
+}
 
 const FIXTURE: &str = include_str!("../../fixtures/native_stun_traces_v1.json");
 
@@ -197,6 +267,12 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
     let mut turns_compared = 0_usize;
     let mut stuns_installed = 0_usize;
     let mut plays = 0_usize;
+    let mut choices_answered = 0_usize;
+    let mut kills = 0_usize;
+    let mut stuns_dropped = 0_usize;
+    let mut player_blocks_set = 0_usize;
+    let mut dead_acting_illusion_turns = 0_usize;
+    let mut dead_acting_segment_turns = 0_usize;
     // (native monster type, native move) -> the engine's names for it, and back.
     let mut names: BTreeMap<(String, String), BTreeSet<String>> = BTreeMap::new();
     let cases = fixture["cases"].as_array().unwrap();
@@ -212,6 +288,14 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
                 serde_json::to_value(project(&state, &catalog)).unwrap()["rng"].clone();
             for act in turn["acts"].as_array().unwrap() {
                 let kind = act[0].as_str().unwrap();
+                if kind == "pb" {
+                    // A root edit like `h`, on the player: the probe set the
+                    // player's current block (#3823, so that a Bowlbug Rock's
+                    // HEADBUTT is fully blocked and installs its own stun).
+                    state.block = i32::try_from(act[1].as_i64().unwrap()).unwrap();
+                    player_blocks_set += 1;
+                    continue;
+                }
                 let uid = act[act.as_array().unwrap().len() - 1].as_u64().unwrap();
                 let Some(index) = monster_index(&state, uid) else {
                     problems.push(format!("{at}: no monster uid {uid} for {act}"));
@@ -226,17 +310,38 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
                 }
                 match kind {
                     "s" | "ss" => {
+                        // The Queen and her Amalgam are bespoke owners:
+                        // their stun is the one a Whistle installs on them.
+                        let queen_roster = matches!(
+                            state.monsters[index].kind,
+                            crate::ids::MonsterKind::Queen
+                                | crate::ids::MonsterKind::TorchHeadAmalgam
+                        );
+                        let before = state.monsters[index].clone();
                         for _ in 0..if kind == "ss" { 2 } else { 1 } {
-                            if let Err(refusal) =
+                            let installed = if queen_roster {
+                                super::monsters::install_queen_amalgam_stun(&mut state, index)
+                            } else {
                                 super::monsters::install_generic_stun(&mut state, index)
-                            {
+                            };
+                            if let Err(refusal) = installed {
                                 problems.push(format!("{at}: stun refused: {refusal:?}"));
                                 break 'turns;
                             }
                         }
                         stuns_installed += 1;
                         let shown = super::turn::monster_intents(&state, &catalog)[index].intent;
-                        if shown != Some("STUNNED") {
+                        // A stun dropped on an unperformed stun (a Whistle's,
+                        // or #3823 the Hopper's Flutter stun and the
+                        // Tunneler's DIZZY) leaves the monster as it was, as
+                        // does one on the Waterfall Giant's must-perform
+                        // ABOUT_TO_BLOW_MOVE.
+                        let dropped = (before.override_state != crate::hot::MonsterOverride::None
+                            || before.is_about_to_blow())
+                            && state.monsters[index] == before;
+                        if dropped {
+                            stuns_dropped += 1;
+                        } else if shown != Some("STUNNED") {
                             problems.push(format!("{at}: stunned monster shows {shown:?}"));
                         }
                     }
@@ -282,6 +387,29 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
                         let hp = i32::try_from(act[1].as_i64().unwrap()).unwrap();
                         state.monsters_mut()[index].hp = hp;
                     }
+                    // A root edit like `h`: the probe set this monster's
+                    // current block (#3823, so that one Strike breaks a
+                    // Tunneler's burrow).
+                    "b" => {
+                        let block = i32::try_from(act[1].as_i64().unwrap()).unwrap();
+                        state.monsters_mut()[index].block = block;
+                    }
+                    // `CreatureCmd.Kill`, as the probe issued it (a card that
+                    // kills an illusion exits the headless host): the HP goes
+                    // to 0 and the death runs, as Doom's kill does.
+                    "k" => {
+                        state.monsters_mut()[index].hp = 0;
+                        if let Err(refusal) = super::damage::finish_monster_death_after_catalog_auth(
+                            &mut state,
+                            &catalog,
+                            index,
+                            &mut Vec::new(),
+                        ) {
+                            problems.push(format!("{at}: kill refused: {refusal:?}"));
+                            break 'turns;
+                        }
+                        kills += 1;
+                    }
                     other => panic!("{at}: unknown act {other}"),
                 }
                 round_trip(
@@ -302,7 +430,63 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
                         break 'turns;
                     }
                 }
+                // A move that opens a player choice (the Knowledge Demon's
+                // curse) stops the enemy side on it; the native run's answers
+                // are the turn's `choices`, in order.
+                let mut answers = turn["choices"].as_array().into_iter().flatten();
+                loop {
+                    let asked = engine::legal_actions(&state, &catalog)
+                        .iter()
+                        .any(|action| matches!(action, Action::Select { .. }));
+                    let answer = answers.next();
+                    if !asked {
+                        if answer.is_some() {
+                            problems.push(format!("{at}: a native choice the engine did not ask"));
+                        }
+                        break;
+                    }
+                    let Some(answer) = answer else {
+                        problems.push(format!(
+                            "{at}: an engine choice the native run did not answer"
+                        ));
+                        break 'turns;
+                    };
+                    round_trip(
+                        &state,
+                        &catalog,
+                        &format!("{at} at the choice"),
+                        &mut problems,
+                    );
+                    let index = u32::try_from(answer.as_u64().unwrap()).unwrap();
+                    let select = Action::Select {
+                        answer: engine::SelectionAnswer::OptionIndex(index),
+                    };
+                    match engine::apply_action_into(&state, &catalog, &select, &mut Vec::new()) {
+                        Ok(next) => state = next,
+                        Err(refusal) => {
+                            problems.push(format!("{at}: choice {index} refused: {refusal:?}"));
+                            break 'turns;
+                        }
+                    }
+                    choices_answered += 1;
+                }
                 turns_compared += 1;
+                dead_acting_illusion_turns += state
+                    .monsters
+                    .iter()
+                    .filter(|monster| {
+                        super::monsters::is_illusion(monster.kind)
+                            && monster.revive_stage == super::monsters::ILLUSION_REVIVE_DROPPED
+                    })
+                    .count();
+                dead_acting_segment_turns += state
+                    .monsters
+                    .iter()
+                    .filter(|monster| {
+                        monster.kind == crate::ids::MonsterKind::DecimillipedeSegment
+                            && monster.revive_stage == super::monsters::SEGMENT_REVIVE_STUN_KEPT
+                    })
+                    .count();
                 round_trip(
                     &state,
                     &catalog,
@@ -418,8 +602,9 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
                     let amount = amount.as_i64().unwrap();
                     // A flag power is a document bool; native counts it as 1.
                     let held = monster
-                        .get(power)
-                        .and_then(|held| held.as_i64().or_else(|| held.as_bool().map(i64::from)));
+                        .get(monster_power_field(power))
+                        .and_then(|held| held.as_i64().or_else(|| held.as_bool().map(i64::from)))
+                        .map(|held| flag_power_amount(power, held));
                     match held {
                         Some(held) if held == amount => {}
                         Some(held) => {
@@ -442,12 +627,39 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
                         problems.push(format!("{tag}: engine-only power {field} = {held}"));
                     }
                 }
+                for (native_name, field) in MONSTER_POWER_FIELDS {
+                    if !powers.contains_key(*native_name)
+                        && monster
+                            .get(*field)
+                            .is_some_and(|held| held.as_i64() != Some(0))
+                    {
+                        problems.push(format!(
+                            "{tag}: engine-only power {field} = {}",
+                            monster[*field]
+                        ));
+                    }
+                }
                 let next = native[5].as_str().unwrap();
-                let shown = intents[index].intent;
+                // A kind's own stun is a `StunInternal` state too, which the
+                // game names STUNNED (`0x11d7cc` IL_0057-IL_0071); the engine
+                // names it by its move (the Bowlbug Rock's DIZZY, #3823).
+                let shown = if super::monsters::own_stun_is_unperformed(&state.monsters[index]) {
+                    Some("STUNNED")
+                } else {
+                    intents[index].intent
+                };
                 if (next == "STUNNED") != (shown == Some("STUNNED")) {
                     problems.push(format!("{tag}: next native {next}, engine {shown:?}"));
                 }
-                if next != "STUNNED" && monster.get("override").is_some() {
+                // The Slumbering Beetle's SNORE is a document override of its
+                // own (the sleeping Beetle's move, not a stun).
+                let snoring = monster.get("override").and_then(Value::as_str) == Some("SNORE")
+                    && next == "SNORE";
+                // The Terror Eel's TERROR_MOVE is a document override too
+                // (the move its own stun hands to, #3823).
+                let terror = monster.get("override").and_then(Value::as_str) == Some("TERROR")
+                    && next == "TERROR";
+                if next != "STUNNED" && monster.get("override").is_some() && !snoring && !terror {
                     problems.push(format!(
                         "{tag}: engine override {} where native shows {next}",
                         monster["override"]
@@ -538,19 +750,39 @@ fn the_generic_stun_matches_the_stored_native_traces_on_real_rosters() {
             player_powers_compared,
             move_logs_compared
         ),
-        (621, 79, 5336, 798, 367, 1977, 2770),
+        (1330, 105, 12997, 3353, 1543, 7802, 4348),
         "cases, kinds, enemy turns compared, stuns installed, cards played, player powers compared, move logs compared"
     );
 
-    // Which generic stun owners have no native trace here. The four Fabricator
-    // bots are spawned by a Fabricator, whose own machine still refuses the
-    // stun (a conditional branch), so no admitted root holds them; their
-    // witness is the row sweep in `turn.rs` and the IL of their machines.
+    assert_eq!(kills, 109, "CreatureCmd.Kill acts from the native runs");
+    assert_eq!(
+        player_blocks_set, 17,
+        "player block edits (#3823, a fully blocked Bowlbug Rock HEADBUTT)"
+    );
+    assert_eq!(
+        stuns_dropped, 64,
+        "stuns dropped on a monster already stunned, by a Whistle or by its own stun, or on a must-perform ABOUT_TO_BLOW (#3823)"
+    );
+    assert_eq!(
+        dead_acting_illusion_turns, 76,
+        "enemy turns ending with an illusion killed under a stun (#3823)"
+    );
+    assert_eq!(
+        dead_acting_segment_turns, 106,
+        "enemy turns ending with a Decimillipede segment killed under a stun (#3823)"
+    );
+    assert_eq!(
+        choices_answered, 101,
+        "choices answered from the native runs"
+    );
+
+    // Every generic stun owner has a native trace here. (The four Fabricator
+    // bots are listed under the `fab_rnd*` cases that stun each of them most.)
     let untraced: Vec<String> = crate::ids::MonsterKind::ALL
         .into_iter()
         .filter(|kind| super::monsters::generic_stun_owner_loop_is_fully_resolvable(*kind))
         .map(|kind| format!("{kind:?}"))
         .filter(|kind| !kinds.contains(kind))
         .collect();
-    assert_eq!(untraced, ["Guardbot", "Noisebot", "Stabbot", "Zapbot"]);
+    assert_eq!(untraced, Vec::<String>::new());
 }

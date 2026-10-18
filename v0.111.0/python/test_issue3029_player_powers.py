@@ -390,7 +390,7 @@ class _PowerChecks:
     def stage(self, _applied):
         return None  # no checkpoint inside the apply (#3242)
 
-    def no_decision(self, _event):
+    def no_decision(self, _event, _state=None):
         pass
 
     def completed(self, _state):

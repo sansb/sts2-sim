@@ -6258,6 +6258,16 @@ wire_enum! {
         // loop row, so no generic owner can resolve this name.
         (BeetleRollOut, "ROLL_OUT_MOVE"),
         (LagavulinSlash, "SLASH_MOVE"),
+        // #3823 — a sleeping Lagavulin Matriarch's SLEEP_MOVE, parked by a
+        // stun (`Creature::StunInternal` `0x11d7cc` IL_0039-IL_0055 reads
+        // `StateLog.Last()`, which is SLEEP_MOVE while it sleeps) and, with no
+        // override, the resumed SLEEP_MOVE the walk out of STUNNED lands on
+        // whatever Asleep then holds (`crate::engine::monsters::
+        // lagavulin_sleep_is_parked`). Not a generated loop row.
+        (LagavulinSleep, "SLEEP_MOVE"),
+        // #3823 — the Slumbering Beetle's SNORE_MOVE, the same two readings
+        // (`crate::engine::monsters::beetle_snore_is_parked`).
+        (BeetleSnore, "SNORE_MOVE"),
         (AmalgamStrongTackle, "STRONG_TACKLE_MOVE"),
         (AmalgamTackleTwo, "TACKLE_2_MOVE"),
         (AmalgamTackleThree, "TACKLE_3_MOVE"),
@@ -16285,8 +16295,9 @@ pub struct HotMonster {
     /// `WasJustAppliedByEnemy` latch. The first enemy-side end after an
     /// application clears this bit instead of granting Strength.
     pub ritual_fresh: bool,
-    /// Owner-disjoint compact revival state. Illusions use 0 while live and 1
-    /// while waiting to spend `REVIVE_MOVE`. Test Subject uses bits 0..1 for
+    /// Owner-disjoint compact revival state. Illusions use 0 while live, 1
+    /// while waiting to spend `REVIVE_MOVE`, and 2 once a stun kept the
+    /// revive out for good (#3823, `monsters::ILLUSION_REVIVE_DROPPED`). Test Subject uses bits 0..1 for
     /// its completed-respawn count, bit 2 for Adaptable's retained-corpse
     /// latch, and bit 3 for Nemesis's alternating-Intangible latch. Typed
     /// accessors below keep those logical canonical fields independent.

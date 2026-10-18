@@ -1039,6 +1039,71 @@ def _native_combat_live(checkpoint: Dict[str, Any]) -> bool:
             and any(c.get("current_hp", 0) > 0 for c in enemies))
 
 
+def _card_is_unplayable(before: Dict[str, Any], legal: List[Dict[str, Any]],
+                        uid: Any) -> bool:
+    """Whether `legal` offers no play at all of the Hand card `uid`, nor of a
+    Hand card identical to it apart from its uid (#3936).
+
+    `CardModel::CanPlay` is a property of the card and the player, never of
+    a target or a selection, so a card the game cancels for it is one Rust
+    offers in no form: not plain, not with any target, not with any
+    selection. A card Rust does offer in some form is playable there, and a
+    recorded play of it that Rust does not offer is a divergence.
+    """
+    hand = {c["uid"]: {k: v for k, v in c.items() if k != "uid"}
+            for c in before["piles"].get("hand", [])}
+    if uid not in hand:
+        return False
+    return not any(
+        offered.get("kind") == "play" and offered.get("uid") in hand
+        and hand[offered["uid"]] == hand[uid]
+        for offered in legal)
+
+
+def _play_cancelled_by_the_game(checks: Any, before: Dict[str, Any]) -> bool:
+    """Whether a recorded play the engine does not offer is one the game
+    cancelled, by the capture's own evidence (#3936).
+
+    `PlayCardAction/<ExecuteAction>d__25::MoveNext` (v0.111.0 RVA 0x3d5458)
+    re-tests the card when the queued action runs: `CardModel::CanPlay` at
+    IL_018d and `IsValidTarget` at IL_01a0, and on either failure
+    `GameAction::Cancel` (IL_01a8) and `leave`. A player who queues a card
+    behind the one that spends their last Energy records exactly that: the
+    input is in the capture, the action runs, and nothing happens. The game
+    still writes the action's completed checkpoint.
+
+    The caller asks this only for a card Rust offers in no form
+    (`_card_is_unplayable`), the `CanPlay` case. A play cancelled because its
+    target became invalid (IL_01a0) is not witnessed and stays `not_legal`.
+
+    So the play is cancelled, not a divergence, exactly when that checkpoint
+    is the next one, is this play's own (`checks.owner`, set by `start`),
+    carries a full state, and that state is the engine's state BEFORE the
+    play, by the same comparison every other checkpoint gets. The checkpoint
+    is then consumed as validated. Without checksums, with another action's
+    checkpoint next, or with any difference, this answers False and the
+    caller reports the divergence it always did: an engine that wrongly
+    refuses a play the game made would differ from the game's post-play
+    state here.
+    """
+    if checks is None or getattr(checks, "owner", None) is None:
+        return False
+    recorded = getattr(checks, "checks", None) or []
+    cursor = getattr(checks, "cursor", 0)
+    if before["player"].get("pending") or cursor >= len(recorded):
+        return False
+    checkpoint = recorded[cursor]
+    if not all(part in checkpoint.get("context", "") for part in checks.owner) \
+            or not checkpoint.get("full_state"):
+        return False
+    try:
+        check_native_checkpoint(before, checkpoint["full_state"])
+    except _CHECKPOINT_ERRORS:
+        return False
+    checks.completed(before)
+    return True
+
+
 def _inputs_cancelled_at_combat_end(replay: Dict[str, Any], checks: Any,
                                     state: Dict[str, Any]) -> bool:
     """Whether recorded inputs after Rust's won combat were never executed.
@@ -1778,6 +1843,15 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
                         wire = sole
                         offered = True
             if not offered:
+                if kind == "NetPlayCardAction" \
+                        and _card_is_unplayable(before, legal, wire["uid"]) \
+                        and _play_cancelled_by_the_game(native, before):
+                    # The game cancelled the play itself and its own
+                    # checkpoint says nothing changed (#3936).
+                    cancelled += 1
+                    note_powers(native)
+                    last_compare = (len(actions), True)
+                    continue
                 raise diverged("not_legal",
                                f"{kind} is not legal at input {index}")
             if kind == "NetPlayCardAction" and wire not in legal:
@@ -1815,12 +1889,16 @@ def replay_recorded_line(session: EngineSession, root: Dict[str, Any],
                 checks = native
                 cursor = getattr(checks, "cursor", None)
                 try:
-                    checks.no_decision(event)
+                    checks.no_decision(event, before)
                 except _CHECKPOINT_ERRORS as exc:
                     mismatch(exc)
                 if getattr(checks, "cursor", None) != cursor:
-                    # Compared against a STAGED mid-apply state (#3242).
-                    last_compare = (len(actions), False)
+                    # Compared against a STAGED mid-apply state (#3242), or,
+                    # for a hook that resumed with no choice (#3936), against
+                    # the live post-step state.
+                    last_compare = (
+                        len(actions),
+                        event.get("event_type") == "ResumeAction")
                 note_powers(checks)
             continue
         else:

@@ -26,8 +26,9 @@ use serde_json::{Value, json};
 mod constrict_native;
 
 /// Native power class names and the engine power each one is.
-const POWERS: [(&str, PowerId); 15] = [
+const POWERS: [(&str, PowerId); 16] = [
     ("JuggernautPower", PowerId::Juggernaut),
+    ("RagePower", PowerId::Rage),
     ("ReboundPower", PowerId::Rebound),
     ("NostalgiaPower", PowerId::Nostalgia),
     ("NoDrawPower", PowerId::NoDraw),
@@ -318,8 +319,9 @@ impl Started {
 }
 
 /// Rebuild the native root: Ironclad at turn one against the trace's
-/// Toadpoles, the spec's relics after Burning Blood as a vouched inventory.
-fn root(spec: &Value, native: &Value) -> Root {
+/// Toadpoles, the spec's relics after Burning Blood, as a vouched inventory
+/// or (#3930) an unvouched one. The state is not yet admitted.
+fn root_parts(spec: &Value, native: &Value, vouched: bool) -> (HotState, Catalog) {
     let mut identities = std::collections::BTreeSet::new();
     for label in spec["deck"].as_array().unwrap() {
         identities.insert(identity_of(label.as_str().unwrap()));
@@ -347,7 +349,7 @@ fn root(spec: &Value, native: &Value) -> Root {
         let name = format!("RELIC.{}", relic.as_str().unwrap());
         relics.push(RelicId::from_str(&name).unwrap_or_else(|| panic!("{name}")));
     }
-    builder.set_relics_ordered(&relics, true).unwrap();
+    builder.set_relics_ordered(&relics, vouched).unwrap();
     let catalog = builder.build();
     let mut state = HotState::at_defaults();
     if let Some(potions) = spec.get("potions") {
@@ -474,6 +476,12 @@ fn root(spec: &Value, native: &Value) -> Root {
         monsters
     };
     state.monsters = std::sync::Arc::new(monsters);
+    (state, catalog)
+}
+
+/// [`root_parts`], round-tripped and admitted.
+fn root(spec: &Value, native: &Value, vouched: bool) -> Root {
+    let (state, catalog) = root_parts(spec, native, vouched);
     let (state, catalog) = cold(&state, &catalog);
     Root {
         state,
@@ -575,8 +583,30 @@ struct Witness {
     terminals: Vec<HotState>,
 }
 
-/// Replay one native trace file (see the module docs).
+/// Replay one native trace file (see the module docs) on a vouched root.
 fn native_trace(text: &str) -> Witness {
+    native_trace_with(text, true)
+}
+
+/// Admission of a native trace's root on an unvouched inventory (#3930).
+fn unvouched_root_admission(text: &str) -> Result<(), crate::engine::admission::AdmissionRefusal> {
+    let file: Value = serde_json::from_str(text).unwrap();
+    let run = &file["runs"][0]["trace"];
+    let native = &run
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| entry["label"] == "root")
+        .unwrap()["snap"];
+    let (state, catalog) = root_parts(&file["spec"], native, false);
+    let wire = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
+    let loaded_catalog = HotBoundary::catalog_from_canonical(&wire).unwrap();
+    let loaded = HotBoundary::from_canonical(&wire, &loaded_catalog).unwrap();
+    admit(&wire, &loaded, &loaded_catalog)
+}
+
+/// Replay one native trace file on a vouched or an unvouched root.
+fn native_trace_with(text: &str, vouched: bool) -> Witness {
     let file: Value = serde_json::from_str(text).unwrap();
     assert_eq!(file["build"], "v0.111.0");
     let spec = &file["spec"];
@@ -610,7 +640,7 @@ fn native_trace(text: &str) -> Witness {
                     let label = step[1].as_str().unwrap();
                     let native = &entry(label)["snap"];
                     if root.is_none() {
-                        let built = self::root(spec, native);
+                        let built = self::root(spec, native, vouched);
                         state = Some(built.state.clone());
                         root = Some(built);
                     }
@@ -815,6 +845,17 @@ macro_rules! trace {
             $name,
             ".json"
         )))
+    };
+}
+
+/// A native trace file's text.
+macro_rules! trace_text {
+    ($name:literal) => {
+        include_str!(concat!(
+            "../../../../fixtures/issue3822_native/",
+            $name,
+            ".json"
+        ))
     };
 }
 
@@ -1990,7 +2031,7 @@ fn the_count_is_a_document_field() {
         "../../../../fixtures/issue3929_native/cap_giant_15.json"
     ))
     .unwrap();
-    let root = root(&file["spec"], &file["runs"][0]["trace"][0]["snap"]);
+    let root = root(&file["spec"], &file["runs"][0]["trace"][0]["snap"], true);
     let wire = HotBoundary::try_to_canonical(&root.state, &root.catalog).unwrap();
     assert!(!wire.player.contains_key(NAME));
     let strike = Action::Play {
@@ -2163,6 +2204,55 @@ fn velvet_choker_stops_the_unceasing_top_loop_at_six_cards() {
         let end = &witness.terminals[0];
         assert_eq!(end.history.card_plays_finished_combat, 6, "{name}");
         assert!(end.piles.get(PileId::Hand).is_empty(), "{name}");
+    }
+}
+
+/// #3930: a Strike Hellraiser plays out of Gremlin Horn's draw after Rage's
+/// Block let Juggernaut kill, inside the sixth card's play. Rage is a power,
+/// and powers run before every relic, so the Choker has not yet counted the
+/// sixth card: the Strike is the seventh play with the Choker before or
+/// after the Horn, vouched or not (scenarios of the independent review of
+/// #3926).
+#[test]
+fn velvet_choker_lets_a_strike_through_after_rage_on_any_inventory() {
+    for (name, text) in [
+        ("rv_rage_vc_horn_b", trace_text!("rv_rage_vc_horn_b")),
+        ("rv_rage_horn_vc_b", trace_text!("rv_rage_horn_vc_b")),
+    ] {
+        for vouched in [true, false] {
+            let witness = native_trace_with(text, vouched);
+            assert_eq!((witness.runs, witness.parks.len()), (1, 0), "{name}");
+            assert_eq!(
+                witness.terminals[0].history.card_plays_finished_combat, 7,
+                "{name} vouched={vouched}"
+            );
+        }
+    }
+}
+
+/// #3930: Letter Opener's hit kills, Gremlin Horn draws a Strike, and
+/// Hellraiser plays it, all inside the sixth Defend's relic walk. Recorded
+/// before the Choker, the Strike is the seventh play; after it, the Choker
+/// has counted six and the Strike is refused. A vouched inventory replays
+/// both. An unvouched one cannot tell them apart and refuses at admission.
+#[test]
+fn velvet_choker_beside_letter_opener_needs_the_recorded_order() {
+    for (name, text, plays) in [
+        ("rv_opener_vc", trace_text!("rv_opener_vc"), 7),
+        ("rv_vc_opener", trace_text!("rv_vc_opener"), 6),
+    ] {
+        let witness = native_trace_with(text, true);
+        assert_eq!(
+            witness.terminals[0].history.card_plays_finished_combat, plays,
+            "{name}"
+        );
+        let refusal = unvouched_root_admission(text).expect_err(name);
+        assert!(
+            refusal.contains(crate::engine::MissingCapability::ArgumentShape(
+                crate::engine::admission::VELVET_CHOKER_KILLING_PEER_ORDER
+            )),
+            "{name}: {refusal:?}"
+        );
     }
 }
 

@@ -319,9 +319,18 @@ pub const IMPLEMENTED_POWERS: [PowerId; 54] = [
 /// the one shared `RngStream::Ai`, exactly as for the elite Flail Knight. The
 /// damage getters are inherited too, which is why the generated
 /// `MYSTERIOUS_KNIGHT_*` tiers equal `FLAIL_KNIGHT_*`.
-pub const RANDOM_AI_ALLOWLIST: [MonsterKind; 17] = [
+///
+/// #3823 adds the Fake Merchant, the one machine here with two
+/// `RandomBranchState`s. `FakeMerchantMonster::GenerateMoveStateMachine` RVA
+/// `0xb40c4`: SWIPE, SPEW_COINS and ENRAGE follow to `RAND_MOVE`
+/// (IL_00f0-IL_0104), THROW_RELIC to `RAND_ATTACK_MOVE` (IL_0130-IL_0133),
+/// and the machine opens on SWIPE (IL_0165-IL_0167). The branch lists and
+/// their weights are on `turn::roll_random_intent`'s arm, the reachable logs
+/// on [`valid_random_ai_state`]'s.
+pub const RANDOM_AI_ALLOWLIST: [MonsterKind; 18] = [
     MonsterKind::Exoskeleton,
     MonsterKind::Fabricator,
+    MonsterKind::FakeMerchantMonster,
     MonsterKind::FlailKnight,
     MonsterKind::Flyconid,
     MonsterKind::FossilStalker,
@@ -435,6 +444,12 @@ pub(crate) const EXOSKELETON_ENRAGE_INDEX: u8 = 2;
 pub(crate) const FLYCONID_VULNERABLE_INDEX: u8 = 0;
 pub(crate) const FLYCONID_FRAIL_INDEX: u8 = 1;
 pub(crate) const FLYCONID_SMASH_INDEX: u8 = 2;
+/// Generated `RANDOM_MOVES` table indexes of the Fake Merchant's four moves
+/// (#3823), which is also their order in `RAND_MOVE`.
+pub(crate) const FAKE_MERCHANT_SWIPE_INDEX: u8 = 0;
+pub(crate) const FAKE_MERCHANT_SPEW_COINS_INDEX: u8 = 1;
+pub(crate) const FAKE_MERCHANT_THROW_RELIC_INDEX: u8 = 2;
+pub(crate) const FAKE_MERCHANT_ENRAGE_INDEX: u8 = 3;
 
 /// Exoskeleton's exact `HardToKillPower` Amount —
 /// `combat_sim.EXOSKELETON_HARD_TO_KILL`, the value
@@ -1392,6 +1407,11 @@ const MOVE_KINDS_WRITING_MONSTER_STRENGTH: [MoveKind; 17] = [
     MoveKind::WeakPlayerStrength,
     MoveKind::Wriggle,
 ];
+
+/// #3930: an unvouched inventory holding Velvet Choker, Gremlin Horn and a
+/// relic whose `AfterCardPlayed` can kill, with a Hellraiser that can be live.
+pub(crate) const VELVET_CHOKER_KILLING_PEER_ORDER: &str =
+    "Velvet Choker beside a killing AfterCardPlayed relic with Gremlin Horn, unvouched";
 
 /// The unvouched Game Piece refusal for a peer a nested Hellraiser play reads
 /// (#2909).
@@ -3417,11 +3437,7 @@ pub fn admit(
     // consume before publishing the power or any Forge writer.
     let hammer_source_reachable = catalog.hammer_time_reachable();
     let hammer_live = state.fanouts.hammer_time();
-    if hammer_live
-        && (state.hp <= 0
-            || state.multiplayer_ally_key != 1
-            || state.fanouts.multiplayer_ally().key != 1)
-    {
+    if hammer_live && !crate::steps::regent_forge::hammer_time_owner_state_is_exact(state) {
         missing.insert(MissingCapability::ArgumentShape(
             "Hammer Time power/owner roster",
         ));
@@ -7803,8 +7819,11 @@ pub fn admit(
                 )
             ) && crate::content_tables::card_row(spec.identity.id, spec.identity.upgrade)
                 == Some(spec.row);
+        // The census, not `spec.solo_unplayable`: a card one player may play
+        // (#3877) still needs its party body to be admitted beside a
+        // teammate.
         if state.multiplayer_ally_key != 0
-            && spec.solo_unplayable
+            && crate::engine::play::card_is_on_a_multiplayer_census(spec.identity.id)
             && !unit_c_ally_card
             && !hammer_time_card
             && !gang_up_card
@@ -8676,18 +8695,21 @@ pub fn admit(
                 // only the Matriarch may carry it. A live Asleep forbids any
                 // override/follow-up — `_validated_monster_forced_shape` — which the
                 // override validator above enforces from the other side.
+                // #3823: or SNORE_MOVE / SLEEP_MOVE parked by a stun.
                 PowerId::Slumber => {
                     monster.kind == MonsterKind::SlumberingBeetle
                         && slot.wire == SlotWire::Int
                         && (1..=3).contains(&slot.value)
-                        && monster.override_state == MonsterOverride::BeetleSnore
+                        && (monster.override_state == MonsterOverride::BeetleSnore
+                            || super::monsters::beetle_snore_is_parked(monster))
                 }
                 PowerId::Asleep => {
                     monster.kind == MonsterKind::LagavulinMatriarch
                         && slot.wire == SlotWire::Int
                         && slot.value > 0
-                        && monster.override_state == crate::hot::MonsterOverride::None
-                        && monster.forced_follow_up == crate::hot::MonsterFollowUp::None
+                        && ((monster.override_state == crate::hot::MonsterOverride::None
+                            && monster.forced_follow_up == crate::hot::MonsterFollowUp::None)
+                            || super::monsters::lagavulin_sleep_is_parked(monster))
                 }
                 PowerId::Skittish => {
                     monster.kind == MonsterKind::PhantasmalGardener
@@ -9111,7 +9133,13 @@ pub fn admit(
                 monster.kind == MonsterKind::SlumberingBeetle
                     && super::monsters::beetle_state_is_valid(monster)
             }
-            MonsterOverride::None => monster.forced_follow_up == crate::hot::MonsterFollowUp::None,
+            // #3823: the resumed SLEEP_MOVE / SNORE_MOVE a stun hands back
+            // carries its move as a follow-up with no override.
+            MonsterOverride::None => {
+                monster.forced_follow_up == crate::hot::MonsterFollowUp::None
+                    || super::monsters::lagavulin_sleep_is_parked(monster)
+                    || super::monsters::beetle_snore_is_parked(monster)
+            }
             MonsterOverride::BeastStun => {
                 monster.kind == MonsterKind::CeremonialBeast
                     && monster.forced_follow_up == crate::hot::MonsterFollowUp::BeastCry
@@ -9144,6 +9172,12 @@ pub fn admit(
                     // and Terror Eel's follow-up-free `STUNNED` keeps its sole
                     // reading.
                     || super::monsters::generic_stun_state_is_exact(state, monster_index)
+                    // #3823: an illusion killed under that stun keeps it until
+                    // the STUNNED performs (`monsters::ILLUSION_REVIVE_DROPPED`).
+                    || super::monsters::illusion_dead_stun_is_exact(monster)
+                    // #3823: so does a segment killed under it
+                    // (`monsters::SEGMENT_REVIVE_STUN_KEPT`).
+                    || super::monsters::segment_dead_stun_is_exact(monster)
             }
             // The Ravenous stun parks whichever telegraph the sibling was
             // already showing, so all three of the Slug's loop moves are legal
@@ -9198,15 +9232,24 @@ pub fn admit(
             missing.insert(MissingCapability::ArgumentShape("monster override"));
         }
         let valid_revive_stage = match monster.kind {
+            // Alive, a corpse waiting on REVIVE_MOVE, or one killed under a
+            // stun that keeps the revive out for good (#3823,
+            // `monsters::ILLUSION_REVIVE_DROPPED`).
             MonsterKind::Parafright | MonsterKind::EyeWithTeeth => {
                 (monster.hp > 0 && monster.revive_stage == 0)
-                    || (monster.hp <= 0 && monster.revive_stage == 1)
+                    || (monster.hp <= 0
+                        && matches!(
+                            monster.revive_stage,
+                            super::monsters::ILLUSION_REVIVING
+                                | super::monsters::ILLUSION_REVIVE_DROPPED
+                        ))
             }
             // A segment is a corpse through DEAD (1) and REATTACH (2) and is
             // alive again at the pending RAND roll (3), because
             // `ReattachPower/<DoReattach>d__10::MoveNext` RVA `0x341e90` heals
-            // before `REATTACH_MOVE`'s successor is resolved. No other pairing
-            // is reachable, and 4.. is not a stage at all. Deliberately no
+            // before `REATTACH_MOVE`'s successor is resolved. A segment killed
+            // under a stun is a corpse at 4 for good (#3823). No other pairing
+            // is reachable, and 5.. is not a stage at all. Deliberately no
             // roster clause: `_finish_monster_death` (frozen Python, deleted #2827) only *enters* the
             // cycle while a peer stands, but a peer can fall afterwards, and a
             // stricter arm would refuse that live successor mid-trajectory.
@@ -9216,6 +9259,8 @@ pub fn admit(
                     monster.hp <= 0
                 }
                 super::monsters::SEGMENT_REVIVE_RAND => monster.hp > 0,
+                // #3823: killed under a stun, acting dead for good.
+                super::monsters::SEGMENT_REVIVE_STUN_KEPT => monster.hp <= 0,
                 _ => false,
             },
             MonsterKind::TestSubject => super::monsters::test_subject_state_is_valid(state),
@@ -9325,13 +9370,22 @@ pub fn admit(
             monster.kind == MonsterKind::BygoneEffigy && monster.bygone_effigy_slow() != 0;
         let colony_private_state = monster.kind == MonsterKind::SkulkingColony
             && monster.skulking_colony_shell_window() != 0;
+        // #3823: the Test Subject's Multi Claw growth counter is a tenant of
+        // the same word (`HotMonster::test_subject_extra_multi_claw_count`),
+        // nonzero after the first MULTI_CLAW of its second form. Without
+        // this, every reload of a second-form Test Subject that has clawed
+        // refused as "waterfall private state" (native trace `tsj_k1`, no
+        // stun at all); `test_subject_state_is_valid` owns the counter.
+        let test_subject_private_state = monster.kind == MonsterKind::TestSubject
+            && monster.test_subject_extra_multi_claw_count() != 0;
         let waterfall_private_state = pressure_gun_field_present
             || (monster.pressure_buildup_idx() != 0
                 && !queen_private_state
                 && !gremlin_private_state
                 && !hopper_private_state
                 && !effigy_private_state
-                && !colony_private_state)
+                && !colony_private_state
+                && !test_subject_private_state)
             || (waterfall_payload_set
                 && matches!(
                     monster.kind,
@@ -10209,6 +10263,45 @@ pub fn admit(
             }
         }
     }
+    // #3930: Velvet Choker counts a play in its own `AfterCardPlayed`
+    // (`VelvetChoker::AfterCardPlayed` RVA `0x9d9a0` IL_0001-001d), at its
+    // place in `Player.Relics` (`CombatState/<IterateHookListeners>d__69`
+    // RVA `0x3f9720` IL_00c9-00ef). A relic body ahead of it that kills
+    // (Letter Opener's `CreatureCmd::Damage`, `<AfterCardPlayed>d__19` RVA
+    // `0x328e98` IL_00d1; Lost Wisp's and Kusarigama's hits; under
+    // Juggernaut a block relic's Block) starts Gremlin Horn's draw
+    // (`GremlinHorn/<AfterDeath>d__6` RVA `0x326170`, `CardPileCmd::Draw`
+    // IL_00d9), and a Strike Hellraiser plays out of it asks `ShouldPlay`
+    // against a count without the current card; behind it, with it. Native
+    // traces `rv_opener_vc` (Letter Opener first: seven plays) and
+    // `rv_vc_opener` (the Choker first: six). A vouched inventory runs the
+    // Choker at its recorded place (`play::velvet_choker_cards_played`); an
+    // unvouched one cannot say which, so it refuses. Draw bodies (Game
+    // Piece, Iron Club) are refused beside the Choker by their own rules.
+    if !hooks.dispatch_ordered()
+        && hooks.owns(RelicId::RelicVelvetChoker)
+        && hooks.owns(RelicId::RelicGremlinHorn)
+        && hellraiser_can_be_live(state, catalog)
+        && ([
+            RelicId::RelicLetterOpener,
+            RelicId::RelicLostWisp,
+            RelicId::RelicKusarigama,
+        ]
+        .into_iter()
+        .any(|relic| hooks.owns(relic))
+            || juggernaut_reachable
+                && [
+                    RelicId::RelicDaughterOfTheWind,
+                    RelicId::RelicOrnamentalFan,
+                    RelicId::RelicPermafrost,
+                ]
+                .into_iter()
+                .any(|relic| hooks.owns(relic)))
+    {
+        missing.insert(MissingCapability::ArgumentShape(
+            VELVET_CHOKER_KILLING_PEER_ORDER,
+        ));
+    }
     // #2909: Game Piece's draw is the same command as Iron Club's, and it can
     // nest a Hellraiser AutoPlay, so it does not commute with an out-of-walk
     // peer that counts plays (`relics::COUNTER_OUT_OF_WALK_PEERS`): this
@@ -10773,6 +10866,34 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
                     && log[1] != log[0]
                     && matches!(log[2], FLYCONID_VULNERABLE_INDEX | FLYCONID_FRAIL_INDEX))
         }
+        // The Fake Merchant (#3823). `GenerateMoveStateMachine` RVA `0xb40c4`
+        // opens on SWIPE (IL_0165-IL_0167), so a log shorter than three
+        // starts there. THROW_RELIC follows to `RAND_ATTACK_MOVE`
+        // (IL_0130-IL_0133), which has no ENRAGE branch (IL_0115-IL_012b),
+        // so ENRAGE never follows THROW_RELIC. ENRAGE is added with cooldown
+        // 3 (IL_00e5-IL_00eb, `AddBranch(state, int cooldown,
+        // MoveRepeatType)` RVA `0x79296`), and `GetStateWeight` RVA `0x79380`
+        // IL_0150-IL_01b9 weighs it 0 while it is among the last three
+        // logged moves, so a log of three never holds it at both ends around
+        // a different move. No all-zero total exists to select it anyway:
+        // CannotRepeat zeroes one branch of three or four.
+        //
+        // A stun logs the parked move again, so a move may follow itself and
+        // the successor rule is asked of the runs. The cooldown rule stays as
+        // written: a duplicate only pushes the earlier ENRAGE further out of
+        // the window (see Flyconid above).
+        MonsterKind::FakeMerchantMonster if table_len == 4 => {
+            once.is_empty()
+                && (log.len() == 3 || log[0] == FAKE_MERCHANT_SWIPE_INDEX)
+                && !runs.windows(2).any(|pair| {
+                    pair[0] == FAKE_MERCHANT_THROW_RELIC_INDEX
+                        && pair[1] == FAKE_MERCHANT_ENRAGE_INDEX
+                })
+                && !(log.len() == 3
+                    && log[0] == FAKE_MERCHANT_ENRAGE_INDEX
+                    && log[2] == FAKE_MERCHANT_ENRAGE_INDEX
+                    && log[1] != FAKE_MERCHANT_ENRAGE_INDEX)
+        }
         MonsterKind::Fabricator if table_len == 3 => {
             super::monsters::fabricator_ai_state_is_valid(monster, false)
         }
@@ -10782,15 +10903,17 @@ pub(crate) fn valid_random_ai_state(monster: &crate::hot::HotMonster, table_len:
         // The Obscura's table index 0 is its fixed one-shot opener; its RAND
         // has only indexes 1..=3, uniform and CannotRepeat. The trailing log
         // may retain the opener only until three later intents displace it.
+        //
+        // #3823: a stun logs the parked move again (the opener included, when
+        // it lands on turn one), so adjacent entries may be equal and the
+        // rules are asked of the runs. CannotRepeat still keeps two different
+        // rolls apart, which the runs cannot show and the roll enforces.
         MonsterKind::TheObscura if table_len == 4 && once.is_empty() => {
-            !log.windows(2).any(|pair| pair[0] == pair[1])
-                && match log.iter().position(|index| *index == 0) {
-                    None => log.len() == 3 && log.iter().all(|index| (1..=3).contains(index)),
-                    Some(0) => {
-                        log.len() == 1 || log[1..].iter().all(|index| (1..=3).contains(index))
-                    }
-                    Some(_) => false,
-                }
+            match runs.iter().position(|index| *index == 0) {
+                None => log.len() == 3 && runs.iter().all(|index| (1..=3).contains(index)),
+                Some(0) => runs[1..].iter().all(|index| (1..=3).contains(index)),
+                Some(_) => false,
+            }
         }
         _ => false,
     }
@@ -27776,16 +27899,49 @@ mod tests {
         )));
     }
 
+    /// #3823: a stun logs the Obscura's parked move again, the opener
+    /// included, so its log is read by runs; the opener must still lead a
+    /// short log and may not follow a RAND move.
+    #[test]
+    fn the_obscura_log_admits_a_stun_duplicate_and_keeps_the_opener_rule() {
+        let machine = |log: &[u8]| {
+            let mut monster = crate::hot::HotMonster::new(MonsterKind::TheObscura, 129);
+            assert!(monster.random_ai.set_log(log));
+            assert!(monster.random_ai.set_next(log.last().copied()));
+            valid_random_ai_state(&monster, 4)
+        };
+        for log in [
+            &[0, 0][..],
+            &[0, 0, 2],
+            &[0, 2, 2],
+            &[2, 2, 3],
+            &[1, 3, 3],
+            &[0, 1, 2],
+        ] {
+            assert!(machine(log), "{log:?}");
+        }
+        for log in [&[1, 1][..], &[2, 0, 1], &[0, 1, 0], &[1, 2]] {
+            assert!(!machine(log), "{log:?}");
+        }
+    }
+
     #[test]
     fn illusion_revive_stage_is_admitted_only_on_the_two_intrinsic_owners() {
         for kind in [MonsterKind::Parafright, MonsterKind::EyeWithTeeth] {
             let (mut document, _, _) = parts();
             document.monsters[0].insert("kind".to_owned(), Value::from(kind.as_str()));
-            document.monsters[0].insert("revive_stage".to_owned(), Value::from(1));
-            let refusal = refuse(&document);
-            assert!(refusal.contains(MissingCapability::ArgumentShape(
-                "illusion revive lifecycle"
-            )));
+            // A living body at either corpse stage (#3823 adds the dropped
+            // revive, `monsters::ILLUSION_REVIVE_DROPPED`), and a stage past it.
+            for stage in [1, 2, 3] {
+                document.monsters[0].insert("revive_stage".to_owned(), Value::from(stage));
+                let refusal = refuse(&document);
+                assert!(
+                    refusal.contains(MissingCapability::ArgumentShape(
+                        "illusion revive lifecycle"
+                    )),
+                    "{kind:?} {stage}"
+                );
+            }
         }
 
         let (mut non_illusion, _, _) = parts();
@@ -29309,10 +29465,22 @@ mod tests {
         let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
         assert_eq!(admit(&document, &state, &catalog), Ok(()));
 
+        // #3823: a stun on turn one logs the opener twice, which admits; the
+        // opener after a RAND move does not.
         document.monsters[0].insert(
             "move_log".to_owned(),
             Value::Array(vec![
                 Value::from("ILLUSION_MOVE"),
+                Value::from("ILLUSION_MOVE"),
+            ]),
+        );
+        let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+        let state = HotBoundary::from_canonical(&document, &catalog).unwrap();
+        assert_eq!(admit(&document, &state, &catalog), Ok(()));
+        document.monsters[0].insert(
+            "move_log".to_owned(),
+            Value::Array(vec![
+                Value::from("PIERCING_GAZE_MOVE"),
                 Value::from("ILLUSION_MOVE"),
             ]),
         );
@@ -29482,9 +29650,9 @@ mod tests {
                 MonsterKind::TwoTailedRat,
             ]
         );
-        // Bodies are complete for all tables; FakeMerchant and MysteriousKnight
-        // retain their independent AI/encounter refusals. The legacy Python
-        // `_roll_fake_merchant_intent` (frozen, deleted #2827) still has a separate machine.
+        // Bodies are complete for all tables. The Fake Merchant's two-RAND
+        // machine is admitted since #3823; its event's entry still refuses
+        // (`entry::event_combat`).
         // Spectral now admits the current-DLL machine documented above;
         // `_advance_spectral_knight_intent` remains advisory only.
         assert_eq!(
@@ -29492,6 +29660,7 @@ mod tests {
             [
                 MonsterKind::Exoskeleton,
                 MonsterKind::Fabricator,
+                MonsterKind::FakeMerchantMonster,
                 MonsterKind::FlailKnight,
                 MonsterKind::Flyconid,
                 MonsterKind::FossilStalker,
@@ -29579,6 +29748,7 @@ mod tests {
                     kind,
                     MonsterKind::Exoskeleton
                         | MonsterKind::Fabricator
+                        | MonsterKind::FakeMerchantMonster
                         | MonsterKind::FlailKnight
                         | MonsterKind::Flyconid
                         | MonsterKind::FossilStalker
@@ -38156,6 +38326,60 @@ mod tests {
         admit(&document, &state, &catalog)
             .err()
             .is_some_and(|r| r.contains(MissingCapability::ArgumentShape(name)))
+    }
+
+    /// #3930: Velvet Choker, Gremlin Horn and a relic whose AfterCardPlayed
+    /// can kill refuse on an unvouched inventory once Hellraiser can be live:
+    /// a damage relic always, a block relic with Juggernaut reachable. Each
+    /// missing conjunct, and a vouched inventory, admit the row.
+    #[test]
+    fn velvet_choker_beside_a_killing_relic_refuses_only_unvouched() {
+        use RelicId::{
+            RelicDaughterOfTheWind as Daughter, RelicGremlinHorn as Horn,
+            RelicKusarigama as Kusarigama, RelicLetterOpener as Opener, RelicLostWisp as Wisp,
+            RelicOrnamentalFan as Fan, RelicPermafrost as Permafrost, RelicVelvetChoker as Choker,
+        };
+        let refused = |relics: &[RelicId], vouched: bool, powers: &[PowerId]| {
+            let (_, mut state, base) = parts();
+            let mut builder = CatalogBuilder::new();
+            for spec in base.specs() {
+                builder.intern(spec.identity).unwrap();
+            }
+            builder.set_relics_ordered(relics, vouched).unwrap();
+            let catalog = builder.build();
+            for power in powers {
+                state.powers.set(*power, crate::powers::SlotWire::Int, 1);
+            }
+            state
+                .fanouts
+                .set_gremlin_horn_owned(catalog.hooks().owns(Horn));
+            let document = HotBoundary::to_canonical(&state, &catalog);
+            admit(&document, &state, &catalog)
+                .err()
+                .is_some_and(|refusal| {
+                    refusal.contains(MissingCapability::ArgumentShape(
+                        VELVET_CHOKER_KILLING_PEER_ORDER,
+                    ))
+                })
+        };
+        let hell = PowerId::Hellraiser;
+        let jug = PowerId::Juggernaut;
+        for killer in [Opener, Wisp, Kusarigama] {
+            for order in [[killer, Choker, Horn], [Choker, killer, Horn]] {
+                assert!(refused(&order, false, &[hell]), "{order:?}");
+                assert!(!refused(&order, true, &[hell]), "{order:?} vouched");
+                assert!(!refused(&order, false, &[]), "{order:?} no Hellraiser");
+            }
+            assert!(!refused(&[killer, Choker], false, &[hell]), "no Horn");
+            assert!(!refused(&[killer, Horn], false, &[hell]), "no Choker");
+        }
+        for blocker in [Daughter, Fan, Permafrost] {
+            let order = [blocker, Choker, Horn];
+            assert!(refused(&order, false, &[hell, jug]), "{order:?}");
+            assert!(!refused(&order, false, &[hell]), "{order:?} no Juggernaut");
+            assert!(!refused(&order, true, &[hell, jug]), "{order:?} vouched");
+        }
+        assert!(!refused(&[Choker, Horn], false, &[hell, jug]), "no killer");
     }
 
     /// #2909: Game Piece's draw can nest a Hellraiser AutoPlay, which the

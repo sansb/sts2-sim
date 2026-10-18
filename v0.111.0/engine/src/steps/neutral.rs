@@ -1268,11 +1268,17 @@ pub(crate) fn gang_up_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> 
     let target = ctx
         .target
         .ok_or(EngineRefusal::MalformedArgs("gang_up_exact target"))?;
+    // `GangUp/<OnPlay>d__5` (RVA `0x3a0d20`) only null-checks its target
+    // (IL_0026-IL_0030) before the one `AttackCommand` (IL_0040-IL_0077). A
+    // replayed body keeps the creature its first body killed, and
+    // `AttackCommand.Execute`'s per-hit `IsAlive` filter (`<Execute>d__90`
+    // `0x3f19c0` IL_0168-IL_0196) leaves it no receiver: the attack helper's
+    // dead-target no-op (#3877; `tests/native/solo_gang_up_glam_lethal`). A
+    // target outside the roster is still refused: no play produces one.
     let monster = ctx
         .state
         .monsters
         .get(target)
-        .filter(|monster| monster.hp > 0)
         .ok_or_else(|| dead_target(target))?;
     let prior = monster.nonowner_same_side_powered_damage_results_this_turn;
     if prior < 0 {
@@ -2042,8 +2048,14 @@ pub(crate) fn rally_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         }
         Ok(())
     }
-    let mut probe = ctx.state.clone();
-    body(&mut probe, ctx.catalog, ctx.spec, &mut Vec::new(), amount)?;
+    // The rehearsal exists so a refusal at the remote recipient cannot leave
+    // the owner's half applied. A lone owner (#3877) is the whole batch, and a
+    // rehearsed gain would count against the play's own Unmovable window
+    // (`play::note_active_play_block_gain` is not part of the cloned state).
+    if ctx.state.multiplayer_ally_key != 0 {
+        let mut probe = ctx.state.clone();
+        body(&mut probe, ctx.catalog, ctx.spec, &mut Vec::new(), amount)?;
+    }
     body(ctx.state, ctx.catalog, ctx.spec, ctx.events, amount)
 }
 
@@ -2750,26 +2762,7 @@ pub(crate) fn stun_target(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
         // uniquely determine.
         return crate::engine::monsters::install_generic_stun(ctx.state, target);
     }
-    if monster.override_state == crate::hot::MonsterOverride::Stunned {
-        return crate::engine::monsters::queen_amalgam_stun_state_is_exact(ctx.state, target)
-            .then_some(())
-            .ok_or(EngineRefusal::MalformedArgs("Whistle existing stun"));
-    }
-    if monster.override_state != crate::hot::MonsterOverride::None
-        || monster.forced_follow_up != crate::hot::MonsterFollowUp::None
-    {
-        return Err(EngineRefusal::MalformedArgs("Whistle target state"));
-    }
-    let follow_up =
-        crate::engine::monsters::queen_amalgam_follow_up(monster.kind, monster.loop_pos)
-            .ok_or(EngineRefusal::MalformedArgs("Whistle target machine"))?;
-    let monster = &mut ctx.state.monsters_mut()[target];
-    monster.override_state = crate::hot::MonsterOverride::Stunned;
-    monster.forced_follow_up = follow_up;
-    if !crate::engine::monsters::queen_amalgam_stun_state_is_exact(ctx.state, target) {
-        return Err(EngineRefusal::MalformedArgs("Whistle stun result"));
-    }
-    Ok(())
+    crate::engine::monsters::install_queen_amalgam_stun(ctx.state, target)
 }
 
 /// `tag_team_exact` — not modeled. **Escalated (#1331).**
@@ -6415,25 +6408,24 @@ mod tests {
             }
         )));
 
+        // #3877: one player may play it (`CardModel::CanPlay` RVA `0x7dca8`
+        // tests the player count only for an AnyAlly target), and the count
+        // of the side's other hits is whatever the target recorded.
         let (mut solo, catalog, _) = gang_up_fixture(0, 2);
         solo.multiplayer_ally_key = 0;
-        let before = solo.clone();
-        let mut refused_events = Vec::new();
-        assert!(
-            apply_action_into(
-                &solo,
-                &catalog,
-                &Action::Play {
-                    uid: 7,
-                    target: Some(0),
-                    selection: SelectionRef::new(None),
-                },
-                &mut refused_events,
-            )
-            .is_err()
-        );
-        assert_eq!(solo, before);
-        assert!(refused_events.is_empty());
+        let mut solo_events = Vec::new();
+        let played = apply_action_into(
+            &solo,
+            &catalog,
+            &Action::Play {
+                uid: 7,
+                target: Some(0),
+                selection: SelectionRef::new(None),
+            },
+            &mut solo_events,
+        )
+        .unwrap();
+        assert_eq!(played.monsters[0].hp, solo.monsters[0].hp - 15);
     }
 
     #[test]
@@ -6521,6 +6513,8 @@ mod tests {
         dead.piles.get_mut(PileId::Play).make_mut().push(source);
         let before = dead.clone();
         let mut events = Vec::new();
+        // #3877: a dead target is the attack's ordinary no-op (a replayed
+        // body keeps the target its first body killed).
         assert_eq!(
             run_gang_up_body(
                 &mut dead,
@@ -6530,10 +6524,24 @@ mod tests {
                 (Some(0), None, 0, &[CompiledArg::I(5)]),
                 &mut events,
             ),
-            Err(EngineRefusal::BadTarget(0))
+            Ok(())
         );
-        assert_eq!(dead, before);
-        assert!(events.is_empty());
+        assert_eq!(dead.monsters, before.monsters);
+        assert_eq!(dead.hp, before.hp);
+        let (mut absent, catalog, gang_up) = gang_up_fixture(0, 2);
+        let source = absent.piles.get_mut(PileId::Hand).make_mut().remove(0);
+        absent.piles.get_mut(PileId::Play).make_mut().push(source);
+        assert_eq!(
+            run_gang_up_body(
+                &mut absent,
+                &catalog,
+                gang_up,
+                7,
+                (Some(9), None, 0, &[CompiledArg::I(5)]),
+                &mut Vec::new(),
+            ),
+            Err(EngineRefusal::BadTarget(9))
+        );
 
         let (mut overflow, catalog, gang_up) = gang_up_fixture(0, 2);
         overflow.monsters_mut()[0].owner_powered_damage_results_this_turn = i32::MAX;

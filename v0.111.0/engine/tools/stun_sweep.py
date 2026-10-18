@@ -29,6 +29,13 @@ An encounter whose opening the engine refuses with a Whistle in the deck is
 listed with the refusal's name and is not a finding: that is admission saying
 so up front, which is the stopgap #3823 is removing kind by kind.
 
+An event-started encounter has no entry-facts opening at all (the facts
+cannot vouch for the pre-combat half of the event, `entry::event_combat`).
+Its fight is still the engine's, so it is swept from a document root: the
+roster `fixtures/event_rosters_v1.json` records for it (the highest ascension
+there), standing in the player state of a map opening on the same seed and
+deck. Whether the engine admits that root is reported like any other.
+
     stun_sweep.py                              # every encounter
     stun_sweep.py --match KNIGHTS --lines 4    # a slice, more lines
     stun_sweep.py --out target/stun_sweep.json
@@ -70,6 +77,32 @@ def encounters():
     for path in glob.glob(str(CRATE / "fixtures" / "*_rosters_v1.json")):
         found.update(case["encounter"] for case in json.loads(pathlib.Path(path).read_text())["cases"])
     return sorted(found)
+
+
+EVENT_BASE = "ENCOUNTER.CUBEX_CONSTRUCT_NORMAL"
+
+
+def event_rosters():
+    """Encounter -> the distinct document rosters the event roster fixture holds at its highest ascension."""
+    cases = json.loads((CRATE / "fixtures" / "event_rosters_v1.json").read_text())["cases"]
+    top = {}
+    for case in cases:
+        top[case["encounter"]] = max(top.get(case["encounter"], 0), case["ascension"])
+    found = {}
+    for case in cases:
+        if case["ascension"] != top[case["encounter"]]:
+            continue
+        roster = []
+        for row in case["roster"]:
+            monster = {"kind": row["kind"], "hp": row["hp"], "max_hp": row["max_hp"]}
+            monster.update({key: row[key] for key in ("slot", "uid", "loop_pos") if row.get(key)})
+            monster.update(dict(row["initial_state"]))
+            if row.get("next_move"):
+                monster["next_move"], monster["move_log"] = row["next_move"], row["move_log"]
+            roster.append(monster)
+        if roster not in found.setdefault(case["encounter"], []):
+            found[case["encounter"]].append(roster)
+    return found
 
 
 def streams(seed):
@@ -251,6 +284,13 @@ def sweep_encounter(binary, encounter, args):
                     root = opening(binary, facts(encounter, seed, deck, node_index, args.hp))
                 except RuntimeError as error:
                     return {"encounter": encounter, "status": "opening error: " + str(error)[:120], **totals, "findings": []}
+                if root.get("refusal_class") == "event_combat_facts_unvouched" and encounter in args.event_rosters:
+                    event = args.event_rosters[encounter]
+                    if node_index >= len(event):
+                        continue
+                    root = opening(binary, facts(EVENT_BASE, seed, deck, 0, args.hp))
+                    if root.get("schema") == "sts-sim-canonical-v2":
+                        root["monsters"] = json.loads(json.dumps(event[node_index]))
                 if root.get("schema") != "sts-sim-canonical-v2":
                     refusal = root.get("opening") or root.get("refusal") or root
                     return {"encounter": encounter, "status": "opening refused: " + json.dumps(refusal)[:150], **totals, "findings": []}
@@ -298,6 +338,7 @@ def main():
     args = parser.parse_args()
     if not args.binary.exists():
         sys.exit(f"no release binary at {args.binary}: cargo build --release --locked")
+    args.event_rosters = event_rosters()
     rows = []
     for encounter in encounters():
         if args.match and not any(text in encounter for text in args.match):

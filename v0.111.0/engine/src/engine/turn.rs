@@ -34,10 +34,11 @@ use crate::rng::Xoshiro256StarStar;
 use super::admission::{
     CORPSE_SLUG_GLOMP_INDEX, CORPSE_SLUG_GOOP_INDEX, CORPSE_SLUG_WHIP_SLAP_INDEX,
     EXOSKELETON_ENRAGE_INDEX, EXOSKELETON_MANDIBLES_INDEX, EXOSKELETON_SKITTER_INDEX,
-    FLYCONID_FRAIL_INDEX, FLYCONID_SMASH_INDEX, FLYCONID_VULNERABLE_INDEX, INKLET_JAB_INDEX,
-    INKLET_PIERCING_INDEX, INKLET_WHIRLWIND_INDEX, LAGAVULIN_SLASH_INDEX, MAWLER_CLAW_INDEX,
-    MAWLER_RIP_INDEX, MAWLER_ROAR_INDEX, PHASE_ORDINARY_ACTIONS, random_ai_is_allowlisted,
-    valid_random_ai_state,
+    FAKE_MERCHANT_ENRAGE_INDEX, FAKE_MERCHANT_SPEW_COINS_INDEX, FAKE_MERCHANT_SWIPE_INDEX,
+    FAKE_MERCHANT_THROW_RELIC_INDEX, FLYCONID_FRAIL_INDEX, FLYCONID_SMASH_INDEX,
+    FLYCONID_VULNERABLE_INDEX, INKLET_JAB_INDEX, INKLET_PIERCING_INDEX, INKLET_WHIRLWIND_INDEX,
+    LAGAVULIN_SLASH_INDEX, MAWLER_CLAW_INDEX, MAWLER_RIP_INDEX, MAWLER_ROAR_INDEX,
+    PHASE_ORDINARY_ACTIONS, random_ai_is_allowlisted, valid_random_ai_state,
 };
 use super::damage::tick_monster_poison_after_catalog_auth;
 use super::draw::{DrawSource, PotionDrawResult, draw_cards, draw_cards_for_potion, flush_hand};
@@ -3593,7 +3594,35 @@ fn finish_player_turn_after_ordinary_side_end(
 ///   `<SpawnedMove>d__16` RVA `0x35b4b8`) are one `CreatureCmd::TriggerAnim`
 ///   (IL_002d).
 ///
-/// Any other creature added here refuses by name.
+/// # Stock's replacement Axebot (#3938)
+///
+/// The one creature the side start can both remove and add. An Axebot the
+/// Poison tick kills is replaced in its slot by `StockPower.AfterDeath`
+/// ([`super::monsters::respawn_axebot`], which carries that IL): the corpse
+/// leaves `_enemies` and a fresh creature joins it, so the roster's length
+/// is unchanged while its only uid is new. `DENN1LA7PRHS` node 38 is the
+/// witness: an Axebot at 1 HP with Poison 2 and Stock 2 ends the player's
+/// turn, and the capture's next two checksums ('After enemy turn start',
+/// 'After enemy turn end') show an 86/86 Axebot with Stock 1 and a player
+/// whose HP and Block did not move.
+///
+/// It spends that enemy turn without acting for the reason above
+/// (`SpawnedThisTurn`, set by `SetUpForCombat` and cleared only at the next
+/// side switch), and its machine is left unperformed on its initial state,
+/// which the next roll does not leave. That state is `BOOT_UP_MOVE`:
+/// `Axebot::GenerateMoveStateMachine` (RVA `0xaee50`) starts the machine on
+/// it when `_stockOverrideAmount` has a value (`ldflda`/`get_HasValue`
+/// IL_00ca-IL_00cf, `brfalse` IL_00d4, `MonsterMoveStateMachine::.ctor` with
+/// the `BOOT_UP_MOVE` local at IL_00d6-IL_00d8), and the replacement always
+/// has one: `StockPower/<AfterDeath>d__4::MoveNext` (RVA `0x346280`) calls
+/// `Axebot::set_StockAmount(Amount - 1)` (IL_0067-IL_006e) before
+/// `CreatureCmd::Add` (IL_0090). The engine's row for it is `loop_pos == 2`,
+/// the value `respawn_axebot` writes, and a monster outside the act walk
+/// keeps its loop position. So leaving the replacement out of this turn's
+/// act walk is the whole of it: it boots up on the next enemy turn, as the
+/// capture shows native does.
+///
+/// Any other creature added here, and any other removal, refuses by name.
 fn enemy_side_start_act_roster(
     state: &HotState,
     switched: SwitchedRoster,
@@ -3611,7 +3640,20 @@ fn enemy_side_start_act_roster(
     if added_count == 0 && state.monsters.len() == switched.len {
         return Ok(None);
     }
-    if state.monsters.len() != switched.len + added_count {
+    // Stock's in-place replacement: the singleton Axebot roster
+    // `respawn_axebot` requires, whose one creature is new and still on the
+    // BOOT_UP it was created at.
+    let stock_replacement = switched.len == 1
+        && added_count == 1
+        && matches!(
+            state.monsters.as_slice(),
+            [replacement]
+                if replacement.kind == MonsterKind::Axebot
+                    && replacement.hp > 0
+                    && replacement.loop_pos == super::monsters::AXEBOT_BOOT_UP_LOOP_POS
+                    && !replacement.spawn_noop
+        );
+    if !stock_replacement && state.monsters.len() != switched.len + added_count {
         return Err(EngineRefusal::MalformedArgs(
             "enemy side start removed a creature",
         ));
@@ -3622,7 +3664,7 @@ fn enemy_side_start_act_roster(
                 monster.kind,
                 MonsterKind::Wriggler | MonsterKind::SneakyGremlin | MonsterKind::FatGremlin
             );
-        if added(monster.uid) && !unperformed_spawned_move {
+        if added(monster.uid) && !unperformed_spawned_move && !stock_replacement {
             return Err(EngineRefusal::MonsterLoopNotModeled(monster.kind));
         }
     }
@@ -5779,20 +5821,34 @@ fn tick_monster_ritual(
 /// names it.
 pub(crate) const LAGAVULIN_SLEEP_MOVE: &str = "SLEEP_MOVE";
 
-fn lagavulin_sleep_move(
-    override_state: MonsterOverride,
-    forced_follow_up: MonsterFollowUp,
-    spawn_noop: bool,
-) -> Result<(), EngineRefusal> {
-    if override_state != MonsterOverride::None
-        || forced_follow_up != MonsterFollowUp::None
-        || spawn_noop
-    {
-        return Err(EngineRefusal::MalformedArgs(
+///
+/// #3823: a stun over SLEEP_MOVE, and the resumed SLEEP_MOVE after it
+/// ([`super::monsters::lagavulin_sleep_is_parked`]). The STUNNED body is the
+/// completed task (`<Stun>b__26_0` `0x3e8f83`), and the walk out of it lands on
+/// SLEEP_MOVE itself, so the action leaves the resumed SLEEP_MOVE showing. That
+/// SLEEP_MOVE's body is `SleepMove` above, nothing, and the roll after it reads
+/// SLEEP_BRANCH, which is the ordinary sleeping or woken Matriarch again.
+fn lagavulin_sleep_move(state: &mut HotState, index: usize) -> Result<(), EngineRefusal> {
+    let monster = &state.monsters[index];
+    let parked = super::monsters::lagavulin_sleep_is_parked(monster);
+    match (monster.override_state, monster.forced_follow_up) {
+        (MonsterOverride::None, MonsterFollowUp::None)
+            if !monster.spawn_noop && monster.powers.value(PowerId::Asleep) > 0 =>
+        {
+            Ok(())
+        }
+        (MonsterOverride::Stunned, MonsterFollowUp::LagavulinSleep) if parked => {
+            state.monsters_mut()[index].override_state = MonsterOverride::None;
+            Ok(())
+        }
+        (MonsterOverride::None, MonsterFollowUp::LagavulinSleep) if parked => {
+            state.monsters_mut()[index].forced_follow_up = MonsterFollowUp::None;
+            Ok(())
+        }
+        _ => Err(EngineRefusal::MalformedArgs(
             "sleeping Lagavulin forced state",
-        ));
+        )),
     }
-    Ok(())
 }
 
 /// `AsleepPower/<BeforeSideTurnEndVeryEarly>d__5::MoveNext` for the enemy
@@ -5949,11 +6005,16 @@ fn monster_act(
         // IllusionPower.ReviveMove clears its retained corpse latch and fully
         // heals the same slot/uid creature, spending the whole action
         // (`monster_act`, frozen Python, deleted #2827).
-        if matches!(kind, MonsterKind::Parafright | MonsterKind::EyeWithTeeth) && revive_stage == 1
+        if super::monsters::is_illusion(kind) && revive_stage == super::monsters::ILLUSION_REVIVING
         {
             let monster = &mut state.monsters_mut()[index];
             monster.hp = monster.max_hp;
             monster.revive_stage = 0;
+        }
+        if super::monsters::is_illusion(kind)
+            && revive_stage == super::monsters::ILLUSION_REVIVE_DROPPED
+        {
+            return dead_illusion_act(state, catalog, index, events);
         }
         // A Decimillipede corpse stays in the roster and keeps taking turns:
         // `CombatManager/<ExecuteEnemyTurn>d__126::MoveNext` RVA `0x3f597c`
@@ -5976,6 +6037,11 @@ fn monster_act(
         // `PrepareForNextTurn` — stage 3, rolled in `prepare_random_ai`, in
         // shared roster order with the other `MonsterAi` consumers.
         if kind == MonsterKind::DecimillipedeSegment
+            && revive_stage == super::monsters::SEGMENT_REVIVE_STUN_KEPT
+        {
+            return dead_segment_act(state, catalog, index, events);
+        }
+        if kind == MonsterKind::DecimillipedeSegment
             && revive_stage == super::monsters::SEGMENT_REVIVE_REATTACH
         {
             let monster = &mut state.monsters_mut()[index];
@@ -5985,11 +6051,35 @@ fn monster_act(
         return Ok(());
     }
     if kind == MonsterKind::LagavulinMatriarch
-        && state.monsters[index].powers.value(PowerId::Asleep) > 0
+        && (state.monsters[index].powers.value(PowerId::Asleep) > 0
+            || forced_follow_up == MonsterFollowUp::LagavulinSleep)
     {
-        return lagavulin_sleep_move(override_state, forced_follow_up, spawn_noop);
+        return lagavulin_sleep_move(state, index);
     }
     if forced_follow_up != MonsterFollowUp::None {
+        // #3823: a stun over the Slumbering Beetle's SNORE_MOVE, and the
+        // resumed SNORE_MOVE after it
+        // ([`super::monsters::beetle_snore_is_parked`]). The STUNNED action
+        // leaves SNORE_MOVE showing (the walk out of STUNNED lands on it); the
+        // resumed SNORE_MOVE's body is nothing (`SlumberingBeetle::SnoreMove`
+        // `0xbe6ba`), and the roll after it reads SNORE_NEXT: still asleep
+        // while Slumber lives, awake on ROLL_OUT once it is gone. Native
+        // traces `bee_s1` (Slumber 3: SNORE twice more, then ROLL_OUT, as
+        // unstunned), `bee_s3s4`.
+        if kind == MonsterKind::SlumberingBeetle
+            && super::monsters::beetle_snore_is_parked(&state.monsters[index])
+        {
+            let monster = &mut state.monsters_mut()[index];
+            if override_state == MonsterOverride::Stunned {
+                monster.override_state = MonsterOverride::None;
+            } else {
+                monster.forced_follow_up = MonsterFollowUp::None;
+                if monster.powers.value(PowerId::Slumber) > 0 {
+                    monster.override_state = MonsterOverride::BeetleSnore;
+                }
+            }
+            return Ok(());
+        }
         if kind == MonsterKind::ThievingHopper
             && override_state == MonsterOverride::Stunned
             && matches!(
@@ -6887,6 +6977,23 @@ fn monster_intent(state: &HotState, catalog: &Catalog, monster: &HotMonster) -> 
         }
         return unknown;
     }
+    // #3823: a parked SLEEP_MOVE / SNORE_MOVE shows STUNNED under the stun,
+    // and the move itself once the stun has performed.
+    if super::monsters::lagavulin_sleep_is_parked(monster)
+        || super::monsters::beetle_snore_is_parked(monster)
+    {
+        let intent = if monster.override_state == MonsterOverride::Stunned {
+            MonsterOverride::Stunned.as_str()
+        } else if monster.kind == MonsterKind::LagavulinMatriarch {
+            LAGAVULIN_SLEEP_MOVE
+        } else {
+            MonsterOverride::BeetleSnore.as_str()
+        };
+        return MonsterIntent {
+            intent: Some(intent),
+            ..unknown
+        };
+    }
     // A sleeping Lagavulin Matriarch's next move is `SLEEP_MOVE`, whose one
     // intent is a `SleepIntent` (`LagavulinMatriarch::GenerateMoveStateMachine`
     // RVA `0xb8124` `IL_0012`-`IL_0031`): no damage. Its parked loop row names
@@ -7100,7 +7207,8 @@ pub(crate) fn monster_intends_to_attack(
         let waking = !asleep
             && monster.override_state == MonsterOverride::LagavulinWakeUp
             && monster.forced_follow_up == MonsterFollowUp::LagavulinSlash;
-        if sleeping || waking {
+        // #3823: STUNNED or the resumed SLEEP_MOVE; neither attacks.
+        if sleeping || waking || super::monsters::lagavulin_sleep_is_parked(monster) {
             return Ok(false);
         }
         if asleep {
@@ -7127,6 +7235,10 @@ pub(crate) fn monster_intends_to_attack(
             )
             && super::monsters::queen_amalgam_stun_state_is_exact(state, index)
         {
+            return Ok(false);
+        }
+        // #3823: the resumed SNORE_MOVE does nothing.
+        if super::monsters::beetle_snore_is_parked(monster) {
             return Ok(false);
         }
         // The generic `CreatureCmd::Stun(creature, null)` state (#2647 slice A).
@@ -7198,6 +7310,148 @@ pub(crate) fn monster_intends_to_attack(
     }
     let (entry, _, _) = current_table_move(monster, catalog)?;
     Ok(move_kind_intends_to_attack(entry.kind))
+}
+
+/// One enemy action of an illusion killed while stunned (#3823,
+/// [`super::monsters::ILLUSION_REVIVE_DROPPED`]): dead, never revived, and
+/// still acting.
+///
+/// * Its first action is the STUNNED it died under. The state's body is the
+///   completed task (`CreatureCmd::<Stun>b__26_0` `0x3e8f83`); the roll after
+///   it follows STUNNED to the parked move (`FindNextMoveState` `0x78e94`
+///   IL_0045-IL_008f), which for a one-row loop is the loop itself. The
+///   override clears and `loop_pos` stays.
+/// * Every action after that performs the loop row with a dead actor.
+///   Parafright's SLAM_MOVE is an `AttackCommand`, and
+///   `AttackCommand/<Execute>d__90::MoveNext` `0x3f19c0` IL_00a2-IL_00b1
+///   returns before any target is resolved when `Attacker.IsDead`: no hit,
+///   no damage, no hook. Eye With Teeth's DISTRACT_MOVE
+///   (`<DistractMove>d__11::MoveNext` `0x35a1a8`) never asks whether its
+///   creature lives: after the animation it adds three Dazed (IL_00b4-IL_00b8),
+///   so the dead eye still does.
+///
+/// Neither loop rolls (each is one row following to itself:
+/// `EyeWithTeeth::GenerateMoveStateMachine` `0xb3a34`, and Parafright's
+/// generated loop), so no stream moves. Any other row refuses by name.
+fn dead_illusion_act(
+    state: &mut HotState,
+    catalog: &Catalog,
+    index: usize,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let monster = &state.monsters[index];
+    if monster.override_state != MonsterOverride::None
+        || monster.forced_follow_up != MonsterFollowUp::None
+    {
+        if !super::monsters::illusion_dead_stun_is_exact(monster) {
+            return Err(EngineRefusal::MalformedArgs("dead illusion stun state"));
+        }
+        let monster = &mut state.monsters_mut()[index];
+        monster.override_state = MonsterOverride::None;
+        monster.forced_follow_up = MonsterFollowUp::None;
+        return Ok(());
+    }
+    let (entry, random_ai, _) = current_table_move(monster, catalog)?;
+    if random_ai {
+        return Err(EngineRefusal::MalformedArgs("dead illusion machine"));
+    }
+    match (monster.kind, entry.kind) {
+        // The dead attacker's `AttackCommand` returns at IL_00a2-IL_00b1.
+        (MonsterKind::Parafright, MoveKind::Attack) => Ok(()),
+        (MonsterKind::EyeWithTeeth, MoveKind::PileInject) => {
+            let mut ctx = MoveCtx {
+                state,
+                catalog,
+                actor: index,
+                args: catalog.args(entry.args),
+                events,
+            };
+            crate::coverage::record_move(entry.kind);
+            crate::moves::apply_move(entry.kind, &mut ctx)
+        }
+        _ => Err(EngineRefusal::MalformedArgs("dead illusion move")),
+    }
+}
+
+/// One enemy action of a Decimillipede segment killed while stunned (#3823,
+/// [`super::monsters::SEGMENT_REVIVE_STUN_KEPT`]): dead, never reattached, and
+/// still acting.
+///
+/// * Its first action is the STUNNED it died under (the completed task,
+///   `CreatureCmd::<Stun>b__26_0` `0x3e8f83`); the roll after it follows
+///   STUNNED to the parked row (`FindNextMoveState` `0x78e94`
+///   IL_0045-IL_008f). The override clears and `loop_pos` stays.
+/// * Every action after that performs its row with a dead actor, and the roll
+///   after it takes the row's `FollowUpState`, the living cycle WRITHE,
+///   CONSTRICT, BULK (`DecimillipedeSegment::GenerateMoveStateMachine`
+///   `0xb2c04`), with no draw. Each body opens with an `AttackCommand`, which
+///   returns before any target is resolved when `Attacker.IsDead`
+///   (`AttackCommand/<Execute>d__90::MoveNext` `0x3f19c0` IL_00a2-IL_00b1): no
+///   hit, no damage, no hook. CONSTRICT then applies Weak 1 to its targets
+///   (`<ConstrictMove>d__50::MoveNext` `0x358dcc` IL_0114-IL_012c), and the
+///   player takes it. BULK then applies Strength to the segment itself
+///   (`<BulkMove>d__49::MoveNext` `0x358be4` IL_0114-IL_0132), which
+///   `PowerCmd/<Apply>d__2::MoveNext` `0x3efbac` IL_0062-IL_006e drops:
+///   `Creature::get_CanReceivePowers` `0x11d2b5` asks `ShouldAllowHitting`,
+///   and `ReattachPower::ShouldAllowHitting` `0xa6643` IL_000c-IL_0015 is
+///   false while `isReviving`, which stays set. WRITHE is the attack alone.
+///
+/// Native traces `dcm_s1k1` (STUNNED, then WRITHE, CONSTRICT, BULK at 0 HP:
+/// the player's loss is the living segments' alone, the Weak is the dead
+/// CONSTRICT's too, and the dead BULK grants no Strength), `dcm_k1s3k3` (a
+/// reattached segment, parked over its rolled CONSTRICT).
+fn dead_segment_act(
+    state: &mut HotState,
+    catalog: &Catalog,
+    index: usize,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
+    let monster = &state.monsters[index];
+    if monster.override_state != MonsterOverride::None
+        || monster.forced_follow_up != MonsterFollowUp::None
+    {
+        if !super::monsters::segment_dead_stun_is_exact(monster) {
+            return Err(EngineRefusal::MalformedArgs("dead segment stun state"));
+        }
+        let monster = &mut state.monsters_mut()[index];
+        monster.override_state = MonsterOverride::None;
+        monster.forced_follow_up = MonsterFollowUp::None;
+        return Ok(());
+    }
+    let (entry, random_ai, moves_len) = current_table_move(monster, catalog)?;
+    if random_ai {
+        return Err(EngineRefusal::MalformedArgs("dead segment machine"));
+    }
+    match entry.kind {
+        // The dead attacker's `AttackCommand` returns at IL_00a2-IL_00b1, and
+        // BULK's Strength on the segment is vetoed while it is reviving.
+        MoveKind::Attack | MoveKind::AttackStrength => {}
+        MoveKind::AttackWeakPlayer => {
+            let [_, _, crate::catalog::CompiledArg::I(weak)] = catalog.args(entry.args) else {
+                return Err(EngineRefusal::MalformedArgs("dead segment CONSTRICT"));
+            };
+            let weak = i32::try_from(*weak)
+                .map_err(|_| EngineRefusal::CounterOverflow("dead segment CONSTRICT Weak"))?;
+            if weak <= 0 {
+                return Err(EngineRefusal::MalformedArgs("dead segment CONSTRICT"));
+            }
+            super::damage::apply_player_duration_affliction(
+                state,
+                PowerId::PlayerWeak,
+                PowerId::PlayerWeakFresh,
+                weak,
+                true,
+                events,
+            )?;
+        }
+        _ => return Err(EngineRefusal::MalformedArgs("dead segment move")),
+    }
+    if !matches!(entry.repeats, crate::content_tables::Repeats::Absent) {
+        return Err(EngineRefusal::MalformedArgs("dead segment machine"));
+    }
+    let monster = &mut state.monsters_mut()[index];
+    monster.loop_pos = (monster.loop_pos + 1) % (moves_len as i32);
+    Ok(())
 }
 
 /// Fogmog's post-SWIPE BRANCH (`_roll_fogmog_branch`, frozen Python, deleted #2827).
@@ -8028,6 +8282,49 @@ fn roll_random_intent(
             )
         })
         .collect(),
+        // The Fake Merchant's two RANDs (#3823). v0.111.0
+        // `FakeMerchantMonster::GenerateMoveStateMachine` RVA `0xb40c4`:
+        //
+        // * `RAND_MOVE` (IL_00be-IL_00eb) adds SWIPE (IL_00ca-IL_00ce),
+        //   SPEW_COINS (IL_00d3-IL_00d7) and THROW_RELIC (IL_00dc-IL_00e0),
+        //   each `(state, 2)` through #5715 `AddBranch(state,
+        //   MoveRepeatType)` RVA `0x792b5`: CannotRepeat, cooldown 0. Then
+        //   ENRAGE `(state, 3, 2)` (IL_00e5-IL_00eb) through #5713
+        //   `AddBranch(state, int cooldown, MoveRepeatType)` RVA `0x79296`:
+        //   cooldown 3 with CannotRepeat. It is not UseOnlyOnce (that would
+        //   be repeat type 3; the `3` here is the `int32` parameter).
+        // * `RAND_ATTACK_MOVE` (IL_0109-IL_012b) adds SWIPE, SPEW_COINS and
+        //   THROW_RELIC the same way (IL_0115-IL_0119, IL_011e-IL_0122,
+        //   IL_0127-IL_012b) and has no ENRAGE.
+        // * SWIPE, SPEW_COINS and ENRAGE follow to `RAND_MOVE`
+        //   (IL_00f0-IL_0104); THROW_RELIC follows to `RAND_ATTACK_MOVE`
+        //   (IL_0130-IL_0133).
+        //
+        // Every weight is the constant `1.0` those overloads pass. The move
+        // that performed is `last`, so it picks the RAND; the log both RANDs
+        // weigh from is the machine's one `StateLog`. In `RAND_ATTACK_MOVE`
+        // THROW_RELIC is always the last entry and so always weighs 0: two
+        // live branches, and the draw is still spent.
+        MonsterKind::FakeMerchantMonster => {
+            let attacks = [
+                FAKE_MERCHANT_SWIPE_INDEX,
+                FAKE_MERCHANT_SPEW_COINS_INDEX,
+                FAKE_MERCHANT_THROW_RELIC_INDEX,
+            ]
+            .into_iter()
+            .map(|index| (index, can_repeat_x_times_weight(machine, index, 1)));
+            if last == FAKE_MERCHANT_THROW_RELIC_INDEX {
+                attacks.collect()
+            } else {
+                attacks
+                    .chain(std::iter::once((
+                        FAKE_MERCHANT_ENRAGE_INDEX,
+                        can_repeat_x_times_weight(machine, FAKE_MERCHANT_ENRAGE_INDEX, 1)
+                            * random_branch_cooldown_weight(machine, FAKE_MERCHANT_ENRAGE_INDEX, 3),
+                    )))
+                    .collect()
+            }
+        }
         _ => return Err(EngineRefusal::MonsterLoopNotModeled(kind)),
     };
     // No refusal on an all-zero total (#3252): native does not throw there.
@@ -11679,11 +11976,20 @@ fn entropy_transform_one(
             "The Scythe DeckVersion transform",
         ));
     }
-    if super::cards::dampen_tracks_uid(state, frozen.card.uid) {
-        return Err(EngineRefusal::MalformedArgs(
-            "Dampen tracked card transform",
-        ));
-    }
+    // A card Dampen tracks is transformed like any other, and its Dampen row
+    // is dropped once the original leaves the Hand (#3856). Entropy's
+    // `CardCmd::TransformToRandom` (`<TransformToRandom>d__9::MoveNext` RVA
+    // `0x3e16e4`, IL_0036) awaits `CardCmd::Transform(IEnumerable)` (RVA
+    // `0x12f990`), whose `<Transform>d__13::MoveNext` (RVA `0x3e0ae0`) removes
+    // the original from its pile (IL_0186-IL_018c) and finally from state
+    // (`CardModel::RemoveFromState`, IL_0a1d-IL_0a22). `DampenPower` has no
+    // pile or card-entered hook (`AfterApplied` `0xa1198`, `AfterDeath`
+    // `0x33871c`, `AfterRemoved` `0xa1290` are its only members), so its
+    // dictionary keeps the orphaned original, and `AfterRemoved`'s later
+    // `CardCmd.Upgrade` of it touches no combat pile: the quotient
+    // `cards::forget_removed_dampen_card` takes, as Primal Force's transform
+    // does (`steps::ironclad_rare::forget_transformed_dampen_card`, #2982).
+    let dampen_tracked = super::cards::dampen_tracks_uid(state, frozen.card.uid);
     let original_spec = catalog
         .spec(frozen.card.atom)
         .ok_or(EngineRefusal::UnknownAtom(frozen.card.atom))?;
@@ -11754,6 +12060,9 @@ fn entropy_transform_one(
     );
     let removed = state.piles.get_mut(PileId::Hand).make_mut().remove(index);
     debug_assert_eq!(removed, frozen.card);
+    if dampen_tracked {
+        super::cards::forget_removed_dampen_card(state, frozen.card.uid);
+    }
     let mut replacement = super::cards::mint_card(state, catalog, replacement_identity)?;
     super::cards::initialize_fresh_physical_card_state(replacement_spec, &mut replacement);
     state
@@ -12843,6 +13152,80 @@ mod tests {
     fn entropy_normal_origin_draws_its_class_pool_control() {
         let pool = crate::steps::neutral::owner_generation_pool(RewardPool::Ironclad, None);
         entropy_witness(CardId::Anger, &pool);
+    }
+
+    /// #3856: Entropy transforms a card Dampen tracks like any other (one Sel
+    /// draw, the same option list), drops only that card's Dampen row, and
+    /// never tracks the minted replacement. Native keeps the orphaned original
+    /// in `DampenPower`'s dictionary, where nothing in combat reads it.
+    #[test]
+    fn entropy_transforming_a_dampen_tracked_card_forgets_only_its_row() {
+        let pool = crate::steps::neutral::owner_generation_pool(RewardPool::Ironclad, None);
+        let mut builder = CatalogBuilder::new();
+        let anger = builder
+            .intern(CardIdentity {
+                id: CardId::Anger,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        for &id in &pool {
+            builder
+                .intern(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.reward_card_pool = Some(RewardPool::Ironclad);
+        state.entropy_card_pool = Some(RewardPool::Ironclad);
+        state.fully_unlocked_card_pool_epochs = true;
+        state.next_card_uid = 20;
+        state.exact_piles = true;
+        let seeded = Xoshiro256StarStar::from_seed(17);
+        state.rng.set(
+            RngStream::Sel,
+            RngStreamState {
+                words: seeded.words,
+                counter: seeded.counter,
+            },
+        );
+        let card = crate::hot::HotCard {
+            uid: 10,
+            atom: anger,
+            flags: 0,
+        };
+        let other = crate::hot::HotCard { uid: 11, ..card };
+        state.piles.get_mut(PileId::Hand).make_mut().push(card);
+        state.piles.get_mut(PileId::Draw).make_mut().push(other);
+        let row = |uid| crate::hot::DampenCardRow {
+            uid,
+            old_level: 0,
+            old_atom: anger,
+            dampened_atom: anger,
+        };
+        state.card_states.set_dampen(Some(crate::hot::DampenState {
+            caster_uid: 0,
+            cards: vec![row(10), row(11)],
+        }));
+        entropy_transform_one(
+            &mut state,
+            &catalog,
+            crate::hot::FrozenAutoBatchEntry {
+                card,
+                state: crate::hot::CardInstanceState::default(),
+            },
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let minted = state.piles.get(PileId::Hand).as_slice()[0];
+        assert_ne!(minted.uid, 10);
+        assert_eq!(state.card_states.dampen().unwrap().cards, vec![row(11)]);
+        assert!(!crate::engine::cards::dampen_tracks_uid(&state, minted.uid));
+        assert_eq!(state.rng.get(RngStream::Sel).counter, seeded.counter + 1);
     }
 
     /// Every card-pool gating epoch (three per character, five Colorless)
@@ -20285,6 +20668,187 @@ mod tests {
         let (next, _, draws) = flyconid_roll(&[FLYCONID_SMASH_INDEX]);
         assert_eq!(next, FLYCONID_FRAIL_INDEX);
         assert_eq!(draws, 1);
+    }
+
+    /// Roll the Fake Merchant once over `log` from each of 64 AI streams:
+    /// the moves selected, the retained log of the first roll, and whether
+    /// every roll spent exactly one draw.
+    fn fake_merchant_rolls(log: &[u8]) -> (std::collections::BTreeSet<u8>, Vec<u8>, bool) {
+        let mut builder = CatalogBuilder::new();
+        builder
+            .intern_monster(MonsterKind::FakeMerchantMonster)
+            .unwrap();
+        let catalog = builder.build();
+        let mut selected = std::collections::BTreeSet::new();
+        let mut first_log = Vec::new();
+        let mut one_draw_each = true;
+        for seed in 0..64_u64 {
+            let mut state = HotState::at_defaults();
+            let mut merchant = HotMonster::new(MonsterKind::FakeMerchantMonster, 175);
+            assert!(merchant.random_ai.set_next(log.last().copied()));
+            assert!(merchant.random_ai.set_log(log));
+            state.monsters_mut().push(merchant);
+            let seeded = Xoshiro256StarStar::from_seed(seed);
+            state.rng.set(
+                RngStream::Ai,
+                RngStreamState {
+                    words: seeded.words,
+                    counter: seeded.counter,
+                },
+            );
+            roll_random_intent(&mut state, &catalog, 0).unwrap();
+            let machine = state.monsters[0].random_ai;
+            assert!(valid_random_ai_state(&state.monsters[0], 4), "{log:?}");
+            if seed == 0 {
+                first_log = (0..machine.log_len())
+                    .map(|position| machine.log_at(position).unwrap())
+                    .collect();
+            }
+            selected.insert(machine.next().unwrap());
+            one_draw_each &= state.rng.get(RngStream::Ai).counter == 1;
+        }
+        (selected, first_log, one_draw_each)
+    }
+
+    /// #3823: `RAND_MOVE` holds all four moves, `RAND_ATTACK_MOVE` the three
+    /// attacks, and the move that performed picks between them
+    /// (`FakeMerchantMonster::GenerateMoveStateMachine` `0xb40c4`
+    /// IL_00f0-IL_0104 and IL_0130-IL_0133).
+    #[test]
+    fn fake_merchant_throw_relic_rolls_the_attack_only_rand() {
+        const S: u8 = FAKE_MERCHANT_SWIPE_INDEX;
+        const P: u8 = FAKE_MERCHANT_SPEW_COINS_INDEX;
+        const T: u8 = FAKE_MERCHANT_THROW_RELIC_INDEX;
+        const E: u8 = FAKE_MERCHANT_ENRAGE_INDEX;
+        let set = |moves: &[u8]| moves.iter().copied().collect();
+        // The opener: SWIPE is CannotRepeat, the other three are live.
+        let (selected, log, one_draw) = fake_merchant_rolls(&[S]);
+        assert_eq!(selected, set(&[P, T, E]));
+        assert!(one_draw);
+        // Seed 0 draws NextFloat(3.0) = 1.80...: past SWIPE (0) and SPEW_COINS
+        // (1), into THROW_RELIC, which pins the AddBranch order.
+        assert_eq!(log, [S, T]);
+        // After THROW_RELIC: no ENRAGE, and THROW_RELIC itself weighs 0. The
+        // two-branch roll still spends its draw. Seed 0, NextFloat(2.0) =
+        // 1.20...: past SWIPE, into SPEW_COINS.
+        let (selected, log, one_draw) = fake_merchant_rolls(&[S, T]);
+        assert_eq!(selected, set(&[S, P]));
+        assert!(one_draw);
+        assert_eq!(log, [S, T, P]);
+        // A stun over THROW_RELIC logs it twice; the roll after it performs
+        // is still the attack-only one.
+        assert_eq!(fake_merchant_rolls(&[S, T, T]).0, set(&[S, P]));
+        assert_eq!(fake_merchant_rolls(&[T, T, T]).0, set(&[S, P]));
+        // A THROW_RELIC further back does not choose the RAND.
+        assert_eq!(fake_merchant_rolls(&[P, T, S]).0, set(&[P, T, E]));
+    }
+
+    /// #3823: ENRAGE is CannotRepeat with cooldown 3 (`0xb40c4`
+    /// IL_00e5-IL_00eb through `AddBranch(state, int, MoveRepeatType)`
+    /// `0x79296`), read from the last three logged moves
+    /// (`GetStateWeight` `0x79380` IL_0150-IL_01b9).
+    #[test]
+    fn fake_merchant_enrage_cools_down_over_three_logged_moves() {
+        const S: u8 = FAKE_MERCHANT_SWIPE_INDEX;
+        const P: u8 = FAKE_MERCHANT_SPEW_COINS_INDEX;
+        const T: u8 = FAKE_MERCHANT_THROW_RELIC_INDEX;
+        const E: u8 = FAKE_MERCHANT_ENRAGE_INDEX;
+        let set = |moves: &[u8]| moves.iter().copied().collect();
+        // Last, one back, two back: cooling.
+        assert_eq!(fake_merchant_rolls(&[S, E]).0, set(&[S, P, T]));
+        assert_eq!(fake_merchant_rolls(&[S, E, S]).0, set(&[P, T]));
+        assert_eq!(fake_merchant_rolls(&[E, S, P]).0, set(&[S, T]));
+        // Three back: it has left the retained window, and is live.
+        assert_eq!(fake_merchant_rolls(&[S, P, S]).0, set(&[P, T, E]));
+        // A stun over ENRAGE logs it twice, which keeps it cooling one roll
+        // longer than the ENRAGE that performed would.
+        assert_eq!(fake_merchant_rolls(&[S, E, E]).0, set(&[S, P, T]));
+        assert_eq!(fake_merchant_rolls(&[E, E, S]).0, set(&[P, T]));
+        assert_eq!(fake_merchant_rolls(&[E, S, P]).0, set(&[S, T]));
+    }
+
+    /// #3823: the logs `valid_random_ai_state` takes for the Fake Merchant.
+    #[test]
+    fn fake_merchant_log_rules_are_the_machines() {
+        const S: u8 = FAKE_MERCHANT_SWIPE_INDEX;
+        const P: u8 = FAKE_MERCHANT_SPEW_COINS_INDEX;
+        const T: u8 = FAKE_MERCHANT_THROW_RELIC_INDEX;
+        const E: u8 = FAKE_MERCHANT_ENRAGE_INDEX;
+        let valid = |log: &[u8], table_len: usize| {
+            let mut merchant = HotMonster::new(MonsterKind::FakeMerchantMonster, 175);
+            assert!(merchant.random_ai.set_next(log.last().copied()));
+            assert!(merchant.random_ai.set_log(log));
+            valid_random_ai_state(&merchant, table_len)
+        };
+        // A short log opens on SWIPE; a full one has dropped its opener.
+        assert!(valid(&[S], 4));
+        assert!(valid(&[S, E], 4));
+        assert!(!valid(&[P], 4));
+        assert!(!valid(&[T, S], 4));
+        assert!(valid(&[T, S, P], 4));
+        // ENRAGE never follows THROW_RELIC, with or without a stunned turn
+        // between them.
+        assert!(!valid(&[S, T, E], 4));
+        assert!(!valid(&[T, T, E], 4));
+        assert!(valid(&[S, T, P], 4));
+        assert!(valid(&[P, E, T], 4));
+        // ENRAGE is never rolled inside its own cooldown.
+        assert!(!valid(&[E, S, E], 4));
+        assert!(valid(&[E, E, S], 4));
+        assert!(valid(&[S, E, E], 4));
+        assert!(valid(&[E, E, E], 4));
+        // Any move may follow itself (a stun), SWIPE also by the exact-zero
+        // roll.
+        assert!(valid(&[S, S], 4));
+        assert!(valid(&[P, T, T], 4));
+        // The table is four moves wide.
+        assert!(!valid(&[S], 3));
+        let mut once = HotMonster::new(MonsterKind::FakeMerchantMonster, 175);
+        assert!(once.random_ai.set_next(Some(S)));
+        assert!(once.random_ai.set_log(&[S]));
+        assert!(once.random_ai.push_once(E));
+        assert!(!valid_random_ai_state(&once, 4), "nothing is UseOnlyOnce");
+    }
+
+    /// #3823: the Fabricator's log against the bots it has made, with the
+    /// stun's second and third entry for a move that has not performed.
+    #[test]
+    fn fabricator_log_holds_a_stunned_opener_more_than_once() {
+        use crate::engine::monsters::{
+            FABRICATOR_DISINTEGRATE_INDEX, FABRICATOR_FABRICATE_INDEX, FABRICATOR_STRIKE_INDEX,
+            fabricator_ai_state_is_valid,
+        };
+        const F: u8 = FABRICATOR_FABRICATE_INDEX;
+        const S: u8 = FABRICATOR_STRIKE_INDEX;
+        const D: u8 = FABRICATOR_DISINTEGRATE_INDEX;
+        let valid = |log: &[u8], last_spawned: Option<MonsterKind>| {
+            let mut fabricator = HotMonster::new(MonsterKind::Fabricator, 155);
+            assert!(fabricator.random_ai.set_next(log.last().copied()));
+            assert!(fabricator.random_ai.set_log(log));
+            fabricator.last_spawned = last_spawned;
+            fabricator_ai_state_is_valid(&fabricator, false)
+        };
+        // Nothing made yet: the opener, once or again for each stunned turn.
+        for opener in [F, S] {
+            assert!(valid(&[opener], None));
+            assert!(valid(&[opener, opener], None));
+            assert!(valid(&[opener, opener, opener], None));
+        }
+        // A second move was rolled only after the first performed, and both
+        // openers end on an aggro bot.
+        assert!(!valid(&[F, S], None));
+        assert!(!valid(&[S, S, F], None));
+        assert!(!valid(&[S, D], None));
+        // DISINTEGRATE never opens.
+        assert!(!valid(&[D], None));
+        assert!(!valid(&[D, D], None));
+        // After a move performed: a roll was logged, and the last bot is an
+        // aggro one.
+        assert!(valid(&[F, S], Some(MonsterKind::Zapbot)));
+        assert!(valid(&[F, F], Some(MonsterKind::Stabbot)));
+        assert!(valid(&[S, D, D], Some(MonsterKind::Stabbot)));
+        assert!(!valid(&[F], Some(MonsterKind::Zapbot)));
+        assert!(!valid(&[F, S], Some(MonsterKind::Guardbot)));
     }
 
     #[test]
@@ -28963,6 +29527,60 @@ mod tests {
         );
     }
 
+    /// #3938: Stock's replacement Axebot is the one removal the enemy side
+    /// start admits. The fresh body, still on its BOOT_UP, is left out of the
+    /// act walk (an empty roster); every neighbouring shape keeps a refusal.
+    #[test]
+    fn enemy_side_start_act_roster_admits_only_stocks_replacement_axebot() {
+        let switched = SwitchedRoster {
+            len: 1,
+            max_uid: Some(0),
+        };
+        let replacement = || {
+            let mut state = HotState::at_defaults();
+            let mut axebot = HotMonster::new(MonsterKind::Axebot, 86);
+            axebot.uid = 1;
+            axebot.loop_pos = crate::engine::monsters::AXEBOT_BOOT_UP_LOOP_POS;
+            axebot.powers.set(PowerId::Stock, SlotWire::Int, 1);
+            state.monsters_mut().push(axebot);
+            state
+        };
+        assert_eq!(
+            enemy_side_start_act_roster(&replacement(), switched),
+            Ok(Some(Vec::new()))
+        );
+        let removed = Err(EngineRefusal::MalformedArgs(
+            "enemy side start removed a creature",
+        ));
+        // Past its BOOT_UP: not the body Stock just created.
+        let mut acted = replacement();
+        acted.monsters_mut()[0].loop_pos = 0;
+        assert_eq!(enemy_side_start_act_roster(&acted, switched), removed);
+        // Dead on arrival.
+        let mut dead = replacement();
+        dead.monsters_mut()[0].hp = 0;
+        assert_eq!(enemy_side_start_act_roster(&dead, switched), removed);
+        // Another kind in the replaced slot.
+        let mut other = replacement();
+        other.monsters_mut()[0].kind = MonsterKind::Toadpole;
+        assert_eq!(enemy_side_start_act_roster(&other, switched), removed);
+        // The same Axebot when it is not new: nothing was added or removed.
+        let mut kept = replacement();
+        kept.monsters_mut()[0].uid = 0;
+        assert_eq!(enemy_side_start_act_roster(&kept, switched), Ok(None));
+        // A replacement beside a second creature is not the singleton
+        // roster Stock requires.
+        let mut beside = replacement();
+        let mut toadpole = HotMonster::new(MonsterKind::Toadpole, 10);
+        toadpole.uid = 0;
+        beside.monsters_mut().insert(0, toadpole);
+        let two = SwitchedRoster {
+            len: 2,
+            max_uid: Some(0),
+        };
+        assert_eq!(enemy_side_start_act_roster(&beside, two), removed);
+    }
+
     /// #3172: a lethal Poison tick with Gremlin Horn owned. Each trigger of
     /// `PoisonPower.AfterSideTurnStart` is one `CreatureCmd.Damage`; the
     /// dying Toadpole's AfterDeath walk reaches `GremlinHorn/<AfterDeath>d__6`
@@ -29561,6 +30179,93 @@ mod tests {
         assert!(events.is_empty());
     }
 
+    /// #3823: an illusion killed under a stun performs STUNNED, then its loop,
+    /// dead, every enemy turn (`monsters::ILLUSION_REVIVE_DROPPED`). The
+    /// dead Parafright's SLAM is an `AttackCommand` that returns on a dead
+    /// attacker (`0x3f19c0` IL_00a2-IL_00b1); the dead Eye With Teeth's
+    /// DISTRACT still adds three Dazed (`0x35a1a8` IL_00b4-IL_00b8). Neither
+    /// heals, and nothing draws.
+    #[test]
+    fn a_dead_acting_illusion_performs_its_stun_then_its_loop_without_reviving() {
+        for kind in [MonsterKind::Parafright, MonsterKind::EyeWithTeeth] {
+            let mut builder = CatalogBuilder::new();
+            builder.intern_monster(kind).unwrap();
+            let catalog = builder.build();
+            let mut state = HotState::at_defaults();
+            state.hp = 80;
+            state.max_hp = 80;
+            let mut illusion = HotMonster::new(kind, 0);
+            illusion.max_hp = 21;
+            illusion.uid = 1;
+            illusion.revive_stage = super::super::monsters::ILLUSION_REVIVE_DROPPED;
+            illusion.override_state = MonsterOverride::Stunned;
+            illusion.forced_follow_up = super::super::monsters::parked_telegraph(kind, 0).unwrap();
+            state.monsters_mut().push(illusion);
+
+            // The STUNNED it died under: nothing but the override clears.
+            let mut stunned = state.clone();
+            monster_act(&mut stunned, &catalog, 0, &mut Vec::new()).unwrap();
+            let mut expected = state.clone();
+            expected.monsters_mut()[0].override_state = MonsterOverride::None;
+            expected.monsters_mut()[0].forced_follow_up = MonsterFollowUp::None;
+            assert_eq!(stunned, expected, "{kind:?}");
+
+            // Then the loop, at 0 HP, over and over.
+            let mut acted = stunned.clone();
+            for turn in 1..=2_usize {
+                monster_act(&mut acted, &catalog, 0, &mut Vec::new()).unwrap();
+                let body = &acted.monsters[0];
+                assert_eq!(body.hp, 0, "{kind:?}");
+                assert_eq!(
+                    body.revive_stage,
+                    super::super::monsters::ILLUSION_REVIVE_DROPPED
+                );
+                assert_eq!(acted.hp, 80, "a dead attacker deals nothing");
+                assert_eq!(acted.rng, state.rng, "neither loop rolls");
+                let dazed = acted
+                    .piles
+                    .get(PileId::Discard)
+                    .as_slice()
+                    .iter()
+                    .filter(|card| {
+                        catalog
+                            .spec(card.atom)
+                            .is_some_and(|spec| matches!(spec.identity.id, CardId::Dazed))
+                    })
+                    .count();
+                let want = if kind == MonsterKind::EyeWithTeeth {
+                    3 * turn
+                } else {
+                    0
+                };
+                assert_eq!(dazed, want, "{kind:?} turn {turn}");
+            }
+
+            // A stun state that is not the parked telegraph refuses by name.
+            let mut malformed = state.clone();
+            malformed.monsters_mut()[0].forced_follow_up = MonsterFollowUp::None;
+            assert_eq!(
+                monster_act(&mut malformed, &catalog, 0, &mut Vec::new()),
+                Err(EngineRefusal::MalformedArgs("dead illusion stun state"))
+            );
+        }
+    }
+
+    /// The two illusions' tables are the rows [`dead_illusion_act`] names: a
+    /// row of another kind would reach its by-name refusal.
+    #[test]
+    fn the_dead_illusion_rows_are_slam_and_distract() {
+        let rows = |kind| {
+            crate::content_tables::monster_loop(kind)
+                .unwrap()
+                .iter()
+                .map(|row| row.kind)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(rows(MonsterKind::Parafright), [MoveKind::Attack]);
+        assert_eq!(rows(MonsterKind::EyeWithTeeth), [MoveKind::PileInject]);
+    }
+
     /// A segment showing DEAD spends its enemy action on `DeadMove`'s empty
     /// body (`DecimillipedeSegment::DeadMove` RVA `0xb2e7f`) and stays on
     /// DEAD: `PerformMove` never rolls, so only the next player-side
@@ -29603,6 +30308,73 @@ mod tests {
         assert_eq!(state.monsters[0].uid, 3);
         assert_eq!(state.monsters[0].slot, 1);
         assert!(events.is_empty());
+    }
+
+    /// #3823: a segment killed under a stun performs the STUNNED, then its
+    /// parked row and its cycle at 0 HP: the attacks deal nothing, CONSTRICT
+    /// still gives the player Weak, BULK grants the corpse no Strength, and
+    /// it never reattaches (`dead_segment_act`). Native trace `dcm_s1k1`.
+    #[test]
+    fn a_segment_killed_under_a_stun_acts_dead_and_never_reattaches() {
+        use super::super::monsters::{SEGMENT_REVIVE_STUN_KEPT, parked_telegraph};
+        let mut builder = CatalogBuilder::new();
+        builder
+            .intern_monster(MonsterKind::DecimillipedeSegment)
+            .unwrap();
+        let catalog = builder.build();
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state.max_hp = 50;
+        let mut segment = HotMonster::new(MonsterKind::DecimillipedeSegment, 0);
+        segment.max_hp = 48;
+        segment.loop_pos = 1;
+        segment.revive_stage = SEGMENT_REVIVE_STUN_KEPT;
+        segment.override_state = MonsterOverride::Stunned;
+        segment.forced_follow_up =
+            parked_telegraph(MonsterKind::DecimillipedeSegment, 1).expect("CONSTRICT parks");
+        state.monsters_mut().push(segment);
+        let mut peer = HotMonster::new(MonsterKind::DecimillipedeSegment, 40);
+        peer.uid = 1;
+        peer.slot = 1;
+        state.monsters_mut().push(peer);
+        let mut forged = state.clone();
+        forged.monsters_mut()[0].forced_follow_up = MonsterFollowUp::LagavulinSleep;
+        let mut events = Vec::new();
+        assert_eq!(
+            monster_act(&mut forged, &catalog, 0, &mut events),
+            Err(EngineRefusal::MalformedArgs("dead segment stun state"))
+        );
+
+        monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+        let segment = &state.monsters[0];
+        assert_eq!(
+            (
+                segment.override_state,
+                segment.forced_follow_up,
+                segment.loop_pos
+            ),
+            (MonsterOverride::None, MonsterFollowUp::None, 1),
+            "the STUNNED performs and hands back the parked CONSTRICT"
+        );
+        // CONSTRICT: no hit, but the Weak lands.
+        monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+        assert_eq!(state.hp, 50);
+        assert_eq!(state.powers.value(PowerId::PlayerWeak), 1);
+        assert_eq!(state.monsters[0].loop_pos, 2);
+        // BULK: no hit and no Strength on the corpse.
+        monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+        assert_eq!(state.hp, 50);
+        assert_eq!(state.monsters[0].powers.value(PowerId::Strength), 0);
+        assert_eq!(state.monsters[0].loop_pos, 0);
+        // WRITHE: nothing; still dead, still at the stage.
+        monster_act(&mut state, &catalog, 0, &mut events).unwrap();
+        assert_eq!(state.hp, 50);
+        assert_eq!(state.monsters[0].loop_pos, 1);
+        assert_eq!(state.monsters[0].hp, 0);
+        assert_eq!(state.monsters[0].revive_stage, SEGMENT_REVIVE_STUN_KEPT);
+        state.turn = 3;
+        advance_segment_dead_states(&mut state);
+        assert_eq!(state.monsters[0].revive_stage, SEGMENT_REVIVE_STUN_KEPT);
     }
 
     /// The seam's gates (#3251). `FindNextMoveState` RVA `0x78e94`
@@ -33899,8 +34671,8 @@ mod tests {
             }
         }
         assert_eq!(
-            rows_swept, 44,
-            "twelve kinds of three rows, two slimes of two, the rat's four"
+            rows_swept, 55,
+            "thirteen kinds of three rows, two slimes of two, the rat's, the Fake Merchant's and the Obscura's four"
         );
     }
 
@@ -35194,12 +35966,23 @@ mod tests {
             MonsterOverride::BeetleSnore
         );
 
-        // Anything else under the Beetle refuses rather than overwriting.
+        // #3823: the Beetle's own WAKE is an unperformed `StunInternal` state,
+        // so the clone's stun is dropped (native trace `bee_b0st3s3`).
         let mut waking = before.clone();
         waking.monsters_mut()[0].override_state = MonsterOverride::BeetleWake;
         waking.monsters_mut()[0].forced_follow_up = MonsterFollowUp::None;
+        let unchanged = waking.clone();
         assert_eq!(
             crate::engine::damage::monsters_after_damage_given(&mut waking, 0, true),
+            Ok(())
+        );
+        assert_eq!(waking, unchanged);
+        // Anything else under the Beetle refuses rather than overwriting.
+        let mut foreign = before.clone();
+        foreign.monsters_mut()[0].override_state = MonsterOverride::Terror;
+        foreign.monsters_mut()[0].forced_follow_up = MonsterFollowUp::None;
+        assert_eq!(
+            crate::engine::damage::monsters_after_damage_given(&mut foreign, 0, true),
             Err(EngineRefusal::MalformedArgs("Slumbering Beetle stun state"))
         );
         // And a forged Beetle stun over any other telegraph is not the state.
@@ -35337,7 +36120,7 @@ mod tests {
                 assert!(events.is_empty(), "{kind:?} {loop_pos}: {events:?}");
             }
         }
-        assert_eq!(rows_swept, 180);
+        assert_eq!(rows_swept, 237);
     }
 
     /// #3823: a stun over a Scroll of Biting's CHEW makes the roll after it

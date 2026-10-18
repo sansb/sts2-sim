@@ -4167,6 +4167,19 @@ fn dispatch_monster_damage_result(
             && (1..=plow).contains(&state.monsters[target].hp)
         {
             let live = state.monsters[target].hp > 0 && !state.history.over;
+            // #3823: the break's `CreatureCmd.Stun(owner, StunnedMove,
+            // BeastCryState.StateId)` (`PlowPower/<AfterDamageReceived>d__8::
+            // MoveNext` IL_0225-IL_024c, `0x132b2c`) goes through
+            // `StunInternal` `0x11d7cc`, whose `SetMoveImmediate(state, force:
+            // false)` (`0x825f0` IL_000c-IL_001c) is dropped under a Whistle's
+            // unperformed STUNNED. Plow and the Strength still go (IL_007d-
+            // IL_0198, before the stun), `SetStunned` `0xb0f24` touches only
+            // flags the animator reads, and the parked PLOW resumes and keeps
+            // following itself (`GenerateMoveStateMachine` `0xb0cfc` IL_0128-
+            // IL_012a): the Beast never reaches BEAST_CRY. Native traces
+            // `bst_s2hb`, `bst_w2hb`, `bst_s3hb3`.
+            let whistle_stunned =
+                super::monsters::generic_stun_parks_this_row(&state.monsters[target]);
             let upkeep = state.fanouts.misery_attachment_upkeep();
             let monster = &mut state.monsters_mut()[target];
             // Plow removes both instances outright — no side-end restoration
@@ -4176,7 +4189,7 @@ fn dispatch_monster_damage_result(
             clear_monster_temp_strength_wrappers(monster, upkeep);
             write_monster_strength(monster, 0, crate::hot::Applier::None, upkeep);
             monster.powers.set(PowerId::PlowThreshold, SlotWire::Int, 0);
-            if live {
+            if live && !whistle_stunned {
                 monster.override_state = MonsterOverride::BeastStun;
                 monster.forced_follow_up = MonsterFollowUp::BeastCry;
             }
@@ -4199,7 +4212,14 @@ fn dispatch_monster_damage_result(
             let monster = &mut state.monsters_mut()[target];
             monster.powers.set(PowerId::Flutter, SlotWire::Int, amount);
             note_power(events, Subject::Monster(uid), PowerId::Flutter, amount);
-            if amount == 0 && can_stun {
+            // #3823: a Whistle's unperformed STUNNED cannot transition away,
+            // so the break's `Stun(owner, ...)` is dropped
+            // (`MonsterModel::SetMoveImmediate` `0x825f0` IL_000c-IL_001c, the
+            // stun installed with `force: false` by `StunInternal` `0x11d7cc`):
+            // Flutter still falls to 0, and the parked row resumes. Native
+            // trace `hop_s4fl`.
+            let whistle_stunned = super::monsters::generic_stun_parks_this_row(monster);
+            if amount == 0 && can_stun && !whistle_stunned {
                 let follow_up = match monster.loop_pos {
                     2 => MonsterFollowUp::HopperNab,
                     3 | 4 => MonsterFollowUp::HopperEscape,
@@ -4246,8 +4266,15 @@ fn dispatch_monster_damage_result(
             let amount = monster.powers.value(PowerId::Slumber) - 1;
             monster.powers.set(PowerId::Slumber, SlotWire::Int, amount);
             note_power(events, Subject::Monster(uid), PowerId::Slumber, amount);
-            if amount == 0 {
+            // #3823: under a Whistle's unperformed STUNNED the wake's
+            // `Stun(owner, WakeUpMove, "ROLL_OUT_MOVE")` (`0x34500c`
+            // IL_00c1-IL_00d8) is dropped (`SetMoveImmediate` `0x825f0`
+            // IL_000c-IL_001c), so `WakeUpMove` never runs and Plating stays
+            // (native trace `bee_s3b0st3`). The resumed SNORE_MOVE after a stun
+            // is an ordinary move state, which the wake replaces.
+            if amount == 0 && monster.override_state != MonsterOverride::Stunned {
                 monster.override_state = MonsterOverride::BeetleWake;
+                monster.forced_follow_up = MonsterFollowUp::None;
             }
         }
 
@@ -4269,8 +4296,15 @@ fn dispatch_monster_damage_result(
         {
             let uid = state.monsters[target].uid;
             let survives = state.monsters[target].hp > 0 && !state.history.over;
+            // #3823: the wake's `CreatureCmd.Stun` is dropped only under an
+            // unperformed stun (`SetMoveImmediate` `0x825f0` IL_000c-IL_001c,
+            // `force: false`): a Whistle's STUNNED over SLEEP_MOVE (native
+            // trace `lag_s2b0st`: SLEEP_MOVE once more, then SLASH). The
+            // resumed SLEEP_MOVE after it is an ordinary move state and the
+            // wake replaces it (`lag_s1b0st2`). Plating and Asleep go either
+            // way (IL_0055-IL_006d, IL_01db).
             let already_forced =
-                state.monsters[target].forced_follow_up != crate::hot::MonsterFollowUp::None;
+                state.monsters[target].override_state != crate::hot::MonsterOverride::None;
             let monster = &mut state.monsters_mut()[target];
             monster.powers.set(PowerId::Mplating, SlotWire::Int, 0);
             monster.powers.set(PowerId::Asleep, SlotWire::Int, 0);
@@ -4310,9 +4344,22 @@ fn dispatch_monster_damage_result(
             .is_some_and(|threshold| hp_after <= threshold)
         && state.monsters[target].powers.value(PowerId::Shriek) > 0
     {
+        // #3823: `ShriekPower/<AfterDamageReceived>d__10::MoveNext`
+        // `0x344348` stuns (IL_0065-IL_008b, `CreatureCmd.Stun(Owner,
+        // TerrorState.StateId)`) and then removes itself (IL_00e5,
+        // `PowerCmd.Remove`) whatever the stun did. The stun goes through
+        // `StunInternal` `0x11d7cc`, whose `SetMoveImmediate(state, force:
+        // false)` (`0x825f0` IL_000c-IL_001c) is dropped under a Whistle's
+        // unperformed STUNNED: the Eel keeps the Whistle's parked row, and
+        // with Shriek gone it never performs TERROR (native trace
+        // `eel_s2hb`). Anything else showing (a row, or a resumed row after
+        // a stun) is an ordinary state the stun replaces (`eel_s1hb2`).
+        let whistle_stunned = super::monsters::generic_stun_parks_this_row(&state.monsters[target]);
         let monster = &mut state.monsters_mut()[target];
         monster.powers.set(PowerId::Shriek, SlotWire::Bool, 0);
-        monster.override_state = MonsterOverride::Stunned;
+        if !whistle_stunned {
+            monster.override_state = MonsterOverride::Stunned;
+        }
         note_power(events, Subject::Monster(uid), PowerId::Shriek, 0);
     }
     Ok(target_killed)
@@ -4665,10 +4712,19 @@ fn after_monster_block_broken(
         crate::coverage::record_relic(RelicId::RelicHandDrill);
     }
     let live = state.monsters[target].hp > 0 && !state.history.over;
+    // #3823: the break's `CreatureCmd.Stun(owner, ..., "BITE_MOVE")`
+    // (`BurrowedPower/<AfterBlockBroken>d__5::MoveNext` `0x33622c` IL_00d6-
+    // IL_00db) goes through `StunInternal` `0x11d7cc`, whose
+    // `SetMoveImmediate(state, force: false)` (`0x825f0` IL_000c-IL_001c) is
+    // dropped under a Whistle's unperformed STUNNED. Burrowed still goes
+    // (the removal follows at IL_0139-IL_013e), and the parked row resumes:
+    // a parked BELOW then follows itself unburrowed. Native trace
+    // `tun_s3br3`.
+    let whistle_stunned = super::monsters::generic_stun_parks_this_row(&state.monsters[target]);
     let monster = &mut state.monsters_mut()[target];
     if monster.kind == MonsterKind::Tunneler && monster.powers.value(PowerId::Burrowed) > 0 {
         monster.powers.set(PowerId::Burrowed, SlotWire::Bool, 0);
-        if live {
+        if live && !whistle_stunned {
             monster.override_state = MonsterOverride::Dizzy;
         }
         note_power(events, Subject::Monster(monster.uid), PowerId::Burrowed, 0);
@@ -5598,6 +5654,8 @@ fn finish_monster_death_body(
     let dying_kind = state.monsters[target].kind;
     // #3823: the stun dies with the creature, before any lifecycle check
     // below reads the roster.
+    let illusion_kept_stun = super::monsters::illusion_stun_survives_death(&state.monsters[target]);
+    let segment_kept_stun = super::monsters::segment_stun_survives_death(&state.monsters[target]);
     super::monsters::clear_generic_stun_at_death(&mut state.monsters_mut()[target]);
     if dying_kind == MonsterKind::ThievingHopper {
         // SwipePower.BeforeDeath is the first Hopper death callback: it
@@ -5860,7 +5918,18 @@ fn finish_monster_death_body(
         if illusion {
             monster.powers.set(PowerId::Weak, SlotWire::Int, 0);
             monster.powers.set(PowerId::Vuln, SlotWire::Int, 0);
-            monster.revive_stage = 1;
+            // #3823: `IllusionPower/<AfterDeath>d__18::MoveNext` `0x33ca54`
+            // IL_0119-IL_011b installs REVIVE_MOVE with `force: false`, which
+            // an unperformed STUNNED refuses (`SetMoveImmediate` `0x825f0`
+            // IL_000c-IL_001c): the stun stays, and the revive never comes
+            // (`monsters::ILLUSION_REVIVE_DROPPED`).
+            if let Some((override_state, forced_follow_up)) = illusion_kept_stun {
+                monster.revive_stage = super::monsters::ILLUSION_REVIVE_DROPPED;
+                monster.override_state = override_state;
+                monster.forced_follow_up = forced_follow_up;
+            } else {
+                monster.revive_stage = super::monsters::ILLUSION_REVIVING;
+            }
         }
         // `ReattachPower/<AfterDeath>d__11::MoveNext` RVA `0x341d30`
         // IL_005a-IL_008c sets `Data.isReviving` and immediately
@@ -5883,7 +5952,18 @@ fn finish_monster_death_body(
             monster.powers.set(PowerId::Poison, SlotWire::Int, 0);
             monster.powers.set(PowerId::Hang, SlotWire::Int, 0);
             monster.block = 0;
-            monster.revive_stage = super::monsters::SEGMENT_REVIVE_DEAD;
+            // #3823: `<AfterDeath>d__11` installs DEAD with `force: false`
+            // (IL_0086-IL_008c), which a standing STUNNED refuses: the stun
+            // stays and the segment acts dead
+            // (`monsters::SEGMENT_REVIVE_STUN_KEPT`). `isReviving` is set
+            // either way (IL_005a-IL_0065), so the wipe above is the same.
+            if let Some((override_state, forced_follow_up)) = segment_kept_stun {
+                monster.revive_stage = super::monsters::SEGMENT_REVIVE_STUN_KEPT;
+                monster.override_state = override_state;
+                monster.forced_follow_up = forced_follow_up;
+            } else {
+                monster.revive_stage = super::monsters::SEGMENT_REVIVE_DEAD;
+            }
         }
         if monster.kind == MonsterKind::WaterfallGiant
             && monster.powers.value(PowerId::SteamPressure) > 0
@@ -5904,7 +5984,12 @@ fn finish_monster_death_body(
             monster.hp = 999_999_999;
             monster.max_hp = 999_999_999;
             monster.set_is_about_to_blow(true);
-            monster.loop_pos = 6;
+            // #3823: `<TriggerAboutToBlowState>d__77::MoveNext` `0x3762a8`
+            // IL_00a9-IL_00b1 is `SetMoveImmediate(AboutToBlowState, force:
+            // true)`, so it replaces a Whistle's standing STUNNED, which the
+            // override clear above has already dropped (native trace
+            // `wfg_s2k2`: ABOUT_TO_BLOW on the turn of the kill).
+            monster.loop_pos = super::monsters::WATERFALL_ABOUT_TO_BLOW_INDEX;
         }
         (monster.uid, monster.kind)
     };
@@ -22004,6 +22089,47 @@ mod tests {
         assert_eq!(illusion.powers.value(PowerId::Vuln), 0);
         assert!(!state.history.over);
         assert_eq!(events, [Event::MonsterDied { uid: 1 }]);
+    }
+
+    /// #3823: an illusion killed under the generic stun keeps the stun, and
+    /// its revive is dropped (`IllusionPower/<AfterDeath>d__18` `0x33ca54`
+    /// IL_0119-IL_011b against an unperformed STUNNED). Unstunned, the same
+    /// death parks the revive as before. Either way the fight goes on beside
+    /// the living summoner.
+    #[test]
+    fn an_illusion_killed_under_a_stun_keeps_it_and_never_revives() {
+        for illusion in [MonsterKind::Parafright, MonsterKind::EyeWithTeeth] {
+            for stunned in [false, true] {
+                let mut state = illusion_roster(illusion, 3);
+                if stunned {
+                    super::super::monsters::install_generic_stun(&mut state, 0).unwrap();
+                }
+                state.monsters_mut()[0].hp = 0;
+                finish_monster_death(&mut state, 0, &mut Vec::new()).unwrap();
+                let body = &state.monsters[0];
+                assert_eq!(body.hp, 0);
+                assert!(!state.history.over, "{illusion:?}");
+                if stunned {
+                    assert_eq!(
+                        body.revive_stage,
+                        super::super::monsters::ILLUSION_REVIVE_DROPPED
+                    );
+                    assert_eq!(body.override_state, MonsterOverride::Stunned);
+                    assert_eq!(
+                        Some(body.forced_follow_up),
+                        super::super::monsters::parked_telegraph(illusion, 0)
+                    );
+                    assert!(super::super::monsters::illusion_dead_stun_is_exact(body));
+                } else {
+                    assert_eq!(body.revive_stage, super::super::monsters::ILLUSION_REVIVING);
+                    assert_eq!(body.override_state, MonsterOverride::None);
+                    assert_eq!(body.forced_follow_up, MonsterFollowUp::None);
+                }
+                // The Strength row survives either way (#3674).
+                assert_eq!(body.powers.value(PowerId::Strength), 3);
+                assert_eq!(body.powers.value(PowerId::Weak), 0);
+            }
+        }
     }
 
     /// A summoner and its illusion, in a fight that keeps the Misery ledger.

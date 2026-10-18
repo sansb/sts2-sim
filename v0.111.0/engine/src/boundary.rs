@@ -14674,10 +14674,21 @@ impl HotBoundary {
                 .get("reward_card_pool")
                 .and_then(Value::as_str)
                 .and_then(RewardPool::from_str);
-            for id in owner
+            let pool = owner
                 .map(|o| builder.owner_listener_pool(o, PowerId::CallOfTheVoid))
-                .unwrap_or_default()
-            {
+                .unwrap_or_default();
+            // #3946: as for Hello World above. The listener hands its owner
+            // cards of the owner's pool every turn
+            // (`CallOfTheVoidPower/<BeforeHandDraw>d__6::MoveNext` RVA
+            // `0x336b08`: `Character.CardPool` / `GetUnlockedCards`
+            // IL_0038-IL_0068, less Basic and rarity 5 by `<>c::
+            // <BeforeHandDraw>b__6_0` RVA `0x336ae0`; `GetDistinctForCombat`
+            // IL_00dc; into Hand, `AddGeneratedCardsToCombat` IL_0123). A
+            // Necrobinder's pool holds the Common Drain Power, and a Drain
+            // Power it hands is the deck's Discard-upgrade writer
+            // ([`pool_holds_drain_power_writer`] carries that IL).
+            drain_power_reachable |= pool_holds_drain_power_writer(&pool);
+            for id in pool {
                 intern_generated_identity_closure(
                     &mut builder,
                     CardIdentity {
@@ -15213,9 +15224,34 @@ impl HotBoundary {
         // `GetDistinctForCombat` IL_00c7, `AddGeneratedCardsToCombat` into
         // Hand IL_0112), and a Necrobinder's Attack pool holds Drain Power,
         // whose `CardCmd::Upgrade` (IL_0149 above) then needs the successor
-        // of whatever sits in Discard. The card generators' own pools are
-        // not widened here: their closures are pinned against admission's
-        // probes, and a writer minted from one still stops by name.
+        // of whatever sits in Discard.
+        //
+        // #3946: so is a Drain Power any generator can mint, and an
+        // Apotheosis (`Apotheosis.OnPlay` RVA `0xd7ce8`, the
+        // `UpgradeAllCombatExceptSourceExact` writer, see
+        // `steps::neutral`). Every generated pool above, the generation
+        // preview included, interned what its generators reach as
+        // reachable, so the built catalog's own reachable set says whether
+        // one can be played: a Necrobinder's Call of the Void, Discovery,
+        // Stoke, Infernal Blade, Metamorphosis, Mad Science or Vexing
+        // Puzzlebox; Splash for every other owner. Before this the play
+        // stopped mid-line (`mid-combat card identity .. was not
+        // pre-interned`), and `call_of_the_void_catalog_closure_is_exact`
+        // now asks for the closure this gives.
+        drain_power_reachable |= (0..=1).any(|upgrade| {
+            builder.contains_reachable(CardIdentity {
+                id: CardId::DrainPower,
+                upgrade,
+                enchantment: None,
+            })
+        });
+        apotheosis_reachable |= (0..=1).any(|upgrade| {
+            builder.contains_reachable(CardIdentity {
+                id: CardId::Apotheosis,
+                upgrade,
+                enchantment: None,
+            })
+        });
         if upgrade_all_hand_reachable
             || drain_power_reachable
             || crossbow_mints_drain_power
@@ -15757,14 +15793,12 @@ impl HotBoundary {
             ));
         }
         if state.fanouts.hammer_time()
-            && (state.hp <= 0
-                || state.multiplayer_ally_key != 1
-                || state.fanouts.multiplayer_ally().key != 1)
+            && !crate::steps::regent_forge::hammer_time_owner_state_is_exact(&state)
         {
             return Err(unrepresentable(
                 Entity::Player,
                 "hammer_time",
-                "live local owner and exact represented teammate key one are required",
+                "a live local owner, alone or beside the exact represented teammate key one, is required",
             ));
         }
         state.powers = Slots::from_unsorted(powers).expect("canonical keys are unique");
@@ -21096,18 +21130,25 @@ pub(crate) fn stoke_generation_closure_seeded(
     // The ordinary preview performs this same reconciliation after Stoke can
     // introduce Armaments or Aggression.  Keep the standalone admission
     // witness at that fixed point too, so the existing Ironclad/Puzzlebox
-    // closure remains byte-for-byte as broad as before.
-    let upgrades_reachable = [CardId::Armaments, CardId::Aggression]
-        .into_iter()
-        .any(|id| {
-            (0..=1).any(|upgrade| {
-                builder.contains_reachable(CardIdentity {
-                    id,
-                    upgrade,
-                    enchantment: None,
-                })
+    // closure remains byte-for-byte as broad as before. #3946: the catalog
+    // also closes after a reachable Drain Power or Apotheosis (a
+    // Necrobinder's Stoke mints the former), so the witness does too.
+    let upgrades_reachable = [
+        CardId::Armaments,
+        CardId::Aggression,
+        CardId::DrainPower,
+        CardId::Apotheosis,
+    ]
+    .into_iter()
+    .any(|id| {
+        (0..=1).any(|upgrade| {
+            builder.contains_reachable(CardIdentity {
+                id,
+                upgrade,
+                enchantment: None,
             })
-        });
+        })
+    });
     if upgrades_reachable {
         builder
             .intern_all_card_upgrade_closure()
@@ -21170,6 +21211,19 @@ fn pool_holds_drain_power_writer(pool: &[CardId]) -> bool {
                 .iter()
                 .any(|step| step.kind == StepKind::DrainPowerExact)
         })
+    })
+}
+
+/// Whether every reachable identity of `catalog` that has a next level has
+/// that successor reachable too: what
+/// [`CatalogBuilder::intern_all_card_upgrade_closure`] leaves behind.
+fn reachable_upgrade_closure_holds(catalog: &Catalog) -> bool {
+    catalog.reachable_specs().all(|spec| {
+        !crate::engine::cards::native_card_is_upgradable(spec.identity)
+            || catalog.is_reachable(CardIdentity {
+                upgrade: spec.identity.upgrade + 1,
+                ..spec.identity
+            })
     })
 }
 
@@ -21955,7 +22009,14 @@ pub(crate) fn call_of_the_void_catalog_closure_is_exact(
     // would expect gated rows the listener can never mint.
     seed_closure_probe(&mut expected, catalog);
     let jackpot = jackpot_pool_for_owner(Some(owner), true);
-    for id in expected.owner_listener_pool(owner, PowerId::CallOfTheVoid) {
+    let pool = expected.owner_listener_pool(owner, PowerId::CallOfTheVoid);
+    // #3946: a Drain Power the listener hands its owner upgrades whatever
+    // sits in Discard ([`pool_holds_drain_power_writer`] carries the IL), so
+    // the closure is exact only with every reachable card's successor.
+    if pool_holds_drain_power_writer(&pool) && !reachable_upgrade_closure_holds(catalog) {
+        return false;
+    }
+    for id in pool {
         if intern_generated_identity_closure(
             &mut expected,
             CardIdentity {
@@ -24981,7 +25042,11 @@ mod tests {
         assert!(dying(4, false), "the ticked shape on the enemy side");
         assert!(dying(5, false), "Doom's pre-tick window");
         assert!(!dying(5, true), "no un-ticked stack on the player side");
-        assert!(!dying(3, false), "an over-ticked stack is forged");
+        // #3823: a Whistle's stunned turn ticks Escape Artist without moving
+        // the machine, so a lower stack is reachable; nothing ticks it to 0.
+        assert!(dying(3, false), "a stunned turn behind the machine");
+        assert!(dying(1, true), "four stunned turns behind the machine");
+        assert!(!dying(0, true), "an empty stack is forged");
     }
 
     /// #2965: a live copy above its master row's upgrade (a combat upgrade,
@@ -29211,9 +29276,9 @@ mod tests {
     }
 
     /// Terror Eel is the seam, not a case (#2647 §5.7): for it `STUNNED` with
-    /// no follow-up is the Terror chain, so a generic parked telegraph must
-    /// never become wire-indistinguishable from it. It is in
-    /// `GENERIC_STUN_BESPOKE_KINDS`, so it can never be an Imbalanced carrier.
+    /// no follow-up is the Terror chain. It takes a Whistle's generic stun
+    /// since #3823, but the Imbalanced carriers are their own narrower list
+    /// (`monsters::IMBALANCED_GENERIC_CARRIER_KINDS`), which it is not on.
     #[test]
     fn an_imbalanced_attachment_on_terror_eel_refuses() {
         let mut document = bowlbug_document();
@@ -32284,15 +32349,31 @@ mod tests {
                             .is_some(),
                         "reachable {owner:?} White Noise leaf must be interned: {id:?}"
                     );
-                    assert!(
+                    // #3946: unless the closure reaches a Drain Power (a
+                    // generated card can mint one), which raises every leaf.
+                    let writer = (0..=1).any(|upgrade| {
+                        catalog.is_reachable(CardIdentity {
+                            id: CardId::DrainPower,
+                            upgrade,
+                            enchantment: None,
+                        })
+                    });
+                    assert_eq!(
                         catalog
                             .atom(&CardIdentity {
                                 id,
                                 upgrade: 1,
                                 enchantment: None,
                             })
-                            .is_none(),
-                        "White Noise+ changes the source cost, not the result level"
+                            .is_some(),
+                        writer
+                            && crate::engine::cards::native_card_is_upgradable(CardIdentity {
+                                id,
+                                upgrade: 0,
+                                enchantment: None,
+                            }),
+                        "White Noise+ changes the source cost, not the result level \
+                         ({owner:?}, writer {writer})"
                     );
                 }
             }
@@ -32838,8 +32919,9 @@ mod tests {
     /// reaches Discard, so every upgradable row of the relic's owner pool
     /// needs its L1 atom. The relic pool is interned after the card-owned
     /// upgrade closure, which is why census WV9GZBQ50ZHH n36 refused `Drain
-    /// Power discard upgrade closure`. Without an upgrade writer the relic
-    /// pool stays at L0 (control).
+    /// Power discard upgrade closure`. Since #3946 the Drain Power the
+    /// relic's own pool holds is that writer too, so the leaves close without
+    /// a physical one as well.
     #[test]
     fn drain_power_closes_the_upgrades_of_relic_generated_cards() {
         let document = |drain_power: bool| {
@@ -32902,10 +32984,15 @@ mod tests {
             );
         }
 
-        let control = HotBoundary::catalog_from_canonical(&document(false)).unwrap();
+        // #3946: the Puzzlebox's own pool holds Drain Power, so without a
+        // physical one the leaves close too (the Silent control is in
+        // `every_pool_generator_that_mints_drain_power_closes_every_upgrade`).
+        let puzzlebox_only = HotBoundary::catalog_from_canonical(&document(false)).unwrap();
         assert!(
-            upgraded_leaves(&control).iter().any(|present| !present),
-            "without an upgrade writer the relic pool stays at L0"
+            upgraded_leaves(&puzzlebox_only)
+                .iter()
+                .all(|present| *present),
+            "a Drain Power the Puzzlebox mints closes the leaves as well"
         );
     }
 
@@ -33050,6 +33137,215 @@ mod tests {
             missing_successors(&bare) > 0,
             "no generator, no closure (control)"
         );
+    }
+
+    /// #3946: the same writer reached through any generator. A catalog that
+    /// can play a Drain Power or an Apotheosis has every reachable card's
+    /// successor, for every owner and every generator the boundary interns:
+    /// the owner-pool listeners and relics (Call of the Void, Metamorphosis,
+    /// a Chaos Mad Science, Vexing Puzzlebox, Choices Paradox) and the
+    /// seeded previews (Discovery, Stoke, Splash, Infernal Blade, Jackpot,
+    /// Quasar, Spectrum Shift, Largesse, Creative AI). Before this change 38
+    /// of these documents reached a Drain Power with successors missing,
+    /// among them a Necrobinder's Call of the Void, Discovery and Stoke,
+    /// every owner's Splash (another character's pool) and a Regent's
+    /// Colorless generators (whose pool holds Splash). A catalog that cannot
+    /// reach one closes nothing (controls: a Silent's Call of the Void and
+    /// Metamorphosis, a Defect's Vexing Puzzlebox).
+    /// [`call_of_the_void_catalog_closure_is_exact`] now asks for the
+    /// closure: the Necrobinder catalog with the upgrades left out fails it,
+    /// and before this change it passed.
+    #[test]
+    fn every_generator_that_mints_drain_power_closes_every_upgrade() {
+        let missing_successors = |catalog: &Catalog| {
+            catalog
+                .reachable_specs()
+                .filter(|spec| {
+                    crate::engine::cards::native_card_is_upgradable(spec.identity)
+                        && !catalog.is_reachable(CardIdentity {
+                            upgrade: spec.identity.upgrade + 1,
+                            ..spec.identity
+                        })
+                })
+                .count()
+        };
+        let reaches = |catalog: &Catalog, id: CardId| {
+            (0..=1).any(|upgrade| {
+                catalog.is_reachable(CardIdentity {
+                    id,
+                    upgrade,
+                    enchantment: None,
+                })
+            })
+        };
+        let with_card = |owner: RewardPool, id: &str, upgrade: i64| {
+            let mut document = white_noise_document(47, owner, 0, 0);
+            let mut source = card(id, 900);
+            source.upgrade = upgrade;
+            if matches!(id, "MAD_SCIENCE") {
+                source.extra = vec![json!([MAD_SCIENCE_TINKER_TAG, 2, 6])];
+            }
+            document.piles.get_mut("hand").unwrap()[0] = source;
+            document
+        };
+        let with_relic = |owner: RewardPool, relic: &str| {
+            let mut document = white_noise_document(47, owner, 0, 0);
+            document.piles.get_mut("hand").unwrap()[0] =
+                fixture().piles.get("hand").unwrap()[0].clone();
+            document
+                .player
+                .insert("relics_entering".to_owned(), json!([relic]));
+            document
+                .player
+                .insert("relics_entering_dispatch_ordered".to_owned(), json!(true));
+            if matches!(relic, "RELIC.VEXING_PUZZLEBOX") {
+                document
+                    .player
+                    .insert("vexing_puzzlebox".to_owned(), json!(true));
+            }
+            document
+        };
+        let owners = [
+            RewardPool::Defect,
+            RewardPool::Ironclad,
+            RewardPool::Necrobinder,
+            RewardPool::Regent,
+            RewardPool::Silent,
+        ];
+        let generators = [
+            "CALL_OF_THE_VOID",
+            "METAMORPHOSIS",
+            "MAD_SCIENCE",
+            "DISCOVERY",
+            "STOKE",
+            "SPLASH",
+            "INFERNAL_BLADE",
+            "JACKPOT",
+            "QUASAR",
+            "SPECTRUM_SHIFT",
+            "LARGESSE",
+            "CREATIVE_AI",
+            "HELLO_WORLD",
+            "CALAMITY",
+            "WHITE_NOISE",
+            "MANIFEST_AUTHORITY",
+        ];
+        let mut reaching = std::collections::BTreeSet::new();
+        for owner in owners {
+            let mut documents = Vec::new();
+            for generator in generators {
+                // A Chaos Mad Science has one level.
+                for upgrade in if matches!(generator, "MAD_SCIENCE") {
+                    0..=0
+                } else {
+                    0..=1
+                } {
+                    documents.push((
+                        format!("{generator}+{upgrade}"),
+                        with_card(owner, generator, upgrade),
+                    ));
+                }
+            }
+            for relic in ["RELIC.VEXING_PUZZLEBOX", "RELIC.CHOICES_PARADOX"] {
+                documents.push((relic.to_owned(), with_relic(owner, relic)));
+            }
+            for (name, document) in documents {
+                let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+                if reaches(&catalog, CardId::DrainPower) || reaches(&catalog, CardId::Apotheosis) {
+                    reaching.insert(format!("{owner:?} {name}"));
+                    assert_eq!(missing_successors(&catalog), 0, "{owner:?} {name}");
+                }
+            }
+        }
+        for name in [
+            "Necrobinder CALL_OF_THE_VOID+0",
+            "Necrobinder CALL_OF_THE_VOID+1",
+            "Necrobinder METAMORPHOSIS+0",
+            "Necrobinder MAD_SCIENCE+0",
+            "Necrobinder DISCOVERY+0",
+            "Necrobinder STOKE+0",
+            "Necrobinder INFERNAL_BLADE+0",
+            "Necrobinder RELIC.VEXING_PUZZLEBOX",
+            "Silent SPLASH+0",
+            "Defect SPLASH+1",
+            "Regent CALL_OF_THE_VOID+0",
+            "Regent QUASAR+1",
+        ] {
+            assert!(reaching.contains(name), "{name} reaches a Drain Power");
+        }
+        for (owner, document) in [
+            (
+                RewardPool::Silent,
+                with_card(RewardPool::Silent, "CALL_OF_THE_VOID", 0),
+            ),
+            (
+                RewardPool::Silent,
+                with_card(RewardPool::Silent, "METAMORPHOSIS", 0),
+            ),
+            (
+                RewardPool::Defect,
+                with_relic(RewardPool::Defect, "RELIC.VEXING_PUZZLEBOX"),
+            ),
+        ] {
+            let catalog = HotBoundary::catalog_from_canonical(&document).unwrap();
+            assert!(!reaches(&catalog, CardId::DrainPower), "{owner:?}");
+            assert!(missing_successors(&catalog) > 0, "{owner:?} (control)");
+        }
+
+        // The probe fails on the closure main interned: the pool's own
+        // closure, without the upgrades of the deck's cards.
+        let document = with_card(RewardPool::Necrobinder, "CALL_OF_THE_VOID", 0);
+        let complete = HotBoundary::catalog_from_canonical(&document).unwrap();
+        assert!(call_of_the_void_catalog_closure_is_exact(
+            &complete,
+            Some(RewardPool::Necrobinder)
+        ));
+        let mut builder = CatalogBuilder::new();
+        builder.set_splash_unlock_epochs(FULLY_UNLOCKED_CARD_POOL_EPOCHS.to_vec());
+        for card in document.piles.values().flatten() {
+            builder
+                .intern_reachable(CardIdentity {
+                    id: CardId::from_str(&card.id).unwrap(),
+                    upgrade: u8::try_from(card.upgrade).unwrap(),
+                    enchantment: None,
+                })
+                .unwrap();
+        }
+        let jackpot = jackpot_pool_for_owner(Some(RewardPool::Necrobinder), true);
+        for id in builder.owner_listener_pool(RewardPool::Necrobinder, PowerId::CallOfTheVoid) {
+            intern_generated_identity_closure(
+                &mut builder,
+                CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                },
+                &jackpot,
+                Some(RewardPool::Necrobinder),
+            )
+            .unwrap();
+        }
+        let partial = builder.build();
+        assert!(missing_successors(&partial) > 0);
+        assert!(!call_of_the_void_catalog_closure_is_exact(
+            &partial,
+            Some(RewardPool::Necrobinder)
+        ));
+        // Closing the upgrades is what the probe was missing.
+        let mut builder = CatalogBuilder::new();
+        builder.set_splash_unlock_epochs(FULLY_UNLOCKED_CARD_POOL_EPOCHS.to_vec());
+        for spec in partial.specs() {
+            if partial.is_reachable(spec.identity) {
+                builder.intern_reachable(spec.identity).unwrap();
+            } else {
+                builder.intern(spec.identity).unwrap();
+            }
+        }
+        builder.intern_all_card_upgrade_closure().unwrap();
+        assert!(call_of_the_void_catalog_closure_is_exact(
+            &builder.build(),
+            Some(RewardPool::Necrobinder)
+        ));
     }
 
     #[test]
@@ -33894,17 +34190,38 @@ mod tests {
                     .is_some(),
                 "an L0 copy reaches every L0 leaf: {id:?}"
             );
-            assert!(
+            // #3946: the pool holds Splash, whose pool (another character's)
+            // holds the Necrobinder's Drain Power, so this catalog also
+            // closes every upgrade (named below). The L1 rows are that
+            // closure's; without a reachable writer there would be none.
+            assert_eq!(
                 isolated
                     .atom(&CardIdentity {
                         id,
                         upgrade: 1,
                         enchantment: None,
                     })
-                    .is_none(),
-                "an L0 copy never raises its fresh card: {id:?}"
+                    .is_some(),
+                crate::engine::cards::native_card_is_upgradable(CardIdentity {
+                    id,
+                    upgrade: 0,
+                    enchantment: None,
+                }),
+                "the Drain Power closure raises exactly the upgradable leaves: {id:?}"
             );
         }
+        assert!(
+            isolated.is_reachable(CardIdentity {
+                id: CardId::Splash,
+                upgrade: 0,
+                enchantment: None,
+            }) && isolated.is_reachable(CardIdentity {
+                id: CardId::DrainPower,
+                upgrade: 0,
+                enchantment: None,
+            }),
+            "the writer behind the L1 rows is a Splash-minted Drain Power (#3946)"
+        );
 
         // The widening itself, pinned rather than argued: on the document that
         // DOES carry exact Entropy provenance, the same L0 Manifest copy sees

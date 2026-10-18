@@ -488,13 +488,13 @@ fn forge_exact_inner(
         state.exact_piles = true;
     }
     if state.fanouts.hammer_time() {
-        if state.hp <= 0
-            || state.multiplayer_ally_key != 1
-            || state.fanouts.multiplayer_ally().key != 1
-        {
+        if state.hp <= 0 || !hammer_time_roster_is_exact(state) {
             return Err(EngineRefusal::MalformedArgs("Hammer Time power state"));
         }
-        if state.fanouts.multiplayer_ally().alive {
+        // `HammerTimePower/<AfterForge>d__6` (RVA `0x33bbd8`) forges for the
+        // living Players other than the forger (`<AfterForge>b__0`
+        // `0x33bbba`, IL_005a-IL_009e). A lone owner has none.
+        if state.multiplayer_ally_key == 1 && state.fanouts.multiplayer_ally().alive {
             crate::engine::allies::forge_remote_player_exact(state, catalog, amount, events)?;
         }
     }
@@ -1324,10 +1324,14 @@ pub(crate) fn hammer_time_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
         || ctx.selection.is_some()
         || ctx.x_value != 0
         || ctx.state.hp <= 0
-        || ctx.state.multiplayer_ally_key != 1
-        || ctx.state.fanouts.multiplayer_ally().key != 1
-        || !ctx.state.fanouts.multiplayer_ally().alive
-        || !furnace_catalog_closure_is_exact(ctx.catalog)
+        || !hammer_time_roster_is_exact(ctx.state)
+        // The generated Blade closure serves the teammate's nested Forge. A
+        // lone owner, or one whose teammate is dead, has no such Forge
+        // (`<AfterForge>b__0` `0x33bbba` keeps living Players only), and the
+        // play is offered either way (`CardModel::CanPlay` `0x7dca8`).
+        || (ctx.state.multiplayer_ally_key == 1
+            && ctx.state.fanouts.multiplayer_ally().alive
+            && !furnace_catalog_closure_is_exact(ctx.catalog))
         || !crate::engine::play::apotheosis_body_context_is_exact(
             ctx.state,
             ctx.catalog,
@@ -1366,6 +1370,35 @@ pub(crate) fn hammer_time_exact(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefus
     // StackType.Unique: replays preserve amount one rather than accumulating.
     ctx.state.fanouts.set_hammer_time(true);
     Ok(())
+}
+
+/// The rosters a live Hammer Time is modeled for: the owner alone, or the
+/// owner and the one represented teammate.
+///
+/// `CardModel::CanPlay` (RVA `0x7dca8`) tests the player count only for an
+/// AnyAlly target (IL_0075-IL_00b1), and Hammer Time targets Self, so one
+/// player may play it (#3703; `tests/native/solo_hammer_time*.native.json`).
+/// `HammerTimePower/<AfterForge>d__6` (RVA `0x33bbd8`) then has no other
+/// living Player to forge for.
+pub(crate) fn hammer_time_roster_is_exact(state: &HotState) -> bool {
+    match state.multiplayer_ally_key {
+        0 => true,
+        1 => state.fanouts.multiplayer_ally().key == 1,
+        _ => false,
+    }
+}
+
+/// Whether a document may carry a live Hammer Time for this owner.
+///
+/// Beside a teammate the owner must be alive, as before. Alone, a dead
+/// owner is the fight's lost terminal state: the engine leaves the flag
+/// where the last turn had it, and that state has to project and reload
+/// like any other the engine reaches (the sweep's
+/// `DENSE_VEGETATION_EVENT_ENCOUNTER & HAMMER_TIME` root dies with the power
+/// live). Nothing reads the flag there: `forge_exact_inner` returns at
+/// IsOverOrEnding first.
+pub(crate) fn hammer_time_owner_state_is_exact(state: &HotState) -> bool {
+    hammer_time_roster_is_exact(state) && (state.hp > 0 || state.multiplayer_ally_key == 0)
 }
 
 pub(crate) fn hammer_time_program_is_exact(row: &CardRow) -> bool {
@@ -7474,6 +7507,80 @@ mod tests {
             .unwrap();
         assert!(autoplay.fanouts.hammer_time());
         assert_eq!(autoplay.energy, 0, "direct AutoPlay spends no Energy");
+    }
+
+    /// #3877: a live Hammer Time is modeled for the owner alone and for the
+    /// owner with teammate key one. Alone, or beside a dead teammate, a Forge
+    /// grows the owner's Blade and nobody else's; an unknown roster refuses.
+    #[test]
+    fn hammer_time_forges_for_nobody_else_alone_or_beside_a_dead_teammate() {
+        let mut builder = CatalogBuilder::new();
+        let blade_atom = builder
+            .intern(CardIdentity {
+                id: CardId::SovereignBlade,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let hammer_atom = builder
+            .intern(CardIdentity {
+                id: CardId::HammerTime,
+                upgrade: 0,
+                enchantment: None,
+            })
+            .unwrap();
+        let catalog = builder.build();
+        let blade = HotCard {
+            uid: 20,
+            atom: blade_atom,
+            flags: CARD_FLAG_DEFAULT_PHYSICAL_STATE | CARD_FLAG_SOVEREIGN_BLADE_STATE,
+        };
+
+        let mut solo = HotState::at_defaults();
+        solo.hp = 50;
+        solo.max_hp = 50;
+        solo.energy = 10;
+        solo.next_card_uid = 100;
+        solo.monsters = std::sync::Arc::new(vec![HotMonster::new(MonsterKind::Toadpole, 30)]);
+        let mut dead = hammer_party();
+        dead.fanouts.multiplayer_ally_mut().alive = false;
+        for mut state in [solo, dead] {
+            assert!(hammer_time_roster_is_exact(&state));
+            // The play applies the power on either roster.
+            state.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
+                uid: 10,
+                atom: hammer_atom,
+                flags: 0,
+            });
+            crate::engine::play::play_card(&mut state, &catalog, 10, None, None, &mut Vec::new())
+                .unwrap();
+            assert!(state.fanouts.hammer_time());
+            state.piles.get_mut(PileId::Hand).make_mut().push(blade);
+            let ally_before = state.fanouts.multiplayer_ally().clone();
+            forge_exact(&mut state, &catalog, 7, &mut Vec::new()).unwrap();
+            assert_eq!(state.card_states.get(blade.uid).damage_growth, 7);
+            assert_eq!(*state.fanouts.multiplayer_ally(), ally_before);
+        }
+
+        // A dead owner keeps the flag only alone (the lost terminal state).
+        let mut lost = HotState::at_defaults();
+        lost.fanouts.set_hammer_time(true);
+        lost.hp = 0;
+        assert!(hammer_time_owner_state_is_exact(&lost));
+        let mut dead_owner = hammer_party();
+        dead_owner.hp = 0;
+        assert!(!hammer_time_owner_state_is_exact(&dead_owner));
+        assert!(hammer_time_owner_state_is_exact(&hammer_party()));
+
+        let mut unknown = hammer_party();
+        unknown.multiplayer_ally_key = 2;
+        assert!(!hammer_time_roster_is_exact(&unknown));
+        unknown.fanouts.set_hammer_time(true);
+        unknown.piles.get_mut(PileId::Hand).make_mut().push(blade);
+        assert_eq!(
+            forge_exact(&mut unknown, &catalog, 7, &mut Vec::new()),
+            Err(EngineRefusal::MalformedArgs("Hammer Time power state"))
+        );
     }
 
     #[test]

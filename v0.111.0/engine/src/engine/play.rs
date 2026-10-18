@@ -6120,10 +6120,55 @@ fn manual_play_condition_is_met(state: &HotState, catalog: &Catalog, spec: &Card
 /// allies or an enemy is playable alone. The headless census of the whole
 /// list is on #3703: 18 of the census ids answer true. An id moves here when
 /// its solo body is modeled and witnessed; the rest stay unplayable alone,
-/// which for those 17 is a named gap (#3703), not the game's behaviour.
+/// which for those seven is a named gap (#3703), not the game's behaviour.
 ///
 /// Hibernate (`get_TargetType` Self; `tests/native/hibernate_solo_*.native.json`).
-pub(crate) const NATIVE_SOLO_PLAYABLE_CARDS: [CardId; 1] = [CardId::Hibernate];
+///
+/// Ten whose body walks the owner's living teammates, the owner included,
+/// and so runs for the owner alone (`tests/solo_playable_census.rs`,
+/// `tests/native/solo_*.native.json`, each at both levels):
+///
+/// * Energy Surge (`<OnPlay>d__9` RVA `0x39b948`, `PlayerCmd.GainEnergy`
+///   IL_0118), Huddle Up (`<OnPlay>d__7` `0x3a60bc`, the Draw at IL_0097),
+///   Plot (`<OnPlay>d__5` `0x3b2b40`, `DrawCardsNextTurnPower` IL_009d),
+///   Rally (`<OnPlay>d__7` `0x3b55e4`, `GainBlock` IL_0089), Blade Symphony
+///   (`<OnPlay>d__7` `0x38ce0c`, `Shiv.CreateInHand` IL_0134) and Glimpse
+///   Beyond (`<OnPlay>d__9` `0x3a1968`, Souls into the Draw pile IL_013a).
+///   Each filters `ICombatState.GetTeammatesOf(owner)` to living Players.
+/// * One for All (`<OnPlay>d__5` `0x3b036c`) applies `OneForAllPower` to
+///   every Player (IL_0112); alone that is the owner, whose free attacks
+///   then deal more (`OneForAllPower::ModifyDamageAdditive` `0xa52d8`).
+/// * Beacon of Hope (`<OnPlay>d__5` `0x38b824`, the power at IL_00c1) and
+///   Hammer Time (`<OnPlay>d__5` `0x3a3458`, IL_00c1) apply a power to the
+///   owner whose hook serves the *other* living Players
+///   (`BeaconOfHopePower::<AfterBlockGained>b__8_0` `0x9fc0b`,
+///   `HammerTimePower/<>c__DisplayClass6_0::<AfterForge>b__0` `0x33bbba`):
+///   alone the power sits there and gives nobody anything.
+/// * Gang Up (`<OnPlay>d__5` `0x3a0d20`) is one attack; its count of this
+///   turn's hits by the owner's side other than the owner
+///   (`<get_CanonicalVars>b__1` `0x3a0c9c`) still counts a pet's.
+pub(crate) const NATIVE_SOLO_PLAYABLE_CARDS: [CardId; 11] = [
+    CardId::BeaconOfHope,
+    CardId::BladeSymphony,
+    CardId::EnergySurge,
+    CardId::GangUp,
+    CardId::GlimpseBeyond,
+    CardId::HammerTime,
+    CardId::Hibernate,
+    CardId::HuddleUp,
+    CardId::OneForAll,
+    CardId::Plot,
+    CardId::Rally,
+];
+
+/// Whether `id` is on either frozen multiplayer `CanPlay` census, whatever a
+/// lone player may do with it. A party fight admits such a card only when
+/// its party body is modeled (`admission`'s `MultiplayerCard` gate), and
+/// that question does not change when the solo body lands: Beacon of Hope
+/// is playable alone and still has no teammate fan-out here.
+pub(crate) fn card_is_on_a_multiplayer_census(id: CardId) -> bool {
+    MULTIPLAYER_ONLY_CANPLAY_CARDS.contains(&id) || TEAMMATE_REQUIRED_CANPLAY_CARDS.contains(&id)
+}
 
 /// Whether `id` is unplayable while the owner is the only living Player.
 pub(crate) fn card_is_solo_unplayable(id: CardId) -> bool {
@@ -10340,11 +10385,14 @@ thread_local! {
 pub(crate) struct VelvetChokerWindow(bool);
 
 impl VelvetChokerWindow {
-    /// Open the window for `uid`'s play, if a vouched inventory holds the
-    /// Choker. An unvouched inventory has no recorded place for it, and keeps
-    /// this crate's fixed one (the count moves when the play finishes).
-    pub(crate) fn open(state: &HotState, catalog: &Catalog, uid: u32) -> Self {
-        let held = state.velvet_choker_owned() && catalog.hooks().dispatch_ordered();
+    /// Open the window for `uid`'s play, if the inventory holds the Choker.
+    /// A vouched inventory closes it at the Choker's recorded place in the
+    /// relic walk; an unvouched one at this crate's fixed place for it
+    /// (`relics::after_card_played_peer_segment`). Either way every power's
+    /// `AfterCardPlayed` runs inside it, because powers precede relics
+    /// (#3930, [`velvet_choker_cards_played`]).
+    pub(crate) fn open(state: &HotState, _catalog: &Catalog, uid: u32) -> Self {
+        let held = state.velvet_choker_owned();
         if held {
             VELVET_CHOKER_WINDOWS.with(|windows| windows.borrow_mut().push((uid, true)));
         }
@@ -10399,11 +10447,22 @@ pub(crate) fn velvet_choker_counts_play(uid: u32) {
 /// (`VELVET_CHOKER_WINDOWS`) and each `Frame::CardPlay` parked at
 /// `CardPlayStage::AfterImitation`, which is past its history entry and
 /// short of its relic walk.
-fn velvet_choker_cards_played(state: &HotState, catalog: &Catalog) -> i32 {
+///
+/// #3930: the same on an unvouched inventory. The window always holds every
+/// power's `AfterCardPlayed`, whatever the relic order: `IterateHookListeners`
+/// yields the player creature's powers (IL_0092-0097) before its relics
+/// (IL_00c9-00ef). So a Strike Hellraiser plays out of the Gremlin Horn draw
+/// (`GremlinHorn/<AfterDeath>d__6` RVA `0x326170`, `CardPileCmd::Draw`
+/// IL_00d9) after Rage's Block (`RagePower/<AfterCardPlayed>d__6` RVA
+/// `0x341490`, `CreatureCmd::GainBlock` IL_006e) let Juggernaut kill, as the
+/// sixth card's guest, is the seventh play with the Choker before or after
+/// the Horn (native traces `rv_rage_vc_horn_b`, `rv_rage_horn_vc_b`). Where
+/// the Choker closes the window among the relics is this crate's fixed
+/// place, and admission refuses the unvouched inventories on which a relic
+/// body could observe it (`Velvet Choker beside a killing AfterCardPlayed
+/// relic with Gremlin Horn, unvouched`).
+fn velvet_choker_cards_played(state: &HotState, _catalog: &Catalog) -> i32 {
     let finished = i32::from(state.history.owner_card_plays_finished_this_turn);
-    if !catalog.hooks().dispatch_ordered() {
-        return finished;
-    }
     let synchronous = VELVET_CHOKER_WINDOWS
         .with(|windows| windows.borrow().iter().filter(|window| window.1).count());
     let parked = state
@@ -23817,6 +23876,14 @@ mod tests {
                     state
                 };
                 let label = format!("{kind:?} row {loop_pos} ({})", rows[loop_pos as usize].name);
+                if kind == MonsterKind::ThievingHopper {
+                    // #3823: a Hopper fight carries its run-deck sidecar and
+                    // Escape Artist from the encounter, which a bare root has
+                    // not; its rows are witnessed on the real roster
+                    // (`engine::native_stun_traces`, `hop_*`).
+                    bare_root_unprojectable.push(kind);
+                    continue;
+                }
                 let state = root(2);
                 let Ok(entry) = HotBoundary::try_to_canonical(&state, &catalog) else {
                     bare_root_unprojectable.push(kind);
@@ -23963,13 +24030,13 @@ mod tests {
                 assert_eq!(cold.powers, plain.powers, "{label}");
             }
         }
-        assert_eq!(swept, 68, "the generic stun owners with a generated loop");
+        assert_eq!(swept, 84, "the generic stun owners with a generated loop");
         acted.dedup();
         bare_root_unprojectable.dedup();
         bare_root_cannot_act.dedup();
-        // What a bare one-monster root cannot show. Four kinds do not
+        // What a bare one-monster root cannot show. Five kinds do not
         // project without the private state their opening sets up, so they
-        // have only the kind-level pin; eleven more have at least one row that
+        // have only the kind-level pin; sixteen more have at least one row that
         // cannot run a turn there, so those rows have the static half
         // (park, drop, cold reload, admission parity) and not the resume.
         // Their resume is the same `monster_act` arm every other row takes.
@@ -23982,14 +24049,32 @@ mod tests {
                 bare_root_cannot_act
             ),
             (
-                180,
-                58,
-                vec![Aeonglass, FatGremlin, GremlinMerc, SneakyGremlin],
+                237,
+                70,
+                vec![
+                    Aeonglass,
+                    FatGremlin,
+                    GremlinMerc,
+                    SneakyGremlin,
+                    ThievingHopper
+                ],
                 vec![
                     BattleFriendV1,
                     BattleFriendV2,
                     BattleFriendV3,
+                    // #3823: the Beast's rows are valid only with the Plow
+                    // threshold and Ringing its own moves set up
+                    // (`ceremonial_beast_state_is_valid`), which a bare
+                    // 400-HP root has not; every row's stun and resume is
+                    // native-traced (`engine::native_stun_traces`, `bst_*`).
+                    CeremonialBeast,
                     Entomancer,
+                    // The demon's validator asks its real roster (the fixed
+                    // max HP, the counter against the row), which a bare
+                    // 400-HP root is not. Its resume over every row, with
+                    // the curse choice answered, is native-traced
+                    // (`engine::native_stun_traces`, the `kd_*` cases).
+                    KnowledgeDemon,
                     // SHIELD_SLAM's row writes the completed-Slam receipt
                     // only in its two-monster roster; its resume and both
                     // successors are native-traced
@@ -23997,10 +24082,23 @@ mod tests {
                     LivingShield,
                     MagiKnight,
                     Noisebot,
+                    // The Ovicopter and its eggs are valid only as the whole
+                    // retained roster (`ovicopter_roster_is_valid`: the
+                    // parent in slot 5 with uid 0, eggs in slots 0..=4).
+                    // Their resume over every row is native-traced
+                    // (`engine::native_stun_traces`, the `ovi_*` cases).
+                    Ovicopter,
                     SoulFysh,
+                    // #3823: the Test Subject is valid only at its fixed
+                    // form max HP (`test_subject_state_is_valid`), which a
+                    // bare 400-HP root is not. Its resume over each form's
+                    // rows is native-traced (`engine::native_stun_traces`,
+                    // the `tsj_*` cases).
+                    TestSubject,
                     TheForgotten,
                     TheInsatiable,
-                    TheLost
+                    TheLost,
+                    ToughEgg
                 ]
             ),
             "rows swept; kinds whose resumed move ran; kinds a bare root cannot carry"
@@ -24257,19 +24355,21 @@ mod tests {
                 atom,
                 flags: 0,
             });
-            unsupported
-                .monsters_mut()
-                .push(HotMonster::new(MonsterKind::Fogmog, 40));
+            unsupported.monsters_mut().push({
+                let mut owl = HotMonster::new(MonsterKind::OwlMagistrate, 40);
+                owl.revive_stage = 1;
+                owl
+            });
             let canonical = HotBoundary::to_canonical(&unsupported, &catalog);
             let refusal = crate::engine::admit(&canonical, &unsupported, &catalog).unwrap_err();
             assert!(
-                // #3823: a Fogmog's SWIPE re-enters a `RandomBranchState`
-                // and its ILLUSION summons a bespoke owner; it is named as
-                // a branching machine rather than as the Queen roster. (A
-                // Toadpole stood here until its plain cycle became
-                // representable, then a Mawler until its random table did.)
+                // An instance off its generated loop is named as such
+                // rather than as the Queen roster. (A Toadpole, a Mawler, a
+                // Fogmog, a Terror Eel and a Decimillipede segment stood
+                // here in turn until each became representable, #3823; no
+                // kind is a bespoke machine to Whistle any more.)
                 refusal.contains(crate::engine::admission::MissingCapability::ArgumentShape(
-                    crate::engine::monsters::WHISTLE_STUN_BRANCH
+                    crate::engine::monsters::WHISTLE_STUN_INSTANCE
                 )),
                 "Whistle in {pile:?} escaped prospective admission: {refusal:?}"
             );
@@ -27980,11 +28080,16 @@ mod tests {
             .unwrap();
         assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
 
-        // An unvouched inventory keeps the count at the history's, and a
-        // deck without the Choker opens no window.
+        // #3930: an unvouched inventory opens the window too (powers run
+        // inside it on any relic order), and its fixed walk place closes
+        // it. A deck without the Choker opens no window.
         let (state, catalog) = build(&choker, false);
-        let _window = VelvetChokerWindow::open(&state, &catalog, 4);
-        assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+        {
+            let _window = VelvetChokerWindow::open(&state, &catalog, 4);
+            assert_eq!(velvet_choker_cards_played(&state, &catalog), 5);
+            velvet_choker_counts_play(4);
+            assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
+        }
         let (state, catalog) = build(&[RelicId::RelicGamePiece], true);
         let _window = VelvetChokerWindow::open(&state, &catalog, 4);
         assert_eq!(velvet_choker_cards_played(&state, &catalog), 6);
@@ -32580,18 +32685,24 @@ mod tests {
     /// on card identity, and a predicate that accidentally keyed on something
     /// correlated (Innate, `Self` target, zero cost) would still pass a
     /// Beacon-only assertion.
+    ///
+    /// #3877: the gated ids are now the census members whose solo body is
+    /// not modeled (Tank, Flanking, Underworld). Beacon of Hope and Gang Up
+    /// are played alone on the game and are among the offered neighbours.
     #[test]
-    fn the_multiplayer_only_census_gates_both_beacon_levels_and_spares_its_neighbours() {
+    fn the_multiplayer_only_census_gates_both_tank_levels_and_spares_its_neighbours() {
         let mut builder = CatalogBuilder::new();
         let gated = [
-            identity(CardId::BeaconOfHope, 0),
-            identity(CardId::BeaconOfHope, 1),
-            identity(CardId::GangUp, 0),
+            identity(CardId::Tank, 0),
+            identity(CardId::Tank, 1),
+            identity(CardId::Flanking, 0),
             identity(CardId::Underworld, 0),
         ];
         let ordinary = [
             identity(CardId::StrikeIronclad, 0),
             identity(CardId::DefendIronclad, 0),
+            identity(CardId::BeaconOfHope, 0),
+            identity(CardId::BeaconOfHope, 1),
         ];
         for id in gated.iter().chain(ordinary.iter()) {
             builder.intern(*id).unwrap();
@@ -32639,11 +32750,11 @@ mod tests {
     /// as a resource shortage.
     #[test]
     fn direct_play_of_a_multiplayer_only_card_refuses_before_any_mutation() {
-        let beacon = identity(CardId::BeaconOfHope, 0);
+        let tank = identity(CardId::Tank, 0);
         let mut builder = CatalogBuilder::new();
-        builder.intern(beacon).unwrap();
+        builder.intern(tank).unwrap();
         let catalog = builder.build();
-        let mut state = state_with_card(&catalog, beacon, 1);
+        let mut state = state_with_card(&catalog, tank, 1);
         // Deliberately abundant: if the refusal were a resource verdict this
         // would pass the gate instead of failing it.
         state.energy = 99;
@@ -32653,10 +32764,7 @@ mod tests {
 
         let refusal = play_card(&mut state, &catalog, 1, None, None, &mut events).unwrap_err();
 
-        assert_eq!(
-            refusal,
-            EngineRefusal::CardNotPlayableSolo(CardId::BeaconOfHope)
-        );
+        assert_eq!(refusal, EngineRefusal::CardNotPlayableSolo(CardId::Tank));
         assert_eq!(state, before, "the refusal must precede every mutation");
         assert!(events.is_empty(), "a refused play emits no events");
     }
@@ -33067,7 +33175,9 @@ mod tests {
         }
 
         let mut builder = CatalogBuilder::new();
-        let multiplayer = identity(CardId::BeaconOfHope, 0);
+        // Tank: a census member one player may not play here (#3877 moved
+        // Beacon of Hope, which stood in this place, to the playable set).
+        let multiplayer = identity(CardId::Tank, 0);
         let underworld = identity(CardId::Underworld, 0);
         builder.intern(multiplayer).unwrap();
         builder.intern(underworld).unwrap();
@@ -33176,6 +33286,17 @@ mod tests {
                 alive: false,
                 ..MultiplayerAllyState::default()
             });
+            if NATIVE_SOLO_PLAYABLE_CARDS.contains(&id) {
+                // #3877: `CardModel::CanPlay` (RVA `0x7dca8`) counts Players
+                // only for an AnyAlly target, so these are offered to the
+                // one living Player.
+                assert!(!multiplayer_restriction_blocks(&state, id));
+                assert!(
+                    can_play(&catalog, &state, card, spec),
+                    "{id:?} with a dead teammate"
+                );
+                continue;
+            }
             assert!(
                 multiplayer_restriction_blocks(&state, id),
                 "{id:?} must count living Players, not represented rows"
@@ -42519,8 +42640,10 @@ mod tests {
         assert_eq!(events, before_events);
     }
 
+    /// #3877: the play is offered to the one living Player too, alone or
+    /// beside a dead teammate (`tests/native/solo_glimpse_beyond*`).
     #[test]
-    fn glimpse_beyond_is_live_party_only_and_burst_late_refusal_has_no_prefix() {
+    fn glimpse_beyond_is_offered_alone_and_burst_late_refusal_has_no_prefix() {
         for (upgrade, amount) in [(0, 3_usize), (1, 4)] {
             let glimpse = identity(CardId::GlimpseBeyond, upgrade);
             let mut builder = CatalogBuilder::new();
@@ -42531,7 +42654,7 @@ mod tests {
 
             let solo = state_with_card(&catalog, glimpse, 200 + u32::from(upgrade));
             let source = solo.piles.get(PileId::Hand).as_slice()[0];
-            assert!(!can_play(
+            assert!(can_play(
                 &catalog,
                 &solo,
                 source,
@@ -42547,7 +42670,7 @@ mod tests {
                     alive: false,
                     ..MultiplayerAllyState::default()
                 });
-            assert!(!can_play(
+            assert!(can_play(
                 &catalog,
                 &dead_remote,
                 source,

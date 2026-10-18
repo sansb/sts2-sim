@@ -1597,8 +1597,11 @@ mod tests {
         }
     }
 
+    /// #3877: one player may play it by hand as well (`CardModel::CanPlay`
+    /// RVA `0x7dca8` counts Players only for an AnyAlly target), and the
+    /// power is the owner's alone.
     #[test]
-    fn one_for_all_manual_solo_refuses_but_direct_autoplay_is_owner_only() {
+    fn one_for_all_manual_solo_and_direct_autoplay_are_owner_only() {
         let identity = CardIdentity {
             id: CardId::OneForAll,
             upgrade: 0,
@@ -1614,20 +1617,15 @@ mod tests {
         ));
         manual.hp = 50;
         manual.energy = 3;
-        manual
-            .powers
-            .set(PowerId::OneForAll, SlotWire::Int, i32::MAX);
         manual.piles.get_mut(PileId::Hand).make_mut().push(HotCard {
             uid: 7,
             atom,
             flags: 0,
         });
-        let before = manual.clone();
-        assert_eq!(
-            play_card(&mut manual, &catalog, 7, None, None, &mut Vec::new()),
-            Err(EngineRefusal::CardNotPlayableSolo(CardId::OneForAll))
-        );
-        assert_eq!(manual, before);
+        play_card(&mut manual, &catalog, 7, None, None, &mut Vec::new()).unwrap();
+        assert_eq!(manual.powers.value(PowerId::OneForAll), 3);
+        assert_eq!(manual.fanouts.multiplayer_ally().one_for_all, 0);
+        assert_eq!(manual.energy, 2);
 
         let mut autoplay = HotState::at_defaults();
 

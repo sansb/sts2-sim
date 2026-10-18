@@ -62,13 +62,14 @@
 //!
 //! Run modifiers are hook listeners too (`Modifiers.Murderous` and `Terminal`
 //! override `AfterRoomEntered`; `Modifiers.NightTerrors` overrides the rest-site
-//! hooks), and the entry does not otherwise model them, so any modifier on an
-//! event root refuses. That is the wider of two rules: every combat root
-//! first passes [`crate::entry::modifiers::combat_gate`] (#3760), which
-//! refuses the modifiers whose hooks run inside a fight and admits the rest
-//! for a map combat. An event root still refuses the rest here, because the
-//! event's room entry and option chain fire hooks that table does not read
-//! (the rest-site heal `NightTerrors` listens to is Dense Vegetation's).
+//! hooks). Every combat root first passes
+//! [`crate::entry::modifiers::combat_gate`] (#3760), which settles the
+//! modifiers whose hooks run inside a fight. An event root then applies a
+//! second, wider rule here, because the event's room entry and option chain
+//! raise hooks that table does not read (the rest-site heal `NightTerrors`
+//! listens to is Dense Vegetation's): a modifier is admitted only when every
+//! method it overrides is one the event path provably never calls
+//! ([`EVENT_PATH_INERT_MODIFIER_OVERRIDES`], #3937), and refuses otherwise.
 
 use crate::entry::deck::DeckEntry;
 use crate::entry::refusal::EntryRefusal;
@@ -123,10 +124,38 @@ pub struct EventCombat {
 ///   stock `BeforeEventStarted` (`0xc94f8`) rolled on the event's RNG and which
 ///   they may have bought from first. Neither the potion spent nor any purchase
 ///   is in the pre-event save.
-/// * **Punch Off.** `AfterEventStarted` (`0xcc13b`) starts `PunchEachOther`
-///   running beside the event, and `Fight` (`0xcc278`) builds two rewards
-///   before entering combat. Neither body has been read to the end, and the
-///   corpus has no Punch Off fight, so it refuses.
+/// * **Punch Off (#3937).** The option chain is `TakeThem` → `Fight`, and
+///   nothing in it or beside it touches the player:
+///   - `AfterEventStarted` (`0xcc13b`) subscribes `OnRoomExited` to
+///     `RunManager.RoomExited` (IL_0001-IL_0012), stores a new
+///     `CancellationTokenSource` (IL_0018-IL_001d) and starts `PunchEachOther`
+///     under `TaskHelper::RunSafely` (IL_0023-IL_0028).
+///   - `<PunchEachOther>d__12::MoveNext` (`0x37e890`) is presentation to its
+///     end: it reads the two layout enemies (`EventCombatSynchronizer::
+///     get_CombatStateForLayout`, IL_0047/IL_0063), and loops
+///     `CreatureCmd::TriggerAnim` (`Attack` IL_0106, `Hit` IL_01fd, and again
+///     at IL_02dd/IL_03da), `Cmd::Wait` (IL_0166, IL_0260, IL_0340, IL_043d),
+///     `VfxCmd::PlayOnCreatureCenter` (IL_01cb, IL_03a8) and
+///     `NHitSparkVfx::Create` until the token is cancelled (IL_02c3,
+///     IL_04a0). It calls no damage, power, card, relic, potion or RNG
+///     command.
+///   - `CalculateVars` (`0xcc1b3`) sets the Nab option's display gold from
+///     `EventModel.Rng.NextInt(91, 99)` (IL_000c-IL_0020). That stream is the
+///     event's own: `EventModel/<BeginEvent>d__28::MoveNext` builds it as
+///     `new Rng(RunState.Rng.Seed + … + hash(Id.Entry))` (IL_0051-IL_0095), a
+///     fresh generator and none of the run's streams.
+///   - `TakeThem` (`0xcc220`) cancels the token (IL_000c-IL_0018) and sets the
+///     page whose one option is `Fight` (IL_001d-IL_004a).
+///   - `Fight` (`0xcc278`) builds a two-element reward list,
+///     `new RelicReward(Owner)` (IL_002c-IL_0032) and
+///     `new PotionReward(Owner)` (IL_0044-IL_004a), and enters combat with it
+///     (IL_0051-IL_0054). Both one-argument constructors (`0x5d3ec`,
+///     `0x5d264`) are `Reward::.ctor(player)` and `ret`: nothing is rolled or
+///     granted until the rewards are offered after the fight.
+///
+///   The other option, `Nab` (`<Nab>d__14` `0x37e688`), ends the event with no
+///   fight. The event overrides `get_IsShared` and `get_LayoutType` like the
+///   Battleworn Dummy, whose roots the census certifies.
 pub const EVENT_COMBATS: [EventCombat; 7] = [
     EventCombat {
         encounter: "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V1_ENCOUNTER",
@@ -165,10 +194,7 @@ pub const EVENT_COMBATS: [EventCombat; 7] = [
     EventCombat {
         encounter: "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER",
         event: "PunchOff",
-        verdict: Verdict::Refused(
-            "AfterEventStarted (0xcc13b) runs PunchEachOther beside the event and \
-             Fight (0xcc278) builds two rewards before combat; neither body is read",
-        ),
+        verdict: Verdict::Admitted(PreCombat::Nothing),
     },
 ];
 
@@ -465,7 +491,17 @@ fn inert_on_event_room(id: &str) -> bool {
 /// choice the pre-event save cannot see (Tiny Mailbox's two `PotionReward`s,
 /// `TryModifyRestSiteHealRewards` `0x9c88a` IL_000e/IL_001a, taken or not on a
 /// rewards screen) or a body nobody ported here.
-pub const REST_HEAL_LISTENERS: [(&str, &str, &str); 13] = [
+///
+/// One override of those hooks is not listed, because its body is read to
+/// return before any write on this path (#3937). `LavaRock::TryModifyRewards`
+/// (`0x960f8`) returns `false` unless the player is its owner (IL_000c-IL_0016)
+/// and the room is non-null with `RoomType == 3` (IL_0017-IL_002c), and only
+/// past that does it test the act, read `HasTriggered` or add a reward. The
+/// room `RewardsSet` hands the hook for the rest's custom rewards is the
+/// event's or none: `EventRoom::get_RoomType` (`0x58e37`) is `ldc.i4.6`. So
+/// the body returns at the room test with `HasTriggered` untouched, and the
+/// relic's fight is the one the save describes.
+pub const REST_HEAL_LISTENERS: [(&str, &str, &str); 12] = [
     (
         "RegalPillow",
         "RELIC.REGAL_PILLOW",
@@ -499,7 +535,6 @@ pub const REST_HEAL_LISTENERS: [(&str, &str, &str); 13] = [
         "TryModifyRewards",
     ),
     ("BlackStar", "RELIC.BLACK_STAR", "TryModifyRewards"),
-    ("LavaRock", "RELIC.LAVA_ROCK", "TryModifyRewards"),
     ("PrayerWheel", "RELIC.PRAYER_WHEEL", "TryModifyRewards"),
     ("WhiteStar", "RELIC.WHITE_STAR", "TryModifyRewards"),
     (
@@ -508,6 +543,54 @@ pub const REST_HEAL_LISTENERS: [(&str, &str, &str); 13] = [
         "TryModifyRewards",
     ),
 ];
+
+/// The `ModifierModel` overrides an event root admits (#3937): methods no
+/// part of an admitted event path calls, each by its callers in the v0.111.0
+/// assembly (a whole-DLL scan for `call`/`callvirt`/`ldftn` of the name).
+///
+/// * `GenerateNeowOption`: only `Neow::GenerateInitialOptions`. The Neow
+///   event starts no fight.
+/// * `get_ClearsPlayerDeck`: `ModifierModel::OnRunCreated` and one static
+///   lambda of the custom-run setup; both run when the run is created.
+/// * `ModifyGeneratedMap`: `Hook::ModifyGeneratedMap`, raised only by
+///   `RunManager/<GenerateMap>d__188::MoveNext` (`0x30d3dc`, IL_0169), at act
+///   entry.
+/// * `ModifyCardRewardCreationOptions`: `Hook` RVA `0x104f6c`, raised only by
+///   `CardFactory::CreateForReward` (`0x112b10`, IL_001a) and
+///   `ScrollBoxes::GenerateRandomBundles` (`0x9adbc`). `CreateForReward`'s
+///   callers are `CardReward::Populate`, `LastingCandy::
+///   TryModifyCardRewardOptions`, seven relic `AfterObtained` bodies, the
+///   Neow-option modifiers' `ObtainCards`/`ChooseCards`, and five event
+///   options (`ShareKnowledge`, `FriedEel`, `Study`, `TouchCore`, `Gorge`),
+///   none of them an option of an event in [`EVENT_COMBATS`]. No admitted
+///   chain offers a `CardReward` before its fight: the Battleworn Dummy enters
+///   with `Array.Empty<Reward>`, the Lantern Key's reward is built around
+///   `RunState::CreateCard`, Punch Off's two rewards are a relic and a potion,
+///   and Dense Vegetation's rest offers only what a
+///   [`REST_HEAL_LISTENERS`] relic adds, each of which refuses.
+///
+/// A modifier that overrides anything else keeps the refusal: the room-entry
+/// and rest-site hooks act on this path, and the rest (the merchant pool,
+/// room odds, free travel, act entry, run load, reward edits) were not read
+/// against it. The in-combat hooks are the combat gate's.
+pub const EVENT_PATH_INERT_MODIFIER_OVERRIDES: [&str; 4] = [
+    "GenerateNeowOption",
+    "ModifyCardRewardCreationOptions",
+    "ModifyGeneratedMap",
+    "get_ClearsPlayerDeck",
+];
+
+/// Whether a run modifier is inert on every admitted event path: a row of
+/// [`crate::entry::modifiers::RUN_MODIFIERS`] whose every override is in
+/// [`EVENT_PATH_INERT_MODIFIER_OVERRIDES`]. A modifier the table does not know
+/// is not inert (the combat gate has already refused it by then).
+fn modifier_inert_on_event_path(id: &str) -> bool {
+    crate::entry::modifiers::run_modifier(id).is_some_and(|row| {
+        row.overrides
+            .iter()
+            .all(|name| EVENT_PATH_INERT_MODIFIER_OVERRIDES.contains(name))
+    })
+}
 
 /// The event-combat facts the gate reads.
 #[derive(Clone, Copy, Debug)]
@@ -554,10 +637,16 @@ pub fn hp_entering(encounter_id: &str, facts: &EventRootFacts<'_>) -> Result<i64
         }
         Verdict::Admitted(pre_combat) => pre_combat,
     };
-    if !facts.modifiers.is_empty() {
+    let acting: Vec<String> = facts
+        .modifiers
+        .iter()
+        .filter(|id| !modifier_inert_on_event_path(id))
+        .cloned()
+        .collect();
+    if !acting.is_empty() {
         return Err(EntryRefusal::EventCombatRunModifiers {
             encounter: encounter_id.to_string(),
-            modifiers: facts.modifiers.to_vec(),
+            modifiers: acting,
         });
     }
     let held = |id: &str| {
@@ -640,6 +729,7 @@ mod tests {
     const DV: &str = "ENCOUNTER.DENSE_VEGETATION_EVENT_ENCOUNTER";
     const BW2: &str = "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V2_ENCOUNTER";
     const KNIGHT: &str = "ENCOUNTER.MYSTERIOUS_KNIGHT_EVENT_ENCOUNTER";
+    const PUNCH: &str = "ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER";
 
     fn class(result: Result<i64, EntryRefusal>) -> &'static str {
         result.expect_err("the event root refuses").class()
@@ -718,6 +808,8 @@ mod tests {
             BW2,
             "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER",
             KNIGHT,
+            // #3937: Punch Off's chain was read to the end.
+            PUNCH,
         ] {
             assert_eq!(
                 hp_entering(encounter, &facts(&[], &[], &[])),
@@ -729,14 +821,41 @@ mod tests {
 
     #[test]
     fn an_unread_option_chain_refuses_by_name() {
-        for (encounter, event) in [
-            ("ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER", "FakeMerchant"),
-            ("ENCOUNTER.PUNCH_OFF_EVENT_ENCOUNTER", "PunchOff"),
-        ] {
-            let refusal = hp_entering(encounter, &facts(&[], &[], &[])).expect_err("refuses");
-            assert_eq!(refusal.class(), "event_combat_path_not_modeled");
-            assert!(refusal.to_string().contains(event));
+        let refusal = hp_entering(
+            "ENCOUNTER.FAKE_MERCHANT_EVENT_ENCOUNTER",
+            &facts(&[], &[], &[]),
+        )
+        .expect_err("refuses");
+        assert_eq!(refusal.class(), "event_combat_path_not_modeled");
+        assert!(refusal.to_string().contains("FakeMerchant"));
+        // The one refused chain left in the table.
+        let refused: Vec<&str> = EVENT_COMBATS
+            .iter()
+            .filter(|row| matches!(row.verdict, Verdict::Refused(_)))
+            .map(|row| row.event)
+            .collect();
+        assert_eq!(refused, ["FakeMerchant"]);
+    }
+
+    /// #3937: Punch Off shares every event path's room-entry rule. A listener
+    /// whose `EventRoom` body acts still refuses it, and one whose body
+    /// returns at its room guard does not.
+    #[test]
+    fn punch_off_keeps_the_room_entry_rule() {
+        for (_, id, _) in EVENT_ROOM_ACTIVE_LISTENERS {
+            let (relics, deck) = holding(id);
+            let refusal = hp_entering(PUNCH, &facts(&relics, &deck, &[])).expect_err("refuses");
+            assert_eq!(refusal.class(), "event_combat_listener_not_modeled");
+            assert!(refusal.to_string().contains(id), "{id}");
         }
+        let inert: Vec<String> = EVENT_ROOM_INERT_LISTENERS
+            .iter()
+            .map(|(_, id, _)| id.to_string())
+            .collect();
+        assert_eq!(hp_entering(PUNCH, &facts(&inert, &[], &[])), Ok(8));
+        // The rest-heal listeners are Dense Vegetation's alone.
+        let mailbox = ["RELIC.TINY_MAILBOX".to_string()];
+        assert_eq!(hp_entering(PUNCH, &facts(&mailbox, &[], &[])), Ok(8));
     }
 
     #[test]
@@ -750,6 +869,94 @@ mod tests {
             class(hp_entering(BW2, &facts(&[], &[], &modifiers))),
             "event_combat_run_modifiers"
         );
+    }
+
+    /// #3937: the modifiers an event root admits are exactly those whose
+    /// every override is a method the event path never calls. The expected
+    /// set is spelled out so a new override on any row, or a new name in the
+    /// list, has to move this test.
+    #[test]
+    fn an_event_root_admits_exactly_the_modifiers_with_no_event_path_hook() {
+        let admitted: Vec<&str> = crate::entry::modifiers::RUN_MODIFIERS
+            .iter()
+            .filter(|row| modifier_inert_on_event_path(row.entry))
+            .map(|row| row.entry)
+            .collect();
+        assert_eq!(
+            admitted,
+            [
+                "ALL_STAR",
+                "BIG_GAME_HUNTER",
+                "DEPRECATED_MODIFIER",
+                "DRAFT",
+                "INSANITY",
+                "SEALED_DECK",
+                "SPECIALIZED",
+            ]
+        );
+        assert!(EVENT_PATH_INERT_MODIFIER_OVERRIDES.is_sorted());
+        for row in crate::entry::modifiers::RUN_MODIFIERS {
+            // Both spellings, on a direct option and on the rest path.
+            for id in [row.entry.to_string(), format!("MODIFIER.{}", row.entry)] {
+                let modifiers = [id.clone()];
+                let direct = hp_entering(BW2, &facts(&[], &[], &modifiers));
+                let rest = hp_entering(DV, &facts(&[], &[], &modifiers));
+                if admitted.contains(&row.entry) {
+                    assert_eq!(direct, Ok(8), "{id}");
+                    assert_eq!(rest, Ok(29), "{id}");
+                } else {
+                    assert_eq!(class(direct), "event_combat_run_modifiers", "{id}");
+                    assert_eq!(class(rest), "event_combat_run_modifiers", "{id}");
+                }
+            }
+        }
+        // A modifier the table has never read is not inert.
+        assert!(!modifier_inert_on_event_path("MODIFIER.NOT_READ"));
+        // The daily run of #3756 whose event fight this admits, and the same
+        // run beside one acting modifier: the refusal names only that one.
+        let daily = [
+            "MODIFIER.ALL_STAR".to_string(),
+            "MODIFIER.SEALED_DECK".to_string(),
+            "MODIFIER.BIG_GAME_HUNTER".to_string(),
+        ];
+        assert_eq!(
+            hp_entering(
+                "ENCOUNTER.BATTLEWORN_DUMMY_EVENT_V3_ENCOUNTER",
+                &facts(&[], &[], &daily)
+            ),
+            Ok(8)
+        );
+        let mut mixed = daily.to_vec();
+        mixed.push("MODIFIER.MIDAS".to_string());
+        let refusal = hp_entering(BW2, &facts(&[], &[], &mixed)).expect_err("refuses");
+        let detail = refusal.to_string();
+        assert!(detail.contains("MODIFIER.MIDAS"), "{detail}");
+        assert!(!detail.contains("ALL_STAR"), "{detail}");
+    }
+
+    /// #3937: Lava Rock's `TryModifyRewards` returns at its room test on the
+    /// rest's custom rewards, so it does not refuse Dense Vegetation; the
+    /// reward listeners nobody read still do.
+    #[test]
+    fn lava_rock_does_not_refuse_dense_vegetation() {
+        let relics = [
+            "RELIC.BURNING_BLOOD".to_string(),
+            "RELIC.LAVA_ROCK".to_string(),
+        ];
+        assert_eq!(hp_entering(DV, &facts(&relics, &[], &[])), Ok(29));
+        assert!(
+            !REST_HEAL_LISTENERS
+                .iter()
+                .any(|(_, id, _)| *id == "RELIC.LAVA_ROCK")
+        );
+        for other in ["RELIC.BLACK_STAR", "RELIC.WHITE_STAR", "RELIC.PRAYER_WHEEL"] {
+            let relics = [other.to_string()];
+            assert_eq!(
+                class(hp_entering(DV, &facts(&relics, &[], &[]))),
+                "event_combat_listener_not_modeled",
+                "{other}"
+            );
+        }
     }
 
     /// The relics and deck that hold one listener (a card goes in the deck).
