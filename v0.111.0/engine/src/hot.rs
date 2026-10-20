@@ -3834,6 +3834,8 @@ impl HotFanouts {
         }
         let state = Arc::make_mut(&mut self.0);
         state.star_energy_reset[..order.len()].copy_from_slice(order);
+        // Dead slots stay at the default (see `unregister_star_energy_reset`).
+        state.star_energy_reset[order.len()..].fill(PowerId::Accuracy);
         state.turn_and_generated_lens = (state.turn_and_generated_lens
             & !STAR_ENERGY_RESET_LEN_MASK)
             | ((order.len() as u8) << STAR_ENERGY_RESET_LEN_SHIFT);
@@ -3917,6 +3919,8 @@ impl HotFanouts {
         }
         let state = Arc::make_mut(&mut self.0);
         state.local_generated[..order.len()].copy_from_slice(order);
+        // Dead slots stay at the default (see `set_fanout_order`).
+        state.local_generated[order.len()..].fill(PowerId::Accuracy);
         state.turn_and_generated_lens = (state.turn_and_generated_lens & !LOCAL_GENERATED_LEN_MASK)
             | ((order.len() as u8) << LOCAL_GENERATED_LEN_SHIFT);
         true
@@ -3933,7 +3937,8 @@ impl HotFanouts {
             *output = power;
         }
         let state = Arc::make_mut(&mut self.0);
-        state.result_location[..order.len()].copy_from_slice(&compact[..order.len()]);
+        // The whole array, so dead slots stay at the default.
+        state.result_location = compact;
         state.turn_and_generated_lens =
             with_result_location_len(state.turn_and_generated_lens, order.len() as u8);
         true
@@ -3972,6 +3977,9 @@ impl HotFanouts {
             .position(|candidate| *candidate == power)
         {
             state.before_hand_draw.copy_within(index + 1..len, index);
+            // Dead slots stay at the default so derived `==`/`Hash` agree
+            // with the canonical projection, which reads only the live prefix.
+            state.before_hand_draw[len - 1] = PowerId::Accuracy;
             state.before_hand_draw_len -= 1;
         }
     }
@@ -4009,6 +4017,9 @@ impl HotFanouts {
             .position(|candidate| *candidate == power)
         {
             state.after_block_cleared.copy_within(index + 1..len, index);
+            // Dead slots stay at the default so derived `==`/`Hash` agree
+            // with the canonical projection, which reads only the live prefix.
+            state.after_block_cleared[len - 1] = PowerId::Accuracy;
             state.after_block_cleared_len -= 1;
             // #3756: a later Toric object that ran after the removed listener
             // now has one fewer listener before it.
@@ -4065,6 +4076,9 @@ impl HotFanouts {
             state
                 .after_power_amount_changed
                 .copy_within(index + 1..len, index);
+            // Dead slots stay at the default so derived `==`/`Hash` agree
+            // with the canonical projection, which reads only the live prefix.
+            state.after_power_amount_changed[len - 1] = PowerAmountChangedPower::Vicious;
             state.after_power_amount_changed_len -= 1;
         }
     }
@@ -4173,6 +4187,9 @@ impl HotFanouts {
             .position(|candidate| *candidate == power)
         {
             state.result_location.copy_within(index + 1..len, index);
+            // Dead slots stay at the default so derived `==`/`Hash` agree
+            // with the canonical projection, which reads only the live prefix.
+            state.result_location[len - 1] = ResultLocationPower::Corruption;
             state.turn_and_generated_lens =
                 with_result_location_len(state.turn_and_generated_lens, len as u8 - 1);
         }
@@ -4188,6 +4205,9 @@ impl HotFanouts {
             .position(|candidate| *candidate == power)
         {
             state.star_energy_reset.copy_within(index + 1..len, index);
+            // Dead slots stay at the default so derived `==`/`Hash` agree
+            // with the canonical projection, which reads only the live prefix.
+            state.star_energy_reset[len - 1] = PowerId::Accuracy;
             state.turn_and_generated_lens = (state.turn_and_generated_lens
                 & !STAR_ENERGY_RESET_LEN_MASK)
                 | ((packed_len - 1) << STAR_ENERGY_RESET_LEN_SHIFT);
@@ -4513,6 +4533,12 @@ impl HotFanouts {
 
     pub(crate) fn fetch_finished(&self, uid: u32) -> bool {
         self.0.cold.fetch_finished_uids.contains(&uid)
+    }
+
+    /// The physical Fetch uids that finished a play this owner turn, in
+    /// record order (projected as `fetch_finished_uids_this_turn`, #3981).
+    pub(crate) fn fetch_finished_uids(&self) -> &[u32] {
+        &self.0.cold.fetch_finished_uids
     }
 
     pub(crate) fn record_fetch_finished(&mut self, uid: u32) {
@@ -5734,6 +5760,9 @@ fn set_fanout_order<const N: usize>(
     let inner = Arc::make_mut(state);
     let (slots, len) = select(inner);
     slots[..order.len()].copy_from_slice(order);
+    // Dead slots stay at the default (every list this sets defaults to
+    // `Accuracy`), so derived `==`/`Hash` agree with the projection.
+    slots[order.len()..].fill(PowerId::Accuracy);
     *len = order.len() as u8;
     true
 }
@@ -8851,7 +8880,7 @@ impl FrozenAutoBatchRecord {
 /// This mirrors the external actions that can start a frozen replay
 /// trajectory. The potion form keeps exact belt-slot and target identity in
 /// the already-paid two action words.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum ActionReplayRootAction {
     Play {
         uid: u32,
@@ -8866,7 +8895,7 @@ pub(crate) enum ActionReplayRootAction {
 }
 
 /// One typed external selection answer already consumed by a replayed action.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum ActionReplayAnswer {
     CardUid(u32),
     OptionIndex(u32),
@@ -8876,17 +8905,50 @@ pub(crate) enum ActionReplayAnswer {
 /// `Frames::action_replay_layout`.
 struct ActionReplayLayout {
     action: ActionReplayRootAction,
-    json: std::ops::Range<usize>,
-    predecessor_len: usize,
     answers: std::ops::Range<usize>,
 }
 
+/// The CardPlay uids seen while authenticating a frame stack, for the
+/// uniqueness check in `Frames::continuation_store_is_valid`. A stack holds a
+/// handful of card plays, so the first sixteen are kept inline and scanned;
+/// the set spills to a vector beyond that. It answers exactly what a
+/// `BTreeSet::insert` did without allocating on every validation (#3499
+/// follow-up: the set was the validator's largest allocation).
+#[derive(Default)]
+struct DistinctUids {
+    inline: [u32; 16],
+    len: usize,
+    spill: Vec<u32>,
+}
+
+impl DistinctUids {
+    /// Record `uid`; `false` when it was already recorded.
+    fn insert(&mut self, uid: u32) -> bool {
+        let inline = &self.inline[..self.len.min(16)];
+        if inline.contains(&uid) || self.spill.contains(&uid) {
+            return false;
+        }
+        if self.len < 16 {
+            self.inline[self.len] = uid;
+        } else {
+            self.spill.push(uid);
+        }
+        self.len += 1;
+        true
+    }
+}
+
 /// Owned depth-one replay witness for a whole external action.
+///
+/// The predecessor is held hot (#3499 option 4): minting a receipt is a
+/// copy-on-write clone of the state, not a canonical projection. Its canonical bytes
+/// exist only where a state crosses the boundary — `try_to_canonical` renders
+/// them, `from_canonical` decodes them back under the session catalog — so
+/// every document carries exactly the bytes the eager receipt carried. The
+/// predecessor is structurally continuation- and pending-free.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ActionReplayRecord {
-    /// Exact canonical predecessor bytes, with canonical zero padding in the
-    /// word arena. The predecessor is structurally continuation-free.
-    pub predecessor_json: Vec<u8>,
+    pub predecessor: Arc<HotState>,
     pub action: ActionReplayRootAction,
     pub answers: Vec<ActionReplayAnswer>,
 }
@@ -10640,10 +10702,44 @@ struct HookListenerRestart {
 /// Both vectors share one COW owner, so [`Frames`] remains one pointer and a
 /// clone increments exactly one strong count. Vector equality ignores spare
 /// capacity, keeping canonical/search equality content-based.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default)]
 struct FrameStore {
     frames: Vec<Frame>,
     words: Vec<PendingWord>,
+    /// The bottom action-replay record's predecessor (#3499 option 4). It is
+    /// meaningful only while an `ActionReplay` frame exists: generic frame
+    /// pops and truncations do not clear it, so equality and hashing read it
+    /// through [`FrameStore::live_replay_predecessor`], and an install
+    /// overwrites whatever a finished receipt left behind.
+    replay_predecessor: Option<Arc<HotState>>,
+}
+
+impl FrameStore {
+    fn live_replay_predecessor(&self) -> Option<&Arc<HotState>> {
+        self.frames
+            .iter()
+            .any(|frame| matches!(frame, Frame::ActionReplay { .. }))
+            .then_some(self.replay_predecessor.as_ref())
+            .flatten()
+    }
+}
+
+impl PartialEq for FrameStore {
+    fn eq(&self, other: &Self) -> bool {
+        self.frames == other.frames
+            && self.words == other.words
+            && self.live_replay_predecessor() == other.live_replay_predecessor()
+    }
+}
+
+impl Eq for FrameStore {}
+
+impl std::hash::Hash for FrameStore {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.frames.hash(state);
+        self.words.hash(state);
+        self.live_replay_predecessor().hash(state);
+    }
 }
 
 /// The copy-on-write continuation stack and its stable word records.
@@ -10661,6 +10757,7 @@ impl Frames {
         Self(Arc::new(FrameStore {
             frames,
             words: Vec::new(),
+            replay_predecessor: None,
         }))
     }
 
@@ -12204,13 +12301,7 @@ impl Frames {
         record: &ActionReplayRecord,
         destination: Option<&mut Vec<PendingWord>>,
     ) -> Option<usize> {
-        if record.predecessor_json.is_empty() {
-            return None;
-        }
-        let json_words = record.predecessor_json.len().checked_add(7)? / 8;
-        let body_count = 3_usize
-            .checked_add(json_words)?
-            .checked_add(record.answers.len())?;
+        let body_count = 3_usize.checked_add(record.answers.len())?;
         let encoded_len = 1_usize.checked_add(body_count)?;
         PendingWord::header(WordRecordKind::ActionReplay, body_count)?;
         let (action_word, selection_word) = match record.action {
@@ -12252,7 +12343,6 @@ impl Frames {
             ),
         };
         let answer_count: u32 = record.answers.len().try_into().ok()?;
-        let predecessor_len: u32 = record.predecessor_json.len().try_into().ok()?;
         let Some(words) = destination else {
             return Some(encoded_len);
         };
@@ -12263,18 +12353,12 @@ impl Frames {
         )?);
         words.push(action_word);
         words.push(selection_word);
+        // The predecessor lives in the store's side slot, not in words; this
+        // word keeps the answer count (its body is always zero).
         words.push(PendingWord {
-            body: predecessor_len,
+            body: 0,
             meta: answer_count,
         });
-        for chunk in record.predecessor_json.chunks(8) {
-            let mut bytes = [0_u8; 8];
-            bytes[..chunk.len()].copy_from_slice(chunk);
-            words.push(PendingWord {
-                body: u32::from_le_bytes(bytes[..4].try_into().ok()?),
-                meta: u32::from_le_bytes(bytes[4..].try_into().ok()?),
-            });
-        }
         words.extend(record.answers.iter().copied().map(|answer| match answer {
             ActionReplayAnswer::CardUid(value) => PendingWord {
                 body: value,
@@ -12308,21 +12392,23 @@ impl Frames {
         store.frames.reserve(1);
         Self::encode_action_replay(record, Some(&mut store.words))?;
         store.frames.push(Frame::ActionReplay { record: index });
+        store.replay_predecessor = Some(Arc::clone(&record.predecessor));
         Some(index)
     }
 
-    /// Validate the closed replay record at `index`, including canonical zero
-    /// padding, without copying its predecessor document or answers.
+    /// Validate the closed replay record at `index` without copying its
+    /// answers.
     ///
     /// Every check [`Self::action_replay`] makes is made here, and that
     /// decoder is built on this one, so `action_replay_layout(i).is_some()`
     /// iff `action_replay(i).is_some()`. Continuation validators ask this
     /// question several times per public transition; materializing the
-    /// predecessor JSON for each ask dominated selection-heavy fights (#3420).
+    /// record for each ask dominated selection-heavy fights (#3420).
     fn action_replay_layout(&self, index: WordRecordIndex) -> Option<ActionReplayLayout> {
         let start = index.offset()?;
         let (kind, count) = self.0.words.get(start)?.parse_header()?;
-        if kind != WordRecordKind::ActionReplay || count < 4 {
+        if kind != WordRecordKind::ActionReplay || count < 3 || self.0.replay_predecessor.is_none()
+        {
             return None;
         }
         let end = start.checked_add(1)?.checked_add(count as usize)?;
@@ -12364,28 +12450,14 @@ impl Frames {
             }
             _ => return None,
         };
-        let predecessor_len = usize::try_from(lengths.body).ok()?;
-        if predecessor_len == 0 {
+        if lengths.body != 0 {
             return None;
         }
         let answer_count = usize::try_from(lengths.meta).ok()?;
-        let json_words = predecessor_len.checked_add(7)? / 8;
-        if 3_usize.checked_add(json_words)?.checked_add(answer_count)? != count as usize {
+        if 3_usize.checked_add(answer_count)? != count as usize {
             return None;
         }
-        let json = start + 4..start + 4 + json_words;
-        let json_slice = self.0.words.get(json.clone())?;
-        // Canonical zero padding: the bytes past `predecessor_len` all sit in
-        // the last JSON word, laid out `body` then `meta`, little-endian.
-        let last = json_slice.last()?;
-        let mut last_bytes = [0_u8; 8];
-        last_bytes[..4].copy_from_slice(&last.body.to_le_bytes());
-        last_bytes[4..].copy_from_slice(&last.meta.to_le_bytes());
-        let used_in_last = predecessor_len - (json_words - 1) * 8;
-        if last_bytes[used_in_last..].iter().any(|byte| *byte != 0) {
-            return None;
-        }
-        let answers = start + 4 + json_words..end;
+        let answers = start + 4..end;
         if self
             .0
             .words
@@ -12395,12 +12467,7 @@ impl Frames {
         {
             return None;
         }
-        Some(ActionReplayLayout {
-            action,
-            json,
-            predecessor_len,
-            answers,
-        })
+        Some(ActionReplayLayout { action, answers })
     }
 
     /// The root action of the valid closed replay record at `index`; `None`
@@ -12413,18 +12480,13 @@ impl Frames {
         self.action_replay_layout(index).map(|layout| layout.action)
     }
 
-    /// Decode the closed replay record, including canonical zero padding.
+    /// Decode the closed replay record; its predecessor is the store's side
+    /// slot (there is at most one replay record, at the bottom).
     #[cold]
     #[inline(never)]
     pub(crate) fn action_replay(&self, index: WordRecordIndex) -> Option<ActionReplayRecord> {
         let layout = self.action_replay_layout(index)?;
-        let json_slice = self.0.words.get(layout.json)?;
-        let mut predecessor_json = Vec::with_capacity(json_slice.len() * 8);
-        for word in json_slice {
-            predecessor_json.extend_from_slice(&word.body.to_le_bytes());
-            predecessor_json.extend_from_slice(&word.meta.to_le_bytes());
-        }
-        predecessor_json.truncate(layout.predecessor_len);
+        let predecessor = self.0.replay_predecessor.clone()?;
         let answers = self
             .0
             .words
@@ -12437,21 +12499,29 @@ impl Frames {
             })
             .collect::<Option<Vec<_>>>()?;
         Some(ActionReplayRecord {
-            predecessor_json,
+            predecessor,
             action: layout.action,
             answers,
         })
     }
 
     fn rebase_frame_record_after(frame: Frame, insertion: usize, delta: usize) -> Option<Frame> {
-        let rebase = |record: WordRecordIndex| {
+        Self::map_frame_record(frame, |record: WordRecordIndex| {
             let offset = record.offset()?;
             WordRecordIndex::from_offset(if offset >= insertion {
                 offset.checked_add(delta)?
             } else {
                 offset
             })
-        };
+        })
+    }
+
+    /// `frame` with its word record mapped through `rebase` (frames without
+    /// a word record are returned unchanged).
+    fn map_frame_record(
+        frame: Frame,
+        rebase: impl Fn(WordRecordIndex) -> Option<WordRecordIndex>,
+    ) -> Option<Frame> {
         Some(match frame {
             Frame::ActionReplay { record } => Frame::ActionReplay {
                 record: rebase(record)?,
@@ -12658,8 +12728,42 @@ impl Frames {
         for (destination, rebased) in store.frames[1..].iter_mut().zip(rebased_frames) {
             *destination = rebased;
         }
+        store.replay_predecessor = Some(Arc::clone(&record.predecessor));
         self.0 = Arc::new(store);
         Some(encoded_len)
+    }
+
+    /// The exact inverse of [`Frames::install_action_replay_bottom`]: remove
+    /// the bottom action-replay record and its words, rebasing every later
+    /// frame's record down by the removed length. Returns the record and that
+    /// length (the caller rebases `PendingSelection` by it).
+    fn remove_action_replay_bottom(&mut self) -> Option<(ActionReplayRecord, usize)> {
+        let Frame::ActionReplay { record } = self.0.frames.first().copied()? else {
+            return None;
+        };
+        if record.offset()? != 0 {
+            return None;
+        }
+        let replay = self.action_replay(record)?;
+        let encoded_len = Self::encode_action_replay(&replay, None)?;
+        if self.0.words.len() < encoded_len {
+            return None;
+        }
+        let rebased = self.0.frames[1..]
+            .iter()
+            .copied()
+            .map(|frame| {
+                Self::map_frame_record(frame, |record| {
+                    WordRecordIndex::from_offset(record.offset()?.checked_sub(encoded_len)?)
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let mut store = (*self.0).clone();
+        store.words.drain(..encoded_len);
+        store.frames = rebased;
+        store.replay_predecessor = None;
+        self.0 = Arc::new(store);
+        Some((replay, encoded_len))
     }
 
     /// Append one successful typed answer to the prefix replay record.
@@ -12733,6 +12837,7 @@ impl Frames {
         let store = Arc::make_mut(&mut self.0);
         store.frames.clear();
         store.words.clear();
+        store.replay_predecessor = None;
         Some(owned)
     }
 
@@ -15326,7 +15431,7 @@ impl Frames {
             return self.0.frames.is_empty() && self.0.words.is_empty();
         }
         let mut cursor = 0_usize;
-        let mut uids = std::collections::BTreeSet::new();
+        let mut uids = DistinctUids::default();
         let mut pending_frames = 0_usize;
         let mut turn_start_pending_frames = 0_usize;
         let mut enemy_pending_frames = 0_usize;
@@ -18292,6 +18397,24 @@ impl HotState {
         }
     }
 
+    /// This state with its bottom action-replay receipt removed and every
+    /// later word record — the frames' and the pending selection's — rebased:
+    /// the exact inverse of [`HotState::install_action_replay_root`]. For
+    /// hashing copies (the hidden-information search's receipt identity);
+    /// `None` without a bottom receipt or when the pending selection names
+    /// the receipt itself.
+    pub(crate) fn without_action_replay_root(&self) -> Option<(HotState, ActionReplayRecord)> {
+        let mut state = self.clone();
+        let (record, delta) = state.frames.remove_action_replay_bottom()?;
+        if let Some(pending) = state.pending.as_deref() {
+            let mut pending = pending.clone();
+            let offset = pending.frame_record.offset()?;
+            pending.frame_record = WordRecordIndex::from_offset(offset.checked_sub(delta)?)?;
+            state.pending = Some(Arc::new(pending));
+        }
+        Some((state, record))
+    }
+
     /// Install one independently rooted replay beneath the complete current
     /// parked stack, rebasing the separate pending CardPlay index atomically.
     #[cold]
@@ -18802,10 +18925,14 @@ const _: () = assert!(size_of::<PendingSelection>() == 8);
 const _: () = assert!(size_of::<PendingWord>() == 8);
 const _: () = assert!(align_of::<PendingWord>() == align_of::<HotCard>());
 const _: () = assert!(size_of::<WordRecordIndex>() == 4);
+/// Two vectors plus the replay receipt's one-pointer hot predecessor slot
+/// (#3499 option 4). The store sits behind the one-pointer `Frames` handle,
+/// so `HotState` does not grow; the slot replaced the receipt's predecessor
+/// JSON, kilobytes of words per parked receipt.
 #[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<FrameStore>() == 48);
+const _: () = assert!(size_of::<FrameStore>() == 56);
 #[cfg(target_pointer_width = "32")]
-const _: () = assert!(size_of::<FrameStore>() == 24);
+const _: () = assert!(size_of::<FrameStore>() == 28);
 
 #[cfg(test)]
 mod tests {
@@ -18879,7 +19006,7 @@ mod tests {
         assert_eq!(size_of::<HotHistory>(), 52);
         assert_eq!(size_of::<PendingWord>(), 8);
         assert_eq!(size_of::<WordRecordIndex>(), 4);
-        assert_eq!(size_of::<FrameStore>(), 48);
+        assert_eq!(size_of::<FrameStore>(), 56);
         assert_eq!(size_of::<PendingSelection>(), 8);
         assert_eq!(size_of::<Frames>(), 8);
         assert_eq!(size_of::<CardStates>(), 8);
@@ -19003,7 +19130,7 @@ mod tests {
     #[test]
     fn potion_action_replay_uses_the_third_two_word_action_tag() {
         let record = ActionReplayRecord {
-            predecessor_json: br#"{"player":{},"schema":"sts-sim-canonical-v2"}"#.to_vec(),
+            predecessor: replay_predecessor(),
             action: ActionReplayRootAction::UsePotion {
                 slot: 254,
                 target: Some(255),
@@ -19013,6 +19140,26 @@ mod tests {
         let mut frames = Frames::new();
         let index = frames.push_action_replay(&record).unwrap();
         assert_eq!(frames.action_replay(index), Some(record));
+    }
+
+    /// `DistinctUids` agrees with a `BTreeSet` on every insert, across the
+    /// inline/spill boundary and with repeats on either side of it.
+    #[test]
+    fn distinct_uids_matches_a_set_across_the_spill() {
+        let mut set = std::collections::BTreeSet::new();
+        let mut uids = DistinctUids::default();
+        let sequence =
+            (0..40_u32)
+                .map(|i| (i * 7) % 23)
+                .chain([0, 15, 16, 22, 99, 99, u32::MAX, u32::MAX]);
+        for uid in sequence {
+            assert_eq!(uids.insert(uid), set.insert(uid), "uid {uid}");
+        }
+        assert_eq!(uids.len, set.len());
+    }
+
+    fn replay_predecessor() -> Arc<HotState> {
+        Arc::new(HotState::at_defaults())
     }
 
     fn test_card_play(uid: u32) -> CardPlayRecord {
@@ -19078,9 +19225,9 @@ mod tests {
 
     #[test]
     fn action_replay_arena_round_trips_and_atomically_rebases_every_record_index() {
-        let predecessor_json = br#"{"player":{},"schema":"sts-sim-canonical-v2"}"#.to_vec();
+        let predecessor = replay_predecessor();
         let replay = ActionReplayRecord {
-            predecessor_json: predecessor_json.clone(),
+            predecessor: Arc::clone(&predecessor),
             action: ActionReplayRootAction::Play {
                 uid: 7,
                 target: Some(2),
@@ -19191,7 +19338,7 @@ mod tests {
         assert_eq!(
             state.frames.action_replay(replay_index).unwrap(),
             ActionReplayRecord {
-                predecessor_json,
+                predecessor,
                 action: replay.action,
                 answers: vec![ActionReplayAnswer::OptionIndex(4)],
             }
@@ -19229,7 +19376,7 @@ mod tests {
     #[test]
     fn action_replay_prepend_is_atomic_across_all_record_indexes() {
         let replay = ActionReplayRecord {
-            predecessor_json: br#"{"player":{},"schema":"sts-sim-canonical-v2"}"#.to_vec(),
+            predecessor: replay_predecessor(),
             action: ActionReplayRootAction::EndTurn,
             answers: Vec::new(),
         };
@@ -19358,9 +19505,9 @@ mod tests {
     }
 
     #[test]
-    fn action_replay_rejects_nonzero_json_padding_and_malformed_bounds() {
+    fn action_replay_rejects_malformed_words_and_a_missing_predecessor() {
         let record = ActionReplayRecord {
-            predecessor_json: b"x".to_vec(),
+            predecessor: replay_predecessor(),
             action: ActionReplayRootAction::EndTurn,
             answers: vec![ActionReplayAnswer::CardUid(3)],
         };
@@ -19368,10 +19515,16 @@ mod tests {
         let index = frames.push_action_replay(&record).unwrap();
         assert_eq!(frames.action_replay(index), Some(record.clone()));
 
-        let mut bad_padding = frames.clone();
-        Arc::make_mut(&mut bad_padding.0).words[4].meta = 1;
-        assert!(bad_padding.action_replay(index).is_none());
-        assert!(!bad_padding.continuation_store_is_valid(None));
+        let mut stray_body = frames.clone();
+        Arc::make_mut(&mut stray_body.0).words[3].body = 1;
+        assert!(stray_body.action_replay(index).is_none());
+        assert!(!stray_body.continuation_store_is_valid(None));
+
+        let mut no_predecessor = frames.clone();
+        Arc::make_mut(&mut no_predecessor.0).replay_predecessor = None;
+        assert!(no_predecessor.action_replay(index).is_none());
+        assert!(no_predecessor.action_replay_action(index).is_none());
+        assert!(!no_predecessor.continuation_store_is_valid(None));
 
         let mut unknown_header = frames.clone();
         Arc::make_mut(&mut unknown_header.0).words[0].meta |= 0xff;
@@ -19394,7 +19547,7 @@ mod tests {
         assert!(!reserved_action.continuation_store_is_valid(None));
 
         let potion = ActionReplayRecord {
-            predecessor_json: b"x".to_vec(),
+            predecessor: replay_predecessor(),
             action: ActionReplayRootAction::UsePotion {
                 slot: u8::MAX,
                 target: Some(u8::MAX),
@@ -19421,7 +19574,7 @@ mod tests {
         assert!(!potion_selection.continuation_store_is_valid(None));
 
         let mut unknown_answer = frames.clone();
-        Arc::make_mut(&mut unknown_answer.0).words[5].meta = 2;
+        Arc::make_mut(&mut unknown_answer.0).words[4].meta = 2;
         assert!(unknown_answer.action_replay(index).is_none());
         assert!(!unknown_answer.continuation_store_is_valid(None));
 
@@ -19437,15 +19590,12 @@ mod tests {
         assert!(bad_length.action_replay(index).is_none());
         assert!(!bad_length.continuation_store_is_valid(None));
 
-        let mut empty_predecessor = frames.clone();
-        let empty_store = Arc::make_mut(&mut empty_predecessor.0);
-        empty_store.words[0] = PendingWord::header(WordRecordKind::ActionReplay, 4).unwrap();
-        empty_store.words[3].body = 0;
-        empty_store.words.remove(4);
-        let checkpoint = empty_predecessor.clone();
-        assert!(empty_predecessor.action_replay(index).is_none());
-        assert!(!empty_predecessor.continuation_store_is_valid(None));
-        assert_eq!(empty_predecessor, checkpoint, "validation is read-only");
+        let mut wrong_count = frames.clone();
+        Arc::make_mut(&mut wrong_count.0).words[3].meta = 2;
+        let checkpoint = wrong_count.clone();
+        assert!(wrong_count.action_replay(index).is_none());
+        assert!(!wrong_count.continuation_store_is_valid(None));
+        assert_eq!(wrong_count, checkpoint, "validation is read-only");
 
         let mut uninjective_selection = record.clone();
         uninjective_selection.action = ActionReplayRootAction::Play {
@@ -19464,53 +19614,34 @@ mod tests {
     }
 
     #[test]
-    fn action_replay_action_agrees_with_the_full_decoder_at_every_padding_width() {
-        let set_byte = |frames: &mut Frames, word: usize, byte: usize, value: u8| {
-            let word = &mut Arc::make_mut(&mut frames.0).words[word];
-            let half = if byte < 4 {
-                &mut word.body
-            } else {
-                &mut word.meta
-            };
-            let mut bytes = half.to_le_bytes();
-            bytes[byte % 4] = value;
-            *half = u32::from_le_bytes(bytes);
-        };
+    fn action_replay_action_agrees_with_the_full_decoder_under_every_word_drift() {
         let action = ActionReplayRootAction::Play {
             uid: 7,
             target: Some(1),
             selection_uid: Some(9),
         };
-        for len in 1_usize..=17 {
+        for answers in 0_u32..=3 {
             let record = ActionReplayRecord {
-                predecessor_json: (1..=len).map(|byte| byte as u8).collect(),
+                predecessor: replay_predecessor(),
                 action,
-                answers: vec![
-                    ActionReplayAnswer::CardUid(3),
-                    ActionReplayAnswer::OptionIndex(0),
-                ],
+                answers: (0..answers).map(ActionReplayAnswer::CardUid).collect(),
             };
             let mut frames = Frames::new();
             let index = frames.push_action_replay(&record).unwrap();
             assert_eq!(frames.action_replay(index), Some(record.clone()));
             assert_eq!(frames.action_replay_action(index), Some(action));
-
-            let json_words = len.div_ceil(8);
-            for position in 0..json_words * 8 {
-                let mut drifted = frames.clone();
-                set_byte(&mut drifted, 4 + position / 8, position % 8, 0xa5);
-                let decoded = drifted.action_replay(index);
-                assert_eq!(
-                    drifted.action_replay_action(index),
-                    decoded.as_ref().map(|replay| replay.action),
-                    "len {len}, byte {position}"
-                );
-                // Content bytes are the predecessor's own; padding must be zero.
-                assert_eq!(
-                    decoded.is_some(),
-                    position < len,
-                    "len {len}, byte {position}"
-                );
+            for word in 0..frames.0.words.len() {
+                for (body, meta) in [(0xa5, 0), (0, 0xa5), (u32::MAX, 1)] {
+                    let mut drifted = frames.clone();
+                    let target = &mut Arc::make_mut(&mut drifted.0).words[word];
+                    target.body ^= body;
+                    target.meta ^= meta;
+                    assert_eq!(
+                        drifted.action_replay_action(index),
+                        drifted.action_replay(index).map(|replay| replay.action),
+                        "answers {answers}, word {word}"
+                    );
+                }
             }
         }
     }
@@ -19829,6 +19960,7 @@ mod tests {
         let roomy = Frames(Arc::new(FrameStore {
             frames: compact.0.frames.to_vec(),
             words: compact.0.words.to_vec(),
+            replay_predecessor: compact.0.replay_predecessor.clone(),
         }));
         assert_eq!(compact, roomy);
     }
@@ -22784,5 +22916,167 @@ mod tests {
         fanouts.unregister_after_energy_reset(AfterEnergyResetPower::Genesis);
         assert_eq!(fanouts.after_energy_reset_order(), Some(&[][..]));
         assert!(fanouts.after_energy_reset_order_is_explicit());
+    }
+}
+
+/// Test diagnostics kept below `mod tests` so source censuses that scan
+/// production text do not count their field names.
+#[cfg(test)]
+pub(crate) mod test_diagnostics {
+    use super::{Arc, HotFanouts, HotState};
+
+    /// Erase the one known hot-only difference from the canonical round
+    /// trip, so a test can require full `==` on everything else.
+    ///
+    /// - #3982: hot Thrash growth keeps the .NET decimal scale the canonical
+    ///   writer strips (`10.50` vs `10.5`).
+    ///
+    /// (#3981, Fetch's played-this-turn set, is projected since and no
+    /// longer erased here.)
+    pub(crate) fn normalize_known_gaps(state: &mut HotState) {
+        let store = Arc::make_mut(&mut state.card_states.0);
+        for (_, card) in &mut store.entries {
+            let aux = Arc::make_mut(&mut card.local_cost_modifiers.0);
+            if let Some(decimal) = &mut aux.thrash_growth {
+                let mut value = u128::from(decimal.hi) << 64
+                    | u128::from(decimal.mid) << 32
+                    | u128::from(decimal.lo);
+                while decimal.scale > 0 && value % 10 == 0 {
+                    value /= 10;
+                    decimal.scale -= 1;
+                }
+                decimal.lo = value as u32;
+                decimal.mid = (value >> 32) as u32;
+                decimal.hi = (value >> 64) as u32;
+            }
+        }
+    }
+
+    /// Test diagnostics: the names of the fields in which two fan-out
+    /// blocks differ, dead slots included.
+    pub(crate) fn differing_fields(a: &HotFanouts, b: &HotFanouts) -> Vec<&'static str> {
+        let (a, b) = (&*a.0, &*b.0);
+        let mut out = Vec::new();
+        if a.after_card_drawn != b.after_card_drawn {
+            out.push("after_card_drawn");
+        }
+        if a.after_card_exhausted != b.after_card_exhausted {
+            out.push("after_card_exhausted");
+        }
+        if a.before_hand_draw != b.before_hand_draw {
+            out.push("before_hand_draw");
+        }
+        if a.after_damage_given != b.after_damage_given {
+            out.push("after_damage_given");
+        }
+        if a.after_block_gained != b.after_block_gained {
+            out.push("after_block_gained");
+        }
+        if a.after_block_cleared != b.after_block_cleared {
+            out.push("after_block_cleared");
+        }
+        if a.after_power_amount_changed != b.after_power_amount_changed {
+            out.push("after_power_amount_changed");
+        }
+        if a.after_side_turn_start != b.after_side_turn_start {
+            out.push("after_side_turn_start");
+        }
+        if a.after_player_turn_start != b.after_player_turn_start {
+            out.push("after_player_turn_start");
+        }
+        if a.withering_cards_left != b.withering_cards_left {
+            out.push("withering_cards_left");
+        }
+        if a.star_energy_reset != b.star_energy_reset {
+            out.push("star_energy_reset");
+        }
+        if a.local_generated != b.local_generated {
+            out.push("local_generated");
+        }
+        if a.result_location != b.result_location {
+            out.push("result_location");
+        }
+        if a.monologue_strength_applied != b.monologue_strength_applied {
+            out.push("monologue_strength_applied");
+        }
+        if a.void_form_cards_played_this_turn != b.void_form_cards_played_this_turn {
+            out.push("void_form_cards_played_this_turn");
+        }
+        if a.private_power_flags != b.private_power_flags {
+            out.push("private_power_flags");
+        }
+        if a.after_card_drawn_len != b.after_card_drawn_len {
+            out.push("after_card_drawn_len");
+        }
+        if a.after_card_exhausted_len != b.after_card_exhausted_len {
+            out.push("after_card_exhausted_len");
+        }
+        if a.before_hand_draw_len != b.before_hand_draw_len {
+            out.push("before_hand_draw_len");
+        }
+        if a.after_damage_given_len != b.after_damage_given_len {
+            out.push("after_damage_given_len");
+        }
+        if a.after_block_gained_len != b.after_block_gained_len {
+            out.push("after_block_gained_len");
+        }
+        if a.after_block_cleared_len != b.after_block_cleared_len {
+            out.push("after_block_cleared_len");
+        }
+        if a.after_power_amount_changed_len != b.after_power_amount_changed_len {
+            out.push("after_power_amount_changed_len");
+        }
+        if a.after_side_turn_start_len != b.after_side_turn_start_len {
+            out.push("after_side_turn_start_len");
+        }
+        if a.turn_and_generated_lens != b.turn_and_generated_lens {
+            out.push("turn_and_generated_lens");
+        }
+        if a.automation_panache_tender != b.automation_panache_tender {
+            out.push("automation_panache_tender");
+        }
+        if a.cacophony_left != b.cacophony_left {
+            out.push("cacophony_left");
+        }
+        if a.cacophony_resets_completed != b.cacophony_resets_completed {
+            out.push("cacophony_resets_completed");
+        }
+        if a.dark_embrace_ethereal != b.dark_embrace_ethereal {
+            out.push("dark_embrace_ethereal");
+        }
+        if a.ethereal_plays_finished_combat != b.ethereal_plays_finished_combat {
+            out.push("ethereal_plays_finished_combat");
+        }
+        if a.tender_cards_played != b.tender_cards_played {
+            out.push("tender_cards_played");
+        }
+        if a.after_side_turn_end_inline != b.after_side_turn_end_inline {
+            out.push("after_side_turn_end_inline");
+        }
+        if a.next_after_side_turn_end_power_uid != b.next_after_side_turn_end_power_uid {
+            out.push("next_after_side_turn_end_power_uid");
+        }
+        if a.pet != b.pet {
+            out.push("pet");
+        }
+        if a.cold != b.cold {
+            out.push("cold");
+        }
+        if a.multiplayer_ally != b.multiplayer_ally {
+            out.push("multiplayer_ally");
+        }
+        if a.imitation_learning != b.imitation_learning {
+            out.push("imitation_learning");
+        }
+        if a.imitation_clones != b.imitation_clones {
+            out.push("imitation_clones");
+        }
+        if a.constrict_amount != b.constrict_amount {
+            out.push("constrict_amount");
+        }
+        if a.intercept_covered_state != b.intercept_covered_state {
+            out.push("intercept_covered_state");
+        }
+        out
     }
 }

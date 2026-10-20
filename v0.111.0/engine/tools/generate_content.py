@@ -1365,6 +1365,54 @@ pub struct RelicLedgerRow {
 }
 """
 
+
+def _card_row_pointer_first_eq(types: str) -> str:
+    """Give `CardRow` a `PartialEq` that compares addresses first.
+
+    Rows are nearly always references into the static tables, and `==` on
+    two `&CardRow` compares every field, step programs included: about 4% of
+    a replay-route search went to provenance checks such as
+    `card_row(id, upgrade) == Some(row)`. Equal addresses imply equal
+    fields, so the answer is unchanged and stays consistent with the derived
+    `Hash`. The field list is read from the struct above and destructured
+    without `..`, so a new field that is left out fails to compile.
+    """
+    derive = "#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]\npub struct CardRow {"
+    assert types.count(derive) == 1, "CardRow derive moved"
+    start = types.index(derive)
+    body = types[start + len(derive):types.index("\n}\n", start)]
+    fields = re.findall(r"^    pub (\w+):", body, re.M)
+    assert fields and fields[0] == "id", "CardRow fields unreadable"
+    types = types.replace(
+        derive,
+        "// `PartialEq` is the field-wise compare with an address shortcut that\n"
+        "// only answers `true` when the fields are equal, so `Hash` agrees.\n"
+        "#[allow(clippy::derived_hash_with_manual_eq)]\n"
+        "#[derive(Copy, Clone, Debug, Eq, Hash)]\npub struct CardRow {",
+    )
+    pattern = "".join(f"\n            {name}," for name in fields)
+    other = "".join(f"\n            {name}: other_{name}," for name in fields)
+    compare = "\n            && ".join(f"{name} == other_{name}" for name in fields)
+    return types + f"""
+// Pointer-first equality (generated from the field list above).
+impl PartialEq for CardRow {{
+    fn eq(&self, other: &Self) -> bool {{
+        if core::ptr::eq(self, other) {{
+            return true;
+        }}
+        let CardRow {{{pattern}
+        }} = self;
+        let CardRow {{{other}
+        }} = other;
+        {compare}
+    }}
+}}
+"""
+
+
+TABLE_TYPES = _card_row_pointer_first_eq(TABLE_TYPES)
+
+
 LOOKUPS = """
 /// The card row for `(id, upgrade)`. `O(log n)`, no allocation.
 pub fn card_row(id: CardId, upgrade: u8) -> Option<&'static CardRow> {

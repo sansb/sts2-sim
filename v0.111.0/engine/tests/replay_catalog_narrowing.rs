@@ -698,7 +698,7 @@ const BIT_READS: &[(&str, &str, usize, BitRead)] = &[
         BitRead::Refusal,
     ),
     ("engine/mod.rs", "legal_actions_into", 2, BitRead::Refusal),
-    ("engine/mod.rs", "apply_action_into", 1, BitRead::Path),
+    ("engine/mod.rs", "route_action", 1, BitRead::Path),
     (
         "engine/mod.rs",
         "apply_action_into_replay",
@@ -843,7 +843,7 @@ fn every_read_of_requires_action_replay_is_classified() {
         not_refusal,
         [
             ("rooted_replay_is_eligible", BitRead::Loader),
-            ("apply_action_into", BitRead::Path),
+            ("route_action", BitRead::Path),
             ("service_void_form_end_turn", BitRead::Path),
             ("play_card_with_work_inner", BitRead::Driver),
         ],

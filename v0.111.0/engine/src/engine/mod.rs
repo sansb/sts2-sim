@@ -66,6 +66,8 @@
 
 pub mod admission;
 pub(crate) mod allies;
+#[cfg(test)]
+mod canonical_equality_tests;
 pub mod cards;
 pub mod damage;
 pub mod draw;
@@ -2555,16 +2557,25 @@ fn install_parked_action_replay_root(
     if !action_is_legal_modulo_hand_dedupe(predecessor, catalog, action) {
         return Err(EngineRefusal::ActionNotLegal("replay root legality"));
     }
-    let predecessor = crate::boundary::HotBoundary::try_to_canonical(predecessor, catalog)
-        .map_err(|_| EngineRefusal::ContinuationNotModeled)?;
-    if predecessor.refusal.is_some()
-        || !predecessor.continuations.is_empty()
-        || predecessor.player.contains_key("pending")
-    {
+    // The predecessor is kept hot (#3499 option 4): minting is a clone, and
+    // `HotBoundary::try_to_canonical` renders the receipt's bytes only when
+    // the state crosses the boundary. The eager mint projected here and
+    // refused on three conditions. Two are exact hot facts — the projection
+    // writes `continuations` from the frame stack and `player.pending` from
+    // the pending selection — and stay refusals. The third, a projection
+    // failure on a stable pre-action state, never occurred across 2,795
+    // mints over every eval fixture's seeded walks (2026-10-19); it is an
+    // invariant, asserted in debug, and a document write would still refuse
+    // it by name. (`refusal` is never set by the projection.)
+    if !predecessor.frames.is_empty() || predecessor.pending.is_some() {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
+    debug_assert!(
+        crate::boundary::HotBoundary::try_to_canonical(predecessor, catalog).is_ok(),
+        "a parked action's predecessor must project"
+    );
     let replay = crate::hot::ActionReplayRecord {
-        predecessor_json: predecessor.canonical_json().into_bytes(),
+        predecessor: std::sync::Arc::new(predecessor.clone()),
         action: root_action,
         answers: Vec::new(),
     };
@@ -2586,6 +2597,151 @@ pub fn apply_action_into(
     action: &Action,
     events: &mut Vec<Event>,
 ) -> Result<HotState, EngineRefusal> {
+    match route_action(state, catalog, action, events)? {
+        ActionRoute::Replay => {
+            apply_public_action_with_replay(state, catalog, action, events, Legality::Check)
+        }
+        ActionRoute::Legacy => apply_action_into_legacy(state, catalog, action, events),
+    }
+}
+
+/// [`apply_action_into`] for an action the caller took from
+/// [`legal_actions`] of this same `state` (the search's tree edges and
+/// rollouts). The replay route's public legality check re-enumerates every
+/// legal action to find one it was handed from that very list — about 8% of
+/// a replay-route search (#3499 follow-up). Every offered action passes that
+/// check (the matcher is reflexive), so skipping it changes nothing for such
+/// a caller; debug builds still assert membership.
+pub(crate) fn apply_offered_action_into(
+    state: &HotState,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+) -> Result<HotState, EngineRefusal> {
+    match route_action(state, catalog, action, events)? {
+        ActionRoute::Replay => {
+            apply_public_action_with_replay(state, catalog, action, events, Legality::Offered)
+        }
+        ActionRoute::Legacy => apply_action_into_legacy(state, catalog, action, events),
+    }
+}
+
+/// Apply one action to a state the caller gives up, mutating it in place.
+///
+/// The playout form of [`apply_action_into`] (#3976). The borrowing form
+/// clones the predecessor and every copy-on-write component the step writes
+/// is then deep-copied, because the predecessor still holds it; a playout
+/// that discards its predecessor pays that copy and the matching free on
+/// every step for nothing. Here the state is moved, so a component this
+/// path owns uniquely is written where it lies.
+///
+/// On success the result equals what [`apply_action_into`] returns for the
+/// same predecessor. On a refusal the consumed state is gone: callers that
+/// need the predecessor afterwards — exact-DFS siblings, a tree edge they
+/// will retry — keep using the borrowing form.
+///
+/// `rebuild_predecessor` must return a state equal to `state` as passed. It
+/// is called only when the step parks on a selection whose replay receipt
+/// is minted from the pre-action state (the legacy path's
+/// `install_parked_action_replay_root`); the step is then rerun on the
+/// borrowing path from the rebuilt predecessor, so this form never refuses
+/// where the borrowing one admits. A playout rebuilds it by replaying its
+/// root through the actions it has applied — transitions are deterministic.
+/// Fights routed to the action-replay path use the borrowing form whole.
+///
+/// Not for use under a `native_checkpoint` or `presentation` recorder: a step
+/// that needs its predecessor runs the body once, abandons it, and reruns it,
+/// so a recorder would see the abandoned pass too.
+pub fn apply_action_owned(
+    state: HotState,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+    rebuild_predecessor: impl FnOnce() -> HotState,
+) -> Result<HotState, EngineRefusal> {
+    apply_owned_with(
+        state,
+        catalog,
+        action,
+        events,
+        rebuild_predecessor,
+        Legality::Check,
+    )
+}
+
+/// [`apply_action_owned`] for an action offered by [`legal_actions`] of this
+/// same `state`; see [`apply_offered_action_into`].
+pub(crate) fn apply_offered_action_owned(
+    state: HotState,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+    rebuild_predecessor: impl FnOnce() -> HotState,
+) -> Result<HotState, EngineRefusal> {
+    apply_owned_with(
+        state,
+        catalog,
+        action,
+        events,
+        rebuild_predecessor,
+        Legality::Offered,
+    )
+}
+
+#[inline(always)]
+fn apply_owned_with(
+    state: HotState,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+    rebuild_predecessor: impl FnOnce() -> HotState,
+    legality: Legality,
+) -> Result<HotState, EngineRefusal> {
+    match route_action(&state, catalog, action, events)? {
+        ActionRoute::Replay => {
+            apply_public_action_with_replay(&state, catalog, action, events, legality)
+        }
+        ActionRoute::Legacy => {
+            legacy_preflight(&state, catalog, action, events)?;
+            let mut needs_predecessor = false;
+            match apply_legacy_body(state, None, catalog, action, events, &mut needs_predecessor) {
+                Err(_) if needs_predecessor => {
+                    let predecessor = rebuild_predecessor();
+                    apply_action_into(&predecessor, catalog, action, events)
+                }
+                result => result,
+            }
+        }
+    }
+}
+
+/// Whether the replay route checks the action against [`legal_actions`].
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Legality {
+    /// An external caller's action: refuse one not offered.
+    Check,
+    /// Taken from [`legal_actions`] of this same state by an in-crate
+    /// caller; asserted in debug builds only.
+    Offered,
+}
+
+/// Which transition path a public action takes.
+enum ActionRoute {
+    /// `apply_public_action_with_replay`: replay receipts and parked roots.
+    Replay,
+    /// `apply_action_into_legacy`: the certified ordinary path.
+    Legacy,
+}
+
+/// The public action guards and the replay-or-legacy routing decision,
+/// shared by [`apply_action_into`] and [`apply_action_owned`].
+#[inline(always)]
+fn route_action(
+    state: &HotState,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+) -> Result<ActionRoute, EngineRefusal> {
     if crate::steps::regent_uncommon::void_form_listener_is_reachable(state)
         && !crate::steps::regent_uncommon::void_form_private_state_is_exact(state)
     {
@@ -2625,9 +2781,9 @@ pub fn apply_action_into(
             Some(crate::frame::Frame::ActionReplay { .. })
         )
     {
-        apply_public_action_with_replay(state, catalog, action, events)
+        Ok(ActionRoute::Replay)
     } else {
-        apply_action_into_legacy(state, catalog, action, events)
+        Ok(ActionRoute::Legacy)
     }
 }
 
@@ -2640,6 +2796,25 @@ fn apply_action_into_legacy(
     action: &Action,
     events: &mut Vec<Event>,
 ) -> Result<HotState, EngineRefusal> {
+    legacy_preflight(state, catalog, action, events)?;
+    apply_legacy_body(
+        state.clone(),
+        Some(state),
+        catalog,
+        action,
+        events,
+        &mut false,
+    )
+}
+
+/// The legacy path's guards, run against the predecessor before any write.
+#[inline(always)]
+fn legacy_preflight(
+    state: &HotState,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+) -> Result<(), EngineRefusal> {
     events.clear();
     if !cards::call_local_ethereal_provenance_is_exact(state, catalog) {
         return Err(EngineRefusal::MalformedArgs(
@@ -2683,7 +2858,26 @@ fn apply_action_into_legacy(
             "unresolved void form end-turn request",
         ));
     }
-    let mut next = state.clone();
+    Ok(())
+}
+
+/// The legacy transition proper, mutating `next` (a copy of the predecessor,
+/// or the predecessor itself on the owned path) in place.
+///
+/// `predecessor` is read only by the parked-action replay-root install, which
+/// mints a receipt from the pre-action state. The owned path passes `None`;
+/// reaching that install then sets `needs_predecessor` and refuses, and
+/// [`apply_action_owned`] reruns the borrowing path from a rebuilt
+/// predecessor, so the owned path never refuses where this one admits.
+#[inline(never)]
+fn apply_legacy_body(
+    mut next: HotState,
+    predecessor: Option<&HotState>,
+    catalog: &Catalog,
+    action: &Action,
+    events: &mut Vec<Event>,
+    needs_predecessor: &mut bool,
+) -> Result<HotState, EngineRefusal> {
     let action_result = (|| {
         match action {
             Action::Play {
@@ -2759,6 +2953,13 @@ fn apply_action_into_legacy(
             },
             Action::EndTurn => turn::end_player_turn(&mut next, catalog, events)?,
             Action::UsePotion { slot, target } => {
+                // `next` is still the untouched predecessor here: no arm has
+                // run yet, so these reads are the predecessor's values. Its
+                // address differs, and Distilled validation keys rehearsal
+                // guards by address; equal values suffice only because no
+                // such guard can be live here (Distilled rehearsals drive
+                // `apply_action_into_replay`, never this body).
+                let state = &next;
                 if crate::steps::regent_uncommon::void_form_listener_is_reachable(state)
                     && !crate::steps::regent_uncommon::void_form_private_state_is_exact(state)
                 {
@@ -2823,6 +3024,12 @@ fn apply_action_into_legacy(
             // (`boundary.rs:11298-11324`), so the pair
             // `authenticate_action_replay` compares is produced from one
             // document by construction.
+            let Some(state) = predecessor else {
+                // The owned path dropped its predecessor; the caller rebuilds
+                // it and reruns the borrowing path (`apply_action_owned`).
+                *needs_predecessor = true;
+                return Err(EngineRefusal::ContinuationNotModeled);
+            };
             let predecessor = crate::boundary::HotBoundary::try_to_canonical(state, catalog)
                 .map_err(|_| EngineRefusal::ContinuationNotModeled)?;
             let rebuilt = crate::boundary::HotBoundary::catalog_from_canonical(&predecessor)
@@ -2884,8 +3091,14 @@ fn apply_public_action_with_replay(
     catalog: &Catalog,
     action: &Action,
     events: &mut Vec<Event>,
+    legality: Legality,
 ) -> Result<HotState, EngineRefusal> {
-    if !is_ordered_extension_select(state, catalog, action)
+    debug_assert!(
+        legality == Legality::Check || legal_actions(state, catalog).contains(action),
+        "an offered action must be one legal_actions offers"
+    );
+    if legality == Legality::Check
+        && !is_ordered_extension_select(state, catalog, action)
         && !action_is_legal_modulo_hand_dedupe(state, catalog, action)
     {
         events.clear();
@@ -2902,8 +3115,13 @@ fn apply_public_action_with_replay(
         && let Err(refusal) = play::rehearse_preserving_active_plays(|| {
             let _scope = ExactRootRehearsalGuard::enter(state, *action)?;
             let mut rehearsal_events = Vec::new();
-            let first =
-                apply_public_action_with_replay(state, catalog, action, &mut rehearsal_events)?;
+            let first = apply_public_action_with_replay(
+                state,
+                catalog,
+                action,
+                &mut rehearsal_events,
+                legality,
+            )?;
             if first.pending.is_none() {
                 return if first.frames.is_empty() {
                     Ok(())
@@ -3002,7 +3220,7 @@ pub(crate) fn rehearse_pending_replay_tree(
             _ => return Err(EngineRefusal::ContinuationNotModeled),
         };
         if replay != node.replay
-            || replay.predecessor_json != expected_root.predecessor_json
+            || replay.predecessor != expected_root.predecessor
             || replay.action != expected_root.action
         {
             return Err(EngineRefusal::ContinuationNotModeled);
@@ -3037,7 +3255,7 @@ pub(crate) fn rehearse_pending_replay_tree(
             let answer = replay_answer(&action).ok_or(EngineRefusal::ContinuationNotModeled)?;
             let mut expected_answers = replay.answers.clone();
             expected_answers.push(answer);
-            if next_replay.predecessor_json != expected_root.predecessor_json
+            if next_replay.predecessor != expected_root.predecessor
                 || next_replay.action != expected_root.action
                 || next_replay.answers != expected_answers
             {
@@ -5314,10 +5532,9 @@ mod tests {
         }
 
         // Forge a receipt naming the Discard-pile copy: the loader refuses it.
-        let predecessor = HotBoundary::try_to_canonical(&state, &catalog).unwrap();
         parked
             .install_action_replay_root(&ActionReplayRecord {
-                predecessor_json: predecessor.canonical_json().into_bytes(),
+                predecessor: std::sync::Arc::new(state.clone()),
                 action: crate::hot::ActionReplayRootAction::Play {
                     uid: 9,
                     target: None,
@@ -17546,8 +17763,8 @@ mod tests {
         use crate::allocation::thread_snapshot;
 
         /// Allocations per transition, averaged over the replayed line.
-        /// **Measured: 10** on aarch64-apple-darwin (1,256 allocations across
-        /// 120 transitions). The ceiling carries two allocations of headroom
+        /// **Measured: 10** on aarch64-apple-darwin (1,307 allocations across
+        /// 120 transitions after #3977; 1,499 before it). The ceiling carries two allocations of headroom
         /// and no more; raising it is an explicit reviewed diff with a stated
         /// reason, exactly like a throughput floor (PORT_PLAN §7).
         const CEILING: u64 = 12;
@@ -17598,6 +17815,66 @@ mod tests {
         assert!(
             per_transition <= CEILING,
             "allocations per transition rose to {per_transition} (ceiling {CEILING}); \
+             a new heap allocation entered the hot path"
+        );
+    }
+
+    /// [`allocations_per_transition_stay_under_the_ceiling`] for the owned,
+    /// in-place step (#3976, #3977): the same line, each state moved into the
+    /// next step instead of cloned. The rebuild closure is never called on
+    /// this line (it parks no selection).
+    #[cfg(feature = "allocation-counting")]
+    #[test]
+    fn owned_allocations_per_transition_stay_under_the_ceiling() {
+        use crate::allocation::thread_snapshot;
+
+        /// **Measured: 2** on aarch64-apple-darwin (275 allocations across 120
+        /// transitions). Same headroom rule as the borrowing pin.
+        const OWNED_CEILING: u64 = 4;
+        const REPLAYS: u64 = 8;
+
+        let pins: serde_json::Value =
+            serde_json::from_str(include_str!("../../fixtures/slice_line_v1.json")).unwrap();
+        let script: Vec<Action> = pins["steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|step| match step["action"]["kind"].as_str().unwrap() {
+                "end" => Action::EndTurn,
+                _ => Action::Play {
+                    uid: step["action"]["uid"].as_u64().unwrap() as u32,
+                    target: step["action"]
+                        .get("target")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|index| index as u8),
+                    selection: SelectionRef::NONE,
+                },
+            })
+            .collect();
+        let (entry, catalog) = fixture();
+        let mut events: Vec<Event> = Vec::with_capacity(256);
+        let run = |events: &mut Vec<Event>| {
+            let mut state = entry.clone();
+            for action in &script {
+                state = apply_action_owned(state, &catalog, action, events, || {
+                    unreachable!("the pinned line parks no selection")
+                })
+                .unwrap();
+            }
+            std::hint::black_box(&state);
+        };
+        run(&mut events);
+
+        let transitions = REPLAYS * script.len() as u64;
+        let (before, _) = thread_snapshot();
+        for _ in 0..REPLAYS {
+            run(&mut events);
+        }
+        let (after, _) = thread_snapshot();
+        let per_transition = (after - before) / transitions;
+        assert!(
+            per_transition <= OWNED_CEILING,
+            "owned allocations per transition rose to {per_transition} (ceiling {OWNED_CEILING}); \
              a new heap allocation entered the hot path"
         );
     }

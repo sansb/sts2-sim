@@ -322,6 +322,7 @@ pub enum PlayerSlot {
     EmotionDamagePreviousTurn,
     FakeTeaSetCharged,
     FakeFlower,
+    FetchFinishedUids,
     Flower,
     FullyUnlockedPotionPool,
     FurCoatActive,
@@ -560,7 +561,7 @@ pub struct FieldSpec<S: 'static> {
 // (deleted #2999; `PROJECTION_PARITY_CENSUS.md` is its frozen last run).
 const _: () = assert!(crate::encounters::MODELED_ASCENSION == 10);
 
-pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 228] = [
+pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 229] = [
     spec(
         "after_block_gained_power_order",
         PlayerSlot::AfterBlockGainedPowerOrder,
@@ -862,6 +863,17 @@ pub const PLAYER_FIELDS: [FieldSpec<PlayerSlot>; 228] = [
         "fake_tea_set_charged",
         PlayerSlot::FakeTeaSetCharged,
         FieldDefault::Bool(false),
+    ),
+    // #3981: the physical Fetch uids that finished a play this owner turn.
+    // The wire name is the frozen Python `State` field's
+    // (`fetch_finished_uids_this_turn`, listed Python-only in
+    // PROJECTION_PARITY_CENSUS.md), so this is a shared slot, not one
+    // Python could not emit. `EmptyList` elision keeps every document
+    // without one byte-identical to what it was before the slot existed.
+    spec(
+        "fetch_finished_uids_this_turn",
+        PlayerSlot::FetchFinishedUids,
+        FieldDefault::EmptyList,
     ),
     spec("flower", PlayerSlot::Flower, FieldDefault::Int(-1)),
     spec(
@@ -4109,6 +4121,15 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
         PlayerSlot::EtherealPlaysFinishedCombat => {
             Value::from(state.fanouts.ethereal_plays_finished_combat())
         }
+        PlayerSlot::FetchFinishedUids => Value::Array(
+            state
+                .fanouts
+                .fetch_finished_uids()
+                .iter()
+                .copied()
+                .map(Value::from)
+                .collect(),
+        ),
         PlayerSlot::NonHandDrawsThisTurn => Value::from(history.non_hand_draws_this_turn),
         PlayerSlot::NormalityCardPlaysStartedThisTurn => {
             Value::from(state.fanouts.normality_card_plays_started_this_turn())
@@ -4652,6 +4673,104 @@ fn player_read(state: &HotState, catalog: Option<&Catalog>, slot: PlayerSlot) ->
     }
 }
 
+/// Restore Fetch's played-this-turn set (#3981) once the piles are decoded.
+///
+/// Native semantics, v0.111.0 DLL 9cb4f1ad: `Fetch::get_HasBeenPlayedThisTurn`
+/// (RVA `0xdfad7`) is `CombatHistory.CardPlaysFinished.Any(...)` (IL_000b,
+/// IL_001c) over the lambda `<get_HasBeenPlayedThisTurn>b__12_0` (RVA
+/// `0xdfaf9`), which compares `entry.CardPlay.Card` to `this` by reference
+/// (IL_0002-IL_000d `bne.un.s`), so the key is the physical card instance,
+/// not the `CardModel` kind: two Fetch copies are tracked separately. The
+/// entry counts only when `CombatHistoryEntry::HappenedThisTurn` (RVA
+/// `0x138a48`, called at IL_0016) holds: same `RoundNumber`
+/// (IL_0012-IL_001d), same `CurrentSide` (IL_0022-IL_002d), and every
+/// recorded `_playerTurnNumbers` pair equal to that player's current
+/// `PlayerCombatState.TurnNumber` (IL_0031-IL_00a7), so a Pael's Eye or
+/// Ambergris extra turn (same round, same side) also opens a fresh window.
+///
+/// The hot set is keyed by physical uid and cleared by `reset_fetch_finished`
+/// in `engine::turn::begin_player_turn_walk`, which every player turn start
+/// reaches, extra turns included. It differs from the native window in one
+/// respect: natively the entries stop counting when the side switches to
+/// the enemy, while the hot set keeps them until the next player turn
+/// starts. The difference is unobservable, because Fetch is the set's only
+/// reader and refuses by name when played on the enemy side
+/// (`steps::necrobinder_osty`).
+///
+/// The wire is an ordered, duplicate-free list of allocated uids. A uid that
+/// names a live card must name a Fetch. One that names no live card is a
+/// played Fetch that has since left combat, and it is kept so the reload
+/// equals the state that projected it. Anything else is a forged or
+/// unmodelled document and refuses by name (I5) rather than being dropped.
+fn restore_fetch_finished_uids(
+    state: &mut HotState,
+    catalog: &Catalog,
+    value: &Value,
+) -> Result<(), BoundaryRefusal> {
+    const FIELD: &str = "fetch_finished_uids_this_turn";
+    let rows = value
+        .as_array()
+        .ok_or_else(|| unrepresentable(Entity::Player, FIELD, "expected an ordered uid list"))?;
+    if rows.is_empty() {
+        // `EmptyList` is the elided default; present-and-empty is not canonical.
+        return Err(BoundaryRefusal::NonCanonicalDefault {
+            entity: Entity::Player,
+            field: FIELD.to_owned(),
+        });
+    }
+    let mut uids: Vec<u32> = Vec::with_capacity(rows.len());
+    for row in rows {
+        let uid = row
+            .as_u64()
+            .and_then(|uid| u32::try_from(uid).ok())
+            .ok_or_else(|| {
+                unrepresentable(
+                    Entity::Player,
+                    FIELD,
+                    "expected a nonnegative 32-bit physical uid",
+                )
+            })?;
+        if uids.contains(&uid) {
+            return Err(unrepresentable(
+                Entity::Player,
+                FIELD,
+                "repeated physical uid",
+            ));
+        }
+        if uid >= state.next_card_uid {
+            return Err(unrepresentable(
+                Entity::Player,
+                FIELD,
+                "uid was never allocated",
+            ));
+        }
+        let location = crate::engine::play::unique_live_card_location(state, uid)
+            .map_err(|_| unrepresentable(Entity::Player, FIELD, "uid names two live cards"))?;
+        // A uid that names no live card is a played Fetch that has since left
+        // combat (for example a Duplication clone's `RemoveFromCombat`). It
+        // is inert both natively and in the hot state, so it is restored as
+        // projected.
+        let names_other_kind = location.is_some_and(|(pile, index)| {
+            let card = state.piles.get(pile).as_slice()[index];
+            !catalog
+                .spec(card.atom)
+                .is_some_and(|spec| matches!(spec.identity.id, CardId::Fetch))
+        });
+        if names_other_kind {
+            return Err(unrepresentable(
+                Entity::Player,
+                FIELD,
+                "uid names a live card that is not Fetch",
+            ));
+        }
+        uids.push(uid);
+    }
+    for uid in uids {
+        state.fanouts.record_fetch_finished(uid);
+    }
+    Ok(())
+}
+
 /// `player.session_bookkeeping`: the names of the bits kept, ascending. Empty
 /// is the default and is elided, so a fight that keeps none of the three
 /// projects exactly the document it did before the field existed.
@@ -5084,6 +5203,7 @@ fn player_write(
         | PlayerSlot::BeforeHandDrawCardListenerUids
         | PlayerSlot::SelfReturnFinishedUidsCurrentTurn
         | PlayerSlot::SelfReturnFinishedUidsPreviousTurn
+        | PlayerSlot::FetchFinishedUids
         | PlayerSlot::CardsPlayedThisTurn
         | PlayerSlot::EnemyPending => {
             return Err(unrepresentable(
@@ -9427,11 +9547,49 @@ fn catastrophe_live_from_canonical(
     Ok(crate::hot::CatastropheLiveRecord { cursor, source_uid })
 }
 
+/// A hot replay record from its canonical frame: the predecessor document is
+/// decoded under the session `catalog` (#3499 option 4) and must render back
+/// to exactly the document it came from, so every later projection writes the
+/// bytes this frame carried.
 #[cold]
 #[inline(never)]
 fn action_replay_from_canonical(
     canonical: &CanonicalFrameV2,
+    catalog: &Catalog,
 ) -> Result<crate::hot::ActionReplayRecord, BoundaryRefusal> {
+    let (predecessor_document, action, answers) = action_replay_parts_from_canonical(canonical)?;
+    let kind = FrameKind::ActionReplay;
+    let predecessor = HotBoundary::from_canonical(&predecessor_document, catalog)
+        .map_err(|_| malformed(kind, "predecessor does not load under the session catalog"))?;
+    let rendered = HotBoundary::try_to_canonical(&predecessor, catalog)
+        .map_err(|_| malformed(kind, "predecessor does not project back"))?;
+    if rendered != predecessor_document {
+        return Err(malformed(
+            kind,
+            "predecessor does not round-trip through the hot state",
+        ));
+    }
+    Ok(crate::hot::ActionReplayRecord {
+        predecessor: std::sync::Arc::new(predecessor),
+        action,
+        answers,
+    })
+}
+
+/// The canonical replay frame's validated parts: its predecessor document,
+/// root action and answers.
+#[cold]
+#[inline(never)]
+fn action_replay_parts_from_canonical(
+    canonical: &CanonicalFrameV2,
+) -> Result<
+    (
+        CanonicalStateV2,
+        crate::hot::ActionReplayRootAction,
+        Vec<crate::hot::ActionReplayAnswer>,
+    ),
+    BoundaryRefusal,
+> {
     use crate::hot::{ActionReplayAnswer, ActionReplayRootAction};
 
     let kind = FrameKind::ActionReplay;
@@ -9549,11 +9707,7 @@ fn action_replay_from_canonical(
             _ => return Err(malformed(kind, "unsupported answer kind")),
         });
     }
-    Ok(crate::hot::ActionReplayRecord {
-        predecessor_json: predecessor.canonical_json().into_bytes(),
-        action,
-        answers,
-    })
+    Ok((predecessor, action, answers))
 }
 
 #[cold]
@@ -11430,6 +11584,7 @@ fn auto_pre_bombardment_phase_to_canonical(
 fn action_replay_to_canonical(
     record: crate::hot::WordRecordIndex,
     state: &HotState,
+    catalog: &Catalog,
     fields: &mut BTreeMap<String, Value>,
 ) -> Result<(), BoundaryRefusal> {
     use crate::hot::{ActionReplayAnswer, ActionReplayRootAction};
@@ -11438,8 +11593,18 @@ fn action_replay_to_canonical(
         .frames
         .action_replay(record)
         .ok_or_else(|| malformed(FrameKind::ActionReplay, "invalid replay record"))?;
-    let predecessor: CanonicalStateV2 = serde_json::from_slice(&replay.predecessor_json)
-        .map_err(|_| malformed(FrameKind::ActionReplay, "invalid predecessor bytes"))?;
+    // The hot predecessor is rendered here, at the boundary (#3499 option 4):
+    // the bytes an eager receipt would have carried, under the same catalog.
+    let predecessor = HotBoundary::try_to_canonical(&replay.predecessor, catalog)?;
+    if predecessor.refusal.is_some()
+        || !predecessor.continuations.is_empty()
+        || predecessor.player.contains_key("pending")
+    {
+        return Err(malformed(
+            FrameKind::ActionReplay,
+            "predecessor must be refusal-, pending-, and continuation-free",
+        ));
+    }
     fields.insert(
         "predecessor".to_owned(),
         serde_json::to_value(predecessor).expect("canonical predecessor serializes"),
@@ -11668,14 +11833,14 @@ fn authenticate_action_replay(
     let replay = state.frames.action_replay(record).ok_or_else(|| {
         unrepresentable(Entity::Player, "pending", "malformed ActionReplay record")
     })?;
-    let predecessor: CanonicalStateV2 =
-        serde_json::from_slice(&replay.predecessor_json).map_err(|_| {
-            unrepresentable(
-                Entity::Player,
-                "pending",
-                "ActionReplay predecessor is not canonical v2",
-            )
-        })?;
+    // The predecessor document as the loaded document carries it: the hot
+    // record's predecessor is numbered under the session catalog, and this
+    // authentication rebuilds its own catalog from the document.
+    let (predecessor, _, _) = document
+        .continuations
+        .first()
+        .ok_or_else(|| unrepresentable(Entity::Player, "pending", "malformed ActionReplay record"))
+        .and_then(action_replay_parts_from_canonical)?;
     let predecessor_catalog = HotBoundary::catalog_from_canonical(&predecessor)?;
     if !predecessor_catalog.same_content_ignoring_replay_root(catalog) {
         return Err(unrepresentable(
@@ -12281,7 +12446,7 @@ fn frame_to_canonical(
     fields.insert("tag".to_owned(), Value::from(tag));
     match frame {
         Frame::ActionReplay { record } => {
-            action_replay_to_canonical(record, state, &mut fields)?;
+            action_replay_to_canonical(record, state, catalog, &mut fields)?;
         }
         Frame::AfterCardExhaustedPower { record } => {
             let owner = state
@@ -13409,15 +13574,8 @@ impl HotBoundary {
             .first()
             .is_some_and(|frame| frame.frame_type == FrameKind::ActionReplay.as_str())
         {
-            let replay = action_replay_from_canonical(&document.continuations[0])?;
-            let predecessor: CanonicalStateV2 = serde_json::from_slice(&replay.predecessor_json)
-                .map_err(|_| {
-                    unrepresentable(
-                        Entity::Player,
-                        "pending",
-                        "ActionReplay predecessor is not canonical v2",
-                    )
-                })?;
+            let (predecessor, _, _) =
+                action_replay_parts_from_canonical(&document.continuations[0])?;
             if predecessor.refusal.is_some()
                 || !predecessor.continuations.is_empty()
                 || predecessor.player.contains_key("pending")
@@ -15452,6 +15610,7 @@ impl HotBoundary {
         let mut dampen_cards_wire: Option<Value> = None;
         let mut self_return_current_wire: Option<Value> = None;
         let mut self_return_previous_wire: Option<Value> = None;
+        let mut fetch_finished_wire: Option<Value> = None;
         let mut before_hand_draw_card_listener_wire: Option<Value> = None;
         let mut sloth_cards_played_wire: Option<i32> = None;
         let mut enemy_pending_wire: Option<Value> = None;
@@ -15588,6 +15747,8 @@ impl HotBoundary {
                     self_return_current_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::SelfReturnFinishedUidsPreviousTurn {
                     self_return_previous_wire = Some(value.clone());
+                } else if field.slot == PlayerSlot::FetchFinishedUids {
+                    fetch_finished_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::BeforeHandDrawCardListenerUids {
                     before_hand_draw_card_listener_wire = Some(value.clone());
                 } else if field.slot == PlayerSlot::ConstrictSources {
@@ -16745,6 +16906,9 @@ impl HotBoundary {
                 .fanouts
                 .set_nightmare_instances(nightmare_instances_from_canonical(value, catalog)?);
         }
+        if let Some(value) = fetch_finished_wire.as_ref() {
+            restore_fetch_finished_uids(&mut state, catalog, value)?;
+        }
         if self_return_current_wire.is_some()
             || self_return_previous_wire.is_some()
             || before_hand_draw_card_listener_wire.is_some()
@@ -17366,7 +17530,7 @@ impl HotBoundary {
                         "ActionReplay must be the sole bottom replay root",
                     ));
                 }
-                let replay = action_replay_from_canonical(canonical)?;
+                let replay = action_replay_from_canonical(canonical, catalog)?;
                 frames.push_action_replay(&replay).ok_or_else(|| {
                     unrepresentable(
                         Entity::Player,
@@ -25685,11 +25849,12 @@ mod tests {
             frame_type: FrameKind::ActionReplay.as_str().to_owned(),
             fields: fields.clone(),
         };
-        let replay = action_replay_from_canonical(&canonical).unwrap();
+        let catalog = HotBoundary::catalog_from_canonical(&predecessor).unwrap();
+        let replay = action_replay_from_canonical(&canonical, &catalog).unwrap();
         let mut state = HotState::at_defaults();
         let index = state.frames.push_action_replay(&replay).unwrap();
         let mut rendered = BTreeMap::from([("tag".to_owned(), json!("action_replay"))]);
-        action_replay_to_canonical(index, &state, &mut rendered).unwrap();
+        action_replay_to_canonical(index, &state, &catalog, &mut rendered).unwrap();
         assert_eq!(rendered, fields);
 
         let mut sentinel = canonical;
@@ -25702,7 +25867,7 @@ mod tests {
                 "selection_uid": u32::MAX,
             }),
         );
-        assert!(action_replay_from_canonical(&sentinel).is_err());
+        assert!(action_replay_from_canonical(&sentinel, &catalog).is_err());
     }
 
     #[test]

@@ -4681,8 +4681,23 @@ fn run_enemy_phase_inner(
     resumed_roster: Option<Vec<u32>>,
     events: &mut Vec<Event>,
 ) -> Result<(), EngineRefusal> {
-    let roster = resumed_roster
-        .unwrap_or_else(|| state.monsters.iter().map(|monster| monster.uid).collect());
+    // The roster-order snapshot, on the stack for the common roster and
+    // whole on the heap past it, as the side-end roster below (#3977).
+    let mut inline_roster = [0_u32; SIDE_END_ROSTER_INLINE];
+    let heap_roster: Vec<u32>;
+    let roster: &[u32] = match &resumed_roster {
+        Some(resumed) => resumed,
+        None if state.monsters.len() <= SIDE_END_ROSTER_INLINE => {
+            for (frozen, monster) in inline_roster.iter_mut().zip(state.monsters.iter()) {
+                *frozen = monster.uid;
+            }
+            &inline_roster[..state.monsters.len()]
+        }
+        None => {
+            heap_roster = state.monsters.iter().map(|monster| monster.uid).collect();
+            &heap_roster
+        }
+    };
     for (cursor, uid) in roster.iter().copied().enumerate() {
         let Some(index) = state.monsters.iter().position(|m| m.uid == uid) else {
             continue; // a replaced or bumped creature
@@ -35138,13 +35153,15 @@ mod tests {
         let mut direct = state.clone();
         end_player_turn(&mut direct, &catalog, &mut Vec::new()).unwrap();
         assert!(kd_pending_is_exact(&direct));
-        let predecessor = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap();
         assert!(
             crate::engine::legal_actions(&state, &catalog)
                 .contains(&crate::engine::Action::EndTurn)
         );
+        // The eager bytes the receipt carried before #3499 option 4; the
+        // rendered receipt below must still equal them.
+        let predecessor = crate::boundary::HotBoundary::try_to_canonical(&state, &catalog).unwrap();
         let replay = crate::hot::ActionReplayRecord {
-            predecessor_json: predecessor.canonical_json().into_bytes(),
+            predecessor: std::sync::Arc::new(state.clone()),
             action: crate::hot::ActionReplayRootAction::EndTurn,
             answers: Vec::new(),
         };

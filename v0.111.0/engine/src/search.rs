@@ -57,22 +57,33 @@ struct Node {
     untried: Option<Vec<Action>>,
     /// At least one of this node's actions was refused and pruned.
     refused: bool,
+    /// The node's state, cached while [`STATE_CACHE_NODES`] has room, so a
+    /// descent reads it instead of re-applying the path from the root.
+    state: Option<HotState>,
 }
 
-fn won(s: &HotState) -> bool {
+/// How many tree nodes may cache their state. Descent through a cached node
+/// costs a reference-count increment instead of a transition; past the budget
+/// the descent re-applies, as it always did. Cached states share every
+/// unchanged copy-on-write component with their parent, so the budget bounds
+/// memory to about 80 MB at most (79 MB measured with 20,000 nodes cached on
+/// f960d49055bd158f), which a browser tab can afford.
+const STATE_CACHE_NODES: usize = 20_000;
+
+pub(crate) fn won(s: &HotState) -> bool {
     s.history.over && s.hp > 0 && s.monsters.iter().all(|m| m.hp <= 0)
 }
-fn enemy_hp(s: &HotState) -> i32 {
+pub(crate) fn enemy_hp(s: &HotState) -> i32 {
     s.monsters.iter().map(|m| m.hp.max(0)).sum()
 }
-fn stopped(s: &HotState, depth: usize, horizon: i16) -> bool {
+pub(crate) fn stopped(s: &HotState, depth: usize, horizon: i16) -> bool {
     s.history.over || s.hp <= 0 || s.turn > horizon || depth >= 256
 }
 /// Playout reward. A win is in `(0.5, 1]` by HP fraction and every other
 /// leaf in `[-1, -0.5]`. A Battleworn Dummy timeout (#3369) is a win that
 /// forfeits the event's reward, so it takes the band between them,
 /// `(0, 0.25]` by HP fraction: below any kill at any HP, above any loss.
-fn reward(s: &HotState, initial_enemy_hp: i32, battleworn: BattlewornObjective) -> f64 {
+pub(crate) fn reward(s: &HotState, initial_enemy_hp: i32, battleworn: BattlewornObjective) -> f64 {
     let hp_fraction = (f64::from(s.hp) / f64::from(s.max_hp.max(1))).clamp(0., 1.);
     if battleworn.timed_out(s) {
         0.25 * hp_fraction
@@ -182,6 +193,18 @@ fn wire(line: &[Action]) -> Vec<ExactSolveActionV1> {
     line.iter().copied().map(Into::into).collect()
 }
 
+/// Rebuild the state after `line` from `root` for
+/// [`engine::apply_action_owned`]. Every action in `line` already applied
+/// from the same states and transitions are deterministic, so a refusal here
+/// is a defect.
+fn replay_line(root: &HotState, catalog: &Catalog, line: &[Action]) -> HotState {
+    let mut events = Vec::new();
+    line.iter().fold(root.clone(), |state, action| {
+        engine::apply_action_into(&state, catalog, action, &mut events)
+            .expect("an applied search line replays: transitions are deterministic")
+    })
+}
+
 struct Search {
     catalog: Catalog,
     events: Vec<engine::Event>,
@@ -196,7 +219,9 @@ struct Search {
 impl Search {
     fn apply(&mut self, s: &HotState, a: &Action, line: &[Action]) -> Result<HotState, Value> {
         self.transitions += 1;
-        engine::apply_action_into(s, &self.catalog, a, &mut self.events).map_err(|e| {
+        // Every action applied here was offered by `Search::actions` on this
+        // same state, or is a tree edge applied once from it already.
+        engine::apply_offered_action_into(s, &self.catalog, a, &mut self.events).map_err(|e| {
             let mut witness = wire(line);
             witness.push((*a).into());
             json!({"status":"refused", "detail":format!("{e:?}"), "actions":witness})
@@ -206,7 +231,47 @@ impl Search {
     /// edge, or the retained line). Transitions are deterministic, so a
     /// refusal here is a defect, not an unmodeled branch.
     fn reapply(&mut self, s: &HotState, a: &Action, line: &[Action]) -> Result<HotState, String> {
-        self.apply(s, a, line).map_err(|e| e.to_string())
+        // The reported line's independent replay keeps the public legality
+        // check: it re-verifies the line, so it takes nothing as offered.
+        self.transitions += 1;
+        engine::apply_action_into(s, &self.catalog, a, &mut self.events).map_err(|e| {
+            let mut witness = wire(line);
+            witness.push((*a).into());
+            json!({"status":"refused", "detail":format!("{e:?}"), "actions":witness}).to_string()
+        })
+    }
+    /// [`Search::apply`] on a state the caller gives up (#3976): descent and
+    /// rollouts never return to a predecessor, so they step in place.
+    /// `root` and `line` rebuild the predecessor in the rare step that needs
+    /// it, which also makes the line its witness on a refusal.
+    fn apply_owned(
+        &mut self,
+        s: HotState,
+        a: &Action,
+        line: &[Action],
+        root: &HotState,
+    ) -> Result<HotState, Value> {
+        self.transitions += 1;
+        let catalog = &self.catalog;
+        engine::apply_offered_action_owned(s, catalog, a, &mut self.events, || {
+            replay_line(root, catalog, line)
+        })
+        .map_err(|e| {
+            let mut witness = wire(line);
+            witness.push((*a).into());
+            json!({"status":"refused", "detail":format!("{e:?}"), "actions":witness})
+        })
+    }
+    /// [`Search::reapply`] in place: a tree edge applied once already.
+    fn reapply_owned(
+        &mut self,
+        s: HotState,
+        a: &Action,
+        line: &[Action],
+        root: &HotState,
+    ) -> Result<HotState, String> {
+        self.apply_owned(s, a, line, root)
+            .map_err(|e| e.to_string())
     }
     fn note_refusal(&mut self, refusal: Value) {
         self.refusals += 1;
@@ -235,23 +300,35 @@ impl Search {
                 |e| json!({"status":"refused", "detail":format!("{e:?}"), "actions":wire(line)}),
             )
     }
-    fn rollout_action(&mut self, actions: &[Action]) -> Action {
+    /// One rollout step's action, drawn with `EndTurn` weighted by
+    /// `end_weight` over [`Search::actions`]' list. It picks from the reused
+    /// legal-action buffer rather than a fresh `Vec` per step: same order,
+    /// same holdback filter, same weights and the same single draw.
+    fn rollout_pick(&mut self, s: &HotState, line: &[Action]) -> Result<Action, Value> {
+        let limit = self.potion_limit;
+        let end_weight = self.end_weight;
+        let actions = engine::legal_actions_checked(s, &self.catalog, &mut self.legal).map_err(
+            |e| json!({"status":"refused", "detail":format!("{e:?}"), "actions":wire(line)}),
+        )?;
+        let allowed = |a: &&Action| limit.is_unlimited() || limit.allows(a, line);
         let weight = |a: &Action| {
             if matches!(a, Action::EndTurn) {
-                self.end_weight
+                end_weight
             } else {
                 1.0
             }
         };
-        let total: f64 = actions.iter().map(weight).sum();
+        let total: f64 = actions.iter().filter(allowed).map(weight).sum();
         let mut choice = self.rng.unit() * total;
-        for a in actions {
+        let mut last = None;
+        for a in actions.iter().filter(allowed) {
             choice -= weight(a);
             if choice < 0. {
-                return *a;
+                return Ok(*a);
             }
+            last = Some(*a);
         }
-        *actions.last().unwrap()
+        Ok(last.expect("a nonterminal rollout state offers an action"))
     }
 }
 
@@ -411,6 +488,7 @@ fn search_with(
         potion_limit,
     };
     let mut tree = vec![Node::default()];
+    let mut cached_states = 0usize;
     let (mut playouts, mut wins, mut deaths, mut cutoffs, mut refused_playouts) =
         (0u64, 0u64, 0u64, 0u64, 0u64);
     let mut best: Option<(HotState, Vec<Action>)> = None;
@@ -461,7 +539,13 @@ fn search_with(
                     }
                     line.push(a);
                     let child = tree.len();
-                    tree.push(Node::default());
+                    tree.push(Node {
+                        state: (cached_states < STATE_CACHE_NODES).then(|| {
+                            cached_states += 1;
+                            state.clone()
+                        }),
+                        ..Node::default()
+                    });
                     tree[n].children.push((a, child));
                     path.push(child);
                     break;
@@ -484,26 +568,33 @@ fn search_with(
                         ucb(*x).total_cmp(&ucb(*y))
                     })
                     .ok_or("no legal actions in nonterminal state")?;
-                state = search.reapply(&state, &a, &line)?;
+                // Transitions are deterministic, so a cached child state is
+                // exactly what re-applying the action would produce.
+                state = match &tree[child].state {
+                    Some(cached) => cached.clone(),
+                    None => search.reapply_owned(state, &a, &line, &root)?,
+                };
                 line.push(a);
                 path.push(child);
             }
         }
         while !refused && !stopped(&state, line.len(), horizon) {
-            let actions = match search.actions(&state, &line) {
-                Ok(actions) => actions,
+            let a = match search.rollout_pick(&state, &line) {
+                Ok(a) => a,
                 Err(refusal) => {
                     search.note_refusal(refusal);
                     refused = true;
                     break;
                 }
             };
-            let a = search.rollout_action(&actions);
-            match search.apply(&state, &a, &line) {
+            match search.apply_owned(state, &a, &line, &root) {
                 Ok(next) => state = next,
                 Err(refusal) => {
                     search.note_refusal(refusal);
                     refused = true;
+                    // The refused step consumed the state and a refused
+                    // playout never reads it again; this keeps it bound.
+                    state = root.clone();
                 }
             }
             line.push(a);

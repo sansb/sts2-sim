@@ -9,31 +9,31 @@
   "schema": "sts-sim-perf-floors/v1",
   "workloads": {
     "ironclad_toadpoles_uniform_v1": {
-      "allocated_bytes_per_transition_ceiling": 975.3,
-      "allocations_per_transition_ceiling": 14.64,
-      "evidence": "benchmarks/2026-10-01-perf-floor-baseline-v1.json",
+      "allocated_bytes_per_transition_ceiling": 306.3,
+      "allocations_per_transition_ceiling": 5.71,
+      "evidence": "benchmarks/2026-10-19-perf-floor-baseline-v1.json",
       "measured_at_baseline": {
-        "allocated_bytes_per_transition": 886.6355,
-        "allocations_per_transition": 13.3105,
-        "best_transitions_per_second": 1049254.4,
-        "median_transitions_per_second": 1042712.1,
-        "peak_rss_bytes": 5914624,
-        "relative_spread": 0.0086,
+        "allocated_bytes_per_transition": 278.4852,
+        "allocations_per_transition": 5.1947,
+        "best_transitions_per_second": 1231965.7,
+        "median_transitions_per_second": 1213700.8,
+        "peak_rss_bytes": 5963776,
+        "relative_spread": 0.044,
         "runs": 5,
-        "worst_transitions_per_second": 1040184.1
+        "worst_transitions_per_second": 1177711.0
       },
       "observed_at_baseline": {
         "checksum": "5d4f992689b53874",
         "entry_sha256": "6a5f557d8ae8b3966aeea58c623d2bdb6fdda9069ec3f1a4a05af32049f16ee2",
         "transitions": 4078800
       },
-      "peak_rss_bytes_ceiling": 8871936,
+      "peak_rss_bytes_ceiling": 8945664,
       "tolerance": {
         "allocation": 0.1,
         "peak_rss": 0.5,
         "throughput": 0.15
       },
-      "transitions_per_second_floor": 891866
+      "transitions_per_second_floor": 1047171
     }
   }
 }

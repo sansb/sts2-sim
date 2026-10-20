@@ -6,13 +6,17 @@
 //! The floors lane needs one number that moves when the engine gets slower:
 //! **transitions per second** over a search-shaped workload. "Search-shaped"
 //! means the loop a UCT playout actually runs — enumerate the legal actions,
-//! pick one, clone-and-apply — not `apply_action_into` in isolation. A
-//! regression that doubles `legal_actions` cost is exactly the kind of creep
-//! §7 exists to catch, so enumeration is inside the timed window.
+//! pick one, apply it in place ([`engine::apply_action_owned`], #3976) — not
+//! a transition in isolation. A regression that doubles `legal_actions` cost
+//! is exactly the kind of creep §7 exists to catch, so enumeration is inside
+//! the timed window. `--borrowed` measures the clone-per-step form
+//! ([`engine::apply_action_into`]) that exact DFS and every caller keeping
+//! its predecessor runs; the work checksum is the same in both modes.
 //!
 //! This module is **binary-local and engine-external**. It calls only the
-//! public library surface `diff_serve` calls ([`HotBoundary`],
-//! [`engine::admit`], [`engine::legal_actions`], [`engine::apply_action_into`])
+//! public library surface ([`HotBoundary`], [`engine::admit`],
+//! [`engine::legal_actions`], [`engine::apply_action_into`],
+//! [`engine::apply_action_owned`])
 //! and adds nothing to `sts_sim`'s API. A benchmark that needed a private hook
 //! into the engine would be measuring a different engine than the one that
 //! ships.
@@ -73,7 +77,7 @@ use sts_sim::hot::HotState;
 pub const SCHEMA_V1: &str = "sts-sim-bench/v1";
 
 const USAGE: &str = "usage: sts-sim bench [--workload NAME] [--trajectories N] \
-                     [--actions M] [--seed S] [--warmup T] [--list]";
+                     [--actions M] [--seed S] [--warmup T] [--borrowed] [--list]";
 
 /// The byte-pinned entry for the v1 synthetic workload.
 ///
@@ -303,7 +307,30 @@ struct Measurement {
 /// Parsed invocation.
 struct Config {
     workload: Workload,
+    stepping: Stepping,
     list: bool,
+}
+
+/// How a playout steps its state.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum Stepping {
+    /// [`engine::apply_action_owned`]: the state is moved and written in
+    /// place, as the UCT search's descent and rollouts step (#3976). The
+    /// default, because it is the loop a playout actually runs.
+    Owned,
+    /// [`engine::apply_action_into`]: clone the predecessor every step, as
+    /// exact DFS and every caller that keeps the predecessor does.
+    /// `--borrowed`; the work checksum is the same in both modes.
+    Borrowed,
+}
+
+impl Stepping {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Owned => "owned",
+            Self::Borrowed => "borrowed",
+        }
+    }
 }
 
 fn parse_u64(flag: &str, value: Option<&String>) -> Result<u64, BenchRefusal> {
@@ -327,12 +354,17 @@ fn parse_u32(flag: &str, value: Option<&String>) -> Result<u32, BenchRefusal> {
 fn parse_args(args: &[String]) -> Result<Config, BenchRefusal> {
     let mut workload = WORKLOADS[0];
     let mut list = false;
+    let mut stepping = Stepping::Owned;
     let mut index = 0;
     while index < args.len() {
         let flag = args[index].as_str();
         match flag {
             "--list" => {
                 list = true;
+                index += 1;
+            }
+            "--borrowed" => {
+                stepping = Stepping::Borrowed;
                 index += 1;
             }
             "--workload" => {
@@ -370,7 +402,11 @@ fn parse_args(args: &[String]) -> Result<Config, BenchRefusal> {
     if workload.actions == 0 {
         return Err(BenchRefusal::EmptyBudget("--actions".to_string()));
     }
-    Ok(Config { workload, list })
+    Ok(Config {
+        workload,
+        stepping,
+        list,
+    })
 }
 
 /// Admit the workload's entry: parse, validate, cross the boundary, and run the
@@ -409,12 +445,18 @@ fn play_one(
     catalog: &Catalog,
     seed: u64,
     max_actions: u32,
-    legal_actions: &mut engine::LegalActionBuffer,
-    events: &mut Vec<engine::Event>,
+    stepping: Stepping,
+    scratch: &mut Scratch,
     measurement: &mut Measurement,
 ) {
     let mut rng = PolicyRng::new(seed);
     let mut state = entry.clone();
+    let Scratch {
+        legal_actions,
+        events,
+        line,
+    } = scratch;
+    line.clear();
     for _ in 0..max_actions {
         if state.history.over {
             measurement.stops.terminal += 1;
@@ -429,9 +471,16 @@ fn play_one(
         }
         let action = actions[rng.below(actions.len())];
         measurement.checksum.fold_action(&action);
-        match engine::apply_action_into(&state, catalog, &action, events) {
+        let stepped = match stepping {
+            Stepping::Owned => engine::apply_action_owned(state, catalog, &action, events, || {
+                replay_line(entry, catalog, line)
+            }),
+            Stepping::Borrowed => engine::apply_action_into(&state, catalog, &action, events),
+        };
+        match stepped {
             Ok(next) => {
                 state = next;
+                line.push(action);
                 measurement.transitions += 1;
             }
             Err(_) => {
@@ -446,12 +495,39 @@ fn play_one(
     measurement.stops.budget += 1;
 }
 
+/// Caller-owned buffers reused across every state and trajectory: the
+/// enumeration and event scratch the engine/search API expects, and the
+/// playout's applied line (the owned step's predecessor rebuild reads it).
+struct Scratch {
+    legal_actions: engine::LegalActionBuffer,
+    events: Vec<engine::Event>,
+    line: Vec<Action>,
+}
+
+/// Rebuild the state a playout had after `line`, for
+/// [`engine::apply_action_owned`]'s rare parked-selection step. Every action
+/// in `line` already applied once from the same states, and transitions are
+/// deterministic, so a refusal here is a defect.
+fn replay_line(entry: &HotState, catalog: &Catalog, line: &[Action]) -> HotState {
+    let mut events = Vec::new();
+    line.iter().fold(entry.clone(), |state, action| {
+        engine::apply_action_into(&state, catalog, action, &mut events)
+            .expect("an applied bench line replays: transitions are deterministic")
+    })
+}
+
 /// Run a workload and return its measurement.
-fn measure(workload: &Workload, entry: &HotState, catalog: &Catalog) -> Measurement {
-    // Caller-owned enumeration scratch is the engine/search API: one buffer
-    // per worker, reused across every state and trajectory.
-    let mut legal_actions = engine::LegalActionBuffer::new();
-    let mut events: Vec<engine::Event> = Vec::new();
+fn measure(
+    workload: &Workload,
+    stepping: Stepping,
+    entry: &HotState,
+    catalog: &Catalog,
+) -> Measurement {
+    let mut scratch = Scratch {
+        legal_actions: engine::LegalActionBuffer::new(),
+        events: Vec::new(),
+        line: Vec::new(),
+    };
     let mut discard = Measurement {
         transitions: 0,
         enumerations: 0,
@@ -468,8 +544,8 @@ fn measure(workload: &Workload, entry: &HotState, catalog: &Catalog) -> Measurem
             catalog,
             trajectory_seed(workload.seed, trajectory),
             workload.actions,
-            &mut legal_actions,
-            &mut events,
+            stepping,
+            &mut scratch,
             &mut discard,
         );
     }
@@ -492,8 +568,8 @@ fn measure(workload: &Workload, entry: &HotState, catalog: &Catalog) -> Measurem
             catalog,
             trajectory_seed(workload.seed, trajectory),
             workload.actions,
-            &mut legal_actions,
-            &mut events,
+            stepping,
+            &mut scratch,
             &mut measurement,
         );
     }
@@ -606,8 +682,10 @@ pub fn main(args: &[String]) -> Result<String, BenchRefusal> {
         return Ok(list().to_string());
     }
     let (entry, catalog) = admit(config.workload.entry)?;
-    let measurement = measure(&config.workload, &entry, &catalog);
-    Ok(report(&config.workload, &measurement).to_string())
+    let measurement = measure(&config.workload, config.stepping, &entry, &catalog);
+    let mut report = report(&config.workload, &measurement);
+    report["stepping"] = config.stepping.name().into();
+    Ok(report.to_string())
 }
 
 #[cfg(test)]

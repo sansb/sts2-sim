@@ -295,6 +295,15 @@ pub(crate) fn osty_body(ctx: &mut StepCtx<'_>) -> Result<(), EngineRefusal> {
             // draws `DynamicVars.Cards.BaseValue` cards when
             // `!HasBeenPlayedThisTurn`, so the draw count is the compiled
             // CardsVar arg (1), not a literal (#2519).
+            //
+            // `HasBeenPlayedThisTurn` keys on `CurrentSide`
+            // (`CombatHistoryEntry::HappenedThisTurn` 0x138a48
+            // IL_0022-IL_002d). The hot played-this-turn set models only the
+            // player-side window and is cleared at player turn start (#3981),
+            // so an enemy-side play refuses by name rather than reading it.
+            if !ctx.state.player_side_active {
+                return Err(EngineRefusal::MalformedArgs("Fetch enemy-side play"));
+            }
             let target = ctx
                 .target
                 .ok_or(EngineRefusal::TargetMismatch { required: true })?;
@@ -871,6 +880,25 @@ mod tests {
         assert_eq!(state.piles.get(PileId::Hand).len(), 1);
         assert_eq!(state.piles.get(PileId::Draw).len(), 3);
         assert_eq!(state.fanouts.pet().attacks_this_turn(), 2);
+    }
+
+    /// #3981: the played-this-turn set models only the player-side window,
+    /// so a Fetch play on the enemy side refuses by name and changes nothing.
+    #[test]
+    fn fetch_played_on_the_enemy_side_refuses_by_name() {
+        let mut state = HotState::at_defaults();
+        state.hp = 50;
+        state
+            .monsters_mut()
+            .push(HotMonster::new(MonsterKind::Toadpole, 50));
+        state.fanouts.set_osty(Some((5, 5))).unwrap();
+        state.player_side_active = false;
+        let before = state.clone();
+        assert_eq!(
+            execute(&mut state, CardId::Fetch, 0, Some(0)),
+            Err(EngineRefusal::MalformedArgs("Fetch enemy-side play"))
+        );
+        assert!(state == before);
     }
 
     #[test]

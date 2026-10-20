@@ -282,15 +282,20 @@ pub(crate) fn aeonglass_owner_reachable(state: &HotState) -> bool {
 }
 
 /// Whether any public Aeonglass-only carrier or exact Wither atom is visible.
+///
+/// A pile holds only atoms this fight's catalog interned, so with no Wither
+/// atom ([`Catalog::has_wither`]) the pile scan cannot succeed and is skipped
+/// (#3978).
 pub(crate) fn aeonglass_reachable(state: &HotState, catalog: &Catalog) -> bool {
     aeonglass_owner_reachable(state)
-        || AEONGLASS_CARD_PILES.into_iter().any(|pile| {
-            state.piles.get(pile).as_slice().iter().any(|card| {
-                catalog
-                    .spec(card.atom)
-                    .is_some_and(|spec| spec.identity.id == CardId::Wither)
+        || catalog.has_wither()
+            && AEONGLASS_CARD_PILES.into_iter().any(|pile| {
+                state.piles.get(pile).as_slice().iter().any(|card| {
+                    catalog
+                        .spec(card.atom)
+                        .is_some_and(|spec| spec.identity.id == CardId::Wither)
+                })
             })
-        })
 }
 
 fn aeonglass_cards_are_exact(state: &HotState, catalog: &Catalog) -> bool {
@@ -1434,7 +1439,10 @@ pub(crate) fn effective_ethereal(
     uid: u32,
 ) -> bool {
     spec.ethereal
-        || state.card_states.get(uid).local_ethereal()
+        || state
+            .card_states
+            .get_ref(uid)
+            .is_some_and(crate::hot::CardInstanceState::local_ethereal)
         || (state.powers.value(PowerId::HexPower) == 2
             && unique_live_card_location(state, uid)
                 .ok()

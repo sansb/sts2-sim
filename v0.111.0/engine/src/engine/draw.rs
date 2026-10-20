@@ -4392,9 +4392,11 @@ pub fn flush_hand(
         }
     }
 
-    let mut hand: Vec<HotCard> = state.piles.get(PileId::Hand).as_slice().to_vec();
+    // Take the hand's cards where they lie: when the pile is uniquely owned
+    // (in-place stepping, #3976) this neither copies the cards nor allocates
+    // a fresh empty pile (#3977). A shared pile is cloned once, as before.
+    let mut hand: Vec<HotCard> = std::mem::take(state.piles.get_mut(PileId::Hand).make_mut());
     if !any_retained {
-        state.piles.set(PileId::Hand, Default::default());
         let discard = state.piles.get_mut(PileId::Discard).make_mut();
         for card in &hand {
             discard.push(*card);
@@ -4409,6 +4411,13 @@ pub fn flush_hand(
         let discard = state.piles.get_mut(PileId::Discard).make_mut();
         let tail = discard.len() - hand.len();
         discard[tail..].copy_from_slice(&hand);
+        // Return the emptied buffer to the still-empty Hand, so the next
+        // draw fills it without growth reallocations. Capacity is invisible
+        // to equality and to the projection.
+        if state.piles.get(PileId::Hand).is_empty() {
+            hand.clear();
+            *state.piles.get_mut(PileId::Hand).make_mut() = hand;
+        }
         return Ok(());
     }
 

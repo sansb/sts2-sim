@@ -102,7 +102,10 @@ impl CardType {
 }
 
 /// A card row: one `(id, upgrade)` key of the assembled `CARDS` registry.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+// `PartialEq` is the field-wise compare with an address shortcut that
+// only answers `true` when the fields are equal, so `Hash` agrees.
+#[allow(clippy::derived_hash_with_manual_eq)]
+#[derive(Copy, Clone, Debug, Eq, Hash)]
 pub struct CardRow {
     /// The card id (the enum axis).
     pub id: CardId,
@@ -261,6 +264,124 @@ pub struct RelicLedgerRow {
     pub inventory_represented: bool,
     /// Whether a single-relic probe is admitted by the simulation admission gate.
     pub exactly_admitted: bool,
+}
+
+// Pointer-first equality (generated from the field list above).
+impl PartialEq for CardRow {
+    fn eq(&self, other: &Self) -> bool {
+        if core::ptr::eq(self, other) {
+            return true;
+        }
+        let CardRow {
+            id,
+            upgrade,
+            name,
+            rarity,
+            cost,
+            steps,
+            pool,
+            star_cost,
+            star_x,
+            playable,
+            play_condition,
+            ethereal,
+            on_draw_energy_loss,
+            card_type,
+            nimble_eligible,
+            is_power,
+            is_skill,
+            strike_tag,
+            tags,
+            exhausts,
+            targeted,
+            target_type,
+            heal,
+            turn_end_dmg,
+            turn_end_hp_loss,
+            turn_end_weak,
+            turn_end_frail,
+            turn_end_hp_loss_hand,
+            is_status,
+            is_status_curse,
+            selects,
+            innate,
+            x_cost,
+            retain,
+            sly,
+        } = self;
+        let CardRow {
+            id: other_id,
+            upgrade: other_upgrade,
+            name: other_name,
+            rarity: other_rarity,
+            cost: other_cost,
+            steps: other_steps,
+            pool: other_pool,
+            star_cost: other_star_cost,
+            star_x: other_star_x,
+            playable: other_playable,
+            play_condition: other_play_condition,
+            ethereal: other_ethereal,
+            on_draw_energy_loss: other_on_draw_energy_loss,
+            card_type: other_card_type,
+            nimble_eligible: other_nimble_eligible,
+            is_power: other_is_power,
+            is_skill: other_is_skill,
+            strike_tag: other_strike_tag,
+            tags: other_tags,
+            exhausts: other_exhausts,
+            targeted: other_targeted,
+            target_type: other_target_type,
+            heal: other_heal,
+            turn_end_dmg: other_turn_end_dmg,
+            turn_end_hp_loss: other_turn_end_hp_loss,
+            turn_end_weak: other_turn_end_weak,
+            turn_end_frail: other_turn_end_frail,
+            turn_end_hp_loss_hand: other_turn_end_hp_loss_hand,
+            is_status: other_is_status,
+            is_status_curse: other_is_status_curse,
+            selects: other_selects,
+            innate: other_innate,
+            x_cost: other_x_cost,
+            retain: other_retain,
+            sly: other_sly,
+        } = other;
+        id == other_id
+            && upgrade == other_upgrade
+            && name == other_name
+            && rarity == other_rarity
+            && cost == other_cost
+            && steps == other_steps
+            && pool == other_pool
+            && star_cost == other_star_cost
+            && star_x == other_star_x
+            && playable == other_playable
+            && play_condition == other_play_condition
+            && ethereal == other_ethereal
+            && on_draw_energy_loss == other_on_draw_energy_loss
+            && card_type == other_card_type
+            && nimble_eligible == other_nimble_eligible
+            && is_power == other_is_power
+            && is_skill == other_is_skill
+            && strike_tag == other_strike_tag
+            && tags == other_tags
+            && exhausts == other_exhausts
+            && targeted == other_targeted
+            && target_type == other_target_type
+            && heal == other_heal
+            && turn_end_dmg == other_turn_end_dmg
+            && turn_end_hp_loss == other_turn_end_hp_loss
+            && turn_end_weak == other_turn_end_weak
+            && turn_end_frail == other_turn_end_frail
+            && turn_end_hp_loss_hand == other_turn_end_hp_loss_hand
+            && is_status == other_is_status
+            && is_status_curse == other_is_status_curse
+            && selects == other_selects
+            && innate == other_innate
+            && x_cost == other_x_cost
+            && retain == other_retain
+            && sly == other_sly
+    }
 }
 
 /// Canonical card-rarity vocabulary derived from `_CARD_RARITY_BY_ID`.

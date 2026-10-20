@@ -6176,13 +6176,41 @@ pub(crate) fn card_is_solo_unplayable(id: CardId) -> bool {
         || TEAMMATE_REQUIRED_CANPLAY_CARDS.contains(&id)
 }
 
+/// Per-[`CardId`] membership in the three canPlay census lists, as bits,
+/// built once from the lists themselves: `can_play` asks for every card in
+/// hand on every enumeration, and the lists hold 43 ids between them (#3978).
+const MULTIPLAYER_ONLY_BIT: u8 = 1;
+const NATIVE_SOLO_PLAYABLE_BIT: u8 = 2;
+const TEAMMATE_REQUIRED_BIT: u8 = 4;
+
+fn multiplayer_census_bits(id: CardId) -> u8 {
+    static BITS: std::sync::LazyLock<[u8; CardId::COUNT]> = std::sync::LazyLock::new(|| {
+        let mut bits = [0; CardId::COUNT];
+        for id in MULTIPLAYER_ONLY_CANPLAY_CARDS {
+            bits[id as usize] |= MULTIPLAYER_ONLY_BIT;
+        }
+        for id in NATIVE_SOLO_PLAYABLE_CARDS {
+            bits[id as usize] |= NATIVE_SOLO_PLAYABLE_BIT;
+        }
+        for id in TEAMMATE_REQUIRED_CANPLAY_CARDS {
+            bits[id as usize] |= TEAMMATE_REQUIRED_BIT;
+        }
+        bits
+    });
+    BITS[id as usize]
+}
+
 fn multiplayer_restriction_blocks(state: &HotState, id: CardId) -> bool {
+    let bits = multiplayer_census_bits(id);
+    if bits == 0 {
+        return false;
+    }
     let living_players = usize::from(state.hp > 0)
         + usize::from(state.multiplayer_ally_key == 1 && state.fanouts.multiplayer_ally().alive);
-    (MULTIPLAYER_ONLY_CANPLAY_CARDS.contains(&id)
-        && !NATIVE_SOLO_PLAYABLE_CARDS.contains(&id)
+    (bits & MULTIPLAYER_ONLY_BIT != 0
+        && bits & NATIVE_SOLO_PLAYABLE_BIT == 0
         && living_players <= 1)
-        || (TEAMMATE_REQUIRED_CANPLAY_CARDS.contains(&id) && state.multiplayer_ally_key == 0)
+        || (bits & TEAMMATE_REQUIRED_BIT != 0 && state.multiplayer_ally_key == 0)
 }
 
 /// `CardEnergyCost::GetWithModifiers(Local)` for the admitted cost surface.
@@ -9941,7 +9969,7 @@ fn play_card_with_work_inner(
                 _ => return Err(EngineRefusal::ContinuationNotModeled),
             }
         } else if catalog.requires_action_replay() {
-            replay_frozen_batch_parent(catalog, &spec)?
+            replay_frozen_batch_parent(catalog, card.atom, &spec)?
         } else {
             None
         };
@@ -11137,15 +11165,26 @@ fn pending_card_play_record(
 #[inline(never)]
 fn replay_frozen_batch_parent(
     catalog: &Catalog,
+    atom: crate::catalog::CardAtom,
     spec: &CardSpec,
 ) -> Result<Option<usize>, EngineRefusal> {
     if !crate::engine::replay_lifecycle_is_active() {
         return Ok(None);
     }
-    replay_frozen_batch_parent_candidate(catalog, spec)
+    // `spec` is always the catalog's own spec for the played card's atom, so
+    // the per-atom answer derived once by the catalog is this one.
+    debug_assert!(catalog.spec(atom) == Some(spec));
+    let parent = catalog
+        .frozen_batch_parent(atom)
+        .ok_or(EngineRefusal::UnknownAtom(atom))?
+        .clone();
+    debug_assert_eq!(parent, replay_frozen_batch_parent_candidate(catalog, spec));
+    parent
 }
 
-fn replay_frozen_batch_parent_candidate(
+/// Pure in `catalog` and `spec`; [`Catalog::frozen_batch_parent`] derives it
+/// once per atom.
+pub(crate) fn replay_frozen_batch_parent_candidate(
     catalog: &Catalog,
     spec: &CardSpec,
 ) -> Result<Option<usize>, EngineRefusal> {
@@ -13232,21 +13271,16 @@ pub(crate) fn end_turn_replay_predecessor_has_foregone(state: &HotState) -> bool
     if replay.action != crate::hot::ActionReplayRootAction::EndTurn {
         return false;
     }
-    let Ok(predecessor) = serde_json::from_slice::<serde_json::Value>(&replay.predecessor_json)
-    else {
-        return false;
-    };
-    let Some(player) = predecessor.get("player") else {
-        return false;
-    };
-    player
-        .get("foregone")
-        .and_then(serde_json::Value::as_i64)
-        .is_some_and(|amount| amount > 0)
-        && player
-            .get("before_hand_draw_power_order")
-            .and_then(serde_json::Value::as_array)
-            .is_some_and(|order| order.iter().any(|power| power.as_str() == Some("foregone")))
+    // The hot predecessor (#3499 option 4). Its canonical document projects
+    // `player.foregone` from the Foregone power's amount and
+    // `before_hand_draw_power_order` from this exact fan-out order, which is
+    // what this discriminator read from the receipt's bytes before.
+    let predecessor = &*replay.predecessor;
+    predecessor.powers.value(PowerId::Foregone) > 0
+        && predecessor
+            .fanouts
+            .before_hand_draw_order()
+            .contains(&PowerId::Foregone)
 }
 
 /// A stack whose innermost receipt-owned Draw sits at `position` (#3114,
@@ -19134,9 +19168,12 @@ fn drive_until_depth_with_active(
             }
             return Ok(DriveStop::Blocked);
         }
-        if !state.frames.continuation_store_is_valid(None) {
-            return Err(EngineRefusal::ContinuationNotModeled);
-        }
+        // `persisted_card_play_stack_is_exact` above opens with
+        // `continuation_store_is_valid(state.pending)`, and the pending
+        // branch always returns, so the store was validated with no pending
+        // selection on this very state. Re-asking cost ~2% of a replay-route
+        // search; debug builds still do.
+        debug_assert!(state.frames.continuation_store_is_valid(None));
         match state.frames.top() {
             Some(crate::frame::Frame::CardPlay { .. }) => {
                 advance_top_card_play_one(state, catalog, events, active_play)?;
@@ -29861,7 +29898,7 @@ mod tests {
         );
         state
             .install_action_replay_root(&crate::hot::ActionReplayRecord {
-                predecessor_json: b"{}".to_vec(),
+                predecessor: std::sync::Arc::new(HotState::at_defaults()),
                 action: crate::hot::ActionReplayRootAction::EndTurn,
                 answers: Vec::new(),
             })
@@ -46991,7 +47028,12 @@ mod tests {
                     atom: scrape_catalog
                         .atom(&if uid == 2 { purity } else { defend })
                         .unwrap(),
-                    flags: 0,
+                    // The cost row below lives in slot 7 (#3629).
+                    flags: if uid == 2 {
+                        CARD_FLAG_DEFAULT_PHYSICAL_STATE
+                    } else {
+                        0
+                    },
                 }
             }));
         lethal_stock.card_states.set_local_sly(2);

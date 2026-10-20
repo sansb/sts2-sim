@@ -1179,6 +1179,9 @@ pub struct Catalog {
     /// Generation-potion pool facts, derived on first use; see
     /// [`crate::engine::potions::GenerationPoolFacts`].
     generation_pools: Derived<crate::engine::potions::GenerationPoolFacts>,
+    /// Per atom, the replay route's frozen-batch parent step, derived on
+    /// first use; see [`Catalog::frozen_batch_parent`].
+    frozen_batch_parent: Derived<Vec<Result<Option<usize>, crate::engine::EngineRefusal>>>,
     /// Whether any interned identity is Normality, or the document records
     /// that its session kept the count (#3660, [`SessionBookkeeping`]).
     ///
@@ -1188,6 +1191,10 @@ pub struct Catalog {
     /// (`engine::play::normality_blocks_card_plays`), whose only reader is a
     /// Normality in Hand.
     has_normality: bool,
+    /// Whether any interned identity is Wither (#3978). A pile holds only
+    /// interned atoms, so without one no Wither card can ever be live and the
+    /// Aeonglass pile scan (`engine::cards::aeonglass_reachable`) is skipped.
+    has_wither: bool,
     /// Whether any interned identity is Enthralled (#2561).
     ///
     /// Same immutability argument as `has_normality`: it gates the Hand scan
@@ -1421,6 +1428,8 @@ impl Catalog {
 
     #[cfg(test)]
     pub(crate) fn spec_mut_for_test(&mut self, atom: CardAtom) -> Option<&mut CardSpec> {
+        // A spec edit invalidates what was derived from the specs.
+        self.frozen_batch_parent = Derived::default();
         self.specs.get_mut(atom as usize)
     }
 
@@ -1541,6 +1550,29 @@ impl Catalog {
             .get_or_init(|| crate::engine::potions::GenerationPoolFacts::of(self))
     }
 
+    /// The frozen-batch parent step of `atom`'s card on the replay route.
+    ///
+    /// `play::replay_frozen_batch_parent_candidate` reads only the catalog
+    /// and the spec, both fixed for the fight, yet ran on every replay-route
+    /// card play (~5% of a replay-route search). It is computed once per
+    /// atom here; `None` for an atom the catalog does not hold.
+    pub(crate) fn frozen_batch_parent(
+        &self,
+        atom: CardAtom,
+    ) -> Option<&Result<Option<usize>, crate::engine::EngineRefusal>> {
+        self.frozen_batch_parent
+            .0
+            .get_or_init(|| {
+                self.specs
+                    .iter()
+                    .map(|spec| {
+                        crate::engine::play::replay_frozen_batch_parent_candidate(self, spec)
+                    })
+                    .collect()
+            })
+            .get(atom as usize)
+    }
+
     /// See the field of the same name.
     #[inline(always)]
     pub(crate) fn outbreak_reachable(&self) -> bool {
@@ -1563,6 +1595,12 @@ impl Catalog {
     #[inline(always)]
     pub(crate) fn has_normality(&self) -> bool {
         self.has_normality
+    }
+
+    /// Whether this fight's immutable catalog interns Wither.
+    #[inline(always)]
+    pub(crate) fn has_wither(&self) -> bool {
+        self.has_wither
     }
 
     /// Whether this fight's immutable catalog interns Enthralled.
@@ -1732,6 +1770,7 @@ impl Catalog {
             (self.misery_is_reachable, host.misery_is_reachable),
             (self.has_normality, host.has_normality),
             (self.has_enthralled, host.has_enthralled),
+            (self.has_wither, host.has_wither),
             (
                 self.has_auto_post_card_listener,
                 host.has_auto_post_card_listener,
@@ -3088,6 +3127,10 @@ impl CatalogBuilder {
             .specs
             .iter()
             .any(|spec| matches!(spec.identity.id, CardId::Enthralled));
+        let has_wither = self
+            .specs
+            .iter()
+            .any(|spec| matches!(spec.identity.id, CardId::Wither));
         let misery_is_reachable = self.session_bookkeeping.misery_ledger
             || self
                 .reachable_identities
@@ -3357,6 +3400,7 @@ impl CatalogBuilder {
             misery_is_reachable,
             has_normality,
             has_enthralled,
+            has_wither,
             has_auto_post_card_listener,
             has_batch139_self_return,
             requires_action_replay,
@@ -3376,6 +3420,7 @@ impl CatalogBuilder {
             outbreak_reachable: false,
             terminal_aware_root_step_reachable: false,
             generation_pools: Derived::default(),
+            frozen_batch_parent: Derived::default(),
         };
         // Derived from the finished catalog's own reachable specs, steps and
         // args, none of which change after `build`.
@@ -3596,6 +3641,33 @@ mod tests {
             !is_generated_card_row(&forged),
             "a hybrid row is not generated"
         );
+    }
+
+    /// `CardRow`'s pointer-first `PartialEq`: a copy at another address is
+    /// still compared field by field, so it equals its table row exactly when
+    /// every field does, and one changed field (a scalar, or the step
+    /// program alone) makes it unequal and no longer generated.
+    #[test]
+    fn card_row_equality_is_by_value_off_the_table_address() {
+        use crate::content_tables::{CARD_ROWS, is_generated_card_row};
+        for row in CARD_ROWS.iter().take(64) {
+            let copy = *row;
+            assert!(!core::ptr::eq(&copy, row));
+            assert_eq!(&copy, row);
+            assert!(is_generated_card_row(&copy));
+            let mut cost = copy;
+            cost.cost += 1;
+            assert_ne!(&cost, row);
+            assert!(!is_generated_card_row(&cost));
+            let mut flag = copy;
+            flag.sly = !flag.sly;
+            assert_ne!(&flag, row);
+        }
+        let shiv = *card_row(CardId::Shiv, 0).unwrap();
+        let mut stepped = shiv;
+        stepped.steps = &stepped.steps[..stepped.steps.len() - 1];
+        assert_ne!(stepped, shiv);
+        assert!(!is_generated_card_row(&stepped));
     }
 
     /// #3178: `RoyallyApproved::OnEnchant` RVA `0xd62c9` adds Innate and

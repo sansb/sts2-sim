@@ -1450,20 +1450,12 @@ fn player_attack_inner(
     }
     let fixed_target_identities = match plan.targeting {
         AttackTargeting::Fixed(targets) => {
-            let mut identities = targets
-                .iter()
-                .map(|target| {
-                    state
-                        .monsters
-                        .get(*target)
-                        .map(|monster| (monster.slot, monster.uid))
-                })
-                .collect::<Option<Vec<_>>>();
+            let mut identities = FrozenIdentities::of(state, targets);
             if let (Some(identities), Some(identity)) =
                 (&mut identities, plan.frozen_target_identity)
-                && identities.len() == 1
+                && identities.as_slice().len() == 1
             {
-                identities[0] = identity;
+                identities.as_mut_slice()[0] = identity;
             }
             identities
         }
@@ -1606,7 +1598,9 @@ fn player_attack_inner(
                 result_sink: probe_has_results.then_some(&mut probe_results),
                 dealer: plan.dealer,
             },
-            fixed_target_identities.as_deref(),
+            fixed_target_identities
+                .as_ref()
+                .map(FrozenIdentities::as_slice),
             &mut probe_events,
         )?;
     }
@@ -1614,7 +1608,9 @@ fn player_attack_inner(
         state,
         source,
         plan,
-        fixed_target_identities.as_deref(),
+        fixed_target_identities
+            .as_ref()
+            .map(FrozenIdentities::as_slice),
         events,
     )
 }
@@ -1841,20 +1837,20 @@ fn player_attack_inner_apply(
         }
         let hit_targets = match (plan.context_mode, plan.targeting) {
             (AttackContextMode::EchoingSlash, _) => {
-                let targets = alive_targets(state);
+                let targets = HitTargets::alive(state);
                 if targets.is_empty() {
                     break;
                 }
                 targets
             }
             (_, AttackTargeting::Random) => match roll_target(state)? {
-                Some(target) => vec![target],
+                Some(target) => HitTargets::from_slice(&[target]),
                 None => break,
             },
             // `validTargets` re-read per hit (IL_0168-IL_0196); an empty set
             // in a live combat leaves the loop (IL_01a6-IL_01b3).
             (_, AttackTargeting::AllOpponents) => {
-                let targets = alive_targets(state);
+                let targets = HitTargets::alive(state);
                 if targets.is_empty() {
                     break;
                 }
@@ -1872,7 +1868,7 @@ fn player_attack_inner_apply(
                 }) {
                     break;
                 }
-                targets.to_vec()
+                HitTargets::from_slice(targets)
             }
         };
         // This slice's new callbacks use synchronous unpowered batches. A
@@ -1904,7 +1900,7 @@ fn player_attack_inner_apply(
         if batched {
             enter_powered_damage_batch(state)?;
         }
-        for (target_cursor, target) in hit_targets.into_iter().enumerate() {
+        for (target_cursor, target) in hit_targets.as_slice().iter().copied().enumerate() {
             let Some(monster) = state.monsters.get(target) else {
                 continue;
             };
@@ -3228,6 +3224,108 @@ fn live_card_source_pile(
         return Err(EngineRefusal::MalformedArgs(mismatch_site));
     }
     Ok(pile)
+}
+
+/// Fixed targets' frozen `(slot, uid)` identities: inline up to eight targets,
+/// on the heap past that (#3977). `None` when a target index is absent.
+enum FrozenIdentities {
+    Inline { buf: [(i32, u32); 8], len: usize },
+    Heap(Vec<(i32, u32)>),
+}
+
+impl FrozenIdentities {
+    fn of(state: &HotState, targets: &[usize]) -> Option<Self> {
+        if targets.len() <= 8 {
+            let mut buf = [(0, 0); 8];
+            for (frozen, target) in buf.iter_mut().zip(targets) {
+                let monster = state.monsters.get(*target)?;
+                *frozen = (monster.slot, monster.uid);
+            }
+            Some(Self::Inline {
+                buf,
+                len: targets.len(),
+            })
+        } else {
+            targets
+                .iter()
+                .map(|target| {
+                    state
+                        .monsters
+                        .get(*target)
+                        .map(|monster| (monster.slot, monster.uid))
+                })
+                .collect::<Option<Vec<_>>>()
+                .map(Self::Heap)
+        }
+    }
+
+    fn as_slice(&self) -> &[(i32, u32)] {
+        match self {
+            Self::Inline { buf, len } => &buf[..*len],
+            Self::Heap(identities) => identities,
+        }
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [(i32, u32)] {
+        match self {
+            Self::Inline { buf, len } => &mut buf[..*len],
+            Self::Heap(identities) => identities,
+        }
+    }
+}
+
+/// One hit's target indices, inline up to eight and spilling to the heap past
+/// that, so the per-hit target list allocates nothing in practice without
+/// assuming a roster bound (#3977).
+enum HitTargets {
+    Inline { buf: [usize; 8], len: usize },
+    Heap(Vec<usize>),
+}
+
+impl HitTargets {
+    fn from_slice(targets: &[usize]) -> Self {
+        if targets.len() <= 8 {
+            let mut buf = [0; 8];
+            buf[..targets.len()].copy_from_slice(targets);
+            Self::Inline {
+                buf,
+                len: targets.len(),
+            }
+        } else {
+            Self::Heap(targets.to_vec())
+        }
+    }
+
+    /// [`alive_targets`], without the allocation.
+    fn alive(state: &HotState) -> Self {
+        let mut buf = [0; 8];
+        let mut len = 0;
+        for index in 0..state.monsters.len() {
+            if state.monsters[index].hp > 0 {
+                if len == 8 {
+                    return Self::Heap(alive_targets(state));
+                }
+                buf[len] = index;
+                len += 1;
+            }
+        }
+        Self::Inline { buf, len }
+    }
+
+    fn as_slice(&self) -> &[usize] {
+        match self {
+            Self::Inline { buf, len } => &buf[..*len],
+            Self::Heap(targets) => targets,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.as_slice().len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.as_slice().is_empty()
+    }
 }
 
 /// The roster indices of every living monster, in roster order

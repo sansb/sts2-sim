@@ -13098,14 +13098,9 @@ fn authenticated_spent_discovery_l0_source_is_finite(
     let Some(replay) = state.frames.action_replay(record) else {
         return false;
     };
-    let Ok(predecessor) = serde_json::from_slice::<CanonicalStateV2>(&replay.predecessor_json)
-    else {
-        return false;
-    };
-    let Ok(predecessor_state) = crate::boundary::HotBoundary::from_canonical(&predecessor, catalog)
-    else {
-        return false;
-    };
+    // The receipt's predecessor is held hot under this session catalog
+    // (#3499 option 4), exactly what decoding its canonical bytes gave.
+    let predecessor_state = &*replay.predecessor;
     crate::boundary::PILE_FIELDS.iter().any(|(pile, _)| {
         predecessor_state
             .piles

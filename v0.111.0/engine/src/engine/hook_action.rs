@@ -1849,7 +1849,7 @@ mod tests {
     /// #3387 branch witnesses for [`publish_queued`].
     #[test]
     fn publish_queued_refuses_each_unmodeled_boundary_by_name() {
-        let (queued, catalog) = queued_stratagem(&[]);
+        let (queued, _) = queued_stratagem(&[]);
         let publish = |edit: &dyn Fn(&mut HotState)| {
             let mut state = queued.clone();
             edit(&mut state);
@@ -1954,10 +1954,9 @@ mod tests {
         // A Select transaction publishes on top of its existing root: the
         // segment's records are rebased past the root's words.
         let mut rooted = queued.clone();
-        let predecessor = HotBoundary::try_to_canonical(&fixture_root(), &catalog).unwrap();
         rooted
             .install_action_replay_root(&crate::hot::ActionReplayRecord {
-                predecessor_json: predecessor.canonical_json().into_bytes(),
+                predecessor: std::sync::Arc::new(fixture_root()),
                 action: crate::hot::ActionReplayRootAction::Play {
                     uid: 1,
                     target: Some(0),

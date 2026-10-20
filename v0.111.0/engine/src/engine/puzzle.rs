@@ -826,8 +826,8 @@ fn select(answer: ActionReplayAnswer) -> Action {
 
 /// Answer a parked receipt-owned Draw by re-executing its receipt.
 ///
-/// The predecessor is rebuilt from the receipt's own canonical bytes against
-/// the running catalog, the root action is re-applied, and the answers are
+/// The predecessor is the receipt's own, held hot under the running catalog
+/// (#3499 option 4), the root action is re-applied, and the answers are
 /// consumed in order at the awaits they answered. The result is published
 /// with the receipt rewritten to the complete answer list, or with no
 /// receipt once the action has finished.
@@ -839,11 +839,7 @@ pub(crate) fn resume_receipt_owned_park(
     answer: ActionReplayAnswer,
     events: &mut Vec<Event>,
 ) -> Result<HotState, EngineRefusal> {
-    let document: crate::canonical::CanonicalStateV2 =
-        serde_json::from_slice(&replay.predecessor_json)
-            .map_err(|_| EngineRefusal::ContinuationNotModeled)?;
-    let predecessor = crate::boundary::HotBoundary::from_canonical(&document, catalog)
-        .map_err(|_| EngineRefusal::ContinuationNotModeled)?;
+    let predecessor = (*replay.predecessor).clone();
     if predecessor.fanouts.replay_tape_cursor() != 0 {
         return Err(EngineRefusal::ContinuationNotModeled);
     }
@@ -896,7 +892,7 @@ pub(crate) fn resume_receipt_owned_park(
             .action_replay(record)
             .ok_or(EngineRefusal::ContinuationNotModeled)?;
         if resumed.pending.is_none()
-            || installed.predecessor_json != replay.predecessor_json
+            || installed.predecessor != replay.predecessor
             || installed.action != replay.action
             || !installed.answers.is_empty()
         {
